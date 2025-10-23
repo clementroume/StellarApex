@@ -81,3 +81,4 @@ test.http
 *.zip
 *.tar.gz
 *.rar
+package-lock.json
