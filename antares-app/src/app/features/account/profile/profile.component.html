@@ -1,0 +1,41 @@
+<div class="card bg-base-100 shadow-xl">
+  <div class="card-body">
+    <div class="flex justify-between items-center">
+      <h2 class="card-title">{{ 'PROFILE.TITLE' | translate }}</h2>
+      @if (!isEditing) {
+        <button (click)="enterEditMode()" class="btn btn-outline btn-sm">{{ 'PROFILE.EDIT' | translate }}</button>
+      }
+    </div>
+
+    @if (authService.currentUser(); as user) {
+      @if (!isEditing) {
+        <div class="space-y-4 mt-4">
+          <p><strong>{{ 'PROFILE.FIRST_NAME' | translate }}</strong> {{ user.firstName }}</p>
+          <p><strong>{{ 'PROFILE.LAST_NAME' | translate }}</strong> {{ user.lastName }}</p>
+          <p><strong>{{ 'PROFILE.EMAIL' | translate }}</strong> {{ user.email }}</p>
+        </div>
+      }
+
+      @if (isEditing) {
+        <form [formGroup]="profileForm" (ngSubmit)="onSave()" class="space-y-4 mt-4">
+          <div class="form-control">
+            <label class="label"><span class="label-text">{{ 'REGISTER.FIRST_NAME' | translate }}</span></label>
+            <input type="text" formControlName="firstName" class="input input-bordered" />
+          </div>
+          <div class="form-control">
+            <label class="label"><span class="label-text">{{ 'REGISTER.LAST_NAME' | translate }}</span></label>
+            <input type="text" formControlName="lastName" class="input input-bordered" />
+          </div>
+          <div class="form-control">
+            <label class="label"><span class="label-text">{{ 'LOGIN.EMAIL' | translate }}</span></label>
+            <input type="email" formControlName="email" class="input input-bordered" />
+          </div>
+          <div class="card-actions justify-end mt-4">
+            <button type="button" (click)="onCancel()" class="btn btn-ghost">{{ 'PROFILE.CANCEL' | translate }}</button>
+            <button type="submit" class="btn btn-primary" [disabled]="profileForm.invalid || profileForm.pristine">{{ 'PROFILE.SAVE' | translate }}</button>
+          </div>
+        </form>
+      }
+    }
+  </div>
+</div>

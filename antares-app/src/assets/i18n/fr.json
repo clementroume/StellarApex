@@ -1,0 +1,59 @@
+{
+  "NAVBAR": {
+    "MY_ACCOUNT": "Mon Compte",
+    "LOG_OUT": "Se déconnecter",
+    "LOG_IN": "Se connecter"
+  },
+  "DASHBOARD": {
+    "TITLE": "Tableau de Bord",
+    "WELCOME": "Bienvenue sur Antares !"
+  },
+  "LOGIN": {
+    "TITLE": "Bon retour !",
+    "SUBTITLE": "Connecte-toi pour accéder à ton journal de bord.",
+    "EMAIL": "Email",
+    "PASSWORD": "Mot de passe",
+    "NO_ACCOUNT": "Pas encore de compte ? S'inscrire"
+  },
+  "REGISTER": {
+    "TITLE": "Rejoins Antares !",
+    "SUBTITLE": "Crée ton compte pour commencer à enregistrer tes WODs.",
+    "FIRST_NAME": "Prénom",
+    "FIRST_NAME_PLACEHOLDER": "Ton prénom",
+    "LAST_NAME": "Nom",
+    "LAST_NAME_PLACEHOLDER": "Ton nom",
+    "PASSWORD": "Mot de passe",
+    "SIGN_UP": "S'inscrire",
+    "HAVE_ACCOUNT": "Déjà un compte ? Se connecter"
+  },
+  "ACCOUNT": {
+    "TITLE": "Mon Compte",
+    "MENU_INFO": "Mes informations",
+    "MENU_SETTINGS": "Paramètres"
+  },
+  "PROFILE": {
+    "TITLE": "Mes informations",
+    "EDIT": "Modifier",
+    "FIRST_NAME": "Prénom :",
+    "LAST_NAME": "Nom :",
+    "EMAIL": "Email :",
+    "CANCEL": "Annuler",
+    "SAVE": "Enregistrer",
+    "SUCCESS_UPDATE": "Votre profil a été mis à jour avec succès !",
+    "ERROR_UPDATE": "Une erreur est survenue lors de la mise à jour de votre profil. Veuillez réessayer."
+  },
+  "SETTINGS": {
+    "TITLE": "Sécurité",
+    "PASSWORD_SUBTITLE": "Changez votre mot de passe. Il doit contenir au moins 8 caractères.",
+    "CURRENT_PASSWORD": "Mot de passe actuel",
+    "NEW_PASSWORD": "Nouveau mot de passe",
+    "CONFIRM_PASSWORD": "Confirmer le nouveau mot de passe",
+    "PASSWORDS_MISMATCH": "Les mots de passe ne correspondent pas.",
+    "CHANGE_PASSWORD_BTN": "Changer le mot de passe",
+    "SUCCESS_PASSWORD_UPDATE": "Votre mot de passe a été mis à jour avec succès !",
+    "ERROR_CURRENT_PASSWORD": "Le mot de passe actuel est incorrect.",
+    "ERROR_GENERIC": "Une erreur est survenue. Veuillez réessayer.",
+    "LANGUAGE_TITLE": "Langue",
+    "LANGUAGE_LABEL": "Langue de l'application"
+  }
+}

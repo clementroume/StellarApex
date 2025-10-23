@@ -1,0 +1,12 @@
+# Ignore build artifacts and local configuration
+target/
+.idea/
+*.iml
+.env
+
+# Ignore Git files
+.git/
+.gitignore
+
+# Ignore IDE files
+.DS_Store

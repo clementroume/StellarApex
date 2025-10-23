@@ -1,0 +1,33 @@
+<div class="hero min-h-screen bg-base-200">
+  <div class="hero-content flex-col lg:flex-row-reverse">
+
+    <div class="text-center lg:text-left lg:pl-10">
+      <h1 class="text-5xl font-bold">{{ 'LOGIN.TITLE' | translate }}</h1>
+      <p class="py-6">{{ 'LOGIN.SUBTITLE' | translate }}</p>
+    </div>
+
+    <div class="card shrink-0 w-full max-w-sm shadow-2xl bg-base-100">
+
+      <form class="card-body" [formGroup]="loginForm" (ngSubmit)="onSubmit()">
+
+        <div class="form-control">
+          <label class="label"><span class="label-text">{{ 'LOGIN.EMAIL' | translate }}</span></label>
+          <input type="email" placeholder="email@example.com" class="input input-bordered" formControlName="email" />
+        </div>
+
+        <div class="form-control">
+          <label class="label"><span class="label-text">{{ 'LOGIN.PASSWORD' | translate }}</span></label>
+          <input type="password" placeholder="********" class="input input-bordered" formControlName="password" />
+        </div>
+
+        <div class="form-control mt-6">
+          <button class="btn btn-primary" type="submit" [disabled]="loginForm.invalid">{{ 'NAVBAR.LOG_IN' | translate }}</button>
+        </div>
+
+        <label class="label">
+          <a routerLink="/auth/register" class="label-text-alt link link-hover">{{ 'LOGIN.NO_ACCOUNT' | translate }}</a>
+        </label>
+      </form>
+    </div>
+  </div>
+</div>

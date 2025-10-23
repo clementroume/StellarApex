@@ -1,0 +1,46 @@
+<div class="card bg-base-100 shadow-xl">
+  <div class="card-body">
+    <h2 class="card-title">{{ 'SETTINGS.TITLE' | translate }}</h2>
+
+    <form [formGroup]="passwordForm" (ngSubmit)="onSubmitPassword()" class="space-y-4 mt-4">
+      <p class="text-sm text-base-content/70">{{ 'SETTINGS.PASSWORD_SUBTITLE' | translate }}</p>
+
+      <div class="form-control">
+        <label class="label"><span class="label-text">{{ 'SETTINGS.CURRENT_PASSWORD' | translate }}</span></label>
+        <input type="password" formControlName="currentPassword" class="input input-bordered" />
+      </div>
+
+      <div class="form-control">
+        <label class="label"><span class="label-text">{{ 'SETTINGS.NEW_PASSWORD' | translate }}</span></label>
+        <input type="password" formControlName="newPassword" class="input input-bordered" />
+      </div>
+
+      <div class="form-control">
+        <label class="label"><span class="label-text">{{ 'SETTINGS.CONFIRM_PASSWORD' | translate }}</span></label>
+        <input type="password" formControlName="confirmationPassword" class="input input-bordered" />
+        @if (passwordForm.errors?.['passwordsMismatch'] && passwordForm.get('confirmationPassword')?.touched) {
+          <div class="label">
+            <span class="label-text-alt text-error">{{ 'SETTINGS.PASSWORDS_MISMATCH' | translate }}</span>
+          </div>
+        }
+      </div>
+
+      <div class="card-actions justify-end mt-4">
+        <button type="submit" class="btn btn-primary" [disabled]="passwordForm.invalid">{{ 'SETTINGS.CHANGE_PASSWORD_BTN' | translate }}</button>
+      </div>
+    </form>
+
+    <div class="divider"></div>
+
+    <h2 class="card-title">{{ 'SETTINGS.LANGUAGE_TITLE' | translate }}</h2>
+    <div class="form-control w-full max-w-xs">
+      <label class="label">
+        <span class="label-text">{{ 'SETTINGS.LANGUAGE_LABEL' | translate }}</span>
+      </label>
+      <select class="select select-bordered" (change)="changeLanguage($event)">
+        <option value="en" [selected]="translate.currentLang === 'en'">English</option>
+        <option value="fr" [selected]="translate.currentLang === 'fr'">Français</option>
+      </select>
+    </div>
+  </div>
+</div>

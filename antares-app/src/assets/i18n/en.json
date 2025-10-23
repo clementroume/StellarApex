@@ -1,0 +1,56 @@
+{
+  "NAVBAR": {
+    "MY_ACCOUNT": "My Account",
+    "LOG_OUT": "Log out",
+    "LOG_IN": "Log in"
+  },
+  "DASHBOARD": {
+    "TITLE": "Dashboard",
+    "WELCOME": "Welcome to Antares!"
+  },
+  "LOGIN": {
+    "TITLE": "Welcome back!",
+    "SUBTITLE": "Log in to access your dashboard.",
+    "EMAIL": "Email",
+    "PASSWORD": "Password",
+    "NO_ACCOUNT": "No account yet? Sign up"
+  },
+  "REGISTER": {
+    "TITLE": "Join Antares!",
+    "SUBTITLE": "Create your account to start logging your WODs.",
+    "FIRST_NAME": "First Name",
+    "FIRST_NAME_PLACEHOLDER": "Your first name",
+    "LAST_NAME": "Last Name",
+    "LAST_NAME_PLACEHOLDER": "Your last name",
+    "PASSWORD": "Password",
+    "SIGN_UP": "Sign up",
+    "HAVE_ACCOUNT": "Already have an account? Log in"
+  },
+  "ACCOUNT": {
+    "TITLE": "My Account",
+    "MENU_INFO": "My information",
+    "MENU_SETTINGS": "Settings"
+  },
+  "PROFILE": {
+    "TITLE": "My information",
+    "EDIT": "Edit",
+    "FIRST_NAME": "First Name:",
+    "LAST_NAME": "Last Name:",
+    "EMAIL": "Email:",
+    "CANCEL": "Cancel",
+    "SAVE": "Save",
+    "SUCCESS_UPDATE": "Your profile has been updated successfully!"
+  },
+  "SETTINGS": {
+    "TITLE": "Security",
+    "PASSWORD_SUBTITLE": "Change your password. It must be at least 8 characters long.",
+    "CURRENT_PASSWORD": "Current Password",
+    "NEW_PASSWORD": "New Password",
+    "CONFIRM_PASSWORD": "Confirm new password",
+    "PASSWORDS_MISMATCH": "Passwords do not match.",
+    "CHANGE_PASSWORD_BTN": "Change Password",
+    "SUCCESS_PASSWORD_UPDATE": "Your password has been updated successfully!",
+    "LANGUAGE_TITLE": "Language",
+    "LANGUAGE_LABEL": "Application Language"
+  }
+}

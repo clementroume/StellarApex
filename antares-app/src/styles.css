@@ -1,0 +1,22 @@
+/**
+ * Main stylesheet for the application.
+ * This file uses Tailwind CSS's modern CSS-first approach.
+ */
+
+/*
+ * Imports all of Tailwind's base styles, components, and utility classes.
+ * This single line provides the entire utility-first framework.
+ */
+@import "tailwindcss";
+
+/*
+ * Configures the Daisy UI plugin directly within the CSS.
+ * - 'themes': Specifies the themes to be used.
+ * - 'light --default': Sets 'light' as the default theme when the application loads.
+ * - 'dark --prefersdark': Automatically applies the 'dark' theme if the user's
+ * operating system is set to dark mode. This is handled by the browser's
+ * `prefers-color-scheme` media query.
+ */
+@plugin "daisyui" {
+  themes: light --default, dark --prefersdark;
+}

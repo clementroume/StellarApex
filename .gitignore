@@ -1,0 +1,83 @@
+# === JetBrains IntelliJ IDEA ===
+.idea/
+*.iml
+*.iws
+*.ipr
+/.run/
+/.junie/
+
+# === Maven / Spring Boot ===
+target/
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+dependency-reduced-pom.xml
+buildNumber.properties
+.mvn/timing.properties
+.mvn/wrapper/maven-wrapper.jar
+# Spring Boot DevTools
+.spring-boot-devtools.properties
+# Archives (usually not versioned in source repo)
+*.jar
+*.war
+*.ear
+
+# === Gradle (if used) ===
+build/
+out/
+.gradle/
+.settings/
+
+# === Node.js / Angular ===
+node_modules/
+dist/
+tmp/
+out-tsc/
+bazel-out/
+# Logs and cache
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.angular/
+**/.angular/cache
+.sass-cache/
+# Lock files
+connect.lock
+# Test & Coverage output
+coverage/
+libpeerconnection.log
+testem.log
+typings/ # Older Typings directory
+
+# === General IDE / Editor Files ===
+*.launch # Eclipse
+*.sublime-workspace # Sublime Text
+.vscode # VS Code
+.project # Eclipse
+.classpath # Eclipse
+
+# === Log Files ===
+*.log
+logs/
+hs_err_pid* # JVM crash logs
+
+# === OS Specific Files ===
+.DS_Store
+
+# === Custom Ignores ===
+# Sensitive environment files
+.env
+.htpasswd
+/http-client.env.json
+# Generated documentation/help files (if auto-generated)
+/HELP.md
+# Large data files (should be managed elsewhere)
+/src/main/resources/athletes.csv
+# HTTP Client test file (often user-specific)
+test.http
+# Compressed archives (usually build artifacts or backups)
+*.zip
+*.tar.gz
+*.rar

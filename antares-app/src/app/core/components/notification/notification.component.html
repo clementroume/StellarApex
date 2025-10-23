@@ -1,0 +1,11 @@
+<div class="toast toast-top toast-end">
+  @if (notificationService.notification(); as notification) {
+    <div
+      class="alert"
+      [class.alert-success]="notification.type === 'success'"
+      [class.alert-error]="notification.type === 'error'"
+    >
+      <span>{{ notification.message }}</span>
+    </div>
+  }
+</div>

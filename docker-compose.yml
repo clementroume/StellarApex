@@ -1,0 +1,75 @@
+version: '3.8'
+
+# Fichier docker-compose principal et unique pour l'application Antares.
+# Orchestre la base de données, le cache, l'API backend et le frontend.
+services:
+  # --- Services de Données ---
+  postgres:
+    image: postgres:16-alpine
+    container_name: antares-postgres
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      # Port exposé pour le développement local et le débogage.
+      # Pour une production stricte, on pourrait le commenter.
+      - "5432:5432"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: antares-redis
+    ports:
+      # Port exposé pour le développement local et le débogage.
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # --- Service Backend ---
+  antares-api:
+    build:
+      context: ./antares-api
+      # L'argument MAVEN_OPTS est maintenant géré directement dans le Dockerfile
+      # pour une meilleure portabilité.
+    container_name: antares-api
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    env_file:
+      - ./.env
+    environment:
+      # On peut définir le profil ici, ou dans le fichier .env
+      - SPRING_PROFILES_ACTIVE=prod
+      # L'API n'est pas exposée directement sur l'hôte. Nginx s'en charge.
+
+  # --- Service Frontend & Reverse Proxy ---
+  nginx:
+    build:
+      context: ./antares-app # Le build du frontend inclut Nginx
+    container_name: antares-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      - antares-api
+
+volumes:
+  postgres_data:
+  redis_data:
