@@ -36,6 +36,10 @@ jobs:
         working-directory: ./antares-app
         run: npm ci
 
+      - name: Test frontend
+        working-directory: ./antares-app
+        run: npm test -- --watch=false --browsers=ChromeHeadless
+
       - name: Build frontend
         working-directory: ./antares-app
         run: npm run build -- --configuration production
