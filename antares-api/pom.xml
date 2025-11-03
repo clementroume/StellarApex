@@ -164,7 +164,7 @@
       <artifactId>spring-boot-admin-dependencies</artifactId>
       <groupId>de.codecentric</groupId>
       <type>pom</type>
-      <version>3.5.5</version>
+      <version>3.5.6</version>
     </dependency>
 
     <!-- 📖 Documentation OpenAPI / Swagger -->
@@ -253,7 +253,7 @@
   <properties>
     <java.version>21</java.version>
     <org.mapstruct.version>1.6.3</org.mapstruct.version>
-    <spring-boot-admin.version>3.5.5</spring-boot-admin.version>
+    <spring-boot-admin.version>3.5.6</spring-boot-admin.version>
   </properties>
 
   <version>0.0.1-SNAPSHOT</version>
