@@ -1,33 +1,36 @@
 version: 2
 updates:
+  # --- Backend Dependencies (Maven) ---
   - package-ecosystem: "maven"
     directory: "/antares-api"
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 5
     groups:
-      # Group all org.apache.commons dependencies together
+      # Group common Apache Commons libraries together
       apache-commons:
         patterns:
           - "org.apache.commons:*"
-      # Group Spring Boot dependencies
+      # Group all Spring Boot dependencies into a single PR
       spring-boot:
         patterns:
           - "org.springframework.boot:*"
 
+  # --- Frontend Dependencies (NPM) ---
   - package-ecosystem: "npm"
     directory: "/antares-app"
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 5
     groups:
-      # Group Angular, Angular CLI, and TypeScript updates together
+      # Group Angular core, CLI, and TypeScript updates
       angular-dependencies:
         patterns:
           - "@angular/*"
           - "@angular-devkit/*"
           - "typescript"
 
+  # --- Docker Dependencies ---
   - package-ecosystem: "docker"
     directory: "/antares-api" # Path to the backend Dockerfile
     schedule:
@@ -40,6 +43,7 @@ updates:
       interval: "weekly"
     open-pull-requests-limit: 3
 
+  # --- GitHub Actions Dependencies ---
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:

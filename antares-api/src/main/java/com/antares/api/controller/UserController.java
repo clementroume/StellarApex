@@ -31,11 +31,11 @@ public class UserController {
   private final UserMapper userMapper;
 
   /**
-   * Handles the GET request to retrieve the profile of the currently authenticated user. The user
-   * is identified via the Authentication principal injected by Spring Security.
+   * Handles GET requests to retrieve the profile of the currently authenticated user. The user is
+   * identified via the Authentication principal injected by Spring Security.
    *
    * @param authentication The authentication object containing the user's principal.
-   * @return A ResponseEntity containing the {@link UserResponse} DTO for the current user.
+   * @return A ResponseEntity containing the {@link UserResponse} for the current user.
    */
   @GetMapping("/me")
   public ResponseEntity<UserResponse> getAuthenticatedUser(Authentication authentication) {
@@ -46,11 +46,11 @@ public class UserController {
   }
 
   /**
-   * Handles the PUT request to update the authenticated user's core profile information.
+   * Handles PUT requests to update the authenticated user's core profile information.
    *
    * @param request The DTO with the updated user data, which is validated.
    * @param authentication The current user's authentication principal.
-   * @return A ResponseEntity containing the updated {@link UserResponse} DTO.
+   * @return A ResponseEntity containing the updated {@link UserResponse}.
    */
   @PutMapping("/me/profile")
   public ResponseEntity<UserResponse> updateProfile(
@@ -62,11 +62,11 @@ public class UserController {
   }
 
   /**
-   * Handles the PATCH request to partially update the authenticated user's preferences.
+   * Handles PATCH requests to partially update the authenticated user's preferences.
    *
    * @param request The DTO with the updated preferences data, which is validated.
    * @param authentication The current user's authentication principal.
-   * @return A ResponseEntity containing the updated {@link UserResponse} DTO.
+   * @return A ResponseEntity containing the updated {@link UserResponse}.
    */
   @PatchMapping("/me/preferences")
   public ResponseEntity<UserResponse> updatePreferences(
@@ -78,11 +78,11 @@ public class UserController {
   }
 
   /**
-   * Handles the PUT request to change the authenticated user's password.
+   * Handles PUT requests to change the authenticated user's password.
    *
-   * @param request The DTO with the current, new, and confirmation passwords.
+   * @param request The DTO with the current, new, and confirmation passwords, validated.
    * @param authentication The current user's authentication principal.
-   * @return An empty ResponseEntity confirming the password was changed successfully.
+   * @return An empty ResponseEntity (200 OK) confirming success.
    */
   @PutMapping("/me/password")
   public ResponseEntity<Void> changePassword(

@@ -15,7 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Service class for user-related operations, including profile and preferences management. All
- * methods that modify data are transactional to ensure data integrity.
+ * methods that modify data are transactional.
  */
 @Service
 @RequiredArgsConstructor
@@ -28,8 +28,8 @@ public class UserService {
   /**
    * Updates the core profile information (name, email) of a user.
    *
-   * @param currentUser The user entity to update, retrieved from the security context.
-   * @param request The DTO containing the new profile data.
+   * @param currentUser The user entity to update (from security context).
+   * @param request The DTO with the new profile data.
    * @return The updated {@link UserResponse} DTO.
    */
   @Transactional
@@ -43,8 +43,8 @@ public class UserService {
   /**
    * Updates the preferences (locale, theme) of a user.
    *
-   * @param currentUser The user entity to update, retrieved from the security context.
-   * @param request The DTO containing the new preferences data.
+   * @param currentUser The user entity to update (from security context).
+   * @param request The DTO with the new preferences data.
    * @return The updated {@link UserResponse} DTO.
    */
   @Transactional
@@ -58,8 +58,8 @@ public class UserService {
   /**
    * Changes the password for the currently authenticated user.
    *
-   * @param request The DTO containing the current and new passwords.
-   * @param currentUser The user entity to update, retrieved from the security context.
+   * @param request The DTO containing passwords.
+   * @param currentUser The user entity to update (from security context).
    * @throws InvalidPasswordException if the current password is incorrect or if the new passwords
    *     do not match.
    */

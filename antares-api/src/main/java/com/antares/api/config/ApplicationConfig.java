@@ -22,8 +22,11 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * ApplicationConfig class for configuring user details service, password encoder, authentication
- * manager, and initializing a default admin user.
+ * Main application configuration class.
+ *
+ * <p>This class defines core Spring beans required for security, data access, and application
+ * initialization, such as the {@link UserDetailsService}, {@link PasswordEncoder}, and the default
+ * admin user initializer.
  */
 @Configuration
 @RequiredArgsConstructor
@@ -34,13 +37,15 @@ public class ApplicationConfig {
   private final MessageSource messageSource;
 
   /**
-   * Configures the UserDetailsService to load user details by email.
+   * Configures the {@link UserDetailsService} bean.
    *
-   * @return UserDetailsService instance
+   * <p>This bean tells Spring Security how to load a user by their email address (which serves as
+   * the 'username' in this application).
+   *
+   * @return The UserDetailsService implementation.
    */
   @Bean
   public UserDetailsService userDetailsService() {
-
     return email ->
         userRepository
             .findByEmail(email)
@@ -54,9 +59,12 @@ public class ApplicationConfig {
   }
 
   /**
-   * Configures the PasswordEncoder to use BCrypt hashing algorithm.
+   * Configures the {@link PasswordEncoder} bean.
    *
-   * @return PasswordEncoder instance
+   * <p>This bean defines the hashing algorithm (BCrypt) to be used for storing and verifying user
+   * passwords.
+   *
+   * @return A BCryptPasswordEncoder instance.
    */
   @Bean
   public PasswordEncoder passwordEncoder() {
@@ -64,29 +72,35 @@ public class ApplicationConfig {
   }
 
   /**
-   * Configures the AuthenticationManager using the provided AuthenticationConfiguration.
+   * Exposes the {@link AuthenticationManager} bean.
    *
-   * @param config AuthenticationConfiguration instance
-   * @return AuthenticationManager instance
-   * @throws Exception if an error occurs while retrieving the AuthenticationManager
+   * <p>This manager is the core of Spring Security's authentication mechanism and is used by the
+   * {@link com.antares.api.service.AuthenticationService} to process logins.
+   *
+   * @param config The autoconfigured AuthenticationConfiguration.
+   * @return The AuthenticationManager.
+   * @throws Exception if the manager cannot be retrieved.
    */
   @Bean
   public AuthenticationManager authenticationManager(AuthenticationConfiguration config)
       throws Exception {
-
     return config.getAuthenticationManager();
   }
 
   /**
-   * Initializes a default admin user if none exists in the database.
+   * Initializes a default admin user if no admin user currently exists.
    *
-   * @param userRepository UserRepository instance
-   * @param passwordEncoder PasswordEncoder instance
-   * @param firstName Default first name for the admin user
-   * @param lastName Default last name for the admin user
-   * @param adminEmail Default email for the admin user
-   * @param adminPassword Default password for the admin user
-   * @return ApplicationRunner instance to run the initialization logic
+   * <p>This {@link ApplicationRunner} bean runs on application startup. It checks if any user with
+   * the {@code ROLE_ADMIN} exists and, if not, creates one using credentials from the application
+   * properties.
+   *
+   * @param userRepository The repository to check for and save the user.
+   * @param passwordEncoder The encoder to hash the default password.
+   * @param firstName Default admin's first name from properties.
+   * @param lastName Default admin's last name from properties.
+   * @param adminEmail Default admin's email from properties.
+   * @param adminPassword Default admin's plain-text password from properties.
+   * @return The ApplicationRunner bean.
    */
   @Bean
   @Transactional
@@ -97,7 +111,6 @@ public class ApplicationConfig {
       @Value("${application.admin.default-lastname}") String lastName,
       @Value("${application.admin.default-email}") String adminEmail,
       @Value("${application.admin.default-password}") String adminPassword) {
-
     return args -> {
       if (!userRepository.existsByRole(Role.ROLE_ADMIN)) {
         User adminUser =
@@ -117,8 +130,11 @@ public class ApplicationConfig {
   }
 
   /**
-   * Enables HTTP request tracing for the "httpexchanges" Actuator endpoint. The Spring Boot Admin
-   * UI will display it in the "Traces" tab.
+   * Enables HTTP request tracing for the "/actuator/httpexchanges" endpoint.
+   *
+   * <p>This bean is used by Spring Boot Admin to display the "Traces" tab.
+   *
+   * @return An in-memory repository for HTTP exchanges.
    */
   @Bean
   public HttpExchangeRepository httpExchangeRepository() {

@@ -21,25 +21,24 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 import org.springframework.web.util.WebUtils;
 
-/** JwtService handles JWT token creation, validation, and extraction logic. */
+/** Service for handling JWT (JSON Web Token) creation, validation, and extraction logic. */
 @Service
 @Getter
 public class JwtService {
 
   private final JwtProperties jwtProperties;
-  private SecretKey signInKey;
   private final String accessTokenCookieName;
   private final String refreshTokenCookieName;
   private final long accessTokenDurationMs;
   private final long refreshTokenDurationMs;
+  private SecretKey signInKey; // The HMAC-SHA key used for signing tokens
 
   /**
    * Constructs a JwtService with the specified JwtProperties.
    *
-   * @param jwtProperties the JWT properties for configuration
+   * @param jwtProperties The JWT configuration properties.
    */
   public JwtService(JwtProperties jwtProperties) {
-
     this.jwtProperties = jwtProperties;
     this.accessTokenCookieName = jwtProperties.accessToken().name();
     this.refreshTokenCookieName = jwtProperties.refreshToken().name();
@@ -47,75 +46,66 @@ public class JwtService {
     this.refreshTokenDurationMs = jwtProperties.refreshToken().expiration();
   }
 
-  /**
-   * Initializes the JwtService by decoding the secret key from Base64 and creating the signing key.
-   * This method is called after the bean is constructed.
-   */
+  /** Initializes the service by decoding the Base64 secret key. */
   @PostConstruct
   public void init() {
-
     this.signInKey = Keys.hmacShaKeyFor(Decoders.BASE64.decode(jwtProperties.secretKey()));
   }
 
   /**
-   * Retrieves the JWT token from cookies in the HTTP request.
+   * Retrieves a JWT token from the cookies of an HTTP request.
    *
-   * @param request the HTTP request containing cookies
-   * @param cookieName the name of the cookie to retrieve the JWT from
-   * @return the JWT token if present, otherwise null
+   * @param request The HTTP request.
+   * @param cookieName The name of the cookie to retrieve.
+   * @return The JWT token string if present, otherwise null.
    */
   public String getJwtFromCookies(HttpServletRequest request, String cookieName) {
-
     Cookie cookie = WebUtils.getCookie(request, cookieName);
-
     return cookie != null ? cookie.getValue() : null;
   }
 
   /**
    * Extracts the username (subject) from the JWT token.
    *
-   * @param token the JWT token
-   * @return the username extracted from the token
+   * @param token The JWT token.
+   * @return The username (email).
    */
   public String extractUsername(String token) {
     return extractClaim(token, Claims::getSubject);
   }
 
   /**
-   * Extracts a specific claim from the JWT token using the provided claims resolver function.
+   * Extracts a specific claim from the JWT token using a claims resolver function.
    *
-   * @param token the JWT token
-   * @param claimsResolver a function to extract the desired claim from the Claims object
-   * @param <T> the type of the claim to be extracted
-   * @return the extracted claim
+   * @param token The JWT token.
+   * @param claimsResolver A function to extract the desired claim.
+   * @param <T> The type of the claim.
+   * @return The extracted claim.
    */
   public <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
-
     return claimsResolver.apply(extractAllClaims(token));
   }
 
   /**
-   * Generates a JWT token for the given user details with default access token expiration.
+   * Generates a standard access token for the given user.
    *
-   * @param userDetails the user details for whom to generate the token
-   * @return the generated JWT token
+   * @param userDetails The user details.
+   * @return The generated JWT access token.
    */
   public String generateToken(UserDetails userDetails) {
-
     return buildToken(new HashMap<>(), userDetails, accessTokenDurationMs);
   }
 
   /**
-   * Builds a JWT token with the specified extra claims, user details, and expiration time.
+   * Builds a JWT token with the specified claims, subject, and expiration.
    *
-   * @param extraClaims additional claims to include in the token
-   * @param userDetails the user details for whom to generate the token
-   * @param expiration the expiration time in milliseconds
-   * @return the generated JWT token
+   * @param extraClaims Additional claims to include.
+   * @param userDetails The user (subject) of the token.
+   * @param expiration The expiration time in milliseconds.
+   * @return The compact, signed JWT string.
    */
   public String buildToken(
       Map<String, Object> extraClaims, UserDetails userDetails, long expiration) {
-
     return Jwts.builder()
         .claims(extraClaims)
         .subject(userDetails.getUsername())
@@ -133,24 +123,22 @@ public class JwtService {
   /**
    * Validates the JWT token against the provided user details.
    *
-   * @param token the JWT token to validate
-   * @param userDetails the user details to validate against
-   * @return true if the token is valid and belongs to the user, false otherwise
+   * @param token The JWT token to validate.
+   * @param userDetails The user details to validate against.
+   * @return true if the token is valid and belongs to the user.
    */
   public boolean isTokenValid(String token, UserDetails userDetails) {
-
     return (extractUsername(token).equals(userDetails.getUsername())) && !isTokenExpired(token);
   }
 
   /**
    * Checks if the JWT token is expired.
    *
-   * @param token the JWT token to check
-   * @return true if the token is expired, false otherwise
-   * @throws InvalidTokenException if the token is invalid
+   * @param token The JWT token.
+   * @return true if the token is expired.
+   * @throws InvalidTokenException if the token is malformed or invalid.
    */
   private boolean isTokenExpired(String token) {
-
     try {
       return extractExpiration(token).before(new Date());
     } catch (JwtException e) {
@@ -161,22 +149,21 @@ public class JwtService {
   /**
    * Extracts the expiration date from the JWT token.
    *
-   * @param token the JWT token
-   * @return the expiration date of the token
+   * @param token The JWT token.
+   * @return The expiration date.
    */
   private Date extractExpiration(String token) {
     return extractClaim(token, Claims::getExpiration);
   }
 
   /**
-   * Extracts all claims from the JWT token.
+   * Extracts all claims from the JWT token after verifying its signature, issuer, and audience.
    *
-   * @param token the JWT token
-   * @return the Claims object containing all claims from the token
-   * @throws InvalidTokenException if the token is invalid
+   * @param token The JWT token.
+   * @return The Claims object.
+   * @throws InvalidTokenException if the token fails validation.
    */
   private Claims extractAllClaims(String token) {
-
     try {
       return Jwts.parser()
           .verifyWith(signInKey)

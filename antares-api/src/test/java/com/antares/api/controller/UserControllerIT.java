@@ -29,33 +29,21 @@ import org.springframework.test.web.servlet.MvcResult;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 /**
- * Integration tests for user profile and settings management endpoints.
- *
- * <p>Each test follows the Given/When/Then pattern for clarity and maintainability.
- *
- * <p>Given: The initial state or preconditions for the test. When: The action or event being
- * tested. Then: The expected outcome or assertion.
- *
- * <p>This class uses {@link Testcontainers} to run against a real PostgreSQL database, ensuring
- * isolation and production-like behavior.
+ * Integration tests for user profile and settings management endpoints in {@link UserController}.
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @AutoConfigureMockMvc
-@Testcontainers
+@Testcontainers // Indicates that this test class uses Testcontainers
 class UserControllerIT extends BaseIntegrationTest {
 
+  private final String initialEmail = "profile.user@example.com";
+  private final String initialPassword = "password123";
   @Autowired private MockMvc mockMvc;
   @Autowired private ObjectMapper objectMapper;
   @Autowired private UserRepository userRepository;
+  private Cookie[] authCookies; // Stores auth cookies for test requests
 
-  private Cookie[] authCookies;
-  private final String initialEmail = "profile.user@example.com";
-  private final String initialPassword = "password123";
-
-  /**
-   * Given: Redis may contain data from previous tests. When: Each test ends. Then: Flush all Redis
-   * data to ensure test isolation.
-   */
+  /** Cleans Redis after each test. */
   @AfterEach
   void cleanUpRedis(@Autowired StringRedisTemplate redisTemplate) {
     redisTemplate.execute(
@@ -66,8 +54,8 @@ class UserControllerIT extends BaseIntegrationTest {
   }
 
   /**
-   * Given: The database may contain users from previous tests. When: Each test starts. Then: Remove
-   * all users except admins, register a new user, and log in to obtain valid cookies.
+   * Before each test: 1. Clean the user database (except admins). 2. Register a new test user. 3.
+   * Log in as that user. 4. Store the authentication cookies in `authCookies` for use in tests.
    */
   @BeforeEach
   void setupUserAndLogin() throws Exception {
@@ -100,34 +88,34 @@ class UserControllerIT extends BaseIntegrationTest {
   }
 
   @Test
-  @DisplayName("Update profile with valid data should succeed")
+  @DisplayName("Update Profile: should succeed with valid data and auth")
   void testUpdateProfile_shouldSucceed() throws Exception {
-    // Given: A valid profile update request.
+    // Given
     ProfileUpdateRequest profileRequest =
         new ProfileUpdateRequest(
             "UpdatedFirstName", "UpdatedLastName", "updated.email@example.com");
 
-    // When: Sending a PUT request to update the profile.
+    // When
     mockMvc
         .perform(
             put("/api/v1/users/me/profile")
                 .cookie(authCookies)
-                .with(csrf())
+                .with(csrf()) // Add CSRF token
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(profileRequest)))
-        // Then: The response is OK and contains the updated data.
+        // Then
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.firstName").value("UpdatedFirstName"))
         .andExpect(jsonPath("$.email").value("updated.email@example.com"));
   }
 
   @Test
-  @DisplayName("Update preferences with valid data should succeed")
+  @DisplayName("Update Preferences: should succeed with valid data and auth")
   void testUpdatePreferences_shouldSucceed() throws Exception {
-    // Given: A valid preferences update request.
+    // Given
     PreferencesUpdateRequest preferencesRequest = new PreferencesUpdateRequest("fr", "dark");
 
-    // When: Sending a PATCH request to update preferences.
+    // When
     mockMvc
         .perform(
             patch("/api/v1/users/me/preferences")
@@ -135,21 +123,21 @@ class UserControllerIT extends BaseIntegrationTest {
                 .with(csrf())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(preferencesRequest)))
-        // Then: The response is OK and contains the updated preferences.
+        // Then
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.locale").value("fr"))
         .andExpect(jsonPath("$.theme").value("dark"));
   }
 
   @Test
-  @DisplayName("Change password with valid data should succeed and invalidate old password")
+  @DisplayName("Change Password: should succeed and invalidate old password")
   void testChangePassword_shouldSucceedAndInvalidateOldPassword() throws Exception {
-    // Given: A valid password change request.
+    // Given
     String newPassword = "newStrongPassword123";
     ChangePasswordRequest passwordRequest =
         new ChangePasswordRequest(initialPassword, newPassword, newPassword);
 
-    // When: Sending a PUT request to change the password.
+    // When
     mockMvc
         .perform(
             put("/api/v1/users/me/password")
@@ -157,9 +145,11 @@ class UserControllerIT extends BaseIntegrationTest {
                 .with(csrf())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(passwordRequest)))
+        // Then
         .andExpect(status().isOk());
 
-    // Then: Logging in with the old password should fail.
+    // --- Verification ---
+    // Then: Login with old password should fail
     AuthenticationRequest loginWithOldPassword =
         new AuthenticationRequest(initialEmail, initialPassword);
     mockMvc
@@ -169,7 +159,7 @@ class UserControllerIT extends BaseIntegrationTest {
                 .content(objectMapper.writeValueAsString(loginWithOldPassword)))
         .andExpect(status().isUnauthorized());
 
-    // And: Logging in with the new password should succeed.
+    // And: Login with a new password should succeed
     AuthenticationRequest loginWithNewPassword =
         new AuthenticationRequest(initialEmail, newPassword);
     mockMvc

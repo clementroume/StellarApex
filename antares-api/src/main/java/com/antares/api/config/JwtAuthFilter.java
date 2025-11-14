@@ -17,8 +17,8 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 /**
- * JwtAuthFilter is a custom filter that intercepts HTTP requests to authenticate users based on JWT
- * tokens stored in cookies.
+ * A custom Spring Security filter that intercepts all HTTP requests to authenticate users based on
+ * a JWT token stored in an HttpOnly cookie.
  */
 @Component
 @RequiredArgsConstructor
@@ -28,13 +28,14 @@ public class JwtAuthFilter extends OncePerRequestFilter {
   private final UserDetailsService userDetailsService;
 
   /**
-   * This method filters incoming HTTP requests to authenticate users based on JWT tokens.
+   * Reads the JWT access token from cookies, validates it, and sets the user authentication in the
+   * Spring Security context.
    *
-   * @param request the incoming HTTP request
-   * @param response the outgoing HTTP response
-   * @param filterChain the filter chain to pass the request and response to the next filter
-   * @throws ServletException if an error occurs during filtering
-   * @throws IOException if an I/O error occurs during filtering
+   * @param request The incoming HTTP request.
+   * @param response The outgoing HTTP response.
+   * @param filterChain The filter chain to pass the request to the next filter.
+   * @throws ServletException If a servlet error occurs.
+   * @throws IOException If an I/O error occurs.
    */
   @Override
   protected void doFilterInternal(
@@ -52,7 +53,6 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     }
 
     final String userEmail = jwtService.extractUsername(accessToken);
-
     if (userEmail != null && SecurityContextHolder.getContext().getAuthentication() == null) {
       UserDetails userDetails = this.userDetailsService.loadUserByUsername(userEmail);
       if (jwtService.isTokenValid(accessToken, userDetails)) {

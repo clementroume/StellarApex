@@ -1,4 +1,4 @@
-# This file defines the infrastructure services for the Antares application stack.
+# Defines the infrastructure services for the Antares application stack.
 services:
   # --- 1. THE TRAEFIK PROXY ---
   traefik:
@@ -6,15 +6,18 @@ services:
     container_name: traefik
     env_file: ./.env # Load environment variables from .env file.
     environment:
-      - TRAEFIK_DASHBOARD_AUTH=${TRAEFIK_DASHBOARD_AUTH} # Pass the auth hash into the container for templating.
+      # Pass auth hash for Traefik dashboard basic auth.
+      - TRAEFIK_DASHBOARD_AUTH=${TRAEFIK_DASHBOARD_AUTH}
     security_opt:
       - no-new-privileges:true # Prevent privilege escalation.
     ports:
       - "80:80"   # Listen on HTTP for redirection.
       - "443:443" # Listen on HTTPS for all services.
     volumes:
-      - "./certs:/certs:ro"             # Mount local SSL certificates (read-only). Generate with : openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout certs/local.key -out certs/local.crt -subj "/CN=*.antares.local"
-      - "./dynamic:/dynamic:ro"         # Mount dynamic configuration files (read-only).
+      # Mount local SSL certificates (read-only).
+      # Generate with: openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout certs/local.key -out certs/local.crt -subj "/CN=*.antares.local"
+      - "./certs:/certs:ro"
+      - "./dynamic:/dynamic:ro" # Mount dynamic configuration files (read-only).
     networks:
       - antares-net
     restart: unless-stopped
@@ -27,17 +30,17 @@ services:
       - "--entrypoints.websecure.http.tls=true"
 
       # --- Providers (Docker & File) ---
-      - "--providers.docker=false"                            # Disable Docker provider for service discovery.
-      - "--providers.file.directory=/dynamic"                 # Enable File provider to read dynamic configs from /dynamic.
-      - "--providers.file.watch=true"                         # Watch for changes in the dynamic config directory.
+      - "--providers.docker=false"            # Disable Docker provider (using file provider instead).
+      - "--providers.file.directory=/dynamic" # Enable File provider to read dynamic configs from /dynamic.
+      - "--providers.file.watch=true"         # Watch for dynamic config file changes.
 
       # --- API & Dashboard (Secured) ---
-      - "--api.dashboard=true"      # Enable the Traefik dashboard.
-      - "--api.insecure=false"      # Disable the insecure API/dashboard port (8080).
+      - "--api.dashboard=true"   # Enable the Traefik dashboard.
+      - "--api.insecure=false"   # Disable insecure API/dashboard entrypoint (port 8080).
 
       # --- Logs ---
-      - "--log.level=INFO"          # Set log level to INFO.
-      - "--accesslog=true"          # Enable access logs.
+      - "--log.level=INFO"       # Set the log level to INFO.
+      - "--accesslog=true"       # Enable access logs.
 
   # --- 2. THE ANGULAR FRONTEND (SERVED BY NGINX) ---
   antares-app:
@@ -94,7 +97,7 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
-      - "127.0.0.1:5432:5432" # Bind port to localhost only for secure local development access.
+      - "127.0.0.1:5432:5432" # Bind to localhost only for secure local dev access.
     restart: unless-stopped
     healthcheck:
       test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}" ]
@@ -112,7 +115,7 @@ services:
     volumes:
       - redis_data:/data
     ports:
-      - "127.0.0.1:6379:6379" # Bind port to localhost only for secure local development access.
+      - "127.0.0.1:6379:6379" # Bind to localhost only for secure local dev access.
     restart: unless-stopped
     healthcheck:
       test: [ "CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping" ]
@@ -123,12 +126,13 @@ services:
       - antares-net
 
 # --- VOLUME DEFINITIONS ---
+# Defines named volumes for persistent data.
 volumes:
   postgres_data:
   redis_data:
 
 # --- NETWORK DEFINITION ---
+# Defines the custom bridge network for service communication.
 networks:
   antares-net:
     driver: bridge
-

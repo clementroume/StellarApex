@@ -5,11 +5,12 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
 
 /**
- * JwtProperties holds configuration properties for JWT tokens and cookies.
+ * Holds configuration properties for JWT tokens and cookies, loaded from application properties
+ * prefixed with "application.security.jwt".
  *
- * <p>Properties are loaded from application properties with the prefix "application.security.jwt".
+ * <p>Uses Java Records for immutable, concise configuration data.
  *
- * <p>Includes nested properties for access tokens, refresh tokens, and cookie settings.
+ * <p>Includes nested records for AccessToken, RefreshToken, and Cookie settings.
  */
 @ConfigurationProperties(prefix = "application.security.jwt")
 @Validated
@@ -27,6 +28,6 @@ public record JwtProperties(
   /** RefreshToken properties including expiration time and cookie name. */
   public record RefreshToken(long expiration, @NotBlank String name) {}
 
-  /** CookieProperties including whether cookies should be secure. */
+  /** CookieProperties including whether cookies should be secure (HTTPS only). */
   public record CookieProperties(boolean secure) {}
 }

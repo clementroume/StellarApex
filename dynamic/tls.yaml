@@ -1,5 +1,6 @@
 # This file provides TLS certificates to Traefik for local development.
 tls:
   certificates:
-    - certFile: /certs/local.crt  # Path inside the container to the self-signed certificate.
-      keyFile: /certs/local.key   # Path inside the container to the self-signed private key.
+    # Paths are relative to inside the Traefik container (see docker-compose.yml volumes).
+    - certFile: /certs/local.crt
+      keyFile: /certs/local.key

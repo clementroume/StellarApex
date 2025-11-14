@@ -24,6 +24,6 @@ Thumbs.db
 .git/
 .gitignore
 
-# Ignore build reports and test outputs
+# Ignore files not needed for the build context
 mvnw.cmd
 .mvn/wrapper/maven-wrapper.jar

@@ -8,6 +8,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import java.time.LocalDateTime;
 import java.util.Collection;
@@ -23,25 +24,10 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
 /**
- * Represents a user in the system with authentication and authorization details.
+ * Represents a user in the system.
  *
- * <p>This entity is mapped to the "users" table in the database and implements the UserDetails
- * interface from Spring Security to provide necessary user information for authentication and
- * authorization processes.
- *
- * <ul>
- *   <li>id: Unique identifier for the user.
- *   <li>firstName: The user's first name.
- *   <li>lastName: The user's last name.
- *   <li>email: The user's email address, used as the username for authentication.
- *   <li>password: The user's password, stored in an encoded format.
- *   <li>role: The role assigned to the user, determining their access level.
- *   <li>enabled: Indicates whether the user's account is active.
- *   <li>locale: The user's preferred locale for localization purposes.
- *   <li>theme: The user's preferred theme for UI customization.
- *   <li>createdAt: Timestamp of when the user was created.
- *   <li>updatedAt: Timestamp of when the user was last updated.
- * </ul>
+ * <p>This entity is mapped to the "users" table in the database and implements the Spring Security
+ * {@link UserDetails} interface to integrate with the authentication and authorization processes.
  */
 @Getter
 @Setter
@@ -90,34 +76,49 @@ public class User implements UserDetails {
   @Column(name = "updated_at", nullable = false)
   private LocalDateTime updatedAt;
 
+  /**
+   * Returns the authorities granted to the user.
+   *
+   * @return A collection containing the user's role.
+   */
   @Override
   public Collection<? extends GrantedAuthority> getAuthorities() {
     return List.of(new SimpleGrantedAuthority(role.name()));
   }
 
+  /**
+   * Returns the email address used to authenticate the user.
+   *
+   * @return The user's email.
+   */
   @Override
   public String getUsername() {
     return email;
   }
 
+  /**
+   * Returns the user's hashed password.
+   *
+   * @return The hashed password.
+   */
   @Override
   public String getPassword() {
     return password;
   }
 
+  /**
+   * Indicates whether the user's account is enabled.
+   *
+   * @return true if the user is enabled, false otherwise.
+   */
   @Override
   public boolean isEnabled() {
     return enabled;
   }
 
   /**
-   * Automatically sets the creation and last updated timestamps before persisting the entity.
-   *
-   * <p>This method is annotated with {@code @PrePersist} and is executed by the JPA provider just
-   * before the entity is inserted into the database.
-   *
-   * <p>It initializes the {@code createdAt} and {@code updatedAt} fields to the current timestamp
-   * using {@link LocalDateTime#now()} to ensure consistent tracking of entity lifecycle events.
+   * JPA lifecycle callback to set creation and update timestamps automatically before a new entity
+   * is persisted.
    */
   @PrePersist
   protected void onCreate() {
@@ -126,6 +127,16 @@ public class User implements UserDetails {
     this.updatedAt = now;
   }
 
+  /**
+   * JPA lifecycle callback to update the 'updatedAt' timestamp automatically before an existing
+   * entity is updated.
+   */
+  @PreUpdate
+  protected void onUpdate() {
+    this.updatedAt = LocalDateTime.now();
+  }
+
+  /** Checks equality based on the entity's ID. */
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -138,6 +149,7 @@ public class User implements UserDetails {
     return id != null && Objects.equals(id, user.id);
   }
 
+  /** Generates a hash code based on the class, ensuring consistency for entity lifecycle. */
   @Override
   public int hashCode() {
     return getClass().hashCode();

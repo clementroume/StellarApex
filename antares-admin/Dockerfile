@@ -30,15 +30,15 @@ RUN --mount=type=cache,target=/root/.m2 ./mvnw clean package -DskipTests
 
 # --- STAGE 2: Runtime ---
 # Use a minimal, secure JRE image based on the same LTS
-FROM eclipse-temurin:21-jre-jammy
+FROM eclipse-temurin:21-jre-alpine
 
 # Set the working directory
 WORKDIR /app
 
 # Create a non-root user and group with specific, stable IDs (1001).
 # log directory is created for application logs
-RUN groupadd --gid 1001 appgroup && \
-    useradd --uid 1001 --gid 1001 -m appuser && \
+RUN addgroup --gid 1001 appgroup && \
+    adduser --uid 1001 -G appgroup -D -h /app appuser && \
     mkdir /app/logs && \
     chown -R appuser:appgroup /app /app/logs
 

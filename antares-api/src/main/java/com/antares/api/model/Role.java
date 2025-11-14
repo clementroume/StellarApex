@@ -3,13 +3,12 @@ package com.antares.api.model;
 /**
  * Enumeration representing the roles that can be assigned to a user.
  *
- * <p>Each role defines a set of permissions and access levels within the application. The roles are
- * used to control authentication and authorization processes, determining actions and resources a
- * user can access.
+ * <p>These roles are used by Spring Security to control authorization and access levels within the
+ * application.
  *
  * <ul>
- *   <li>ROLE_USER: Represents a standard user role with basic access permissions.
- *   <li>ROLE_ADMIN: Represents an administrative user role with elevated access permissions.
+ *   <li>ROLE_USER: Standard user with basic application access.
+ *   <li>ROLE_ADMIN: Administrator with elevated permissions.
  * </ul>
  */
 public enum Role {

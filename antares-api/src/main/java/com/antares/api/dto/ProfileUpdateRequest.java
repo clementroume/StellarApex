@@ -7,12 +7,12 @@ import jakarta.validation.constraints.Size;
 /**
  * Data Transfer Object (DTO) for handling a user's profile update request.
  *
- * <p>This record is used as the request body for the profile update endpoint and includes
- * validation annotations to ensure data integrity before processing.
+ * <p>This record is used as the request body for the profile update endpoint. Validation messages
+ * are sourced from {@code messages.properties}.
  *
- * @param firstName The user's updated first name, which must not be blank.
- * @param lastName The user's updated last name, which must not be blank.
- * @param email The user's updated email address, which must be a valid format and not blank.
+ * @param firstName The user's updated first name.
+ * @param lastName The user's updated last name.
+ * @param email The user's updated email address.
  */
 public record ProfileUpdateRequest(
     @NotBlank(message = "{validation.firstName.required}")

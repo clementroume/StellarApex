@@ -8,12 +8,12 @@ import jakarta.validation.constraints.Size;
  * Data Transfer Object (DTO) for handling new user registration requests.
  *
  * <p>This record is used as the request body for the registration endpoint and includes validation
- * annotations to ensure data integrity.
+ * annotations. Validation messages are sourced from {@code messages.properties}.
  *
- * @param firstName The user's first name, which must not be blank.
- * @param lastName The user's last name, which must not be blank.
- * @param email The user's email address, which must be a valid format and not blank.
- * @param password The user's plain-text password, which must be at least 8 characters long.
+ * @param firstName The user's first name.
+ * @param lastName The user's last name.
+ * @param email The user's email address.
+ * @param password The user's plain-text password (min 8 characters).
  */
 public record RegisterRequest(
     @NotBlank(message = "{validation.firstName.required}")

@@ -1,6 +1,6 @@
-# --- STAGE 1: Build ---
+# --- STAGE 1: Build Environment ---
 # Use a specific, consistent JDK base image (Ubuntu 22.04 LTS 'jammy')
-# This ensures both builds run in the exact same environment.
+# This ensures builds run in the exact same environment.
 FROM eclipse-temurin:21-jdk-jammy AS builder
 
 # Set the working directory
@@ -10,12 +10,12 @@ WORKDIR /app
 ARG MAVEN_OPTS="-Dmaven.repo.local=/root/.m2/repository"
 ENV MAVEN_OPTS=${MAVEN_OPTS}
 
-# 1. Copy build descriptors first to leverage Docker layer caching
+# 1. Copy build descriptors first to leverage layer caching
 COPY mvnw .
 COPY .mvn/ .mvn/
 COPY pom.xml .
 
-# 2. Download dependencies using BuildKit's cache mount for persistent caching
+# 2. Download dependencies using BuildKit's cache mount for persistent caching.
 # This is more efficient than a simple 'RUN ./mvnw dependency:go-offline'
 # as the cache is persisted between builds, not just as a Docker layer.
 RUN --mount=type=cache,target=/root/.m2 ./mvnw dependency:go-offline
@@ -28,17 +28,17 @@ COPY src ./src
 # Use the cache mount again for the build process
 RUN --mount=type=cache,target=/root/.m2 ./mvnw clean package -DskipTests
 
-# --- STAGE 2: Runtime ---
+# --- STAGE 2: Runtime Environment ---
 # Use a minimal, secure JRE image based on the same LTS
-FROM eclipse-temurin:21-jre-jammy
+FROM eclipse-temurin:21-jre-alpine
 
 # Set the working directory
 WORKDIR /app
 
 # Create a non-root user and group with specific, stable IDs (1001).
-# log directory is created for application logs
-RUN groupadd --gid 1001 appgroup && \
-    useradd --uid 1001 --gid 1001 -m appuser && \
+# A log directory is created for application logs.
+RUN addgroup --gid 1001 appgroup && \
+    adduser --uid 1001 -G appgroup -D -h /app appuser && \
     mkdir /app/logs && \
     chown -R appuser:appgroup /app /app/logs
 
@@ -51,7 +51,7 @@ RUN chown appuser:appgroup app.jar
 # Switch to the non-root user
 USER appuser
 
-# Expose the application ports
+# Expose the application ports (main and actuator)
 EXPOSE 8080
 EXPOSE 9090
 

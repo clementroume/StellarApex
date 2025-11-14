@@ -6,27 +6,31 @@ http:
   middlewares:
     # --- Security Middlewares ---
     dash-auth:
+      # Basic Auth for the dashboard (reads hashed user:pass from env).
       basicAuth:
         users:
-          - '{{ env "TRAEFIK_DASHBOARD_AUTH" }}' # Basic Auth for the dashboard (reads hashed user:pass from env).
+          - '{{ env "TRAEFIK_DASHBOARD_AUTH" }}'
 
     secure-headers:
+      # Applies best-practice security headers to responses.
       headers:
         frameDeny: true                 # Set X-Frame-Options to DENY.
         browserXssFilter: true          # Enable XSS filtering.
         contentTypeNosniff: true        # Prevent MIME-type sniffing.
         stsIncludeSubdomains: true      # HSTS: Include subdomains.
         stsPreload: true                # HSTS: Allow preloading.
-        stsSeconds: 31536000            # HSTS: One year cache.
+        stsSeconds: 31536000            # HSTS: One-year cache.
 
     # --- Rate Limit Middlewares ---
     rate-limit-admin:
+      # Rate limiting for administrative endpoints.
       rateLimit:
-        average: 200                     # 20 requests/minute average.
+        average: 200                     # 200 requests/minute average.
         period: "1m"
-        burst: 100                       # Allow bursts of 10 requests.
+        burst: 100                       # Allow bursts of 100 requests.
 
     rate-limit-api:
+      # Rate limiting for public API endpoints.
       rateLimit:
         average: 100                    # 100 requests/minute average.
         period: "1m"
@@ -39,33 +43,34 @@ http:
     # --- 1. Frontend Application Router ---
     app-router:
       rule: "Host(`antares.local`)"             # Match 'antares.local'.
-      entryPoints: [ "websecure" ]                # Use the 'websecure' (HTTPS) entrypoint.
+      entryPoints: [ "websecure" ]              # Use the 'websecure' (HTTPS) entrypoint.
       tls: true                                 # Enable TLS (HTTPS).
-      priority: 5                               # Set low priority to act as a catch-all for the domain.
-      service: "antares-app-service"            # Route to the service 'antares-app' discovered by Docker.
-      middlewares: [ "secure-headers" ]           # Apply security headers.
+      priority: 5                               # Low priority to act as a catch-all for this domain.
+      service: "antares-app-service"            # Route to the frontend service.
+      middlewares: [ "secure-headers" ]         # Apply security headers.
 
     # --- 2. API Routers (Proxy, Dedicated, Swagger) ---
     api-proxy-router:
       rule: "Host(`antares.local`) && PathPrefix(`/api`)" # Match 'antares.local/api...'.
       entryPoints: [ "websecure" ]
       tls: true
-      priority: 10                              # High priority to catch '/api' before the frontend.
+      priority: 10                              # High priority to catch '/api' before the frontend router.
       service: "antares-api-service"            # Route to the 'antares-api' service.
-      middlewares: [ "rate-limit-api" ]           # Apply API rate limiting.
+      middlewares: [ "rate-limit-api" ]         # Apply API rate limiting.
 
     api-dedicated-router:
-      rule: "Host(`api.antares.local`)"         # Match 'api.antares.local'.
+      rule: "Host(`api.antares.local`)"         # Match dedicated 'api.antares.local' subdomain.
       entryPoints: [ "websecure" ]
       tls: true
       service: "antares-api-service"
       middlewares: [ "rate-limit-api" ]
 
     api-swagger-router:
-      rule: "Host(`antares.local`) && (PathPrefix(`/swagger-ui`) || PathPrefix(`/v3/api-docs`))" # Match 'antares.local/swagger...'.
+      # High-priority rule to catch Swagger/OpenAPI paths before the frontend router.
+      rule: "Host(`antares.local`) && (PathPrefix(`/swagger-ui`) || PathPrefix(`/v3/api-docs`))"
       entryPoints: [ "websecure" ]
       tls: true
-      priority: 10                              # High priority to catch '/swagger' before the frontend.
+      priority: 10
       service: "antares-api-service"
       middlewares: [ "rate-limit-api" ]
 
@@ -75,7 +80,7 @@ http:
       entryPoints: [ "websecure" ]
       tls: true
       service: "antares-admin-service"          # Route to the 'antares-admin' service.
-      middlewares: [ "rate-limit-admin" ]         # Apply administrative rate limiting.
+      middlewares: [ "rate-limit-admin" ]       # Apply administrative rate limiting.
 
     # --- 4. Traefik Dashboard Router ---
     dashboard-router:
@@ -84,27 +89,30 @@ http:
       tls: true
       service: "api@internal"                   # Route to Traefik's internal API/dashboard service.
       middlewares:
-        - "dash-auth"                         # Secure with Basic Auth.
-        - "rate-limit-admin"                # Secure with rate limiting.
+        - "dash-auth"                           # Secure with Basic Auth.
+        - "rate-limit-admin"                    # Secure with rate limiting.
 
   # ===================================================================
-  #  ROUTERS
+  #  SERVICES
   # ===================================================================
   services:
     # --- 1. Frontend Application Service ---
     antares-app-service:
       loadBalancer:
         servers:
+          # Points to the Nginx container serving the Angular app.
           - url: "http://antares-app:80"
 
-    # --- 2. API Service
+    # --- 2. API Service ---
     antares-api-service:
       loadBalancer:
         servers:
+          # Points to the Spring Boot API container.
           - url: "http://antares-api:8080"
 
-    # --- 3. Admin Service
+    # --- 3. Admin Service ---
     antares-admin-service:
       loadBalancer:
         servers:
+          # Points to the Spring Boot Admin container.
           - url: "http://antares-admin:9091"

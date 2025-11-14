@@ -4,11 +4,12 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
 /**
- * DTO for handling a user's password change request.
+ * Data Transfer Object (DTO) for handling a user's password change request. Validation messages are
+ * sourced from {@code messages.properties}.
  *
  * @param currentPassword The user's current password for verification.
- * @param newPassword The desired new password.
- * @param confirmationPassword A confirmation of the new password to prevent typos.
+ * @param newPassword The desired new password (min 8 characters).
+ * @param confirmationPassword A confirmation of the new password.
  */
 public record ChangePasswordRequest(
     @NotBlank(message = "{validation.currentPassword.required}") String currentPassword,

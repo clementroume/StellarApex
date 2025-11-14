@@ -17,17 +17,19 @@ public interface UserRepository extends JpaRepository<User, Long> {
   /**
    * Finds a user by their unique email address.
    *
-   * <p>This is a "derived query method"; Spring Data JPA automatically generates the implementation
-   * based on the method name. It's a key part of the authentication process.
+   * <p>This is a "derived query method"; Spring Data JPA automatically generates the
+   * implementation. It is essential for the authentication process.
    *
    * @param email The email address to search for.
-   * @return An {@link Optional} containing the found {@link User} if one exists, or an empty
-   *     Optional otherwise.
+   * @return An {@link Optional} containing the found {@link User}, or empty otherwise.
    */
   Optional<User> findByEmail(String email);
 
   /**
    * Checks if a user with the specified role exists.
+   *
+   * <p>Used by the {@link com.antares.api.config.ApplicationConfig} to determine if the default
+   * admin user needs to be created on startup.
    *
    * @param role The role to check for.
    * @return true if at least one user has this role, false otherwise.

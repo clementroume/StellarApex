@@ -6,7 +6,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseCookie;
 import org.springframework.stereotype.Service;
 
-/** CookieService handles adding and clearing HTTP cookies in the response. */
+/** Service to handle adding and clearing secure, HttpOnly cookies. */
 @Service
 @RequiredArgsConstructor
 public class CookieService {
@@ -14,32 +14,32 @@ public class CookieService {
   private final JwtProperties jwtProperties;
 
   /**
-   * Adds a cookie with the specified name, value, and max age to the HTTP response.
+   * Adds an HttpOnly cookie to the HTTP response.
    *
-   * @param name the name of the cookie
-   * @param value the value of the cookie
-   * @param maxAgeMs the maximum age of the cookie in milliseconds
-   * @param response the HTTP response to add the cookie to
+   * @param name The name of the cookie.
+   * @param value The value of the cookie.
+   * @param maxAgeMs The maximum age in milliseconds.
+   * @param response The HTTP response.
    */
   public void addCookie(String name, String value, long maxAgeMs, HttpServletResponse response) {
 
     ResponseCookie cookie =
         ResponseCookie.from(name, value)
             .httpOnly(true)
-            .secure(jwtProperties.cookie().secure())
-            .sameSite("Lax")
+            .secure(jwtProperties.cookie().secure()) // From application.properties
+            .sameSite("Lax") // Protects against most CSRF attacks
             .path("/")
-            .maxAge(maxAgeMs / 1000)
+            .maxAge(maxAgeMs / 1000) // Converts ms to seconds for Max-Age
             .build();
 
     response.addHeader("Set-Cookie", cookie.toString());
   }
 
   /**
-   * Clears the specified cookie by setting its max age to 0.
+   * Clears an HttpOnly cookie by setting its max age to 0.
    *
-   * @param name the name of the cookie to clear
-   * @param response the HTTP response to add the cleared cookie to
+   * @param name The name of the cookie to clear.
+   * @param response The HTTP response.
    */
   public void clearCookie(String name, HttpServletResponse response) {
 
@@ -49,7 +49,7 @@ public class CookieService {
             .secure(jwtProperties.cookie().secure())
             .sameSite("Lax")
             .path("/")
-            .maxAge(0)
+            .maxAge(0) // Expires the cookie immediately
             .build();
 
     response.addHeader("Set-Cookie", cookie.toString());

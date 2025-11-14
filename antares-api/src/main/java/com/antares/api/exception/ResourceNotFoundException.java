@@ -3,8 +3,10 @@ package com.antares.api.exception;
 import lombok.Getter;
 
 /**
- * Thrown when a requested resource cannot be found. Example: trying to fetch a user by ID that does
- * not exist.
+ * Thrown when a requested resource cannot be found (e.g., trying to fetch a user by ID or email
+ * that does not exist).
+ *
+ * <p>This results in an HTTP 404 Not Found status.
  */
 @Getter
 public class ResourceNotFoundException extends RuntimeException {
@@ -13,10 +15,10 @@ public class ResourceNotFoundException extends RuntimeException {
   private final transient Object[] args;
 
   /**
-   * Constructs a new ResourceNotFoundException with the specified message key and arguments.
+   * Constructs a new ResourceNotFoundException.
    *
-   * @param messageKey the key identifying the error message
-   * @param args optional arguments for the error message
+   * @param messageKey The key for the i18n error message (e.g., "error.user.not.found.email").
+   * @param args Optional arguments to be formatted into the message.
    */
   public ResourceNotFoundException(String messageKey, Object... args) {
     super(messageKey);

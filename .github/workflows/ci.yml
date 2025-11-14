@@ -5,13 +5,14 @@ on:
     branches: [ "main" ]
   pull_request:
     branches: [ "main" ]
-  workflow_dispatch:
+  workflow_dispatch: # Allows manual triggering
 
 env:
+  # Define a dummy secret for CI environments
   JWT_SECRET: ${{ secrets.JWT_SECRET || 'dummy-secret-for-ci' }}
 
 jobs:
-  # --- JOB 1: Build et test du Frontend ---
+  # --- JOB 1: Build and test the Frontend ---
   build-frontend:
     runs-on: ubuntu-latest
     defaults:
@@ -21,30 +22,28 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v5
         with:
-          fetch-depth: 0
+          fetch-depth: 0 # Fetch all history (needed for some CI tools)
 
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
           node-version: '22'
-          cache: 'npm' # Cette ligne gère déjà le cache de ~/.npm
+          cache: 'npm' # Use built-in caching for npm dependencies
           cache-dependency-path: antares-app/package-lock.json
-
-      # --- L'étape manuelle "Cache npm" a été supprimée (redondante) ---
 
       - name: Install frontend deps
         working-directory: ./antares-app
-        run: npm ci
+        run: npm ci # Use 'ci' for clean, reproducible installations
 
       - name: Test frontend
         working-directory: ./antares-app
-        run: npm test -- --watch=false --browsers=ChromeHeadless
+        run: npm test -- --watch=false --browsers=ChromeHeadless # Run tests headlessly
 
       - name: Build frontend
         working-directory: ./antares-app
         run: npm run build -- --configuration production
 
-  # --- JOB 2: Build et test du Backend (exécuté en parallèle avec le frontend) ---
+  # --- JOB 2: Build and test the Backend (runs in parallel) ---
   build-backend:
     runs-on: ubuntu-latest
     defaults:
@@ -61,15 +60,15 @@ jobs:
         with:
           java-version: '21'
           distribution: 'temurin'
-          cache: 'maven' # Cette ligne gère déjà le cache de ~/.m2/repository
-
-      # --- L'étape manuelle "Cache Maven repo" a été supprimée (redondante) ---
+          cache: 'maven' # Use built-in caching for Maven dependencies
 
       - name: Build & test backend
         working-directory: ./antares-api
         env:
+          # Set properties required for the test environment
           SPRING_APPLICATION_JSON: '{"application.security.jwt.cookie.secure": false}'
           JWT_SECRET: ${{ env.JWT_SECRET }}
+        # Run Maven build and all tests (unit and integration)
         run: |
           chmod +x ./mvnw
           ./mvnw -B verify

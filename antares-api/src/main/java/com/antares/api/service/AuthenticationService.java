@@ -34,9 +34,10 @@ public class AuthenticationService {
   /**
    * Registers a new user and issues JWT tokens.
    *
-   * @param request the registration request containing user details
-   * @param response the HTTP response to set cookies
-   * @return UserResponse containing the registered user's details
+   * @param request The registration request containing user details.
+   * @param response The HTTP response to set cookies.
+   * @return UserResponse containing the registered user's details.
+   * @throws DataConflictException if the email is already in use.
    */
   @Transactional
   public UserResponse register(RegisterRequest request, HttpServletResponse response) {
@@ -63,9 +64,10 @@ public class AuthenticationService {
   /**
    * Authenticates a user and issues JWT tokens.
    *
-   * @param request the authentication request containing user credentials
-   * @param response the HTTP response to set cookies
-   * @return UserResponse containing the authenticated user's details
+   * @param request The authentication request containing user credentials.
+   * @param response The HTTP response to set cookies.
+   * @return UserResponse containing the authenticated user's details.
+   * @throws ResourceNotFoundException if the user email does not exist.
    */
   @Transactional
   public UserResponse login(AuthenticationRequest request, HttpServletResponse response) {
@@ -87,9 +89,10 @@ public class AuthenticationService {
   /**
    * Refreshes JWT tokens using the provided refresh token.
    *
-   * @param oldRefreshToken the old refresh token
-   * @param response the HTTP response to set new cookies
-   * @return TokenRefreshResponse containing the new access token
+   * @param oldRefreshToken The (raw) old refresh token from the user's cookie.
+   * @param response The HTTP response to set new cookies.
+   * @return TokenRefreshResponse containing the new access token.
+   * @throws ResourceNotFoundException if the refresh token is not found in Redis.
    */
   @Transactional
   public TokenRefreshResponse refreshToken(String oldRefreshToken, HttpServletResponse response) {
@@ -105,10 +108,10 @@ public class AuthenticationService {
   }
 
   /**
-   * Logs out the user by deleting their refresh token and clearing JWT cookies.
+   * Logs out the user by deleting their refresh token from Redis and clearing cookies.
    *
-   * @param currentUser the currently authenticated user
-   * @param response the HTTP response to clear cookies
+   * @param currentUser The currently authenticated user.
+   * @param response The HTTP response to clear cookies.
    */
   public void logout(User currentUser, HttpServletResponse response) {
 
@@ -118,11 +121,11 @@ public class AuthenticationService {
   }
 
   /**
-   * Issues JWT access and refresh tokens, and sets them as HTTP-only cookies in the response.
+   * Centralized method to issue new tokens and set them in cookies.
    *
-   * @param user the user for whom to issue tokens
-   * @param response the HTTP response to set cookies
-   * @return the issued access token
+   * @param user The user for whom to issue tokens.
+   * @param response The HTTP response.
+   * @return The newly generated access token.
    */
   private String issueTokensAndSetCookies(User user, HttpServletResponse response) {
 

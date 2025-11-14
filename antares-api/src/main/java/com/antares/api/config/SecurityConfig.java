@@ -20,12 +20,14 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 /**
- * Main web security configuration class for the application. This setup is designed for a stateless
- * API using HttpOnly JWT cookies and CSRF protection.
+ * Main web security configuration for the application.
+ *
+ * <p>This setup is designed for a stateless API using HttpOnly JWT cookies and "Double Submit
+ * Cookie" CSRF protection.
  */
 @Configuration
 @EnableWebSecurity
-@EnableMethodSecurity
+@EnableMethodSecurity // Enables method-level security (e.g., @PreAuthorize)
 @RequiredArgsConstructor
 public class SecurityConfig {
 
@@ -35,8 +37,7 @@ public class SecurityConfig {
   private String allowedOrigins;
 
   /**
-   * Configures the primary security filter chain that applies to all incoming HTTP requests. This
-   * is the central point for defining security rules.
+   * Configures the primary security filter chain that applies to all HTTP requests.
    *
    * @param http The HttpSecurity object to configure.
    * @return The configured SecurityFilterChain.
@@ -45,34 +46,47 @@ public class SecurityConfig {
   @Bean
   public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 
+    // Handler to ensure CSRF token is accessible by JavaScript (for the header)
+    // but not sent as a request attribute.
     CsrfTokenRequestAttributeHandler requestHandler = new CsrfTokenRequestAttributeHandler();
     requestHandler.setCsrfRequestAttributeName(null);
 
-    http.cors(withDefaults())
+    http.cors(withDefaults()) // Enable CORS using the corsConfigurationSource bean
         .csrf(
             csrf ->
-                csrf.csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
+                csrf
+                    // Use CookieCsrfTokenRepository, setting HttpOnly=false so Angular can read it.
+                    .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
                     .csrfTokenRequestHandler(requestHandler)
+                    // Disable CSRF protection for public auth endpoints and actuators
                     .ignoringRequestMatchers("/api/v1/auth/**", "/actuator/**"))
         .authorizeHttpRequests(
             auth ->
-                auth.requestMatchers("/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**")
+                auth
+                    // Secure Swagger/OpenAPI endpoints (admin only)
+                    .requestMatchers("/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**")
                     .hasRole("ADMIN")
+                    // Public endpoints
                     .requestMatchers("/api/v1/auth/**", "/actuator/**")
                     .permitAll()
+                    // All other endpoints require authentication
                     .anyRequest()
                     .authenticated())
         .sessionManagement(
-            session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            session ->
+                // Configure the application to be stateless (no HttpSession)
+                session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+        // Add the custom JWT filter before the standard username/password filter
         .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
     return http.build();
   }
 
   /**
-   * Defines the Cross-Origin Resource Sharing (CORS) configuration for the application. This bean
-   * defines which external origins (i.e., our Angular frontend) are allowed to communicate with the
-   * API.
+   * Defines the Cross-Origin Resource Sharing (CORS) configuration.
+   *
+   * <p>This bean allows the Angular frontend (running on '<a
+   * href="https://antares.local">https://antares.local</a>') to make requests to this API.
    *
    * @return The CorsConfigurationSource.
    */
@@ -83,7 +97,7 @@ public class SecurityConfig {
     configuration.setAllowedOrigins(List.of(this.allowedOrigins));
     configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
     configuration.setAllowedHeaders(List.of("Authorization", "Content-Type", "X-XSRF-TOKEN"));
-    configuration.setAllowCredentials(true);
+    configuration.setAllowCredentials(true); // Crucial for sending/receiving cookies
 
     UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
     source.registerCorsConfiguration("/**", configuration);

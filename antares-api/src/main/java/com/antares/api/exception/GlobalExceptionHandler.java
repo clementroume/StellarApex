@@ -4,6 +4,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import java.util.Locale;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.MessageSource;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -20,6 +21,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
  */
 @RestControllerAdvice
 @RequiredArgsConstructor
+@Slf4j
 public class GlobalExceptionHandler {
 
   private final MessageSource messageSource;
@@ -36,6 +38,7 @@ public class GlobalExceptionHandler {
   public ResponseEntity<ErrorResponse> handleNotFound(
       ResourceNotFoundException ex, HttpServletRequest request, Locale locale) {
 
+    log.debug("Resource not found: {}", ex.getMessage());
     String message = messageSource.getMessage(ex.getMessageKey(), ex.getArgs(), locale);
 
     return buildErrorResponse(HttpStatus.NOT_FOUND, "Resource Not Found", message, request);
@@ -53,6 +56,7 @@ public class GlobalExceptionHandler {
   public ResponseEntity<ErrorResponse> handleConflict(
       DataConflictException ex, HttpServletRequest request, Locale locale) {
 
+    log.warn("Data conflict on request [{}]: {}", request.getRequestURI(), ex.getMessage());
     String message = messageSource.getMessage(ex.getMessageKey(), ex.getArgs(), locale);
 
     return buildErrorResponse(HttpStatus.CONFLICT, "Data Conflict", message, request);
@@ -70,6 +74,7 @@ public class GlobalExceptionHandler {
   public ResponseEntity<ErrorResponse> handleInvalidPassword(
       InvalidPasswordException ex, HttpServletRequest request, Locale locale) {
 
+    log.info("Invalid password attempt for {}", request.getRequestURI());
     String message = messageSource.getMessage(ex.getMessageKey(), null, locale);
 
     return buildErrorResponse(HttpStatus.BAD_REQUEST, "Invalid Input", message, request);
@@ -86,6 +91,7 @@ public class GlobalExceptionHandler {
   public ResponseEntity<ErrorResponse> handleBadCredentials(
       HttpServletRequest request, Locale locale) {
 
+    log.info("Failed login attempt for {}", request.getRequestURI());
     String message = messageSource.getMessage("error.credentials.bad", null, locale);
 
     return buildErrorResponse(HttpStatus.UNAUTHORIZED, "Bad Credentials", message, request);
@@ -102,6 +108,7 @@ public class GlobalExceptionHandler {
   public ResponseEntity<ErrorResponse> handleAccessDenied(
       HttpServletRequest request, Locale locale) {
 
+    log.warn("Access denied for {}", request.getRequestURI());
     String message = messageSource.getMessage("error.access.denied", null, locale);
 
     return buildErrorResponse(HttpStatus.FORBIDDEN, "Access Denied", message, request);
@@ -130,6 +137,8 @@ public class GlobalExceptionHandler {
                   return error.getDefaultMessage();
                 })
             .collect(Collectors.joining("; "));
+
+    log.info("Validation errors on [{}]: {}", request.getRequestURI(), errors);
     String title = messageSource.getMessage("error.validation", null, locale);
 
     return buildErrorResponse(HttpStatus.BAD_REQUEST, title, errors, request);
@@ -147,6 +156,7 @@ public class GlobalExceptionHandler {
   public ResponseEntity<ErrorResponse> handleInvalidToken(
       InvalidTokenException ex, HttpServletRequest request, Locale locale) {
 
+    log.info("Invalid token on request [{}]: {}", request.getRequestURI(), ex.getMessage());
     String message = messageSource.getMessage(ex.getMessageKey(), null, locale);
 
     return buildErrorResponse(HttpStatus.UNAUTHORIZED, "Invalid Token", message, request);
@@ -165,6 +175,7 @@ public class GlobalExceptionHandler {
   public ResponseEntity<ErrorResponse> handleHashingException(
       HashingException ex, HttpServletRequest request, Locale locale) {
 
+    log.error("Critical hashing failure", ex);
     String message = messageSource.getMessage(ex.getMessageKey(), null, locale);
 
     return buildErrorResponse(
@@ -180,8 +191,10 @@ public class GlobalExceptionHandler {
    * @return a standardized error response
    */
   @ExceptionHandler(Exception.class)
-  public ResponseEntity<ErrorResponse> handleGeneric(HttpServletRequest request, Locale locale) {
+  public ResponseEntity<ErrorResponse> handleGeneric(
+      Exception ex, HttpServletRequest request, Locale locale) {
 
+    log.error("Unhandled exception caught for request {}", request.getRequestURI(), ex);
     String message = messageSource.getMessage("error.internal.server", null, locale);
 
     return buildErrorResponse(

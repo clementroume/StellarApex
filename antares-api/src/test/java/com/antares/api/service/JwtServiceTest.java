@@ -17,12 +17,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.security.core.userdetails.UserDetails;
 
 /**
- * Unit tests for {@link JwtService}.
- *
- * <p>Each test follows the Given/When/Then pattern for clarity and maintainability.
- *
- * <p>Given: The initial state or preconditions for the test. When: The action or event being
- * tested. Then: The expected outcome or assertion.
+ * Unit tests for {@link JwtService}. Verifies token generation, validation, and claim extraction.
  */
 class JwtServiceTest {
   private JwtService jwtService;
@@ -30,7 +25,7 @@ class JwtServiceTest {
 
   @BeforeEach
   void setUp() {
-    // Given: A JwtService initialized with test properties and a test user.
+    // Given
     String testSecretKey =
         "YjQ1ZGRjYjU5YjYwNzZkMWY2MzE4YmFiY2Y4ZjgxMGE0YzY4ZmIwYmZkOTRkMjYxYmVjZGU1Y2Y3YWQyYjQzYw==";
     JwtProperties jwtProperties =
@@ -42,20 +37,19 @@ class JwtServiceTest {
             new JwtProperties.RefreshToken(604800000L, "refresh_token"),
             new JwtProperties.CookieProperties(false));
     jwtService = new JwtService(jwtProperties);
-    jwtService.init(); // Manually call @PostConstruct method
+    jwtService.init(); // Manually call @PostConstruct
 
     userDetails =
         User.builder().email("test@example.com").password("password").role(Role.ROLE_USER).build();
   }
 
   @Test
-  @DisplayName("generateToken should create a valid access token with default expiration")
+  @DisplayName("generateToken: should create a valid token with correct claims")
   void testGenerateToken_shouldCreateValidToken() {
-    // Given: A valid userDetails.
-    // When: Generating a token.
+    // When
     String token = jwtService.generateToken(userDetails);
 
-    // Then: The token is not null and contains expected claims.
+    // Then
     assertNotNull(token);
     Claims claims =
         Jwts.parser()
@@ -73,19 +67,20 @@ class JwtServiceTest {
   }
 
   @Test
-  @DisplayName("isTokenValid should return true for a valid token")
+  @DisplayName("isTokenValid: should return true for a valid token")
   void testIsTokenValid_withValidToken_shouldReturnTrue() {
-    // Given: A valid token for the user.
+    // Given
     String token = jwtService.generateToken(userDetails);
 
-    // When & Then: Validating the token does not throw.
+    // When & Then
+    // This test primarily asserts that no exception is thrown
     assertDoesNotThrow(() -> jwtService.isTokenValid(token, userDetails));
   }
 
   @Test
-  @DisplayName("isTokenValid should throw InvalidTokenException for an expired token")
+  @DisplayName("isTokenValid: should throw InvalidTokenException for an expired token")
   void testIsTokenValid_withExpiredToken_shouldThrowException() {
-    // Given: An expired token created with the JwtService configuration.
+    // Given: A token manually created with an expiration date in the past.
     String expiredToken =
         Jwts.builder()
             .subject(userDetails.getUsername())
@@ -98,20 +93,19 @@ class JwtServiceTest {
             .signWith(jwtService.getSignInKey())
             .compact();
 
-    // When & Then: Validating the expired token throws InvalidTokenException.
+    // When & Then
     assertThrows(
         InvalidTokenException.class, () -> jwtService.isTokenValid(expiredToken, userDetails));
   }
 
   @Test
-  @DisplayName("isTokenValid should return false for a different user")
+  @DisplayName("isTokenValid: should return false for a token belonging to a different user")
   void testIsTokenValid_withDifferentUser_shouldReturnFalse() {
-    // Given: A token for the primary user and a different user.
+    // Given
     String token = jwtService.generateToken(userDetails);
     UserDetails anotherUser = User.builder().email("another@example.com").build();
 
-    // When: Validating the token against a different user.
-    // Then: The result is false.
+    // When & Then
     assertFalse(jwtService.isTokenValid(token, anotherUser));
   }
 }

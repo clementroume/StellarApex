@@ -9,20 +9,22 @@ import org.springframework.data.redis.cache.RedisCacheManager;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 
 /**
- * Configuration class for setting up Redis caching in the application. This includes both a
- * Spring-native CacheManager for use with Spring's caching abstraction and a JCache-compliant
- * CacheManager for third-party libraries that require JCache support.
+ * Configuration class for setting up Redis caching.
+ *
+ * <p>Enables Spring's caching abstraction and configures the {@link RedisCacheManager} with default
+ * and cache-specific Time-To-Live (TTL) settings.
  */
 @Configuration
 @EnableCaching
 public class RedisCacheConfig {
 
   /**
-   * Configures a Spring-native CacheManager that uses Redis as the underlying cache store. This is
-   * primarily used with Spring's @Cacheable abstraction.
+   * Configures the Spring-native CacheManager to use Redis.
    *
-   * @param redisConnectionFactory The factory to create Redis connections, auto-configured by
-   *     Spring Boot.
+   * <p>This sets a default TTL of 10 minutes for all caches and a specific 7-day TTL for the
+   * 'refreshTokens' cache.
+   *
+   * @param redisConnectionFactory The autoconfigured factory from Spring Boot.
    * @return A RedisCacheManager instance.
    */
   @Bean
@@ -33,9 +35,6 @@ public class RedisCacheConfig {
             .entryTtl(Duration.ofMinutes(10))
             .disableCachingNullValues();
 
-    return RedisCacheManager.builder(redisConnectionFactory)
-        .cacheDefaults(config)
-        .withCacheConfiguration("refreshTokens", config.entryTtl(Duration.ofDays(7)))
-        .build();
+    return RedisCacheManager.builder(redisConnectionFactory).cacheDefaults(config).build();
   }
 }

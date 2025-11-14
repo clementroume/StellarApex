@@ -16,22 +16,28 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/** Service for managing the lifecycle of refresh tokens using Redis. */
+/**
+ * Service for managing the lifecycle of refresh tokens using Redis.
+ *
+ * <p>This service implements a secure storage pattern by hashing tokens and user IDs before storing
+ * them in Redis, mitigating the risk of token theft from database access.
+ */
 @Service
 @RequiredArgsConstructor
 public class RefreshTokenService {
 
+  private static final String REFRESH_TOKEN_PREFIX = "refresh_token::";
+  private static final String USER_TOKEN_PREFIX = "user_refresh_token::";
   private final RedisTemplate<String, String> redisTemplate;
   private final UserRepository userRepository;
   private final JwtProperties jwtProperties;
-  private static final String REFRESH_TOKEN_PREFIX = "refresh_token::";
-  private static final String USER_TOKEN_PREFIX = "user_refresh_token::";
 
   /**
-   * Creates a new refresh token for the given user, deleting any existing token.
+   * Creates a new refresh token for the given user, deleting any existing token to enforce a "one
+   * session at a time" policy.
    *
    * @param user The user for whom to create the refresh token.
-   * @return The raw refresh token.
+   * @return The raw, unhashed refresh token (to be sent in the cookie).
    */
   @Transactional
   public String createRefreshToken(User user) {
@@ -45,6 +51,7 @@ public class RefreshTokenService {
     redisTemplate
         .opsForValue()
         .set(REFRESH_TOKEN_PREFIX + hashedToken, user.getId().toString(), duration);
+
     redisTemplate
         .opsForValue()
         .set(USER_TOKEN_PREFIX + hashValue(user.getId().toString()), hashedToken, duration);
@@ -53,10 +60,10 @@ public class RefreshTokenService {
   }
 
   /**
-   * Finds a user by their refresh token.
+   * Finds a user by their raw refresh token.
    *
-   * @param rawToken The raw refresh token.
-   * @return An Optional containing the User if found, or empty if not found or token is invalid.
+   * @param rawToken The raw refresh token from the cookie.
+   * @return An Optional containing the User if found, or empty if not.
    */
   public Optional<User> findUserByToken(String rawToken) {
 
@@ -66,9 +73,9 @@ public class RefreshTokenService {
   }
 
   /**
-   * Deletes the refresh token associated with the given user.
+   * Deletes all refresh token entries associated with a specific user.
    *
-   * @param user The user whose refresh token should be deleted.
+   * @param user The user whose token should be deleted.
    */
   public void deleteTokenForUser(User user) {
 
@@ -82,13 +89,13 @@ public class RefreshTokenService {
   }
 
   /**
-   * Hashes a string value using SHA-256.
+   * Hashes a string value using SHA-256 and encodes it in Base64.
    *
    * @param value The string to hash.
-   * @return The Base64 encoded SHA-256 hash of the value.
+   * @return The Base64 encoded SHA-256 hash.
+   * @throws HashingException if SHA-256 is not available.
    */
   private String hashValue(String value) {
-
     try {
       MessageDigest digest = MessageDigest.getInstance("SHA-256");
       byte[] hash = digest.digest(value.getBytes(StandardCharsets.UTF_8));

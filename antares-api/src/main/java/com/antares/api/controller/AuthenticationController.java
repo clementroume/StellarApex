@@ -21,8 +21,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * AuthenticationController handles user authentication-related endpoints such as registration,
- * login, logout, and token refresh.
+ * REST controller for handling user authentication endpoints such as registration, login, logout,
+ * and token refresh.
  */
 @RestController
 @RequestMapping("/api/v1/auth")
@@ -33,11 +33,11 @@ public class AuthenticationController {
   private final JwtService jwtService;
 
   /**
-   * Registers a new user.
+   * Handles POST requests to register a new user.
    *
-   * @param request the registration request containing user details
-   * @param response the HTTP response to set cookies if needed
-   * @return ResponseEntity containing the registered user's details
+   * @param request The registration request DTO, validated.
+   * @param response The HTTP response, used to set auth cookies.
+   * @return A ResponseEntity with status 201 (Created) and the new {@link UserResponse}.
    */
   @PostMapping("/register")
   public ResponseEntity<UserResponse> register(
@@ -48,11 +48,11 @@ public class AuthenticationController {
   }
 
   /**
-   * Authenticates a user and logs them in.
+   * Handles POST requests to authenticate (login) a user.
    *
-   * @param request the authentication request containing user credentials
-   * @param response the HTTP response to set cookies if needed
-   * @return ResponseEntity containing the authenticated user's details
+   * @param request The authentication request DTO, validated.
+   * @param response The HTTP response, used to set auth cookies.
+   * @return A ResponseEntity with status 200 (OK) and the authenticated {@link UserResponse}.
    */
   @PostMapping("/login")
   public ResponseEntity<UserResponse> login(
@@ -62,11 +62,11 @@ public class AuthenticationController {
   }
 
   /**
-   * Logs out the currently authenticated user.
+   * Handles POST requests to log out the currently authenticated user.
    *
-   * @param authentication the authentication object containing user details
-   * @param response the HTTP response to clear cookies if needed
-   * @return ResponseEntity with no content
+   * @param authentication The Spring Security authentication object (injected).
+   * @param response The HTTP response, used to clear auth cookies.
+   * @return A ResponseEntity with status 200 (OK).
    */
   @PostMapping("/logout")
   public ResponseEntity<Void> logout(Authentication authentication, HttpServletResponse response) {
@@ -78,11 +78,13 @@ public class AuthenticationController {
   }
 
   /**
-   * Refreshes the JWT token using the refresh token from cookies.
+   * Handles POST requests to refresh an expired access token using a refresh token. The refresh
+   * token is read from an HttpOnly cookie.
    *
-   * @param request the HTTP request containing cookies
-   * @param response the HTTP response to set new cookies if needed
-   * @return ResponseEntity containing the new access and refresh tokens
+   * @param request The HTTP request, used to read cookies.
+   * @param response The HTTP response, used to set new auth cookies.
+   * @return A ResponseEntity with status 200 (OK) and the {@link TokenRefreshResponse}.
+   * @throws ResourceNotFoundException if the refresh token cookie is missing.
    */
   @PostMapping("/refresh-token")
   public ResponseEntity<TokenRefreshResponse> refreshToken(

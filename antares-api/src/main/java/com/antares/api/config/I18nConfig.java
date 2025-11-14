@@ -15,17 +15,19 @@ import org.springframework.web.servlet.LocaleResolver;
 import org.springframework.web.servlet.i18n.AcceptHeaderLocaleResolver;
 
 /**
- * Configuration class for internationalization (i18n) support. Sets up message sources and the
- * custom locale resolver for the application.
+ * Configuration class for internationalization (i18n) support.
+ *
+ * <p>Sets up the message source for translations and a custom {@link LocaleResolver} that
+ * prioritizes the authenticated user's preferred locale.
  */
 @Configuration
 public class I18nConfig {
 
   /**
-   * Configures the source for translation messages. Loads files named `messages_xx.properties` from
-   * the classpath.
+   * Configures the source for translation messages (e.g., messages_en.properties,
+   * messages_fr.properties).
    *
-   * @return the message source bean
+   * @return The message source bean.
    */
   @Bean
   public MessageSource messageSource() {
@@ -39,10 +41,9 @@ public class I18nConfig {
   }
 
   /**
-   * Configures the custom LocaleResolver that determines the locale based on the authenticated
-   * user's preferences or the 'Accept-Language' header.
+   * Configures the custom {@link LocaleResolver} bean.
    *
-   * @return the locale resolver bean
+   * @return The UserLocaleResolver instance.
    */
   @Bean
   public LocaleResolver localeResolver() {
@@ -51,25 +52,24 @@ public class I18nConfig {
   }
 
   /**
-   * Custom LocaleResolver that first checks the authenticated user's locale preference. If the user
-   * is not authenticated, it falls back to the 'Accept-Language' header.
+   * Custom LocaleResolver that prioritizes the authenticated user's preference.
+   *
+   * <p>If a user is authenticated, their 'locale' preference is used. If not, it falls back to the
+   * 'Accept-Language' header.
    */
   private static class UserLocaleResolver extends AcceptHeaderLocaleResolver {
 
     /**
-     * Resolves the locale for the current request. If a user is authenticated, it uses the locale
-     * from the user's profile. Otherwise, it falls back to the default behavior of using the
-     * 'Accept-Language' header.
+     * Resolves the locale for the current request.
      *
-     * @param request the current HTTP request
-     * @return the resolved Locale
+     * @param request The current HTTP request.
+     * @return The resolved Locale.
      */
     @Override
     @NonNull
     public Locale resolveLocale(@NonNull HttpServletRequest request) {
 
       Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-
       if (authentication != null
           && authentication.isAuthenticated()
           && authentication.getPrincipal() instanceof User user) {
@@ -84,14 +84,10 @@ public class I18nConfig {
     }
 
     /**
-     * This method is not supported because the locale is tied to user preferences and cannot be
-     * changed via this method.
+     * This operation is unsupported. Locale changes must go through the user preferences API
+     * endpoint, not via session attributes.
      *
-     * @param request the current HTTP request
-     * @param response the current HTTP response
-     * @param locale the new locale to set (not used)
-     * @throws UnsupportedOperationException always thrown to indicate this operation is not
-     *     supported
+     * @throws UnsupportedOperationException always.
      */
     @Override
     public void setLocale(

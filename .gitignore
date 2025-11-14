@@ -1,4 +1,7 @@
-# === JetBrains IntelliJ IDEA ===
+# ===================================================================
+# General IDE / Editor Files
+# ===================================================================
+# JetBrains IntelliJ IDEA
 .idea/
 *.iml
 *.iws
@@ -6,7 +9,21 @@
 /.run/
 /.junie/
 
-# === Maven / Spring Boot ===
+# VS Code
+.vscode/
+
+# Eclipse
+.project
+.classpath
+*.launch
+
+# Sublime Text
+*.sublime-workspace
+
+# ===================================================================
+# Build Tool & Dependency Artifacts
+# ===================================================================
+# Maven / Spring Boot
 target/
 pom.xml.tag
 pom.xml.releaseBackup
@@ -17,69 +34,74 @@ dependency-reduced-pom.xml
 buildNumber.properties
 .mvn/timing.properties
 .mvn/wrapper/maven-wrapper.jar
-# Spring Boot DevTools
-.spring-boot-devtools.properties
-# Archives (usually not versioned in source repo)
-*.jar
-*.war
-*.ear
 
-# === Gradle (if used) ===
+# Gradle (if used)
 build/
 out/
 .gradle/
 .settings/
 
-# === Node.js / Angular ===
+# Node.js / Angular
 node_modules/
 dist/
 tmp/
 out-tsc/
 bazel-out/
-# Logs and cache
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
 .angular/
 **/.angular/cache
 .sass-cache/
-# Lock files
+
+# Lock files (package-lock.json is explicitly listed here)
 connect.lock
+package-lock.json
+
 # Test & Coverage output
 coverage/
 libpeerconnection.log
 testem.log
 typings/ # Older Typings directory
 
-# === General IDE / Editor Files ===
-*.launch # Eclipse
-*.sublime-workspace # Sublime Text
-.vscode # VS Code
-.project # Eclipse
-.classpath # Eclipse
-
-# === Log Files ===
+# ===================================================================
+# Logs, Archives & OS Files
+# ===================================================================
+# Log Files
 *.log
 logs/
 hs_err_pid* # JVM crash logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
 
-# === OS Specific Files ===
+# Archives (usually build artifacts or backups)
+*.jar
+*.war
+*.ear
+*.zip
+*.tar.gz
+*.rar
+
+# OS Specific Files
 .DS_Store
 
-# === Custom Ignores ===
+# ===================================================================
+# Custom Project-Specific Ignores
+# ===================================================================
 # Sensitive environment files
 .env
 .htpasswd
 /http-client.env.json
+
 # Generated documentation/help files (if auto-generated)
 /HELP.md
+
 # Large data files (should be managed elsewhere)
 /src/main/resources/athletes.csv
+
 # HTTP Client test file (often user-specific)
 test.http
-# Compressed archives (usually build artifacts or backups)
-*.zip
-*.tar.gz
-*.rar
-package-lock.json
+
+# Local SSL certificates
 /certs/
+
+# Spring Boot DevTools
+.spring-boot-devtools.properties

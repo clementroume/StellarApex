@@ -4,7 +4,9 @@ import lombok.Getter;
 
 /**
  * Thrown when a request cannot be completed because of a conflict with the current state of the
- * resource. Example: trying to register with an email that already exists.
+ * resource (e.g., trying to register with an email that already exists).
+ *
+ * <p>This results in an HTTP 409 Conflict status.
  */
 @Getter
 public class DataConflictException extends RuntimeException {
@@ -13,13 +15,12 @@ public class DataConflictException extends RuntimeException {
   private final transient Object[] args;
 
   /**
-   * Constructs a new DataConflictException with the specified message key and arguments.
+   * Constructs a new DataConflictException.
    *
-   * @param messageKey the key identifying the error message
-   * @param args optional arguments for the error message
+   * @param messageKey The key for the i18n error message (e.g., "error.email.in.use").
+   * @param args Optional arguments to be formatted into the message.
    */
   public DataConflictException(String messageKey, Object... args) {
-
     super(messageKey);
     this.messageKey = messageKey;
     this.args = args;

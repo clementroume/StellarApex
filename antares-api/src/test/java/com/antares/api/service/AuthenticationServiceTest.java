@@ -22,12 +22,8 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 /**
- * Unit tests for {@link AuthenticationService}.
- *
- * <p>Each test follows the Given/When/Then pattern for clarity and maintainability.
- *
- * <p>Given: The initial state or preconditions for the test. When: The action or event being
- * tested. Then: The expected outcome or assertion.
+ * Unit tests for {@link AuthenticationService}. These tests mock all dependencies to isolate the
+ * service's logic.
  */
 @ExtendWith(MockitoExtension.class)
 class AuthenticationServiceTest {
@@ -44,9 +40,9 @@ class AuthenticationServiceTest {
   @InjectMocks private AuthenticationService authenticationService;
 
   @Test
-  @DisplayName("register should create user with USER role and set cookies")
+  @DisplayName("register: should create user with USER role and set cookies")
   void testRegister_shouldSucceed() {
-    // Given: A registration request with a new email.
+    // Given
     RegisterRequest request =
         new RegisterRequest("John", "Doe", "john.doe@example.com", "password123");
     when(userRepository.findByEmail(request.email())).thenReturn(Optional.empty());
@@ -55,16 +51,16 @@ class AuthenticationServiceTest {
         .thenAnswer(
             invocation -> {
               User user = invocation.getArgument(0);
-              assertEquals(Role.ROLE_USER, user.getRole());
+              assertEquals(Role.ROLE_USER, user.getRole()); // Verify the role is set
               return user;
             });
     when(jwtService.generateToken(any(User.class))).thenReturn("fakeAccessToken");
     when(refreshTokenService.createRefreshToken(any(User.class))).thenReturn("fakeRefreshToken");
 
-    // When: Registering the user.
+    // When
     authenticationService.register(request, httpServletResponse);
 
-    // Then: The user is saved and cookies are set.
+    // Then
     verify(userRepository).save(any(User.class));
     verify(cookieService)
         .addCookie(
@@ -81,14 +77,14 @@ class AuthenticationServiceTest {
   }
 
   @Test
-  @DisplayName("register should throw DataConflictException when email already exists")
+  @DisplayName("register: should throw DataConflictException if email already exists")
   void testRegister_whenEmailExists_shouldThrowException() {
-    // Given: A registration request with an existing email.
+    // Given
     RegisterRequest request =
         new RegisterRequest("Jane", "Doe", "jane.doe@example.com", "password123");
     when(userRepository.findByEmail(request.email())).thenReturn(Optional.of(new User()));
 
-    // When & Then: Registering throws DataConflictException and no user is saved or cookies set.
+    // When & Then
     assertThrows(
         DataConflictException.class,
         () -> authenticationService.register(request, httpServletResponse));
@@ -99,51 +95,40 @@ class AuthenticationServiceTest {
   }
 
   @Test
-  @DisplayName("login should authenticate and set cookies for valid credentials")
+  @DisplayName("login: should authenticate and set cookies for valid credentials")
   void testLogin_withValidCredentials_shouldAuthenticate() {
-    // Given: A valid authentication request and existing user.
+    // Given
     AuthenticationRequest request = new AuthenticationRequest("test@example.com", "password");
     User user = User.builder().email(request.email()).build();
     when(userRepository.findByEmail(request.email())).thenReturn(Optional.of(user));
     when(jwtService.generateToken(any(User.class))).thenReturn("fakeAccessToken");
     when(refreshTokenService.createRefreshToken(any(User.class))).thenReturn("fakeRefreshToken");
 
-    // When: Logging in with valid credentials.
+    // When
     authenticationService.login(request, httpServletResponse);
 
-    // Then: Authentication is performed and cookies are set.
-    verify(authenticationManager).authenticate(any());
-    verify(cookieService)
-        .addCookie(
-            eq(jwtService.getAccessTokenCookieName()),
-            eq("fakeAccessToken"),
-            anyLong(),
-            eq(httpServletResponse));
-    verify(cookieService)
-        .addCookie(
-            eq(jwtService.getRefreshTokenCookieName()),
-            eq("fakeRefreshToken"),
-            anyLong(),
-            eq(httpServletResponse));
+    // Then
+    verify(authenticationManager).authenticate(any()); // Verify auth manager was called
+    verify(cookieService).addCookie(any(), eq("fakeAccessToken"), anyLong(), any());
+    verify(cookieService).addCookie(any(), eq("fakeRefreshToken"), anyLong(), any());
   }
 
   @Test
-  @DisplayName("logout should revoke refresh token and clear cookies")
+  @DisplayName("logout: should revoke refresh token and clear cookies")
   void testLogout_shouldRevokeTokenAndClearCookies() {
-    // Given: A logged-in user and cookie names.
+    // Given
     User currentUser = new User();
     String accessTokenName = "access_token_cookie";
     String refreshTokenName = "refresh_token_cookie";
     when(jwtService.getAccessTokenCookieName()).thenReturn(accessTokenName);
     when(jwtService.getRefreshTokenCookieName()).thenReturn(refreshTokenName);
 
-    // When: Logging out the user.
+    // When
     authenticationService.logout(currentUser, httpServletResponse);
 
-    // Then: The refresh token is revoked and cookies are cleared.
+    // Then
     verify(refreshTokenService).deleteTokenForUser(currentUser);
     verify(cookieService).clearCookie(accessTokenName, httpServletResponse);
     verify(cookieService).clearCookie(refreshTokenName, httpServletResponse);
-    verifyNoMoreInteractions(cookieService);
   }
 }

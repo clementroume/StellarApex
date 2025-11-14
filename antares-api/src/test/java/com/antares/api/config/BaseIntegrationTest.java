@@ -7,45 +7,35 @@ import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 
 /**
- * Base class for integration tests, providing configuration for application context, Testcontainers
- * for PostgreSQL and Redis, and other commonly used test utilities.
+ * Base abstract class for all integration tests.
  *
- * <p>This abstract class is intended to be extended by integration test classes. It sets up a test
- * environment where: - The Spring application context is loaded with a random web environment. -
- * Testcontainers are used to provide isolated PostgreSQL and Redis instances. - Default property
- * values are dynamically registered to simulate the application's runtime environment.
- *
- * <p>Class Annotations: - {@link SpringBootTest}: Configures the application context for
- * integration testing. - {@link AutoConfigureMockMvc}: Enables MockMvc for testing web layer
- * functionalities. - {@link ActiveProfiles}: Activates the "test" profile during tests.
- *
- * <p>Primary Responsibilities: - Provides a consistent, isolated environment for integration tests.
- * - Registers dynamic properties such as database connection details and application configuration
- * values via {@link DynamicPropertySource}.
- *
- * <p>Dynamic Property Registration: The method {@code registerDynamicProperties} is responsible for
- * setting dynamic configuration properties for: - PostgreSQL database connection (URL, username,
- * password). - Redis connection details (host and port). - Application-specific properties like
- * security settings and default admin credentials.
- *
- * <p>Example Usage: This class should be extended by integration test classes that require the
- * configured application context and containerized services. Extending classes can leverage the
- * injected properties, autowired beans, and utilities provided by the Spring test context and this
- * base class.
+ * <p>This class sets up the Spring Boot test environment, activates the "test" profile, and
+ * inherits the singleton Testcontainers. It uses {@link DynamicPropertySource} to override
+ * application properties at runtime with the dynamic ports and credentials from the containers.
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@AutoConfigureMockMvc
-@ActiveProfiles("test")
+@AutoConfigureMockMvc // Configures MockMvc for testing web controllers
+@ActiveProfiles("test") // Activates the 'application-test.properties'
 public abstract class BaseIntegrationTest extends SingletonTestContainers {
 
+  /**
+   * Dynamically registers properties from the Testcontainers into the Spring ApplicationContext
+   * before it starts.
+   *
+   * @param registry The property registry to add properties to.
+   */
   @DynamicPropertySource
   static void registerDynamicProperties(DynamicPropertyRegistry registry) {
-    // On référence les conteneurs de la classe parente
+    // Inject PostgreSQL properties
     registry.add("spring.datasource.url", postgres::getJdbcUrl);
     registry.add("spring.datasource.username", postgres::getUsername);
     registry.add("spring.datasource.password", postgres::getPassword);
+
+    // Inject Redis properties
     registry.add("spring.data.redis.host", redis::getHost);
     registry.add("spring.data.redis.port", () -> redis.getMappedPort(6379));
+
+    // Inject dummy security and admin properties for the test environment
     registry.add(
         "JWT_SECRET",
         () ->

@@ -3,12 +3,9 @@
   xmlns="http://maven.apache.org/POM/4.0.0"
   xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
   <artifactId>antares-api</artifactId>
-
-  <!-- Parent Spring Boot -->
   <build>
     <plugins>
 
-      <!-- ✏️ Compilation Java + Processors -->
       <plugin>
         <artifactId>maven-compiler-plugin</artifactId>
         <configuration>
@@ -28,7 +25,6 @@
         <groupId>org.apache.maven.plugins</groupId>
       </plugin>
 
-      <!-- 🚀 Plugin Spring Boot -->
       <plugin>
         <artifactId>spring-boot-maven-plugin</artifactId>
         <configuration>
@@ -49,7 +45,6 @@
         <groupId>org.springframework.boot</groupId>
       </plugin>
 
-      <!-- 🧪 Tests d’intégration -->
       <plugin>
         <artifactId>maven-failsafe-plugin</artifactId>
         <executions>
@@ -71,10 +66,8 @@
 
     </plugins>
   </build>
-
   <dependencies>
 
-    <!-- 🌱 Core Spring Boot -->
     <dependency>
       <artifactId>spring-boot-starter-web</artifactId>
       <groupId>org.springframework.boot</groupId>
@@ -107,7 +100,7 @@
       <artifactId>spring-boot-admin-starter-client</artifactId>
       <groupId>de.codecentric</groupId>
     </dependency>
-    <!-- 🔐 JWT Authentication -->
+
     <dependency>
       <artifactId>jjwt-api</artifactId>
       <groupId>io.jsonwebtoken</groupId>
@@ -124,7 +117,6 @@
       <version>0.13.0</version>
     </dependency>
 
-    <!-- 🗄️ Base de données -->
     <dependency>
       <artifactId>postgresql</artifactId>
       <groupId>org.postgresql</groupId>
@@ -137,7 +129,6 @@
       <scope>runtime</scope>
     </dependency>
 
-    <!-- 🧰 Outils de développement -->
     <dependency>
       <artifactId>lombok</artifactId>
       <groupId>org.projectlombok</groupId>
@@ -150,7 +141,6 @@
       <scope>runtime</scope>
     </dependency>
 
-    <!-- 📊 Observabilité -->
     <dependency>
       <artifactId>micrometer-tracing-bridge-brave</artifactId>
       <groupId>io.micrometer</groupId>
@@ -167,14 +157,12 @@
       <version>3.5.6</version>
     </dependency>
 
-    <!-- 📖 Documentation OpenAPI / Swagger -->
     <dependency>
       <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
       <groupId>org.springdoc</groupId>
       <version>2.8.14</version>
     </dependency>
 
-    <!-- 🧰 Utilitaires Apache -->
     <dependency>
       <artifactId>commons-compress</artifactId>
       <groupId>org.apache.commons</groupId>
@@ -186,14 +174,12 @@
       <version>3.19.0</version>
     </dependency>
 
-    <!-- 🧪 Mapping DTO ↔ Entities -->
     <dependency>
       <artifactId>mapstruct</artifactId>
       <groupId>org.mapstruct</groupId>
       <version>${org.mapstruct.version}</version>
     </dependency>
 
-    <!-- 🗃️ Migration de base de données -->
     <dependency>
       <artifactId>flyway-core</artifactId>
       <groupId>org.flywaydb</groupId>
@@ -203,7 +189,6 @@
       <groupId>org.flywaydb</groupId>
     </dependency>
 
-    <!-- 🧪 Tests -->
     <dependency>
       <artifactId>spring-boot-starter-test</artifactId>
       <groupId>org.springframework.boot</groupId>
@@ -237,8 +222,9 @@
       </dependency>
     </dependencies>
   </dependencyManagement>
-  <description>Antares</description>
+  <description>Spring Boot API for the Antares application</description>
   <groupId>com.antares</groupId>
+
   <modelVersion>4.0.0</modelVersion>
 
   <name>antares-api</name>
@@ -257,4 +243,5 @@
   </properties>
 
   <version>0.0.1-SNAPSHOT</version>
+
 </project>

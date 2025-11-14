@@ -1,6 +1,7 @@
 -- V1__Create_user_table.sql
 -- Initial users table for Antares application.
--- This script creates the "users" table and a trigger to update the updated_at timestamp on row updates.
+-- This script creates the "users" table, a trigger for 'updated_at',
+-- and database-level CHECK constraints for data integrity.
 
 CREATE TABLE users
 (
@@ -17,7 +18,7 @@ CREATE TABLE users
     updated_at TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- Trigger function to update updated_at on row update
+-- Trigger function to update updated_at timestamp on row update
 CREATE OR REPLACE FUNCTION update_updated_at_column()
     RETURNS TRIGGER AS
 $$
@@ -40,4 +41,3 @@ ALTER TABLE users
     ADD CONSTRAINT chk_theme CHECK (theme IN ('light', 'dark')),
     ADD CONSTRAINT chk_locale CHECK (locale ~ '^[a-z]{2}(-[A-Z]{2})?$'),
     ADD CONSTRAINT chk_role CHECK (role IN ('ROLE_USER', 'ROLE_ADMIN'));
-
