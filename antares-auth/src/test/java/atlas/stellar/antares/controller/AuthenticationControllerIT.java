@@ -103,7 +103,7 @@ class AuthenticationControllerIT extends BaseIntegrationTest {
     mockMvc
         .perform(post("/api/v1/auth/logout").cookie(loginCookies).with(csrf()))
         .andExpect(status().isOk())
-        .andExpect(cookie().maxAge("antares_access_token", 0));
+        .andExpect(cookie().maxAge("stellar_access_token", 0));
   }
 
   @Test
@@ -189,7 +189,7 @@ class AuthenticationControllerIT extends BaseIntegrationTest {
                             new AuthenticationRequest("refresh.user@example.com", "password123"))))
             .andExpect(status().isOk())
             .andReturn();
-    Cookie refreshTokenCookie = loginResult.getResponse().getCookie("antares_refresh_token");
+    Cookie refreshTokenCookie = loginResult.getResponse().getCookie("stellar_refresh_token");
 
     // When
     mockMvc
