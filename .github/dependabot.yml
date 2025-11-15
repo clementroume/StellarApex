@@ -1,44 +1,54 @@
 version: 2
 updates:
-  # --- Backend Dependencies (Maven) ---
+  # --- Backend Auth Dependencies (Maven) ---
   - package-ecosystem: "maven"
-    directory: "/antares-api"
+    directory: "/antares-auth"
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 5
     groups:
-      # Group common Apache Commons libraries together
       apache-commons:
         patterns:
           - "org.apache.commons:*"
-      # Group all Spring Boot dependencies into a single PR
       spring-boot:
         patterns:
           - "org.springframework.boot:*"
 
   # --- Frontend Dependencies (NPM) ---
   - package-ecosystem: "npm"
-    directory: "/antares-app"
+    directory: "/sirius-app"
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 5
     groups:
-      # Group Angular core, CLI, and TypeScript updates
       angular-dependencies:
         patterns:
           - "@angular/*"
           - "@angular-devkit/*"
           - "typescript"
 
+  # --- Backend Admin Dependencies (Maven) ---
+  - package-ecosystem: "maven"
+    directory: "/vega-admin"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+
   # --- Docker Dependencies ---
   - package-ecosystem: "docker"
-    directory: "/antares-api" # Path to the backend Dockerfile
+    directory: "/antares-auth"
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 3
 
   - package-ecosystem: "docker"
-    directory: "/antares-app" # Path to the frontend Dockerfile
+    directory: "/sirius-app"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 3
+
+  - package-ecosystem: "docker"
+    directory: "/vega-admin"
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 3
@@ -49,7 +59,6 @@ updates:
     schedule:
       interval: "weekly"
     groups:
-      # Group all GitHub Actions updates into a single PR
       github-actions:
         patterns:
           - "*"

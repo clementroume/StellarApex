@@ -19,7 +19,7 @@ services:
       - "./certs:/certs:ro"
       - "./dynamic:/dynamic:ro" # Mount dynamic configuration files (read-only).
     networks:
-      - antares-net
+      - stellar-net
     restart: unless-stopped
     command:
       # --- Entrypoints (Web & WebSecure with HTTPS redirect) ---
@@ -42,60 +42,60 @@ services:
       - "--log.level=INFO"       # Set the log level to INFO.
       - "--accesslog=true"       # Enable access logs.
 
-  # --- 2. THE ANGULAR FRONTEND (SERVED BY NGINX) ---
-  antares-app:
+  # --- 2. SIRIUS - ANGULAR FRONTEND SERVED BY NGINX ---
+  sirius-app:
     build:
-      context: ./antares-app
+      context: ./sirius-app
       dockerfile: Dockerfile
-    image: antares-app:latest
-    container_name: antares-app
+    image: sirius-app:latest
+    container_name: sirius-app
     restart: unless-stopped
     networks:
-      - antares-net
+      - stellar-net
     depends_on:
-      - antares-api
+      - antares-auth
 
-  # --- 3. THE CORE SPRING BOOT API (AUTH & USERS) ---
-  antares-api:
+  # --- 3. ANTARES - AUTH & USERS SPRINGBOOT API ---
+  antares-auth:
     build:
-      context: ./antares-api
+      context: ./antares-auth
       dockerfile: Dockerfile
-    image: antares-api:latest
-    container_name: antares-api
+    image: antares-auth:latest
+    container_name: antares-auth
     env_file: ./.env
     depends_on:
-      postgres:
+      castor-db:
         condition: service_healthy
-      redis:
+      pollux-cache:
         condition: service_healthy
     restart: unless-stopped
     networks:
-      - antares-net
+      - stellar-net
 
-  # --- 4. THE SPRING BOOT ADMIN SERVER (MONITORING) ---
-  antares-admin:
+  # --- 4. VEGA - ADMIN SPRING BOOT SERVER ---
+  vega-admin:
     build:
-      context: ./antares-admin
+      context: ./vega-admin
       dockerfile: Dockerfile
-    image: antares-admin:latest
-    container_name: antares-admin
+    image: vega-admin:latest
+    container_name: vega-admin
     env_file: ./.env
     networks:
-      - antares-net
+      - stellar-net
     depends_on:
-      - antares-api
+      - antares-auth
     restart: unless-stopped
 
-  # --- 5. DATA SERVICES (DATABASES & CACHES) ---
-  postgres:
+  # --- 5. CASTOR & POLLUX - DATABASE & CACHE ---
+  castor-db:
     image: postgres:16-alpine
-    container_name: antares-postgres
+    container_name: castor-db
     environment:
       POSTGRES_DB: "${POSTGRES_DB}"
       POSTGRES_USER: "${POSTGRES_USER}"
       POSTGRES_PASSWORD: "${POSTGRES_PASSWORD}"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - castor_data:/var/lib/postgresql/data
     ports:
       - "127.0.0.1:5432:5432" # Bind to localhost only for secure local dev access.
     restart: unless-stopped
@@ -105,15 +105,15 @@ services:
       timeout: 5s
       retries: 5
     networks:
-      - antares-net
+      - stellar-net
 
-  redis:
+  pollux-cache:
     image: redis:7-alpine
-    container_name: antares-redis
+    container_name: pollux-cache
     env_file: ./.env
     command: redis-server --requirepass ${REDIS_PASSWORD}
     volumes:
-      - redis_data:/data
+      - pollux_data:/data
     ports:
       - "127.0.0.1:6379:6379" # Bind to localhost only for secure local dev access.
     restart: unless-stopped
@@ -123,16 +123,16 @@ services:
       timeout: 5s
       retries: 5
     networks:
-      - antares-net
+      - stellar-net
 
 # --- VOLUME DEFINITIONS ---
 # Defines named volumes for persistent data.
 volumes:
-  postgres_data:
-  redis_data:
+  castor_data:
+  pollux_data:
 
 # --- NETWORK DEFINITION ---
 # Defines the custom bridge network for service communication.
 networks:
-  antares-net:
+  stellar-net:
     driver: bridge

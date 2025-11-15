@@ -1,18 +1,17 @@
-name: Antares CI (monorepo)
+name: StellarAtlas CI
 
 on:
   push:
     branches: [ "main" ]
   pull_request:
     branches: [ "main" ]
-  workflow_dispatch: # Allows manual triggering
+  workflow_dispatch:
 
 env:
-  # Define a dummy secret for CI environments
   JWT_SECRET: ${{ secrets.JWT_SECRET || 'dummy-secret-for-ci' }}
 
 jobs:
-  # --- JOB 1: Build and test the Frontend ---
+  # --- JOB 1: Build and test the Frontend (Sirius) ---
   build-frontend:
     runs-on: ubuntu-latest
     defaults:
@@ -22,29 +21,29 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v5
         with:
-          fetch-depth: 0 # Fetch all history (needed for some CI tools)
+          fetch-depth: 0
 
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
           node-version: '22'
-          cache: 'npm' # Use built-in caching for npm dependencies
-          cache-dependency-path: antares-app/package-lock.json
+          cache: 'npm'
+          cache-dependency-path: sirius-app/package-lock.json
 
       - name: Install frontend deps
-        working-directory: ./antares-app
-        run: npm ci # Use 'ci' for clean, reproducible installations
+        working-directory: ./sirius-app
+        run: npm ci
 
       - name: Test frontend
-        working-directory: ./antares-app
-        run: npm test -- --watch=false --browsers=ChromeHeadless # Run tests headlessly
+        working-directory: ./sirius-app
+        run: npm test -- --watch=false --browsers=ChromeHeadless
 
       - name: Build frontend
-        working-directory: ./antares-app
+        working-directory: ./sirius-app
         run: npm run build -- --configuration production
 
-  # --- JOB 2: Build and test the Backend (runs in parallel) ---
-  build-backend:
+  # --- JOB 2: Build and test the Auth Backend (Antares) ---
+  build-backend-auth:
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -60,15 +59,38 @@ jobs:
         with:
           java-version: '21'
           distribution: 'temurin'
-          cache: 'maven' # Use built-in caching for Maven dependencies
+          cache: 'maven'
 
-      - name: Build & test backend
-        working-directory: ./antares-api
+      - name: Build & test auth backend
+        working-directory: ./antares-auth
         env:
-          # Set properties required for the test environment
           SPRING_APPLICATION_JSON: '{"application.security.jwt.cookie.secure": false}'
           JWT_SECRET: ${{ env.JWT_SECRET }}
-        # Run Maven build and all tests (unit and integration)
+        run: |
+          chmod +x ./mvnw
+          ./mvnw -B verify
+
+  # --- JOB 3: Build and test the Admin Backend (Vega) ---
+  build-backend-admin:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash -l -o pipefail {0}
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v5
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: Build & test admin backend
+        working-directory: ./vega-admin
         run: |
           chmod +x ./mvnw
           ./mvnw -B verify

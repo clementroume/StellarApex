@@ -40,51 +40,51 @@ http:
   #  ROUTERS
   # ===================================================================
   routers:
-    # --- 1. Frontend Application Router ---
-    app-router:
-      rule: "Host(`antares.local`)"             # Match 'antares.local'.
+    # --- 1. Sirius Router (Frontend) ---
+    sirius-router: # <- RENOMMÉ
+      rule: "Host(`stellar.atlas`)"             # Match 'stellar.atlas'.
       entryPoints: [ "websecure" ]              # Use the 'websecure' (HTTPS) entrypoint.
       tls: true                                 # Enable TLS (HTTPS).
       priority: 5                               # Low priority to act as a catch-all for this domain.
-      service: "antares-app-service"            # Route to the frontend service.
+      service: "sirius-app-service"             # Route to the frontend service.
       middlewares: [ "secure-headers" ]         # Apply security headers.
 
-    # --- 2. API Routers (Proxy, Dedicated, Swagger) ---
-    api-proxy-router:
-      rule: "Host(`antares.local`) && PathPrefix(`/api`)" # Match 'antares.local/api...'.
+    # --- 2. Antares Routers (Proxy, Dedicated, Swagger) ---
+    antares-proxy-router: # <- RENOMMÉ
+      rule: "Host(`stellar.atlas`) && PathPrefix(`/api`)" # Match 'stellar.atlas/api...'.
       entryPoints: [ "websecure" ]
       tls: true
       priority: 10                              # High priority to catch '/api' before the frontend router.
-      service: "antares-api-service"            # Route to the 'antares-api' service.
+      service: "antares-auth-service"           # Route to the 'antares-auth' service.
       middlewares: [ "rate-limit-api" ]         # Apply API rate limiting.
 
-    api-dedicated-router:
-      rule: "Host(`api.antares.local`)"         # Match dedicated 'api.antares.local' subdomain.
+    antares-dedicated-router: # <- RENOMMÉ
+      rule: "Host(`api.stellar.atlas`)"         # Match dedicated 'api.stellar.atlas' subdomain.
       entryPoints: [ "websecure" ]
       tls: true
-      service: "antares-api-service"
+      service: "antares-auth-service"
       middlewares: [ "rate-limit-api" ]
 
-    api-swagger-router:
+    antares-swagger-router: # <- RENOMMÉ
       # High-priority rule to catch Swagger/OpenAPI paths before the frontend router.
-      rule: "Host(`antares.local`) && (PathPrefix(`/swagger-ui`) || PathPrefix(`/v3/api-docs`))"
+      rule: "Host(`stellar.atlas`) && (PathPrefix(`/swagger-ui`) || PathPrefix(`/v3/api-docs`))"
       entryPoints: [ "websecure" ]
       tls: true
       priority: 10
-      service: "antares-api-service"
+      service: "antares-auth-service"
       middlewares: [ "rate-limit-api" ]
 
-    # --- 3. Spring Boot Admin Router ---
-    admin-router:
-      rule: "Host(`admin.antares.local`)"       # Match 'admin.antares.local'.
+    # --- 3. Vega Router (Spring Boot Admin) ---
+    vega-router: # <- RENOMMÉ
+      rule: "Host(`admin.stellar.atlas`)"       # Match 'admin.stellar.atlas'.
       entryPoints: [ "websecure" ]
       tls: true
-      service: "antares-admin-service"          # Route to the 'antares-admin' service.
+      service: "vega-admin-service"          # <- CORRIGÉ (pointait vers 'antares-admin-service')
       middlewares: [ "rate-limit-admin" ]       # Apply administrative rate limiting.
 
     # --- 4. Traefik Dashboard Router ---
-    dashboard-router:
-      rule: "Host(`dashboard.antares.local`)"   # Match 'dashboard.antares.local'.
+    traefik-dashboard-router: # <- RENOMMÉ
+      rule: "Host(`dashboard.stellar.atlas`)"   # Match 'dashboard.stellar.atlas'.
       entryPoints: [ "websecure" ]
       tls: true
       service: "api@internal"                   # Route to Traefik's internal API/dashboard service.
@@ -96,23 +96,23 @@ http:
   #  SERVICES
   # ===================================================================
   services:
-    # --- 1. Frontend Application Service ---
-    antares-app-service:
+    # --- 1. Frontend Application Service (Sirius) ---
+    sirius-app-service: # <- RENOMMÉ
       loadBalancer:
         servers:
           # Points to the Nginx container serving the Angular app.
-          - url: "http://antares-app:80"
+          - url: "http://sirius-app:80" # <- CORRIGÉ
 
-    # --- 2. API Service ---
-    antares-api-service:
+    # --- 2. API Service (Antares) ---
+    antares-auth-service: # <- RENOMMÉ
       loadBalancer:
         servers:
           # Points to the Spring Boot API container.
-          - url: "http://antares-api:8080"
+          - url: "http://antares-auth:8080" # <- CORRIGÉ
 
-    # --- 3. Admin Service ---
-    antares-admin-service:
+    # --- 3. Admin Service (Vega) ---
+    vega-admin-service: # <- RENOMMÉ
       loadBalancer:
         servers:
           # Points to the Spring Boot Admin container.
-          - url: "http://antares-admin:9091"
+          - url: "http://vega-admin:9091" # <- CORRIGÉ
