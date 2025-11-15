@@ -1,7 +1,7 @@
 # --- STAGE 1: Build ---
 # Use a specific, consistent JDK base image (Ubuntu 22.04 LTS 'jammy')
 # This ensures both builds run in the exact same environment.
-FROM eclipse-temurin:21-jdk-jammy AS builder
+FROM eclipse-temurin:25-jdk-jammy AS builder
 
 # Set the working directory
 WORKDIR /app
@@ -30,7 +30,7 @@ RUN --mount=type=cache,target=/root/.m2 ./mvnw clean package -DskipTests
 
 # --- STAGE 2: Runtime ---
 # Use a minimal, secure JRE image based on the same LTS
-FROM eclipse-temurin:21-jre-alpine
+FROM eclipse-temurin:25-jre-alpine
 
 # Set the working directory
 WORKDIR /app
