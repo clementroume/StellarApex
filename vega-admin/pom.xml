@@ -64,7 +64,7 @@
 
   <properties>
     <java.version>21</java.version>
-    <spring-boot-admin.version>3.5.5</spring-boot-admin.version>
+    <spring-boot-admin.version>3.5.6</spring-boot-admin.version>
   </properties>
   <version>1.0.0</version>
 
