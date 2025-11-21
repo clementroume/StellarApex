@@ -26,10 +26,10 @@ public class CookieService {
     ResponseCookie cookie =
         ResponseCookie.from(name, value)
             .httpOnly(true)
-            .secure(jwtProperties.cookie().secure()) // From application.properties
-            .sameSite("Lax") // Protects against most CSRF attacks
+            .secure(jwtProperties.cookie().secure())
+            .sameSite("Strict")
             .path("/")
-            .maxAge(maxAgeMs / 1000) // Converts ms to seconds for Max-Age
+            .maxAge(maxAgeMs / 1000)
             .build();
 
     response.addHeader("Set-Cookie", cookie.toString());
@@ -47,9 +47,9 @@ public class CookieService {
         ResponseCookie.from(name, "")
             .httpOnly(true)
             .secure(jwtProperties.cookie().secure())
-            .sameSite("Lax")
+            .sameSite("Strict")
             .path("/")
-            .maxAge(0) // Expires the cookie immediately
+            .maxAge(0)
             .build();
 
     response.addHeader("Set-Cookie", cookie.toString());

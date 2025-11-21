@@ -46,6 +46,9 @@ public class SecurityConfig {
   @Bean
   public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 
+    CookieCsrfTokenRepository csrfRepository = CookieCsrfTokenRepository.withHttpOnlyFalse();
+    csrfRepository.setCookieCustomizer(builder -> builder.secure(true).sameSite("Strict"));
+
     // Handler to ensure CSRF token is accessible by JavaScript (for the header)
     // but not sent as a request attribute.
     CsrfTokenRequestAttributeHandler requestHandler = new CsrfTokenRequestAttributeHandler();

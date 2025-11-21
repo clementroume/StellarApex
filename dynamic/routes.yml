@@ -49,24 +49,18 @@ http:
       service: "sirius-app-service"             # Route to the frontend service.
       middlewares: [ "secure-headers" ]         # Apply security headers.
 
-    # --- 2. Antares-Auth Router ---
-    antares-auth-router:
-      rule: "Host(`auth.stellar.atlas`)"        # Match dedicated 'auth.stellar.atlas' subdomain.
-      entryPoints: [ "websecure" ]              # Use the 'websecure' (HTTPS) entrypoint.
-      tls: true                                 # Enable TLS (HTTPS).
-      service: "antares-auth-service"           # Route to the 'antares-auth' service.
-      middlewares: [ "rate-limit-api" ]         # Apply API rate limiting.
-
-    # --- 3. Antares-Auth Sirius Router ---
+    # --- 2. Antares-Auth Sirius Router ---
     antares-auth-sirius-router:
       rule: "Host(`stellar.atlas`) && PathPrefix(`/antares`)" # Match 'stellar.atlas/antares...'.
       entryPoints: [ "websecure" ]              # Use the 'websecure' (HTTPS) entrypoint.
       tls: true                                 # Enable TLS (HTTPS).
       priority: 10                              # Higher priority to override the main app router.
       service: "antares-auth-service"           # Route to the 'antares-auth' service.
-      middlewares: [ "rate-limit-api" ]         # Apply API rate limiting.
+      middlewares:
+        - "rate-limit-api"        # Apply API rate limiting.
+        - "secure-headers"
 
-    # --- 4. Antares-Auth Swagger Router ---
+    # --- 3. Antares-Auth Swagger Router ---
     antares-auth-swagger-router:
       rule: "Host(`stellar.atlas`) && (PathPrefix(`/swagger-ui`) || PathPrefix(`/v3/api-docs`))"
       entryPoints: [ "websecure" ]              # Use the 'websecure' (HTTPS) entrypoint.
@@ -75,7 +69,7 @@ http:
       service: "antares-auth-service"           # Route to the 'antares-auth' service.
       middlewares: [ "rate-limit-api" ]         # Apply API rate limiting.
 
-    # --- 5. Vega-Admin Router ---
+    # --- 4. Vega-Admin Router ---
     vega-admin-router:
       rule: "Host(`admin.stellar.atlas`)"       # Match 'admin.stellar.atlas'.
       entryPoints: [ "websecure" ]              # Use the 'websecure' (HTTPS) entrypoint.
@@ -83,7 +77,7 @@ http:
       service: "vega-admin-service"             # Route to the 'vega-admin' service
       middlewares: [ "rate-limit-admin" ]       # Apply administrative rate limiting.
 
-    # --- 6. Altair-Proxy Router ---
+    # --- 5. Altair-Proxy Router ---
     altair-proxy-router:
       rule: "Host(`proxy.stellar.atlas`)"   # Match 'dashboard.stellar.atlas'.
       entryPoints: [ "websecure" ]              # Use the 'websecure' (HTTPS) entrypoint.
