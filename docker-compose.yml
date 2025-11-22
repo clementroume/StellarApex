@@ -92,7 +92,7 @@ services:
     container_name: castor-db
     environment:
       POSTGRES_DB: "${CASTOR_DB}"
-      POSTGRES_USER: "${CASTOR_USER}"
+      POSTGRES_USER: "${CASTOR_USERNAME}"
       POSTGRES_PASSWORD: "${CASTOR_PASSWORD}"
     volumes:
       - castor_data:/var/lib/postgresql/data
@@ -100,7 +100,7 @@ services:
       - "127.0.0.1:5432:5432" # Bind to localhost only for secure local dev access.
     restart: unless-stopped
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U ${CASTOR_USER} -d ${CASTOR_DB}" ]
+      test: [ "CMD-SHELL", "pg_isready -U ${CASTOR_USERNAME} -d ${CASTOR_DB}" ]
       interval: 10s
       timeout: 5s
       retries: 5

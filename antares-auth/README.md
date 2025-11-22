@@ -1,4 +1,4 @@
-# Antares API
+# Antares Auth API
 
 This is the core backend service for the Antares platform, responsible for user authentication,
 session management, and user profile operations. It is a secure, stateless Spring Boot application

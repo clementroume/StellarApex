@@ -53,27 +53,27 @@ required to run the application.
 
 ```txt
 # === CASTOR (PostgreSQL) ===
-CASTOR_DB=antares
-CASTOR_USER=antares
-CASTOR_PASSWORD=your_strong_postgres_password
+CASTOR_DB=
+CASTOR_USERNAME=
+CASTOR_PASSWORD=
 
 # === POLLUX (Redis) ===
-POLLUX_PASSWORD=your_strong_redis_password
+POLLUX_PASSWORD=
 
-# === ANTARES (Auth API) ===
+# === ANTARES (Auth Api) ===
 # Generate with 'openssl rand -base64 64'
-ANTARES_JWT_SECRET=your_long_and_random_jwt_secret_key
-ANTARES_DEFAULT_ADMIN_FIRSTNAME=Admin
-ANTARES_DEFAULT_ADMIN_LASTNAME=User
+ANTARES_JWT_SECRET=
 
-# === VEGA (Admin Server) & ANTARES (Client) ===
+# === ADMIN - ANTARES & VEGA ===
+ADMIN_USERNAME=
+ADMIN_FIRSTNAME=
+ADMIN_LASTNAME=
+ADMIN_EMAIL=
+ADMIN_PASSWORD=
 
-VEGA_ADMIN_EMAIL=admin@stellar.atlas
-VEGA_ADMIN_PASSWORD=your_strong_admin_password
-
-# === Traefik Dashboard Authentication ===
+# === ALTAIR (Traefik) ===
 # Generate with 'htpasswd -nb user password', escaping '$' as '$$'
-ALTAIR_DASHBOARD_AUTH=your_htpasswd_hash_with_escaped_dollars
+ALTAIR_DASHBOARD_AUTH=
 ```
 
 ### 2. Generate Local Certificates
