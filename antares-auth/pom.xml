@@ -34,6 +34,9 @@
               <groupId>org.projectlombok</groupId>
             </exclude>
           </excludes>
+          <layers>
+            <enabled>true</enabled>
+          </layers>
         </configuration>
         <executions>
           <execution>

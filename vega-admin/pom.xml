@@ -8,6 +8,11 @@
     <plugins>
       <plugin>
         <artifactId>spring-boot-maven-plugin</artifactId>
+        <configuration>
+          <layers>
+            <enabled>true</enabled>
+          </layers>
+        </configuration>
         <groupId>org.springframework.boot</groupId>
       </plugin>
     </plugins>
