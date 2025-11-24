@@ -1,11 +1,11 @@
-import { ChangeDetectionStrategy, Component, OnInit, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Router, RouterModule, ActivatedRoute } from '@angular/router';
-import { AuthService } from '../../../core/services/auth.service';
-import { TranslateModule } from '@ngx-translate/core';
-import { NotificationService } from '../../../core/services/notification.service';
-import { HttpErrorResponse } from '@angular/common/http';
+import {ChangeDetectionStrategy, Component, inject, OnInit} from '@angular/core';
+import {CommonModule} from '@angular/common';
+import {FormBuilder, FormGroup, ReactiveFormsModule, Validators} from '@angular/forms';
+import {ActivatedRoute, Router, RouterModule} from '@angular/router';
+import {AuthService} from '../../../core/services/auth.service';
+import {TranslateModule} from '@ngx-translate/core';
+import {NotificationService} from '../../../core/services/notification.service';
+import {HttpErrorResponse} from '@angular/common/http';
 
 /**
  * Handles the user login page.
@@ -54,9 +54,17 @@ export class LoginComponent implements OnInit {
       return;
     }
 
+
     this.authService.login(this.loginForm.value).subscribe({
       next: () => {
-        void this.router.navigate([this.returnUrl]);
+        // Check if the returnUrl is an external absolute URL (starts with http)
+        if (this.returnUrl.startsWith('http')) {
+          // Native browser redirect for external domains (Admin, Traefik)
+          globalThis.location.href = this.returnUrl;
+        } else {
+          // Standard Angular routing for internal pages
+          void this.router.navigate([this.returnUrl]);
+        }
       },
       error: (err: HttpErrorResponse) => {
         if (err.error?.message) {

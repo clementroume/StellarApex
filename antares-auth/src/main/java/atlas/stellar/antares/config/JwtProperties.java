@@ -29,5 +29,5 @@ public record JwtProperties(
   public record RefreshToken(long expiration, @NotBlank String name) {}
 
   /** CookieProperties including whether cookies should be secure (HTTPS only). */
-  public record CookieProperties(boolean secure) {}
+  public record CookieProperties(boolean secure, String domain) {}
 }

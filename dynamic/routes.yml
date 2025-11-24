@@ -5,11 +5,13 @@ http:
   # ===================================================================
   middlewares:
     # --- Security Middlewares ---
-    dash-auth:
-      # Basic Auth for the dashboard (reads hashed user:pass from env).
-      basicAuth:
-        users:
-          - '{{ env "TRAEFIK_DASHBOARD_AUTH" }}'
+    forward-auth:
+      # Forward Authentication Middleware
+      forwardAuth:
+        address: "http://antares-auth:8080/antares/auth/verify"
+        trustForwardHeader: true
+        authResponseHeaders:
+          - "X-Auth-User"
 
     secure-headers:
       # Applies best-practice security headers to responses.
@@ -57,7 +59,7 @@ http:
       priority: 10                              # Higher priority to override the main app router.
       service: "antares-auth-service"           # Route to the 'antares-auth' service.
       middlewares:
-        - "rate-limit-api"        # Apply API rate limiting.
+        - "rate-limit-api"
         - "secure-headers"
 
     # --- 3. Antares-Auth Swagger Router ---
@@ -75,7 +77,9 @@ http:
       entryPoints: [ "websecure" ]              # Use the 'websecure' (HTTPS) entrypoint.
       tls: true                                 # Enable TLS (HTTPS).
       service: "vega-admin-service"             # Route to the 'vega-admin' service
-      middlewares: [ "rate-limit-admin" ]       # Apply administrative rate limiting.
+      middlewares: # Middleware declaration
+        - "forward-auth"                           # Secure with Basic Auth.
+        - "rate-limit-admin"                    # Secure with rate limiting.
 
     # --- 5. Altair-Proxy Router ---
     altair-proxy-router:
@@ -84,7 +88,7 @@ http:
       tls: true                                 # Enable TLS (HTTPS).
       service: "api@internal"                   # Route to Traefik's internal API/dashboard service.
       middlewares: # Middleware declaration
-        - "dash-auth"                           # Secure with Basic Auth.
+        - "forward-auth"                           # Secure with Basic Auth.
         - "rate-limit-admin"                    # Secure with rate limiting.
 
   # ===================================================================

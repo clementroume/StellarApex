@@ -4,10 +4,6 @@ services:
   altair-proxy:
     image: traefik:v3.5
     container_name: altair-proxy
-    env_file: ./.env # Load environment variables from .env file.
-    environment:
-      # Pass auth hash for Traefik dashboard basic auth.
-      - TRAEFIK_DASHBOARD_AUTH=${ALTAIR_DASHBOARD_AUTH}
     security_opt:
       - no-new-privileges:true # Prevent privilege escalation.
     ports:

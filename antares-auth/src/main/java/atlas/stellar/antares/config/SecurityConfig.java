@@ -97,7 +97,7 @@ public class SecurityConfig {
   public CorsConfigurationSource corsConfigurationSource() {
 
     CorsConfiguration configuration = new CorsConfiguration();
-    configuration.setAllowedOrigins(List.of(this.allowedOrigins));
+    configuration.setAllowedOriginPatterns(List.of(this.allowedOrigins, "https://*.stellar.atlas"));
     configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
     configuration.setAllowedHeaders(List.of("Authorization", "Content-Type", "X-XSRF-TOKEN"));
     configuration.setAllowCredentials(Boolean.TRUE); // Crucial for sending/receiving cookies

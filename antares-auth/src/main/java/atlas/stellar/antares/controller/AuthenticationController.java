@@ -1,5 +1,7 @@
 package atlas.stellar.antares.controller;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+
 import atlas.stellar.antares.dto.AuthenticationRequest;
 import atlas.stellar.antares.dto.RegisterRequest;
 import atlas.stellar.antares.dto.TokenRefreshResponse;
@@ -11,10 +13,13 @@ import atlas.stellar.antares.service.JwtService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
+import java.net.URLEncoder;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -78,6 +83,60 @@ public class AuthenticationController {
   }
 
   /**
+   * Advanced Forward Auth Endpoint.
+   *
+   * <p>This method acts as a gatekeeper for infrastructure services (Traefik Dashboard, Vega
+   * Admin).
+   *
+   * <p>Logic Flow:
+   *
+   * <ol>
+   *   <li>If Unauthenticated -> Return 302 Redirect to the Sirius Login Page.
+   *   <li>If Authenticated but not ADMIN -> Return 403 Forbidden.
+   *   <li>If Authenticated and ADMIN -> Return 200 OK (Access Granted).
+   * </ol>
+   */
+  @GetMapping("/verify")
+  public ResponseEntity<Void> verify(HttpServletRequest request, Authentication authentication) {
+
+    if (authentication == null || !authentication.isAuthenticated()) {
+
+      String targetUrl = buildLoginRedirectUrl(request);
+
+      return ResponseEntity.status(HttpStatus.FOUND)
+          .header(HttpHeaders.LOCATION, targetUrl)
+          .build();
+    }
+
+    User user = (User) authentication.getPrincipal();
+
+    return user.getRole().name().equals("ROLE_ADMIN")
+        ? ResponseEntity.ok().build()
+        : ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+  }
+
+  /**
+   * Helper to construct the Angular login URL with a returnUrl parameter. It uses the X-Forwarded-*
+   * headers provided by Traefik to know where the user came from.
+   */
+  private String buildLoginRedirectUrl(HttpServletRequest request) {
+
+    String loginBaseUrl = "https://stellar.atlas/auth/login";
+
+    String proto = request.getHeader("X-Forwarded-Proto");
+    String host = request.getHeader("X-Forwarded-Host");
+    String uri = request.getHeader("X-Forwarded-Uri");
+
+    if (proto != null && host != null) {
+      String originalUrl = proto + "://" + host + (uri != null ? uri : "");
+      String encodedUrl = URLEncoder.encode(originalUrl, UTF_8);
+      return loginBaseUrl + "?returnUrl=" + encodedUrl;
+    }
+
+    return loginBaseUrl;
+  }
+
+  /**
    * Handles POST requests to refresh an expired access token using a refresh token. The refresh
    * token is read from an HttpOnly cookie.
    *
@@ -97,9 +156,6 @@ public class AuthenticationController {
       throw new ResourceNotFoundException("error.token.refresh.missing");
     }
 
-    TokenRefreshResponse refreshResponse =
-        authenticationService.refreshToken(oldRefreshToken, response);
-
-    return ResponseEntity.ok(refreshResponse);
+    return ResponseEntity.ok(authenticationService.refreshToken(oldRefreshToken, response));
   }
 }

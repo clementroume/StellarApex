@@ -35,7 +35,7 @@ class JwtServiceTest {
             "test-audience",
             new JwtProperties.AccessToken(900000L, "access_token"),
             new JwtProperties.RefreshToken(604800000L, "refresh_token"),
-            new JwtProperties.CookieProperties(false));
+            new JwtProperties.CookieProperties(false, "stellar.atlas"));
     jwtService = new JwtService(jwtProperties);
     jwtService.init(); // Manually call @PostConstruct
 

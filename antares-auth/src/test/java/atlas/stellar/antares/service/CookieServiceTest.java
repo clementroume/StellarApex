@@ -29,7 +29,7 @@ class CookieServiceTest {
             "test-audience",
             new JwtProperties.AccessToken(1L, "access"),
             new JwtProperties.RefreshToken(1L, "refresh"),
-            new JwtProperties.CookieProperties(isSecure));
+            new JwtProperties.CookieProperties(isSecure, "stellar.atlas"));
     cookieService = new CookieService(jwtProperties);
   }
 
@@ -54,6 +54,7 @@ class CookieServiceTest {
     assertTrue(cookieHeader.contains("Secure")); // Secure flag is present
     assertTrue(cookieHeader.contains("SameSite=Strict"));
     assertTrue(cookieHeader.contains("Path=/"));
+    assertTrue(cookieHeader.contains("Domain=stellar.atlas"));
   }
 
   @Test
@@ -74,6 +75,7 @@ class CookieServiceTest {
     assertTrue(cookieHeader.contains("my-cookie=my-value"));
     assertTrue(cookieHeader.contains("HttpOnly"));
     assertFalse(cookieHeader.contains("Secure")); // Secure flag is absent
+    assertTrue(cookieHeader.contains("Domain=stellar.atlas"));
   }
 
   @Test
@@ -93,5 +95,6 @@ class CookieServiceTest {
     assertTrue(cookieHeader.contains("cookie-to-clear="));
     assertTrue(cookieHeader.contains("Max-Age=0"));
     assertTrue(cookieHeader.contains("HttpOnly"));
+    assertTrue(cookieHeader.contains("Domain=stellar.atlas"));
   }
 }
