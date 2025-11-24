@@ -63,17 +63,14 @@ POLLUX_PASSWORD=
 # === ANTARES (Auth Api) ===
 # Generate with 'openssl rand -base64 64'
 ANTARES_JWT_SECRET=
+COOKIE_DOMAIN=
 
-# === ADMIN - ANTARES & VEGA ===
+# === ADMIN USER ===
 ADMIN_USERNAME=
 ADMIN_FIRSTNAME=
 ADMIN_LASTNAME=
 ADMIN_EMAIL=
 ADMIN_PASSWORD=
-
-# === ALTAIR (Traefik) ===
-# Generate with 'htpasswd -nb user password', escaping '$' as '$$'
-ALTAIR_DASHBOARD_AUTH=
 ```
 
 ### 2. Generate Local Certificates
