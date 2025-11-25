@@ -65,7 +65,7 @@ class AuthenticationControllerVerifyIT extends BaseIntegrationTest {
             header()
                 .string(
                     "Location",
-                    "https://stellar.atlas/auth/login?returnUrl=https%3A%2F%2Fadmin.stellar.atlas%2Fdashboard"));
+                    "https://stellar.apex/auth/login?returnUrl=https%3A%2F%2Fadmin.stellar.atlas%2Fdashboard"));
   }
 
   @Test
