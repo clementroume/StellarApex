@@ -18,6 +18,7 @@ public abstract class BaseIntegrationTest {
   static final PostgreSQLContainer postgres = new PostgreSQLContainer("postgres:16-alpine");
 
   @ServiceConnection(name = "redis")
+  @SuppressWarnings("resource")
   static final GenericContainer<?> redis =
       new GenericContainer<>("redis:7-alpine").withExposedPorts(6379);
 
@@ -28,8 +29,6 @@ public abstract class BaseIntegrationTest {
 
   @DynamicPropertySource
   static void registerCustomProperties(DynamicPropertyRegistry registry) {
-    // On garde ici uniquement les propriétés métier spécifiques (JWT, Admin)
-    // Les propriétés d'infra (DB, Redis) sont gérées par @ServiceConnection
     registry.add(
         "ANTARES_JWT_SECRET",
         () ->
