@@ -1,12 +1,17 @@
 package apex.stellar.antares.exception;
 
 import jakarta.servlet.http.HttpServletRequest;
+import java.net.URI;
 import java.util.Locale;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.jspecify.annotations.NonNull;
 import org.springframework.context.MessageSource;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
+import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -14,119 +19,137 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.context.request.ServletWebRequest;
+import org.springframework.web.context.request.WebRequest;
+import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
 /**
- * Centralized exception handler for the entire REST API. This class ensures that all error
- * responses are consistent, secure, structured, and internationalized.
+ * Centralized exception handler for the Antares Auth API.
+ *
+ * <p>This class extends {@link ResponseEntityExceptionHandler} to provide standard handling for
+ * Spring MVC exceptions (compliant with RFC 7807 Problem Details) while injecting custom logging
+ * and business-specific error handling logic.
+ *
+ * <p>All responses are formatted as {@link ProblemDetail} objects.
  */
 @RestControllerAdvice
 @RequiredArgsConstructor
 @Slf4j
-public class GlobalExceptionHandler {
+public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
   private final MessageSource messageSource;
 
   /**
-   * Handles {@link ResourceNotFoundException} and returns a translated 404 Not Found response.
+   * Handles {@link ResourceNotFoundException} when a requested resource (e.g., User) cannot be
+   * found. Returns a 404 Not Found status with a localized error message.
    *
-   * @param ex the exception thrown
-   * @param request the HTTP request
-   * @param locale the locale for message translation
-   * @return a standardized error response
+   * @param ex The thrown exception containing the message key and arguments.
+   * @param request The current HTTP request.
+   * @param locale The locale for message translation.
+   * @return A {@link ResponseEntity} containing the {@link ProblemDetail}.
    */
   @ExceptionHandler(ResourceNotFoundException.class)
-  public ResponseEntity<ErrorResponse> handleNotFound(
+  public ResponseEntity<@NonNull ProblemDetail> handleNotFound(
       ResourceNotFoundException ex, HttpServletRequest request, Locale locale) {
 
     log.debug("Resource not found: {}", ex.getMessage());
     String message = messageSource.getMessage(ex.getMessageKey(), ex.getArgs(), locale);
 
-    return buildErrorResponse(HttpStatus.NOT_FOUND, "Resource Not Found", message, request);
+    return createProblemResponse(HttpStatus.NOT_FOUND, "Resource Not Found", message, request);
   }
 
   /**
-   * Handles {@link DataConflictException} and returns a translated 409 Conflict response.
+   * Handles {@link DataConflictException} when a request conflicts with the current state of the
+   * server (e.g., duplicate email registration). Returns a 409 Conflict status.
    *
-   * @param ex the exception thrown
-   * @param request the HTTP request
-   * @param locale the locale for message translation
-   * @return a standardized error response
+   * @param ex The thrown exception.
+   * @param request The current HTTP request.
+   * @param locale The locale for message translation.
+   * @return A {@link ResponseEntity} containing the {@link ProblemDetail}.
    */
   @ExceptionHandler(DataConflictException.class)
-  public ResponseEntity<ErrorResponse> handleConflict(
+  public ResponseEntity<@NonNull ProblemDetail> handleConflict(
       DataConflictException ex, HttpServletRequest request, Locale locale) {
 
     log.warn("Data conflict on request [{}]: {}", request.getRequestURI(), ex.getMessage());
     String message = messageSource.getMessage(ex.getMessageKey(), ex.getArgs(), locale);
 
-    return buildErrorResponse(HttpStatus.CONFLICT, "Data Conflict", message, request);
+    return createProblemResponse(HttpStatus.CONFLICT, "Data Conflict", message, request);
   }
 
   /**
-   * Handles {@link InvalidPasswordException} and returns a translated 400 Bad Request response.
+   * Handles {@link InvalidPasswordException} during password updates. Returns a 400 Bad Request
+   * status.
    *
-   * @param ex the exception thrown
-   * @param request the HTTP request
-   * @param locale the locale for message translation
-   * @return a standardized error response
+   * @param ex The thrown exception.
+   * @param request The current HTTP request.
+   * @param locale The locale for message translation.
+   * @return A {@link ResponseEntity} containing the {@link ProblemDetail}.
    */
   @ExceptionHandler(InvalidPasswordException.class)
-  public ResponseEntity<ErrorResponse> handleInvalidPassword(
+  public ResponseEntity<@NonNull ProblemDetail> handleInvalidPassword(
       InvalidPasswordException ex, HttpServletRequest request, Locale locale) {
 
     log.info("Invalid password attempt for {}", request.getRequestURI());
     String message = messageSource.getMessage(ex.getMessageKey(), null, locale);
 
-    return buildErrorResponse(HttpStatus.BAD_REQUEST, "Invalid Input", message, request);
+    return createProblemResponse(HttpStatus.BAD_REQUEST, "Invalid Input", message, request);
   }
 
   /**
-   * Handles {@link BadCredentialsException} and returns a translated 401 Unauthorized response.
+   * Handles {@link BadCredentialsException} during login attempts. Returns a 401 Unauthorized
+   * status to prevent user enumeration.
    *
-   * @param request the HTTP request
-   * @param locale the locale for message translation
-   * @return a standardized error response
+   * @param request The current HTTP request.
+   * @param locale The locale for message translation.
+   * @return A {@link ResponseEntity} containing the {@link ProblemDetail}.
    */
   @ExceptionHandler(BadCredentialsException.class)
-  public ResponseEntity<ErrorResponse> handleBadCredentials(
+  public ResponseEntity<@NonNull ProblemDetail> handleBadCredentials(
       HttpServletRequest request, Locale locale) {
 
     log.info("Failed login attempt for {}", request.getRequestURI());
     String message = messageSource.getMessage("error.credentials.bad", null, locale);
 
-    return buildErrorResponse(HttpStatus.UNAUTHORIZED, "Bad Credentials", message, request);
+    return createProblemResponse(HttpStatus.UNAUTHORIZED, "Bad Credentials", message, request);
   }
 
   /**
-   * Handles {@link AccessDeniedException} and returns a translated 403 Forbidden response.
+   * Handles {@link AccessDeniedException} when a user lacks the necessary permissions. Returns a
+   * 403 Forbidden status.
    *
-   * @param request the HTTP request
-   * @param locale the locale for message translation
-   * @return a standardized error response
+   * @param request The current HTTP request.
+   * @param locale The locale for message translation.
+   * @return A {@link ResponseEntity} containing the {@link ProblemDetail}.
    */
   @ExceptionHandler(AccessDeniedException.class)
-  public ResponseEntity<ErrorResponse> handleAccessDenied(
+  public ResponseEntity<@NonNull ProblemDetail> handleAccessDenied(
       HttpServletRequest request, Locale locale) {
 
     log.warn("Access denied for {}", request.getRequestURI());
     String message = messageSource.getMessage("error.access.denied", null, locale);
 
-    return buildErrorResponse(HttpStatus.FORBIDDEN, "Access Denied", message, request);
+    return createProblemResponse(HttpStatus.FORBIDDEN, "Access Denied", message, request);
   }
 
   /**
-   * Handles validation errors from DTOs. It formats all field errors into a single message and
-   * returns a 400 Bad Request response.
+   * Overrides the standard Spring MVC validation handler to provide detailed field error logging
+   * and a customized ProblemDetail response.
    *
-   * @param ex the exception thrown
-   * @param request the HTTP request
-   * @param locale the locale for message translation
-   * @return a standardized error response
+   * @param ex The exception containing validation errors.
+   * @param headers The headers to be written to the response.
+   * @param status The selected response status code (400 Bad Request).
+   * @param request The current web request.
+   * @return A {@link ResponseEntity} with the validation errors formatted in the 'detail' field.
    */
-  @ExceptionHandler(MethodArgumentNotValidException.class)
-  public ResponseEntity<ErrorResponse> handleValidationErrors(
-      MethodArgumentNotValidException ex, HttpServletRequest request, Locale locale) {
+  @Override
+  protected ResponseEntity<@NonNull Object> handleMethodArgumentNotValid(
+      MethodArgumentNotValidException ex,
+      @NonNull HttpHeaders headers,
+      @NonNull HttpStatusCode status,
+      WebRequest request) {
 
+    // Aggregates all field errors into a single string for logging and the response detail.
     String errors =
         ex.getBindingResult().getAllErrors().stream()
             .map(
@@ -138,64 +161,56 @@ public class GlobalExceptionHandler {
                 })
             .collect(Collectors.joining("; "));
 
-    log.info("Validation errors on [{}]: {}", request.getRequestURI(), errors);
-    String title = messageSource.getMessage("error.validation", null, locale);
+    // Cast to ServletWebRequest to access the raw HttpServletRequest URI
+    String requestUri = ((ServletWebRequest) request).getRequest().getRequestURI();
+    log.info("Validation errors on [{}]: {}", requestUri, errors);
 
-    return buildErrorResponse(HttpStatus.BAD_REQUEST, title, errors, request);
+    // Customize the standard ProblemDetail provided by the exception
+    ProblemDetail problemDetail = ex.getBody();
+    problemDetail.setTitle(messageSource.getMessage("error.validation", null, request.getLocale()));
+    problemDetail.setDetail(errors);
+    problemDetail.setInstance(URI.create(requestUri));
+
+    return createResponseEntity(problemDetail, headers, status, request);
   }
 
   /**
-   * Handles {@link InvalidTokenException} and returns a translated 401 Unauthorized response.
+   * Catch-all handler for any unexpected runtime exceptions. Logs the full stack trace and returns
+   * a generic 500 Internal Server Error.
    *
-   * @param ex the exception thrown
-   * @param request the HTTP request
-   * @param locale the locale for message translation
-   * @return a standardized error response
-   */
-  @ExceptionHandler(InvalidTokenException.class)
-  public ResponseEntity<ErrorResponse> handleInvalidToken(
-      InvalidTokenException ex, HttpServletRequest request, Locale locale) {
-
-    log.info("Invalid token on request [{}]: {}", request.getRequestURI(), ex.getMessage());
-    String message = messageSource.getMessage(ex.getMessageKey(), null, locale);
-
-    return buildErrorResponse(HttpStatus.UNAUTHORIZED, "Invalid Token", message, request);
-  }
-
-  /**
-   * A generic catch-all handler for any other unhandled {@link Exception}. Logs the full exception
-   * but returns a generic, translated 500 Internal Server Error.
-   *
-   * @param request the HTTP request
-   * @param locale the locale for message translation
-   * @return a standardized error response
+   * @param ex The unexpected exception.
+   * @param request The current HTTP request.
+   * @param locale The locale for message translation.
+   * @return A {@link ResponseEntity} containing the {@link ProblemDetail}.
    */
   @ExceptionHandler(Exception.class)
-  public ResponseEntity<ErrorResponse> handleGeneric(
+  public ResponseEntity<@NonNull ProblemDetail> handleGeneric(
       Exception ex, HttpServletRequest request, Locale locale) {
 
     log.error("Unhandled exception caught for request {}", request.getRequestURI(), ex);
     String message = messageSource.getMessage("error.internal.server", null, locale);
 
-    return buildErrorResponse(
+    return createProblemResponse(
         HttpStatus.INTERNAL_SERVER_ERROR, "Internal Server Error", message, request);
   }
 
   /**
-   * Helper method to build a standardized {@link ErrorResponse}.
+   * Helper method to construct a consistent {@link ResponseEntity} containing a {@link
+   * ProblemDetail}.
    *
-   * @param status the HTTP status to return
-   * @param error the error title
-   * @param message the error message
-   * @param request the HTTP request
-   * @return a standardized error response
+   * @param status The HTTP status code.
+   * @param title The short title of the error type.
+   * @param detail The human-readable explanation of the specific error.
+   * @param request The HTTP request (used to set the 'instance' URI).
+   * @return A fully constructed ResponseEntity.
    */
-  private ResponseEntity<ErrorResponse> buildErrorResponse(
-      HttpStatus status, String error, String message, HttpServletRequest request) {
+  private ResponseEntity<@NonNull ProblemDetail> createProblemResponse(
+      HttpStatus status, String title, String detail, HttpServletRequest request) {
 
-    ErrorResponse response =
-        ErrorResponse.of(status.value(), error, message, request.getRequestURI());
+    ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(status, detail);
+    problemDetail.setTitle(title);
+    problemDetail.setInstance(URI.create(request.getRequestURI()));
 
-    return ResponseEntity.status(status).body(response);
+    return ResponseEntity.status(status).body(problemDetail);
   }
 }
