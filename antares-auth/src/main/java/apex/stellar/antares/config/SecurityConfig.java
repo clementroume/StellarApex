@@ -5,8 +5,8 @@ import static org.springframework.security.config.Customizer.withDefaults;
 import apex.stellar.antares.model.User;
 import com.nimbusds.jose.jwk.source.ImmutableSecret;
 import jakarta.servlet.http.Cookie;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
-import java.util.Base64;
 import java.util.List;
 import javax.crypto.spec.SecretKeySpec;
 import lombok.RequiredArgsConstructor;
@@ -82,7 +82,11 @@ public class SecurityConfig {
                 csrf.csrfTokenRepository(csrfRepository)
                     .csrfTokenRequestHandler(requestHandler)
                     // Exclude public authentication endpoints and actuators from CSRF checks
-                    .ignoringRequestMatchers("/antares/auth/**", "/actuator/**"))
+                    .ignoringRequestMatchers(
+                        "/antares/auth/register",
+                        "/antares/auth/login",
+                        "/antares/auth/refresh-token",
+                        "/actuator/**"))
         .authorizeHttpRequests(
             auth ->
                 auth
@@ -170,8 +174,10 @@ public class SecurityConfig {
    */
   @Bean
   public JwtDecoder jwtDecoder() {
-    byte[] keyBytes = Base64.getDecoder().decode(jwtProperties.secretKey());
-    SecretKeySpec secretKey = new SecretKeySpec(keyBytes, "HmacSHA256");
+
+    SecretKeySpec secretKey =
+        new SecretKeySpec(jwtProperties.secretKey().getBytes(StandardCharsets.UTF_8), "HmacSHA256");
+
     return NimbusJwtDecoder.withSecretKey(secretKey).macAlgorithm(MacAlgorithm.HS256).build();
   }
 
@@ -182,8 +188,9 @@ public class SecurityConfig {
    */
   @Bean
   public JwtEncoder jwtEncoder() {
-    byte[] keyBytes = Base64.getDecoder().decode(jwtProperties.secretKey());
-    return new NimbusJwtEncoder(new ImmutableSecret<>(keyBytes));
+
+    return new NimbusJwtEncoder(
+        new ImmutableSecret<>(jwtProperties.secretKey().getBytes(StandardCharsets.UTF_8)));
   }
 
   /**

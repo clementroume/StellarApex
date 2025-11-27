@@ -133,6 +133,25 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
   }
 
   /**
+   * Handles {@link AccountLockedException} when a user is blocked due to too many failed login
+   * attempts. Returns a 429 Too Many Requests status.
+   *
+   * @param ex The thrown exception.
+   * @param request The current HTTP request.
+   * @param locale The locale for message translation.
+   * @return A {@link ResponseEntity} containing the {@link ProblemDetail}.
+   */
+  @ExceptionHandler(AccountLockedException.class)
+  public ResponseEntity<@NonNull ProblemDetail> handleAccountLocked(
+      AccountLockedException ex, HttpServletRequest request, Locale locale) {
+
+    log.warn("Login blocked for locked account on request {}", request.getRequestURI());
+    String message = messageSource.getMessage(ex.getMessageKey(), ex.getArgs(), locale);
+
+    return createProblemResponse(HttpStatus.TOO_MANY_REQUESTS, "Account Locked", message, request);
+  }
+
+  /**
    * Overrides the standard Spring MVC validation handler to provide detailed field error logging
    * and a customized ProblemDetail response.
    *

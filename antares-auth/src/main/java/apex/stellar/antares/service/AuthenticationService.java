@@ -4,6 +4,7 @@ import apex.stellar.antares.dto.AuthenticationRequest;
 import apex.stellar.antares.dto.RegisterRequest;
 import apex.stellar.antares.dto.TokenRefreshResponse;
 import apex.stellar.antares.dto.UserResponse;
+import apex.stellar.antares.exception.AccountLockedException;
 import apex.stellar.antares.exception.DataConflictException;
 import apex.stellar.antares.exception.ResourceNotFoundException;
 import apex.stellar.antares.mapper.UserMapper;
@@ -13,6 +14,7 @@ import apex.stellar.antares.repository.UserRepository;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -30,6 +32,7 @@ public class AuthenticationService {
   private final UserMapper userMapper;
   private final RefreshTokenService refreshTokenService;
   private final CookieService cookieService;
+  private final LoginAttemptService loginAttemptService;
 
   /**
    * Registers a new user and issues JWT tokens.
@@ -72,18 +75,34 @@ public class AuthenticationService {
   @Transactional
   public UserResponse login(AuthenticationRequest request, HttpServletResponse response) {
 
-    authenticationManager.authenticate(
-        new UsernamePasswordAuthenticationToken(request.email(), request.password()));
+    // Vérifier si le compte est verrouillé
+    if (loginAttemptService.isBlocked(request.email())) {
+      long secondsRemaining = loginAttemptService.getBlockTimeRemaining(request.email());
+      throw new AccountLockedException("error.account.locked", secondsRemaining / 60);
+    }
 
-    User user =
-        repository
-            .findByEmail(request.email())
-            .orElseThrow(
-                () -> new ResourceNotFoundException("error.user.not.found.email", request.email()));
+    try {
+      authenticationManager.authenticate(
+          new UsernamePasswordAuthenticationToken(request.email(), request.password()));
 
-    issueTokensAndSetCookies(user, response);
+      User user =
+          repository
+              .findByEmail(request.email())
+              .orElseThrow(
+                  () ->
+                      new ResourceNotFoundException("error.user.not.found.email", request.email()));
 
-    return userMapper.toUserResponse(user);
+      // Réinitialiser les tentatives en cas de succès
+      loginAttemptService.loginSucceeded(request.email());
+
+      issueTokensAndSetCookies(user, response);
+      return userMapper.toUserResponse(user);
+
+    } catch (BadCredentialsException e) {
+      // Enregistrer l'échec
+      loginAttemptService.loginFailed(request.email());
+      throw e;
+    }
   }
 
   /**

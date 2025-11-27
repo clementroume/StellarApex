@@ -1,99 +1,81 @@
 package apex.stellar.antares.service;
 
 import apex.stellar.antares.config.JwtProperties;
+import apex.stellar.antares.model.RefreshToken;
 import apex.stellar.antares.model.User;
+import apex.stellar.antares.repository.RefreshTokenRepository;
 import apex.stellar.antares.repository.UserRepository;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.time.Duration;
 import java.util.Base64;
 import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Service for managing the lifecycle of refresh tokens using Redis.
- *
- * <p>This service implements a secure storage pattern by hashing tokens and user IDs before storing
- * them in Redis, mitigating the risk of token theft from database access.
+ * Service for managing the lifecycle of refresh tokens using Spring Data Redis.
  */
 @Service
 @RequiredArgsConstructor
 public class RefreshTokenService {
 
-  private static final String REFRESH_TOKEN_PREFIX = "refresh_token::";
-  private static final String USER_TOKEN_PREFIX = "user_refresh_token::";
-  private final RedisTemplate<String, String> redisTemplate;
+  private final RefreshTokenRepository refreshTokenRepository;
   private final UserRepository userRepository;
   private final JwtProperties jwtProperties;
 
   /**
-   * Creates a new refresh token for the given user, deleting any existing token to enforce a "one
-   * session at a time" policy.
+   * Creates a new refresh token for the given user.
+   * Enforces "one session per user" by invalidating any existing token.
    *
-   * @param user The user for whom to create the refresh token.
-   * @return The raw, unhashed refresh token (to be sent in the cookie).
+   * @param user The user.
+   * @return The raw token string.
    */
-  @Transactional
   public String createRefreshToken(User user) {
-
+    // 1. Invalidate previous session
     deleteTokenForUser(user);
 
+    // 2. Generate and Hash token
     String rawToken = UUID.randomUUID().toString();
     String hashedToken = hashValue(rawToken);
-    Duration duration = Duration.ofMillis(jwtProperties.refreshToken().expiration());
 
-    redisTemplate
-        .opsForValue()
-        .set(REFRESH_TOKEN_PREFIX + hashedToken, user.getId().toString(), duration);
+    // 3. Save to Redis via Repository
+    RefreshToken token = RefreshToken.builder()
+        .id(hashedToken)
+        .userId(user.getId())
+        .expiration(jwtProperties.refreshToken().expiration() / 1000) // Seconds
+        .build();
 
-    redisTemplate
-        .opsForValue()
-        .set(USER_TOKEN_PREFIX + hashValue(user.getId().toString()), hashedToken, duration);
+    refreshTokenRepository.save(token);
 
     return rawToken;
   }
 
   /**
-   * Finds a user by their raw refresh token.
+   * Finds a user associated with a raw refresh token.
    *
-   * @param rawToken The raw refresh token from the cookie.
-   * @return An Optional containing the User if found, or empty if not.
+   * @param rawToken The raw token from cookie.
+   * @return The User if found and valid.
    */
   public Optional<User> findUserByToken(String rawToken) {
+    String hashedToken = hashValue(rawToken);
 
-    String userId = redisTemplate.opsForValue().get(REFRESH_TOKEN_PREFIX + hashValue(rawToken));
-
-    return userId != null ? userRepository.findById(Long.parseLong(userId)) : Optional.empty();
+    return refreshTokenRepository.findById(hashedToken)
+        .flatMap(refreshToken -> userRepository.findById(refreshToken.getUserId()));
   }
 
   /**
-   * Deletes all refresh token entries associated with a specific user.
+   * Deletes the refresh token associated with a user.
    *
-   * @param user The user whose token should be deleted.
+   * @param user The user.
    */
   public void deleteTokenForUser(User user) {
-
-    String userKey = USER_TOKEN_PREFIX + hashValue(user.getId().toString());
-    String hashedToken = redisTemplate.opsForValue().get(userKey);
-
-    if (hashedToken != null) {
-      redisTemplate.delete(REFRESH_TOKEN_PREFIX + hashedToken);
-      redisTemplate.delete(userKey);
-    }
+    // Thanks to @Indexed on userId, we can find the token by user ID efficiently
+    refreshTokenRepository.findByUserId(user.getId())
+        .ifPresent(refreshTokenRepository::delete);
   }
 
-  /**
-   * Hashes a string value using SHA-256 and encodes it in Base64.
-   *
-   * @param value The string to hash.
-   * @return The Base64 encoded SHA-256 hash.
-   * @throws IllegalStateException if SHA-256 is not available.
-   */
   private String hashValue(String value) {
     try {
       MessageDigest digest = MessageDigest.getInstance("SHA-256");

@@ -1,40 +1,38 @@
 package apex.stellar.antares.service;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 import apex.stellar.antares.config.JwtProperties;
+import apex.stellar.antares.model.RefreshToken;
 import apex.stellar.antares.model.User;
+import apex.stellar.antares.repository.RefreshTokenRepository;
 import apex.stellar.antares.repository.UserRepository;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.time.Duration;
 import java.util.Base64;
 import java.util.Optional;
 import java.util.UUID;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.data.redis.core.ValueOperations;
 
-/** Unit tests for the {@link RefreshTokenService} with hashing logic. */
 @ExtendWith(MockitoExtension.class)
 class RefreshTokenServiceTest {
 
-  @Mock private RedisTemplate<String, String> redisTemplate;
+  @Mock private RefreshTokenRepository refreshTokenRepository;
   @Mock private UserRepository userRepository;
   @Mock private JwtProperties jwtProperties;
-  @Mock private ValueOperations<String, String> valueOperations;
 
   @InjectMocks private RefreshTokenService refreshTokenService;
 
-  // Helper to replicate the hashing logic for verification
+  // Helper pour reproduire le hashing afin de vérifier les interactions
   private String hashValue(String value) {
     try {
       MessageDigest digest = MessageDigest.getInstance("SHA-256");
@@ -45,49 +43,52 @@ class RefreshTokenServiceTest {
     }
   }
 
-  @BeforeEach
-  void setUp() {
-    // Given
-    when(redisTemplate.opsForValue()).thenReturn(valueOperations);
-  }
-
   @Test
-  @DisplayName("createRefreshToken: should save hashed tokens in Redis and return raw token")
-  void createRefreshToken_shouldGenerateAndSaveTokenInRedis() {
+  @DisplayName(
+      "createRefreshToken: should delete old token, save new hashed token and return raw token")
+  void createRefreshToken_shouldSaveTokenInRepository() {
     // Given
     User user = new User();
     user.setId(1L);
 
     JwtProperties.RefreshToken refreshTokenProps = mock(JwtProperties.RefreshToken.class);
     when(jwtProperties.refreshToken()).thenReturn(refreshTokenProps);
-    when(refreshTokenProps.expiration()).thenReturn(604800000L);
+    when(refreshTokenProps.expiration()).thenReturn(604800000L); // 7 jours
 
     // When
     String rawToken = refreshTokenService.createRefreshToken(user);
 
     // Then
     assertNotNull(rawToken);
-
     String hashedToken = hashValue(rawToken);
-    String hashedUserId = hashValue(user.getId().toString());
 
-    // Verify that the *hashed* values are used as keys in Redis
-    verify(valueOperations).set(eq("refresh_token::" + hashedToken), eq("1"), any(Duration.class));
-    verify(valueOperations)
-        .set(eq("user_refresh_token::" + hashedUserId), eq(hashedToken), any(Duration.class));
+    // 1. Vérifie qu'on essaie de supprimer l'ancien token
+    verify(refreshTokenRepository).findByUserId(user.getId());
+
+    // 2. Capture l'objet sauvegardé pour vérifier ses propriétés
+    ArgumentCaptor<RefreshToken> tokenCaptor = ArgumentCaptor.forClass(RefreshToken.class);
+    verify(refreshTokenRepository).save(tokenCaptor.capture());
+
+    RefreshToken savedToken = tokenCaptor.getValue();
+    assertEquals(hashedToken, savedToken.getId()); // L'ID doit être le hash
+    assertEquals(user.getId(), savedToken.getUserId());
+    assertEquals(604800L, savedToken.getExpiration()); // 7 jours en secondes
   }
 
   @Test
-  @DisplayName("findUserByToken: should use hashed token for lookup")
-  void findUserByToken_shouldReturnUserIfTokenIsValid() {
+  @DisplayName("findUserByToken: should return User if token exists in repo")
+  void findUserByToken_shouldReturnUser_whenTokenExists() {
     // Given
     String rawToken = UUID.randomUUID().toString();
     String hashedToken = hashValue(rawToken);
     Long userId = 1L;
+
     User user = new User();
     user.setId(userId);
 
-    when(valueOperations.get("refresh_token::" + hashedToken)).thenReturn(userId.toString());
+    RefreshToken tokenEntity = RefreshToken.builder().id(hashedToken).userId(userId).build();
+
+    when(refreshTokenRepository.findById(hashedToken)).thenReturn(Optional.of(tokenEntity));
     when(userRepository.findById(userId)).thenReturn(Optional.of(user));
 
     // When
@@ -99,53 +100,51 @@ class RefreshTokenServiceTest {
   }
 
   @Test
-  @DisplayName("findUserByToken: should return empty if token is not found")
-  void findUserByToken_shouldReturnEmptyIfTokenIsExpiredOrNotFound() {
+  @DisplayName("findUserByToken: should return empty if token not in repo")
+  void findUserByToken_shouldReturnEmpty_whenTokenMissing() {
     // Given
     String rawToken = UUID.randomUUID().toString();
     String hashedToken = hashValue(rawToken);
-    when(valueOperations.get("refresh_token::" + hashedToken)).thenReturn(null);
+
+    when(refreshTokenRepository.findById(hashedToken)).thenReturn(Optional.empty());
 
     // When
     Optional<User> result = refreshTokenService.findUserByToken(rawToken);
 
     // Then
     assertTrue(result.isEmpty());
-    verifyNoInteractions(userRepository); // Repository is not queried
+    verifyNoInteractions(userRepository);
   }
 
   @Test
-  @DisplayName("deleteTokenForUser: should use hashed IDs and tokens to delete keys")
-  void deleteTokenForUser_shouldDeleteKeysIfTokenExists() {
+  @DisplayName("deleteTokenForUser: should find by userId and delete")
+  void deleteTokenForUser_shouldFindAndDelete() {
     // Given
     User user = new User();
-    user.setId(1L);
-    String hashedUserId = hashValue(user.getId().toString());
-    String hashedToken = "hashed-abc-123";
+    user.setId(10L);
+    RefreshToken existingToken = RefreshToken.builder().id("someHash").userId(10L).build();
 
-    when(valueOperations.get("user_refresh_token::" + hashedUserId)).thenReturn(hashedToken);
+    when(refreshTokenRepository.findByUserId(10L)).thenReturn(Optional.of(existingToken));
 
     // When
     refreshTokenService.deleteTokenForUser(user);
 
     // Then
-    verify(redisTemplate).delete("refresh_token::" + hashedToken);
-    verify(redisTemplate).delete("user_refresh_token::" + hashedUserId);
+    verify(refreshTokenRepository).delete(existingToken);
   }
 
   @Test
-  @DisplayName("deleteTokenForUser: should do nothing if no token exists")
-  void deleteTokenForUser_shouldDoNothingIfNoTokenExists() {
+  @DisplayName("deleteTokenForUser: should do nothing if no token found")
+  void deleteTokenForUser_shouldDoNothing_whenEmpty() {
     // Given
     User user = new User();
-    user.setId(1L);
-    String hashedUserId = hashValue(user.getId().toString());
-    when(valueOperations.get("user_refresh_token::" + hashedUserId)).thenReturn(null);
+    user.setId(20L);
+    when(refreshTokenRepository.findByUserId(20L)).thenReturn(Optional.empty());
 
     // When
     refreshTokenService.deleteTokenForUser(user);
 
     // Then
-    verify(redisTemplate, never()).delete(anyString());
+    verify(refreshTokenRepository, never()).delete(any());
   }
 }
