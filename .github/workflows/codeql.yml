@@ -6,48 +6,79 @@ on:
   pull_request:
     branches: [ "main" ]
   schedule:
+    # Weekly scan on Saturdays at 21:42 UTC
     - cron: '42 21 * * 6'
 
+permissions:
+  contents: read
+  pull-requests: read # Required for 'dorny/paths-filter' to detect changes in PRs
+  security-events: write # Required to upload CodeQL analysis results
+  actions: read
+
 jobs:
-  analyze:
-    name: Analyze (${{ matrix.language }})
-    runs-on: ${{ (matrix.language == 'swift' && 'macos-latest') || 'ubuntu-latest' }}
+  # ==============================================================================
+  # JOB 1: CHANGE DETECTION (FILTER)
+  # ==============================================================================
+  # Determines which parts of the monorepo have changed to avoid unnecessary scans.
+  filter:
+    runs-on: ubuntu-latest
+    outputs:
+      frontend: ${{ steps.filter.outputs.frontend }}
+      backend: ${{ steps.filter.outputs.backend }}
+      shared: ${{ steps.filter.outputs.shared }}
+      is_schedule: ${{ github.event_name == 'schedule' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            frontend:
+              - 'sirius-app/**'
+            backend:
+              - 'antares-auth/**'
+              - 'vega-admin/**'
+            shared:
+              - '.github/workflows/codeql.yml'
+              - 'docker-compose.yml'
+
+  # ==============================================================================
+  # JOB 2: BACKEND ANALYSIS (JAVA/KOTLIN)
+  # ==============================================================================
+  analyze-java:
+    needs: filter
+    # Run if: Scheduled scan OR Backend changes OR Shared config changes
+    if: needs.filter.outputs.is_schedule == 'true' || needs.filter.outputs.backend == 'true' || needs.filter.outputs.shared == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
     permissions:
       security-events: write
-      packages: read
       actions: read
       contents: read
-
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - language: actions
-            build-mode: none
-          - language: java-kotlin
-            build-mode: manual
-          - language: javascript-typescript
-            build-mode: none
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      # Using Eclipse Temurin as requested (consistent with the main CI pipeline)
       - name: Setup JDK 25
-        if: matrix.language == 'java-kotlin'
         uses: actions/setup-java@v5
         with:
           java-version: 25
           distribution: temurin
+          cache: maven
 
+      # Initialize CodeQL for Java.
+      # Build mode is set to 'manual' to support the multi-module Maven structure.
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v4
         with:
-          languages: ${{ matrix.language }}
-          build-mode: ${{ matrix.build-mode }}
+          languages: java-kotlin
+          build-mode: manual
 
-      - name: Run manual build steps
-        if: matrix.build-mode == 'manual'
+      # Manually build both backend services so CodeQL can trace the compilation.
+      # We skip tests to speed up the analysis process.
+      - name: Build Backend Services
         shell: bash
         run: |
           echo "Building Antares Auth..."
@@ -63,4 +94,63 @@ jobs:
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v4
         with:
-          category: "/language:${{matrix.language}}"
+          category: "/language:java-kotlin"
+
+  # ==============================================================================
+  # JOB 3: FRONTEND ANALYSIS (JAVASCRIPT/TYPESCRIPT)
+  # ==============================================================================
+  analyze-javascript:
+    needs: filter
+    # Run if: Scheduled scan OR Frontend changes OR Shared config changes
+    if: needs.filter.outputs.is_schedule == 'true' || needs.filter.outputs.frontend == 'true' || needs.filter.outputs.shared == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    permissions:
+      security-events: write
+      actions: read
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # No build is required for interpreted languages like JS/TS.
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v4
+        with:
+          languages: javascript-typescript
+          build-mode: none
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v4
+        with:
+          category: "/language:javascript-typescript"
+
+  # ==============================================================================
+  # JOB 4: WORKFLOW ANALYSIS (GITHUB ACTIONS)
+  # ==============================================================================
+  analyze-actions:
+    needs: filter
+    # Run if: Scheduled scan OR Shared config changes (where workflows usually live)
+    if: needs.filter.outputs.is_schedule == 'true' || needs.filter.outputs.shared == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    permissions:
+      security-events: write
+      actions: read
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v4
+        with:
+          languages: actions
+          build-mode: none
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v4
+        with:
+          category: "/language:actions"
