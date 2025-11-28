@@ -83,12 +83,23 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Set up JDK 21
+      - name: Set up JDK 25
         uses: actions/setup-java@v5
         with:
           java-version: '25'
           distribution: 'temurin'
           cache: 'maven'
+
+      - name: Verify Java & Maven (diagnostic)
+        run: |
+          echo "=== java / javac / mvn versions ==="
+          java -version || true
+          javac -version || true
+          ./mvnw -v || mvn -v || true
+          echo "JAVA_HOME=${JAVA_HOME}"
+          echo "Which java: $(which java || echo 'not found')"
+          echo "Which javac: $(which javac || echo 'not found')"
+          echo "---- End diagnostics ----"
 
       - name: Build & test auth backend
         working-directory: ./antares-auth
@@ -113,12 +124,23 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Set up JDK 21
+      - name: Set up JDK 25
         uses: actions/setup-java@v5
         with:
           java-version: '25'
           distribution: 'temurin'
           cache: 'maven'
+
+      - name: Verify Java & Maven (diagnostic)
+        run: |
+          echo "=== java / javac / mvn versions ==="
+          java -version || true
+          javac -version || true
+          ./mvnw -v || mvn -v || true
+          echo "JAVA_HOME=${JAVA_HOME}"
+          echo "Which java: $(which java || echo 'not found')"
+          echo "Which javac: $(which javac || echo 'not found')"
+          echo "---- End diagnostics ----"
 
       - name: Build & test admin backend
         working-directory: ./vega-admin
