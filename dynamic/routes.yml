@@ -52,7 +52,7 @@ http:
       middlewares: [ "secure-headers" ]         # Apply security headers.
 
     # --- 2. Antares-Auth Sirius Router ---
-    antares-auth-sirius-router:
+    antares-auth-router:
       rule: "Host(`stellar.apex`) && PathPrefix(`/antares`)" # Match 'stellar.apex/antares...'.
       entryPoints: [ "websecure" ]              # Use the 'websecure' (HTTPS) entrypoint.
       tls: true                                 # Enable TLS (HTTPS).
@@ -62,16 +62,30 @@ http:
         - "rate-limit-api"
         - "secure-headers"
 
-    # --- 3. Antares-Auth Swagger Router ---
-    antares-auth-swagger-router:
-      rule: "Host(`stellar.apex`) && (PathPrefix(`/swagger-ui`) || PathPrefix(`/v3/api-docs`))"
+    # --- 3. Aldebaran-Training Sirius Router ---
+    aldebaran-training-router:
+      rule: "Host(`stellar.apex`) && PathPrefix(`/aldebaran`)"
+      entryPoints: [ "websecure" ]
+      tls: true
+      priority: 10
+      service: "aldebaran-training-service"
+      middlewares:
+        - "rate-limit-api"
+        - "secure-headers"
+
+    # --- 4. Bellatrix-Swagger Router ---
+    bellatrix-swagger-router:
+      rule: "Host(`docs.stellar.apex`) || (Host(`stellar.apex`) && (PathPrefix(`/swagger-ui`) || PathPrefix(`/v3/api-docs/antares`) || PathPrefix(`/v3/api-docs/orion`)))"
       entryPoints: [ "websecure" ]              # Use the 'websecure' (HTTPS) entrypoint.
       tls: true                                 # Enable TLS (HTTPS).
-      priority: 10                              # Higher priority to override the main app router.
-      service: "antares-auth-service"           # Route to the 'antares-auth' service.
-      middlewares: [ "rate-limit-api" ]         # Apply API rate limiting.
+      priority: 15                              # Higher priority to override the main app router.
+      service: "bellatrix-swagger-service"           # Route to the 'antares-auth' service.
+      middlewares:
+        - "forward-auth"                        # Secure with Forward Auth.
+        - "secure-headers"
+        - "rate-limit-admin"                    # Secure with rate limiting.
 
-    # --- 4. Vega-Admin Router ---
+    # --- 5. Vega-Admin Router ---
     vega-admin-router:
       rule: "Host(`admin.stellar.apex`)"        # Match 'admin.stellar.apex'.
       entryPoints: [ "websecure" ]              # Use the 'websecure' (HTTPS) entrypoint.
@@ -81,7 +95,7 @@ http:
         - "forward-auth"                        # Secure with Forward Auth.
         - "rate-limit-admin"                    # Secure with rate limiting.
 
-    # --- 5. Altair-Proxy Router ---
+    # --- 6. Altair-Proxy Router ---
     altair-proxy-router:
       rule: "Host(`proxy.stellar.apex`)"        # Match 'proxy.stellar.apex'.
       entryPoints: [ "websecure" ]              # Use the 'websecure' (HTTPS) entrypoint.
@@ -107,7 +121,19 @@ http:
         servers:
           - url: "http://antares-auth:8080"
 
-    # --- 3. Vega-Admin Service ---
+    # --- 3. Aldebaran-Training Service ---
+    aldebaran-training-service:
+      loadBalancer:
+        servers:
+          - url: "http://aldebaran-training:8081"
+
+    # --- 4. Bellatrix-Swagger Service ---
+    bellatrix-swagger-service:
+      loadBalancer:
+        servers:
+          - url: "http://bellatrix-swagger:8888"
+
+    # --- 5. Vega-Admin Service ---
     vega-admin-service:
       loadBalancer:
         servers:

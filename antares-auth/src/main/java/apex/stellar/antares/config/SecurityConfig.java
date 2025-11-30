@@ -91,13 +91,14 @@ public class SecurityConfig {
                         "/antares/auth/register",
                         "/antares/auth/login",
                         "/antares/auth/refresh-token",
-                        "/actuator/**"))
+                        "/actuator/**",
+                        "/v3/api-docs/**"))
         .authorizeHttpRequests(
             auth ->
                 auth
                     // Secure Documentation and Admin endpoints (ADMIN only)
-                    .requestMatchers("/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**")
-                    .hasRole("ADMIN")
+                    .requestMatchers("/v3/api-docs", "/v3/api-docs/**")
+                    .permitAll()
                     // Allow public access to Authentication & Health endpoints
                     .requestMatchers("/antares/auth/**", "/actuator/**")
                     .permitAll()

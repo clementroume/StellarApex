@@ -2,7 +2,7 @@
 <project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
   xmlns="http://maven.apache.org/POM/4.0.0"
   xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
-  <artifactId>antares</artifactId>
+  <artifactId>aldebaran</artifactId>
   <build>
     <plugins>
 
@@ -69,8 +69,9 @@
 
     </plugins>
   </build>
-  <dependencies>
 
+
+  <dependencies>
     <dependency>
       <artifactId>spring-boot-starter-webmvc</artifactId>
       <groupId>org.springframework.boot</groupId>
@@ -158,6 +159,17 @@
     </dependency>
 
     <dependency>
+      <artifactId>commons-csv</artifactId>
+      <groupId>org.apache.commons</groupId>
+      <version>1.11.0</version>
+    </dependency>
+    <dependency>
+      <artifactId>poi-ooxml</artifactId>
+      <groupId>org.apache.poi</groupId>
+      <version>5.3.0</version>
+    </dependency>
+
+    <dependency>
       <artifactId>spring-boot-starter-webmvc-test</artifactId>
       <groupId>org.springframework.boot</groupId>
       <scope>test</scope>
@@ -198,11 +210,11 @@
     </dependencies>
   </dependencyManagement>
 
-  <description>Antares Auth Service (Identity/User Core)</description>
+  <description>Aldebaran Training Service (Workouts and Performance)</description>
   <groupId>apex.stellar</groupId>
   <modelVersion>4.0.0</modelVersion>
 
-  <name>antares-auth</name>
+  <name>aldebaran-training</name>
 
   <parent>
     <artifactId>spring-boot-starter-parent</artifactId>

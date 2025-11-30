@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns="http://maven.apache.org/POM/4.0.0"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <artifactId>bellatrix</artifactId>
+  <build>
+    <plugins>
+      <plugin>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <configuration>
+          <annotationProcessorPaths>
+            <path>
+              <artifactId>lombok</artifactId>
+              <groupId>org.projectlombok</groupId>
+              <version>${lombok.version}</version>
+            </path>
+          </annotationProcessorPaths>
+        </configuration>
+        <groupId>org.apache.maven.plugins</groupId>
+      </plugin>
+
+      <plugin>
+        <artifactId>spring-boot-maven-plugin</artifactId>
+        <configuration>
+          <excludes>
+            <exclude>
+              <artifactId>lombok</artifactId>
+              <groupId>org.projectlombok</groupId>
+            </exclude>
+          </excludes>
+          <layers>
+            <enabled>true</enabled>
+          </layers>
+        </configuration>
+        <groupId>org.springframework.boot</groupId>
+      </plugin>
+    </plugins>
+  </build>
+
+  <dependencies>
+    <dependency>
+      <artifactId>spring-boot-starter-webmvc</artifactId>
+      <groupId>org.springframework.boot</groupId>
+    </dependency>
+    <dependency>
+      <artifactId>spring-boot-starter-security</artifactId>
+      <groupId>org.springframework.boot</groupId>
+    </dependency>
+    <dependency>
+      <artifactId>spring-boot-starter-actuator</artifactId>
+      <groupId>org.springframework.boot</groupId>
+    </dependency>
+    <dependency>
+      <artifactId>spring-boot-starter-security-oauth2-resource-server</artifactId>
+      <groupId>org.springframework.boot</groupId>
+    </dependency>
+    <dependency>
+      <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+      <groupId>org.springdoc</groupId>
+      <version>${springdoc.version}</version>
+    </dependency>
+    <dependency>
+      <artifactId>lombok</artifactId>
+      <groupId>org.projectlombok</groupId>
+      <optional>true</optional>
+    </dependency>
+    <dependency>
+      <artifactId>spring-boot-starter-webmvc-test</artifactId>
+      <groupId>org.springframework.boot</groupId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <artifactId>spring-boot-admin-starter-client</artifactId>
+      <groupId>de.codecentric</groupId>
+    </dependency>
+  </dependencies>
+
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <artifactId>spring-boot-admin-dependencies</artifactId>
+        <groupId>de.codecentric</groupId>
+        <scope>import</scope>
+        <type>pom</type>
+        <version>${spring-boot-admin.version}</version>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+
+  <description>Bellatrix Swagger Service</description>
+  <groupId>apex.stellar</groupId>
+  <modelVersion>4.0.0</modelVersion>
+
+  <name>bellatrix-swagger</name>
+
+  <parent>
+    <artifactId>spring-boot-starter-parent</artifactId>
+    <groupId>org.springframework.boot</groupId>
+    <relativePath/>
+    <version>4.0.0</version>
+  </parent>
+
+  <properties>
+    <java.version>25</java.version>
+    <spring-boot-admin.version>3.5.6</spring-boot-admin.version>
+    <springdoc.version>3.0.0</springdoc.version>
+  </properties>
+
+  <version>1.0.0</version>
+
+</project>

@@ -68,7 +68,41 @@ services:
     networks:
       - stellar-net
 
-  # --- 4. VEGA - ADMIN SPRING BOOT SERVER ---
+  # --- 4. ALDEBARAN - WORKOUTS & PERFORMANCE SPRINGBOOT API ---
+  aldebaran-training:
+    build:
+      context: ./aldebaran-training
+      dockerfile: Dockerfile
+    image: aldebaran-training:latest
+    container_name: aldebaran-training
+    env_file: ./.env
+    depends_on:
+      castor-db:
+        condition: service_healthy
+      pollux-cache:
+        condition: service_healthy
+      antares-auth:
+        condition: service_started
+    restart: unless-stopped
+    networks:
+      - stellar-net
+
+  # --- 4. BELLATRIX - SWAGGER API DOCS SERVER ---
+  bellatrix-swagger:
+    build:
+      context: ./bellatrix-swagger
+      dockerfile: Dockerfile
+    image: bellatrix-swagger:latest
+    container_name: bellatrix-swagger
+    env_file: ./.env
+    depends_on:
+      - antares-auth
+      - aldebaran-training
+    restart: unless-stopped
+    networks:
+      - stellar-net
+
+  # --- 5. VEGA - ADMIN SPRING BOOT SERVER ---
   vega-admin:
     build:
       context: ./vega-admin
@@ -82,7 +116,7 @@ services:
       - antares-auth
     restart: unless-stopped
 
-  # --- 5. CASTOR & POLLUX - DATABASE & CACHE ---
+  # --- 6. CASTOR & POLLUX - DATABASE & CACHE ---
   castor-db:
     image: postgres:16-alpine
     container_name: castor-db

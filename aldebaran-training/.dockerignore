@@ -1,0 +1,29 @@
+# Ignore Maven build output
+target/
+pom.xml.tag
+pom.xml.bak
+
+# Ignore local IDE files and directories
+.project
+.settings
+.classpath
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# Ignore temporary/local files
+*.log
+*.tmp
+
+# Ignore OS-specific files
+.DS_Store
+Thumbs.db
+
+# Ignore Git files
+.git/
+.gitignore
+
+# Ignore files not needed for the build context
+mvnw.cmd
+.mvn/wrapper/maven-wrapper.jar
