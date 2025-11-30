@@ -75,7 +75,7 @@ http:
 
     # --- 4. Bellatrix-Swagger Router ---
     bellatrix-swagger-router:
-      rule: "Host(`docs.stellar.apex`) || (Host(`stellar.apex`) && (PathPrefix(`/swagger-ui`) || PathPrefix(`/v3/api-docs/antares`) || PathPrefix(`/v3/api-docs/orion`)))"
+      rule: "Host(`docs.stellar.apex`)"
       entryPoints: [ "websecure" ]              # Use the 'websecure' (HTTPS) entrypoint.
       tls: true                                 # Enable TLS (HTTPS).
       priority: 15                              # Higher priority to override the main app router.

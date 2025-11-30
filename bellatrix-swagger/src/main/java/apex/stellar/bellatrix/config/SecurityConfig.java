@@ -1,4 +1,5 @@
 package apex.stellar.bellatrix.config;
+
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
@@ -20,10 +21,7 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
-/**
- * Security configuration for Swagger Gateway.
- * Requires ADMIN role to access documentation.
- */
+/** Security configuration for Swagger Gateway. Requires ADMIN role to access documentation. */
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
@@ -43,9 +41,10 @@ public class SecurityConfig {
             auth ->
                 auth.requestMatchers("/actuator/**")
                     .permitAll()
-                    .requestMatchers("/", "/index.html")
+                    .requestMatchers("/", "/index.html", "/swagger-ui.html")
                     .permitAll()
-                    .requestMatchers("/webjars/**", "/swagger-resources/**")
+                    .requestMatchers(
+                        "/webjars/**", "/swagger-resources/**", "/swagger-ui/**", "/v3/api-docs/**")
                     .permitAll()
                     .anyRequest()
                     .hasRole("ADMIN"))

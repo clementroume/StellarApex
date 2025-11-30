@@ -20,7 +20,7 @@ public class BellatrixConfig {
   @Value("${swagger.services.antares.url}")
   private String antaresUrl;
 
-  @Value("${swagger.services.orion.url}")
+  @Value("${swagger.services.aldebaran.url}")
   private String aldebaranUrl;
 
   @Bean
@@ -60,25 +60,25 @@ public class BellatrixConfig {
                         .description("JWT Access Token (HttpOnly Cookie)")));
   }
 
-//  /** Group for Antares Auth API. */
-//  @Bean
-//  public GroupedOpenApi antaresAuthApi() {
-//    return GroupedOpenApi.builder()
-//        .group("1-antares-auth")
-//        .displayName("Antares Auth")
-//        .pathsToMatch("/antares/**")
-//        .build();
-//  }
-//
-//  /** Group for Orion Training API. */
-//  @Bean
-//  public GroupedOpenApi aldebaranTrainingApi() {
-//    return GroupedOpenApi.builder()
-//        .group("2-aldebaran-training")
-//        .displayName("Aldebaran Training")
-//        .pathsToMatch("/aldebaran/**")
-//        .build();
-//  }
+  //  /** Group for Antares Auth API. */
+  //  @Bean
+  //  public GroupedOpenApi antaresAuthApi() {
+  //    return GroupedOpenApi.builder()
+  //        .group("1-antares-auth")
+  //        .displayName("Antares Auth")
+  //        .pathsToMatch("/antares/**")
+  //        .build();
+  //  }
+  //
+  //  /** Group for Orion Training API. */
+  //  @Bean
+  //  public GroupedOpenApi aldebaranTrainingApi() {
+  //    return GroupedOpenApi.builder()
+  //        .group("2-aldebaran-training")
+  //        .displayName("Aldebaran Training")
+  //        .pathsToMatch("/aldebaran/**")
+  //        .build();
+  //  }
 
   //  /** Example for future services - uncomment when ready. */
   //  @Bean

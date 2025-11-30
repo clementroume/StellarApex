@@ -17,6 +17,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
@@ -24,6 +25,8 @@ import org.springframework.web.bind.annotation.RestController;
  *
  * <p>This controller fetches the OpenAPI JSON from each service and optionally modifies the
  * 'servers' field to ensure correct URL resolution in Swagger UI.
+ *
+ * <p>IMPORTANT: Uses @Controller (not @RestController) to enable "redirect:" syntax
  */
 @RestController
 @RequiredArgsConstructor
@@ -38,7 +41,7 @@ public class BellatrixController {
   @Value("${swagger.services.antares.url}")
   private String antaresUrl;
 
-  @Value("${swagger.services.orion.url}")
+  @Value("${swagger.services.aldebaran.url}")
   private String aldebaranUrl;
 
   @Value("${swagger.gateway.public-url}")
@@ -47,23 +50,32 @@ public class BellatrixController {
   /**
    * Redirects the root path to the Swagger UI page. This prevents the "file download" behavior when
    * accessing the root URL.
+   *
+   * <p>CRITICAL: @Controller (not @RestController) is required for "redirect:" to work
+   */
+  /**
+   * Redirects the root URL to the Swagger UI.
    */
   @GetMapping("/")
-  public ResponseEntity<@NonNull Void> index() {
-    return ResponseEntity.status(HttpStatus.FOUND).location(URI.create("/swagger-ui.html")).build();
+  public ResponseEntity<Void> index() {
+    return ResponseEntity.status(HttpStatus.FOUND)
+        .location(URI.create("/swagger-ui.html"))
+        .build();
   }
 
   /** Proxies the OpenAPI spec from Antares Auth service. */
   @GetMapping(value = "/v3/api-docs/antares", produces = MediaType.APPLICATION_JSON_VALUE)
+  @ResponseBody
   public ResponseEntity<@NonNull String> getAntaresApiDocs() {
     log.debug("Fetching Antares API docs from: {}", antaresUrl);
     return fetchAndModifyApiDocs(antaresUrl + "/v3/api-docs", "/antares");
   }
 
-  /** Proxies the OpenAPI spec from Orion Training service. */
+  /** Proxies the OpenAPI spec from Aldebaran Training service. */
   @GetMapping(value = "/v3/api-docs/aldebaran", produces = MediaType.APPLICATION_JSON_VALUE)
+  @ResponseBody
   public ResponseEntity<@NonNull String> getAldebaranApiDocs() {
-    log.debug("Fetching Orion API docs from: {}", aldebaranUrl);
+    log.debug("Fetching Aldebaran API docs from: {}", aldebaranUrl);
     return fetchAndModifyApiDocs(aldebaranUrl + "/v3/api-docs", "/aldebaran");
   }
 
