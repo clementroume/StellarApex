@@ -37,7 +37,9 @@ public class SecurityConfig {
   public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 
     http.cors(withDefaults())
-        .csrf(csrf -> csrf.ignoringRequestMatchers("/orion/**", "/actuator/**", "/v3/api-docs/**"))
+        .csrf(
+            csrf ->
+                csrf.ignoringRequestMatchers("/aldebaran/**", "/actuator/**", "/v3/api-docs/**"))
         .authorizeHttpRequests(
             auth ->
                 auth

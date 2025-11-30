@@ -1,4 +1,4 @@
-package apex.stellar.bellatrix.config;
+package apex.stellar.aldebaran.config;
 
 import io.swagger.v3.oas.models.Components;
 import io.swagger.v3.oas.models.OpenAPI;
@@ -9,27 +9,20 @@ import io.swagger.v3.oas.models.security.SecurityRequirement;
 import io.swagger.v3.oas.models.security.SecurityScheme;
 import io.swagger.v3.oas.models.servers.Server;
 import java.util.List;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-/** Aggregates multiple OpenAPI specifications from different microservices. */
+/** OpenAPI/Swagger configuration for Orion Training API. */
 @Configuration
-public class BellatrixConfig {
-
-  @Value("${swagger.services.antares.url}")
-  private String antaresUrl;
-
-  @Value("${swagger.services.orion.url}")
-  private String aldebaranUrl;
+public class OpenApiConfig {
 
   @Bean
-  public OpenAPI customOpenAPI() {
+  public OpenAPI orionOpenAPI() {
     return new OpenAPI()
         .info(
             new Info()
-                .title("StellarApex Platform API")
-                .description("Unified API documentation for all microservices")
+                .title("Orion Training API")
+                .description("Workout Management, Exercise Catalog & Performance Analytics")
                 .version("v1.0.0")
                 .contact(
                     new Contact()
@@ -40,7 +33,10 @@ public class BellatrixConfig {
                     new License()
                         .name("Apache 2.0")
                         .url("https://www.apache.org/licenses/LICENSE-2.0")))
-        .servers(List.of(new Server().url("https://stellar.apex").description("Production")))
+        .servers(
+            List.of(
+                new Server().url("https://stellar.apex").description("Production"),
+                new Server().url("http://localhost:8081").description("Local Development")))
         .addSecurityItem(new SecurityRequirement().addList("bearerAuth").addList("cookieAuth"))
         .components(
             new Components()
@@ -59,34 +55,4 @@ public class BellatrixConfig {
                         .name("stellar_access_token")
                         .description("JWT Access Token (HttpOnly Cookie)")));
   }
-
-//  /** Group for Antares Auth API. */
-//  @Bean
-//  public GroupedOpenApi antaresAuthApi() {
-//    return GroupedOpenApi.builder()
-//        .group("1-antares-auth")
-//        .displayName("Antares Auth")
-//        .pathsToMatch("/antares/**")
-//        .build();
-//  }
-//
-//  /** Group for Orion Training API. */
-//  @Bean
-//  public GroupedOpenApi aldebaranTrainingApi() {
-//    return GroupedOpenApi.builder()
-//        .group("2-aldebaran-training")
-//        .displayName("Aldebaran Training")
-//        .pathsToMatch("/aldebaran/**")
-//        .build();
-//  }
-
-  //  /** Example for future services - uncomment when ready. */
-  //  @Bean
-  //  public GroupedOpenApi vegaPlanningApi() {
-  //    return GroupedOpenApi.builder()
-  //        .group("3-vega-planning")
-  //        .displayName("📅 Vega Planning API")
-  //        .pathsToMatch("/vega/**")
-  //        .build();
-  //  }
 }

@@ -13,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.NonNull;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -42,6 +43,15 @@ public class BellatrixController {
 
   @Value("${swagger.gateway.public-url}")
   private String publicUrl;
+
+  /**
+   * Redirects the root path to the Swagger UI page. This prevents the "file download" behavior when
+   * accessing the root URL.
+   */
+  @GetMapping("/")
+  public ResponseEntity<@NonNull Void> index() {
+    return ResponseEntity.status(HttpStatus.FOUND).location(URI.create("/swagger-ui.html")).build();
+  }
 
   /** Proxies the OpenAPI spec from Antares Auth service. */
   @GetMapping(value = "/v3/api-docs/antares", produces = MediaType.APPLICATION_JSON_VALUE)
