@@ -1,5 +1,6 @@
 package apex.stellar.bellatrix.config;
 
+import jakarta.servlet.http.Cookie;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
@@ -71,7 +72,7 @@ public class SecurityConfig {
       if (request.getCookies() != null) {
         return Arrays.stream(request.getCookies())
             .filter(c -> "stellar_access_token".equals(c.getName()))
-            .map(jakarta.servlet.http.Cookie::getValue)
+            .map(Cookie::getValue)
             .findFirst()
             .orElseGet(() -> resolver.resolve(request));
       }

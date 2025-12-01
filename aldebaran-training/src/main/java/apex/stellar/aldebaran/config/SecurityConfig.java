@@ -42,9 +42,7 @@ public class SecurityConfig {
                 csrf.ignoringRequestMatchers("/aldebaran/**", "/actuator/**", "/v3/api-docs/**"))
         .authorizeHttpRequests(
             auth ->
-                auth
-                    // ✅ OpenAPI endpoint accessible only from internal network
-                    .requestMatchers("/v3/api-docs", "/v3/api-docs/**")
+                auth.requestMatchers("/v3/api-docs", "/v3/api-docs/**")
                     .permitAll()
                     // Actuator endpoints
                     .requestMatchers("/actuator/**")

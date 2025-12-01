@@ -17,7 +17,7 @@ import org.springframework.context.annotation.Configuration;
 public class OpenApiConfig {
 
   @Bean
-  public OpenAPI orionOpenAPI() {
+  public OpenAPI aldebaranOpenAPI() {
     return new OpenAPI()
         .info(
             new Info()
