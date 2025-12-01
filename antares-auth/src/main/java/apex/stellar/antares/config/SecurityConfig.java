@@ -91,13 +91,12 @@ public class SecurityConfig {
                         "/antares/auth/register",
                         "/antares/auth/login",
                         "/antares/auth/refresh-token",
-                        "/actuator/**",
-                        "/v3/api-docs/**"))
+                        "/actuator/**"))
         .authorizeHttpRequests(
             auth ->
                 auth
                     // Secure Documentation and Admin endpoints (ADMIN only)
-                    .requestMatchers("/v3/api-docs", "/v3/api-docs/**")
+                    .requestMatchers("/antares-docs", "/antares-docs/**")
                     .permitAll()
                     // Allow public access to Authentication & Health endpoints
                     .requestMatchers("/antares/auth/**", "/actuator/**")
@@ -235,7 +234,7 @@ public class SecurityConfig {
   @Bean
   public CorsConfigurationSource corsConfigurationSource() {
     CorsConfiguration configuration = new CorsConfiguration();
-    configuration.setAllowedOriginPatterns(List.of(allowedOrigins, "https://*.stellar.apex"));
+    configuration.setAllowedOriginPatterns(List.of(allowedOrigins));
     configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
     configuration.setAllowedHeaders(List.of("Authorization", "Content-Type", "X-XSRF-TOKEN"));
     configuration.setAllowCredentials(true); // Essential for Cookie-based auth

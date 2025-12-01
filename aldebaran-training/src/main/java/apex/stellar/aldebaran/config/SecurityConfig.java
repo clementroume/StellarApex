@@ -39,10 +39,10 @@ public class SecurityConfig {
     http.cors(withDefaults())
         .csrf(
             csrf ->
-                csrf.ignoringRequestMatchers("/aldebaran/**", "/actuator/**", "/v3/api-docs/**"))
+                csrf.ignoringRequestMatchers("/aldebaran/**", "/actuator/**", "/aldebaran-docs/**"))
         .authorizeHttpRequests(
             auth ->
-                auth.requestMatchers("/v3/api-docs", "/v3/api-docs/**")
+                auth.requestMatchers("/aldebaran-docs", "/aldebaran-docs/**")
                     .permitAll()
                     // Actuator endpoints
                     .requestMatchers("/actuator/**")
