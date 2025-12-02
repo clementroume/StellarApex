@@ -6,7 +6,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.web.cors.CorsConfiguration;
@@ -32,11 +31,19 @@ public class SecurityConfig {
   @Value("${cors.allowed-origins}")
   private String allowedOrigins;
 
+  /**
+   * Configures the security filter chain for the application's HTTP security.
+   *
+   * <p>This configuration enables Cross-Origin Resource Sharing (CORS), permits all incoming HTTP
+   * requests without additional authorization checks, and enforces a stateless session management
+   * policy.
+   *
+   * @param http the {@link HttpSecurity} object to configure HTTP security settings
+   * @return the configured {@link SecurityFilterChain} instance
+   */
   @Bean
   public SecurityFilterChain securityFilterChain(HttpSecurity http) {
     http
-        // Disable CSRF: unnecessary for a read-only stateless documentation API
-        .csrf(AbstractHttpConfigurer::disable)
         // Enable CORS: required for the Swagger UI JavaScript to load JSON resources
         .cors(cors -> cors.configurationSource(corsConfigurationSource()))
         // Authorization: Trust the proxy; all incoming traffic is deemed legitimate

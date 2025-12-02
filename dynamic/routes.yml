@@ -137,4 +137,4 @@ http:
     vega-admin-service:
       loadBalancer:
         servers:
-          - url: "http://vega-admin:9091"
+          - url: "http://vega-admin:9090"
