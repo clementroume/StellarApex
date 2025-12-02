@@ -1,59 +1,8 @@
 version: 2
 updates:
-  # --- Backend Auth Dependencies (Maven) ---
-  - package-ecosystem: "maven"
-    directory: "/antares-auth"
-    schedule:
-      interval: "weekly"
-    open-pull-requests-limit: 5
-    groups:
-      apache-commons:
-        patterns:
-          - "org.apache.commons:*"
-      spring-boot:
-        patterns:
-          - "org.springframework.boot:*"
-
-  # --- Frontend Dependencies (NPM) ---
-  - package-ecosystem: "npm"
-    directory: "/sirius-app"
-    schedule:
-      interval: "weekly"
-    open-pull-requests-limit: 5
-    groups:
-      angular-dependencies:
-        patterns:
-          - "@angular/*"
-          - "@angular-devkit/*"
-          - "typescript"
-
-  # --- Backend Admin Dependencies (Maven) ---
-  - package-ecosystem: "maven"
-    directory: "/vega-admin"
-    schedule:
-      interval: "weekly"
-    open-pull-requests-limit: 5
-
-  # --- Docker Dependencies ---
-  - package-ecosystem: "docker"
-    directory: "/antares-auth"
-    schedule:
-      interval: "weekly"
-    open-pull-requests-limit: 3
-
-  - package-ecosystem: "docker"
-    directory: "/sirius-app"
-    schedule:
-      interval: "weekly"
-    open-pull-requests-limit: 3
-
-  - package-ecosystem: "docker"
-    directory: "/vega-admin"
-    schedule:
-      interval: "weekly"
-    open-pull-requests-limit: 3
-
-  # --- GitHub Actions Dependencies ---
+  # ==============================================================================
+  # 1. CI/CD WORKFLOWS
+  # ==============================================================================
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
@@ -62,3 +11,93 @@ updates:
       github-actions:
         patterns:
           - "*"
+
+  # ==============================================================================
+  # 2. BACKEND SERVICES (MAVEN)
+  # ==============================================================================
+
+  # --- Antares Auth ---
+  - package-ecosystem: "maven"
+    directory: "/antares-auth"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    groups:
+      spring-boot:
+        patterns:
+          - "org.springframework.boot:*"
+      apache-commons:
+        patterns:
+          - "org.apache.commons:*"
+
+  # --- Vega Admin ---
+  - package-ecosystem: "maven"
+    directory: "/vega-admin"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+  #    groups:
+  #      spring-boot: # Ajout du groupement pour Vega aussi
+  #        patterns:
+  #          - "org.springframework.boot:*"
+
+  # --- Bellatrix Swagger ---
+  - package-ecosystem: "maven"
+    directory: "/bellatrix-swagger"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    groups:
+      spring-boot:
+        patterns:
+          - "org.springframework.boot:*"
+
+  # ==============================================================================
+  # 3. FRONTEND (NPM)
+  # ==============================================================================
+
+  # --- Sirius App ---
+  - package-ecosystem: "npm"
+    directory: "/sirius-app"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    groups:
+      angular-framework:
+        patterns:
+          - "@angular/*"
+          - "@angular-devkit/*"
+          - "typescript"
+          - "rxjs"
+
+  # ==============================================================================
+  # 4. DOCKER IMAGES (BASE IMAGES)
+  # ==============================================================================
+
+  # --- Antares Auth ---
+  - package-ecosystem: "docker"
+    directory: "/antares-auth"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 3
+
+  # --- Vega Admin ---
+  - package-ecosystem: "docker"
+    directory: "/vega-admin"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 3
+
+  # --- Bellatrix Swagger ---
+  - package-ecosystem: "docker"
+    directory: "/bellatrix-swagger"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 3
+
+  # --- Sirius App ---
+  - package-ecosystem: "docker"
+    directory: "/sirius-app"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 3

@@ -11,20 +11,21 @@ on:
 
 permissions:
   contents: read
-  pull-requests: read # Required for 'dorny/paths-filter' to detect changes in PRs
-  security-events: write # Required to upload CodeQL analysis results
+  pull-requests: read
+  security-events: write
   actions: read
 
 jobs:
   # ==============================================================================
   # JOB 1: CHANGE DETECTION (FILTER)
   # ==============================================================================
-  # Determines which parts of the monorepo have changed to avoid unnecessary scans.
   filter:
     runs-on: ubuntu-latest
     outputs:
       frontend: ${{ steps.filter.outputs.frontend }}
-      backend: ${{ steps.filter.outputs.backend }}
+      auth: ${{ steps.filter.outputs.auth }}
+      admin: ${{ steps.filter.outputs.admin }}
+      swagger: ${{ steps.filter.outputs.swagger }}
       shared: ${{ steps.filter.outputs.shared }}
       is_schedule: ${{ github.event_name == 'schedule' }}
     steps:
@@ -35,22 +36,25 @@ jobs:
           filters: |
             frontend:
               - 'sirius-app/**'
-            backend:
+            auth:
               - 'antares-auth/**'
+            admin:
               - 'vega-admin/**'
+            swagger:
+              - 'bellatrix-swagger/**'
             shared:
               - '.github/workflows/codeql.yml'
               - 'docker-compose.yml'
 
   # ==============================================================================
-  # JOB 2: BACKEND ANALYSIS (JAVA/KOTLIN)
+  # JOB 2a: ANALYZE ANTARES (AUTH)
   # ==============================================================================
-  analyze-java:
+  analyze-auth:
     needs: filter
-    # Run if: Scheduled scan OR Backend changes OR Shared config changes
-    if: needs.filter.outputs.is_schedule == 'true' || needs.filter.outputs.backend == 'true' || needs.filter.outputs.shared == 'true'
+    # Run if: Scheduled scan OR Auth changes OR Shared config changes
+    if: needs.filter.outputs.is_schedule == 'true' || needs.filter.outputs.auth == 'true' || needs.filter.outputs.shared == 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 360
+    timeout-minutes: 120
     permissions:
       security-events: write
       actions: read
@@ -60,7 +64,6 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # Using Eclipse Temurin as requested (consistent with the main CI pipeline)
       - name: Setup JDK 25
         uses: actions/setup-java@v5
         with:
@@ -68,40 +71,112 @@ jobs:
           distribution: temurin
           cache: maven
 
-      # Initialize CodeQL for Java.
-      # Build mode is set to 'manual' to support the multi-module Maven structure.
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v4
         with:
           languages: java-kotlin
           build-mode: manual
 
-      # Manually build both backend services so CodeQL can trace the compilation.
-      # We skip tests to speed up the analysis process.
-      - name: Build Backend Services
-        shell: bash
+      - name: Build Antares Auth
+        working-directory: ./antares-auth
         run: |
-          echo "Building Antares Auth..."
-          cd antares-auth
-          chmod +x mvnw
-          ./mvnw clean package -DskipTests
-
-          echo "Building Vega Admin..."
-          cd ../vega-admin
           chmod +x mvnw
           ./mvnw clean package -DskipTests
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v4
         with:
-          category: "/language:java-kotlin"
+          category: "/language:java-kotlin/auth"
+
+  # ==============================================================================
+  # JOB 2b: ANALYZE VEGA (ADMIN)
+  # ==============================================================================
+  analyze-admin:
+    needs: filter
+    # Run if: Scheduled scan OR Admin changes OR Shared config changes
+    if: needs.filter.outputs.is_schedule == 'true' || needs.filter.outputs.admin == 'true' || needs.filter.outputs.shared == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    permissions:
+      security-events: write
+      actions: read
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup JDK 25
+        uses: actions/setup-java@v5
+        with:
+          java-version: 25
+          distribution: temurin
+          cache: maven
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v4
+        with:
+          languages: java-kotlin
+          build-mode: manual
+
+      - name: Build Vega Admin
+        working-directory: ./vega-admin
+        run: |
+          chmod +x mvnw
+          ./mvnw clean package -DskipTests
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v4
+        with:
+          category: "/language:java-kotlin/admin"
+
+  # ==============================================================================
+  # JOB 2c: ANALYZE BELLATRIX (SWAGGER)
+  # ==============================================================================
+  analyze-swagger:
+    needs: filter
+    # Run if: Scheduled scan OR Swagger changes OR Shared config changes
+    if: needs.filter.outputs.is_schedule == 'true' || needs.filter.outputs.swagger == 'true' || needs.filter.outputs.shared == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      security-events: write
+      actions: read
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup JDK 25
+        uses: actions/setup-java@v5
+        with:
+          java-version: 25
+          distribution: temurin
+          cache: maven
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v4
+        with:
+          languages: java-kotlin
+          build-mode: manual
+
+      - name: Build Bellatrix Swagger
+        working-directory: ./bellatrix-swagger
+        run: |
+          chmod +x mvnw
+          ./mvnw clean package -DskipTests
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v4
+        with:
+          category: "/language:java-kotlin/swagger"
 
   # ==============================================================================
   # JOB 3: FRONTEND ANALYSIS (JAVASCRIPT/TYPESCRIPT)
   # ==============================================================================
   analyze-javascript:
     needs: filter
-    # Run if: Scheduled scan OR Frontend changes OR Shared config changes
     if: needs.filter.outputs.is_schedule == 'true' || needs.filter.outputs.frontend == 'true' || needs.filter.outputs.shared == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 360
@@ -114,7 +189,6 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # No build is required for interpreted languages like JS/TS.
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v4
         with:
@@ -131,7 +205,6 @@ jobs:
   # ==============================================================================
   analyze-actions:
     needs: filter
-    # Run if: Scheduled scan OR Shared config changes (where workflows usually live)
     if: needs.filter.outputs.is_schedule == 'true' || needs.filter.outputs.shared == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 360

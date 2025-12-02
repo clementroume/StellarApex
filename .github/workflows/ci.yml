@@ -35,6 +35,8 @@ jobs:
               - 'antares-auth/**'
             admin:
               - 'vega-admin/**'
+            swagger:
+              - 'bellatrix-swagger/**'
             shared:
               - '.github/workflows/ci.yml'
               - 'docker-compose.yml'
@@ -126,6 +128,33 @@ jobs:
 
       - name: Build & test admin backend
         working-directory: ./vega-admin
+        run: |
+          chmod +x ./mvnw
+          ./mvnw -B verify
+
+  # --- JOB 5: Build Swagger Gateway (Bellatrix) ---
+  build-backend-swagger:
+    needs: filter
+    if: needs.filter.outputs.swagger == 'true' || needs.filter.outputs.shared == 'true'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash -l -o pipefail {0}
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Set up JDK 25
+        uses: actions/setup-java@v5
+        with:
+          java-version: '25'
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: Build & test swagger gateway
+        working-directory: ./bellatrix-swagger
         run: |
           chmod +x ./mvnw
           ./mvnw -B verify

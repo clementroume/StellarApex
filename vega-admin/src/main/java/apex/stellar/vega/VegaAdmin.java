@@ -3,6 +3,7 @@ package apex.stellar.vega;
 import de.codecentric.boot.admin.server.config.EnableAdminServer;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.autoconfigure.security.servlet.UserDetailsServiceAutoConfiguration;
 
 /**
  * The main class for the Antares Admin application.
@@ -13,7 +14,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
  * <p>The {@code @EnableAdminServer} annotation activates the auto-configuration of the user
  * interface and the API endpoints required to receive client registrations.
  */
-@SpringBootApplication
+@SpringBootApplication(exclude = {UserDetailsServiceAutoConfiguration.class})
 @EnableAdminServer
 public class VegaAdmin {
 

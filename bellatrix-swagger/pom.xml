@@ -34,6 +34,26 @@
         </configuration>
         <groupId>org.springframework.boot</groupId>
       </plugin>
+
+      <plugin>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <executions>
+          <execution>
+            <goals>
+              <goal>properties</goal>
+            </goals>
+          </execution>
+        </executions>
+        <groupId>org.apache.maven.plugins</groupId>
+      </plugin>
+
+      <plugin>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <argLine>-javaagent:${org.mockito:mockito-core:jar} -Xshare:off</argLine>
+        </configuration>
+        <groupId>org.apache.maven.plugins</groupId>
+      </plugin>
     </plugins>
   </build>
 
@@ -68,6 +88,12 @@
     <dependency>
       <artifactId>spring-boot-admin-starter-client</artifactId>
       <groupId>de.codecentric</groupId>
+    </dependency>
+    <dependency>
+      <artifactId>wiremock-standalone</artifactId>
+      <groupId>org.wiremock</groupId>
+      <scope>test</scope>
+      <version>3.13.2</version>
     </dependency>
   </dependencies>
 
