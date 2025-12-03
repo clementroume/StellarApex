@@ -1,39 +1,122 @@
 <div class="card bg-base-100 shadow-xl">
   <div class="card-body">
-    <div class="flex justify-between items-center">
-      <h2 class="card-title">{{ 'PROFILE.TITLE' | translate }}</h2>
+
+    <div class="flex justify-between items-center mb-4">
+      <h2 class="card-title flex gap-2">
+        <svg class="h-6 w-6 opacity-50" fill="none" stroke="currentColor"
+             stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24"
+             xmlns="http://www.w3.org/2000/svg">
+          <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/>
+          <circle cx="12" cy="7" r="4"/>
+        </svg>
+        {{ 'PROFILE.TITLE' | translate }}
+      </h2>
+
       @if (!isEditing) {
-        <button (click)="enterEditMode()" class="btn btn-outline btn-sm">{{ 'PROFILE.EDIT' | translate }}</button>
+        <button (click)="enterEditMode()" [title]="'PROFILE.EDIT' | translate"
+                class="btn btn-neutral btn-sm btn-square">
+          <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-linecap="round"
+               stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24"
+               xmlns="http://www.w3.org/2000/svg">
+            <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/>
+          </svg>
+        </button>
       }
     </div>
 
     @if (authService.currentUser(); as user) {
+
       @if (!isEditing) {
-        <div class="space-y-4 mt-4">
-          <p><strong>{{ 'PROFILE.FIRST_NAME' | translate }}</strong> {{ user.firstName }}</p>
-          <p><strong>{{ 'PROFILE.LAST_NAME' | translate }}</strong> {{ user.lastName }}</p>
-          <p><strong>{{ 'PROFILE.EMAIL' | translate }}</strong> {{ user.email }}</p>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+          <div class="flex flex-col gap-1">
+            <span
+              class="text-xs font-bold text-base-content/50 uppercase tracking-wide">{{ 'REGISTER.FIRST_NAME' | translate }}</span>
+            <div class="flex items-center gap-2 text-lg">
+              <span class="font-medium">{{ user.firstName }}</span>
+            </div>
+          </div>
+
+          <div class="flex flex-col gap-1">
+            <span
+              class="text-xs font-bold text-base-content/50 uppercase tracking-wide">{{ 'REGISTER.LAST_NAME' | translate }}</span>
+            <div class="flex items-center gap-2 text-lg">
+              <span class="font-medium">{{ user.lastName }}</span>
+            </div>
+          </div>
+
+          <div class="flex flex-col gap-1 md:col-span-2">
+            <span
+              class="text-xs font-bold text-base-content/50 uppercase tracking-wide">{{ 'LOGIN.EMAIL' | translate }}</span>
+            <div class="flex items-center gap-2 text-lg">
+              <span class="font-medium">{{ user.email }}</span>
+              <div class="badge badge-success badge-xs badge-outline gap-1">Verified</div>
+            </div>
+          </div>
         </div>
       }
 
       @if (isEditing) {
-        <form [formGroup]="profileForm" (ngSubmit)="onSave()" class="space-y-4 mt-4">
-          <div class="form-control">
-            <label class="label"><span class="label-text">{{ 'REGISTER.FIRST_NAME' | translate }}</span></label>
-            <input type="text" formControlName="firstName" class="input input-bordered" />
-          </div>
-          <div class="form-control">
-            <label class="label"><span class="label-text">{{ 'REGISTER.LAST_NAME' | translate }}</span></label>
-            <input type="text" formControlName="lastName" class="input input-bordered" />
-          </div>
-          <div class="form-control">
-            <label class="label"><span class="label-text">{{ 'LOGIN.EMAIL' | translate }}</span></label>
-            <input type="email" formControlName="email" class="input input-bordered" />
-          </div>
-          <div class="card-actions justify-end mt-4">
-            <button type="button" (click)="onCancel()" class="btn btn-ghost">{{ 'PROFILE.CANCEL' | translate }}</button>
-            <button type="submit" class="btn btn-primary" [disabled]="profileForm.invalid || profileForm.pristine">{{ 'PROFILE.SAVE' | translate }}</button>
-          </div>
+        <form (ngSubmit)="onSave()" [formGroup]="profileForm">
+
+          <fieldset class="fieldset bg-base-200/50 border-base-300 rounded-box w-full border p-4">
+            <legend class="fieldset-legend">{{ 'ACCOUNT.MENU_INFO' | translate }}</legend>
+
+            <label class="fieldset-label">{{ 'REGISTER.FIRST_NAME' | translate }}</label>
+            <label class="input validator w-full">
+              <svg class="h-[1em] opacity-50" viewBox="0 0 24 24"
+                   xmlns="http://www.w3.org/2000/svg">
+                <g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"
+                   stroke-width="2.5">
+                  <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path>
+                  <circle cx="12" cy="7" r="4"></circle>
+                </g>
+              </svg>
+              <input [placeholder]="'REGISTER.FIRST_NAME_PLACEHOLDER' | translate" formControlName="firstName" maxlength="50" required
+                     type="text"/>
+            </label>
+            <p class="validator-hint hidden">Max 50 characters</p>
+
+            <label class="fieldset-label mt-3">{{ 'REGISTER.LAST_NAME' | translate }}</label>
+            <label class="input validator w-full">
+              <svg class="h-[1em] opacity-50" viewBox="0 0 24 24"
+                   xmlns="http://www.w3.org/2000/svg">
+                <g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"
+                   stroke-width="2.5">
+                  <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path>
+                  <circle cx="12" cy="7" r="4"></circle>
+                </g>
+              </svg>
+              <input [placeholder]="'REGISTER.LAST_NAME_PLACEHOLDER' | translate" formControlName="lastName" maxlength="50" required
+                     type="text"/>
+            </label>
+            <p class="validator-hint hidden">Max 50 characters</p>
+
+            <label class="fieldset-label mt-3">{{ 'LOGIN.EMAIL' | translate }}</label>
+            <label class="input validator w-full">
+              <svg class="h-[1em] opacity-50" viewBox="0 0 24 24"
+                   xmlns="http://www.w3.org/2000/svg">
+                <g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"
+                   stroke-width="2.5">
+                  <rect height="16" rx="2" width="20" x="2" y="4"></rect>
+                  <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"></path>
+                </g>
+              </svg>
+              <input formControlName="email" required type="email"/>
+            </label>
+            <div class="validator-hint hidden">Enter valid email address</div>
+
+            <div class="card-actions justify-end mt-6">
+              <button (click)="onCancel()" class="btn btn-ghost" type="button">
+                {{ 'PROFILE.CANCEL' | translate }}
+              </button>
+              <button [disabled]="profileForm.invalid || profileForm.pristine" class="btn btn-primary"
+                      type="submit">
+                {{ 'PROFILE.SAVE' | translate }}
+              </button>
+            </div>
+
+          </fieldset>
         </form>
       }
     }

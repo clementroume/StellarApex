@@ -1,11 +1,19 @@
 <div class="card bg-base-100 shadow-xl">
-  <div class="card-body">
-    <h2 class="card-title">{{ 'SETTINGS.TITLE' | translate }}</h2>
+  <div class="card-body gap-8">
+
+    <h2 class="card-title flex gap-2 mb-2">
+      <svg class="h-6 w-6 opacity-50" fill="none" stroke="currentColor"
+           stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24"
+           xmlns="http://www.w3.org/2000/svg">
+        <path
+          d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.38a2 2 0 0 0-.73-2.73l-.15-.1a2 2 0 0 1-1-1.72v-.51a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/>
+        <circle cx="12" cy="12" r="3"/>
+      </svg>
+      {{ 'SETTINGS.TITLE' | translate }}
+    </h2>
 
     <form (ngSubmit)="onSubmitPassword()" [formGroup]="passwordForm">
-
       <fieldset class="fieldset bg-base-200 border-base-300 rounded-box w-full border p-4">
-
         <legend class="fieldset-legend">{{ 'SETTINGS.PASSWORD_SUBTITLE' | translate }}</legend>
 
         <label class="fieldset-label">{{ 'SETTINGS.CURRENT_PASSWORD' | translate }}</label>
@@ -18,16 +26,12 @@
               <circle cx="16.5" cy="7.5" fill="currentColor" r=".5"></circle>
             </g>
           </svg>
-
-          <input
-            formControlName="currentPassword"
-            placeholder="{{ 'SETTINGS.CURRENT_PASSWORD' | translate }}"
-            required
-            type="password"
-          />
+          <input [placeholder]="'SETTINGS.CURRENT_PASSWORD' | translate"
+                 formControlName="currentPassword"
+                 required type="password"/>
         </label>
 
-        <label class="fieldset-label">{{ 'SETTINGS.NEW_PASSWORD' | translate }}</label>
+        <label class="fieldset-label mt-3">{{ 'SETTINGS.NEW_PASSWORD' | translate }}</label>
         <label class="input validator w-full">
           <svg class="h-[1em] opacity-50" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
             <g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"
@@ -37,12 +41,11 @@
               <circle cx="16.5" cy="7.5" fill="currentColor" r=".5"></circle>
             </g>
           </svg>
-
           <input
+            [placeholder]="'SETTINGS.NEW_PASSWORD' | translate"
             formControlName="newPassword"
             minlength="8"
             pattern="(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{8,}"
-            placeholder="{{ 'SETTINGS.NEW_PASSWORD' | translate }}"
             required
             title="Must be more than 8 characters, including number, lowercase letter, uppercase letter"
             type="password"
@@ -50,12 +53,10 @@
         </label>
         <p class="validator-hint hidden text-xs">
           Must be more than 8 characters, including <br/>
-          At least one number <br/>
-          At least one lowercase letter <br/>
-          At least one uppercase letter
+          At least one number, one lowercase, one uppercase letter
         </p>
 
-        <label class="fieldset-label">{{ 'SETTINGS.CONFIRM_PASSWORD' | translate }}</label>
+        <label class="fieldset-label mt-3">{{ 'SETTINGS.CONFIRM_PASSWORD' | translate }}</label>
         <label class="input validator w-full">
           <svg class="h-[1em] opacity-50" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
             <g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"
@@ -65,13 +66,9 @@
               <circle cx="16.5" cy="7.5" fill="currentColor" r=".5"></circle>
             </g>
           </svg>
-
-          <input
-            formControlName="confirmationPassword"
-            placeholder="{{ 'SETTINGS.CONFIRM_PASSWORD' | translate }}"
-            required
-            type="password"
-          />
+          <input [placeholder]="'SETTINGS.CONFIRM_PASSWORD' | translate"
+                 formControlName="confirmationPassword"
+                 required type="password"/>
         </label>
         @if (passwordForm.errors?.['passwordsMismatch'] && passwordForm.get(
           'confirmationPassword')?.touched) {
@@ -80,46 +77,74 @@
           </p>
         }
 
-        <div class="card-actions justify-end mt-6">
+        <div class="card-actions justify-end mt-4">
           <button [disabled]="passwordForm.invalid" class="btn btn-primary" type="submit">
             {{ 'SETTINGS.CHANGE_PASSWORD_BTN' | translate }}
           </button>
         </div>
-
       </fieldset>
     </form>
 
-    <div class="divider"></div>
+    <fieldset class="fieldset bg-base-200 border-base-300 rounded-box w-full border p-4">
+      <legend class="fieldset-legend">{{ 'SETTINGS.LANGUAGE_TITLE' | translate }}</legend>
 
-    <h2 class="card-title">{{ 'SETTINGS.LANGUAGE_TITLE' | translate }}</h2>
-    <div class="form-control w-full max-w-xs">
-      <label class="label">
-        <span class="label-text">{{ 'SETTINGS.LANGUAGE_LABEL' | translate }}</span>
-      </label>
-      <select (change)="changeLanguage($event)" class="select select-bordered">
-        <option [selected]="translate.currentLang === 'en'" value="en">English</option>
-        <option [selected]="translate.currentLang === 'fr'" value="fr">Français</option>
-      </select>
-    </div>
+      <label class="fieldset-label">{{ 'SETTINGS.LANGUAGE_LABEL' | translate }}</label>
+      <div class="join w-full">
+        <div class="btn btn-square join-item bg-base-100 border-base-300 cursor-default">
+          <svg class="h-5 w-5 opacity-50" fill="none" stroke="currentColor"
+               stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24"
+               xmlns="http://www.w3.org/2000/svg">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="2" x2="22" y1="12" y2="12"/>
+            <path
+              d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+          </svg>
+        </div>
+        <select (change)="changeLanguage($event)" class="select join-item w-full bg-base-100">
+          <option [selected]="translate.currentLang === 'en'" value="en">English</option>
+          <option [selected]="translate.currentLang === 'fr'" value="fr">Français</option>
+        </select>
+      </div>
+    </fieldset>
 
-    <div class="divider"></div>
+    <fieldset class="fieldset bg-error/5 border-error/20 rounded-box w-full border p-4">
+      <legend class="fieldset-legend text-error font-bold flex gap-2 items-center">
+        <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-linecap="round"
+             stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24"
+             xmlns="http://www.w3.org/2000/svg">
+          <path
+            d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+          <line x1="12" x2="12" y1="9" y2="13"/>
+          <line x1="12" x2="12.01" y1="17" y2="17"/>
+        </svg>
+        {{ 'SETTINGS.DANGER_ZONE_TITLE' | translate }}
+      </legend>
 
-    <h2 class="card-title text-error">{{ 'SETTINGS.DANGER_ZONE_TITLE' | translate }}</h2>
-    <div class="mt-4 p-4 border border-error rounded-lg bg-error/10">
-      <div class="flex justify-between items-center">
-        <span class="text-sm font-medium">{{ 'SETTINGS.DELETE_ACCOUNT_BTN' | translate }}</span>
+      <div class="flex flex-col sm:flex-row justify-between items-center gap-4">
+        <span class="text-sm text-base-content/70">
+           {{ 'SETTINGS.DELETE_MODAL_DESC' | translate }}
+        </span>
         <button (click)="openDeleteConfirmation()" class="btn btn-error btn-sm text-white">
           {{ 'SETTINGS.DELETE_ACCOUNT_BTN' | translate }}
         </button>
       </div>
-    </div>
+    </fieldset>
+
   </div>
 </div>
 
 <dialog #deleteModal class="modal">
   <div class="modal-box">
-    <h3 class="font-bold text-lg">{{ 'SETTINGS.DELETE_MODAL_TITLE' | translate }}</h3>
-    <p class="py-4">{{ 'SETTINGS.DELETE_MODAL_DESC' | translate }}</p>
+    <h3 class="font-bold text-lg text-error flex gap-2 items-center">
+      <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+           xmlns="http://www.w3.org/2000/svg">
+        <path
+          d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+          stroke-linecap="round" stroke-linejoin="round"
+          stroke-width="2"/>
+      </svg>
+      {{ 'SETTINGS.DELETE_MODAL_TITLE' | translate }}
+    </h3>
     <div class="modal-action">
       <form class="flex gap-2" method="dialog">
         <button (click)="closeDeleteConfirmation()"

@@ -24,7 +24,9 @@
     "LAST_NAME_PLACEHOLDER": "Ton nom",
     "PASSWORD": "Mot de passe",
     "SIGN_UP": "S'inscrire",
-    "HAVE_ACCOUNT": "Déjà un compte ? Se connecter"
+    "HAVE_ACCOUNT": "Déjà un compte ? Se connecter",
+    "CONFIRM_PASSWORD": "Confirmer le mot de passe",
+    "PASSWORDS_MISMATCH": "Les mots de passe ne correspondent pas."
   },
   "ACCOUNT": {
     "TITLE": "Mon Compte",

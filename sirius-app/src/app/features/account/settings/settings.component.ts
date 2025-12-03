@@ -48,7 +48,7 @@ export class SettingsComponent {
   constructor() {
     this.passwordForm = this.fb.group({
       currentPassword: ['', [Validators.required]],
-      newPassword: ['', [Validators.required, Validators.minLength(8)]],
+      newPassword: ['', [Validators.required, Validators.minLength(8), Validators.pattern(/(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{8,}/)]],
       confirmationPassword: ['', [Validators.required]]
     }, {validators: passwordMatchValidator});
   }

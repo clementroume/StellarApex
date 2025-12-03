@@ -1,12 +1,28 @@
 import {ChangeDetectionStrategy, Component, inject} from '@angular/core';
 import {CommonModule} from '@angular/common';
-import {FormBuilder, FormGroup, ReactiveFormsModule, Validators} from '@angular/forms';
+import {
+  AbstractControl,
+  FormBuilder,
+  FormGroup,
+  ReactiveFormsModule,
+  ValidationErrors,
+  ValidatorFn,
+  Validators
+} from '@angular/forms';
 import {Router, RouterModule} from '@angular/router';
 import {AuthService} from '../../../core/services/auth.service';
 import {TranslateModule} from '@ngx-translate/core';
 import {NotificationService} from '../../../core/services/notification.service';
 import {HttpErrorResponse} from '@angular/common/http';
 import {ProblemDetail} from '../../../core/models/problem-detail.model';
+
+export const passwordMatchValidator: ValidatorFn = (control: AbstractControl): ValidationErrors | null => {
+  const password = control.get('password');
+  const confirmation = control.get('confirmationPassword');
+  return password && confirmation && password.value !== confirmation.value
+    ? {passwordsMismatch: true}
+    : null;
+};
 
 /**
  * Handles the user registration page.
@@ -33,8 +49,13 @@ export class RegisterComponent {
       firstName: ['', Validators.required],
       lastName: ['', Validators.required],
       email: ['', [Validators.required, Validators.email]],
-      password: ['', [Validators.required, Validators.minLength(8)]]
-    });
+      password: ['', [
+        Validators.required,
+        Validators.minLength(8),
+        Validators.pattern(/(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{8,}/)
+      ]],
+      confirmationPassword: ['', Validators.required]
+    }, {validators: passwordMatchValidator});
   }
 
   /**
@@ -46,7 +67,9 @@ export class RegisterComponent {
       return;
     }
 
-    this.authService.register(this.registerForm.value).subscribe({
+    const {confirmationPassword, ...registerPayload} = this.registerForm.value;
+
+    this.authService.register(registerPayload).subscribe({
       next: () => {
         void this.router.navigate(['/dashboard']);
       },

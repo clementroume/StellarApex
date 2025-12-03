@@ -24,7 +24,9 @@
     "LAST_NAME_PLACEHOLDER": "Your last name",
     "PASSWORD": "Password",
     "SIGN_UP": "Sign up",
-    "HAVE_ACCOUNT": "Already have an account? Log in"
+    "HAVE_ACCOUNT": "Already have an account? Log in",
+    "CONFIRM_PASSWORD": "Confirm Password",
+    "PASSWORDS_MISMATCH": "Passwords do not match."
   },
   "ACCOUNT": {
     "TITLE": "My Account",

@@ -7,25 +7,43 @@
     </div>
 
     <div class="card shrink-0 w-full max-w-sm shadow-2xl bg-base-100">
+      <form (ngSubmit)="onSubmit()" [formGroup]="loginForm" class="card-body">
 
-      <form class="card-body" [formGroup]="loginForm" (ngSubmit)="onSubmit()">
+        <label class="input validator w-full">
+          <svg class="h-[1em] opacity-50" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"
+               stroke-width="2.5">
+              <rect height="16" rx="2" width="20" x="2" y="4"></rect>
+              <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"></path>
+            </g>
+          </svg>
+          <input formControlName="email" placeholder="{{ 'LOGIN.EMAIL' | translate }}" required
+                 type="email"/>
+        </label>
+        <div class="validator-hint hidden">Enter valid email address</div>
 
-        <div class="form-control">
-          <label class="label"><span class="label-text">{{ 'LOGIN.EMAIL' | translate }}</span></label>
-          <input type="email" placeholder="email@example.com" class="input input-bordered" formControlName="email" />
-        </div>
-
-        <div class="form-control">
-          <label class="label"><span class="label-text">{{ 'LOGIN.PASSWORD' | translate }}</span></label>
-          <input type="password" placeholder="********" class="input input-bordered" formControlName="password" />
-        </div>
+        <label class="input validator w-full mt-4">
+          <svg class="h-[1em] opacity-50" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"
+               stroke-width="2.5">
+              <path
+                d="M2.586 17.414A2 2 0 0 0 2 18.828V21a1 1 0 0 0 1 1h3a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h1a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h.172a2 2 0 0 0 1.414-.586l.814-.814a6.5 6.5 0 1 0-4-4z"></path>
+              <circle cx="16.5" cy="7.5" fill="currentColor" r=".5"></circle>
+            </g>
+          </svg>
+          <input formControlName="password" placeholder="{{ 'LOGIN.PASSWORD' | translate }}"
+                 required type="password"/>
+        </label>
 
         <div class="form-control mt-6">
-          <button class="btn btn-primary" type="submit" [disabled]="loginForm.invalid">{{ 'NAVBAR.LOG_IN' | translate }}</button>
+          <button [disabled]="loginForm.invalid" class="btn btn-primary"
+                  type="submit">{{ 'NAVBAR.LOG_IN' | translate }}
+          </button>
         </div>
 
         <label class="label">
-          <a routerLink="/auth/register" class="label-text-alt link link-hover">{{ 'LOGIN.NO_ACCOUNT' | translate }}</a>
+          <a class="label-text-alt link link-hover"
+             routerLink="/auth/register">{{ 'LOGIN.NO_ACCOUNT' | translate }}</a>
         </label>
       </form>
     </div>
