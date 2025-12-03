@@ -51,6 +51,13 @@
     "CHANGE_PASSWORD_BTN": "Change Password",
     "SUCCESS_PASSWORD_UPDATE": "Your password has been updated successfully!",
     "LANGUAGE_TITLE": "Language",
-    "LANGUAGE_LABEL": "Application Language"
+    "LANGUAGE_LABEL": "Application Language",
+    "DANGER_ZONE_TITLE": "Danger Zone",
+    "DELETE_ACCOUNT_BTN": "Delete my account",
+    "DELETE_MODAL_TITLE": "Are you absolutely sure?",
+    "DELETE_MODAL_DESC": "This action cannot be undone. This will permanently delete your account and all your associated data.",
+    "DELETE_MODAL_CONFIRM": "Yes, delete my account",
+    "DELETE_MODAL_CANCEL": "Cancel",
+    "SUCCESS_DELETE": "Your account has been successfully deleted. Goodbye!"
   }
 }

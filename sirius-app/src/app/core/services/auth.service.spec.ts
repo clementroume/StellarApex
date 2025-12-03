@@ -115,4 +115,25 @@ describe('AuthService', () => {
       req.flush(null, {status: 200, statusText: 'OK'});
     });
   });
+
+  describe('deleteAccount', () => {
+    it('should DELETE to correct URL, clear user state, and navigate to register', () => {
+      // Given: A user is logged in
+      (service as any)._currentUser.set(dummyUser);
+
+      // When
+      service.deleteAccount().subscribe();
+
+      // Then: Verify the HTTP request
+      const req = httpMock.expectOne(`${base}/users/me`);
+      expect(req.request.method).toBe('DELETE');
+      req.flush(null, {status: 204, statusText: 'No Content'});
+
+      // Verify state clearing
+      expect(service.currentUser()).toBeNull();
+
+      // Verify redirection
+      expect(navigateSpy).toHaveBeenCalledWith(['/auth/register']);
+    });
+  });
 });

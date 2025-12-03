@@ -1,4 +1,4 @@
-import {ChangeDetectionStrategy, Component, inject} from '@angular/core';
+import {ChangeDetectionStrategy, Component, ElementRef, inject, ViewChild} from '@angular/core';
 import {CommonModule} from '@angular/common';
 import {
   AbstractControl,
@@ -39,6 +39,7 @@ export const passwordMatchValidator: ValidatorFn = (control: AbstractControl): V
 export class SettingsComponent {
   public readonly passwordForm: FormGroup;
   public readonly translate = inject(TranslateService);
+  @ViewChild('deleteModal') deleteModal!: ElementRef<HTMLDialogElement>;
   private readonly authService = inject(AuthService);
   private readonly fb = inject(FormBuilder);
   private readonly notificationService = inject(NotificationService);
@@ -97,5 +98,31 @@ export class SettingsComponent {
         }
       });
     }
+  }
+
+  openDeleteConfirmation(): void {
+    this.deleteModal.nativeElement.showModal();
+  }
+
+  closeDeleteConfirmation(): void {
+    this.deleteModal.nativeElement.close();
+  }
+
+  confirmDeleteAccount(): void {
+    this.authService.deleteAccount().subscribe({
+      next: () => {
+        this.closeDeleteConfirmation();
+        this.translate.get('SETTINGS.SUCCESS_DELETE').subscribe((msg) => {
+          this.notificationService.showSuccess(msg);
+        });
+      },
+      error: (err) => {
+        this.closeDeleteConfirmation();
+        // Gestion d'erreur standard
+        const problem = err.error;
+        const message = problem?.detail || 'Erreur lors de la suppression';
+        this.notificationService.showError(message);
+      }
+    });
   }
 }

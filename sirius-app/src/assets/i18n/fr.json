@@ -54,6 +54,13 @@
     "ERROR_CURRENT_PASSWORD": "Le mot de passe actuel est incorrect.",
     "ERROR_GENERIC": "Une erreur est survenue. Veuillez réessayer.",
     "LANGUAGE_TITLE": "Langue",
-    "LANGUAGE_LABEL": "Langue de l'application"
+    "LANGUAGE_LABEL": "Langue de l'application",
+    "DANGER_ZONE_TITLE": "Zone de danger",
+    "DELETE_ACCOUNT_Btn": "Supprimer mon compte",
+    "DELETE_MODAL_TITLE": "Êtes-vous absolument sûr ?",
+    "DELETE_MODAL_fp__DESC": "Cette action est irréversible. Cela supprimera définitivement votre compte et toutes vos données associées.",
+    "DELETE_MODAL_CONFIRM": "Oui, supprimer mon compte",
+    "DELETE_MODAL_CANCEL": "Annuler",
+    "SUCCESS_DELETE": "Votre compte a été supprimé avec succès. Au revoir !"
   }
 }

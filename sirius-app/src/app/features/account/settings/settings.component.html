@@ -2,31 +2,38 @@
   <div class="card-body">
     <h2 class="card-title">{{ 'SETTINGS.TITLE' | translate }}</h2>
 
-    <form [formGroup]="passwordForm" (ngSubmit)="onSubmitPassword()" class="space-y-4 mt-4">
+    <form (ngSubmit)="onSubmitPassword()" [formGroup]="passwordForm" class="space-y-4 mt-4">
       <p class="text-sm text-base-content/70">{{ 'SETTINGS.PASSWORD_SUBTITLE' | translate }}</p>
 
       <div class="form-control">
-        <label class="label"><span class="label-text">{{ 'SETTINGS.CURRENT_PASSWORD' | translate }}</span></label>
-        <input type="password" formControlName="currentPassword" class="input input-bordered" />
+        <label class="label"><span
+          class="label-text">{{ 'SETTINGS.CURRENT_PASSWORD' | translate }}</span></label>
+        <input class="input input-bordered" formControlName="currentPassword" type="password"/>
       </div>
 
       <div class="form-control">
-        <label class="label"><span class="label-text">{{ 'SETTINGS.NEW_PASSWORD' | translate }}</span></label>
-        <input type="password" formControlName="newPassword" class="input input-bordered" />
+        <label class="label"><span
+          class="label-text">{{ 'SETTINGS.NEW_PASSWORD' | translate }}</span></label>
+        <input class="input input-bordered" formControlName="newPassword" type="password"/>
       </div>
 
       <div class="form-control">
-        <label class="label"><span class="label-text">{{ 'SETTINGS.CONFIRM_PASSWORD' | translate }}</span></label>
-        <input type="password" formControlName="confirmationPassword" class="input input-bordered" />
-        @if (passwordForm.errors?.['passwordsMismatch'] && passwordForm.get('confirmationPassword')?.touched) {
+        <label class="label"><span
+          class="label-text">{{ 'SETTINGS.CONFIRM_PASSWORD' | translate }}</span></label>
+        <input class="input input-bordered" formControlName="confirmationPassword" type="password"/>
+        @if (passwordForm.errors?.['passwordsMismatch'] && passwordForm.get(
+          'confirmationPassword')?.touched) {
           <div class="label">
-            <span class="label-text-alt text-error">{{ 'SETTINGS.PASSWORDS_MISMATCH' | translate }}</span>
+            <span
+              class="label-text-alt text-error">{{ 'SETTINGS.PASSWORDS_MISMATCH' | translate }}</span>
           </div>
         }
       </div>
 
       <div class="card-actions justify-end mt-4">
-        <button type="submit" class="btn btn-primary" [disabled]="passwordForm.invalid">{{ 'SETTINGS.CHANGE_PASSWORD_BTN' | translate }}</button>
+        <button [disabled]="passwordForm.invalid" class="btn btn-primary"
+                type="submit">{{ 'SETTINGS.CHANGE_PASSWORD_BTN' | translate }}
+        </button>
       </div>
     </form>
 
@@ -37,10 +44,39 @@
       <label class="label">
         <span class="label-text">{{ 'SETTINGS.LANGUAGE_LABEL' | translate }}</span>
       </label>
-      <select class="select select-bordered" (change)="changeLanguage($event)">
-        <option value="en" [selected]="translate.currentLang === 'en'">English</option>
-        <option value="fr" [selected]="translate.currentLang === 'fr'">Français</option>
+      <select (change)="changeLanguage($event)" class="select select-bordered">
+        <option [selected]="translate.currentLang === 'en'" value="en">English</option>
+        <option [selected]="translate.currentLang === 'fr'" value="fr">Français</option>
       </select>
+    </div>
+
+    <div class="divider"></div>
+
+    <h2 class="card-title text-error">{{ 'SETTINGS.DANGER_ZONE_TITLE' | translate }}</h2>
+    <div class="mt-4 p-4 border border-error rounded-lg bg-error/10">
+      <div class="flex justify-between items-center">
+        <span class="text-sm font-medium">{{ 'SETTINGS.DELETE_ACCOUNT_BTN' | translate }}</span>
+        <button (click)="openDeleteConfirmation()" class="btn btn-error btn-sm text-white">
+          {{ 'SETTINGS.DELETE_ACCOUNT_BTN' | translate }}
+        </button>
+      </div>
     </div>
   </div>
 </div>
+
+<dialog #deleteModal class="modal">
+  <div class="modal-box">
+    <h3 class="font-bold text-lg">{{ 'SETTINGS.DELETE_MODAL_TITLE' | translate }}</h3>
+    <p class="py-4">{{ 'SETTINGS.DELETE_MODAL_DESC' | translate }}</p>
+    <div class="modal-action">
+      <form class="flex gap-2" method="dialog">
+        <button (click)="closeDeleteConfirmation()"
+                class="btn">{{ 'SETTINGS.DELETE_MODAL_CANCEL' | translate }}
+        </button>
+        <button (click)="confirmDeleteAccount()"
+                class="btn btn-error text-white">{{ 'SETTINGS.DELETE_MODAL_CONFIRM' | translate }}
+        </button>
+      </form>
+    </div>
+  </div>
+</dialog>

@@ -123,6 +123,23 @@ export class AuthService {
     return this.http.put<void>(this.buildUrl('/users/me/password'), payload);
   }
 
+
+  /**
+   * Deletes the account of the currently authenticated user.
+   * This method sends a DELETE request to the server to remove the user's account,
+   * resets the current user state to null, and redirects to the registration page.
+   *
+   * @return {Observable<void>} An observable that completes when the account deletion process finishes.
+   */
+  deleteAccount(): Observable<void> {
+    return this.http.delete<void>(this.buildUrl('/users/me')).pipe(
+      tap(() => {
+        this._currentUser.set(null);
+        void this.router.navigate(['/auth/register']);
+      })
+    );
+  }
+
   // --- Private Helper ---
 
   /**

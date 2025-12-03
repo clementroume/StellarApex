@@ -1,4 +1,4 @@
-import {ChangeDetectionStrategy, Component, inject, OnInit} from '@angular/core';
+import {ChangeDetectionStrategy, Component, DOCUMENT, Inject, inject, OnInit} from '@angular/core';
 import {CommonModule} from '@angular/common';
 import {FormBuilder, FormGroup, ReactiveFormsModule, Validators} from '@angular/forms';
 import {ActivatedRoute, Router, RouterModule} from '@angular/router';
@@ -31,7 +31,7 @@ export class LoginComponent implements OnInit {
 
   private returnUrl = '/dashboard';
 
-  constructor() {
+  constructor(@Inject(DOCUMENT) private document: Document) {
     this.loginForm = this.fb.group({
       email: ['', [Validators.required, Validators.email]],
       password: ['', [Validators.required]]
@@ -61,7 +61,7 @@ export class LoginComponent implements OnInit {
         // Check if the returnUrl is an external absolute URL (starts with http)
         if (this.returnUrl.startsWith('http')) {
           // Native browser redirect for external domains (Admin, Traefik)
-          globalThis.location.href = this.returnUrl;
+          this.redirectToExternal(this.returnUrl);
         } else {
           // Standard Angular routing for internal pages
           void this.router.navigate([this.returnUrl]);
@@ -73,5 +73,9 @@ export class LoginComponent implements OnInit {
         this.notificationService.showError(message);
       }
     });
+  }
+
+  public redirectToExternal(url: string): void {
+    this.document.location.href = url;
   }
 }
