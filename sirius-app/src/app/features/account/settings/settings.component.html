@@ -2,39 +2,91 @@
   <div class="card-body">
     <h2 class="card-title">{{ 'SETTINGS.TITLE' | translate }}</h2>
 
-    <form (ngSubmit)="onSubmitPassword()" [formGroup]="passwordForm" class="space-y-4 mt-4">
-      <p class="text-sm text-base-content/70">{{ 'SETTINGS.PASSWORD_SUBTITLE' | translate }}</p>
+    <form (ngSubmit)="onSubmitPassword()" [formGroup]="passwordForm">
 
-      <div class="form-control">
-        <label class="label"><span
-          class="label-text">{{ 'SETTINGS.CURRENT_PASSWORD' | translate }}</span></label>
-        <input class="input input-bordered" formControlName="currentPassword" type="password"/>
-      </div>
+      <fieldset class="fieldset bg-base-200 border-base-300 rounded-box w-full border p-4">
 
-      <div class="form-control">
-        <label class="label"><span
-          class="label-text">{{ 'SETTINGS.NEW_PASSWORD' | translate }}</span></label>
-        <input class="input input-bordered" formControlName="newPassword" type="password"/>
-      </div>
+        <legend class="fieldset-legend">{{ 'SETTINGS.PASSWORD_SUBTITLE' | translate }}</legend>
 
-      <div class="form-control">
-        <label class="label"><span
-          class="label-text">{{ 'SETTINGS.CONFIRM_PASSWORD' | translate }}</span></label>
-        <input class="input input-bordered" formControlName="confirmationPassword" type="password"/>
+        <label class="fieldset-label">{{ 'SETTINGS.CURRENT_PASSWORD' | translate }}</label>
+        <label class="input validator w-full">
+          <svg class="h-[1em] opacity-50" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"
+               stroke-width="2.5">
+              <path
+                d="M2.586 17.414A2 2 0 0 0 2 18.828V21a1 1 0 0 0 1 1h3a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h1a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h.172a2 2 0 0 0 1.414-.586l.814-.814a6.5 6.5 0 1 0-4-4z"></path>
+              <circle cx="16.5" cy="7.5" fill="currentColor" r=".5"></circle>
+            </g>
+          </svg>
+
+          <input
+            formControlName="currentPassword"
+            placeholder="{{ 'SETTINGS.CURRENT_PASSWORD' | translate }}"
+            required
+            type="password"
+          />
+        </label>
+
+        <label class="fieldset-label">{{ 'SETTINGS.NEW_PASSWORD' | translate }}</label>
+        <label class="input validator w-full">
+          <svg class="h-[1em] opacity-50" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"
+               stroke-width="2.5">
+              <path
+                d="M2.586 17.414A2 2 0 0 0 2 18.828V21a1 1 0 0 0 1 1h3a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h1a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h.172a2 2 0 0 0 1.414-.586l.814-.814a6.5 6.5 0 1 0-4-4z"></path>
+              <circle cx="16.5" cy="7.5" fill="currentColor" r=".5"></circle>
+            </g>
+          </svg>
+
+          <input
+            formControlName="newPassword"
+            minlength="8"
+            pattern="(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{8,}"
+            placeholder="{{ 'SETTINGS.NEW_PASSWORD' | translate }}"
+            required
+            title="Must be more than 8 characters, including number, lowercase letter, uppercase letter"
+            type="password"
+          />
+        </label>
+        <p class="validator-hint hidden text-xs">
+          Must be more than 8 characters, including <br/>
+          At least one number <br/>
+          At least one lowercase letter <br/>
+          At least one uppercase letter
+        </p>
+
+        <label class="fieldset-label">{{ 'SETTINGS.CONFIRM_PASSWORD' | translate }}</label>
+        <label class="input validator w-full">
+          <svg class="h-[1em] opacity-50" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"
+               stroke-width="2.5">
+              <path
+                d="M2.586 17.414A2 2 0 0 0 2 18.828V21a1 1 0 0 0 1 1h3a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h1a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h.172a2 2 0 0 0 1.414-.586l.814-.814a6.5 6.5 0 1 0-4-4z"></path>
+              <circle cx="16.5" cy="7.5" fill="currentColor" r=".5"></circle>
+            </g>
+          </svg>
+
+          <input
+            formControlName="confirmationPassword"
+            placeholder="{{ 'SETTINGS.CONFIRM_PASSWORD' | translate }}"
+            required
+            type="password"
+          />
+        </label>
         @if (passwordForm.errors?.['passwordsMismatch'] && passwordForm.get(
           'confirmationPassword')?.touched) {
-          <div class="label">
-            <span
-              class="label-text-alt text-error">{{ 'SETTINGS.PASSWORDS_MISMATCH' | translate }}</span>
-          </div>
+          <p class="validator-hint text-error text-xs mt-1">
+            {{ 'SETTINGS.PASSWORDS_MISMATCH' | translate }}
+          </p>
         }
-      </div>
 
-      <div class="card-actions justify-end mt-4">
-        <button [disabled]="passwordForm.invalid" class="btn btn-primary"
-                type="submit">{{ 'SETTINGS.CHANGE_PASSWORD_BTN' | translate }}
-        </button>
-      </div>
+        <div class="card-actions justify-end mt-6">
+          <button [disabled]="passwordForm.invalid" class="btn btn-primary" type="submit">
+            {{ 'SETTINGS.CHANGE_PASSWORD_BTN' | translate }}
+          </button>
+        </div>
+
+      </fieldset>
     </form>
 
     <div class="divider"></div>
