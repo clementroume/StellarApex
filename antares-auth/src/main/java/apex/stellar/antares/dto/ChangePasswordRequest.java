@@ -1,5 +1,6 @@
 package apex.stellar.antares.dto;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
@@ -12,9 +13,13 @@ import jakarta.validation.constraints.Size;
  * @param confirmationPassword A confirmation of the new password.
  */
 public record ChangePasswordRequest(
-    @NotBlank(message = "{validation.currentPassword.required}") String currentPassword,
-    @NotBlank(message = "{validation.newPassword.required}")
+    @Schema(description = "Current password for verification", example = "OldPass123!")
+        @NotBlank(message = "{validation.currentPassword.required}")
+        String currentPassword,
+    @Schema(description = "New desired password", example = "NewStrongPass456!")
+        @NotBlank(message = "{validation.newPassword.required}")
         @Size(min = 8, message = "{validation.password.size}")
         String newPassword,
-    @NotBlank(message = "{validation.confirmationPassword.required}")
+    @Schema(description = "Confirmation of the new password", example = "NewStrongPass456!")
+        @NotBlank(message = "{validation.confirmationPassword.required}")
         String confirmationPassword) {}

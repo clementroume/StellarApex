@@ -1,5 +1,6 @@
 package apex.stellar.antares.dto;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 
@@ -14,7 +15,10 @@ import jakarta.validation.constraints.NotBlank;
  * @param password The user's plain-text password.
  */
 public record AuthenticationRequest(
-    @Email(message = "{validation.email.invalid}")
+    @Schema(description = "User's email address", example = "john.doe@stellar.apex")
+        @Email(message = "{validation.email.invalid}")
         @NotBlank(message = "{validation.email.required}")
         String email,
-    @NotBlank(message = "{validation.password.required}") String password) {}
+    @Schema(description = "User's password", example = "SecurePass123!")
+        @NotBlank(message = "{validation.password.required}")
+        String password) {}

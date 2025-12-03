@@ -11,6 +11,14 @@ import apex.stellar.antares.model.Role;
 import apex.stellar.antares.model.User;
 import apex.stellar.antares.service.AuthenticationService;
 import apex.stellar.antares.service.JwtService;
+import io.swagger.v3.oas.annotations.Hidden;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirements;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
@@ -35,6 +43,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/antares/auth")
 @RequiredArgsConstructor
+@Tag(name = "Authentication", description = "Registration, Logging in, and Token Management")
 public class AuthenticationController {
 
   private final AuthenticationService authenticationService;
@@ -51,6 +60,22 @@ public class AuthenticationController {
    * @return A ResponseEntity with status 201 (Created) and the new {@link UserResponse}.
    */
   @PostMapping("/register")
+  @Operation(
+      summary = "Register a new user",
+      description = "Creates a new user account and returns the public profile.")
+  @SecurityRequirements()
+  @ApiResponses(
+      value = {
+        @ApiResponse(responseCode = "201", description = "User successfully created"),
+        @ApiResponse(
+            responseCode = "400",
+            description = "Validation error (e.g. invalid email format)",
+            content = @Content(schema = @Schema(hidden = true))),
+        @ApiResponse(
+            responseCode = "409",
+            description = "Conflict - Email address is already in use",
+            content = @Content(schema = @Schema(hidden = true)))
+      })
   public ResponseEntity<@NonNull UserResponse> register(
       @Valid @RequestBody RegisterRequest request, HttpServletResponse response) {
 
@@ -66,6 +91,26 @@ public class AuthenticationController {
    * @return A ResponseEntity with status 200 (OK) and the authenticated {@link UserResponse}.
    */
   @PostMapping("/login")
+  @Operation(
+      summary = "Authenticate user",
+      description = "Validates credentials and sets HttpOnly cookies.")
+  @SecurityRequirements()
+  @ApiResponses(
+      value = {
+        @ApiResponse(responseCode = "200", description = "Authentication successful"),
+        @ApiResponse(
+            responseCode = "400",
+            description = "Validation error (e.g. missing field)",
+            content = @Content(schema = @Schema(hidden = true))),
+        @ApiResponse(
+            responseCode = "401",
+            description = "Bad Credentials",
+            content = @Content(schema = @Schema(hidden = true))),
+        @ApiResponse(
+            responseCode = "429",
+            description = "Account locked due to too many failed attempts",
+            content = @Content(schema = @Schema(hidden = true)))
+      })
   public ResponseEntity<@NonNull UserResponse> login(
       @Valid @RequestBody AuthenticationRequest request, HttpServletResponse response) {
 
@@ -80,6 +125,15 @@ public class AuthenticationController {
    * @return A ResponseEntity with status 200 (OK).
    */
   @PostMapping("/logout")
+  @Operation(summary = "Logout user", description = "Invalidates the session and clears cookies.")
+  @ApiResponses(
+      value = {
+        @ApiResponse(responseCode = "200", description = "Logged out successfully"),
+        @ApiResponse(
+            responseCode = "401",
+            description = "Unauthorized - User was not logged in",
+            content = @Content(schema = @Schema(hidden = true)))
+      })
   public ResponseEntity<@NonNull Void> logout(
       Authentication authentication, HttpServletResponse response) {
 
@@ -104,6 +158,7 @@ public class AuthenticationController {
    * </ol>
    */
   @GetMapping("/verify")
+  @Hidden
   public ResponseEntity<@NonNull Void> verify(
       HttpServletRequest request, Authentication authentication) {
 
@@ -134,6 +189,7 @@ public class AuthenticationController {
    * @throws ResourceNotFoundException if the refresh token cookie is missing.
    */
   @PostMapping("/refresh-token")
+  @Hidden
   public ResponseEntity<@NonNull TokenRefreshResponse> refreshToken(
       HttpServletRequest request, HttpServletResponse response) {
 

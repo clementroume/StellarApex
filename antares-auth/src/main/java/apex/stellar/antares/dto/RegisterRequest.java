@@ -1,5 +1,6 @@
 package apex.stellar.antares.dto;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -16,16 +17,20 @@ import jakarta.validation.constraints.Size;
  * @param password The user's plain-text password (min 8 characters).
  */
 public record RegisterRequest(
-    @NotBlank(message = "{validation.firstName.required}")
+    @Schema(description = "User's first name", example = "John")
+        @NotBlank(message = "{validation.firstName.required}")
         @Size(max = 50, message = "{validation.firstName.size}")
         String firstName,
-    @NotBlank(message = "{validation.lastName.required}")
+    @Schema(description = "User's last name", example = "Doe")
+        @NotBlank(message = "{validation.lastName.required}")
         @Size(max = 50, message = "{validation.lastName.size}")
         String lastName,
-    @Email(message = "{validation.email.invalid}")
+    @Schema(description = "User's email address", example = "john.doe@stellar.apex")
+        @Email(message = "{validation.email.invalid}")
         @NotBlank(message = "{validation.email.required}")
         @Size(max = 255, message = "{validation.email.size}")
         String email,
-    @NotBlank(message = "{validation.password.required}")
+    @Schema(description = "User's password (min 8 chars)", example = "SecurePass123!")
+        @NotBlank(message = "{validation.password.required}")
         @Size(min = 8, message = "{validation.password.size}")
         String password) {}

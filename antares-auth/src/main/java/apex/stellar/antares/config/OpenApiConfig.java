@@ -9,6 +9,7 @@ import io.swagger.v3.oas.models.security.SecurityRequirement;
 import io.swagger.v3.oas.models.security.SecurityScheme;
 import io.swagger.v3.oas.models.servers.Server;
 import java.util.List;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -16,36 +17,44 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class OpenApiConfig {
 
+  @Value("${application.frontend.url}")
+  private String serverUrl;
+
+  /**
+   * Configures and returns the OpenAPI specification for the Antares Auth API. The API provides
+   * Authentication, Authorization, and User Management services. It includes details such as the
+   * API title, description, version, contact information, license information, server URL, and
+   * security schemes.
+   *
+   * @return an OpenAPI object containing the configuration for the Antares Auth API.
+   */
   @Bean
-  public OpenAPI antaresOpenAPI() {
+  public OpenAPI antaresOpenApi() {
+
     return new OpenAPI()
         .info(
             new Info()
-                .title("Antares Auth API")
+                .title("Antares Auth Api")
                 .description("Authentication, Authorization & User Management Service")
                 .version("v1.0.0")
                 .contact(
                     new Contact()
-                        .name("StellarApex Team")
-                        .email("dev@stellarapex.com")
-                        .url("https://stellar.apex"))
+                        .name("StellarApex GitHub")
+                        .url("https://github.com/clementroume/StellarApex"))
                 .license(
                     new License()
                         .name("Apache 2.0")
                         .url("https://www.apache.org/licenses/LICENSE-2.0")))
-        .servers(
-            List.of(
-                new Server().url("https://stellar.apex").description("Production"),
-                new Server().url("http://localhost:8080").description("Local Development")))
-        .addSecurityItem(new SecurityRequirement().addList("cookieAuth"))
+        .servers(List.of(new Server().url(serverUrl).description("Main Server (Traefik)")))
+        .addSecurityItem(new SecurityRequirement().addList("bearerAuth"))
         .components(
             new Components()
                 .addSecuritySchemes(
-                    "cookieAuth",
+                    "bearerAuth",
                     new SecurityScheme()
-                        .type(SecurityScheme.Type.APIKEY)
-                        .in(SecurityScheme.In.COOKIE)
-                        .name("stellar_access_token")
-                        .description("JWT Access Token (HttpOnly Cookie)")));
+                        .type(SecurityScheme.Type.HTTP)
+                        .scheme("bearer")
+                        .bearerFormat("JWT")
+                        .description("Paste the 'accessToken'")));
   }
 }

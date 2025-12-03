@@ -5,10 +5,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.util.Locale;
 import org.jspecify.annotations.NonNull;
-import org.springframework.context.MessageSource;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.support.ReloadableResourceBundleMessageSource;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.servlet.LocaleResolver;
@@ -23,22 +21,6 @@ import org.springframework.web.servlet.i18n.AcceptHeaderLocaleResolver;
  */
 @Configuration
 public class I18nConfig {
-
-  /**
-   * Configures the source for translation messages.
-   *
-   * <p>Loads properties files from the classpath with the base name "messages" (e.g., {@code
-   * messages.properties}, {@code messages_fr.properties}).
-   *
-   * @return The configured message source bean.
-   */
-  @Bean
-  public MessageSource messageSource() {
-    ReloadableResourceBundleMessageSource messageSource =
-        new ReloadableResourceBundleMessageSource();
-    messageSource.setBasename("classpath:messages");
-    return messageSource;
-  }
 
   /**
    * Configures the custom {@link LocaleResolver} bean.

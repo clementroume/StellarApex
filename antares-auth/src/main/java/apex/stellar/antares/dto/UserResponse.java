@@ -1,6 +1,7 @@
 package apex.stellar.antares.dto;
 
 import apex.stellar.antares.model.Role;
+import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.LocalDateTime;
 
 /**
@@ -22,13 +23,13 @@ import java.time.LocalDateTime;
  * @param updatedAt The timestamp of the last update to the user's record.
  */
 public record UserResponse(
-    Long id,
-    String firstName,
-    String lastName,
-    String email,
-    Role role,
-    Boolean enabled,
-    String locale,
-    String theme,
+    @Schema(example = "1") Long id,
+    @Schema(example = "John") String firstName,
+    @Schema(example = "Doe") String lastName,
+    @Schema(example = "john.doe@stellar.apex") String email,
+    @Schema(example = "ROLE_USER") Role role,
+    @Schema(example = "true") Boolean enabled,
+    @Schema(example = "en") String locale,
+    @Schema(example = "light") String theme,
     LocalDateTime createdAt,
     LocalDateTime updatedAt) {}

@@ -32,7 +32,6 @@ class RefreshTokenServiceTest {
 
   @InjectMocks private RefreshTokenService refreshTokenService;
 
-  // Helper pour reproduire le hashing afin de vérifier les interactions
   private String hashValue(String value) {
     try {
       MessageDigest digest = MessageDigest.getInstance("SHA-256");

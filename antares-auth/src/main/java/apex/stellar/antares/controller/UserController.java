@@ -7,6 +7,12 @@ import apex.stellar.antares.dto.UserResponse;
 import apex.stellar.antares.mapper.UserMapper;
 import apex.stellar.antares.model.User;
 import apex.stellar.antares.service.UserService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.NonNull;
@@ -27,6 +33,9 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/antares/users")
 @RequiredArgsConstructor
+@Tag(
+    name = "User Management",
+    description = "Profile, preferences, and password management for the current user.")
 public class UserController {
 
   private final UserService userService;
@@ -40,6 +49,17 @@ public class UserController {
    * @return A ResponseEntity containing the {@link UserResponse} for the current user.
    */
   @GetMapping("/me")
+  @Operation(
+      summary = "Get current user profile",
+      description = "Retrieves public details of the currently authenticated user.")
+  @ApiResponses(
+      value = {
+        @ApiResponse(responseCode = "200", description = "Profile retrieved successfully"),
+        @ApiResponse(
+            responseCode = "401",
+            description = "Unauthorized - Token missing or invalid",
+            content = @Content(schema = @Schema(hidden = true)))
+      })
   public ResponseEntity<@NonNull UserResponse> getAuthenticatedUser(Authentication authentication) {
 
     if (authentication.getPrincipal() instanceof User currentUser) {
@@ -56,6 +76,21 @@ public class UserController {
    * @return A ResponseEntity containing the updated {@link UserResponse}.
    */
   @PutMapping("/me/profile")
+  @Operation(
+      summary = "Update profile info",
+      description = "Updates first name, last name, and email.")
+  @ApiResponses(
+      value = {
+        @ApiResponse(responseCode = "200", description = "Profile updated successfully"),
+        @ApiResponse(
+            responseCode = "400",
+            description = "Validation error (e.g. invalid email format)",
+            content = @Content(schema = @Schema(hidden = true))),
+        @ApiResponse(
+            responseCode = "401",
+            description = "Unauthorized",
+            content = @Content(schema = @Schema(hidden = true)))
+      })
   public ResponseEntity<@NonNull UserResponse> updateProfile(
       @Valid @RequestBody ProfileUpdateRequest request, Authentication authentication) {
 
@@ -73,6 +108,19 @@ public class UserController {
    * @return A ResponseEntity containing the updated {@link UserResponse}.
    */
   @PatchMapping("/me/preferences")
+  @Operation(summary = "Update user preferences", description = "Updates locale and UI theme.")
+  @ApiResponses(
+      value = {
+        @ApiResponse(responseCode = "200", description = "Preferences updated successfully"),
+        @ApiResponse(
+            responseCode = "400",
+            description = "Validation error (e.g. invalid locale or theme)",
+            content = @Content(schema = @Schema(hidden = true))),
+        @ApiResponse(
+            responseCode = "401",
+            description = "Unauthorized",
+            content = @Content(schema = @Schema(hidden = true)))
+      })
   public ResponseEntity<@NonNull UserResponse> updatePreferences(
       @Valid @RequestBody PreferencesUpdateRequest request, Authentication authentication) {
 
@@ -90,6 +138,21 @@ public class UserController {
    * @return An empty ResponseEntity (200 OK) confirming success.
    */
   @PutMapping("/me/password")
+  @Operation(
+      summary = "Change password",
+      description = "Updates the user's password. Requires current password verification.")
+  @ApiResponses(
+      value = {
+        @ApiResponse(responseCode = "200", description = "Password changed successfully"),
+        @ApiResponse(
+            responseCode = "400",
+            description = "Invalid input (e.g. wrong current password, mismatch)",
+            content = @Content(schema = @Schema(hidden = true))),
+        @ApiResponse(
+            responseCode = "401",
+            description = "Unauthorized",
+            content = @Content(schema = @Schema(hidden = true)))
+      })
   public ResponseEntity<@NonNull Void> changePassword(
       @Valid @RequestBody ChangePasswordRequest request, Authentication authentication) {
 

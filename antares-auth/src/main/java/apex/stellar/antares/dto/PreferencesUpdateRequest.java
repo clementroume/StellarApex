@@ -1,5 +1,6 @@
 package apex.stellar.antares.dto;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 
@@ -13,9 +14,14 @@ import jakarta.validation.constraints.Pattern;
  * @param theme The user's preferred theme ("light" or "dark").
  */
 public record PreferencesUpdateRequest(
-    @NotBlank(message = "{validation.locale.required}")
+    @Schema(description = "Preferred language (locale)", example = "fr")
+        @NotBlank(message = "{validation.locale.required}")
         @Pattern(regexp = "^[a-z]{2}(-[A-Z]{2})?$", message = "{validation.locale.pattern}")
         String locale,
-    @NotBlank(message = "{validation.theme.required}")
+    @Schema(
+            description = "UI Theme preference",
+            example = "dark",
+            allowableValues = {"light", "dark"})
+        @NotBlank(message = "{validation.theme.required}")
         @Pattern(regexp = "^(light|dark)$", message = "{validation.theme.pattern}")
         String theme) {}
