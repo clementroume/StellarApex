@@ -1,7 +1,9 @@
 package apex.stellar.antares.controller;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.cookie;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -166,5 +168,35 @@ class UserControllerIT extends BaseIntegrationTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(loginWithNewPassword)))
         .andExpect(status().isOk());
+  }
+
+  @Test
+  @DisplayName("Delete Account: should remove user data and clear cookies")
+  void testDeleteAccount_shouldSucceed() throws Exception {
+    // Given: An authenticated user
+    // (We reuse the cookies from setupUserAndLogin() in @BeforeEach, or recreate context if needed)
+    // Here, we assume 'authCookies' is available thanks to the @BeforeEach of the existing class.
+
+    // When: DELETE call to /me
+    mockMvc
+        .perform(delete("/antares/users/me").cookie(authCookies).with(csrf()))
+        // Then: Status 204 No Content
+        .andExpect(status().isNoContent())
+        // Verify cookie clearing (Max-Age=0)
+        .andExpect(cookie().maxAge("stellar_access_token", 0))
+        .andExpect(cookie().maxAge("stellar_refresh_token", 0));
+
+    // DB Verification: The user must no longer exist
+    assertThat(userRepository.findByEmail(initialEmail)).isEmpty();
+
+    // Login Verification: A subsequent login attempt must fail
+    AuthenticationRequest loginRequest = new AuthenticationRequest(initialEmail, initialPassword);
+    mockMvc
+        .perform(
+            post("/antares/auth/login")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(loginRequest)))
+        .andExpect(
+            status().isUnauthorized()); // Or ResourceNotFound depending on your error handling
   }
 }

@@ -25,6 +25,7 @@ public class UserService {
   private final UserRepository userRepository;
   private final PasswordEncoder passwordEncoder;
   private final UserMapper userMapper;
+  private final RefreshTokenService refreshTokenService;
 
   /**
    * Updates the core profile information (name, email) of a user.
@@ -80,5 +81,19 @@ public class UserService {
 
     currentUser.setPassword(passwordEncoder.encode(request.newPassword()));
     userRepository.save(currentUser);
+  }
+
+  /**
+   * Deletes the account of the currently authenticated user. This operation removes the user's data
+   * from the database and invalidates any associated tokens.
+   *
+   * @param currentUser The user entity to be deleted (from the security context).
+   */
+  @Transactional
+  @CacheEvict(value = "users", key = "#currentUser.email")
+  public void deleteAccount(User currentUser) {
+
+    refreshTokenService.deleteTokenForUser(currentUser);
+    userRepository.delete(currentUser);
   }
 }

@@ -25,6 +25,7 @@ class UserServiceTest {
   @Mock private UserRepository userRepository;
   @Mock private PasswordEncoder passwordEncoder;
   @Mock private UserMapper userMapper;
+  @Mock private RefreshTokenService refreshTokenService;
 
   @InjectMocks private UserService userService;
 
@@ -96,5 +97,16 @@ class UserServiceTest {
     assertThrows(
         InvalidPasswordException.class, () -> userService.changePassword(request, testUser));
     verify(userRepository, never()).save(any(User.class));
+  }
+
+  @Test
+  @DisplayName("deleteAccount: should remove refresh token and delete user from repository")
+  void testDeleteAccount_shouldCleanupAndDelete() {
+    // When
+    userService.deleteAccount(testUser);
+
+    // Then
+    verify(refreshTokenService).deleteTokenForUser(testUser);
+    verify(userRepository).delete(testUser);
   }
 }

@@ -6,6 +6,8 @@ import apex.stellar.antares.dto.ProfileUpdateRequest;
 import apex.stellar.antares.dto.UserResponse;
 import apex.stellar.antares.mapper.UserMapper;
 import apex.stellar.antares.model.User;
+import apex.stellar.antares.service.CookieService;
+import apex.stellar.antares.service.JwtService;
 import apex.stellar.antares.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -13,12 +15,14 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.NonNull;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -40,6 +44,8 @@ public class UserController {
 
   private final UserService userService;
   private final UserMapper userMapper;
+  private final CookieService cookieService;
+  private final JwtService jwtService;
 
   /**
    * Handles GET requests to retrieve the profile of the currently authenticated user. The user is
@@ -159,6 +165,39 @@ public class UserController {
     if (authentication.getPrincipal() instanceof User currentUser) {
       userService.changePassword(request, currentUser);
       return ResponseEntity.ok().build();
+    }
+    return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+  }
+
+  /**
+   * Deletes the authenticated user's account and clears all associated sessions. This action is
+   * irreversible and removes all data related to the user's account.
+   *
+   * @param authentication the authentication object representing the currently logged-in user
+   * @param response the HTTP servlet response used to manipulate response headers or cookies
+   * @return a ResponseEntity with status 204 (No Content) if the account is successfully deleted,
+   *     or status 401 (Unauthorized) if the authentication is invalid
+   */
+  @DeleteMapping("/me")
+  @Operation(
+      summary = "Delete account",
+      description = "Permanently deletes the authenticated user account and clears sessions.")
+  @ApiResponses(
+      value = {
+        @ApiResponse(responseCode = "204", description = "Account successfully deleted"),
+        @ApiResponse(
+            responseCode = "401",
+            description = "Unauthorized",
+            content = @Content(schema = @Schema(hidden = true)))
+      })
+  public ResponseEntity<@NonNull Void> deleteAccount(
+      Authentication authentication, HttpServletResponse response) {
+
+    if (authentication.getPrincipal() instanceof User currentUser) {
+      userService.deleteAccount(currentUser);
+      cookieService.clearCookie(jwtService.getAccessTokenCookieName(), response);
+      cookieService.clearCookie(jwtService.getRefreshTokenCookieName(), response);
+      return ResponseEntity.noContent().build();
     }
     return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
   }
