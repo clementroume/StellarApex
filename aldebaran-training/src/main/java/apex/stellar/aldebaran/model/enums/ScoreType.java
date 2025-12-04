@@ -1,4 +1,4 @@
-package apex.stellar.aldebaran.model.emuns;
+package apex.stellar.aldebaran.model.enums;
 
 public enum ScoreType {
   TIME, // For Time workouts (mm:ss)

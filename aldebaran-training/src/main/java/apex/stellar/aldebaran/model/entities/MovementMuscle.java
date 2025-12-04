@@ -1,6 +1,6 @@
 package apex.stellar.aldebaran.model.entities;
 
-import apex.stellar.aldebaran.model.emuns.MuscleRole;
+import apex.stellar.aldebaran.model.enums.MuscleRole;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;

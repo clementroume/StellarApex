@@ -1,9 +1,9 @@
 package apex.stellar.aldebaran.model.entities;
 
-import apex.stellar.aldebaran.model.emuns.Equipment;
-import apex.stellar.aldebaran.model.emuns.Family;
-import apex.stellar.aldebaran.model.emuns.Modality;
-import apex.stellar.aldebaran.model.emuns.Technique;
+import apex.stellar.aldebaran.model.enums.Equipment;
+import apex.stellar.aldebaran.model.enums.Family;
+import apex.stellar.aldebaran.model.enums.Modality;
+import apex.stellar.aldebaran.model.enums.Technique;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;

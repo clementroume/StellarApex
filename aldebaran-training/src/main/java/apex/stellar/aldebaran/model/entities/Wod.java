@@ -1,8 +1,8 @@
 package apex.stellar.aldebaran.model.entities;
 
-import apex.stellar.aldebaran.model.emuns.BenchmarkName;
-import apex.stellar.aldebaran.model.emuns.Modality;
-import apex.stellar.aldebaran.model.emuns.WorkoutType;
+import apex.stellar.aldebaran.model.enums.BenchmarkName;
+import apex.stellar.aldebaran.model.enums.Modality;
+import apex.stellar.aldebaran.model.enums.WorkoutType;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -15,12 +15,18 @@ import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 @Entity
-@Table(name = "wods", indexes = {
-    @Index(name = "idx_benchmark", columnList = "benchmarkName"),
-    @Index(name = "idx_type", columnList = "type")
-})
+@Table(
+    name = "wods",
+    indexes = {
+      @Index(name = "idx_benchmark", columnList = "benchmarkName"),
+      @Index(name = "idx_type", columnList = "type")
+    })
 @EntityListeners(AuditingEntityListener.class)
-@Getter @Setter @Builder @NoArgsConstructor @AllArgsConstructor
+@Getter
+@Setter
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class Wod {
 
   @Id
@@ -39,8 +45,7 @@ public class Wod {
   // Métadonnées de création
   private Long creatorId; // Coach ou Admin
 
-  @Builder.Default
-  private boolean isPublic = false; // Visible par toute la box ?
+  @Builder.Default private boolean isPublic = false; // Visible par toute la box ?
 
   @Column(columnDefinition = "TEXT")
   private String description;

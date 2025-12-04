@@ -1,7 +1,7 @@
 package apex.stellar.aldebaran.model.entities;
 
-import apex.stellar.aldebaran.model.emuns.ScalingLevel;
-import apex.stellar.aldebaran.model.emuns.ScoreType;
+import apex.stellar.aldebaran.model.enums.ScalingLevel;
+import apex.stellar.aldebaran.model.enums.ScoreType;
 import jakarta.persistence.*;
 import java.time.LocalDate;
 import java.time.LocalDateTime;

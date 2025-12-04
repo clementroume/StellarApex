@@ -1,4 +1,4 @@
-package apex.stellar.aldebaran.model.emuns;
+package apex.stellar.aldebaran.model.enums;
 
 public enum BenchmarkName {
   // Girls
