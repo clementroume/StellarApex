@@ -1,5 +1,10 @@
-package apex.stellar.aldebaran.model;
+package apex.stellar.aldebaran.model.entities;
 
+import apex.stellar.aldebaran.model.emuns.Equipment;
+import apex.stellar.aldebaran.model.emuns.Family;
+import apex.stellar.aldebaran.model.emuns.Modality;
+import apex.stellar.aldebaran.model.emuns.Technique;
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
 import jakarta.persistence.ElementCollection;
@@ -10,8 +15,7 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
-import jakarta.persistence.JoinTable;
-import jakarta.persistence.ManyToMany;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import java.time.LocalDateTime;
 import java.util.HashSet;
@@ -62,29 +66,21 @@ public class Movement {
   @Builder.Default
   private Set<Technique> techniques = new HashSet<>(); // Strict, kipping, butterfly, etc.
 
-  @ManyToMany(fetch = FetchType.LAZY)
-  @JoinTable(
-      name = "movement_prime_movers",
-      joinColumns = @JoinColumn(name = "movement_id"),
-      inverseJoinColumns = @JoinColumn(name = "muscle_id"))
+  @OneToMany(
+      mappedBy = "movement",
+      cascade = CascadeType.ALL,
+      orphanRemoval = true,
+      fetch = FetchType.EAGER)
   @Builder.Default
-  private Set<Muscle> agonists = new HashSet<>();
+  private Set<MovementMuscle> affectedMuscles = new HashSet<>();
 
-  @ManyToMany(fetch = FetchType.LAZY)
-  @JoinTable(
-      name = "movement_synergists",
-      joinColumns = @JoinColumn(name = "movement_id"),
-      inverseJoinColumns = @JoinColumn(name = "muscle_id"))
+  @Column(nullable = false)
   @Builder.Default
-  private Set<Muscle> synergists = new HashSet<>();
+  private Boolean involvesBodyweight = false;
 
-  @ManyToMany(fetch = FetchType.LAZY)
-  @JoinTable(
-      name = "movement_stabilizers",
-      joinColumns = @JoinColumn(name = "movement_id"),
-      inverseJoinColumns = @JoinColumn(name = "muscle_id"))
-  @Builder.Default
-  private Set<Muscle> stabilizers = new HashSet<>();
+  // Facteur de charge corporelle (1.0 pour Pull-up, 0.65 pour Push-up, 0.0 pour Bench Press)
+  // Charge Totale = (Poids Barre + (Poids Athlète * bodyweightFactor)) * Reps
+  @Builder.Default private Double bodyweightFactor = 0.0;
 
   @Column(columnDefinition = "TEXT")
   private String descriptionEn;

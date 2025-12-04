@@ -1,4 +1,4 @@
-package apex.stellar.aldebaran.model;
+package apex.stellar.aldebaran.model.emuns;
 
 public enum Modality {
   MONOSTRUCTURAL,
