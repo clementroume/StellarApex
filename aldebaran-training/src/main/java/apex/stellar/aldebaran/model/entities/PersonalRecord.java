@@ -1,6 +1,5 @@
 package apex.stellar.aldebaran.model.entities;
 
-import apex.stellar.aldebaran.model.enums.ScalingLevel;
 import jakarta.persistence.*;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -56,10 +55,7 @@ public class PersonalRecord {
   private Wod benchmarkWod;
 
   // --- Result Data ---
-
-  @Enumerated(EnumType.STRING)
-  private ScalingLevel scalingLevel; // Important : un PR "Scaled" n'écrase pas un PR "Rx"
-
+  
   private LocalDate achievedDate;
 
   // Metrics (Flattened for easier querying/sorting)

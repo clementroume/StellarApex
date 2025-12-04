@@ -1,7 +1,5 @@
 package apex.stellar.aldebaran.model.entities;
 
-import apex.stellar.aldebaran.model.enums.ScalingLevel;
-import apex.stellar.aldebaran.model.enums.ScoreType;
 import jakarta.persistence.*;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -43,35 +41,66 @@ public class WodPerformance {
 
   @Enumerated(EnumType.STRING)
   @Column(nullable = false)
-  private ScoreType scoreType; // TIME, AMRAP, WEIGHT...
+  private ScoreType scoreType;
 
-  // Metrics spécifiques selon le type de score
-  private Integer timeSeconds; // Pour FOR TIME
-
-  private Integer rounds; // Pour AMRAP
-  private Integer reps; // Pour AMRAP (reps restantes) ou total reps simples
-
-  private Double maxWeight; // Pour 1RM / Heavy Day (kg)
-  private Double totalLoad; // Pour le tonnage total (kg)
-
-  private Integer totalCalories; // Pour résultats Calorie
-  private Double totalDistance; // Pour résultats Distance (mètres)
+  // Metrics spécifiques
+  private Integer timeSeconds;
+  private Integer rounds;
+  private Integer reps;
+  private Double maxWeight;
+  private Double totalLoad;
+  private Integer totalCalories;
+  private Double totalDistance;
 
   // --- Metadata de l'exécution ---
 
   @Column(nullable = false)
   @Builder.Default
-  private Boolean timeCapped = false; // A-t-on atteint le Time Cap ?
+  private Boolean timeCapped = false;
 
   @Enumerated(EnumType.STRING)
   @Column(nullable = false)
-  private ScalingLevel scaling; // RX, SCALED...
+  private ScalingLevel scaling;
 
   @Column(columnDefinition = "TEXT")
-  private String scalingNotes; // "J'ai fait des Ring Rows au lieu des Pull-ups"
+  private String scalingNotes;
 
   @Column(columnDefinition = "TEXT")
-  private String userComment; // "Sensations, douleur, stratégie..."
+  private String userComment;
 
   @CreatedDate private LocalDateTime loggedAt;
+
+  /**
+   * Represents the difficulty level at which a workout was performed relative to the prescription.
+   */
+  @Getter
+  @RequiredArgsConstructor
+  public enum ScalingLevel {
+    /** Performed exactly as written. Only RX performances are eligible for Leaderboards/PRs. */
+    RX("Rx"),
+    /** Modified weights, movements, or reps to match athlete ability. */
+    SCALED("Scaled"),
+    /** Harder version than prescribed (e.g., vest). */
+    ELITE("Elite / Rx+"),
+    /** Significant modification changing the stimulus. */
+    CUSTOM("Custom / Modified");
+
+    private final String displayName;
+  }
+
+  /** Defines the primary scoring metric for a performance. */
+  @Getter
+  @RequiredArgsConstructor
+  public enum ScoreType {
+    TIME("Time"),
+    ROUNDS_REPS("Rounds + Reps"),
+    REPS("Total Reps"),
+    WEIGHT("Max Weight"),
+    LOAD("Total Load"),
+    CALORIES("Calories"),
+    DISTANCE("Distance"),
+    NONE("No Score");
+
+    private final String displayName;
+  }
 }

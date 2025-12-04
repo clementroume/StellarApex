@@ -1,8 +1,7 @@
 package apex.stellar.aldebaran.model.entities;
 
-import apex.stellar.aldebaran.model.enums.BenchmarkName;
+import apex.stellar.aldebaran.model.enums.Benchmark;
 import apex.stellar.aldebaran.model.enums.Modality;
-import apex.stellar.aldebaran.model.enums.WorkoutType;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -37,10 +36,10 @@ public class Wod {
 
   @Enumerated(EnumType.STRING)
   @Column(nullable = false)
-  private WorkoutType type;
+  private WodType type;
 
   @Enumerated(EnumType.STRING)
-  private BenchmarkName benchmarkName; // Null si c'est un WOD du jour lambda
+  private Benchmark benchmark; // Null si c'est un WOD du jour lambda
 
   // Métadonnées de création
   private Long creatorId; // Coach ou Admin
@@ -79,4 +78,25 @@ public class Wod {
   @LastModifiedDate
   @Column(nullable = false)
   private LocalDateTime updatedAt;
+
+  public enum WodType {
+    // Time-based
+    AMRAP,
+    EMOM,
+    FOR_TIME,
+    TABATA,
+
+    // Special
+    CHIPPER,
+    GIRLS,
+    HERO,
+
+    // Training focus
+    STRENGTH,
+    SKILL,
+    ACCESSORY,
+
+    // Other
+    CUSTOM
+  }
 }

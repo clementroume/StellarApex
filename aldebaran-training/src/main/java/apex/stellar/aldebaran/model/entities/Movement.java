@@ -1,8 +1,7 @@
 package apex.stellar.aldebaran.model.entities;
 
 import apex.stellar.aldebaran.model.enums.Equipment;
-import apex.stellar.aldebaran.model.enums.Family;
-import apex.stellar.aldebaran.model.enums.Modality;
+import apex.stellar.aldebaran.model.enums.MovementFamily;
 import apex.stellar.aldebaran.model.enums.Technique;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.CollectionTable;
@@ -42,16 +41,14 @@ public class Movement {
   @Column(length = 20)
   private String id; // M-CLEAN-001, G-PULLUP-001, C-ROW-001
 
-  @Enumerated(EnumType.STRING)
-  @Column(nullable = false)
-  private Modality modality;
-
   @Column(nullable = false)
   private String name;
 
   private String nameAbbreviation; // For scoreboards: C&J, HSPU, T2B, etc.
 
-  private Family family; // Olympic lifts, squats, presses, etc.
+  @Enumerated(EnumType.STRING)
+  @Column(nullable = false)
+  private MovementFamily family;
 
   @ElementCollection(fetch = FetchType.EAGER)
   @CollectionTable(name = "movement_equipment", joinColumns = @JoinColumn(name = "movement_id"))
