@@ -22,11 +22,14 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
-/** Security configuration for Orion Training API. Uses JWT from Antares Auth for authentication. */
+/**
+ * Security configuration for Aldebaran Training API. Uses JWT from Antares Auth for authentication.
+ */
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
 public class SecurityConfig {
+
   @Value("${application.security.jwt.secret-key}")
   private String jwtSecretKey;
 
@@ -34,12 +37,10 @@ public class SecurityConfig {
   private String allowedOrigins;
 
   @Bean
-  public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+  public SecurityFilterChain securityFilterChain(HttpSecurity http) {
 
     http.cors(withDefaults())
-        .csrf(
-            csrf ->
-                csrf.ignoringRequestMatchers("/aldebaran/**", "/actuator/**", "/aldebaran-docs/**"))
+        .csrf(csrf -> csrf.ignoringRequestMatchers("/aldebaran/**", "/actuator/**"))
         .authorizeHttpRequests(
             auth ->
                 auth.requestMatchers("/aldebaran-docs", "/aldebaran-docs/**")
@@ -78,7 +79,7 @@ public class SecurityConfig {
   @Bean
   public CorsConfigurationSource corsConfigurationSource() {
     CorsConfiguration configuration = new CorsConfiguration();
-    configuration.setAllowedOriginPatterns(List.of(allowedOrigins, "https://*.stellar.apex"));
+    configuration.setAllowedOriginPatterns(List.of(allowedOrigins));
     configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
     configuration.setAllowedHeaders(List.of("Authorization", "Content-Type", "X-XSRF-TOKEN"));
     configuration.setAllowCredentials(true);

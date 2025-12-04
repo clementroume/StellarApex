@@ -1,0 +1,26 @@
+package apex.stellar.aldebaran.model;
+
+public enum Family {
+  DEADLIFT,
+  SQUAT,
+  PRESS_AND_JERK,
+  CLEAN,
+  SNATCH,
+  COMPLEXES,
+  LUNGES,
+  SWING,
+  OTHER_LIFTS,
+  PULLING,
+  PUSHING,
+  INVERTED,
+  CORE,
+  LOCOMOTION_AND_BODY_CONTROL,
+  CARDIO,
+  CARDIO_MACHINES,
+  BURPEES,
+  JUMPING,
+  THROWS_AND_SLAMS,
+  CARRY,
+  STRONGMAN_LIFTS,
+  SLED
+}
