@@ -1,57 +1,184 @@
 package apex.stellar.aldebaran.model.entities;
 
-import jakarta.persistence.*;
-import lombok.*;
+import apex.stellar.aldebaran.model.enums.Unit;
+import apex.stellar.aldebaran.model.enums.Unit.UnitType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
+import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import lombok.ToString;
 
 /**
- * Represents a movement within a workout with its prescribed sets/reps. For EMOM: could represent
- * what happens on even/odd minutes For Chipper: represents each movement in sequence
+ * Represents a prescribed ingredient within a WOD (The "Recipe").
+ *
+ * <p>It defines <strong>WHAT</strong> to do (exercise, weight, reps) and in <strong>WHAT
+ * ORDER</strong>. This entity links the generic {@link Wod} definition to the specific {@link
+ * Movement}.
+ *
+ * <p><em>Note: This refers to the Prescription (Rx). Actual results are stored in
+ * WodPerformance.</em>
  */
-@Entity
-@Table(name = "workout_movements")
 @Getter
 @Setter
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@Entity
+@Table(name = "wod_movements")
 public class WodMovement {
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
 
-  // Relation vers la définition du WOD (La Recette)
+  // -------------------------------------------------------------------------
+  // Relationships
+  // -------------------------------------------------------------------------
+
+  /** The parent WOD definition. */
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "wod_id", nullable = false)
+  @ToString.Exclude
+  @NotNull
   private Wod wod;
 
-  // Lien vers la bibliothèque de mouvements
-  @ManyToOne(fetch = FetchType.EAGER)
+  /** The movement to be performed (The "Ingredient"). */
+  @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "movement_id", nullable = false)
+  @NotNull
   private Movement movement;
 
-  @Column(nullable = false)
-  private Integer orderIndex; // 1, 2, 3... pour l'ordre d'affichage
+  /** Sequence order within the WOD (e.g., 1 for the first movement, 2 for the second). */
+  @Column(name = "order_index", nullable = false)
+  @Min(1)
+  @NotNull
+  private Integer orderIndex;
 
-  // --- Prescription (Rx) ---
+  // -------------------------------------------------------------------------
+  // Prescription (Rx)
+  // -------------------------------------------------------------------------
 
-  // Ex: "21-15-9" ou "5x5" ou "Max reps"
-  private String targetRepsScheme;
+  /**
+   * Textual representation of the rep scheme for this specific movement. Ex: "21-15-9", "5x5", "Max
+   * Reps", "100m".
+   */
+  @Column(name = "reps_scheme", length = 50)
+  @Size(max = 50)
+  private String repsScheme;
 
-  // Poids prescrit (Rx)
-  private Double rxWeight; // kg (Renommé de prescribedWeight pour plus de clarté "CrossFit")
-  private String rxWeightNote; // "Bodyweight", "1.5x BW", "Heavy"
+  // --- Weight ---
 
-  // Objectifs pour les mouvements cardio ou statiques
-  private Integer targetDurationSeconds; // Ex: Plank hold
-  private Double targetDistance; // meters
-  private Integer targetCalories;
+  /** Prescribed weight value. Unit is defined by {@code weightUnit}. */
+  @Column(name = "weight")
+  @DecimalMin("0.0")
+  private Double weight;
 
-  // --- Metadata ---
+  /** The unit for the prescribed weight (Mass). Default: KG. */
+  @Enumerated(EnumType.STRING)
+  @Column(name = "weight_unit", length = 10)
+  @Builder.Default
+  private Unit weightUnit = Unit.KG;
 
-  @Column(columnDefinition = "TEXT")
-  private String notes; // Instructions spécifiques (ex: "Touch and go")
+  // --- Duration ---
 
-  @Column(columnDefinition = "TEXT")
-  private String scalingOptions; // Suggestions : "Use PVC", "Knee push-ups"
+  /** Target duration for static holds or cardio. */
+  @Column(name = "duration_seconds")
+  @Min(0)
+  private Integer durationSeconds;
+
+  /** The unit for the prescribed duration. Default: SECONDS. */
+  @Enumerated(EnumType.STRING)
+  @Column(name = "duration_display_unit", length = 10)
+  @Builder.Default
+  private Unit durationDisplayUnit = Unit.SECONDS;
+
+  // --- Distance ---
+
+  /** Target distance value. Unit is defined by {@code distanceUnit}. */
+  @Column(name = "distance")
+  @DecimalMin("0.0")
+  private Double distance;
+
+  /** The unit for the prescribed distance. Default: METERS. */
+  @Enumerated(EnumType.STRING)
+  @Column(name = "distance_unit", length = 10)
+  @Builder.Default
+  private Unit distanceUnit = Unit.METERS;
+
+  // --- Calories ---
+
+  /** Target energy expenditure (calories). */
+  @Column(name = "calories")
+  @Min(0)
+  private Integer calories;
+
+  // -------------------------------------------------------------------------
+  // Metadata & Instructions
+  // -------------------------------------------------------------------------
+
+  /**
+   * Specific instructions for this movement in this WOD context. Ex: "Touch and go", "Unbroken".
+   */
+  @Column(name = "notes", columnDefinition = "TEXT")
+  private String notes;
+
+  /**
+   * Suggested scaling options displayed to the athlete. Ex: "Use PVC", "Knee push-ups", "Reduce
+   * weight to 40kg".
+   */
+  @Column(name = "scaling_options", columnDefinition = "TEXT")
+  private String scalingOptions;
+
+  // -------------------------------------------------------------------------
+  // Helper: Conversion Accessors (Transient)
+  // -------------------------------------------------------------------------
+
+  /** Helper to get normalized KG weight for calculations. */
+  @Transient
+  public Double getWeightInKg() {
+    if (weight == null || weightUnit == null) {
+      return null;
+    }
+    return weightUnit.getType() == UnitType.MASS ? weightUnit.toBase(weight) : null;
+  }
+
+  /** Helper to get normalized Meters distance for calculations. */
+  @Transient
+  public Double getDistanceInMeters() {
+    if (distance == null || distanceUnit == null) {
+      return null;
+    }
+    return distanceUnit.getType() == UnitType.DISTANCE ? distanceUnit.toBase(distance) : null;
+  }
+
+  /** Extracts the 'Minutes' part for a split display (Min:Sec). Ex: 90 seconds -> returns 1. */
+  @Transient
+  public Integer getDurationMinutesPart() {
+    return durationSeconds != null ? durationSeconds / 60 : null;
+  }
+
+  /**
+   * Extracts the 'Seconds' remainder for a split display (Min:Sec). Ex: 90 seconds -> returns 30.
+   */
+  @Transient
+  public Integer getDurationSecondsPart() {
+    return durationSeconds != null ? durationSeconds % 60 : null;
+  }
 }

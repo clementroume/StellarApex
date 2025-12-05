@@ -1,7 +1,21 @@
 package apex.stellar.aldebaran.model.entities;
 
-import jakarta.persistence.*;
-import lombok.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.RequiredArgsConstructor;
+import lombok.Setter;
 
 /**
  * Represents a specific anatomical muscle in the human body.
@@ -10,36 +24,65 @@ import lombok.*;
  * {@link MuscleGroup} to facilitate high-level reporting and visualization (e.g., "Upper Body" vs.
  * "Lower Body" volume).
  */
-@Entity
-@Table(name = "muscles")
 @Getter
 @Setter
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@Entity
+@Table(name = "muscles")
 public class Muscle {
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
 
-  @Column(unique = true, nullable = false)
-  private String standardName; // Latin/Medical name (e.g., "Pectoralis Major")
+  /** The Latin/Medical name (e.g., "Pectoralis Major"). Acts as the business key. */
+  @Column(name = "medical_name", unique = true, nullable = false, length = 100)
+  @NotBlank
+  private String medicalName;
 
-  private String nameEn; // Common name EN
-  private String nameFr; // Common name FR
+  @Column(name = "common_name_en", length = 100)
+  private String commonNameEn;
 
-  @Column(columnDefinition = "TEXT")
+  @Column(name = "common_name_fr", length = 100)
+  private String commonNameFr;
+
+  @Column(name = "description_en", columnDefinition = "TEXT")
   private String descriptionEn;
 
-  @Column(columnDefinition = "TEXT")
+  @Column(name = "description_fr", columnDefinition = "TEXT")
   private String descriptionFr;
 
   /** The major anatomical group this muscle belongs to. */
   @Enumerated(EnumType.STRING)
-  @Column(nullable = false)
+  @Column(name = "muscle_group", nullable = false, length = 50)
+  @NotNull
   private MuscleGroup muscleGroup;
 
+  // -------------------------------------------------------------------------
+  // Equality based on business key (medicalName)
+  // -------------------------------------------------------------------------
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    Muscle muscle = (Muscle) o;
+    return medicalName != null && medicalName.equals(muscle.medicalName);
+  }
+
+  @Override
+  public int hashCode() {
+    return medicalName != null ? medicalName.hashCode() : 0;
+  }
+
+  // -------------------------------------------------------------------------
+  // INNER ENUM
+  // -------------------------------------------------------------------------
   /**
    * High-level categorization of muscles into major anatomical groups.
    *
@@ -49,17 +92,11 @@ public class Muscle {
   @Getter
   @RequiredArgsConstructor
   public enum MuscleGroup {
-
-    // --- Lower Body ---
     LEGS("Legs"),
-
-    // --- Upper Body ---
     BACK("Back"),
     CHEST("Chest"),
     SHOULDERS("Shoulders"),
     ARMS("Arms"),
-
-    // --- Trunk ---
     CORE("Core");
 
     /** A human-readable name suitable for UI display. */
