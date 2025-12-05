@@ -130,7 +130,7 @@ public class WodScore {
   // STATUS & METADATA
   // -------------------------------------------------------------------------
 
-  /** Is this the user's best score (PR) for this WOD? */
+  /** Is this the user's best score (PR) for this WOD?. */
   @Column(name = "is_personal_record", nullable = false)
   @Builder.Default
   private boolean personalRecord = false;
