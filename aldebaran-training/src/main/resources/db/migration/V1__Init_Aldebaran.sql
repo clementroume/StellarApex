@@ -1,7 +1,14 @@
 -- ==================================================================================
 -- V1__Init_Aldebaran.sql
 -- Initial schema for Aldebaran Training Microservice (PostgreSQL)
+-- Includes: Schema + Indexes + Constraints + Extensions
 -- ==================================================================================
+
+-- ----------------------------------------------------------------------------------
+-- 0. EXTENSIONS
+-- ----------------------------------------------------------------------------------
+-- Recherche full-text fuzzy (Trigram similarity)
+CREATE EXTENSION IF NOT EXISTS pg_trgm;
 
 -- ----------------------------------------------------------------------------------
 -- 1. ANATOMY & MOVEMENT LIBRARY
@@ -15,17 +22,21 @@ CREATE TABLE muscles
     common_name_fr VARCHAR(100),
     description_en TEXT,
     description_fr TEXT,
-    muscle_group   VARCHAR(50)  NOT NULL
+    muscle_group   VARCHAR(50)  NOT NULL,
+
+    -- Audit
+    created_at     TIMESTAMP    NOT NULL DEFAULT NOW(),
+    updated_at     TIMESTAMP    NOT NULL DEFAULT NOW()
 );
 
 CREATE TABLE movements
 (
-    id                  VARCHAR(20) PRIMARY KEY,   -- Business Key (e.g., WL-SQ-001)
+    id                  VARCHAR(20) PRIMARY KEY, -- Business Key (e.g., WL-SQ-001)
 
     name                VARCHAR(50)      NOT NULL,
     name_abbreviation   VARCHAR(20),
 
-    category            VARCHAR(30)      NOT NULL, -- Renamed from 'family' to 'category'
+    category            VARCHAR(30)      NOT NULL,
 
     -- Load Logic
     involves_bodyweight BOOLEAN          NOT NULL DEFAULT FALSE,
@@ -40,32 +51,42 @@ CREATE TABLE movements
     image_url           VARCHAR(512),
 
     -- Audit
-    created_at          TIMESTAMP        NOT NULL,
-    updated_at          TIMESTAMP        NOT NULL
+    created_at          TIMESTAMP        NOT NULL DEFAULT NOW(),
+    updated_at          TIMESTAMP        NOT NULL DEFAULT NOW()
 );
 
 -- Weighted Join Table for Anatomy
 CREATE TABLE movement_muscles
 (
     id            BIGSERIAL PRIMARY KEY,
-    movement_id   VARCHAR(20)      NOT NULL REFERENCES movements (id),
-    muscle_id     BIGINT           NOT NULL REFERENCES muscles (id),
+    movement_id   VARCHAR(20)      NOT NULL REFERENCES movements (id) ON DELETE CASCADE,
+    muscle_id     BIGINT           NOT NULL REFERENCES muscles (id) ON DELETE CASCADE,
     role          VARCHAR(50)      NOT NULL,
-    impact_factor DOUBLE PRECISION NOT NULL DEFAULT 1.0
+    impact_factor DOUBLE PRECISION NOT NULL DEFAULT 1.0,
+
+    CONSTRAINT check_impact_factor_range CHECK (impact_factor >= 0 AND impact_factor <= 1)
 );
 
 -- Collection Tables
 CREATE TABLE movement_equipment
 (
-    movement_id VARCHAR(20) NOT NULL REFERENCES movements (id),
+    movement_id VARCHAR(20) NOT NULL REFERENCES movements (id) ON DELETE CASCADE,
     equipment   VARCHAR(50) NOT NULL
 );
 
 CREATE TABLE movement_variations
 (
-    movement_id VARCHAR(20) NOT NULL REFERENCES movements (id),
+    movement_id VARCHAR(20) NOT NULL REFERENCES movements (id) ON DELETE CASCADE,
     technique   VARCHAR(50) NOT NULL
 );
+
+-- Constraint: Bodyweight consistency
+ALTER TABLE movements
+    ADD CONSTRAINT check_bodyweight_consistency
+        CHECK (
+            (involves_bodyweight = TRUE AND bodyweight_factor > 0) OR
+            (involves_bodyweight = FALSE AND bodyweight_factor = 0)
+            );
 
 -- ----------------------------------------------------------------------------------
 -- 2. WORKOUT DEFINITIONS (WODs)
@@ -89,42 +110,40 @@ CREATE TABLE wods
     emom_rounds      INTEGER,
     rep_scheme       VARCHAR(100),
 
-    created_at       TIMESTAMP    NOT NULL,
-    updated_at       TIMESTAMP    NOT NULL
+    created_at       TIMESTAMP    NOT NULL DEFAULT NOW(),
+    updated_at       TIMESTAMP    NOT NULL DEFAULT NOW()
 );
-
--- Indexes defined in Wod.java
-CREATE INDEX idx_wod_title ON wods (title);
-CREATE INDEX idx_wod_type ON wods (wod_type);
 
 CREATE TABLE wod_modalities
 (
-    wod_id   BIGINT      NOT NULL REFERENCES wods (id),
+    wod_id   BIGINT      NOT NULL REFERENCES wods (id) ON DELETE CASCADE,
     modality VARCHAR(50) NOT NULL
 );
 
 CREATE TABLE wod_movements
 (
-    id              BIGSERIAL PRIMARY KEY,
-    wod_id          BIGINT      NOT NULL REFERENCES wods (id) ON DELETE CASCADE,
-    movement_id     VARCHAR(20) NOT NULL REFERENCES movements (id),
-    order_index     INTEGER     NOT NULL,
+    id                    BIGSERIAL PRIMARY KEY,
+    wod_id                BIGINT      NOT NULL REFERENCES wods (id) ON DELETE CASCADE,
+    movement_id           VARCHAR(20) NOT NULL REFERENCES movements (id),
+    order_index           INTEGER     NOT NULL,
 
-    reps_scheme     VARCHAR(50),
+    reps_scheme           VARCHAR(50),
 
-    weight          DOUBLE PRECISION,
-    weight_unit     VARCHAR(10),
+    weight                DOUBLE PRECISION,
+    weight_unit           VARCHAR(10) DEFAULT 'KG',
 
-    duration        INTEGER, -- Stored in Seconds
-    duration_unit   VARCHAR(10),
+    duration_seconds      INTEGER,
+    duration_display_unit VARCHAR(10) DEFAULT 'SECONDS',
 
-    distance        DOUBLE PRECISION,
-    distance_unit   VARCHAR(10),
+    distance              DOUBLE PRECISION,
+    distance_unit         VARCHAR(10) DEFAULT 'METERS',
 
-    calories        INTEGER,
+    calories              INTEGER,
 
-    notes           TEXT,
-    scaling_options TEXT
+    notes                 TEXT,
+    scaling_options       TEXT,
+
+    CONSTRAINT check_order_positive CHECK (order_index > 0)
 );
 
 -- ----------------------------------------------------------------------------------
@@ -134,70 +153,90 @@ CREATE TABLE wod_movements
 CREATE TABLE wod_scores
 (
     id                 BIGSERIAL PRIMARY KEY,
-    user_id            BIGINT      NOT NULL,
-    date               DATE        NOT NULL,
-    wod_id             BIGINT      NOT NULL REFERENCES wods (id),
+    user_id            VARCHAR(255) NOT NULL,
+    date               DATE         NOT NULL,
+    wod_id             BIGINT       NOT NULL REFERENCES wods (id) ON DELETE CASCADE,
 
     -- Metrics
     time_seconds       INTEGER,
-    time_display_unit  VARCHAR(10),
+    time_display_unit  VARCHAR(10)           DEFAULT 'SECONDS',
 
     rounds             INTEGER,
     reps               INTEGER,
 
     max_weight         DOUBLE PRECISION,
     total_load         DOUBLE PRECISION,
-    weight_unit        VARCHAR(10),
+    weight_unit        VARCHAR(10)           DEFAULT 'KG',
 
     total_distance     DOUBLE PRECISION,
-    distance_unit      VARCHAR(10),
+    distance_unit      VARCHAR(10)           DEFAULT 'METERS',
 
     total_calories     INTEGER,
 
     -- Metadata
-    is_personal_record BOOLEAN     NOT NULL DEFAULT FALSE,
-    time_capped        BOOLEAN     NOT NULL DEFAULT FALSE,
-    scaling            VARCHAR(20) NOT NULL,
+    is_personal_record BOOLEAN      NOT NULL DEFAULT FALSE,
+    time_capped        BOOLEAN      NOT NULL DEFAULT FALSE,
+    scaling            VARCHAR(20)  NOT NULL,
     scaling_notes      TEXT,
     user_comment       TEXT,
 
-    logged_at          TIMESTAMP   NOT NULL
+    logged_at          TIMESTAMP    NOT NULL DEFAULT NOW(),
+
+    -- Constraints
+    CONSTRAINT check_time_positive CHECK (time_seconds IS NULL OR time_seconds > 0),
+    CONSTRAINT check_rounds_positive CHECK (rounds IS NULL OR rounds >= 0),
+    CONSTRAINT check_weight_positive CHECK (max_weight IS NULL OR max_weight > 0)
 );
 
--- Indexes defined in WodScore.java
-CREATE INDEX idx_user_date ON wod_scores (user_id, date);
+-- ==================================================================================
+-- INDEXES - Performance Optimization
+-- ==================================================================================
+
+-- ----------------------------------------------------------------------------------
+-- MOVEMENT_MUSCLES (Anatomical queries)
+-- ----------------------------------------------------------------------------------
+CREATE INDEX idx_movement_muscles_movement ON movement_muscles (movement_id);
+CREATE INDEX idx_movement_muscles_muscle ON movement_muscles (muscle_id);
+CREATE INDEX idx_movement_muscles_role ON movement_muscles (role, impact_factor);
+
+-- ----------------------------------------------------------------------------------
+-- WOD_MOVEMENTS (WOD structure queries)
+-- ----------------------------------------------------------------------------------
+CREATE INDEX idx_wod_movements_wod_order ON wod_movements (wod_id, order_index);
+
+-- ----------------------------------------------------------------------------------
+-- MOVEMENTS (Search & Filtering)
+-- ----------------------------------------------------------------------------------
+CREATE INDEX idx_movements_category ON movements (category);
+CREATE INDEX idx_movements_name_trgm ON movements USING gin (name gin_trgm_ops);
+
+-- ----------------------------------------------------------------------------------
+-- WODS (Search)
+-- ----------------------------------------------------------------------------------
+CREATE INDEX idx_wod_title ON wods (title);
+CREATE INDEX idx_wod_type ON wods (wod_type);
+
+-- ----------------------------------------------------------------------------------
+-- WOD_SCORES (Leaderboards & History)
+-- ----------------------------------------------------------------------------------
+CREATE INDEX idx_user_date ON wod_scores (user_id, date DESC);
 CREATE INDEX idx_wod_user ON wod_scores (wod_id, user_id);
-CREATE INDEX idx_user_pr ON wod_scores (user_id, is_personal_record);
+CREATE INDEX idx_user_pr ON wod_scores (user_id) WHERE is_personal_record = TRUE;
+CREATE INDEX idx_wod_scores_wod_scaling ON wod_scores (wod_id, scaling, time_seconds);
 
--- ----------------------------------------------------------------------------------
--- 4. PERSONAL RECORDS (Read Model)
--- ----------------------------------------------------------------------------------
+-- ==================================================================================
+-- COMMENTS (Documentation in database)
+-- ==================================================================================
 
-CREATE TABLE personal_records
-(
-    id                    BIGSERIAL PRIMARY KEY,
-    user_id               BIGINT    NOT NULL,
+COMMENT ON TABLE movements IS 'Master catalog of exercises/movements';
+COMMENT ON COLUMN movements.id IS 'Business key format: {MODALITY}-{FAMILY}-{SEQUENCE} (e.g., WL-SQ-001)';
+COMMENT ON COLUMN movements.bodyweight_factor IS 'Percentage of bodyweight involved (0.0 to 1.0)';
 
-    source_performance_id BIGINT    NOT NULL REFERENCES wod_scores (id) ON DELETE CASCADE,
+COMMENT ON TABLE movement_muscles IS 'Weighted relationship between movements and muscles';
+COMMENT ON COLUMN movement_muscles.role IS 'AGONIST, SYNERGIST, or STABILIZER';
+COMMENT ON COLUMN movement_muscles.impact_factor IS 'Activation coefficient (0.0 to 1.0)';
 
-    movement_id           VARCHAR(20) REFERENCES movements (id),
-    wod_id                BIGINT REFERENCES wods (id),
-
-    achieved_date         DATE,
-
-    weight                DOUBLE PRECISION,
-    reps                  INTEGER,
-    time_seconds          INTEGER,
-
-    workout_time_seconds  INTEGER,
-    rounds                INTEGER,
-    total_reps            INTEGER,
-
-    notes                 TEXT,
-    is_current_pr         BOOLEAN   NOT NULL DEFAULT TRUE,
-    created_at            TIMESTAMP NOT NULL
-);
-
--- Indexes defined in PersonalRecord.java
-CREATE INDEX idx_pr_user_movement ON personal_records (user_id, movement_id);
-CREATE INDEX idx_pr_user_wod ON personal_records (user_id, wod_id);
+COMMENT ON TABLE wods IS 'Workout definitions (the recipe)';
+COMMENT ON TABLE wod_scores IS 'Athlete performance results (the execution)';
+COMMENT ON COLUMN wod_scores.time_seconds IS 'Canonical storage in seconds';
+COMMENT ON COLUMN wod_scores.time_display_unit IS 'User preference for display';

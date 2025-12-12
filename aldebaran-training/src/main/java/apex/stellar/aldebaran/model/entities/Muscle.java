@@ -2,6 +2,7 @@ package apex.stellar.aldebaran.model.entities;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EntityListeners;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
@@ -10,12 +11,16 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import java.time.LocalDateTime;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 /**
  * Represents a specific anatomical muscle in the human body.
@@ -31,6 +36,7 @@ import lombok.Setter;
 @AllArgsConstructor
 @Entity
 @Table(name = "muscles")
+@EntityListeners(AuditingEntityListener.class)
 public class Muscle {
 
   @Id
@@ -59,6 +65,17 @@ public class Muscle {
   @Column(name = "muscle_group", nullable = false, length = 50)
   @NotNull
   private MuscleGroup muscleGroup;
+
+  // -------------------------------------------------------------------------
+  // Audit
+  // -------------------------------------------------------------------------
+  @CreatedDate
+  @Column(name = "created_at", nullable = false, updatable = false)
+  private LocalDateTime createdAt;
+
+  @LastModifiedDate
+  @Column(name = "updated_at", nullable = false)
+  private LocalDateTime updatedAt;
 
   // -------------------------------------------------------------------------
   // Equality based on business key (medicalName)

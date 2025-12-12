@@ -2,6 +2,7 @@ package apex.stellar.aldebaran.model.entities;
 
 import apex.stellar.aldebaran.model.enums.Unit;
 import apex.stellar.aldebaran.model.enums.Unit.UnitType;
+import apex.stellar.aldebaran.validation.ValidScore;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EntityListeners;
@@ -43,6 +44,7 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 @Entity
 @Table(name = "wod_scores") // Index managed via Flyway
 @EntityListeners(AuditingEntityListener.class)
+@ValidScore
 public class WodScore {
 
   @Id
@@ -51,7 +53,7 @@ public class WodScore {
 
   @Column(name = "user_id", nullable = false)
   @NotNull
-  private Long userId;
+  private String userId;
 
   @Column(nullable = false)
   @NotNull
@@ -181,6 +183,14 @@ public class WodScore {
     return weightUnit.getType() == UnitType.MASS ? weightUnit.toBase(maxWeight) : null;
   }
 
+  /** Sets maxWeight from normalized KG value. */
+  @Transient
+  public void setMaxWeightFromKg(Double kgValue) {
+    if (kgValue != null && weightUnit != null && weightUnit.getType() == UnitType.MASS) {
+      this.maxWeight = weightUnit.fromBase(kgValue);
+    }
+  }
+
   /** Converts totalLoad to KG for volume analysis. */
   @Transient
   public Double getTotalLoadInKg() {
@@ -190,6 +200,14 @@ public class WodScore {
     return weightUnit.getType() == UnitType.MASS ? weightUnit.toBase(totalLoad) : null;
   }
 
+  /** Sets totalLoad from normalized KG value. */
+  @Transient
+  public void setTotalLoadFromKg(Double kgValue) {
+    if (kgValue != null && weightUnit != null && weightUnit.getType() == UnitType.MASS) {
+      this.totalLoad = weightUnit.fromBase(kgValue);
+    }
+  }
+
   /** Converts totalDistance to Meters for ranking comparison. */
   @Transient
   public Double getTotalDistanceInMeters() {
@@ -197,6 +215,16 @@ public class WodScore {
       return null;
     }
     return distanceUnit.getType() == UnitType.DISTANCE ? distanceUnit.toBase(totalDistance) : null;
+  }
+
+  /** Sets totalDistance from normalized Meters value. */
+  @Transient
+  public void setTotalDistanceFromMeters(Double metersValue) {
+    if (metersValue != null
+        && distanceUnit != null
+        && distanceUnit.getType() == UnitType.DISTANCE) {
+      this.totalDistance = distanceUnit.fromBase(metersValue);
+    }
   }
 
   // ==================================================================================
