@@ -1,4 +1,4 @@
-name: StellarAtlas CI (monorepo)
+name: StellarApex CI
 
 permissions:
   contents: read
