@@ -1,0 +1,70 @@
+package apex.stellar.aldebaran.dto;
+
+import apex.stellar.aldebaran.model.enums.Category;
+import apex.stellar.aldebaran.model.enums.Equipment;
+import apex.stellar.aldebaran.model.enums.Technique;
+import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.DecimalMax;
+import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
+/**
+ * DTO for creating or updating a Movement in the catalog.
+ *
+ * <p>This object encapsulates all static data required to define an exercise, including its
+ * anatomical impact and coaching content.
+ */
+public record MovementRequest(
+    @Schema(description = "Official display name of the movement", example = "Back Squat")
+        @NotBlank(message = "{validation.movement.name.required}")
+        @Size(max = 50, message = "{validation.movement.name.size}")
+        String name,
+    @Schema(description = "Short abbreviation or code", example = "BS")
+        @Size(max = 20, message = "{validation.movement.abbreviation.size}")
+        String nameAbbreviation,
+    @Schema(description = "Primary functional category")
+        @NotNull(message = "{validation.movement.category.required}")
+        Category category,
+    @Schema(description = "List of required equipment (can be empty if bodyweight only)") @NotNull
+        Set<Equipment> equipment,
+    @Schema(description = "List of applicable technique variations") @NotNull
+        Set<Technique> techniques,
+    @Schema(description = "Configuration of targeted muscles and their activation roles") @Valid
+        List<MovementMuscleRequest> muscles,
+    @Schema(description = "Indicates if the athlete's body weight contributes to the load")
+        boolean involvesBodyweight,
+    @Schema(
+            description = "Factor of bodyweight to include in tonnage calculation (0.0 to 1.0)",
+            example = "1.0")
+        @DecimalMin(value = "0.0", message = "{validation.movement.bodyweightFactor.min}")
+        @DecimalMax(value = "1.0", message = "{validation.movement.bodyweightFactor.max}")
+        Double bodyweightFactor,
+
+    // --- Content & Media ---
+
+    @Schema(description = "Detailed technical description in English") String descriptionEn,
+    @Schema(description = "Description technique détaillée en Français") String descriptionFr,
+    @Schema(description = "Short coaching cues in English") String coachingCuesEn,
+    @Schema(description = "Conseils de coaching courts en Français") String coachingCuesFr,
+    @Schema(
+            description = "URL to a demonstration video",
+            example = "https://videos.stellar.apex/back-squat.mp4")
+        @Size(max = 512, message = "{validation.url.size}")
+        String videoUrl,
+    @Schema(description = "URL to an anatomical diagram or image")
+        @Size(max = 512, message = "{validation.url.size}")
+        String imageUrl) {
+  // Compact Constructor to ensure collections are never null
+  public MovementRequest {
+    equipment = equipment != null ? equipment : new HashSet<>();
+    techniques = techniques != null ? techniques : new HashSet<>();
+    muscles = muscles != null ? muscles : new ArrayList<>();
+  }
+}
