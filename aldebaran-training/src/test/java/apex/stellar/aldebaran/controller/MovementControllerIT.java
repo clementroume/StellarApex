@@ -1,0 +1,285 @@
+package apex.stellar.aldebaran.controller;
+
+import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.startsWith;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+import apex.stellar.aldebaran.config.BaseIntegrationTest;
+import apex.stellar.aldebaran.dto.MovementMuscleRequest;
+import apex.stellar.aldebaran.dto.MovementRequest;
+import apex.stellar.aldebaran.model.entities.Movement;
+import apex.stellar.aldebaran.model.entities.MovementMuscle.MuscleRole;
+import apex.stellar.aldebaran.model.entities.Muscle;
+import apex.stellar.aldebaran.model.entities.Muscle.MuscleGroup;
+import apex.stellar.aldebaran.model.enums.Category;
+import apex.stellar.aldebaran.repository.MovementRepository;
+import apex.stellar.aldebaran.repository.MuscleRepository;
+import java.util.Collections;
+import java.util.List;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.transaction.annotation.Transactional;
+import tools.jackson.databind.json.JsonMapper;
+
+/**
+ * Integration tests for {@link MovementController}.
+ *
+ * <p>Verifies the API contract, database persistence, and security rules.
+ *
+ * <p>Annotated with {@code @Transactional} to ensure Hibernate Session remains open during
+ * assertions, preventing LazyInitializationException when inspecting entities.
+ */
+@Transactional
+class MovementControllerIT extends BaseIntegrationTest {
+
+  @Autowired private MockMvc mockMvc;
+  @Autowired private JsonMapper objectMapper;
+  @Autowired private MovementRepository movementRepository;
+  @Autowired private MuscleRepository muscleRepository;
+
+  @Autowired private StringRedisTemplate stringRedisTemplate;
+
+  private Muscle quadriceps;
+
+  @BeforeEach
+  void setUp() {
+    // Clean DB
+    movementRepository.deleteAll();
+    muscleRepository.deleteAll();
+
+    // Seed Reference Data (Muscle) required for linking
+    quadriceps =
+        Muscle.builder()
+            .medicalName("Quadriceps Femoris")
+            .commonNameEn("Quads")
+            .muscleGroup(MuscleGroup.LEGS)
+            .build();
+    muscleRepository.save(quadriceps);
+
+    // Seed Initial Movement
+    Movement backSquat =
+        Movement.builder()
+            .id("WL-SQ-001")
+            .name("Back Squat")
+            .category(Category.SQUAT)
+            .targetedMuscles(new java.util.HashSet<>())
+            .build();
+    movementRepository.save(backSquat);
+  }
+
+  @AfterEach
+  void cleanUpCache() {
+    // Flush Redis to prevent cache pollution between tests
+    if (stringRedisTemplate.getConnectionFactory() != null) {
+      stringRedisTemplate.getConnectionFactory().getConnection().serverCommands().flushAll();
+    }
+  }
+
+  // -------------------------------------------------------------------------
+  // GET Operations (Read)
+  // -------------------------------------------------------------------------
+
+  @Test
+  @WithMockUser(username = "athlete")
+  @DisplayName("GET /movements: should return summaries matching query")
+  void testSearchMovements_Success() throws Exception {
+    mockMvc
+        .perform(get("/aldebaran/movements").param("query", "Squat"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$", hasSize(1)))
+        .andExpect(jsonPath("$[0].id").value("WL-SQ-001"))
+        .andExpect(jsonPath("$[0].name").value("Back Squat"))
+        .andExpect(jsonPath("$[0].category").value("SQUAT"));
+  }
+
+  @Test
+  @WithMockUser(username = "athlete")
+  @DisplayName("GET /movements/{id}: should return detailed response")
+  void testGetMovement_Success() throws Exception {
+    mockMvc
+        .perform(get("/aldebaran/movements/WL-SQ-001"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.id").value("WL-SQ-001"))
+        .andExpect(jsonPath("$.name").value("Back Squat"));
+  }
+
+  @Test
+  @WithMockUser(username = "athlete")
+  @DisplayName("GET /movements/{id}: should return 404 for unknown ID")
+  void testGetMovement_NotFound() throws Exception {
+    mockMvc
+        .perform(get("/aldebaran/movements/UNKNOWN-ID"))
+        .andExpect(status().isNotFound())
+        .andExpect(jsonPath("$.title").value("Resource Not Found"));
+  }
+
+  // -------------------------------------------------------------------------
+  // POST Operations (Create)
+  // -------------------------------------------------------------------------
+
+  @Test
+  @WithMockUser(
+      username = "admin",
+      roles = {"ADMIN"})
+  @DisplayName("POST /movements: should create new movement with muscles when Admin")
+  void testCreateMovement_AsAdmin_Success() throws Exception {
+    // Given
+    MovementRequest request =
+        new MovementRequest(
+            "Front Squat",
+            "FS",
+            Category.SQUAT,
+            Collections.emptySet(),
+            Collections.emptySet(),
+            List.of(new MovementMuscleRequest("Quadriceps Femoris", MuscleRole.AGONIST, 1.0)),
+            true,
+            1.0,
+            "English Desc",
+            "French Desc",
+            null,
+            null,
+            null,
+            null);
+
+    // When/Then
+    mockMvc
+        .perform(
+            post("/aldebaran/movements")
+                .with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+        .andExpect(status().isCreated())
+        .andExpect(jsonPath("$.name").value("Front Squat"))
+        // Verify ID generation (Category SQUAT -> WL-SQ prefix)
+        .andExpect(jsonPath("$.id", startsWith("WL-SQ-")));
+
+    // Verify DB persistence
+    // Because of @Transactional, the Session is open, so getting targetedMuscles won't throw
+    // LazyInitException
+    List<Movement> movements = movementRepository.findByNameContainingIgnoreCase("Front Squat");
+    assert (movements.size() == 1);
+    assert (movements.get(0).getTargetedMuscles().size() == 1);
+  }
+
+  @Test
+  @WithMockUser(
+      username = "user",
+      roles = {"USER"})
+  @DisplayName("POST /movements: should return 403 Forbidden when simple User")
+  void testCreateMovement_AsUser_Forbidden() throws Exception {
+    MovementRequest request =
+        new MovementRequest(
+            "Forbidden Move",
+            "FM",
+            Category.SQUAT,
+            null,
+            null,
+            null,
+            true,
+            1.0,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null);
+
+    mockMvc
+        .perform(
+            post("/aldebaran/movements")
+                .with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+        .andExpect(status().isForbidden());
+  }
+
+  @Test
+  @WithMockUser(
+      username = "admin",
+      roles = {"ADMIN"})
+  @DisplayName("POST /movements: should return 404 if muscle name not found")
+  void testCreateMovement_UnknownMuscle() throws Exception {
+    // Given: Request referencing a muscle that doesn't exist in DB
+    MovementRequest request =
+        new MovementRequest(
+            "Bad Move",
+            "BM",
+            Category.SQUAT,
+            Collections.emptySet(),
+            Collections.emptySet(),
+            List.of(new MovementMuscleRequest("NonExistentMuscle", MuscleRole.AGONIST, 1.0)),
+            true,
+            1.0,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null);
+
+    // When/Then
+    mockMvc
+        .perform(
+            post("/aldebaran/movements")
+                .with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+        .andExpect(status().isNotFound())
+        .andExpect(jsonPath("$.title").value("Resource Not Found"));
+  }
+
+  // -------------------------------------------------------------------------
+  // PUT Operations (Update)
+  // -------------------------------------------------------------------------
+
+  @Test
+  @WithMockUser(
+      username = "admin",
+      roles = {"ADMIN"})
+  @DisplayName("PUT /movements/{id}: should update existing movement")
+  void testUpdateMovement_Success() throws Exception {
+    // Given: Seeded "WL-SQ-001"
+    MovementRequest updateRequest =
+        new MovementRequest(
+            "Back Squat (High Bar)", // Changed Name
+            "HBBS",
+            Category.SQUAT,
+            Collections.emptySet(),
+            Collections.emptySet(),
+            List.of(new MovementMuscleRequest("Quadriceps Femoris", MuscleRole.AGONIST, 1.0)),
+            true,
+            1.0,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null);
+
+    // When/Then
+    mockMvc
+        .perform(
+            put("/aldebaran/movements/WL-SQ-001")
+                .with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(updateRequest)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.name").value("Back Squat (High Bar)"));
+
+    // Check DB
+    Movement updated = movementRepository.findById("WL-SQ-001").orElseThrow();
+    assert (updated.getName().equals("Back Squat (High Bar)"));
+  }
+}

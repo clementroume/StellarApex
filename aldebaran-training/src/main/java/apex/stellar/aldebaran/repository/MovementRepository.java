@@ -6,7 +6,6 @@ import apex.stellar.aldebaran.repository.projection.MovementSummary;
 import java.util.List;
 import java.util.Optional;
 import org.jspecify.annotations.NonNull;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -29,8 +28,8 @@ public interface MovementRepository extends JpaRepository<Movement, String> {
   // FULL ENTITY QUERIES (For Detail/Edit Views)
   // -------------------------------------------------------------------------
 
-  /** Retrieves a movement by ID with caching. Cache TTL: 24 hours (master data). */
-  @Cacheable(value = "movements", key = "#id")
+  /** Retrieves a movement by ID. */
+
   @Override
   @NonNull Optional<Movement> findById(String id);
 
@@ -59,7 +58,6 @@ public interface MovementRepository extends JpaRepository<Movement, String> {
   /** Searches movements by name (projection). Ideal for autocomplete and search results. */
   List<MovementSummary> findProjectedByNameContainingIgnoreCase(String name);
 
-  /** Retrieves movements by category as projections with caching. Cache TTL: 24 hours. */
-  @Cacheable(value = "movements-by-category", key = "#category")
+  /** Retrieves movements by category as projections with caching.*/
   List<MovementSummary> findProjectedByCategory(Category category);
 }

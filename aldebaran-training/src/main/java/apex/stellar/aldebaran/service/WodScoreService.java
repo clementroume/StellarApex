@@ -1,22 +1,27 @@
 package apex.stellar.aldebaran.service;
 
 import apex.stellar.aldebaran.config.SecurityUtils;
+import apex.stellar.aldebaran.dto.WodScoreRequest;
+import apex.stellar.aldebaran.dto.WodScoreResponse;
+import apex.stellar.aldebaran.exception.ResourceNotFoundException;
+import apex.stellar.aldebaran.mapper.WodScoreMapper;
+import apex.stellar.aldebaran.model.entities.Wod;
+import apex.stellar.aldebaran.model.entities.Wod.ScoreType;
 import apex.stellar.aldebaran.model.entities.WodScore;
+import apex.stellar.aldebaran.repository.WodRepository;
 import apex.stellar.aldebaran.repository.WodScoreRepository;
-import jakarta.persistence.EntityNotFoundException;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.MessageSource;
-import org.springframework.context.i18n.LocaleContextHolder;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Service layer for WodScore operations with security enforcement.
+ * Service for logging and managing athlete performance scores.
  *
- * <p>Ensures that users can only create/modify/delete their own scores.
+ * <p>Handles security checks (ownership), PR (Personal Record) calculations, and DTO mapping.
  */
 @Service
 @RequiredArgsConstructor
@@ -24,115 +29,148 @@ import org.springframework.transaction.annotation.Transactional;
 public class WodScoreService {
 
   private final WodScoreRepository scoreRepository;
-  private final MessageSource messageSource;
+  private final WodRepository wodRepository;
+  private final WodScoreMapper scoreMapper;
 
-  private String getMessage(String key, Object... args) {
-    return messageSource.getMessage(key, args, LocaleContextHolder.getLocale());
+  /**
+   * Retrieves all scores for the currently authenticated user.
+   *
+   * @return List of score responses ordered by date (descending).
+   */
+  @Transactional(readOnly = true)
+  public List<WodScoreResponse> getMyScores() {
+    String userId = SecurityUtils.getCurrentUserId();
+    return scoreRepository.findByUserIdOrderByDateDesc(userId).stream()
+        .map(scoreMapper::toResponse)
+        .toList();
   }
 
   /**
-   * Saves a WodScore with ownership validation.
+   * Logs a new score for the current user.
    *
-   * <p>For new scores: Sets userId to authenticated user. For updates: Validates that the user owns
-   * the score.
+   * <p>Automatically calculates if this result constitutes a new Personal Record (PR) based on the
+   * WOD's {@link ScoreType} and the user's history.
    *
-   * @param score The score to save
-   * @return The saved score
-   * @throws AccessDeniedException if user tries to modify another user's score
+   * @param request The score data to log.
+   * @return The persisted score response.
+   * @throws ResourceNotFoundException if the WOD ID is invalid.
    */
   @Transactional
-  public WodScore saveScore(WodScore score) throws AccessDeniedException {
-    String authenticatedUserId = SecurityUtils.getCurrentUserId();
+  @CacheEvict(value = "wod-scores", key = "#request.wodId()")
+  public WodScoreResponse logScore(WodScoreRequest request) {
+    String userId = SecurityUtils.getCurrentUserId();
 
-    if (score.getId() == null) {
-      // New score: enforce authenticated userId
-      score.setUserId(authenticatedUserId);
+    Wod wod =
+        wodRepository
+            .findById(request.wodId())
+            .orElseThrow(
+                () -> new ResourceNotFoundException("error.wod.not.found", request.wodId()));
+
+    // Map DTO to Entity (ignores ID, User, PR status)
+    WodScore score = scoreMapper.toEntity(request);
+    score.setWod(wod);
+    score.setUserId(userId);
+    score.setLoggedAt(java.time.LocalDateTime.now());
+
+    // PR Logic: Check if this is the best performance
+    boolean isPr = checkIsPersonalRecord(userId, wod, score);
+    score.setPersonalRecord(isPr);
+
+    WodScore saved = scoreRepository.save(score);
+
+    if (isPr) {
       log.info(
-          "Creating new score for user {} on WOD {}", authenticatedUserId, score.getWod().getId());
-    } else {
-      // Update: verify ownership
-      WodScore existing =
-          scoreRepository
-              .findById(score.getId())
-              .orElseThrow(
-                  () ->
-                      new EntityNotFoundException(
-                          getMessage("wod.score.not.found", score.getId())));
-
-      if (!existing.getUserId().equals(authenticatedUserId)) {
-        log.warn(
-            "User {} attempted to modify score {} owned by user {}",
-            authenticatedUserId,
-            score.getId(),
-            existing.getUserId());
-        throw new AccessDeniedException(getMessage("error.score.unauthorized.modify"));
-      }
+          "New PR for user {} on WOD {} (Type: {})!", userId, wod.getTitle(), wod.getScoreType());
     }
 
-    return scoreRepository.save(score);
+    return scoreMapper.toResponse(saved);
   }
 
   /**
-   * Deletes a score with ownership validation.
+   * Deletes a score if it belongs to the current user.
    *
-   * @param scoreId The ID of the score to delete
-   * @throws AccessDeniedException if user doesn't own the score
-   * @throws EntityNotFoundException if score doesn't exist
+   * @param scoreId The ID of the score to delete.
+   * @throws ResourceNotFoundException if the score does not exist.
+   * @throws AccessDeniedException if the user does not own the score.
    */
   @Transactional
-  public void deleteScore(Long scoreId) throws AccessDeniedException {
+  public void deleteScore(Long scoreId) {
     WodScore score =
         scoreRepository
             .findById(scoreId)
-            .orElseThrow(
-                () -> new EntityNotFoundException(getMessage("wod.score.not.found", scoreId)));
+            .orElseThrow(() -> new ResourceNotFoundException("error.score.not.found", scoreId));
 
-    String authenticatedUserId = SecurityUtils.getCurrentUserId();
-
-    if (!score.getUserId().equals(authenticatedUserId)) {
-      log.warn(
-          "User {} attempted to delete score {} owned by user {}",
-          authenticatedUserId,
-          scoreId,
-          score.getUserId());
-      throw new AccessDeniedException(getMessage("error.score.unauthorized.delete"));
+    if (!SecurityUtils.isCurrentUser(score.getUserId())) {
+      throw new AccessDeniedException("error.score.unauthorized.delete");
     }
 
     scoreRepository.delete(score);
-    log.info("Deleted score {} for user {}", scoreId, authenticatedUserId);
   }
 
-  /**
-   * Retrieves all scores for the authenticated user.
-   *
-   * @return List of user's scores ordered by date (desc)
-   */
-  @Transactional(readOnly = true)
-  public List<WodScore> getCurrentUserScores() {
-    String userId = SecurityUtils.getCurrentUserId();
-    return scoreRepository.findByUserIdOrderByDateDesc(userId);
-  }
+  // -------------------------------------------------------------------------
+  // PR Calculation Logic
+  // -------------------------------------------------------------------------
 
-  /**
-   * Retrieves a single score with ownership validation.
-   *
-   * @param scoreId The score ID
-   * @return The score if owned by current user
-   * @throws AccessDeniedException if user doesn't own the score
-   */
-  @Transactional(readOnly = true)
-  public WodScore getScore(Long scoreId) throws AccessDeniedException {
-    WodScore score =
-        scoreRepository
-            .findById(scoreId)
-            .orElseThrow(() -> new EntityNotFoundException("Score introuvable: " + scoreId));
+  /** Determines if the current score is better than any previous score for this specific WOD. */
+  private boolean checkIsPersonalRecord(String userId, Wod wod, WodScore current) {
+    // 1. Retrieve previous PR
+    WodScore oldPr = findPreviousPr(userId, wod.getId());
 
-    String authenticatedUserId = SecurityUtils.getCurrentUserId();
-
-    if (!score.getUserId().equals(authenticatedUserId)) {
-      throw new AccessDeniedException(getMessage("error.score.unauthorized.access"));
+    // 2. If no previous PR, it's a PR (unless unscored)
+    if (oldPr == null) {
+      return wod.getScoreType() != ScoreType.NONE;
     }
 
-    return score;
+    // 3. Delegate comparison based on type
+    return isBetterScore(current, oldPr, wod.getScoreType());
+  }
+
+  private WodScore findPreviousPr(String userId, Long wodId) {
+    return scoreRepository.findByUserIdAndPersonalRecordTrue(userId).stream()
+        .filter(s -> s.getWod().getId().equals(wodId))
+        .findFirst()
+        .orElse(null);
+  }
+
+  private boolean isBetterScore(WodScore current, WodScore old, ScoreType type) {
+    return switch (type) {
+      case TIME -> compareTime(current, old);
+      case ROUNDS_REPS -> compareRoundsReps(current, old);
+      case REPS -> compareValues(current.getReps(), old.getReps());
+      case WEIGHT -> compareValues(current.getMaxWeightInKg(), old.getMaxWeightInKg());
+      case LOAD -> compareValues(current.getTotalLoadInKg(), old.getTotalLoadInKg());
+      case CALORIES -> compareValues(current.getTotalCalories(), old.getTotalCalories());
+      case DISTANCE ->
+          compareValues(current.getTotalDistanceInMeters(), old.getTotalDistanceInMeters());
+      case NONE -> false;
+    };
+  }
+
+  // --- Specific Comparators ---
+
+  private boolean compareTime(WodScore current, WodScore old) {
+    // Lower is better for time
+    if (current.getTimeSeconds() == null) return false;
+    return old.getTimeSeconds() == null || current.getTimeSeconds() < old.getTimeSeconds();
+  }
+
+  private boolean compareRoundsReps(WodScore current, WodScore old) {
+    int currentRounds = current.getRounds() != null ? current.getRounds() : 0;
+    int oldRounds = old.getRounds() != null ? old.getRounds() : 0;
+
+    if (currentRounds != oldRounds) {
+      return currentRounds > oldRounds;
+    }
+
+    int currentReps = current.getReps() != null ? current.getReps() : 0;
+    int oldReps = old.getReps() != null ? old.getReps() : 0;
+    return currentReps > oldReps;
+  }
+
+  private boolean compareValues(Number current, Number old) {
+    // Generic "Higher is better" comparison
+    double c = current != null ? current.doubleValue() : 0.0;
+    double o = old != null ? old.doubleValue() : 0.0;
+    return c > o;
   }
 }

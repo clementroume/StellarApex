@@ -1,5 +1,6 @@
 package apex.stellar.aldebaran.model.entities;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -44,6 +45,7 @@ public class MovementMuscle {
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "movement_id", nullable = false)
   @NotNull
+  @JsonIgnore
   private Movement movement;
 
   @ManyToOne(fetch = FetchType.LAZY)

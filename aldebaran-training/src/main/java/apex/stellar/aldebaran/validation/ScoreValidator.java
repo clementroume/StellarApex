@@ -4,7 +4,7 @@ import apex.stellar.aldebaran.model.entities.Wod.ScoreType;
 import apex.stellar.aldebaran.model.entities.WodScore;
 import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.stereotype.Component;
@@ -15,10 +15,20 @@ import org.springframework.stereotype.Component;
  * <p>This ensures data integrity at the application level before persistence.
  */
 @Component
-@RequiredArgsConstructor
 public class ScoreValidator implements ConstraintValidator<ValidScore, WodScore> {
 
-  private final MessageSource messageSource;
+  private MessageSource messageSource;
+
+  /**
+   * Default constructor for the ScoreValidator class.
+   *
+   * <p>Initializes an instance of ScoreValidator for validating WodScore objects based on the
+   * scoring type of the associated WOD. Ensures that validation logic is properly encapsulated
+   * within this class.
+   */
+  public ScoreValidator() {
+    //
+  }
 
   @Override
   public boolean isValid(WodScore score, ConstraintValidatorContext context) {
@@ -53,5 +63,10 @@ public class ScoreValidator implements ConstraintValidator<ValidScore, WodScore>
     }
 
     return isValid;
+  }
+
+  @Autowired
+  public void setMessageSource(MessageSource messageSource) {
+    this.messageSource = messageSource;
   }
 }
