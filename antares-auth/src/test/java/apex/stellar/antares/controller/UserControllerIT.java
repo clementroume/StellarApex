@@ -39,7 +39,7 @@ class UserControllerIT extends BaseIntegrationTest {
   private final String initialEmail = "profile.user@example.com";
   private final String initialPassword = "password123";
   @Autowired private MockMvc mockMvc;
-  @Autowired private JsonMapper objectMapper;
+  @Autowired private JsonMapper jsonMapper;
   @Autowired private UserRepository userRepository;
   private Cookie[] authCookies; // Stores auth cookies for test requests
 
@@ -71,7 +71,7 @@ class UserControllerIT extends BaseIntegrationTest {
         .perform(
             post("/antares/auth/register")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(registerRequest)))
+                .content(jsonMapper.writeValueAsString(registerRequest)))
         .andExpect(status().isCreated());
 
     AuthenticationRequest loginRequest = new AuthenticationRequest(initialEmail, initialPassword);
@@ -80,7 +80,7 @@ class UserControllerIT extends BaseIntegrationTest {
             .perform(
                 post("/antares/auth/login")
                     .contentType(MediaType.APPLICATION_JSON)
-                    .content(objectMapper.writeValueAsString(loginRequest)))
+                    .content(jsonMapper.writeValueAsString(loginRequest)))
             .andExpect(status().isOk())
             .andReturn();
 
@@ -102,7 +102,7 @@ class UserControllerIT extends BaseIntegrationTest {
                 .cookie(authCookies)
                 .with(csrf()) // Add CSRF token
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(profileRequest)))
+                .content(jsonMapper.writeValueAsString(profileRequest)))
         // Then
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.firstName").value("UpdatedFirstName"))
@@ -122,7 +122,7 @@ class UserControllerIT extends BaseIntegrationTest {
                 .cookie(authCookies)
                 .with(csrf())
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(preferencesRequest)))
+                .content(jsonMapper.writeValueAsString(preferencesRequest)))
         // Then
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.locale").value("fr"))
@@ -144,7 +144,7 @@ class UserControllerIT extends BaseIntegrationTest {
                 .cookie(authCookies)
                 .with(csrf())
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(passwordRequest)))
+                .content(jsonMapper.writeValueAsString(passwordRequest)))
         // Then
         .andExpect(status().isOk());
 
@@ -156,7 +156,7 @@ class UserControllerIT extends BaseIntegrationTest {
         .perform(
             post("/antares/auth/login")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(loginWithOldPassword)))
+                .content(jsonMapper.writeValueAsString(loginWithOldPassword)))
         .andExpect(status().isUnauthorized());
 
     // And: Login with a new password should succeed
@@ -166,7 +166,7 @@ class UserControllerIT extends BaseIntegrationTest {
         .perform(
             post("/antares/auth/login")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(loginWithNewPassword)))
+                .content(jsonMapper.writeValueAsString(loginWithNewPassword)))
         .andExpect(status().isOk());
   }
 
@@ -195,7 +195,7 @@ class UserControllerIT extends BaseIntegrationTest {
         .perform(
             post("/antares/auth/login")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(loginRequest)))
+                .content(jsonMapper.writeValueAsString(loginRequest)))
         .andExpect(
             status().isUnauthorized()); // Or ResourceNotFound depending on your error handling
   }

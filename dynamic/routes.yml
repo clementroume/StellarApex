@@ -5,13 +5,21 @@ http:
   # ===================================================================
   middlewares:
     # --- Security Middlewares ---
-    forward-auth:
-      # Forward Authentication Middleware
+    forward-auth-admin:
+      # Forward authentication middleware for admin.
       forwardAuth:
-        address: "http://antares-auth:8080/antares/auth/verify"
+        address: "http://antares-auth:8080/antares/auth/verify/admin"
+        trustForwardHeader: true
+
+    forward-auth-api:
+      # Forward authentication middleware for api.
+      forwardAuth:
+        address: "http://antares-auth:8080/antares/auth/verify/api"
         trustForwardHeader: true
         authResponseHeaders:
-          - "X-Auth-User"
+          - "X-Auth-User-Id"
+          - "X-Auth-User-Role"
+          - "X-Auth-User-Locale"
 
     secure-headers:
       # Applies recommended HTTP security headers.
@@ -59,31 +67,33 @@ http:
       priority: 10                              # Higher priority to override the main app router.
       service: "antares-auth-service"           # Route to the 'antares-auth' service.
       middlewares:
-        - "rate-limit-api"
-        - "secure-headers"
+        - "rate-limit-api"                      # Secure with rate limiting.
+        - "secure-headers"                      # Apply security headers.
 
     # --- 3. Aldebaran-Training Sirius Router ---
     aldebaran-training-router:
-      rule: "Host(`stellar.apex`) && PathPrefix(`/aldebaran`)"
-      entryPoints: [ "websecure" ]
-      tls: true
-      priority: 10
-      service: "aldebaran-training-service"
+      rule: "Host(`stellar.apex`) && PathPrefix(`/aldebaran`)"  # Match 'stellar.apex/aldebaran...'.
+      entryPoints: [ "websecure" ]              # Use the 'websecure' (HTTPS) entrypoint.
+      tls: true                                 # Enable TLS (HTTPS).
+      priority: 10                              # Higher priority to override the main app router.
+      service: "aldebaran-training-service"     # Route to the 'aldebaran-training' service.
       middlewares:
-        - "rate-limit-api"
-        - "secure-headers"
+        - "rate-limit-api"                      # Secure with rate limiting.
+        - "secure-headers"                      # Apply security headers.
+        - "forward-auth-api"                    # Secure with Api Forward Auth.
 
     # --- 4. Bellatrix-Swagger Router ---
     bellatrix-swagger-router:
-      rule: "Host(`docs.stellar.apex`)"
+      rule: "Host(`docs.stellar.apex`)"         # Match 'docs.stellar.apex'.
       entryPoints: [ "websecure" ]              # Use the 'websecure' (HTTPS) entrypoint.
       tls: true                                 # Enable TLS (HTTPS).
       priority: 15                              # Higher priority to override the main app router.
-      service: "bellatrix-swagger-service"           # Route to the 'antares-auth' service.
+      service: "bellatrix-swagger-service"      # Route to the 'bellatrix-swagger' service.
       middlewares:
-        - "forward-auth"                        # Secure with Forward Auth.
-        - "secure-headers"
         - "rate-limit-admin"                    # Secure with rate limiting.
+        - "secure-headers"                      # Apply security headers.
+        - "forward-auth-admin"                  # Secure with Admin Forward Auth.
+
 
     # --- 5. Vega-Admin Router ---
     vega-admin-router:
@@ -92,8 +102,9 @@ http:
       tls: true                                 # Enable TLS (HTTPS).
       service: "vega-admin-service"             # Route to the 'vega-admin' service
       middlewares:
-        - "forward-auth"                        # Secure with Forward Auth.
         - "rate-limit-admin"                    # Secure with rate limiting.
+        - "secure-headers"                      # Apply security headers.
+        - "forward-auth-admin"                  # Secure with Admin Forward Auth.
 
     # --- 6. Altair-Proxy Router ---
     altair-proxy-router:
@@ -102,8 +113,8 @@ http:
       tls: true                                 # Enable TLS (HTTPS).
       service: "api@internal"                   # Route to Traefik's internal API/dashboard service.
       middlewares:
-        - "forward-auth"                        # Secure with Forward Auth.
         - "rate-limit-admin"                    # Secure with rate limiting.
+        - "forward-auth-admin"                  # Secure with Admin Forward Auth.
 
   # ===================================================================
   #  SERVICES

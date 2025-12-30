@@ -4,8 +4,6 @@ import java.util.Optional;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.oauth2.jwt.Jwt;
 
 /**
  * Security utilities for extracting authenticated user information.
@@ -19,36 +17,20 @@ public class SecurityUtils {
   }
 
   /**
-   * Extracts the current authenticated user's ID from the JWT.
+   * Retrieves the user ID of the currently authenticated user from the security context. This
+   * method extracts the principal from the authentication object, assuming the user is
+   * authenticated. If no authenticated user is found, an exception is thrown.
    *
-   * @return The userId claim from the JWT
-   * @throws IllegalStateException if no user is authenticated
+   * @return the user ID of the currently authenticated user as a {@code String}.
+   * @throws IllegalStateException if no authenticated user is present in the security context.
    */
   public static String getCurrentUserId() {
     return Optional.of(SecurityContextHolder.getContext())
         .map(SecurityContext::getAuthentication)
         .filter(Authentication::isAuthenticated)
-        .map(
-            authentication -> {
-              Object principal = authentication.getPrincipal();
-
-              // Cas 1: JWT (si on gardait une config hybride)
-              if (principal instanceof Jwt jwt) {
-                return jwt.getSubject();
-              }
-              // Cas 2: UserDetails (Standard Spring Security / MockUser)
-              else if (principal instanceof UserDetails userDetails) {
-                return userDetails.getUsername();
-              }
-              // Cas 3: String (Pre-Authenticated Header / MockUser simple)
-              else if (principal instanceof String principalName) {
-                return principalName;
-              }
-
-              // Fallback standard
-              return authentication.getName();
-            })
-        .orElseThrow(() -> new IllegalStateException("Utilisateur non authentifié"));
+        .map(Authentication::getPrincipal)
+        .map(Object::toString)
+        .orElseThrow(() -> new IllegalStateException("No authenticated user found"));
   }
 
   /**

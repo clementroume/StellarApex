@@ -2,25 +2,31 @@ package apex.stellar.aldebaran.config;
 
 import static org.springframework.security.config.Customizer.withDefaults;
 
-import java.nio.charset.StandardCharsets;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
 import java.util.List;
-import javax.crypto.spec.SecretKeySpec;
+import org.jspecify.annotations.NonNull;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
-import org.springframework.security.oauth2.jwt.JwtDecoder;
-import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
-import org.springframework.security.oauth2.server.resource.web.BearerTokenResolver;
-import org.springframework.security.oauth2.server.resource.web.DefaultBearerTokenResolver;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
+import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.springframework.web.filter.OncePerRequestFilter;
 
 /**
  * Security configuration for Aldebaran Training API. Uses JWT from Antares Auth for authentication.
@@ -30,50 +36,42 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 @EnableMethodSecurity
 public class SecurityConfig {
 
-  @Value("${application.security.jwt.secret-key}")
-  private String jwtSecretKey;
-
   @Value("${cors.allowed-origins}")
   private String allowedOrigins;
 
   @Bean
   public SecurityFilterChain securityFilterChain(HttpSecurity http) {
 
+    // CSRF Configuration:
+    // We use a cookie-based repository. Crucially, 'withHttpOnlyFalse' is used, so the Angular
+    // frontend can read the CSRF token from the cookie and include it in the 'X-XSRF-TOKEN' header.
+    CookieCsrfTokenRepository csrfRepository = CookieCsrfTokenRepository.withHttpOnlyFalse();
+    csrfRepository.setCookieCustomizer(builder -> builder.secure(true).sameSite("Strict"));
+
+    // The RequestAttributeHandler makes the CSRF token available as a request attribute,
+    // which is required for the XorCsrfTokenRequestAttributeHandler default in Spring Security 6.
+    CsrfTokenRequestAttributeHandler requestHandler = new CsrfTokenRequestAttributeHandler();
+
     http.cors(withDefaults())
-        .csrf(csrf -> csrf.ignoringRequestMatchers("/aldebaran/**", "/actuator/**"))
+        .csrf(
+            csrf ->
+                csrf.csrfTokenRepository(csrfRepository)
+                    .csrfTokenRequestHandler(requestHandler)
+                    // On ignore CSRF uniquement pour les endpoints techniques (monitoring)
+                    .ignoringRequestMatchers("/actuator/**"))
         .authorizeHttpRequests(
             auth ->
-                auth.requestMatchers("/aldebaran-docs", "/aldebaran-docs/**")
-                    .permitAll()
-                    // Actuator endpoints
-                    .requestMatchers("/actuator/**")
+                auth
+                    // Allow unauthenticated access to documentation and actuator endpoints
+                    .requestMatchers("/aldebaran-docs", "/aldebaran-docs/**", "/actuator/**")
                     .permitAll()
                     // All other endpoints require authentication
                     .anyRequest()
                     .authenticated())
         .sessionManagement(
             session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-        .oauth2ResourceServer(
-            oauth2 ->
-                oauth2
-                    .bearerTokenResolver(bearerTokenResolver())
-                    .jwt(jwt -> jwt.decoder(jwtDecoder())));
-
+        .addFilterBefore(new ForwardedAuthFilter(), UsernamePasswordAuthenticationFilter.class);
     return http.build();
-  }
-
-  @Bean
-  public BearerTokenResolver bearerTokenResolver() {
-    DefaultBearerTokenResolver resolver = new DefaultBearerTokenResolver();
-    resolver.setAllowUriQueryParameter(false);
-    return resolver;
-  }
-
-  @Bean
-  public JwtDecoder jwtDecoder() {
-    SecretKeySpec secretKey =
-        new SecretKeySpec(jwtSecretKey.getBytes(StandardCharsets.UTF_8), "HmacSHA256");
-    return NimbusJwtDecoder.withSecretKey(secretKey).macAlgorithm(MacAlgorithm.HS256).build();
   }
 
   @Bean
@@ -87,5 +85,27 @@ public class SecurityConfig {
     UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
     source.registerCorsConfiguration("/**", configuration);
     return source;
+  }
+
+  private static class ForwardedAuthFilter extends OncePerRequestFilter {
+    @Override
+    protected void doFilterInternal(
+        @NonNull HttpServletRequest request,
+        @NonNull HttpServletResponse response,
+        @NonNull FilterChain chain)
+        throws ServletException, IOException {
+
+      String userId = request.getHeader("X-Auth-User-Id");
+      String role = request.getHeader("X-Auth-User-Role");
+
+      if (userId != null && role != null) {
+        var auth =
+            new UsernamePasswordAuthenticationToken(
+                userId, null, List.of(new SimpleGrantedAuthority(role)));
+        SecurityContextHolder.getContext().setAuthentication(auth);
+      }
+
+      chain.doFilter(request, response);
+    }
   }
 }

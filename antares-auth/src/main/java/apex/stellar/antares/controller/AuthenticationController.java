@@ -157,9 +157,9 @@ public class AuthenticationController {
    *   <li>If Authenticated and ADMIN -> Return 200 OK (Access Granted).
    * </ol>
    */
-  @GetMapping("/verify")
+  @GetMapping("/verify/admin")
   @Hidden
-  public ResponseEntity<@NonNull Void> verify(
+  public ResponseEntity<Void> verifyAdmin(
       HttpServletRequest request, Authentication authentication) {
 
     if (authentication == null || !authentication.isAuthenticated()) {
@@ -177,6 +177,34 @@ public class AuthenticationController {
     }
 
     return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+  }
+
+  /**
+   * Verifies the authenticated user's API access and responds with appropriate headers containing
+   * user details if the authentication is valid and the user is authenticated.
+   *
+   * @param authentication the authentication object containing the user's authentication details
+   * @return a ResponseEntity with an HTTP 200 status and user headers if authenticated, or an HTTP
+   *     401 status if the user is not authenticated or the authentication is null
+   */
+  @GetMapping("/verify/api")
+  @Hidden
+  public ResponseEntity<Void> verifyApi(Authentication authentication) {
+
+    if (authentication == null || !authentication.isAuthenticated()) {
+
+      return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+    }
+
+    if (authentication.getPrincipal() instanceof User user) {
+      return ResponseEntity.ok()
+          .header("X-Auth-User-Id", String.valueOf(user.getId()))
+          .header("X-Auth-User-Role", user.getRole().name())
+          .header("X-Auth-User-Locale", user.getLocale())
+          .build();
+    }
+
+    return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
   }
 
   /**

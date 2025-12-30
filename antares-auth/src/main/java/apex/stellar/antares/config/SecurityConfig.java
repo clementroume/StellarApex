@@ -95,11 +95,9 @@ public class SecurityConfig {
         .authorizeHttpRequests(
             auth ->
                 auth
-                    // Secure Documentation and Admin endpoints (ADMIN only)
-                    .requestMatchers("/antares-docs", "/antares-docs/**")
-                    .permitAll()
-                    // Allow public access to Authentication & Health endpoints
-                    .requestMatchers("/antares/auth/**", "/actuator/**")
+                    // Allow unauthenticated access to auth endpoints, docs, and actuators
+                    .requestMatchers(
+                        "/antares/auth/**", "/antares-docs", "/antares-docs/**", "/actuator/**")
                     .permitAll()
                     // Require authentication for all other endpoints
                     .anyRequest()

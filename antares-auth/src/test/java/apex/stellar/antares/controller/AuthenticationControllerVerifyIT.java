@@ -29,7 +29,7 @@ import tools.jackson.databind.json.JsonMapper;
 class AuthenticationControllerVerifyIT extends BaseIntegrationTest {
 
   @Autowired private MockMvc mockMvc;
-  @Autowired private JsonMapper objectMapper;
+  @Autowired private JsonMapper jsonMapper;
   @Autowired private UserRepository userRepository;
   @Autowired private PasswordEncoder passwordEncoder;
 
@@ -48,13 +48,18 @@ class AuthenticationControllerVerifyIT extends BaseIntegrationTest {
         });
   }
 
+  // ==================================================================================
+  // 1. ADMIN / INFRASTRUCTURE FLOW (Target: /verify/admin)
+  // Behavior: Browser-based, expects Redirects (302) or Forbidden (403).
+  // ==================================================================================
+
   @Test
   @DisplayName("Verify: Unauthenticated request should redirect to login with returnUrl")
   void testVerify_whenUnauthenticated_shouldRedirectToLogin() throws Exception {
     // Given: A request coming from Traefik (simulated headers)
     mockMvc
         .perform(
-            get("/antares/auth/verify")
+            get("/antares/auth/verify/admin")
                 .header("X-Forwarded-Proto", "https")
                 .header("X-Forwarded-Host", "admin.stellar.atlas")
                 .header("X-Forwarded-Uri", "/dashboard"))
@@ -76,7 +81,7 @@ class AuthenticationControllerVerifyIT extends BaseIntegrationTest {
 
     // 2. Perform verification
     mockMvc
-        .perform(get("/antares/auth/verify").cookie(userCookies))
+        .perform(get("/antares/auth/verify/admin").cookie(userCookies))
         // Then: Expect 403 Forbidden (Access Denied)
         .andExpect(status().isForbidden());
   }
@@ -92,9 +97,38 @@ class AuthenticationControllerVerifyIT extends BaseIntegrationTest {
 
     // 3. Perform verification
     mockMvc
-        .perform(get("/antares/auth/verify").cookie(adminCookies))
+        .perform(get("/antares/auth/verify/admin").cookie(adminCookies))
         // Then: Expect 200 OK (Access Granted)
         .andExpect(status().isOk());
+  }
+
+  // ==================================================================================
+  // 2. API / MICROSERVICE FLOW (Target: /verify/api)
+  // Behavior: XHR/AJAX based, expects Unauthorized (401) or OK (200) + Headers.
+  // ==================================================================================
+
+  @Test
+  @DisplayName("Verify API: Unauthenticated request should return Unauthorized (401)")
+  void testVerifyApi_whenUnauthenticated_shouldReturnUnauthorized() throws Exception {
+    mockMvc
+        .perform(get("/antares/auth/verify/api"))
+        // Then: Expect 401 (Triggers frontend interceptor refresh flow)
+        .andExpect(status().isUnauthorized());
+  }
+
+  @Test
+  @DisplayName("Verify API: Authenticated USER should return OK (200) and X-Auth headers")
+  void testVerifyApi_whenAuthenticated_shouldReturnHeaders() throws Exception {
+    Cookie[] userCookies = registerAndLogin();
+
+    mockMvc
+        .perform(get("/antares/auth/verify/api").cookie(userCookies))
+        // Then: Expect 200 OK
+        .andExpect(status().isOk())
+        // And: Check specific Forward Auth headers needed by Aldebaran
+        .andExpect(header().exists("X-Auth-User-Id"))
+        .andExpect(header().string("X-Auth-User-Role", "ROLE_USER"))
+        .andExpect(header().string("X-Auth-User-Locale", "en"));
   }
 
   // --- Helpers ---
@@ -106,7 +140,7 @@ class AuthenticationControllerVerifyIT extends BaseIntegrationTest {
         .perform(
             post("/antares/auth/register")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(registerRequest)))
+                .content(jsonMapper.writeValueAsString(registerRequest)))
         .andExpect(status().isCreated());
 
     return login("user@test.com", "password123");
@@ -130,7 +164,7 @@ class AuthenticationControllerVerifyIT extends BaseIntegrationTest {
             .perform(
                 post("/antares/auth/login")
                     .contentType(MediaType.APPLICATION_JSON)
-                    .content(objectMapper.writeValueAsString(loginRequest)))
+                    .content(jsonMapper.writeValueAsString(loginRequest)))
             .andExpect(status().isOk())
             .andReturn();
     return result.getResponse().getCookies();

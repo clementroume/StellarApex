@@ -30,7 +30,7 @@ import tools.jackson.databind.json.JsonMapper;
 class AuthenticationControllerIT extends BaseIntegrationTest {
 
   @Autowired private MockMvc mockMvc;
-  @Autowired private JsonMapper objectMapper;
+  @Autowired private JsonMapper jsonMapper;
   @Autowired private UserRepository userRepository;
 
   /** Cleans the database before each test (except for admin users). */
@@ -65,7 +65,7 @@ class AuthenticationControllerIT extends BaseIntegrationTest {
         .perform(
             post("/antares/auth/register")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(registerRequest)))
+                .content(jsonMapper.writeValueAsString(registerRequest)))
         .andExpect(status().isCreated())
         .andExpect(jsonPath("$.email").value("test.user@example.com"))
         .andExpect(jsonPath("$.role").value("ROLE_USER"));
@@ -81,7 +81,7 @@ class AuthenticationControllerIT extends BaseIntegrationTest {
             .perform(
                 post("/antares/auth/login")
                     .contentType(MediaType.APPLICATION_JSON)
-                    .content(objectMapper.writeValueAsString(loginRequest)))
+                    .content(jsonMapper.writeValueAsString(loginRequest)))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.email").value("test.user@example.com"))
             .andReturn();
@@ -116,7 +116,7 @@ class AuthenticationControllerIT extends BaseIntegrationTest {
         .perform(
             post("/antares/auth/register")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(initialRequest)))
+                .content(jsonMapper.writeValueAsString(initialRequest)))
         .andExpect(status().isCreated());
 
     // When
@@ -128,7 +128,7 @@ class AuthenticationControllerIT extends BaseIntegrationTest {
         .perform(
             post("/antares/auth/register")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(conflictRequest)))
+                .content(jsonMapper.writeValueAsString(conflictRequest)))
         .andExpect(status().isConflict());
   }
 
@@ -142,7 +142,7 @@ class AuthenticationControllerIT extends BaseIntegrationTest {
         .perform(
             post("/antares/auth/register")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(registerRequest)))
+                .content(jsonMapper.writeValueAsString(registerRequest)))
         .andExpect(status().isCreated());
 
     // When
@@ -154,7 +154,7 @@ class AuthenticationControllerIT extends BaseIntegrationTest {
         .perform(
             post("/antares/auth/login")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(loginRequest)))
+                .content(jsonMapper.writeValueAsString(loginRequest)))
         .andExpect(status().isUnauthorized());
   }
 
@@ -176,7 +176,7 @@ class AuthenticationControllerIT extends BaseIntegrationTest {
         .perform(
             post("/antares/auth/register")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(registerRequest)))
+                .content(jsonMapper.writeValueAsString(registerRequest)))
         .andExpect(status().isCreated());
 
     MvcResult loginResult =
@@ -185,7 +185,7 @@ class AuthenticationControllerIT extends BaseIntegrationTest {
                 post("/antares/auth/login")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(
-                        objectMapper.writeValueAsString(
+                        jsonMapper.writeValueAsString(
                             new AuthenticationRequest("refresh.user@example.com", "password123"))))
             .andExpect(status().isOk())
             .andReturn();
