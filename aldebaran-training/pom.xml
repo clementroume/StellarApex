@@ -187,7 +187,7 @@
     <dependency>
       <artifactId>poi-ooxml</artifactId>
       <groupId>org.apache.poi</groupId>
-      <version>5.4.0</version>
+      <version>5.5.1</version>
     </dependency>
 
     <dependency>
