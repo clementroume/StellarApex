@@ -248,7 +248,7 @@
     <java.version>25</java.version>
     <org.mapstruct.version>1.6.3</org.mapstruct.version>
     <spring-boot-admin.version>3.5.6</spring-boot-admin.version>
-    <springdoc.version>3.0.0</springdoc.version>
+    <springdoc.version>3.0.1</springdoc.version>
   </properties>
 
   <version>1.0.0</version>
