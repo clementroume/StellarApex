@@ -178,18 +178,7 @@
       <artifactId>flyway-database-postgresql</artifactId>
       <groupId>org.flywaydb</groupId>
     </dependency>
-
-    <dependency>
-      <artifactId>commons-csv</artifactId>
-      <groupId>org.apache.commons</groupId>
-      <version>1.11.0</version>
-    </dependency>
-    <dependency>
-      <artifactId>poi-ooxml</artifactId>
-      <groupId>org.apache.poi</groupId>
-      <version>5.4.0</version>
-    </dependency>
-
+    
     <dependency>
       <artifactId>spring-boot-starter-webmvc-test</artifactId>
       <groupId>org.springframework.boot</groupId>
