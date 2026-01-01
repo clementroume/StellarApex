@@ -1,7 +1,6 @@
 package apex.stellar.aldebaran.model.entities;
 
 import apex.stellar.aldebaran.model.enums.Unit;
-import apex.stellar.aldebaran.model.enums.Unit.UnitType;
 import apex.stellar.aldebaran.validation.ValidScore;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -15,7 +14,6 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
-import jakarta.persistence.Transient;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
@@ -34,7 +32,16 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 /**
  * Represents the result/score of a workout performed by an athlete.
  *
- * <p>Renamed from WodPerformance to WodScore to reflect its primary role: storing the outcome.
+ * <p><b>Storage Philosophy:</b> All metrics are stored in their canonical system units (SI) to
+ * ensure comparability (Leaderboards, PRs) regardless of user input preferences.
+ *
+ * <ul>
+ *   <li>Time: Seconds
+ *   <li>Mass: Kilograms
+ *   <li>Distance: Meters
+ * </ul>
+ *
+ * <p>The {@code *DisplayUnit} fields store the user's preferred unit for rendering the value back.
  */
 @Getter
 @Setter
@@ -42,7 +49,7 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Table(name = "wod_scores") // Index managed via Flyway
+@Table(name = "wod_scores")
 @EntityListeners(AuditingEntityListener.class)
 @ValidScore
 public class WodScore {
@@ -67,10 +74,10 @@ public class WodScore {
   private Wod wod;
 
   // -------------------------------------------------------------------------
-  // METRICS (Data)
+  // METRICS (Normalized Storage)
   // -------------------------------------------------------------------------
 
-  // --- Time (Canonical: Seconds) ---
+  // --- Time (Ref: Seconds) ---
 
   /** Total time in seconds (Canonical storage). */
   @Column(name = "time_seconds")
@@ -93,36 +100,36 @@ public class WodScore {
   @Min(0)
   private Integer reps;
 
-  // --- Load (Weight) ---
+  // --- Load (Ref: KG) ---
 
-  /** Heaviest weight lifted. Value stored in 'weightUnit'. */
-  @Column(name = "max_weight")
+  /** Heaviest weight lifted (Stored in KG). */
+  @Column(name = "max_weight_kg")
   @DecimalMin("0.0")
-  private Double maxWeight;
+  private Double maxWeightKg;
 
-  /** Total tonnage. Value stored in 'weightUnit'. */
-  @Column(name = "total_load")
+  /** Total tonnage (Stored in KG). */
+  @Column(name = "total_load_kg")
   @DecimalMin("0.0")
-  private Double totalLoad;
+  private Double totalLoadKg;
 
-  /** The unit used for input/storage (KG, LBS...). */
+  /** The unit preferred by the user for display (e.g. LBS). */
   @Enumerated(EnumType.STRING)
-  @Column(name = "weight_unit", length = 10)
+  @Column(name = "weight_display_unit", length = 10)
   @Builder.Default
-  private Unit weightUnit = Unit.KG;
+  private Unit weightDisplayUnit = Unit.KG;
 
-  // --- Distance ---
+  // --- Distance (Ref: Meters) ---
 
-  /** Total distance covered. Value stored in 'distanceUnit'. */
-  @Column(name = "total_distance")
+  /** Total distance covered (Stored in Meters). */
+  @Column(name = "total_distance_meters")
   @DecimalMin("0.0")
-  private Double totalDistance;
+  private Double totalDistanceMeters;
 
-  /** The unit used for input/storage (METERS, MILES...). */
+  /** The unit preferred by the user for display (e.g. MILES). */
   @Enumerated(EnumType.STRING)
-  @Column(name = "distance_unit", length = 10)
+  @Column(name = "distance_display_unit", length = 10)
   @Builder.Default
-  private Unit distanceUnit = Unit.METERS;
+  private Unit distanceDisplayUnit = Unit.METERS;
 
   @Column(name = "total_calories")
   @Min(0)
@@ -132,7 +139,7 @@ public class WodScore {
   // STATUS & METADATA
   // -------------------------------------------------------------------------
 
-  /** Is this the user's best score (PR) for this WOD?. */
+  /** Is this the user's best score (PR) for this WOD? */
   @Column(name = "is_personal_record", nullable = false)
   @Builder.Default
   private boolean personalRecord = false;
@@ -156,84 +163,11 @@ public class WodScore {
   @Column(name = "logged_at", nullable = false, updatable = false)
   private LocalDateTime loggedAt;
 
-  // -------------------------------------------------------------------------
-  // UI HELPERS (Transient)
-  // -------------------------------------------------------------------------
-
-  @Transient
-  public Integer getTimeMinutesPart() {
-    return timeSeconds != null ? timeSeconds / 60 : null;
-  }
-
-  @Transient
-  public Integer getTimeSecondsPart() {
-    return timeSeconds != null ? timeSeconds % 60 : null;
-  }
-
-  // -------------------------------------------------------------------------
-  // NORMALIZATION HELPERS (Transient - Critical for Leaderboards)
-  // -------------------------------------------------------------------------
-
-  /** Converts maxWeight to KG for ranking comparison. */
-  @Transient
-  public Double getMaxWeightInKg() {
-    if (maxWeight == null || weightUnit == null) {
-      return null;
-    }
-    return weightUnit.getType() == UnitType.MASS ? weightUnit.toBase(maxWeight) : null;
-  }
-
-  /** Sets maxWeight from normalized KG value. */
-  @Transient
-  public void setMaxWeightFromKg(Double kgValue) {
-    if (kgValue != null && weightUnit != null && weightUnit.getType() == UnitType.MASS) {
-      this.maxWeight = weightUnit.fromBase(kgValue);
-    }
-  }
-
-  /** Converts totalLoad to KG for volume analysis. */
-  @Transient
-  public Double getTotalLoadInKg() {
-    if (totalLoad == null || weightUnit == null) {
-      return null;
-    }
-    return weightUnit.getType() == UnitType.MASS ? weightUnit.toBase(totalLoad) : null;
-  }
-
-  /** Sets totalLoad from normalized KG value. */
-  @Transient
-  public void setTotalLoadFromKg(Double kgValue) {
-    if (kgValue != null && weightUnit != null && weightUnit.getType() == UnitType.MASS) {
-      this.totalLoad = weightUnit.fromBase(kgValue);
-    }
-  }
-
-  /** Converts totalDistance to Meters for ranking comparison. */
-  @Transient
-  public Double getTotalDistanceInMeters() {
-    if (totalDistance == null || distanceUnit == null) {
-      return null;
-    }
-    return distanceUnit.getType() == UnitType.DISTANCE ? distanceUnit.toBase(totalDistance) : null;
-  }
-
-  /** Sets totalDistance from normalized Meters value. */
-  @Transient
-  public void setTotalDistanceFromMeters(Double metersValue) {
-    if (metersValue != null
-        && distanceUnit != null
-        && distanceUnit.getType() == UnitType.DISTANCE) {
-      this.totalDistance = distanceUnit.fromBase(metersValue);
-    }
-  }
-
   // ==================================================================================
   // INNER ENUM: SCALING
   // ==================================================================================
 
-  /**
-   * Represents the difficulty level at which a workout was performed relative to the prescription.
-   */
+  /** Represents the difficulty level at which a workout was performed. */
   @Getter
   @RequiredArgsConstructor
   public enum ScalingLevel {

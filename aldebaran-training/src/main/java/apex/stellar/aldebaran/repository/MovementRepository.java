@@ -12,38 +12,19 @@ import org.springframework.stereotype.Repository;
 /**
  * Repository interface for managing {@link Movement} entities.
  *
- * <p>Acts as the primary data access layer for the exercise catalog (Master Data).
- *
- * <p>Caching Strategy:
- *
- * <ul>
- *   <li>Movements are quasi-immutable master data (24h TTL)
- *   <li>Use projections for list views to reduce bandwidth
- * </ul>
+ * <p>Acts as the primary data access layer for the exercise catalog (Master Data). Caching is
+ * delegated to the Service layer to handle DTOs directly.
  */
 @Repository
 public interface MovementRepository extends JpaRepository<Movement, String> {
 
   // -------------------------------------------------------------------------
-  // FULL ENTITY QUERIES (For Detail/Edit Views)
+  // FULL ENTITY QUERIES (For Detail/Edit/Audit Views)
   // -------------------------------------------------------------------------
 
   /** Retrieves a movement by ID. */
-
   @Override
   @NonNull Optional<Movement> findById(String id);
-
-  /**
-   * Finds movements whose name contains the given string (full entity). Use for editing/detail
-   * views where all data is needed.
-   */
-  List<Movement> findByNameContainingIgnoreCase(String name);
-
-  /**
-   * Retrieves all movements in a specific category (full entity). Use when you need complete
-   * movement data including relationships.
-   */
-  List<Movement> findByCategory(Category category);
 
   // -------------------------------------------------------------------------
   // PROJECTION QUERIES (For List/Search Views - Optimized)
@@ -55,9 +36,12 @@ public interface MovementRepository extends JpaRepository<Movement, String> {
    */
   List<MovementSummary> findAllProjectedBy();
 
-  /** Searches movements by name (projection). Ideal for autocomplete and search results. */
+  /** Searches movements by name (projection). Ideal for autocomplete and public search results. */
   List<MovementSummary> findProjectedByNameContainingIgnoreCase(String name);
 
-  /** Retrieves movements by category as projections with caching.*/
+  /**
+   * Retrieves movements by category as projections. Enables efficient filtering (e.g., "Show me all
+   * Gymnastics movements").
+   */
   List<MovementSummary> findProjectedByCategory(Category category);
 }

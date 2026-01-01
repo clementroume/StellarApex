@@ -8,7 +8,8 @@ import java.time.LocalDate;
 /**
  * DTO representing a logged score.
  *
- * <p>Includes a summary of the WOD performed to display context in history lists.
+ * <p>Includes pre-calculated display fields (like split minutes/seconds) to facilitate UI
+ * formatting (e.g. "1:30" instead of "90s") and denormalized values based on user preference.
  */
 public record WodScoreResponse(
     @Schema(description = "Unique Score ID", example = "888") Long id,
@@ -18,7 +19,11 @@ public record WodScoreResponse(
 
     // --- Metrics ---
 
-    @Schema(description = "Time result in seconds", example = "420") Integer timeSeconds,
+    @Schema(description = "Total time in seconds", example = "90") Integer timeSeconds,
+    @Schema(description = "Minutes part for MM:SS display (e.g., 1 for 90s)", example = "1")
+        Integer timeMinutesPart,
+    @Schema(description = "Seconds part for MM:SS display (e.g., 30 for 90s)", example = "30")
+        Integer timeSecondsPart,
     @Schema(description = "User preference for time display", example = "SECONDS")
         Unit timeDisplayUnit,
     @Schema(description = "Rounds completed (for AMRAP)", example = "10") Integer rounds,

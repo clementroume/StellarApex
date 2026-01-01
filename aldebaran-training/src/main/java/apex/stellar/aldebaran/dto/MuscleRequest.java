@@ -22,8 +22,12 @@ public record MuscleRequest(
     @Schema(description = "Common name in French", example = "Pectoraux")
         @Size(max = 100, message = "{validation.muscle.commonName.size}")
         String commonNameFr,
-    @Schema(description = "Description in English") String descriptionEn,
-    @Schema(description = "Description in French") String descriptionFr,
+    @Schema(description = "Description in English")
+        @Size(max = 2000, message = "{validation.muscle.description.size}")
+        String descriptionEn,
+    @Schema(description = "Description in French")
+        @Size(max = 2000, message = "{validation.muscle.description.size}")
+        String descriptionFr,
     @Schema(description = "Major anatomical muscle group", example = "CHEST")
         @NotNull(message = "{validation.muscle.group.required}")
         MuscleGroup muscleGroup) {}

@@ -3,6 +3,7 @@ package apex.stellar.aldebaran.controller;
 import apex.stellar.aldebaran.dto.MovementRequest;
 import apex.stellar.aldebaran.dto.MovementResponse;
 import apex.stellar.aldebaran.dto.MovementSummaryResponse;
+import apex.stellar.aldebaran.model.enums.Category;
 import apex.stellar.aldebaran.service.MovementService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -70,6 +71,23 @@ public class MovementController {
       description = "Retrieves full details including anatomy, descriptions, and media.")
   public ResponseEntity<MovementResponse> getMovement(@PathVariable String id) {
     return ResponseEntity.ok(movementService.getMovement(id));
+  }
+
+  /**
+   * Retrieves movements filtered by functional category.
+   *
+   * <p>Defined with a specific path prefix to avoid ambiguity with ID lookup.
+   *
+   * @param category The category to filter by (e.g., DEADLIFT).
+   * @return A list of movement summaries.
+   */
+  @GetMapping("/category/{category}")
+  @Operation(
+      summary = "Filter by category",
+      description = "Retrieves movements for a specific functional category.")
+  public ResponseEntity<List<MovementSummaryResponse>> getMovementsByCategory(
+      @PathVariable Category category) {
+    return ResponseEntity.ok(movementService.getMovementsByCategory(category));
   }
 
   /**

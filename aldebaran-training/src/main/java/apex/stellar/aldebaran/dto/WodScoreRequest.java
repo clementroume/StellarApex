@@ -13,8 +13,8 @@ import java.time.LocalDate;
 /**
  * DTO for logging a new workout performance.
  *
- * <p>Captures the athlete's result. Conditional validation (e.g. enforcing 'time' for a 'For Time'
- * workout) is handled by the business logic, not this DTO.
+ * <p>Adapts time input to allow users to enter data naturally (e.g., "1 min 30" or "90 sec"). The
+ * API will infer the preferred display format based on which fields are populated.
  */
 public record WodScoreRequest(
     @Schema(description = "ID of the performed WOD", example = "101")
@@ -25,13 +25,19 @@ public record WodScoreRequest(
         @PastOrPresent(message = "{validation.date.future}")
         LocalDate date,
 
-    // --- Metrics (Optional based on WOD Type) ---
+    // --- Time Metrics (Flexible Input) ---
 
-    @Schema(description = "Total time in seconds", example = "420")
+    @Schema(description = "Minutes part of the time (e.g., 1 for '1:30')", example = "1")
+        @Min(value = 0, message = "{validation.value.positive}")
+        Integer timeMinutes,
+    @Schema(
+            description = "Seconds part or Total seconds (e.g., 30 for '1:30', or 90 for '90s')",
+            example = "30")
         @Min(value = 0, message = "{validation.value.positive}")
         Integer timeSeconds,
-    @Schema(description = "User preference for time display", example = "SECONDS")
-        Unit timeDisplayUnit,
+
+    // --- Other Metrics ---
+
     @Schema(description = "Rounds completed (AMRAP)", example = "10")
         @Min(value = 0, message = "{validation.value.positive}")
         Integer rounds,

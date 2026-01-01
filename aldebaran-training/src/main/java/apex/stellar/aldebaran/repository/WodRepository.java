@@ -5,6 +5,7 @@ import apex.stellar.aldebaran.model.entities.Wod.WodType;
 import apex.stellar.aldebaran.repository.projection.WodSummary;
 import java.util.List;
 import java.util.Optional;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -16,50 +17,63 @@ import org.springframework.stereotype.Repository;
  *
  * <p>Provides access to workout definitions ("The Recipe").
  *
- * <p>Performance Notes:
+ * <p>Performance optimization strategy:
  *
  * <ul>
- *   <li>Use EntityGraph to avoid N+1 queries when loading movements
- *   <li>Use projections for list views
+ *   <li><b>Full Entities:</b> Use {@link EntityGraph} to eagerly load the {@code movements} and
+ *       their nested {@code movement} definitions in a single query, avoiding N+1 issues.
+ *   <li><b>Summaries:</b> Use database projections ({@link WodSummary}) for list views and search
+ *       operations to minimize bandwidth and memory usage.
  * </ul>
  */
 @Repository
 public interface WodRepository extends JpaRepository<Wod, Long> {
 
   // -------------------------------------------------------------------------
-  // FULL ENTITY QUERIES (With Eager Loading)
+  // FULL ENTITY QUERIES (Eager Loading)
   // -------------------------------------------------------------------------
 
   /**
-   * Retrieves a WOD with its movements eagerly loaded (avoids N+1). Use for detail/edit screens
-   * where you need the complete structure.
+   * Retrieves a WOD with its movements eagerly loaded.
+   *
+   * <p>Essential for detailed views or editing where the complete structure is required. The {@code
+   * attributePaths} ensures we join Wod -> WodMovement -> Movement.
+   *
+   * @param id The unique identifier of the WOD.
+   * @return An {@link Optional} containing the WOD if found.
    */
   @EntityGraph(attributePaths = {"movements", "movements.movement"})
   @Query("SELECT w FROM Wod w WHERE w.id = :id")
   Optional<Wod> findByIdWithMovements(@Param("id") Long id);
 
-  /** Retrieves all WODs of a specific type with movements eagerly loaded. */
-  @EntityGraph(attributePaths = {"movements", "movements.movement"})
-  List<Wod> findByWodType(WodType wodType);
-
-  /** Searches WODs by title with eager loading. Use when you need full WOD data. */
-  @EntityGraph(attributePaths = {"movements", "movements.movement"})
-  List<Wod> findByTitleContainingIgnoreCase(String title);
-
   // -------------------------------------------------------------------------
-  // PROJECTION QUERIES (For Lists - Optimized)
+  // PROJECTION QUERIES (Lightweight)
   // -------------------------------------------------------------------------
 
   /**
-   * Returns all WODs as lightweight projections. Ideal for listing screens (no movements loaded).
+   * Retrieves all WODs as lightweight projections.
+   *
+   * <p>Optimized for list views where deep nesting is not required.
+   *
+   * @param pageable Pagination information.
+   * @return A list of WOD summaries.
    */
-  List<WodSummary> findAllProjectedBy();
+  List<WodSummary> findAllProjectedBy(Pageable pageable);
 
   /**
-   * Searches WODs by title (projection). Faster for search results where movements aren't needed.
+   * Searches for WODs by title using lightweight projections.
+   *
+   * @param title The title fragment to search for (case-insensitive).
+   * @return A list of matching WOD summaries.
    */
   List<WodSummary> findProjectedByTitleContainingIgnoreCase(String title);
 
-  /** Retrieves WODs by type (projection). */
-  List<WodSummary> findProjectedByWodType(WodType wodType);
+  /**
+   * Retrieves WODs by type using lightweight projections.
+   *
+   * @param wodType The structural type of the WOD.
+   * @param pageable Pagination information.
+   * @return A list of matching WOD summaries.
+   */
+  List<WodSummary> findProjectedByWodType(WodType wodType, Pageable pageable);
 }

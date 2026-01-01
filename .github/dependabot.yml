@@ -30,6 +30,17 @@ updates:
         patterns:
           - "org.apache.commons:*"
 
+  # --- Aldebaran Training ---
+  - package-ecosystem: "maven"
+    directory: "/aldebaran-training"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    groups:
+      spring-boot:
+        patterns:
+          - "org.springframework.boot:*"
+
   # --- Vega Admin ---
   - package-ecosystem: "maven"
     directory: "/vega-admin"
@@ -77,6 +88,13 @@ updates:
   # --- Antares Auth ---
   - package-ecosystem: "docker"
     directory: "/antares-auth"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 3
+
+  # --- Aldebaran Training ---
+  - package-ecosystem: "docker"
+    directory: "/aldebaran-training"
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 3

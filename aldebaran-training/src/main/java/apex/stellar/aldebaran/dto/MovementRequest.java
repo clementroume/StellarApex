@@ -49,10 +49,18 @@ public record MovementRequest(
 
     // --- Content & Media ---
 
-    @Schema(description = "Detailed technical description in English") String descriptionEn,
-    @Schema(description = "Description technique détaillée en Français") String descriptionFr,
-    @Schema(description = "Short coaching cues in English") String coachingCuesEn,
-    @Schema(description = "Conseils de coaching courts en Français") String coachingCuesFr,
+    @Schema(description = "Detailed technical description in English")
+        @Size(max = 4000, message = "{validation.movement.description.size}")
+        String descriptionEn,
+    @Schema(description = "Description technique détaillée en Français")
+        @Size(max = 4000, message = "{validation.movement.description.size}")
+        String descriptionFr,
+    @Schema(description = "Short coaching cues in English")
+        @Size(max = 4000, message = "{validation.movement.description.size}")
+        String coachingCuesEn,
+    @Schema(description = "Conseils de coaching courts en Français")
+        @Size(max = 4000, message = "{validation.movement.description.size}")
+        String coachingCuesFr,
     @Schema(
             description = "URL to a demonstration video",
             example = "https://videos.stellar.apex/back-squat.mp4")
@@ -61,7 +69,17 @@ public record MovementRequest(
     @Schema(description = "URL to an anatomical diagram or image")
         @Size(max = 512, message = "{validation.url.size}")
         String imageUrl) {
-  // Compact Constructor to ensure collections are never null
+
+  /**
+   * Constructs a MovementRequest object with default values for equipment, techniques, and muscles
+   * if null values are provided.
+   *
+   * @param equipment the set of equipment associated with the movement; defaults to an empty set if
+   *     null.
+   * @param techniques the set of techniques applicable to the movement; defaults to an empty set if
+   *     null.
+   * @param muscles the list of muscles involved in the movement; defaults to an empty list if null.
+   */
   public MovementRequest {
     equipment = equipment != null ? equipment : new HashSet<>();
     techniques = techniques != null ? techniques : new HashSet<>();

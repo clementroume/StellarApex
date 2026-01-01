@@ -12,28 +12,19 @@ import org.springframework.stereotype.Component;
 /**
  * Validates that the WodScore fields correspond to the WOD's scoring type.
  *
- * <p>This ensures data integrity at the application level before persistence.
+ * <p>Checks are performed against the normalized fields (e.g., {@code maxWeightKg}) to ensure data
+ * consistency regardless of the display unit.
  */
 @Component
 public class ScoreValidator implements ConstraintValidator<ValidScore, WodScore> {
 
   private MessageSource messageSource;
 
-  /**
-   * Default constructor for the ScoreValidator class.
-   *
-   * <p>Initializes an instance of ScoreValidator for validating WodScore objects based on the
-   * scoring type of the associated WOD. Ensures that validation logic is properly encapsulated
-   * within this class.
-   */
-  public ScoreValidator() {
-    //
-  }
-
   @Override
   public boolean isValid(WodScore score, ConstraintValidatorContext context) {
+    // If WOD or Score is null, let standard @NotNull annotations handle it
     if (score == null || score.getWod() == null) {
-      return true; // Let @NotNull handle nullity
+      return true;
     }
 
     ScoreType scoreType = score.getWod().getScoreType();
@@ -43,10 +34,10 @@ public class ScoreValidator implements ConstraintValidator<ValidScore, WodScore>
           case TIME -> score.getTimeSeconds() != null;
           case ROUNDS_REPS -> score.getRounds() != null || score.getReps() != null;
           case REPS -> score.getReps() != null;
-          case WEIGHT -> score.getMaxWeight() != null;
-          case LOAD -> score.getTotalLoad() != null;
+          case WEIGHT -> score.getMaxWeightKg() != null;
+          case LOAD -> score.getTotalLoadKg() != null;
           case CALORIES -> score.getTotalCalories() != null;
-          case DISTANCE -> score.getTotalDistance() != null;
+          case DISTANCE -> score.getTotalDistanceMeters() != null;
           case NONE -> true;
         };
 

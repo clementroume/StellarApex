@@ -50,6 +50,10 @@
 
       <plugin>
         <artifactId>maven-failsafe-plugin</artifactId>
+        <configuration>
+          <!--suppress UnresolvedMavenProperty -->
+          <argLine>-javaagent:${org.mockito:mockito-core:jar} -Xshare:off</argLine>
+        </configuration>
         <executions>
           <execution>
             <configuration>
@@ -64,6 +68,27 @@
             <id>integration-tests</id>
           </execution>
         </executions>
+        <groupId>org.apache.maven.plugins</groupId>
+      </plugin>
+
+      <plugin>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <executions>
+          <execution>
+            <goals>
+              <goal>properties</goal>
+            </goals>
+          </execution>
+        </executions>
+        <groupId>org.apache.maven.plugins</groupId>
+      </plugin>
+
+      <plugin>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <!--suppress UnresolvedMavenProperty -->
+          <argLine>-javaagent:${org.mockito:mockito-core:jar} -Xshare:off</argLine>
+        </configuration>
         <groupId>org.apache.maven.plugins</groupId>
       </plugin>
 

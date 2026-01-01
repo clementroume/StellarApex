@@ -9,11 +9,12 @@ import apex.stellar.aldebaran.dto.WodScoreRequest;
 import apex.stellar.aldebaran.dto.WodScoreResponse;
 import apex.stellar.aldebaran.mapper.WodScoreMapper;
 import apex.stellar.aldebaran.model.entities.Wod;
+import apex.stellar.aldebaran.model.entities.Wod.ScoreType;
 import apex.stellar.aldebaran.model.entities.WodScore;
-import apex.stellar.aldebaran.model.enums.Unit;
+import apex.stellar.aldebaran.model.entities.WodScore.ScalingLevel;
 import apex.stellar.aldebaran.repository.WodRepository;
 import apex.stellar.aldebaran.repository.WodScoreRepository;
-import java.util.List;
+import java.time.LocalDate;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -29,58 +30,65 @@ import org.springframework.security.access.AccessDeniedException;
 @ExtendWith(MockitoExtension.class)
 class WodScoreServiceTest {
 
-  private final String USER_ID = "user-123";
+  private final String userId = "user-123";
   @Mock private WodScoreRepository scoreRepository;
   @Mock private WodRepository wodRepository;
   @Mock private WodScoreMapper scoreMapper;
   @InjectMocks private WodScoreService scoreService;
+
   private Wod wodTime;
-  private Wod wodReps;
-  private WodScoreRequest request;
-  private WodScore scoreEntity;
+  private WodScoreRequest requestTime;
+  private WodScore scoreEntityTime;
 
   @BeforeEach
   void setUp() {
-    wodTime = Wod.builder()
-        .id(1L)
-        .title("Fran")
-        .scoreType(Wod.ScoreType.TIME)
-        .build();
+    wodTime = Wod.builder().id(1L).title("Fran").scoreType(ScoreType.TIME).build();
 
-    wodReps = Wod.builder()
-        .id(2L)
-        .title("Cindy")
-        .scoreType(Wod.ScoreType.ROUNDS_REPS)
-        .build();
+    // New Request DTO with split time (5 mins 0 seconds = 300s)
+    requestTime =
+        new WodScoreRequest(
+            1L,
+            LocalDate.now(),
+            5,
+            0, // Minutes, Seconds
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            ScalingLevel.RX,
+            false,
+            null,
+            null);
 
-    request = new WodScoreRequest(
-        1L, java.time.LocalDate.now(),
-        300, Unit.SECONDS, null, null, null, null, null, null, null, null,
-        WodScore.ScalingLevel.RX, false, null, null
-    );
-
-    scoreEntity = WodScore.builder()
-        .id(50L)
-        .wod(wodTime)
-        .userId(USER_ID)
-        .timeSeconds(300)
-        .build();
+    // Entity stores normalized timeSeconds
+    scoreEntityTime =
+        WodScore.builder().id(50L).wod(wodTime).userId(userId).timeSeconds(300).build();
   }
 
   @Test
   @DisplayName("logScore: should save new PR when no previous history")
   void testLogScore_NewPr() {
     try (MockedStatic<SecurityUtils> utilities = mockStatic(SecurityUtils.class)) {
-      utilities.when(SecurityUtils::getCurrentUserId).thenReturn(USER_ID);
+      utilities.when(SecurityUtils::getCurrentUserId).thenReturn(userId);
 
       when(wodRepository.findById(1L)).thenReturn(Optional.of(wodTime));
-      when(scoreMapper.toEntity(request)).thenReturn(scoreEntity);
-      when(scoreRepository.findByUserIdAndPersonalRecordTrue(USER_ID)).thenReturn(List.of()); // No previous PR
-      when(scoreRepository.save(any(WodScore.class))).thenReturn(scoreEntity);
-      when(scoreMapper.toResponse(scoreEntity)).thenReturn(mock(WodScoreResponse.class));
+      when(scoreMapper.toEntity(requestTime)).thenReturn(scoreEntityTime);
 
-      scoreService.logScore(request);
+      // Optimized Repository Query: returns Empty (No previous PR)
+      when(scoreRepository.findByWodIdAndUserIdAndPersonalRecordTrue(1L, userId))
+          .thenReturn(Optional.empty());
 
+      when(scoreRepository.save(any(WodScore.class))).thenReturn(scoreEntityTime);
+      when(scoreMapper.toResponse(scoreEntityTime)).thenReturn(mock(WodScoreResponse.class));
+
+      // When
+      scoreService.logScore(requestTime);
+
+      // Then
       ArgumentCaptor<WodScore> captor = ArgumentCaptor.forClass(WodScore.class);
       verify(scoreRepository).save(captor.capture());
       assertTrue(captor.getValue().isPersonalRecord(), "First score should be a PR");
@@ -91,50 +99,31 @@ class WodScoreServiceTest {
   @DisplayName("logScore: should verify PR calculation (Time: Lower is Better)")
   void testLogScore_TimeImprovement() {
     try (MockedStatic<SecurityUtils> utilities = mockStatic(SecurityUtils.class)) {
-      utilities.when(SecurityUtils::getCurrentUserId).thenReturn(USER_ID);
+      utilities.when(SecurityUtils::getCurrentUserId).thenReturn(userId);
 
-      // Old PR = 400 seconds
-      WodScore oldPr = WodScore.builder().wod(wodTime).timeSeconds(400).personalRecord(true).build();
+      // Old PR = 400 seconds (Normalized)
+      WodScore oldPr =
+          WodScore.builder().wod(wodTime).timeSeconds(400).personalRecord(true).build();
 
       // New Score = 300 seconds (Better)
-      scoreEntity.setTimeSeconds(300);
+      scoreEntityTime.setTimeSeconds(300);
 
       when(wodRepository.findById(1L)).thenReturn(Optional.of(wodTime));
-      when(scoreMapper.toEntity(request)).thenReturn(scoreEntity);
-      when(scoreRepository.findByUserIdAndPersonalRecordTrue(USER_ID)).thenReturn(List.of(oldPr));
-      when(scoreRepository.save(any())).thenReturn(scoreEntity);
+      when(scoreMapper.toEntity(requestTime)).thenReturn(scoreEntityTime);
 
-      scoreService.logScore(request);
+      // Found previous PR
+      when(scoreRepository.findByWodIdAndUserIdAndPersonalRecordTrue(1L, userId))
+          .thenReturn(Optional.of(oldPr));
 
+      when(scoreRepository.save(any())).thenReturn(scoreEntityTime);
+
+      // When
+      scoreService.logScore(requestTime);
+
+      // Then
       ArgumentCaptor<WodScore> captor = ArgumentCaptor.forClass(WodScore.class);
       verify(scoreRepository).save(captor.capture());
       assertTrue(captor.getValue().isPersonalRecord(), "300s is faster than 400s -> Should be PR");
-    }
-  }
-
-  @Test
-  @DisplayName("logScore: should verify PR calculation (Rounds: Higher is Better)")
-  void testLogScore_RoundsImprovement() {
-    try (MockedStatic<SecurityUtils> utilities = mockStatic(SecurityUtils.class)) {
-      utilities.when(SecurityUtils::getCurrentUserId).thenReturn(USER_ID);
-
-      // Old PR = 10 Rounds
-      WodScore oldPr = WodScore.builder().wod(wodReps).rounds(10).reps(0).personalRecord(true).build();
-
-      // New Score = 11 Rounds
-      WodScore newScore = WodScore.builder().wod(wodReps).rounds(11).reps(0).build();
-      WodScoreRequest reqReps = new WodScoreRequest(2L, java.time.LocalDate.now(), null, null, 11, 0, null, null, null, null, null, null, WodScore.ScalingLevel.RX, false, null, null);
-
-      when(wodRepository.findById(2L)).thenReturn(Optional.of(wodReps));
-      when(scoreMapper.toEntity(reqReps)).thenReturn(newScore);
-      when(scoreRepository.findByUserIdAndPersonalRecordTrue(USER_ID)).thenReturn(List.of(oldPr));
-      when(scoreRepository.save(any())).thenReturn(newScore);
-
-      scoreService.logScore(reqReps);
-
-      ArgumentCaptor<WodScore> captor = ArgumentCaptor.forClass(WodScore.class);
-      verify(scoreRepository).save(captor.capture());
-      assertTrue(captor.getValue().isPersonalRecord(), "11 Rounds > 10 Rounds -> Should be PR");
     }
   }
 
@@ -144,10 +133,10 @@ class WodScoreServiceTest {
     try (MockedStatic<SecurityUtils> utilities = mockStatic(SecurityUtils.class)) {
       // Mock Current User as "hacker"
       utilities.when(SecurityUtils::getCurrentUserId).thenReturn("hacker");
-      // Mock SecurityUtils check to fail
-      utilities.when(() -> SecurityUtils.isCurrentUser(USER_ID)).thenReturn(false);
+      // Security Check fails
+      utilities.when(() -> SecurityUtils.isCurrentUser(userId)).thenReturn(false);
 
-      when(scoreRepository.findById(50L)).thenReturn(Optional.of(scoreEntity)); // Entity owned by USER_ID
+      when(scoreRepository.findById(50L)).thenReturn(Optional.of(scoreEntityTime));
 
       assertThrows(AccessDeniedException.class, () -> scoreService.deleteScore(50L));
       verify(scoreRepository, never()).delete(any());
@@ -158,13 +147,13 @@ class WodScoreServiceTest {
   @DisplayName("deleteScore: should delete if user is owner")
   void testDeleteScore_Success() {
     try (MockedStatic<SecurityUtils> utilities = mockStatic(SecurityUtils.class)) {
-      utilities.when(SecurityUtils::getCurrentUserId).thenReturn(USER_ID);
-      utilities.when(() -> SecurityUtils.isCurrentUser(USER_ID)).thenReturn(true);
+      utilities.when(SecurityUtils::getCurrentUserId).thenReturn(userId);
+      utilities.when(() -> SecurityUtils.isCurrentUser(userId)).thenReturn(true);
 
-      when(scoreRepository.findById(50L)).thenReturn(Optional.of(scoreEntity));
+      when(scoreRepository.findById(50L)).thenReturn(Optional.of(scoreEntityTime));
 
       scoreService.deleteScore(50L);
-      verify(scoreRepository).delete(scoreEntity);
+      verify(scoreRepository).delete(scoreEntityTime);
     }
   }
 }

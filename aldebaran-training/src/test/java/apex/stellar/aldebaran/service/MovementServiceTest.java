@@ -16,6 +16,7 @@ import apex.stellar.aldebaran.model.entities.Muscle;
 import apex.stellar.aldebaran.model.enums.Category;
 import apex.stellar.aldebaran.repository.MovementRepository;
 import apex.stellar.aldebaran.repository.MuscleRepository;
+import apex.stellar.aldebaran.repository.projection.MovementSummary;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -78,17 +79,28 @@ class MovementServiceTest {
   }
 
   @Test
-  @DisplayName("searchMovements: should return mapped summaries")
+  @DisplayName("searchMovements: should return mapped summaries from projection")
   void testSearchMovements() {
-    when(movementRepository.findByNameContainingIgnoreCase("Squat")).thenReturn(List.of(movement));
-    when(movementMapper.toSummary(movement))
-        .thenReturn(
-            new MovementSummaryResponse("WL-SQ-1234", "Back Squat", "BS", Category.SQUAT, null));
+    // Given
+    MovementSummary projection = mock(MovementSummary.class);
+    when(projection.getId()).thenReturn("WL-SQ-1234");
+    when(projection.getName()).thenReturn("Back Squat");
+    when(projection.getNameAbbreviation()).thenReturn("BS");
+    when(projection.getCategory()).thenReturn(Category.SQUAT);
+    when(projection.getImageUrl()).thenReturn(null);
 
+    when(movementRepository.findProjectedByNameContainingIgnoreCase("Squat"))
+        .thenReturn(List.of(projection));
+
+    // When
     List<MovementSummaryResponse> results = movementService.searchMovements("Squat");
 
+    // Then
     assertEquals(1, results.size());
-    verify(movementRepository).findByNameContainingIgnoreCase("Squat");
+    assertEquals("WL-SQ-1234", results.get(0).id());
+
+    // Verify we called the Optimized Projection method, not the full entity search
+    verify(movementRepository).findProjectedByNameContainingIgnoreCase("Squat");
   }
 
   @Test

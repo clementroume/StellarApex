@@ -1,9 +1,9 @@
 package apex.stellar.aldebaran.repository;
 
 import apex.stellar.aldebaran.model.entities.WodScore;
-import java.time.LocalDate;
 import java.util.List;
-import org.springframework.cache.annotation.Cacheable;
+import java.util.Optional;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -18,34 +18,25 @@ public interface WodScoreRepository extends JpaRepository<WodScore, Long> {
   /**
    * Retrieves the score history for a specific user, ordered by date (newest first).
    *
+   * <p><b>Optimization:</b> Uses {@link EntityGraph} to eagerly load the associated {@code Wod}
+   * entity. This prevents the N+1 select problem when mapping the list to response DTOs that
+   * include WOD summaries.
+   *
    * @param userId The ID of the user.
-   * @return A list of the user's scores.
+   * @return A list of the user's scores with WOD details loaded.
    */
+  @EntityGraph(attributePaths = {"wod"})
   List<WodScore> findByUserIdOrderByDateDesc(String userId);
 
   /**
-   * Retrieves all scores for a specific WOD definition. Used to build leaderboards.
+   * Finds the existing Personal Record (PR) for a specific user on a specific WOD.
    *
-   * <p>Cached with a short TTL (5 min) via "wod-scores" config to reduce database load on heavy
-   * workouts (e.g. "Murph").
-   */
-  @Cacheable(value = "wod-scores", key = "#wodId")
-  List<WodScore> findByWodId(Long wodId);
-
-  /**
-   * Retrieves all scores flagged as Personal Records (PR) for a user.
+   * <p>Used by the Service to compare a new score against the previous best.
    *
-   * @param userId The ID of the user.
-   * @return A list of the user's PR performances.
+   * @param wodId The ID of the WOD.
+   * @param userId The ID of the athlete.
+   * @return An Optional containing the PR score if it exists.
    */
-  List<WodScore> findByUserIdAndPersonalRecordTrue(String userId);
-
-  /**
-   * Retrieves scores for a specific user on a specific date.
-   *
-   * @param userId The ID of the user.
-   * @param date The date of the workout.
-   * @return A list of scores found.
-   */
-  List<WodScore> findByUserIdAndDate(String userId, LocalDate date);
+  @EntityGraph(attributePaths = {"wod"})
+  Optional<WodScore> findByWodIdAndUserIdAndPersonalRecordTrue(Long wodId, String userId);
 }

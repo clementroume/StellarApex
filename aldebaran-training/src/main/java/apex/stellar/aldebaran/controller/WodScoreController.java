@@ -21,9 +21,9 @@ import org.springframework.web.bind.annotation.RestController;
 /**
  * REST Controller for managing Athlete Performance (Scores).
  *
- * <p>Provides endpoints for athletes to log their workout results, view their history, and manage
- * their own data. Security is strictly enforced to ensure users can only modify or delete their own
- * scores.
+ * <p>Provides endpoints for athletes to log their workout results. Input data is accepted in
+ * user-preferred units (e.g. Lbs), processed by the service, and stored in normalized system units
+ * (Kg).
  */
 @RestController
 @RequestMapping("/aldebaran/scores")
@@ -36,10 +36,7 @@ public class WodScoreController {
   /**
    * Retrieves the score history for the currently authenticated user.
    *
-   * <p>The results are ordered by date (descending). Each entry includes a summary of the performed
-   * WOD for context.
-   *
-   * @return A list of the user's scores.
+   * @return A list of the user's scores, ordered by date.
    */
   @GetMapping("/me")
   @Operation(
@@ -52,9 +49,6 @@ public class WodScoreController {
   /**
    * Logs a new performance result for a specific WOD.
    *
-   * <p>This operation automatically triggers Personal Record (PR) calculations based on the user's
-   * previous history and the WOD's scoring type.
-   *
    * @param request The score submission data (WOD ID, Date, Result, Scaling).
    * @return The persisted score with PR status, returned with HTTP 201 Created.
    */
@@ -66,9 +60,6 @@ public class WodScoreController {
 
   /**
    * Deletes a specific score entry.
-   *
-   * <p><b>Security:</b> Users can only delete scores that belong to them. Attempting to delete
-   * another user's score will result in a 403 Forbidden error.
    *
    * @param id The unique identifier of the score to delete.
    * @return HTTP 204 No Content on success.

@@ -12,8 +12,6 @@ import java.util.Set;
  *
  * <p>Aggregates all movement properties, including internationalized content, anatomical analysis,
  * and load calculation logic.
- *
- * @param id The unique business identifier (e.g., "WL-SQ-001").
  */
 public record MovementResponse(
     // --- Identification ---
@@ -32,6 +30,10 @@ public record MovementResponse(
     @Schema(description = "Whether body weight is factored into the load")
         boolean involvesBodyweight,
     @Schema(description = "Bodyweight factor coefficient (0.0 - 1.0)") Double bodyweightFactor,
+    @Schema(
+            description = "Indicates if this movement typically requires an external load (weight)",
+            example = "true")
+        boolean isLoadBearing,
 
     // --- Internationalized Content ---
     @Schema(description = "Description in English") String descriptionEn,

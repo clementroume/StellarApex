@@ -22,6 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
  * Service for logging and managing athlete performance scores.
  *
  * <p>Handles security checks (ownership), PR (Personal Record) calculations, and DTO mapping.
+ * Integrates with {@link WodScoreRepository} for optimized data access.
  */
 @Service
 @RequiredArgsConstructor
@@ -34,6 +35,9 @@ public class WodScoreService {
 
   /**
    * Retrieves all scores for the currently authenticated user.
+   *
+   * <p>The results are ordered by date (descending). Uses an optimized repository query to fetch
+   * WOD details efficiently.
    *
    * @return List of score responses ordered by date (descending).
    */
@@ -49,7 +53,8 @@ public class WodScoreService {
    * Logs a new score for the current user.
    *
    * <p>Automatically calculates if this result constitutes a new Personal Record (PR) based on the
-   * WOD's {@link ScoreType} and the user's history.
+   * WOD's {@link ScoreType} and the user's history. Normalization of units is handled by the
+   * mapper.
    *
    * @param request The score data to log.
    * @return The persisted score response.
@@ -66,7 +71,7 @@ public class WodScoreService {
             .orElseThrow(
                 () -> new ResourceNotFoundException("error.wod.not.found", request.wodId()));
 
-    // Map DTO to Entity (ignores ID, User, PR status)
+    // Map DTO to Entity (Values converted to Base Units)
     WodScore score = scoreMapper.toEntity(request);
     score.setWod(wod);
     score.setUserId(userId);
@@ -79,8 +84,7 @@ public class WodScoreService {
     WodScore saved = scoreRepository.save(score);
 
     if (isPr) {
-      log.info(
-          "New PR for user {} on WOD {} (Type: {})!", userId, wod.getTitle(), wod.getScoreType());
+      log.info("New PR for user {} on WOD {}!", userId, wod.getTitle());
     }
 
     return scoreMapper.toResponse(saved);
@@ -111,25 +115,14 @@ public class WodScoreService {
   // PR Calculation Logic
   // -------------------------------------------------------------------------
 
-  /** Determines if the current score is better than any previous score for this specific WOD. */
   private boolean checkIsPersonalRecord(String userId, Wod wod, WodScore current) {
-    // 1. Retrieve previous PR
-    WodScore oldPr = findPreviousPr(userId, wod.getId());
+    WodScore oldPr =
+        scoreRepository.findByWodIdAndUserIdAndPersonalRecordTrue(wod.getId(), userId).orElse(null);
 
-    // 2. If no previous PR, it's a PR (unless unscored)
     if (oldPr == null) {
       return wod.getScoreType() != ScoreType.NONE;
     }
-
-    // 3. Delegate comparison based on type
     return isBetterScore(current, oldPr, wod.getScoreType());
-  }
-
-  private WodScore findPreviousPr(String userId, Long wodId) {
-    return scoreRepository.findByUserIdAndPersonalRecordTrue(userId).stream()
-        .filter(s -> s.getWod().getId().equals(wodId))
-        .findFirst()
-        .orElse(null);
   }
 
   private boolean isBetterScore(WodScore current, WodScore old, ScoreType type) {
@@ -137,19 +130,18 @@ public class WodScoreService {
       case TIME -> compareTime(current, old);
       case ROUNDS_REPS -> compareRoundsReps(current, old);
       case REPS -> compareValues(current.getReps(), old.getReps());
-      case WEIGHT -> compareValues(current.getMaxWeightInKg(), old.getMaxWeightInKg());
-      case LOAD -> compareValues(current.getTotalLoadInKg(), old.getTotalLoadInKg());
+      // Comparison on normalized KG values
+      case WEIGHT -> compareValues(current.getMaxWeightKg(), old.getMaxWeightKg());
+      case LOAD -> compareValues(current.getTotalLoadKg(), old.getTotalLoadKg());
       case CALORIES -> compareValues(current.getTotalCalories(), old.getTotalCalories());
+      // Comparison on normalized Meter values
       case DISTANCE ->
-          compareValues(current.getTotalDistanceInMeters(), old.getTotalDistanceInMeters());
+          compareValues(current.getTotalDistanceMeters(), old.getTotalDistanceMeters());
       case NONE -> false;
     };
   }
 
-  // --- Specific Comparators ---
-
   private boolean compareTime(WodScore current, WodScore old) {
-    // Lower is better for time
     if (current.getTimeSeconds() == null) return false;
     return old.getTimeSeconds() == null || current.getTimeSeconds() < old.getTimeSeconds();
   }
@@ -168,7 +160,6 @@ public class WodScoreService {
   }
 
   private boolean compareValues(Number current, Number old) {
-    // Generic "Higher is better" comparison
     double c = current != null ? current.doubleValue() : 0.0;
     double o = old != null ? old.doubleValue() : 0.0;
     return c > o;

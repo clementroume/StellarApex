@@ -152,40 +152,42 @@ CREATE TABLE wod_movements
 
 CREATE TABLE wod_scores
 (
-    id                 BIGSERIAL PRIMARY KEY,
-    user_id            VARCHAR(255) NOT NULL,
-    date               DATE         NOT NULL,
-    wod_id             BIGINT       NOT NULL REFERENCES wods (id) ON DELETE CASCADE,
+    id                    BIGSERIAL PRIMARY KEY,
+    user_id               VARCHAR(255) NOT NULL,
+    date                  DATE         NOT NULL,
+    wod_id                BIGINT       NOT NULL REFERENCES wods (id) ON DELETE CASCADE,
 
-    -- Metrics
-    time_seconds       INTEGER,
-    time_display_unit  VARCHAR(10)           DEFAULT 'SECONDS',
+    -- Metrics (Canonical Storage)
+    time_seconds          INTEGER,
+    time_display_unit     VARCHAR(10)           DEFAULT 'SECONDS',
 
-    rounds             INTEGER,
-    reps               INTEGER,
+    rounds                INTEGER,
+    reps                  INTEGER,
 
-    max_weight         DOUBLE PRECISION,
-    total_load         DOUBLE PRECISION,
-    weight_unit        VARCHAR(10)           DEFAULT 'KG',
+    -- Normalized Weight (KG)
+    max_weight_kg         DOUBLE PRECISION,
+    total_load_kg         DOUBLE PRECISION,
+    weight_display_unit   VARCHAR(10)           DEFAULT 'KG',     -- User preference for display
 
-    total_distance     DOUBLE PRECISION,
-    distance_unit      VARCHAR(10)           DEFAULT 'METERS',
+    -- Normalized Distance (Meters)
+    total_distance_meters DOUBLE PRECISION,
+    distance_display_unit VARCHAR(10)           DEFAULT 'METERS', -- User preference for display
 
-    total_calories     INTEGER,
+    total_calories        INTEGER,
 
     -- Metadata
-    is_personal_record BOOLEAN      NOT NULL DEFAULT FALSE,
-    time_capped        BOOLEAN      NOT NULL DEFAULT FALSE,
-    scaling            VARCHAR(20)  NOT NULL,
-    scaling_notes      TEXT,
-    user_comment       TEXT,
+    is_personal_record    BOOLEAN      NOT NULL DEFAULT FALSE,
+    time_capped           BOOLEAN      NOT NULL DEFAULT FALSE,
+    scaling               VARCHAR(20)  NOT NULL,
+    scaling_notes         TEXT,
+    user_comment          TEXT,
 
-    logged_at          TIMESTAMP    NOT NULL DEFAULT NOW(),
+    logged_at             TIMESTAMP    NOT NULL DEFAULT NOW(),
 
     -- Constraints
     CONSTRAINT check_time_positive CHECK (time_seconds IS NULL OR time_seconds > 0),
     CONSTRAINT check_rounds_positive CHECK (rounds IS NULL OR rounds >= 0),
-    CONSTRAINT check_weight_positive CHECK (max_weight IS NULL OR max_weight > 0)
+    CONSTRAINT check_weight_positive CHECK (max_weight_kg IS NULL OR max_weight_kg > 0)
 );
 
 -- ==================================================================================
@@ -238,5 +240,7 @@ COMMENT ON COLUMN movement_muscles.impact_factor IS 'Activation coefficient (0.0
 
 COMMENT ON TABLE wods IS 'Workout definitions (the recipe)';
 COMMENT ON TABLE wod_scores IS 'Athlete performance results (the execution)';
-COMMENT ON COLUMN wod_scores.time_seconds IS 'Canonical storage in seconds';
 COMMENT ON COLUMN wod_scores.time_display_unit IS 'User preference for display';
+COMMENT ON COLUMN wod_scores.time_seconds IS 'Canonical storage in seconds';
+COMMENT ON COLUMN wod_scores.max_weight_kg IS 'Canonical storage in Kilograms';
+COMMENT ON COLUMN wod_scores.total_distance_meters IS 'Canonical storage in Meters';

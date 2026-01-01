@@ -21,6 +21,7 @@ jobs:
     outputs:
       frontend: ${{ steps.filter.outputs.frontend }}
       auth: ${{ steps.filter.outputs.auth }}
+      training: ${{ steps.filter.outputs.training }}
       admin: ${{ steps.filter.outputs.admin }}
       shared: ${{ steps.filter.outputs.shared }}
     steps:
@@ -33,6 +34,8 @@ jobs:
               - 'sirius-app/**'
             auth:
               - 'antares-auth/**'
+            training:
+              - 'aldebaran-training/**'
             admin:
               - 'vega-admin/**'
             swagger:
@@ -105,7 +108,34 @@ jobs:
           chmod +x ./mvnw
           ./mvnw -B verify
 
-  # --- JOB 4: Build Admin Backend (Vega) ---
+  # --- JOB 4: Build Training Backend (Aldebaran) ---
+  build-backend-training:
+    needs: filter
+    if: needs.filter.outputs.training == 'true' || needs.filter.outputs.shared == 'true'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash -l -o pipefail {0}
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Set up JDK 25
+        uses: actions/setup-java@v5
+        with:
+          java-version: '25'
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: Build & test training backend
+        working-directory: ./aldebaran-training
+        run: |
+          chmod +x ./mvnw
+          ./mvnw -B verify
+
+  # --- JOB 5: Build Admin Backend (Vega) ---
   build-backend-admin:
     needs: filter
     if: needs.filter.outputs.admin == 'true' || needs.filter.outputs.shared == 'true'
@@ -132,7 +162,7 @@ jobs:
           chmod +x ./mvnw
           ./mvnw -B verify
 
-  # --- JOB 5: Build Swagger Gateway (Bellatrix) ---
+  # --- JOB 6: Build Swagger Gateway (Bellatrix) ---
   build-backend-swagger:
     needs: filter
     if: needs.filter.outputs.swagger == 'true' || needs.filter.outputs.shared == 'true'

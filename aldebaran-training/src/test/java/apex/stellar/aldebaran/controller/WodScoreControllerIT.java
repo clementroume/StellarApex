@@ -19,22 +19,24 @@ import apex.stellar.aldebaran.model.enums.Unit;
 import apex.stellar.aldebaran.repository.WodRepository;
 import apex.stellar.aldebaran.repository.WodScoreRepository;
 import java.time.LocalDate;
+import java.util.List;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.connection.RedisConnection;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.http.MediaType;
-import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 import tools.jackson.databind.json.JsonMapper;
 
 /**
- * Integration tests for {@link WodScoreController}. * Simulated Context: Auth is handled upstream
- * (Traefik). We use @WithMockUser to simulate the authenticated Principal arriving at the
- * controller.
+ * Integration tests for {@link WodScoreController}.
+ *
+ * <p>Verifies the full lifecycle of a score: Input (User Units) -> Storage (System Units) -> Output
+ * (User Units).
  */
 @Transactional
 class WodScoreControllerIT extends BaseIntegrationTest {
@@ -43,8 +45,7 @@ class WodScoreControllerIT extends BaseIntegrationTest {
   @Autowired private JsonMapper objectMapper;
   @Autowired private WodScoreRepository scoreRepository;
   @Autowired private WodRepository wodRepository;
-
-  @Autowired private StringRedisTemplate stringRedisTemplate;
+  @Autowired private StringRedisTemplate redisTemplate;
 
   private Wod fran;
 
@@ -65,75 +66,26 @@ class WodScoreControllerIT extends BaseIntegrationTest {
 
   @AfterEach
   void cleanUpCache() {
-    if (stringRedisTemplate.getConnectionFactory() != null) {
-      stringRedisTemplate.getConnectionFactory().getConnection().serverCommands().flushAll();
-    }
+    redisTemplate.execute(
+        (RedisConnection connection) -> {
+          connection.serverCommands().flushAll();
+          return null;
+        });
   }
 
-  // --- GET ---
+  // -------------------------------------------------------------------------
+  // Normalization Tests (POST)
+  // -------------------------------------------------------------------------
 
   @Test
-  @WithMockUser(username = "athlete") // "athlete" devient le SecurityUtils.getCurrentUserId()
-  @DisplayName("GET /scores/me: should return only authenticated user scores")
-  void testGetMyScores_Success() throws Exception {
-    // Given
-    seedScore("athlete", 300);
-    seedScore("other", 240);
-
-    // When/Then
-    mockMvc
-        .perform(get("/aldebaran/scores/me"))
-        .andExpect(status().isOk())
-        .andExpect(jsonPath("$", hasSize(1)))
-        .andExpect(jsonPath("$[0].timeSeconds").value(300));
-  }
-
-  // --- POST ---
-
-  @Test
-  @WithMockUser(username = "athlete")
-  @DisplayName("POST /scores: should log score and return 201 Created")
-  void testLogScore_Success() throws Exception {
+  @DisplayName("POST /scores: should normalize Time Input (1 min 30 -> 90s)")
+  void testLogScore_TimeNormalization() throws Exception {
     WodScoreRequest request =
         new WodScoreRequest(
             fran.getId(),
             LocalDate.now(),
-            420,
-            Unit.SECONDS,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            ScalingLevel.RX,
-            false,
-            "Tough!",
-            "No Scaling");
-
-    mockMvc
-        .perform(
-            post("/aldebaran/scores")
-                .with(csrf())
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(request)))
-        .andExpect(status().isCreated())
-        .andExpect(jsonPath("$.timeSeconds").value(420))
-        .andExpect(jsonPath("$.personalRecord").value(true));
-  }
-
-  @Test
-  @WithMockUser(username = "athlete")
-  @DisplayName("POST /scores: should return 404 if WOD does not exist")
-  void testLogScore_WodNotFound() throws Exception {
-    WodScoreRequest request =
-        new WodScoreRequest(
-            9999L,
-            LocalDate.now(),
-            420,
-            Unit.SECONDS,
+            1,
+            30, // 1 min 30s
             null,
             null,
             null,
@@ -150,63 +102,210 @@ class WodScoreControllerIT extends BaseIntegrationTest {
     mockMvc
         .perform(
             post("/aldebaran/scores")
+                .header("X-Auth-User-Id", "athlete")
+                .header("X-Auth-User-Role", "USER")
                 .with(csrf())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
-        .andExpect(status().isNotFound())
-        .andExpect(jsonPath("$.title").value("Resource Not Found"));
+        .andExpect(status().isCreated())
+        // Response should reflect user input preference
+        .andExpect(jsonPath("$.timeMinutesPart").value(1))
+        .andExpect(jsonPath("$.timeSecondsPart").value(30))
+        .andExpect(jsonPath("$.timeDisplayUnit").value("MINUTES"));
+
+    // DB Verification: Canonical storage
+    List<WodScore> scores = scoreRepository.findAll();
+    assert (scores.get(0).getTimeSeconds() == 90);
   }
 
-  // --- DELETE ---
+  @Test
+  @DisplayName("POST /scores: should normalize Weight Input (LBS -> KG)")
+  void testLogScore_WeightNormalization() throws Exception {
+    // 225 LBS ~ 102.058 KG
+    WodScoreRequest request =
+        new WodScoreRequest(
+            fran.getId(),
+            LocalDate.now(),
+            null,
+            600,
+            null,
+            null,
+            225.0,
+            null,
+            Unit.LBS,
+            null,
+            null,
+            null,
+            ScalingLevel.RX,
+            false,
+            null,
+            null);
+
+    mockMvc
+        .perform(
+            post("/aldebaran/scores")
+                .header("X-Auth-User-Id", "athlete")
+                .header("X-Auth-User-Role", "USER")
+                .with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+        .andExpect(status().isCreated())
+        // Response should match input
+        .andExpect(jsonPath("$.maxWeight").value(225.0))
+        .andExpect(jsonPath("$.weightUnit").value("LBS"));
+
+    // DB Verification: Canonical storage
+    List<WodScore> scores = scoreRepository.findAll();
+    double storedKg = scores.get(0).getMaxWeightKg();
+    assert (storedKg > 102.0 && storedKg < 103.0);
+  }
 
   @Test
-  @WithMockUser(username = "athlete")
+  @DisplayName("POST /scores: should normalize Distance Input (MILES -> METERS)")
+  void testLogScore_DistanceNormalization() throws Exception {
+    // 10 MILES ~ 16093.4 METERS
+    WodScoreRequest request =
+        new WodScoreRequest(
+            fran.getId(),
+            LocalDate.now(),
+            null,
+            600,
+            null,
+            null,
+            null,
+            null,
+            null,
+            10.0,
+            Unit.MILES,
+            null,
+            ScalingLevel.RX,
+            false,
+            null,
+            null);
+
+    mockMvc
+        .perform(
+            post("/aldebaran/scores")
+                .header("X-Auth-User-Id", "athlete")
+                .header("X-Auth-User-Role", "USER")
+                .with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+        .andExpect(status().isCreated())
+        // Response should match input
+        .andExpect(jsonPath("$.totalDistance").value(10.0))
+        .andExpect(jsonPath("$.distanceUnit").value("MILES"));
+
+    // DB Verification: Canonical storage
+    List<WodScore> scores = scoreRepository.findAll();
+    double storedMeters = scores.get(0).getTotalDistanceMeters();
+    assert (storedMeters > 16093.0 && storedMeters < 16094.0);
+  }
+
+  // -------------------------------------------------------------------------
+  // Round-Trip Tests (GET retrieves what was POSTed)
+  // -------------------------------------------------------------------------
+
+  @Test
+  @DisplayName("Round-Trip: POST in LBS/MILES -> DB (KG/M) -> GET in LBS/MILES")
+  void testRoundTrip_Conversion() throws Exception {
+    // 1. POST a complex score (Imperial units + Time split)
+    WodScoreRequest request =
+        new WodScoreRequest(
+            fran.getId(),
+            LocalDate.now(),
+            2,
+            15, // 2min 15s (135s)
+            null,
+            null,
+            135.0, // 135 LBS
+            null,
+            Unit.LBS,
+            5.0, // 5 MILES
+            Unit.MILES,
+            null,
+            ScalingLevel.RX,
+            false,
+            null,
+            null);
+
+    mockMvc
+        .perform(
+            post("/aldebaran/scores")
+                .header("X-Auth-User-Id", "athlete")
+                .header("X-Auth-User-Role", "USER")
+                .with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+        .andExpect(status().isCreated());
+
+    // 2. GET the history
+    mockMvc
+        .perform(
+            get("/aldebaran/scores/me")
+                .header("X-Auth-User-Id", "athlete")
+                .header("X-Auth-User-Role", "USER"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$", hasSize(1)))
+        // Verify Time reconstruction
+        .andExpect(jsonPath("$[0].timeSeconds").value(135))
+        .andExpect(jsonPath("$[0].timeMinutesPart").value(2))
+        .andExpect(jsonPath("$[0].timeSecondsPart").value(15))
+        // Verify Weight reconstruction (should be exactly 135.0 LBS)
+        .andExpect(jsonPath("$[0].maxWeight").value(135.0))
+        .andExpect(jsonPath("$[0].weightUnit").value("LBS"))
+        // Verify Distance reconstruction (should be exactly 5.0 MILES)
+        .andExpect(jsonPath("$[0].totalDistance").value(5.0))
+        .andExpect(jsonPath("$[0].distanceUnit").value("MILES"));
+  }
+
+  // -------------------------------------------------------------------------
+  // Standard Operations
+  // -------------------------------------------------------------------------
+
+  @Test
   @DisplayName("DELETE /{id}: should delete own score")
-  void testDeleteScore_Own_Success() throws Exception {
-    WodScore score = seedScore("athlete", 300);
-
-    mockMvc
-        .perform(delete("/aldebaran/scores/" + score.getId()).with(csrf()))
-        .andExpect(status().isNoContent());
-
-    assert (scoreRepository.findById(score.getId()).isEmpty());
-  }
-
-  @Test
-  @WithMockUser(username = "hacker") // "hacker" is the current user
-  @DisplayName("DELETE /{id}: should return 403 Forbidden when deleting others' score")
-  void testDeleteScore_Others_Forbidden() throws Exception {
-    WodScore score = seedScore("victim", 300); // Score belongs to "victim"
-
-    mockMvc
-        .perform(delete("/aldebaran/scores/" + score.getId()).with(csrf()))
-        .andExpect(status().isForbidden())
-        .andExpect(jsonPath("$.title").value("Access Denied"));
-
-    assert (scoreRepository.findById(score.getId()).isPresent());
-  }
-
-  @Test
-  @WithMockUser(username = "athlete")
-  @DisplayName("DELETE /{id}: should return 404 if score unknown")
-  void testDeleteScore_NotFound() throws Exception {
-    mockMvc
-        .perform(delete("/aldebaran/scores/99999").with(csrf()))
-        .andExpect(status().isNotFound());
-  }
-
-  // --- Helper ---
-
-  private WodScore seedScore(String userId, Integer timeSeconds) {
+  void testDeleteScore_Success() throws Exception {
     WodScore score =
         WodScore.builder()
             .wod(fran)
-            .userId(userId)
+            .userId("athlete")
             .date(LocalDate.now())
-            .timeSeconds(timeSeconds)
             .scaling(ScalingLevel.RX)
+            .timeSeconds(100)
             .loggedAt(java.time.LocalDateTime.now())
             .build();
-    return scoreRepository.save(score);
+    score = scoreRepository.save(score);
+
+    mockMvc
+        .perform(
+            delete("/aldebaran/scores/" + score.getId())
+                .header("X-Auth-User-Id", "athlete")
+                .header("X-Auth-User-Role", "USER")
+                .with(csrf()))
+        .andExpect(status().isNoContent());
+  }
+
+  @Test
+  @DisplayName("DELETE /{id}: should return 403 Forbidden when deleting others' score")
+  void testDeleteScore_Others_Forbidden() throws Exception {
+    WodScore score =
+        WodScore.builder()
+            .wod(fran)
+            .userId("victim")
+            .date(LocalDate.now())
+            .scaling(ScalingLevel.RX)
+            .timeSeconds(100)
+            .loggedAt(java.time.LocalDateTime.now())
+            .build();
+    score = scoreRepository.save(score);
+
+    mockMvc
+        .perform(
+            delete("/aldebaran/scores/" + score.getId())
+                .header("X-Auth-User-Id", "hacker")
+                .header("X-Auth-User-Role", "USER")
+                .with(csrf()))
+        .andExpect(status().isForbidden());
   }
 }

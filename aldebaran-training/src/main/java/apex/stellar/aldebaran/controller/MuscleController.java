@@ -2,8 +2,10 @@ package apex.stellar.aldebaran.controller;
 
 import apex.stellar.aldebaran.dto.MuscleRequest;
 import apex.stellar.aldebaran.dto.MuscleResponse;
+import apex.stellar.aldebaran.model.entities.Muscle.MuscleGroup;
 import apex.stellar.aldebaran.service.MuscleService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.List;
@@ -17,6 +19,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
@@ -35,17 +38,43 @@ public class MuscleController {
   private final MuscleService muscleService;
 
   /**
-   * Retrieves the full anatomical catalog.
+   * Retrieves the anatomical catalog, optionally filtered by muscle group.
    *
-   * <p>Returns a flat list of all defined muscles. This data is intended to be cached by clients as
-   * it changes very infrequently.
+   * <p>If the 'group' parameter is provided, returns only muscles belonging to that group.
+   * Otherwise, returns the full catalog.
    *
-   * @return A list of {@link MuscleResponse} containing internationalized names and descriptions.
+   * @param group (Optional) The anatomical group to filter by (e.g., "LEGS").
+   * @return A list of {@link MuscleResponse} objects.
    */
   @GetMapping
-  @Operation(summary = "List all muscles", description = "Retrieves the full anatomical catalog.")
-  public ResponseEntity<List<MuscleResponse>> getAllMuscles() {
+  @Operation(
+      summary = "List muscles",
+      description = "Retrieves the full anatomical catalog or filters by muscle group.")
+  public ResponseEntity<List<MuscleResponse>> getMuscles(
+      @Parameter(description = "Filter by anatomical group") @RequestParam(required = false)
+          MuscleGroup group) {
+
+    if (group != null) {
+      return ResponseEntity.ok(muscleService.getMusclesByGroup(group));
+    }
     return ResponseEntity.ok(muscleService.getAllMuscles());
+  }
+
+  /**
+   * Retrieves details of a specific muscle by its medical name.
+   *
+   * <p>This uses the Business Key (Medical Name) as it is the primary identifier used in movement
+   * prescriptions.
+   *
+   * @param medicalName The Latin/Medical name of the muscle (e.g., "Pectoralis Major").
+   * @return The detailed muscle response.
+   */
+  @GetMapping("/{medicalName}")
+  @Operation(
+      summary = "Get muscle details",
+      description = "Retrieves a single muscle by its Medical Name (Business Key).")
+  public ResponseEntity<MuscleResponse> getMuscle(@PathVariable String medicalName) {
+    return ResponseEntity.ok(muscleService.getMuscle(medicalName));
   }
 
   /**
@@ -71,6 +100,9 @@ public class MuscleController {
    * Updates an existing muscle definition.
    *
    * <p><b>Security:</b> Restricted to users with the {@code ADMIN} role.
+   *
+   * <p>Uses the technical ID to target the resource, allowing updates to the Medical Name if
+   * necessary.
    *
    * @param id The unique identifier of the muscle to update.
    * @param request The updated data.
