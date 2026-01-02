@@ -6,6 +6,11 @@ import apex.stellar.aldebaran.dto.MovementSummaryResponse;
 import apex.stellar.aldebaran.model.enums.Category;
 import apex.stellar.aldebaran.service.MovementService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.List;
@@ -51,6 +56,14 @@ public class MovementController {
   @Operation(
       summary = "Search movements",
       description = "Search exercises by name (autocomplete). Returns lightweight summaries.")
+  @ApiResponses(
+      value = {
+        @ApiResponse(responseCode = "200", description = "Search successful"),
+        @ApiResponse(
+            responseCode = "401",
+            description = "Unauthorized",
+            content = @Content(schema = @Schema(hidden = true)))
+      })
   public ResponseEntity<List<MovementSummaryResponse>> searchMovements(
       @RequestParam(defaultValue = "") String query) {
     return ResponseEntity.ok(movementService.searchMovements(query));
@@ -69,6 +82,18 @@ public class MovementController {
   @Operation(
       summary = "Get movement details",
       description = "Retrieves full details including anatomy, descriptions, and media.")
+  @ApiResponses(
+      value = {
+        @ApiResponse(responseCode = "200", description = "Movement details retrieved"),
+        @ApiResponse(
+            responseCode = "404",
+            description = "Movement not found",
+            content = @Content(schema = @Schema(hidden = true))),
+        @ApiResponse(
+            responseCode = "401",
+            description = "Unauthorized",
+            content = @Content(schema = @Schema(hidden = true)))
+      })
   public ResponseEntity<MovementResponse> getMovement(@PathVariable String id) {
     return ResponseEntity.ok(movementService.getMovement(id));
   }
@@ -85,6 +110,14 @@ public class MovementController {
   @Operation(
       summary = "Filter by category",
       description = "Retrieves movements for a specific functional category.")
+  @ApiResponses(
+      value = {
+        @ApiResponse(responseCode = "200", description = "Movements retrieved"),
+        @ApiResponse(
+            responseCode = "401",
+            description = "Unauthorized",
+            content = @Content(schema = @Schema(hidden = true)))
+      })
   public ResponseEntity<List<MovementSummaryResponse>> getMovementsByCategory(
       @PathVariable Category category) {
     return ResponseEntity.ok(movementService.getMovementsByCategory(category));
@@ -103,6 +136,35 @@ public class MovementController {
   @Operation(
       summary = "Create movement",
       description = "Adds a new exercise to the catalog (Admin only).")
+  @ApiResponses(
+      value = {
+        @ApiResponse(responseCode = "201", description = "Movement created successfully"),
+        @ApiResponse(
+            responseCode = "400",
+            description = "Validation error",
+            content = @Content(schema = @Schema(hidden = true))),
+        @ApiResponse(
+            responseCode = "403",
+            description = "Forbidden - Admin access required",
+            content = @Content(schema = @Schema(hidden = true))),
+        @ApiResponse(
+            responseCode = "401",
+            description = "Unauthorized",
+            content = @Content(schema = @Schema(hidden = true)))
+      })
+  @io.swagger.v3.oas.annotations.parameters.RequestBody(
+      content =
+          @Content(
+              examples =
+                  @ExampleObject(
+                      name = "Back Squat Example",
+                      value =
+                          """
+          {
+            "name": "Back Squat", "nameAbbreviation": "BS", "category": "SQUAT", "equipment": ["BARBELL", "PLATES"],
+            "techniques": [], "muscles": [{"medicalName": "Quadriceps Femoris", "role": "AGONIST", "impactFactor": 1.0}],
+            "involvesBodyweight": true, "bodyweightFactor": 1.0
+          }""")))
   public ResponseEntity<MovementResponse> createMovement(
       @Valid @RequestBody MovementRequest request) {
     return ResponseEntity.status(HttpStatus.CREATED).body(movementService.createMovement(request));
@@ -125,6 +187,38 @@ public class MovementController {
   @Operation(
       summary = "Update movement",
       description = "Updates an existing exercise definition (Admin only).")
+  @ApiResponses(
+      value = {
+        @ApiResponse(responseCode = "200", description = "Movement updated successfully"),
+        @ApiResponse(
+            responseCode = "400",
+            description = "Validation error",
+            content = @Content(schema = @Schema(hidden = true))),
+        @ApiResponse(
+            responseCode = "404",
+            description = "Movement not found",
+            content = @Content(schema = @Schema(hidden = true))),
+        @ApiResponse(
+            responseCode = "403",
+            description = "Forbidden - Admin access required",
+            content = @Content(schema = @Schema(hidden = true))),
+        @ApiResponse(
+            responseCode = "401",
+            description = "Unauthorized",
+            content = @Content(schema = @Schema(hidden = true)))
+      })
+  @io.swagger.v3.oas.annotations.parameters.RequestBody(
+      content =
+          @Content(
+              examples =
+                  @ExampleObject(
+                      name = "Update Example",
+                      value =
+                          """
+          {
+            "name": "Back Squat (High Bar)", "nameAbbreviation": "HBBS", "category": "SQUAT", "equipment": ["BARBELL"],
+            "techniques": ["HIGH_BAR"], "muscles": [], "involvesBodyweight": true, "bodyweightFactor": 1.0
+          }""")))
   public ResponseEntity<MovementResponse> updateMovement(
       @PathVariable String id, @Valid @RequestBody MovementRequest request) {
     return ResponseEntity.ok(movementService.updateMovement(id, request));

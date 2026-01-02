@@ -4,6 +4,11 @@ import apex.stellar.aldebaran.dto.WodScoreRequest;
 import apex.stellar.aldebaran.dto.WodScoreResponse;
 import apex.stellar.aldebaran.service.WodScoreService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.List;
@@ -22,7 +27,7 @@ import org.springframework.web.bind.annotation.RestController;
  * REST Controller for managing Athlete Performance (Scores).
  *
  * <p>Provides endpoints for athletes to log their workout results. Input data is accepted in
- * user-preferred units (e.g. Lbs), processed by the service, and stored in normalized system units
+ * user-preferred units (e.g., Lbs), processed by the service, and stored in normalized system units
  * (Kg).
  */
 @RestController
@@ -42,6 +47,14 @@ public class WodScoreController {
   @Operation(
       summary = "My history",
       description = "Retrieves the score history of the current user.")
+  @ApiResponses(
+      value = {
+        @ApiResponse(responseCode = "200", description = "History retrieved"),
+        @ApiResponse(
+            responseCode = "401",
+            description = "Unauthorized",
+            content = @Content(schema = @Schema(hidden = true)))
+      })
   public ResponseEntity<List<WodScoreResponse>> getMyScores() {
     return ResponseEntity.ok(scoreService.getMyScores());
   }
@@ -54,6 +67,32 @@ public class WodScoreController {
    */
   @PostMapping
   @Operation(summary = "Log score", description = "Logs a performance result for a specific WOD.")
+  @ApiResponses(
+      value = {
+        @ApiResponse(responseCode = "201", description = "Score logged successfully"),
+        @ApiResponse(
+            responseCode = "400",
+            description = "Validation error (e.g. missing time for FOR_TIME WOD)",
+            content = @Content(schema = @Schema(hidden = true))),
+        @ApiResponse(
+            responseCode = "404",
+            description = "WOD not found",
+            content = @Content(schema = @Schema(hidden = true))),
+        @ApiResponse(
+            responseCode = "401",
+            description = "Unauthorized",
+            content = @Content(schema = @Schema(hidden = true)))
+      })
+  @io.swagger.v3.oas.annotations.parameters.RequestBody(
+      content =
+          @Content(
+              examples =
+                  @ExampleObject(
+                      name = "Fran Score Example",
+                      value =
+                          """
+          { "wodId": 101, "date": "2023-10-25", "timeMinutes": 2, "timeSeconds": 30, "scaling": "RX" }
+          """)))
   public ResponseEntity<WodScoreResponse> logScore(@Valid @RequestBody WodScoreRequest request) {
     return ResponseEntity.status(HttpStatus.CREATED).body(scoreService.logScore(request));
   }
@@ -68,6 +107,22 @@ public class WodScoreController {
   @Operation(
       summary = "Delete score",
       description = "Removes a performance log (User must own it).")
+  @ApiResponses(
+      value = {
+        @ApiResponse(responseCode = "204", description = "Score deleted successfully"),
+        @ApiResponse(
+            responseCode = "404",
+            description = "Score not found",
+            content = @Content(schema = @Schema(hidden = true))),
+        @ApiResponse(
+            responseCode = "403",
+            description = "Forbidden - Not owner",
+            content = @Content(schema = @Schema(hidden = true))),
+        @ApiResponse(
+            responseCode = "401",
+            description = "Unauthorized",
+            content = @Content(schema = @Schema(hidden = true)))
+      })
   public ResponseEntity<Void> deleteScore(@PathVariable Long id) {
     scoreService.deleteScore(id);
     return ResponseEntity.noContent().build();

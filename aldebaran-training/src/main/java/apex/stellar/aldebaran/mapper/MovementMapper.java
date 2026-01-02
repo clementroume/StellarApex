@@ -15,6 +15,18 @@ import org.mapstruct.ReportingPolicy;
 /**
  * Mapper for {@link Movement} and its biomechanical relationships.
  *
+ * <p><b>Strategy:</b>
+ *
+ * <ul>
+ *   <li><b>Muscle Linking:</b> The {@code targetedMuscles} list in requests contains references
+ *       (Medical Names). The Mapper ignores these during entity creation (`ignore = true`) because
+ *       the Service layer must resolve the actual {@link
+ *       apex.stellar.aldebaran.model.entities.Muscle} entities from the database to establish the
+ *       relationship.
+ *   <li><b>DTO Structure:</b> Defines the nested structure for responses, delegating to {@link
+ *       MuscleMapper} for the muscle details.
+ * </ul>
+ *
  * <p>Uses {@link MuscleMapper} to convert nested muscle objects in responses.
  */
 @Mapper(

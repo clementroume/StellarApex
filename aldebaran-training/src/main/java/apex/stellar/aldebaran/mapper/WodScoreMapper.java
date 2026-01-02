@@ -10,6 +10,20 @@ import org.mapstruct.MappingTarget;
 import org.mapstruct.Named;
 import org.mapstruct.ReportingPolicy;
 
+/**
+ * Mapper for converting between {@link WodScore} entities and DTOs.
+ *
+ * <p><b>Conversion Strategy:</b>
+ *
+ * <ul>
+ *   <li><b>Normalization (Request -> Entity):</b> Converts user-provided units (e.g., LBS, MILES)
+ *       into system canonical units (KG, METERS) using {@link Unit#toBase(double)}.
+ *   <li><b>Display (Entity -> Response):</b> Converts canonical units back to the user's preferred
+ *       display unit (stored in the entity) using {@link Unit#fromBase(double)}.
+ *   <li><b>Time Handling:</b> Aggregates split time inputs (Minutes/Seconds) into total seconds for
+ *       storage, and splits them back for display.
+ * </ul>
+ */
 @Mapper(
     componentModel = "spring",
     unmappedTargetPolicy = ReportingPolicy.IGNORE,

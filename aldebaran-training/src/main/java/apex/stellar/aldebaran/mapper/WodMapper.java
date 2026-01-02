@@ -15,6 +15,16 @@ import org.mapstruct.ReportingPolicy;
 /**
  * Mapper for {@link Wod} definitions and their prescribed movements.
  *
+ * <p><b>Strategy:</b>
+ *
+ * <ul>
+ *   <li><b>Movement Aggregation:</b> Similar to {@link MovementMapper}, the list of movements in a
+ *       WOD request is handled by the Service layer to resolve movement IDs and manage the {@link
+ *       WodMovement} join entities.
+ *   <li><b>Modality Calculation:</b> The `modalities` set is computed by the Service based on the
+ *       movements added, so it is ignored during mapping.
+ * </ul>
+ *
  * <p>Uses {@link MovementMapper} to embed movement details in the WOD response.
  */
 @Mapper(

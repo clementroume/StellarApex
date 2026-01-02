@@ -6,6 +6,11 @@ import apex.stellar.aldebaran.model.entities.Muscle.MuscleGroup;
 import apex.stellar.aldebaran.service.MuscleService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.List;
@@ -50,6 +55,14 @@ public class MuscleController {
   @Operation(
       summary = "List muscles",
       description = "Retrieves the full anatomical catalog or filters by muscle group.")
+  @ApiResponses(
+      value = {
+        @ApiResponse(responseCode = "200", description = "Muscles retrieved"),
+        @ApiResponse(
+            responseCode = "401",
+            description = "Unauthorized",
+            content = @Content(schema = @Schema(hidden = true)))
+      })
   public ResponseEntity<List<MuscleResponse>> getMuscles(
       @Parameter(description = "Filter by anatomical group") @RequestParam(required = false)
           MuscleGroup group) {
@@ -73,6 +86,18 @@ public class MuscleController {
   @Operation(
       summary = "Get muscle details",
       description = "Retrieves a single muscle by its Medical Name (Business Key).")
+  @ApiResponses(
+      value = {
+        @ApiResponse(responseCode = "200", description = "Muscle details retrieved"),
+        @ApiResponse(
+            responseCode = "404",
+            description = "Muscle not found",
+            content = @Content(schema = @Schema(hidden = true))),
+        @ApiResponse(
+            responseCode = "401",
+            description = "Unauthorized",
+            content = @Content(schema = @Schema(hidden = true)))
+      })
   public ResponseEntity<MuscleResponse> getMuscle(@PathVariable String medicalName) {
     return ResponseEntity.ok(muscleService.getMuscle(medicalName));
   }
@@ -92,6 +117,36 @@ public class MuscleController {
   @Operation(
       summary = "Create muscle",
       description = "Adds a new muscle to the catalog (Admin only).")
+  @ApiResponses(
+      value = {
+        @ApiResponse(responseCode = "201", description = "Muscle created successfully"),
+        @ApiResponse(
+            responseCode = "400",
+            description = "Validation error",
+            content = @Content(schema = @Schema(hidden = true))),
+        @ApiResponse(
+            responseCode = "409",
+            description = "Conflict - Name already exists",
+            content = @Content(schema = @Schema(hidden = true))),
+        @ApiResponse(
+            responseCode = "403",
+            description = "Forbidden - Admin access required",
+            content = @Content(schema = @Schema(hidden = true))),
+        @ApiResponse(
+            responseCode = "401",
+            description = "Unauthorized",
+            content = @Content(schema = @Schema(hidden = true)))
+      })
+  @io.swagger.v3.oas.annotations.parameters.RequestBody(
+      content =
+          @Content(
+              examples =
+                  @ExampleObject(
+                      name = "Pectoralis Example",
+                      value =
+                          """
+          { "medicalName": "Pectoralis Major", "commonNameEn": "Chest", "muscleGroup": "CHEST" }
+          """)))
   public ResponseEntity<MuscleResponse> createMuscle(@Valid @RequestBody MuscleRequest request) {
     return ResponseEntity.status(HttpStatus.CREATED).body(muscleService.createMuscle(request));
   }
@@ -111,6 +166,40 @@ public class MuscleController {
   @PutMapping("/{id}")
   @PreAuthorize("hasRole('ADMIN')")
   @Operation(summary = "Update muscle", description = "Updates an existing muscle (Admin only).")
+  @ApiResponses(
+      value = {
+        @ApiResponse(responseCode = "200", description = "Muscle updated successfully"),
+        @ApiResponse(
+            responseCode = "400",
+            description = "Validation error",
+            content = @Content(schema = @Schema(hidden = true))),
+        @ApiResponse(
+            responseCode = "404",
+            description = "Muscle not found",
+            content = @Content(schema = @Schema(hidden = true))),
+        @ApiResponse(
+            responseCode = "409",
+            description = "Conflict - Name already exists",
+            content = @Content(schema = @Schema(hidden = true))),
+        @ApiResponse(
+            responseCode = "403",
+            description = "Forbidden - Admin access required",
+            content = @Content(schema = @Schema(hidden = true))),
+        @ApiResponse(
+            responseCode = "401",
+            description = "Unauthorized",
+            content = @Content(schema = @Schema(hidden = true)))
+      })
+  @io.swagger.v3.oas.annotations.parameters.RequestBody(
+      content =
+          @Content(
+              examples =
+                  @ExampleObject(
+                      name = "Update Example",
+                      value =
+                          """
+          { "medicalName": "Pectoralis Major", "commonNameEn": "Upper Chest", "muscleGroup": "CHEST" }
+          """)))
   public ResponseEntity<MuscleResponse> updateMuscle(
       @PathVariable Long id, @Valid @RequestBody MuscleRequest request) {
     return ResponseEntity.ok(muscleService.updateMuscle(id, request));

@@ -11,6 +11,9 @@ import org.mapstruct.ReportingPolicy;
 /**
  * Mapper interface for converting between {@link Muscle} entities and DTOs.
  *
+ * <p><b>Strategy:</b> Direct field-to-field mapping. ID and Audit fields are ignored during
+ * creation/update to prevent overwriting system-managed data.
+ *
  * <p>MapStruct generates an implementation of this interface at compile time. The {@code
  * componentModel = "spring"} attribute makes the generated mapper a Spring Bean, allowing it to be
  * injected into services.

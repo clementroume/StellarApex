@@ -7,6 +7,11 @@ import apex.stellar.aldebaran.model.entities.Wod.WodType;
 import apex.stellar.aldebaran.service.WodService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.List;
@@ -55,6 +60,10 @@ public class WodController {
   @Operation(
       summary = "List WODs",
       description = "Retrieves summaries of available workouts with filtering.")
+  @ApiResponses(value = {
+      @ApiResponse(responseCode = "200", description = "WODs retrieved"),
+      @ApiResponse(responseCode = "401", description = "Unauthorized", content = @Content(schema = @Schema(hidden = true)))
+  })
   public ResponseEntity<List<WodSummaryResponse>> getWods(
       @Parameter(description = "Search by title") @RequestParam(required = false) String search,
       @Parameter(description = "Filter by WOD Type") @RequestParam(required = false) WodType type,
@@ -74,6 +83,11 @@ public class WodController {
    */
   @GetMapping("/{id}")
   @Operation(summary = "Get WOD details", description = "Retrieves the full recipe of a workout.")
+  @ApiResponses(value = {
+      @ApiResponse(responseCode = "200", description = "WOD details retrieved"),
+      @ApiResponse(responseCode = "404", description = "WOD not found", content = @Content(schema = @Schema(hidden = true))),
+      @ApiResponse(responseCode = "401", description = "Unauthorized", content = @Content(schema = @Schema(hidden = true)))
+  })
   public ResponseEntity<WodResponse> getWod(@PathVariable Long id) {
     return ResponseEntity.ok(wodService.getWodDetail(id));
   }
@@ -89,6 +103,23 @@ public class WodController {
   @PostMapping
   @PreAuthorize("hasRole('ADMIN') or hasRole('COACH')")
   @Operation(summary = "Create WOD", description = "Defines a new workout (Admin/Coach only).")
+  @ApiResponses(value = {
+      @ApiResponse(responseCode = "201", description = "WOD created successfully"),
+      @ApiResponse(responseCode = "400", description = "Validation error", content = @Content(schema = @Schema(hidden = true))),
+      @ApiResponse(responseCode = "403", description = "Forbidden - Coach/Admin access required", content = @Content(schema = @Schema(hidden = true))),
+      @ApiResponse(responseCode = "401", description = "Unauthorized", content = @Content(schema = @Schema(hidden = true)))
+  })
+  @io.swagger.v3.oas.annotations.parameters.RequestBody(content = @Content(examples = @ExampleObject(
+      name = "Fran Example",
+      value = """
+          {
+            "title": "Fran", "wodType": "FOR_TIME", "scoreType": "TIME", "isPublic": true, "repScheme": "21-15-9",
+            "movements": [
+              { "movementId": "WL-TR-001", "orderIndex": 1, "repsScheme": "21-15-9", "weight": 43.0, "weightUnit": "KG" },
+              { "movementId": "GY-PU-001", "orderIndex": 2, "repsScheme": "21-15-9" }
+            ]
+          }"""
+  )))
   public ResponseEntity<WodResponse> createWod(@Valid @RequestBody WodRequest request) {
     return ResponseEntity.status(HttpStatus.CREATED).body(wodService.createWod(request));
   }
@@ -107,6 +138,21 @@ public class WodController {
   @Operation(
       summary = "Update WOD",
       description = "Updates an existing workout (Admin/Coach only).")
+  @ApiResponses(value = {
+      @ApiResponse(responseCode = "200", description = "WOD updated successfully"),
+      @ApiResponse(responseCode = "400", description = "Validation error", content = @Content(schema = @Schema(hidden = true))),
+      @ApiResponse(responseCode = "404", description = "WOD not found", content = @Content(schema = @Schema(hidden = true))),
+      @ApiResponse(responseCode = "403", description = "Forbidden - Coach/Admin access required", content = @Content(schema = @Schema(hidden = true))),
+      @ApiResponse(responseCode = "401", description = "Unauthorized", content = @Content(schema = @Schema(hidden = true)))
+  })
+  @io.swagger.v3.oas.annotations.parameters.RequestBody(content = @Content(examples = @ExampleObject(
+      name = "Update Example",
+      value = """
+          {
+            "title": "Fran (Scaled)", "wodType": "FOR_TIME", "scoreType": "TIME", "isPublic": true,
+            "movements": [ { "movementId": "WL-TR-001", "orderIndex": 1, "weight": 30.0, "weightUnit": "KG" } ]
+          }"""
+  )))
   public ResponseEntity<WodResponse> updateWod(
       @PathVariable Long id, @Valid @RequestBody WodRequest request) {
     return ResponseEntity.ok(wodService.updateWod(id, request));
@@ -123,6 +169,12 @@ public class WodController {
   @Operation(
       summary = "Delete WOD",
       description = "Removes a workout definition (Admin/Coach only).")
+  @ApiResponses(value = {
+      @ApiResponse(responseCode = "204", description = "WOD deleted successfully"),
+      @ApiResponse(responseCode = "404", description = "WOD not found", content = @Content(schema = @Schema(hidden = true))),
+      @ApiResponse(responseCode = "403", description = "Forbidden - Coach/Admin access required", content = @Content(schema = @Schema(hidden = true))),
+      @ApiResponse(responseCode = "401", description = "Unauthorized", content = @Content(schema = @Schema(hidden = true)))
+  })
   public ResponseEntity<Void> deleteWod(@PathVariable Long id) {
     wodService.deleteWod(id);
     return ResponseEntity.noContent().build();
