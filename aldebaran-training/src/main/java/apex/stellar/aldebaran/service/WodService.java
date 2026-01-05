@@ -1,5 +1,7 @@
 package apex.stellar.aldebaran.service;
 
+import static apex.stellar.aldebaran.config.RedisCacheConfig.CACHE_WODS;
+
 import apex.stellar.aldebaran.config.SecurityUtils;
 import apex.stellar.aldebaran.dto.WodMovementRequest;
 import apex.stellar.aldebaran.dto.WodRequest;
@@ -20,6 +22,8 @@ import java.util.HashSet;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -96,6 +100,7 @@ public class WodService {
    * @throws ResourceNotFoundException if the WOD is not found.
    */
   @Transactional(readOnly = true)
+  @Cacheable(value = CACHE_WODS, key = "#id")
   public WodResponse getWodDetail(Long id) {
     return wodRepository
         .findByIdWithMovements(id)
@@ -150,6 +155,7 @@ public class WodService {
    * @throws ResourceNotFoundException if the WOD is not found.
    */
   @Transactional
+  @CacheEvict(value = CACHE_WODS, key = "#id")
   public WodResponse updateWod(Long id, WodRequest request) {
     Wod existingWod =
         wodRepository
@@ -181,6 +187,7 @@ public class WodService {
    * @throws ResourceNotFoundException if the WOD is not found.
    */
   @Transactional
+  @CacheEvict(value = CACHE_WODS, key = "#id")
   public void deleteWod(Long id) {
     if (!wodRepository.existsById(id)) {
       throw new ResourceNotFoundException("error.wod.not.found", id);

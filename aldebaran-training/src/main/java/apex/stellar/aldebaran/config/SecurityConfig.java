@@ -39,6 +39,15 @@ public class SecurityConfig {
   @Value("${cors.allowed-origins}")
   private String allowedOrigins;
 
+  /**
+   * Configures the security filter chain for the application, including CSRF protection, CORS
+   * configuration, authentication, and session management. This method returns a fully built {@link
+   * SecurityFilterChain} tailored to the application's security needs.
+   *
+   * @param http the {@link HttpSecurity} configuration object that allows customization of various
+   *     security aspects, such as authentication, session policies, and request authorization.
+   * @return a {@link SecurityFilterChain} instance configured with the defined security policies.
+   */
   @Bean
   public SecurityFilterChain securityFilterChain(HttpSecurity http) {
 
@@ -57,7 +66,7 @@ public class SecurityConfig {
             csrf ->
                 csrf.csrfTokenRepository(csrfRepository)
                     .csrfTokenRequestHandler(requestHandler)
-                    // On ignore CSRF uniquement pour les endpoints techniques (monitoring)
+                    // On ignore CSRF uniquement pour les endpoints techniques (monitoring).
                     .ignoringRequestMatchers("/actuator/**"))
         .authorizeHttpRequests(
             auth ->
@@ -74,6 +83,16 @@ public class SecurityConfig {
     return http.build();
   }
 
+  /**
+   * Creates and configures a {@link CorsConfigurationSource} bean to define Cross-Origin Resource
+   * Sharing (CORS) policies for the application. This includes setting allowed origins, HTTP
+   * methods, headers, and credentials for incoming requests matching the specified paths.
+   *
+   * <p>The CORS configuration is registered for all paths ("/**") to ensure compliance with
+   * security requirements while enabling cross-origin requests from authorized sources.
+   *
+   * @return an instance of {@link CorsConfigurationSource} containing the specified CORS policies.
+   */
   @Bean
   public CorsConfigurationSource corsConfigurationSource() {
     CorsConfiguration configuration = new CorsConfiguration();

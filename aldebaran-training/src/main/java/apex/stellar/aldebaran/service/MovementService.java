@@ -1,5 +1,7 @@
 package apex.stellar.aldebaran.service;
 
+import static apex.stellar.aldebaran.config.RedisCacheConfig.CACHE_MOVEMENTS;
+
 import apex.stellar.aldebaran.dto.MovementMuscleRequest;
 import apex.stellar.aldebaran.dto.MovementRequest;
 import apex.stellar.aldebaran.dto.MovementResponse;
@@ -20,7 +22,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
-import org.springframework.cache.annotation.Caching;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -56,6 +57,10 @@ public class MovementService {
    * @return A list of summarized movement data.
    */
   @Transactional(readOnly = true)
+  @Cacheable(
+      value = CACHE_MOVEMENTS,
+      key = "'all'",
+      condition = "#query == null || #query.isBlank()")
   public List<MovementSummaryResponse> searchMovements(String query) {
     List<MovementSummary> projections;
 
@@ -85,7 +90,7 @@ public class MovementService {
    * @return A list of movement summaries.
    */
   @Transactional(readOnly = true)
-  @Cacheable(value = "movements-by-category", key = "#category")
+  @Cacheable(value = CACHE_MOVEMENTS, key = "'cat-' + #category.name()")
   public List<MovementSummaryResponse> getMovementsByCategory(Category category) {
     return movementRepository.findProjectedByCategory(category).stream()
         .map(
@@ -107,7 +112,7 @@ public class MovementService {
    * @throws ResourceNotFoundException if the movement does not exist.
    */
   @Transactional(readOnly = true)
-  @Cacheable(value = "movements", key = "#id")
+  @Cacheable(value = CACHE_MOVEMENTS, key = "#id")
   public MovementResponse getMovement(String id) {
     return movementRepository
         .findById(id)
@@ -132,7 +137,7 @@ public class MovementService {
    * @return The created movement with its generated ID.
    */
   @Transactional
-  @CacheEvict(value = "movements-by-category", allEntries = true)
+  @CacheEvict(value = CACHE_MOVEMENTS, allEntries = true)
   public MovementResponse createMovement(MovementRequest request) {
     Movement movement = movementMapper.toEntity(request);
 
@@ -158,8 +163,8 @@ public class MovementService {
   /**
    * Updates an existing movement.
    *
-   * <p>This method employs a "Full Replacement" strategy for muscle relationships: the existing
-   * list is cleared and rebuilt from the request to ensure the state matches exactly.
+   * <p>This method uses a "Full Replacement" strategy for muscle relationships: the existing list
+   * is cleared and rebuilt from the request to ensure the state matches exactly.
    *
    * @param id The ID of the movement to update.
    * @param request The update payload.
@@ -167,11 +172,7 @@ public class MovementService {
    * @throws ResourceNotFoundException if the movement ID is invalid.
    */
   @Transactional
-  @Caching(
-      evict = {
-        @CacheEvict(value = "movements", key = "#id"),
-        @CacheEvict(value = "movements-by-category", allEntries = true)
-      })
+  @CacheEvict(value = CACHE_MOVEMENTS, allEntries = true)
   public MovementResponse updateMovement(String id, MovementRequest request) {
     Movement movement =
         movementRepository

@@ -22,6 +22,13 @@ import tools.jackson.databind.json.JsonMapper;
 /**
  * Redis cache configuration with custom TTL per data type.
  *
+ * <p><b>Invalidation Strategy:</b>
+ * <ul>
+ *   <li><b>Movements:</b> Updates evict all entries (details and lists) to ensure consistency.</li>
+ *   <li><b>WODs:</b> Individual eviction on update/delete.</li>
+ *   <li><b>Scores:</b> User history is evicted on new logs.</li>
+ * </ul>
+ *
  * <p>Cache Strategy:
  *
  * <ul>
@@ -35,6 +42,23 @@ import tools.jackson.databind.json.JsonMapper;
 @EnableConfigurationProperties(RedisCacheConfig.CacheProperties.class)
 public class RedisCacheConfig {
 
+  public static final String CACHE_MOVEMENTS = "movements";
+  public static final String CACHE_MUSCLES = "muscles";
+  public static final String CACHE_WODS = "wods";
+  public static final String CACHE_WOD_SCORES = "wod-scores";
+  public static final String CACHE_USER_STATS = "user-stats";
+
+  /**
+   * Configures a {@link RedisCacheManager} bean with custom TTL (Time-to-Live) values for different
+   * cache categories. This method sets up default serialization for keys and values, applies a
+   * default TTL, and optionally overrides it for specific cache configurations.
+   *
+   * @param connectionFactory the {@link RedisConnectionFactory} to be used for creating the cache
+   *     manager.
+   * @param properties an instance of {@link CacheProperties} containing TTL settings for the
+   *     different cache categories.
+   * @return a {@link RedisCacheManager} instance with the specified configurations.
+   */
   @Bean
   public RedisCacheManager cacheManager(
       RedisConnectionFactory connectionFactory, CacheProperties properties) {
@@ -57,15 +81,17 @@ public class RedisCacheConfig {
 
     RedisCacheConfiguration masterDataConfig =
         defaultConfig.entryTtl(Duration.ofMillis(properties.masterDataTtl()));
-    cacheConfigurations.put("movements", masterDataConfig);
-    cacheConfigurations.put("movements-by-category", masterDataConfig);
-    cacheConfigurations.put("muscles", masterDataConfig);
+    cacheConfigurations.put(CACHE_MOVEMENTS, masterDataConfig);
+    cacheConfigurations.put(CACHE_MUSCLES, masterDataConfig);
 
     cacheConfigurations.put(
-        "wods", defaultConfig.entryTtl(Duration.ofMillis(properties.wodsTtl())));
+        CACHE_WODS, defaultConfig.entryTtl(Duration.ofMillis(properties.wodsTtl())));
 
     cacheConfigurations.put(
-        "wod-scores", defaultConfig.entryTtl(Duration.ofMillis(properties.scoresTtl())));
+        CACHE_WOD_SCORES, defaultConfig.entryTtl(Duration.ofMillis(properties.scoresTtl())));
+
+    cacheConfigurations.put(
+        CACHE_USER_STATS, defaultConfig.entryTtl(Duration.ofMinutes(1)));
 
     return RedisCacheManager.builder(connectionFactory)
         .cacheDefaults(defaultConfig)

@@ -1,5 +1,7 @@
 package apex.stellar.aldebaran.service;
 
+import static apex.stellar.aldebaran.config.RedisCacheConfig.CACHE_MUSCLES;
+
 import apex.stellar.aldebaran.dto.MuscleRequest;
 import apex.stellar.aldebaran.dto.MuscleResponse;
 import apex.stellar.aldebaran.exception.DataConflictException;
@@ -38,7 +40,7 @@ public class MuscleService {
    * @return A list of {@link MuscleResponse} objects representing all muscles.
    */
   @Transactional(readOnly = true)
-  @Cacheable(value = "muscles", key = "'all'")
+  @Cacheable(value = CACHE_MUSCLES, key = "'all'")
   public List<MuscleResponse> getAllMuscles() {
     return muscleRepository.findAll().stream().map(muscleMapper::toResponse).toList();
   }
@@ -50,7 +52,7 @@ public class MuscleService {
    * @return A filtered list of {@link MuscleResponse} objects.
    */
   @Transactional(readOnly = true)
-  @Cacheable(value = "muscles", key = "'group-' + #group.name()")
+  @Cacheable(value = CACHE_MUSCLES, key = "'group-' + #group.name()")
   public List<MuscleResponse> getMusclesByGroup(MuscleGroup group) {
     return muscleRepository.findByMuscleGroup(group).stream()
         .map(muscleMapper::toResponse)
@@ -67,7 +69,7 @@ public class MuscleService {
    * @throws ResourceNotFoundException if the muscle does not exist.
    */
   @Transactional(readOnly = true)
-  @Cacheable(value = "muscles", key = "#medicalName")
+  @Cacheable(value = CACHE_MUSCLES, key = "#medicalName")
   public MuscleResponse getMuscle(String medicalName) {
     return muscleRepository
         .findByMedicalName(medicalName)
@@ -86,7 +88,7 @@ public class MuscleService {
    * @throws DataConflictException if a muscle with the same medical name already exists.
    */
   @Transactional
-  @CacheEvict(value = "muscles", allEntries = true)
+  @CacheEvict(value = CACHE_MUSCLES, allEntries = true)
   public MuscleResponse createMuscle(MuscleRequest request) {
     if (muscleRepository.findByMedicalName(request.medicalName()).isPresent()) {
       throw new DataConflictException("error.muscle.name.exists", request.medicalName());
@@ -112,7 +114,7 @@ public class MuscleService {
    * @throws DataConflictException if the new medical name conflicts with another existing muscle.
    */
   @Transactional
-  @CacheEvict(value = "muscles", allEntries = true)
+  @CacheEvict(value = CACHE_MUSCLES, allEntries = true)
   public MuscleResponse updateMuscle(Long id, MuscleRequest request) {
     Muscle muscle =
         muscleRepository

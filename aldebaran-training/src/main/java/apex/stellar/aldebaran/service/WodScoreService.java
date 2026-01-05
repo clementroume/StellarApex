@@ -1,5 +1,7 @@
 package apex.stellar.aldebaran.service;
 
+import static apex.stellar.aldebaran.config.RedisCacheConfig.CACHE_WOD_SCORES;
+
 import apex.stellar.aldebaran.config.SecurityUtils;
 import apex.stellar.aldebaran.dto.WodScoreRequest;
 import apex.stellar.aldebaran.dto.WodScoreResponse;
@@ -14,6 +16,7 @@ import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -42,6 +45,9 @@ public class WodScoreService {
    * @return List of score responses ordered by date (descending).
    */
   @Transactional(readOnly = true)
+  @Cacheable(
+      value = CACHE_WOD_SCORES,
+      key = "T(apex.stellar.aldebaran.config.SecurityUtils).getCurrentUserId()")
   public List<WodScoreResponse> getMyScores() {
     String userId = SecurityUtils.getCurrentUserId();
     return scoreRepository.findByUserIdOrderByDateDesc(userId).stream()
@@ -53,15 +59,16 @@ public class WodScoreService {
    * Logs a new score for the current user.
    *
    * <p>Automatically calculates if this result constitutes a new Personal Record (PR) based on the
-   * WOD's {@link ScoreType} and the user's history. Normalization of units is handled by the
-   * mapper.
+   * WOD's {@link ScoreType} and the user's history. The mapper handles normalization of units.
    *
    * @param request The score data to log.
    * @return The persisted score response.
    * @throws ResourceNotFoundException if the WOD ID is invalid.
    */
   @Transactional
-  @CacheEvict(value = "wod-scores", key = "#request.wodId()")
+  @CacheEvict(
+      value = CACHE_WOD_SCORES,
+      key = "T(apex.stellar.aldebaran.config.SecurityUtils).getCurrentUserId()")
   public WodScoreResponse logScore(WodScoreRequest request) {
     String userId = SecurityUtils.getCurrentUserId();
 
@@ -98,6 +105,9 @@ public class WodScoreService {
    * @throws AccessDeniedException if the user does not own the score.
    */
   @Transactional
+  @CacheEvict(
+      value = CACHE_WOD_SCORES,
+      key = "T(apex.stellar.aldebaran.config.SecurityUtils).getCurrentUserId()")
   public void deleteScore(Long scoreId) {
     WodScore score =
         scoreRepository
@@ -142,7 +152,9 @@ public class WodScoreService {
   }
 
   private boolean compareTime(WodScore current, WodScore old) {
-    if (current.getTimeSeconds() == null) return false;
+    if (current.getTimeSeconds() == null) {
+      return false;
+    }
     return old.getTimeSeconds() == null || current.getTimeSeconds() < old.getTimeSeconds();
   }
 

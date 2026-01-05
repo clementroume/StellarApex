@@ -42,14 +42,4 @@ public class SecurityUtils {
   public static boolean isCurrentUser(String userId) {
     return userId != null && userId.equals(getCurrentUserId());
   }
-
-  /**
-   * Checks if a user is authenticated.
-   *
-   * @return true if authenticated, false otherwise
-   */
-  public static boolean isAuthenticated() {
-    Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-    return auth != null && auth.isAuthenticated() && !"anonymousUser".equals(auth.getPrincipal());
-  }
 }
