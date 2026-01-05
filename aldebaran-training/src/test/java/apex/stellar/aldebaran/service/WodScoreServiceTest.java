@@ -5,6 +5,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 import apex.stellar.aldebaran.config.SecurityUtils;
+import apex.stellar.aldebaran.dto.ScoreComparisonResponse;
 import apex.stellar.aldebaran.dto.WodScoreRequest;
 import apex.stellar.aldebaran.dto.WodScoreResponse;
 import apex.stellar.aldebaran.mapper.WodScoreMapper;
@@ -66,7 +67,7 @@ class WodScoreServiceTest {
 
     // Entity stores normalized timeSeconds
     scoreEntityTime =
-        WodScore.builder().id(50L).wod(wodTime).userId(userId).timeSeconds(300).build();
+        WodScore.builder().id(50L).wod(wodTime).userId(userId).timeSeconds(300).scaling(ScalingLevel.RX).build();
   }
 
   @Test
@@ -155,5 +156,28 @@ class WodScoreServiceTest {
       scoreService.deleteScore(50L);
       verify(scoreRepository).delete(scoreEntityTime);
     }
+  }
+
+  @Test
+  @DisplayName("compareScore: should calculate rank and percentile correctly")
+  void testCompareScore() {
+    // Given
+    // Score ID 50, Time 300s.
+    // Total scores = 10.
+    // Better scores (faster) = 2.
+    // Expected Rank = 3.
+    // Expected Percentile = (10 - 3) / 9 * 100 = 7/9 * 100 = 77.77%
+
+    when(scoreRepository.findById(50L)).thenReturn(Optional.of(scoreEntityTime));
+    when(scoreRepository.countByWodIdAndScaling(1L, ScalingLevel.RX)).thenReturn(10L);
+    when(scoreRepository.countBetterTime(1L, ScalingLevel.RX, 300)).thenReturn(2L);
+
+    // When
+    ScoreComparisonResponse response = scoreService.compareScore(50L);
+
+    // Then
+    assertEquals(3L, response.rank());
+    assertEquals(10L, response.totalScores());
+    assertEquals(77.77, response.percentile(), 0.01);
   }
 }

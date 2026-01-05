@@ -308,4 +308,44 @@ class WodScoreControllerIT extends BaseIntegrationTest {
                 .with(csrf()))
         .andExpect(status().isForbidden());
   }
+
+  // -------------------------------------------------------------------------
+  // Comparison / Leaderboard Tests
+  // -------------------------------------------------------------------------
+
+  @Test
+  @DisplayName("GET /{id}/compare: should return rank 1 for best score")
+  void testCompareScore_Best() throws Exception {
+    // 1. Create 3 scores for Fran (Time: Lower is better)
+    // Score A: 100s (Best)
+    // Score B: 200s
+    // Score C: 300s
+
+    createScore("user1", 100);
+    WodScore scoreB = createScore("user2", 200);
+    createScore("user3", 300);
+
+    // 2. Compare Score B (Should be Rank 2)
+    mockMvc
+        .perform(
+            get("/aldebaran/scores/" + scoreB.getId() + "/compare")
+                .header("X-Auth-User-Id", "user2")
+                .header("X-Auth-User-Role", "USER"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.rank").value(2))
+        .andExpect(jsonPath("$.totalScores").value(3))
+        .andExpect(jsonPath("$.percentile").value(50.0)); // (3-2)/2 * 100 = 50%
+  }
+
+  private WodScore createScore(String userId, int seconds) {
+    WodScore s = WodScore.builder()
+        .wod(fran)
+        .userId(userId)
+        .date(LocalDate.now())
+        .scaling(ScalingLevel.RX)
+        .timeSeconds(seconds)
+        .loggedAt(java.time.LocalDateTime.now())
+        .build();
+    return scoreRepository.save(s);
+  }
 }

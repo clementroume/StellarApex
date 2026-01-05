@@ -3,6 +3,7 @@ package apex.stellar.aldebaran.service;
 import static apex.stellar.aldebaran.config.RedisCacheConfig.CACHE_WOD_SCORES;
 
 import apex.stellar.aldebaran.config.SecurityUtils;
+import apex.stellar.aldebaran.dto.ScoreComparisonResponse;
 import apex.stellar.aldebaran.dto.WodScoreRequest;
 import apex.stellar.aldebaran.dto.WodScoreResponse;
 import apex.stellar.aldebaran.exception.ResourceNotFoundException;
@@ -119,6 +120,41 @@ public class WodScoreService {
     }
 
     scoreRepository.delete(score);
+  }
+
+  /**
+   * Calculates the rank and percentile of a specific score within its WOD and Scaling category.
+   *
+   * @param scoreId The ID of the score to analyze.
+   * @return The comparison result (Rank, Total, Percentile).
+   * @throws ResourceNotFoundException if the score is not found.
+   */
+  @Transactional(readOnly = true)
+  public ScoreComparisonResponse compareScore(Long scoreId) {
+    WodScore score =
+        scoreRepository
+            .findById(scoreId)
+            .orElseThrow(() -> new ResourceNotFoundException("error.score.not.found", scoreId));
+
+    Wod wod = score.getWod();
+    long total = scoreRepository.countByWodIdAndScaling(wod.getId(), score.getScaling());
+    long better = 0;
+
+    switch (wod.getScoreType()) {
+      case TIME -> better = scoreRepository.countBetterTime(wod.getId(), score.getScaling(), score.getTimeSeconds());
+      case ROUNDS_REPS -> better = scoreRepository.countBetterRoundsReps(wod.getId(), score.getScaling(), score.getRounds(), score.getReps());
+      case REPS -> better = scoreRepository.countBetterReps(wod.getId(), score.getScaling(), score.getReps());
+      case WEIGHT -> better = scoreRepository.countBetterWeight(wod.getId(), score.getScaling(), score.getMaxWeightKg());
+      case LOAD -> better = scoreRepository.countBetterLoad(wod.getId(), score.getScaling(), score.getTotalLoadKg());
+      case DISTANCE -> better = scoreRepository.countBetterDistance(wod.getId(), score.getScaling(), score.getTotalDistanceMeters());
+      case CALORIES -> better = scoreRepository.countBetterCalories(wod.getId(), score.getScaling(), score.getTotalCalories());
+      case NONE -> better = 0;
+    }
+
+    long rank = better + 1;
+    double percentile = total > 1 ? ((double) (total - rank) / (total - 1)) * 100.0 : 100.0;
+
+    return new ScoreComparisonResponse(rank, total, percentile);
   }
 
   // -------------------------------------------------------------------------

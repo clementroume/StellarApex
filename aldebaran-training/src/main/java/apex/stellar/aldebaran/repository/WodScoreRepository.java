@@ -1,10 +1,12 @@
 package apex.stellar.aldebaran.repository;
 
 import apex.stellar.aldebaran.model.entities.WodScore;
+import apex.stellar.aldebaran.model.entities.WodScore.ScalingLevel;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 /**
@@ -47,4 +49,31 @@ public interface WodScoreRepository extends JpaRepository<WodScore, Long> {
    * @return true if at least one score exists.
    */
   boolean existsByWodId(Long wodId);
+
+  // -------------------------------------------------------------------------
+  // LEADERBOARD / RANKING QUERIES
+  // -------------------------------------------------------------------------
+
+  long countByWodIdAndScaling(Long wodId, ScalingLevel scaling);
+
+  @Query("SELECT COUNT(s) FROM WodScore s WHERE s.wod.id = :wodId AND s.scaling = :scaling AND s.timeSeconds < :time")
+  long countBetterTime(Long wodId, ScalingLevel scaling, Integer time);
+
+  @Query("SELECT COUNT(s) FROM WodScore s WHERE s.wod.id = :wodId AND s.scaling = :scaling AND (s.rounds > :rounds OR (s.rounds = :rounds AND s.reps > :reps))")
+  long countBetterRoundsReps(Long wodId, ScalingLevel scaling, Integer rounds, Integer reps);
+
+  @Query("SELECT COUNT(s) FROM WodScore s WHERE s.wod.id = :wodId AND s.scaling = :scaling AND s.reps > :reps")
+  long countBetterReps(Long wodId, ScalingLevel scaling, Integer reps);
+
+  @Query("SELECT COUNT(s) FROM WodScore s WHERE s.wod.id = :wodId AND s.scaling = :scaling AND s.maxWeightKg > :weight")
+  long countBetterWeight(Long wodId, ScalingLevel scaling, Double weight);
+
+  @Query("SELECT COUNT(s) FROM WodScore s WHERE s.wod.id = :wodId AND s.scaling = :scaling AND s.totalLoadKg > :load")
+  long countBetterLoad(Long wodId, ScalingLevel scaling, Double load);
+
+  @Query("SELECT COUNT(s) FROM WodScore s WHERE s.wod.id = :wodId AND s.scaling = :scaling AND s.totalDistanceMeters > :distance")
+  long countBetterDistance(Long wodId, ScalingLevel scaling, Double distance);
+
+  @Query("SELECT COUNT(s) FROM WodScore s WHERE s.wod.id = :wodId AND s.scaling = :scaling AND s.totalCalories > :calories")
+  long countBetterCalories(Long wodId, ScalingLevel scaling, Integer calories);
 }

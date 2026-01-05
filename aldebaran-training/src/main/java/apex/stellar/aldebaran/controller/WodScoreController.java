@@ -1,5 +1,6 @@
 package apex.stellar.aldebaran.controller;
 
+import apex.stellar.aldebaran.dto.ScoreComparisonResponse;
 import apex.stellar.aldebaran.dto.WodScoreRequest;
 import apex.stellar.aldebaran.dto.WodScoreResponse;
 import apex.stellar.aldebaran.service.WodScoreService;
@@ -126,5 +127,27 @@ public class WodScoreController {
   public ResponseEntity<Void> deleteScore(@PathVariable Long id) {
     scoreService.deleteScore(id);
     return ResponseEntity.noContent().build();
+  }
+
+  /**
+   * Retrieves the rank and percentile of a specific score.
+   *
+   * @param id The ID of the score to compare.
+   * @return The comparison metrics.
+   */
+  @GetMapping("/{id}/compare")
+  @Operation(
+      summary = "Compare score",
+      description = "Calculates rank and percentile for a score against the global leaderboard.")
+  @ApiResponses(
+      value = {
+        @ApiResponse(responseCode = "200", description = "Comparison retrieved"),
+        @ApiResponse(
+            responseCode = "404",
+            description = "Score not found",
+            content = @Content(schema = @Schema(hidden = true)))
+      })
+  public ResponseEntity<ScoreComparisonResponse> compareScore(@PathVariable Long id) {
+    return ResponseEntity.ok(scoreService.compareScore(id));
   }
 }
