@@ -138,6 +138,30 @@ class MovementServiceTest {
   }
 
   @Test
+  @DisplayName("createMovement: should generate semantic ID based on category")
+  void testCreateMovement_GeneratesSemanticId() {
+    // Given: A movement entity from mapper (ID is null or temporary)
+    Movement newMovement = Movement.builder()
+        .name("Deadlift")
+        .category(Category.DEADLIFT) // Should generate prefix "WL-DL" (Weightlifting - Deadlift)
+        .targetedMuscles(new HashSet<>())
+        .build();
+
+    when(movementMapper.toEntity(request)).thenReturn(newMovement);
+    when(muscleRepository.findByMedicalName(any())).thenReturn(Optional.of(muscle));
+    when(movementMapper.toMuscleEntity(any())).thenReturn(new MovementMuscle());
+    when(movementRepository.save(any(Movement.class))).thenAnswer(inv -> inv.getArgument(0));
+    when(movementMapper.toResponse(any())).thenReturn(mock(MovementResponse.class));
+
+    // When
+    movementService.createMovement(request);
+
+    // Then
+    assertNotNull(newMovement.getId());
+    assertTrue(newMovement.getId().startsWith("WL-DL-"), "ID should start with semantic prefix 'WL-DL-' but was " + newMovement.getId());
+  }
+
+  @Test
   @DisplayName("createMovement: should throw exception if muscle name is invalid")
   void testCreateMovement_InvalidMuscle() {
     when(movementMapper.toEntity(request)).thenReturn(movement);

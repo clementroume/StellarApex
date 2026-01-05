@@ -26,6 +26,7 @@ import apex.stellar.aldebaran.repository.projection.WodSummary;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -162,6 +163,48 @@ class WodServiceTest {
 
       verify(movementRepository).findAllById(any());
       verify(wodRepository).save(wod);
+    }
+  }
+
+  @Test
+  @DisplayName("createWod: should optimize DB calls by fetching all movements in batch")
+  void testCreateWod_BatchOptimization() {
+    // Given: A request with 2 distinct movements
+    WodMovementRequest m1 = new WodMovementRequest("GY-PU-001", 1, "21", 0.0, null, 0, null, 0.0, null, 0, null, null);
+    WodMovementRequest m2 = new WodMovementRequest("WL-SQ-001", 2, "15", 0.0, null, 0, null, 0.0, null, 0, null, null);
+    
+    WodRequest batchRequest = new WodRequest(
+        "Batch WOD", WodType.FOR_TIME, ScoreType.TIME, null, null, true, 
+        0, 0, 0, "21-15", List.of(m1, m2)
+    );
+
+    Movement move1 = Movement.builder().id("GY-PU-001").category(Category.PULLING).build();
+    Movement move2 = Movement.builder().id("WL-SQ-001").category(Category.SQUAT).build();
+
+    // Mock Mapper
+    Wod newWod = new Wod();
+    newWod.setMovements(new java.util.ArrayList<>());
+    newWod.setModalities(new HashSet<>());
+    when(wodMapper.toEntity(batchRequest)).thenReturn(newWod);
+    when(wodMapper.toWodMovementEntity(any())).thenReturn(new WodMovement());
+    when(wodRepository.save(any(Wod.class))).thenReturn(newWod);
+    when(wodMapper.toResponse(any(Wod.class))).thenReturn(mock(WodResponse.class));
+
+    // Mock Repository: Expect a single call with a Set containing both IDs
+    when(movementRepository.findAllById(argThat(ids -> 
+        ids instanceof Set && ((Set<?>) ids).size() == 2 && ((Set<?>) ids).containsAll(List.of("GY-PU-001", "WL-SQ-001"))
+    ))).thenReturn(List.of(move1, move2));
+
+    try (MockedStatic<SecurityUtils> utilities = mockStatic(SecurityUtils.class)) {
+      utilities.when(SecurityUtils::getCurrentUserId).thenReturn("100");
+
+      // When
+      wodService.createWod(batchRequest);
+
+      // Then
+      // Verify findAllById is called exactly once with the collection of IDs
+      verify(movementRepository, times(1)).findAllById(any());
+      verify(movementRepository, never()).findById(any()); // Ensure no N+1 individual lookups
     }
   }
 
