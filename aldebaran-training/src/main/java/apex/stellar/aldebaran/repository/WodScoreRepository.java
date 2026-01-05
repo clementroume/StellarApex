@@ -39,4 +39,12 @@ public interface WodScoreRepository extends JpaRepository<WodScore, Long> {
    */
   @EntityGraph(attributePaths = {"wod"})
   Optional<WodScore> findByWodIdAndUserIdAndPersonalRecordTrue(Long wodId, String userId);
+
+  /**
+   * Checks if any scores exist for a given WOD.
+   *
+   * @param wodId The ID of the WOD.
+   * @return true if at least one score exists.
+   */
+  boolean existsByWodId(Long wodId);
 }

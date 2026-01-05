@@ -2,6 +2,8 @@ package apex.stellar.aldebaran.exception;
 
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.ConstraintViolationException;
 import java.net.URI;
 import java.util.Locale;
 import java.util.stream.Collectors;
@@ -71,6 +73,37 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     String message = messageSource.getMessage(ex.getMessageKey(), ex.getArgs(), locale);
 
     return createProblemResponse(HttpStatus.CONFLICT, "Data Conflict", message, request);
+  }
+
+  /**
+   * Handles {@link WodLockedException} when modification is attempted on a locked WOD.
+   * Returns 409 Conflict.
+   */
+  @ExceptionHandler(WodLockedException.class)
+  public ResponseEntity<@NonNull ProblemDetail> handleWodLocked(
+      WodLockedException ex, HttpServletRequest request, Locale locale) {
+
+    log.warn("WOD Locked: {}", ex.getMessage());
+    String message = messageSource.getMessage(ex.getMessageKey(), ex.getArgs(), locale);
+    return createProblemResponse(
+        HttpStatus.CONFLICT, "WOD Locked", message, request);
+  }
+
+  /**
+   * Handles {@link ConstraintViolationException} triggered by JPA/Hibernate Validator (e.g. @ValidScore).
+   * Returns 400 Bad Request with the validation message.
+   */
+  @ExceptionHandler(ConstraintViolationException.class)
+  public ResponseEntity<@NonNull ProblemDetail> handleConstraintViolation(
+      ConstraintViolationException ex, HttpServletRequest request) {
+
+    String errors =
+        ex.getConstraintViolations().stream()
+            .map(ConstraintViolation::getMessage)
+            .collect(Collectors.joining("; "));
+
+    log.warn("Constraint violation: {}", errors);
+    return createProblemResponse(HttpStatus.BAD_REQUEST, "Validation Error", errors, request);
   }
 
   /**

@@ -8,24 +8,12 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-/**
- * Validates that a WodScore's fields match the WOD's scoreType.
- *
- * <p>Examples:
- *
- * <ul>
- *   <li>A "For Time" WOD must have timeSeconds filled
- *   <li>A "Rounds + Reps" WOD must have rounds or reps filled
- * </ul>
- */
 @Documented
-@Constraint(validatedBy = ScoreValidator.class)
+@Constraint(validatedBy = MovementValidator.class)
 @Target({ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
-public @interface ValidScore {
-  String message() default "Invalid score configuration";
-
+public @interface ValidMovement {
+  String message() default "Invalid movement configuration";
   Class<?>[] groups() default {};
-
   Class<? extends Payload>[] payload() default {};
 }

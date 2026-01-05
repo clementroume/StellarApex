@@ -8,6 +8,7 @@ import apex.stellar.aldebaran.dto.WodRequest;
 import apex.stellar.aldebaran.dto.WodResponse;
 import apex.stellar.aldebaran.dto.WodSummaryResponse;
 import apex.stellar.aldebaran.exception.ResourceNotFoundException;
+import apex.stellar.aldebaran.exception.WodLockedException;
 import apex.stellar.aldebaran.mapper.WodMapper;
 import apex.stellar.aldebaran.model.entities.Movement;
 import apex.stellar.aldebaran.model.entities.Wod;
@@ -16,10 +17,15 @@ import apex.stellar.aldebaran.model.entities.WodMovement;
 import apex.stellar.aldebaran.model.enums.Category.Modality;
 import apex.stellar.aldebaran.repository.MovementRepository;
 import apex.stellar.aldebaran.repository.WodRepository;
+import apex.stellar.aldebaran.repository.WodScoreRepository;
 import apex.stellar.aldebaran.repository.projection.WodSummary;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;
@@ -42,6 +48,7 @@ public class WodService {
 
   private final WodRepository wodRepository;
   private final MovementRepository movementRepository;
+  private final WodScoreRepository wodScoreRepository;
   private final WodMapper wodMapper;
 
   // =========================================================================
@@ -157,6 +164,11 @@ public class WodService {
   @Transactional
   @CacheEvict(value = CACHE_WODS, key = "#id")
   public WodResponse updateWod(Long id, WodRequest request) {
+    // Integrity Check: Lock WOD if scores exist
+    if (wodScoreRepository.existsByWodId(id)) {
+      throw new WodLockedException("error.wod.locked", id);
+    }
+
     Wod existingWod =
         wodRepository
             .findByIdWithMovements(id)
@@ -226,16 +238,24 @@ public class WodService {
     if (wod.getMovements() == null) wod.setMovements(new ArrayList<>());
     if (wod.getModalities() == null) wod.setModalities(new HashSet<>());
 
-    for (WodMovementRequest req : requests) {
-      // Use the MovementRepository's findById (String ID)
-      Movement movement =
-          movementRepository
-              .findById(req.movementId())
-              .orElseThrow(
-                  () ->
-                      new ResourceNotFoundException("error.movement.not.found", req.movementId()));
+    // 1. Optimize: Fetch all movements in one query (N+1 fix)
+    Set<String> movementIds =
+        requests.stream().map(WodMovementRequest::movementId).collect(Collectors.toSet());
 
-      // Create the Join Entity
+    Map<String, Movement> movementMap =
+        movementRepository.findAllById(movementIds).stream()
+            .collect(Collectors.toMap(Movement::getId, Function.identity()));
+
+    // 2. Validate existence
+    if (movementMap.size() != movementIds.size()) {
+      List<String> missingIds =
+          movementIds.stream().filter(id -> !movementMap.containsKey(id)).toList();
+      throw new ResourceNotFoundException("error.movement.not.found", missingIds);
+    }
+
+    // 3. Map and Link
+    for (WodMovementRequest req : requests) {
+      Movement movement = movementMap.get(req.movementId());
       WodMovement link = wodMapper.toWodMovementEntity(req);
       link.setWod(wod);
       link.setMovement(movement);

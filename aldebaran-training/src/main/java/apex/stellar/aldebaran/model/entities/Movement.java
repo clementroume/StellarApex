@@ -4,6 +4,7 @@ import apex.stellar.aldebaran.model.enums.Category;
 import apex.stellar.aldebaran.model.enums.Category.Modality;
 import apex.stellar.aldebaran.model.enums.Equipment;
 import apex.stellar.aldebaran.model.enums.Technique;
+import apex.stellar.aldebaran.validation.ValidMovement;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
@@ -44,6 +45,7 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 @Entity
 @Table(name = "movements")
 @EntityListeners(AuditingEntityListener.class)
+@ValidMovement
 public class Movement {
 
   /** Business key: {MODALITY_CODE}-{FAMILY_CODE}-{SEQUENCE}. */
