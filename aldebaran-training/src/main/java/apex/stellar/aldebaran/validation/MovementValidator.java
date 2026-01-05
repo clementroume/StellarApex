@@ -13,6 +13,13 @@ public class MovementValidator implements ConstraintValidator<ValidMovement, Mov
 
   private MessageSource messageSource;
 
+  /**
+   * Validates the consistency between the bodyweight flag and the bodyweight factor.
+   *
+   * @param movement The movement entity to validate.
+   * @param context The validator context.
+   * @return true if the configuration is consistent, false otherwise.
+   */
   @Override
   public boolean isValid(Movement movement, ConstraintValidatorContext context) {
     if (movement == null) {
@@ -41,6 +48,11 @@ public class MovementValidator implements ConstraintValidator<ValidMovement, Mov
     return isValid;
   }
 
+  /**
+   * Sets the message source for internationalized error messages.
+   *
+   * @param messageSource The Spring MessageSource.
+   */
   @Autowired
   public void setMessageSource(MessageSource messageSource) {
     this.messageSource = messageSource;

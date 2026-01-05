@@ -107,6 +107,15 @@ public class SecurityConfig {
   }
 
   private static class ForwardedAuthFilter extends OncePerRequestFilter {
+    /**
+     * Filters incoming requests to extract authentication details from custom headers.
+     *
+     * @param request The HTTP request.
+     * @param response The HTTP response.
+     * @param chain The filter chain.
+     * @throws ServletException If a servlet error occurs.
+     * @throws IOException If an I/O error occurs.
+     */
     @Override
     protected void doFilterInternal(
         @NonNull HttpServletRequest request,

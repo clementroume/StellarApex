@@ -216,7 +216,11 @@ public class WodService {
   // INTERNAL HELPERS
   // =========================================================================
 
-  /** Extracts the User ID from the Spring Security Context using {@link SecurityUtils}. */
+  /**
+   * Assigns the creator ID to the WOD based on the current authenticated user context.
+   *
+   * @param wod The WOD entity to update.
+   */
   private void assignCreator(Wod wod) {
     try {
       String userId = SecurityUtils.getCurrentUserId();
@@ -239,8 +243,12 @@ public class WodService {
       return;
     }
 
-    if (wod.getMovements() == null) wod.setMovements(new ArrayList<>());
-    if (wod.getModalities() == null) wod.setModalities(new HashSet<>());
+    if (wod.getMovements() == null) {
+      wod.setMovements(new ArrayList<>());
+    }
+    if (wod.getModalities() == null) {
+      wod.setModalities(new HashSet<>());
+    }
 
     // 1. Optimize: Fetch all movements in one query (N+1 fix)
     Set<String> movementIds =

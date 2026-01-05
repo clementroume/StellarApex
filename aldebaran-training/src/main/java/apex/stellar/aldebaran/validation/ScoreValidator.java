@@ -20,6 +20,13 @@ public class ScoreValidator implements ConstraintValidator<ValidScore, WodScore>
 
   private MessageSource messageSource;
 
+  /**
+   * Validates that the score fields are populated correctly according to the WOD's score type.
+   *
+   * @param score The WOD score entity to validate.
+   * @param context The validator context.
+   * @return true if the score is valid, false otherwise.
+   */
   @Override
   public boolean isValid(WodScore score, ConstraintValidatorContext context) {
     // If WOD or Score is null, let standard @NotNull annotations handle it
@@ -56,6 +63,11 @@ public class ScoreValidator implements ConstraintValidator<ValidScore, WodScore>
     return isValid;
   }
 
+  /**
+   * Sets the message source for internationalized error messages.
+   *
+   * @param messageSource The Spring MessageSource.
+   */
   @Autowired
   public void setMessageSource(MessageSource messageSource) {
     this.messageSource = messageSource;

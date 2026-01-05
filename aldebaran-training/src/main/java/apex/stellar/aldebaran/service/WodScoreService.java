@@ -201,6 +201,14 @@ public class WodScoreService {
   // PR Calculation Logic
   // -------------------------------------------------------------------------
 
+  /**
+   * Determines if the current score qualifies as a Personal Record (PR).
+   *
+   * @param wod The WOD performed.
+   * @param current The new score being logged.
+   * @param oldPr The previous PR, if any.
+   * @return true if the current score is better than the old PR.
+   */
   private boolean checkIsPersonalRecord(Wod wod, WodScore current, WodScore oldPr) {
     if (oldPr == null) {
       return wod.getScoreType() != ScoreType.NONE;
@@ -208,6 +216,14 @@ public class WodScoreService {
     return isBetterScore(current, oldPr, wod.getScoreType());
   }
 
+  /**
+   * Compares two scores to determine which one represents a better performance.
+   *
+   * @param current The new score.
+   * @param old The existing score.
+   * @param type The scoring metric (e.g., TIME, WEIGHT).
+   * @return true if current is better than old.
+   */
   private boolean isBetterScore(WodScore current, WodScore old, ScoreType type) {
     return switch (type) {
       case TIME -> compareTime(current, old);
@@ -224,6 +240,13 @@ public class WodScoreService {
     };
   }
 
+  /**
+   * Compares two time-based scores (lower is better).
+   *
+   * @param current The new score.
+   * @param old The existing score.
+   * @return true if current time is less than old time.
+   */
   private boolean compareTime(WodScore current, WodScore old) {
     if (current.getTimeSeconds() == null) {
       return false;
@@ -231,6 +254,13 @@ public class WodScoreService {
     return old.getTimeSeconds() == null || current.getTimeSeconds() < old.getTimeSeconds();
   }
 
+  /**
+   * Compares two AMRAP scores based on rounds and repetitions.
+   *
+   * @param current The new score.
+   * @param old The existing score.
+   * @return true if current has more rounds, or equal rounds and more reps.
+   */
   private boolean compareRoundsReps(WodScore current, WodScore old) {
     int currentRounds = current.getRounds() != null ? current.getRounds() : 0;
     int oldRounds = old.getRounds() != null ? old.getRounds() : 0;
@@ -244,12 +274,24 @@ public class WodScoreService {
     return currentReps > oldReps;
   }
 
+  /**
+   * Compares two numeric values (higher is better).
+   *
+   * @param current The new value.
+   * @param old The existing value.
+   * @return true if current is greater than old.
+   */
   private boolean compareValues(Number current, Number old) {
     double c = current != null ? current.doubleValue() : 0.0;
     double o = old != null ? old.doubleValue() : 0.0;
     return c > o;
   }
 
+  /**
+   * Recalculates and promotes the next best score to PR status after a PR deletion.
+   *
+   * @param scoreToDelete The PR score being deleted.
+   */
   private void recalculatePrOnDelete(WodScore scoreToDelete) {
     List<WodScore> allScores = scoreRepository.findByWodIdAndUserId(scoreToDelete.getWod().getId(), scoreToDelete.getUserId());
     
@@ -266,6 +308,12 @@ public class WodScoreService {
     }
   }
 
+  /**
+   * Determines the sorting strategy based on the WOD's score type.
+   *
+   * @param type The score type.
+   * @return The Sort object for database queries.
+   */
   private Sort getSortForScoreType(ScoreType type) {
     return switch (type) {
       case TIME -> Sort.by("timeSeconds").ascending(); // Lower time is better

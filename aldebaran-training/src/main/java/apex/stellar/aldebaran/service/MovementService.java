@@ -222,7 +222,10 @@ public class MovementService {
   }
 
   /**
-   * Generates a semantic ID string. Format: {CATEGORY_PREFIX}-{SHORT_UUID} (e.g., "WL-SQ-A1B2").
+   * Generates a unique semantic business ID for a movement.
+   *
+   * @param movement The movement for which to generate the ID.
+   * @return A string in the format {CATEGORY_PREFIX}-{SHORT_UUID} (e.g., "WL-SQ-A1B2").
    */
   private String generateBusinessId(Movement movement) {
     String prefix = movement.getSemanticIdPrefix();

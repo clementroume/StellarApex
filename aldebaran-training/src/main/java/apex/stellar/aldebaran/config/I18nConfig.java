@@ -37,6 +37,12 @@ public class I18nConfig {
   }
 
   static class ForwardedLocaleResolver extends AcceptHeaderLocaleResolver {
+    /**
+     * Resolves the locale from the "X-Auth-User-Locale" header, falling back to the Accept-Language header.
+     *
+     * @param request The HTTP request.
+     * @return The resolved Locale.
+     */
     @Override
     @NonNull
     public Locale resolveLocale(@NonNull HttpServletRequest request) {

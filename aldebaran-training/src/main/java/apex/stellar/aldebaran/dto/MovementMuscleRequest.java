@@ -34,7 +34,9 @@ public record MovementMuscleRequest(
         @DecimalMin(value = "0.0", message = "{validation.muscle.impactFactor.min}")
         @DecimalMax(value = "1.0", message = "{validation.muscle.impactFactor.max}")
         Double impactFactor) {
-  // Compact constructor for safe defaults
+  /**
+   * Compact constructor that applies default values for the impact factor if null.
+   */
   public MovementMuscleRequest {
     if (impactFactor == null) {
       impactFactor = 1.0;

@@ -17,6 +17,11 @@ import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 @EnableCaching
 public class AldebaranTraining {
 
+  /**
+   * The main method that bootstraps the Spring Boot application.
+   *
+   * @param args Command line arguments.
+   */
   public static void main(String[] args) {
     SpringApplication.run(AldebaranTraining.class, args);
   }
