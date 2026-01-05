@@ -31,7 +31,7 @@ import org.springframework.security.access.AccessDeniedException;
 @ExtendWith(MockitoExtension.class)
 class WodScoreServiceTest {
 
-  private final String userId = "user-123";
+  private final Long userId = 123L;
   @Mock private WodScoreRepository scoreRepository;
   @Mock private WodRepository wodRepository;
   @Mock private WodScoreMapper scoreMapper;
@@ -74,7 +74,7 @@ class WodScoreServiceTest {
   @DisplayName("logScore: should save new PR when no previous history")
   void testLogScore_NewPr() {
     try (MockedStatic<SecurityUtils> utilities = mockStatic(SecurityUtils.class)) {
-      utilities.when(SecurityUtils::getCurrentUserId).thenReturn(userId);
+      utilities.when(SecurityUtils::getCurrentUserIdAsLong).thenReturn(userId);
 
       when(wodRepository.findById(1L)).thenReturn(Optional.of(wodTime));
       when(scoreMapper.toEntity(requestTime)).thenReturn(scoreEntityTime);
@@ -100,7 +100,7 @@ class WodScoreServiceTest {
   @DisplayName("logScore: should verify PR calculation (Time: Lower is Better)")
   void testLogScore_TimeImprovement() {
     try (MockedStatic<SecurityUtils> utilities = mockStatic(SecurityUtils.class)) {
-      utilities.when(SecurityUtils::getCurrentUserId).thenReturn(userId);
+      utilities.when(SecurityUtils::getCurrentUserIdAsLong).thenReturn(userId);
 
       // Old PR = 400 seconds (Normalized)
       WodScore oldPr =
@@ -122,9 +122,12 @@ class WodScoreServiceTest {
       scoreService.logScore(requestTime);
 
       // Then
-      ArgumentCaptor<WodScore> captor = ArgumentCaptor.forClass(WodScore.class);
-      verify(scoreRepository).save(captor.capture());
-      assertTrue(captor.getValue().isPersonalRecord(), "300s is faster than 400s -> Should be PR");
+      // Verify old PR is unset
+      assertFalse(oldPr.isPersonalRecord());
+      verify(scoreRepository).save(oldPr);
+      // Verify new score is saved as PR
+      verify(scoreRepository).save(scoreEntityTime);
+      assertTrue(scoreEntityTime.isPersonalRecord());
     }
   }
 
@@ -133,9 +136,7 @@ class WodScoreServiceTest {
   void testDeleteScore_Unauthorized() {
     try (MockedStatic<SecurityUtils> utilities = mockStatic(SecurityUtils.class)) {
       // Mock Current User as "hacker"
-      utilities.when(SecurityUtils::getCurrentUserId).thenReturn("hacker");
-      // Security Check fails
-      utilities.when(() -> SecurityUtils.isCurrentUser(userId)).thenReturn(false);
+      utilities.when(SecurityUtils::getCurrentUserIdAsLong).thenReturn(999L);
 
       when(scoreRepository.findById(50L)).thenReturn(Optional.of(scoreEntityTime));
 
@@ -148,8 +149,7 @@ class WodScoreServiceTest {
   @DisplayName("deleteScore: should delete if user is owner")
   void testDeleteScore_Success() {
     try (MockedStatic<SecurityUtils> utilities = mockStatic(SecurityUtils.class)) {
-      utilities.when(SecurityUtils::getCurrentUserId).thenReturn(userId);
-      utilities.when(() -> SecurityUtils.isCurrentUser(userId)).thenReturn(true);
+      utilities.when(SecurityUtils::getCurrentUserIdAsLong).thenReturn(userId);
 
       when(scoreRepository.findById(50L)).thenReturn(Optional.of(scoreEntityTime));
 

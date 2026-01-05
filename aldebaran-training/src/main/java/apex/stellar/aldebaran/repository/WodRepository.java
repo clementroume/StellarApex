@@ -76,4 +76,14 @@ public interface WodRepository extends JpaRepository<Wod, Long> {
    * @return A list of matching WOD summaries.
    */
   List<WodSummary> findProjectedByWodType(WodType wodType, Pageable pageable);
+
+  /**
+   * Retrieves WODs that include a specific movement.
+   *
+   * @param movementId The ID of the movement (e.g., "GY-PU-001").
+   * @param pageable Pagination information.
+   * @return A list of matching WOD summaries.
+   */
+  @Query("SELECT w FROM Wod w JOIN w.movements wm WHERE wm.movement.id = :movementId")
+  List<WodSummary> findProjectedByMovementId(@Param("movementId") String movementId, Pageable pageable);
 }

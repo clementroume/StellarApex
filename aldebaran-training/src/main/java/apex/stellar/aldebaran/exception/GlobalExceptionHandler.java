@@ -51,9 +51,10 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
       ResourceNotFoundException ex, HttpServletRequest request, Locale locale) {
 
     log.debug("Resource not found: {}", ex.getMessage());
+    String title = messageSource.getMessage("error.title.not.found", null, locale);
     String message = messageSource.getMessage(ex.getMessageKey(), ex.getArgs(), locale);
 
-    return createProblemResponse(HttpStatus.NOT_FOUND, "Resource Not Found", message, request);
+    return createProblemResponse(HttpStatus.NOT_FOUND, title, message, request);
   }
 
   /**
@@ -70,9 +71,10 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
       DataConflictException ex, HttpServletRequest request, Locale locale) {
 
     log.warn("Data conflict on request [{}]: {}", request.getRequestURI(), ex.getMessage());
+    String title = messageSource.getMessage("error.title.conflict", null, locale);
     String message = messageSource.getMessage(ex.getMessageKey(), ex.getArgs(), locale);
 
-    return createProblemResponse(HttpStatus.CONFLICT, "Data Conflict", message, request);
+    return createProblemResponse(HttpStatus.CONFLICT, title, message, request);
   }
 
   /**
@@ -84,9 +86,10 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
       WodLockedException ex, HttpServletRequest request, Locale locale) {
 
     log.warn("WOD Locked: {}", ex.getMessage());
+    String title = messageSource.getMessage("error.title.locked", null, locale);
     String message = messageSource.getMessage(ex.getMessageKey(), ex.getArgs(), locale);
     return createProblemResponse(
-        HttpStatus.CONFLICT, "WOD Locked", message, request);
+        HttpStatus.CONFLICT, title, message, request);
   }
 
   /**
@@ -95,7 +98,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
    */
   @ExceptionHandler(ConstraintViolationException.class)
   public ResponseEntity<@NonNull ProblemDetail> handleConstraintViolation(
-      ConstraintViolationException ex, HttpServletRequest request) {
+      ConstraintViolationException ex, HttpServletRequest request, Locale locale) {
 
     String errors =
         ex.getConstraintViolations().stream()
@@ -103,7 +106,8 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
             .collect(Collectors.joining("; "));
 
     log.warn("Constraint violation: {}", errors);
-    return createProblemResponse(HttpStatus.BAD_REQUEST, "Validation Error", errors, request);
+    String title = messageSource.getMessage("error.validation", null, locale);
+    return createProblemResponse(HttpStatus.BAD_REQUEST, title, errors, request);
   }
 
   /**
@@ -112,11 +116,12 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
    */
   @ExceptionHandler(EntityNotFoundException.class)
   public ResponseEntity<@NonNull ProblemDetail> handleEntityNotFound(
-      EntityNotFoundException ex, HttpServletRequest request) {
+      EntityNotFoundException ex, HttpServletRequest request, Locale locale) {
 
     log.debug("Entity not found: {}", ex.getMessage());
+    String title = messageSource.getMessage("error.title.entity.not.found", null, locale);
     return createProblemResponse(
-        HttpStatus.NOT_FOUND, "Entity Not Found", ex.getMessage(), request);
+        HttpStatus.NOT_FOUND, title, ex.getMessage(), request);
   }
 
   /**
@@ -132,9 +137,10 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
       HttpServletRequest request, Locale locale) {
 
     log.warn("Access denied for {}", request.getRequestURI());
+    String title = messageSource.getMessage("error.title.access.denied", null, locale);
     String message = messageSource.getMessage("error.access.denied", null, locale);
 
-    return createProblemResponse(HttpStatus.FORBIDDEN, "Access Denied", message, request);
+    return createProblemResponse(HttpStatus.FORBIDDEN, title, message, request);
   }
 
   /**
@@ -193,10 +199,11 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
       Exception ex, HttpServletRequest request, Locale locale) {
 
     log.error("Unhandled exception caught for request {}", request.getRequestURI(), ex);
+    String title = messageSource.getMessage("error.title.internal.server", null, locale);
     String message = messageSource.getMessage("error.internal.server", null, locale);
 
     return createProblemResponse(
-        HttpStatus.INTERNAL_SERVER_ERROR, "Internal Server Error", message, request);
+        HttpStatus.INTERNAL_SERVER_ERROR, title, message, request);
   }
 
   private ResponseEntity<@NonNull ProblemDetail> createProblemResponse(

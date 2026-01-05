@@ -9,6 +9,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -65,7 +66,7 @@ public class MovementController {
             content = @Content(schema = @Schema(hidden = true)))
       })
   public ResponseEntity<List<MovementSummaryResponse>> searchMovements(
-      @RequestParam(defaultValue = "") String query) {
+      @Parameter(description = "Search term") @RequestParam(defaultValue = "") String query) {
     return ResponseEntity.ok(movementService.searchMovements(query));
   }
 

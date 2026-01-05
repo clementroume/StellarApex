@@ -34,6 +34,15 @@ public class SecurityUtils {
   }
 
   /**
+   * Retrieves the user ID as a Long.
+   *
+   * @return the user ID.
+   */
+  public static Long getCurrentUserIdAsLong() {
+    return Long.valueOf(getCurrentUserId());
+  }
+
+  /**
    * Checks if the given userId matches the current authenticated user.
    *
    * @param userId The userId to check

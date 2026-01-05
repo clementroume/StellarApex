@@ -13,7 +13,7 @@ import java.time.LocalDate;
  */
 public record WodScoreResponse(
     @Schema(description = "Unique Score ID", example = "888") Long id,
-    @Schema(description = "ID of the athlete", example = "user-123") String userId,
+    @Schema(description = "ID of the athlete", example = "123") Long userId,
     @Schema(description = "Date of performance") LocalDate date,
     @Schema(description = "Summary of the WOD definition") WodSummaryResponse wodSummary,
 

@@ -63,16 +63,20 @@ public class WodService {
    *
    * @param search Optional title search string.
    * @param type Optional WOD type filter.
+   * @param movementId Optional movement ID filter.
    * @param pageable Pagination information.
    * @return A list of lightweight WOD summaries.
    */
   @Transactional(readOnly = true)
-  public List<WodSummaryResponse> getWods(String search, WodType type, Pageable pageable) {
+  public List<WodSummaryResponse> getWods(String search, WodType type, String movementId, Pageable pageable) {
     List<WodSummary> projections;
 
     if (StringUtils.hasText(search)) {
       // Search by title (Projection)
       projections = wodRepository.findProjectedByTitleContainingIgnoreCase(search);
+    } else if (StringUtils.hasText(movementId)) {
+      // Filter by contained movement
+      projections = wodRepository.findProjectedByMovementId(movementId, pageable);
     } else if (type != null) {
       // Filter by type (Projection)
       projections = wodRepository.findProjectedByWodType(type, pageable);

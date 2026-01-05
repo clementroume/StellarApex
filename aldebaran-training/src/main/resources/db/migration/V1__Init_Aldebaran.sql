@@ -153,7 +153,7 @@ CREATE TABLE wod_movements
 CREATE TABLE wod_scores
 (
     id                    BIGSERIAL PRIMARY KEY,
-    user_id               VARCHAR(255) NOT NULL,
+    user_id               BIGINT       NOT NULL,
     date                  DATE         NOT NULL,
     wod_id                BIGINT       NOT NULL REFERENCES wods (id) ON DELETE CASCADE,
 

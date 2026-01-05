@@ -103,7 +103,7 @@ class WodServiceTest {
     when(wodRepository.findAllProjectedBy(pageable)).thenReturn(List.of(summaryProjection));
 
     // When
-    List<WodSummaryResponse> results = wodService.getWods(null, null, pageable);
+    List<WodSummaryResponse> results = wodService.getWods(null, null, null, pageable);
 
     // Then
     assertEquals(1, results.size());

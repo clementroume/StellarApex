@@ -102,7 +102,7 @@ class WodScoreControllerIT extends BaseIntegrationTest {
     mockMvc
         .perform(
             post("/aldebaran/scores")
-                .header("X-Auth-User-Id", "athlete")
+                .header("X-Auth-User-Id", "100")
                 .header("X-Auth-User-Role", "USER")
                 .with(csrf())
                 .contentType(MediaType.APPLICATION_JSON)
@@ -144,7 +144,7 @@ class WodScoreControllerIT extends BaseIntegrationTest {
     mockMvc
         .perform(
             post("/aldebaran/scores")
-                .header("X-Auth-User-Id", "athlete")
+                .header("X-Auth-User-Id", "100")
                 .header("X-Auth-User-Role", "USER")
                 .with(csrf())
                 .contentType(MediaType.APPLICATION_JSON)
@@ -186,7 +186,7 @@ class WodScoreControllerIT extends BaseIntegrationTest {
     mockMvc
         .perform(
             post("/aldebaran/scores")
-                .header("X-Auth-User-Id", "athlete")
+                .header("X-Auth-User-Id", "100")
                 .header("X-Auth-User-Role", "USER")
                 .with(csrf())
                 .contentType(MediaType.APPLICATION_JSON)
@@ -232,7 +232,7 @@ class WodScoreControllerIT extends BaseIntegrationTest {
     mockMvc
         .perform(
             post("/aldebaran/scores")
-                .header("X-Auth-User-Id", "athlete")
+                .header("X-Auth-User-Id", "100")
                 .header("X-Auth-User-Role", "USER")
                 .with(csrf())
                 .contentType(MediaType.APPLICATION_JSON)
@@ -242,21 +242,21 @@ class WodScoreControllerIT extends BaseIntegrationTest {
     // 2. GET the history
     mockMvc
         .perform(
-            get("/aldebaran/scores/me")
-                .header("X-Auth-User-Id", "athlete")
+            get("/aldebaran/scores/me?wodId=" + fran.getId())
+                .header("X-Auth-User-Id", "100")
                 .header("X-Auth-User-Role", "USER"))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$", hasSize(1)))
+        .andExpect(jsonPath("$.content", hasSize(1)))
         // Verify Time reconstruction
-        .andExpect(jsonPath("$[0].timeSeconds").value(135))
-        .andExpect(jsonPath("$[0].timeMinutesPart").value(2))
-        .andExpect(jsonPath("$[0].timeSecondsPart").value(15))
+        .andExpect(jsonPath("$.content[0].timeSeconds").value(135))
+        .andExpect(jsonPath("$.content[0].timeMinutesPart").value(2))
+        .andExpect(jsonPath("$.content[0].timeSecondsPart").value(15))
         // Verify Weight reconstruction (should be exactly 135.0 LBS)
-        .andExpect(jsonPath("$[0].maxWeight").value(135.0))
-        .andExpect(jsonPath("$[0].weightUnit").value("LBS"))
+        .andExpect(jsonPath("$.content[0].maxWeight").value(135.0))
+        .andExpect(jsonPath("$.content[0].weightUnit").value("LBS"))
         // Verify Distance reconstruction (should be exactly 5.0 MILES)
-        .andExpect(jsonPath("$[0].totalDistance").value(5.0))
-        .andExpect(jsonPath("$[0].distanceUnit").value("MILES"));
+        .andExpect(jsonPath("$.content[0].totalDistance").value(5.0))
+        .andExpect(jsonPath("$.content[0].distanceUnit").value("MILES"));
   }
 
   // -------------------------------------------------------------------------
@@ -269,7 +269,7 @@ class WodScoreControllerIT extends BaseIntegrationTest {
     WodScore score =
         WodScore.builder()
             .wod(fran)
-            .userId("athlete")
+            .userId(100L)
             .date(LocalDate.now())
             .scaling(ScalingLevel.RX)
             .timeSeconds(100)
@@ -280,7 +280,7 @@ class WodScoreControllerIT extends BaseIntegrationTest {
     mockMvc
         .perform(
             delete("/aldebaran/scores/" + score.getId())
-                .header("X-Auth-User-Id", "athlete")
+                .header("X-Auth-User-Id", "100")
                 .header("X-Auth-User-Role", "USER")
                 .with(csrf()))
         .andExpect(status().isNoContent());
@@ -292,7 +292,7 @@ class WodScoreControllerIT extends BaseIntegrationTest {
     WodScore score =
         WodScore.builder()
             .wod(fran)
-            .userId("victim")
+            .userId(200L)
             .date(LocalDate.now())
             .scaling(ScalingLevel.RX)
             .timeSeconds(100)
@@ -303,7 +303,7 @@ class WodScoreControllerIT extends BaseIntegrationTest {
     mockMvc
         .perform(
             delete("/aldebaran/scores/" + score.getId())
-                .header("X-Auth-User-Id", "hacker")
+                .header("X-Auth-User-Id", "999")
                 .header("X-Auth-User-Role", "USER")
                 .with(csrf()))
         .andExpect(status().isForbidden());
@@ -321,15 +321,15 @@ class WodScoreControllerIT extends BaseIntegrationTest {
     // Score B: 200s
     // Score C: 300s
 
-    createScore("user1", 100);
-    WodScore scoreB = createScore("user2", 200);
-    createScore("user3", 300);
+    createScore(101L, 100);
+    WodScore scoreB = createScore(102L, 200);
+    createScore(103L, 300);
 
     // 2. Compare Score B (Should be Rank 2)
     mockMvc
         .perform(
             get("/aldebaran/scores/" + scoreB.getId() + "/compare")
-                .header("X-Auth-User-Id", "user2")
+                .header("X-Auth-User-Id", "102")
                 .header("X-Auth-User-Role", "USER"))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.rank").value(2))
@@ -337,7 +337,7 @@ class WodScoreControllerIT extends BaseIntegrationTest {
         .andExpect(jsonPath("$.percentile").value(50.0)); // (3-2)/2 * 100 = 50%
   }
 
-  private WodScore createScore(String userId, int seconds) {
+  private WodScore createScore(Long userId, int seconds) {
     WodScore s = WodScore.builder()
         .wod(fran)
         .userId(userId)

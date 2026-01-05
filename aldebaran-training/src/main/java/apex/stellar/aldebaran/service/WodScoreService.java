@@ -1,7 +1,5 @@
 package apex.stellar.aldebaran.service;
 
-import static apex.stellar.aldebaran.config.RedisCacheConfig.CACHE_WOD_SCORES;
-
 import apex.stellar.aldebaran.config.SecurityUtils;
 import apex.stellar.aldebaran.dto.ScoreComparisonResponse;
 import apex.stellar.aldebaran.dto.WodScoreRequest;
@@ -11,13 +9,18 @@ import apex.stellar.aldebaran.mapper.WodScoreMapper;
 import apex.stellar.aldebaran.model.entities.Wod;
 import apex.stellar.aldebaran.model.entities.Wod.ScoreType;
 import apex.stellar.aldebaran.model.entities.WodScore;
+import apex.stellar.aldebaran.model.entities.WodScore.ScalingLevel;
 import apex.stellar.aldebaran.repository.WodRepository;
 import apex.stellar.aldebaran.repository.WodScoreRepository;
 import java.util.List;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.cache.annotation.Cacheable;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -40,20 +43,48 @@ public class WodScoreService {
   /**
    * Retrieves all scores for the currently authenticated user.
    *
-   * <p>The results are ordered by date (descending). Uses an optimized repository query to fetch
-   * WOD details efficiently.
+   * <p>The results are ordered by date (descending). Can be filtered by WOD ID to see progress on a specific workout.
+   * <p><b>Note:</b> Caching is removed here in favor of pagination to avoid complex cache key management and stale data on large lists.
    *
-   * @return List of score responses ordered by date (descending).
+   * @param wodId Optional WOD ID to filter the history.
+   * @param pageable Pagination info.
+   * @return Page of score responses.
    */
   @Transactional(readOnly = true)
-  @Cacheable(
-      value = CACHE_WOD_SCORES,
-      key = "T(apex.stellar.aldebaran.config.SecurityUtils).getCurrentUserId()")
-  public List<WodScoreResponse> getMyScores() {
-    String userId = SecurityUtils.getCurrentUserId();
-    return scoreRepository.findByUserIdOrderByDateDesc(userId).stream()
-        .map(scoreMapper::toResponse)
-        .toList();
+  public Page<WodScoreResponse> getMyScores(Long wodId, Pageable pageable) {
+    Long userId = SecurityUtils.getCurrentUserIdAsLong();
+    
+    // Force sort by Date DESC if not specified
+    Pageable sortedPageable = pageable.getSort().isSorted() 
+        ? pageable 
+        : PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), Sort.by("date").descending());
+
+    Page<WodScore> scores = (wodId != null)
+        ? scoreRepository.findByUserIdAndWodId(userId, wodId, sortedPageable)
+        : scoreRepository.findByUserId(userId, sortedPageable);
+
+    return scores.map(scoreMapper::toResponse);
+  }
+
+  /**
+   * Retrieves the leaderboard for a specific WOD.
+   *
+   * @param wodId The WOD ID.
+   * @param scaling The scaling level (default RX).
+   * @param pageable Pagination info.
+   * @return Page of scores sorted by performance (Best first).
+   */
+  @Transactional(readOnly = true)
+  public Page<WodScoreResponse> getLeaderboard(Long wodId, ScalingLevel scaling, Pageable pageable) {
+    Wod wod = wodRepository.findById(wodId)
+        .orElseThrow(() -> new ResourceNotFoundException("error.wod.not.found", wodId));
+
+    // Determine Sort direction based on ScoreType
+    Sort sort = getSortForScoreType(wod.getScoreType());
+    Pageable sortedPageable = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), sort);
+
+    return scoreRepository.findByWodIdAndScalingAndPersonalRecordTrue(wodId, scaling, sortedPageable)
+        .map(scoreMapper::toResponse);
   }
 
   /**
@@ -67,11 +98,9 @@ public class WodScoreService {
    * @throws ResourceNotFoundException if the WOD ID is invalid.
    */
   @Transactional
-  @CacheEvict(
-      value = CACHE_WOD_SCORES,
-      key = "T(apex.stellar.aldebaran.config.SecurityUtils).getCurrentUserId()")
+  // No generic cache eviction needed as pagination makes caching 'my-scores' impractical.
   public WodScoreResponse logScore(WodScoreRequest request) {
-    String userId = SecurityUtils.getCurrentUserId();
+    Long userId = SecurityUtils.getCurrentUserIdAsLong();
 
     Wod wod =
         wodRepository
@@ -86,8 +115,16 @@ public class WodScoreService {
     score.setLoggedAt(java.time.LocalDateTime.now());
 
     // PR Logic: Check if this is the best performance
-    boolean isPr = checkIsPersonalRecord(userId, wod, score);
+    Optional<WodScore> oldPr = scoreRepository.findByWodIdAndUserIdAndPersonalRecordTrue(wod.getId(), userId);
+    boolean isPr = checkIsPersonalRecord(wod, score, oldPr.orElse(null));
+    
     score.setPersonalRecord(isPr);
+
+    // If new PR, unmark the old one
+    if (isPr && oldPr.isPresent()) {
+      oldPr.get().setPersonalRecord(false);
+      scoreRepository.save(oldPr.get());
+    }
 
     WodScore saved = scoreRepository.save(score);
 
@@ -106,17 +143,20 @@ public class WodScoreService {
    * @throws AccessDeniedException if the user does not own the score.
    */
   @Transactional
-  @CacheEvict(
-      value = CACHE_WOD_SCORES,
-      key = "T(apex.stellar.aldebaran.config.SecurityUtils).getCurrentUserId()")
   public void deleteScore(Long scoreId) {
     WodScore score =
         scoreRepository
             .findById(scoreId)
             .orElseThrow(() -> new ResourceNotFoundException("error.score.not.found", scoreId));
 
-    if (!SecurityUtils.isCurrentUser(score.getUserId())) {
+    // Check ownership (converting Long to String for utility check, or use direct comparison)
+    if (!score.getUserId().equals(SecurityUtils.getCurrentUserIdAsLong())) {
       throw new AccessDeniedException("error.score.unauthorized.delete");
+    }
+
+    // PR Logic: If deleting a PR, promote the next best score
+    if (score.isPersonalRecord()) {
+      recalculatePrOnDelete(score);
     }
 
     scoreRepository.delete(score);
@@ -161,10 +201,7 @@ public class WodScoreService {
   // PR Calculation Logic
   // -------------------------------------------------------------------------
 
-  private boolean checkIsPersonalRecord(String userId, Wod wod, WodScore current) {
-    WodScore oldPr =
-        scoreRepository.findByWodIdAndUserIdAndPersonalRecordTrue(wod.getId(), userId).orElse(null);
-
+  private boolean checkIsPersonalRecord(Wod wod, WodScore current, WodScore oldPr) {
     if (oldPr == null) {
       return wod.getScoreType() != ScoreType.NONE;
     }
@@ -211,5 +248,34 @@ public class WodScoreService {
     double c = current != null ? current.doubleValue() : 0.0;
     double o = old != null ? old.doubleValue() : 0.0;
     return c > o;
+  }
+
+  private void recalculatePrOnDelete(WodScore scoreToDelete) {
+    List<WodScore> allScores = scoreRepository.findByWodIdAndUserId(scoreToDelete.getWod().getId(), scoreToDelete.getUserId());
+    
+    // Find best score excluding the one being deleted
+    WodScore newPr = allScores.stream()
+        .filter(s -> !s.getId().equals(scoreToDelete.getId()))
+        .reduce((s1, s2) -> isBetterScore(s1, s2, scoreToDelete.getWod().getScoreType()) ? s1 : s2)
+        .orElse(null);
+
+    if (newPr != null) {
+      newPr.setPersonalRecord(true);
+      scoreRepository.save(newPr);
+      log.info("PR transferred to score {} after deletion", newPr.getId());
+    }
+  }
+
+  private Sort getSortForScoreType(ScoreType type) {
+    return switch (type) {
+      case TIME -> Sort.by("timeSeconds").ascending(); // Lower time is better
+      case ROUNDS_REPS -> Sort.by("rounds").descending().and(Sort.by("reps").descending());
+      case REPS -> Sort.by("reps").descending();
+      case WEIGHT -> Sort.by("maxWeightKg").descending();
+      case LOAD -> Sort.by("totalLoadKg").descending();
+      case DISTANCE -> Sort.by("totalDistanceMeters").descending();
+      case CALORIES -> Sort.by("totalCalories").descending();
+      case NONE -> Sort.by("date").descending();
+    };
   }
 }

@@ -60,7 +60,7 @@ public class WodScore {
 
   @Column(name = "user_id", nullable = false)
   @NotNull
-  private String userId;
+  private Long userId;
 
   @Column(nullable = false)
   @NotNull
