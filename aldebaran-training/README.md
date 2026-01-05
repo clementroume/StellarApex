@@ -1,43 +1,37 @@
-# Aldebaran Training Service
+# Aldebaran Training API
 
-Aldebaran Training Service is a Spring Boot application focused on Workouts and Performance management. It is part of the Stellar Apex ecosystem.
+This is the training and performance backend service for the StellarApex platform, responsible for
+workout management (WODs), exercise catalog (Movements/Muscles), and athlete performance tracking
+(Scores/PRs). It is a secure, stateless Spring Boot application designed to run as a containerized
+microservice.
 
 ## Tech Stack
 
-*   **Java:** 25
-*   **Framework:** Spring Boot 4.0.0
-*   **Database:** PostgreSQL (with Flyway for migrations)
-*   **Caching:** Redis
-*   **API Documentation:** SpringDoc OpenAPI
-*   **Observability:** Micrometer, Prometheus
-*   **Tools:** Lombok, MapStruct, Commons CSV, POI OOXML
+* **Framework**: Spring Boot 4.0
+* **Language**: Java 25
+* **Security**: Spring Security 6 (stateless), JWT (via Forward Auth)
+* **Database**: PostgreSQL (managed by Flyway migrations)
+* **Cache**: Redis (for caching WODs and Master Data)
+* **Tooling**: MapStruct (DTO mapping), Lombok (boilerplate reduction)
+* **API Docs**: Springdoc (OpenAPI / Swagger)
 
 ## Prerequisites
 
-*   Java 25
-*   Maven
-*   PostgreSQL
-*   Redis
+* JDK 25
+* Docker & Docker Compose
+* A configured `.env` file in the project root (see the root `README.md`).
 
-## Configuration
+## How to Build
 
-The application uses the following environment variables for configuration. You should set these before running the application locally.
+This project uses the Maven Wrapper (`mvnw`), which will download the correct Maven version
+automatically.
 
-| Variable | Description |
-| :--- | :--- |
-| `CASTOR_DB` | PostgreSQL Database Name |
-| `CASTOR_USERNAME` | PostgreSQL Username |
-| `CASTOR_PASSWORD` | PostgreSQL Password |
-| `POLLUX_PASSWORD` | Redis Password |
+### Build the JAR
 
-The application listens on port `8081` by default.
-
-## Running the Application
-
-### Locally with Maven
+To build the executable JAR and run all tests:
 
 ```bash
-./mvnw spring-boot:run
+./mvnw verify
 ```
 
 Ensure that you have a running PostgreSQL and Redis instance and the environment variables are set.
