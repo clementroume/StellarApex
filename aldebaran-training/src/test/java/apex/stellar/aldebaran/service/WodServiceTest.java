@@ -10,6 +10,7 @@ import apex.stellar.aldebaran.dto.WodRequest;
 import apex.stellar.aldebaran.dto.WodResponse;
 import apex.stellar.aldebaran.dto.WodSummaryResponse;
 import apex.stellar.aldebaran.exception.ResourceNotFoundException;
+import apex.stellar.aldebaran.exception.WodLockedException;
 import apex.stellar.aldebaran.mapper.WodMapper;
 import apex.stellar.aldebaran.model.entities.Movement;
 import apex.stellar.aldebaran.model.entities.Wod;
@@ -20,6 +21,7 @@ import apex.stellar.aldebaran.model.enums.Category;
 import apex.stellar.aldebaran.model.enums.Category.Modality;
 import apex.stellar.aldebaran.repository.MovementRepository;
 import apex.stellar.aldebaran.repository.WodRepository;
+import apex.stellar.aldebaran.repository.WodScoreRepository;
 import apex.stellar.aldebaran.repository.projection.WodSummary;
 import java.util.HashSet;
 import java.util.List;
@@ -39,6 +41,7 @@ class WodServiceTest {
 
   @Mock private WodRepository wodRepository;
   @Mock private MovementRepository movementRepository;
+  @Mock private WodScoreRepository wodScoreRepository;
   @Mock private WodMapper wodMapper;
 
   @InjectMocks private WodService wodService;
@@ -94,7 +97,7 @@ class WodServiceTest {
     when(summaryProjection.getWodType()).thenReturn(WodType.FOR_TIME);
     when(summaryProjection.getScoreType()).thenReturn(ScoreType.TIME);
 
-    // Using unpaged for simplicity, but the service calls findAllProjectedBy(pageable)
+    // Using unpaged for simplicity
     Pageable pageable = Pageable.unpaged();
     when(wodRepository.findAllProjectedBy(pageable)).thenReturn(List.of(summaryProjection));
 
@@ -138,7 +141,9 @@ class WodServiceTest {
   void testCreateWod_Success() {
     // Given
     when(wodMapper.toEntity(wodRequest)).thenReturn(wod);
-    when(movementRepository.findById("GY-PU-001")).thenReturn(Optional.of(movement));
+    // CORRECTION ICI: Utilisation de findAllById au lieu de findById
+    when(movementRepository.findAllById(any())).thenReturn(List.of(movement));
+
     when(wodMapper.toWodMovementEntity(any())).thenReturn(new WodMovement());
     when(wodRepository.save(wod)).thenReturn(wod);
     when(wodMapper.toResponse(wod)).thenReturn(mock(WodResponse.class));
@@ -153,11 +158,9 @@ class WodServiceTest {
       assertNotNull(response);
       assertEquals(100L, wod.getCreatorId());
       assertEquals(1, wod.getMovements().size());
-
-      // Verify Modality Aggregation: Pull-up is GYMNASTICS
       assertTrue(wod.getModalities().contains(Modality.GYMNASTICS));
 
-      verify(movementRepository).findById("GY-PU-001");
+      verify(movementRepository).findAllById(any());
       verify(wodRepository).save(wod);
     }
   }
@@ -167,7 +170,8 @@ class WodServiceTest {
   void testCreateWod_InvalidMovement() {
     // Given
     when(wodMapper.toEntity(wodRequest)).thenReturn(wod);
-    when(movementRepository.findById("GY-PU-001")).thenReturn(Optional.empty());
+    // CORRECTION ICI: On simule une liste vide retournée par findAllById pour déclencher l'erreur
+    when(movementRepository.findAllById(any())).thenReturn(List.of());
 
     // When & Then
     ResourceNotFoundException ex =
@@ -178,22 +182,26 @@ class WodServiceTest {
   }
 
   @Test
-  @DisplayName("updateWod: should replace movements and update metadata")
+  @DisplayName("updateWod: should update when NO scores exist")
   void testUpdateWod_Success() {
     // Given
+    when(wodScoreRepository.existsByWodId(1L)).thenReturn(false);
     when(wodRepository.findByIdWithMovements(1L)).thenReturn(Optional.of(wod));
-    // Mapper behavior for update (void method)
+
+    // Mapper behavior
     doAnswer(
             invocation -> {
-              Wod target = invocation.getArgument(1);
               WodRequest source = invocation.getArgument(0);
-              target.setTitle(source.title()); // Simulate mapper update
+              Wod target = invocation.getArgument(1);
+              target.setTitle(source.title());
               return null;
             })
         .when(wodMapper)
         .updateEntity(any(WodRequest.class), any(Wod.class));
 
-    when(movementRepository.findById("GY-PU-001")).thenReturn(Optional.of(movement));
+    // CORRECTION ICI: Utilisation de findAllById
+    when(movementRepository.findAllById(any())).thenReturn(List.of(movement));
+
     when(wodMapper.toWodMovementEntity(any())).thenReturn(new WodMovement());
     when(wodRepository.save(wod)).thenReturn(wod);
     when(wodMapper.toResponse(wod)).thenReturn(mock(WodResponse.class));
@@ -201,7 +209,7 @@ class WodServiceTest {
     // When
     WodRequest updateRequest =
         new WodRequest(
-            "Fran (Updated)", // Title changed
+            "Fran (Updated)",
             WodType.FOR_TIME,
             ScoreType.TIME,
             "New Desc",
@@ -219,9 +227,22 @@ class WodServiceTest {
 
     // Then
     verify(wodMapper).updateEntity(updateRequest, wod);
-    // Verify movements were cleared and re-added (size should be 1 from the new request)
     assertEquals(1, wod.getMovements().size());
     verify(wodRepository).save(wod);
+  }
+
+  @Test
+  @DisplayName("updateWod: should throw WodLockedException when scores exist")
+  void testUpdateWod_Locked() {
+    // Given
+    when(wodScoreRepository.existsByWodId(1L)).thenReturn(true);
+
+    // When & Then
+    WodLockedException ex =
+        assertThrows(WodLockedException.class, () -> wodService.updateWod(1L, wodRequest));
+
+    assertEquals("error.wod.locked", ex.getMessageKey());
+    verify(wodRepository, never()).save(any());
   }
 
   @Test
