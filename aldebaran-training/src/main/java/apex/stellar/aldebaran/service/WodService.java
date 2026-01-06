@@ -223,8 +223,8 @@ public class WodService {
    */
   private void assignCreator(Wod wod) {
     try {
-      String userId = SecurityUtils.getCurrentUserId();
-      wod.setCreatorId(Long.valueOf(userId));
+      Long userId = SecurityUtils.getCurrentUserId();
+      wod.setCreatorId(userId);
     } catch (Exception e) {
       // Log as warning but don't block creation if user context is missing or ID is non-numeric
       log.warn("Unable to assign creator ID: {}", e.getMessage());

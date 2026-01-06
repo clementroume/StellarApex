@@ -52,7 +52,7 @@ public class WodScoreService {
    */
   @Transactional(readOnly = true)
   public Page<WodScoreResponse> getMyScores(Long wodId, Pageable pageable) {
-    Long userId = SecurityUtils.getCurrentUserIdAsLong();
+    Long userId = SecurityUtils.getCurrentUserId();
     
     // Force sort by Date DESC if not specified
     Pageable sortedPageable = pageable.getSort().isSorted() 
@@ -100,7 +100,7 @@ public class WodScoreService {
   @Transactional
   // No generic cache eviction needed as pagination makes caching 'my-scores' impractical.
   public WodScoreResponse logScore(WodScoreRequest request) {
-    Long userId = SecurityUtils.getCurrentUserIdAsLong();
+    Long userId = SecurityUtils.getCurrentUserId();
 
     Wod wod =
         wodRepository
@@ -150,7 +150,7 @@ public class WodScoreService {
             .orElseThrow(() -> new ResourceNotFoundException("error.score.not.found", scoreId));
 
     // Check ownership (converting Long to String for utility check, or use direct comparison)
-    if (!score.getUserId().equals(SecurityUtils.getCurrentUserIdAsLong())) {
+    if (!score.getUserId().equals(SecurityUtils.getCurrentUserId())) {
       throw new AccessDeniedException("error.score.unauthorized.delete");
     }
 

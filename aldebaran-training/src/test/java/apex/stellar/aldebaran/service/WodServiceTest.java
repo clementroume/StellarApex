@@ -150,7 +150,7 @@ class WodServiceTest {
     when(wodMapper.toResponse(wod)).thenReturn(mock(WodResponse.class));
 
     try (MockedStatic<SecurityUtils> utilities = mockStatic(SecurityUtils.class)) {
-      utilities.when(SecurityUtils::getCurrentUserId).thenReturn("100");
+      utilities.when(SecurityUtils::getCurrentUserId).thenReturn(100L);
 
       // When
       WodResponse response = wodService.createWod(wodRequest);
@@ -196,7 +196,7 @@ class WodServiceTest {
     ))).thenReturn(List.of(move1, move2));
 
     try (MockedStatic<SecurityUtils> utilities = mockStatic(SecurityUtils.class)) {
-      utilities.when(SecurityUtils::getCurrentUserId).thenReturn("100");
+      utilities.when(SecurityUtils::getCurrentUserId).thenReturn(100L);
 
       // When
       wodService.createWod(batchRequest);

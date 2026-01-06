@@ -26,7 +26,6 @@ import tools.jackson.databind.json.JsonMapper;
  * <ul>
  *   <li><b>Movements:</b> Updates evict all entries (details and lists) to ensure consistency.</li>
  *   <li><b>WODs:</b> Individual eviction on update/delete.</li>
- *   <li><b>Scores:</b> User history is evicted on new logs.</li>
  * </ul>
  *
  * <p>Cache Strategy:
@@ -34,7 +33,6 @@ import tools.jackson.databind.json.JsonMapper;
  * <ul>
  *   <li>Master Data (Movements, Muscles): 24h TTL
  *   <li>WODs: 1h TTL
- *   <li>Scores: 5min TTL
  * </ul>
  */
 @Configuration
@@ -45,8 +43,6 @@ public class RedisCacheConfig {
   public static final String CACHE_MOVEMENTS = "movements";
   public static final String CACHE_MUSCLES = "muscles";
   public static final String CACHE_WODS = "wods";
-  public static final String CACHE_WOD_SCORES = "wod-scores";
-  public static final String CACHE_USER_STATS = "user-stats";
 
   /**
    * Configures a {@link RedisCacheManager} bean with custom TTL (Time-to-Live) values for different
@@ -87,12 +83,6 @@ public class RedisCacheConfig {
     cacheConfigurations.put(
         CACHE_WODS, defaultConfig.entryTtl(Duration.ofMillis(properties.wodsTtl())));
 
-    cacheConfigurations.put(
-        CACHE_WOD_SCORES, defaultConfig.entryTtl(Duration.ofMillis(properties.scoresTtl())));
-
-    cacheConfigurations.put(
-        CACHE_USER_STATS, defaultConfig.entryTtl(Duration.ofMinutes(1)));
-
     return RedisCacheManager.builder(connectionFactory)
         .cacheDefaults(defaultConfig)
         .withInitialCacheConfigurations(cacheConfigurations)
@@ -108,6 +98,5 @@ public class RedisCacheConfig {
   public record CacheProperties(
       @NotNull @Positive Long defaultTtl,
       @NotNull @Positive Long masterDataTtl,
-      @NotNull @Positive Long wodsTtl,
-      @NotNull @Positive Long scoresTtl) {}
+      @NotNull @Positive Long wodsTtl) {}
 }
