@@ -19,6 +19,7 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.transaction.annotation.Transactional;
 import tools.jackson.databind.json.JsonMapper;
 
 /**
@@ -27,6 +28,7 @@ import tools.jackson.databind.json.JsonMapper;
  * <p>These tests cover the full authentication and authorization flows, running against a real
  * database and Redis instance via Testcontainers.
  */
+@Transactional
 class AuthenticationControllerIT extends BaseIntegrationTest {
 
   @Autowired private MockMvc mockMvc;
@@ -36,7 +38,7 @@ class AuthenticationControllerIT extends BaseIntegrationTest {
   /** Cleans the database before each test (except for admin users). */
   @BeforeEach
   void setUp() {
-    userRepository.deleteAll(
+    userRepository.deleteAllInBatch(
         userRepository.findAll().stream()
             .filter(u -> !u.getRole().name().equals("ROLE_ADMIN"))
             .toList());

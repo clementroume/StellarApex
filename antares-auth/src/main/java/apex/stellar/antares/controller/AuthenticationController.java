@@ -7,8 +7,11 @@ import apex.stellar.antares.dto.RegisterRequest;
 import apex.stellar.antares.dto.TokenRefreshResponse;
 import apex.stellar.antares.dto.UserResponse;
 import apex.stellar.antares.exception.ResourceNotFoundException;
+import apex.stellar.antares.model.Membership;
+import apex.stellar.antares.model.Permission;
 import apex.stellar.antares.model.Role;
 import apex.stellar.antares.model.User;
+import apex.stellar.antares.repository.UserRepository;
 import apex.stellar.antares.service.AuthenticationService;
 import apex.stellar.antares.service.JwtService;
 import io.swagger.v3.oas.annotations.Hidden;
@@ -23,13 +26,16 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import java.net.URLEncoder;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.NonNull;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -44,10 +50,12 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/antares/auth")
 @RequiredArgsConstructor
 @Tag(name = "Authentication", description = "Registration, Logging in, and Token Management")
+@Slf4j
 public class AuthenticationController {
 
   private final AuthenticationService authenticationService;
   private final JwtService jwtService;
+  private final UserRepository userRepository;
 
   @Value("${application.frontend.login.url}")
   private String loginBaseUrl;
@@ -184,24 +192,68 @@ public class AuthenticationController {
    * user details if the authentication is valid and the user is authenticated.
    *
    * @param authentication the authentication object containing the user's authentication details
+   * @param request the HTTP request containing headers
    * @return a ResponseEntity with an HTTP 200 status and user headers if authenticated, or an HTTP
    *     401 status if the user is not authenticated or the authentication is null
    */
   @GetMapping("/verify/api")
   @Hidden
-  public ResponseEntity<Void> verifyApi(Authentication authentication) {
+  @Transactional(readOnly = true)
+  public ResponseEntity<Void> verifyApi(Authentication authentication, HttpServletRequest request) {
 
     if (authentication == null || !authentication.isAuthenticated()) {
-
       return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
     }
 
-    if (authentication.getPrincipal() instanceof User user) {
-      return ResponseEntity.ok()
-          .header("X-Auth-User-Id", String.valueOf(user.getId()))
-          .header("X-Auth-User-Role", user.getRole().name())
-          .header("X-Auth-User-Locale", user.getLocale())
-          .build();
+    if (authentication.getPrincipal() instanceof User principal) {
+      // Reload user to ensure memberships are initialized and avoid LazyInitializationException
+      User user = userRepository.findById(principal.getId()).orElse(principal);
+
+      String gymIdHeader = request.getHeader("X-Context-Gym-Id");
+      Membership membership = null;
+
+      if (gymIdHeader != null) {
+        try {
+          Long gymId = Long.parseLong(gymIdHeader);
+          membership =
+              user.getMemberships().stream()
+                  .filter(m -> m.getGymId().equals(gymId))
+                  .findFirst()
+                  .orElse(null);
+        } catch (NumberFormatException e) {
+          log.warn("Error parsing gymId header: {}", e.getMessage());
+        }
+      } else if (!user.getMemberships().isEmpty()) {
+        // Default to first membership if no header provided
+        membership = user.getMemberships().getFirst();
+      }
+
+      if (membership == null && gymIdHeader != null) {
+        // Requested gym isn't found for the user
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+      }
+
+      ResponseEntity.BodyBuilder responseBuilder =
+          ResponseEntity.ok()
+              .header("X-Auth-User-Id", String.valueOf(user.getId()))
+              .header("X-Auth-User-Locale", user.getLocale());
+
+      if (membership != null) {
+        String permissions =
+            membership.getPermissions().stream()
+                .map(Permission::name)
+                .collect(Collectors.joining(","));
+
+        responseBuilder
+            .header("X-Auth-Gym-Id", String.valueOf(membership.getGymId()))
+            .header("X-Auth-User-Role", membership.getRole().name())
+            .header("X-Auth-User-Permissions", permissions);
+      } else {
+        // Fallback for users without memberships (e.g., global admins or new users)
+        responseBuilder.header("X-Auth-User-Role", user.getRole().name());
+      }
+
+      return responseBuilder.build();
     }
 
     return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();

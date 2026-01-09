@@ -10,6 +10,7 @@ import apex.stellar.aldebaran.model.entities.WodMovement;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
+import org.mapstruct.NullValuePropertyMappingStrategy;
 import org.mapstruct.ReportingPolicy;
 
 /**
@@ -21,7 +22,7 @@ import org.mapstruct.ReportingPolicy;
  *   <li><b>Movement Aggregation:</b> Similar to {@link MovementMapper}, the list of movements in a
  *       WOD request is handled by the Service layer to resolve movement IDs and manage the {@link
  *       WodMovement} join entities.
- *   <li><b>Modality Calculation:</b> The `modalities` set is computed by the Service based on the
+ *   <li><b>Modality Calculation:</b> The Service computes the 'modalities' set based on the
  *       movements added, so it is ignored during mapping.
  * </ul>
  *
@@ -30,7 +31,8 @@ import org.mapstruct.ReportingPolicy;
 @Mapper(
     componentModel = "spring",
     unmappedTargetPolicy = ReportingPolicy.IGNORE,
-    uses = {MovementMapper.class})
+    uses = {MovementMapper.class},
+    nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
 public interface WodMapper {
 
   // -------------------------------------------------------------------------
@@ -66,7 +68,6 @@ public interface WodMapper {
   @Mapping(target = "id", ignore = true)
   @Mapping(target = "movements", ignore = true) // Handled by Service
   @Mapping(target = "modalities", ignore = true) // Computed by Service based on movements
-  @Mapping(target = "creatorId", ignore = true) // Set from Security Context
   @Mapping(target = "createdAt", ignore = true)
   @Mapping(target = "updatedAt", ignore = true)
   Wod toEntity(WodRequest request);
@@ -80,7 +81,8 @@ public interface WodMapper {
   @Mapping(target = "id", ignore = true)
   @Mapping(target = "movements", ignore = true) // Handled by Service
   @Mapping(target = "modalities", ignore = true) // Re-computed by Service
-  @Mapping(target = "creatorId", ignore = true) // Immutable
+  @Mapping(target = "gymId", ignore = true)
+  @Mapping(target = "authorId", ignore = true)
   @Mapping(target = "createdAt", ignore = true)
   @Mapping(target = "updatedAt", ignore = true)
   void updateEntity(WodRequest request, @MappingTarget Wod entity);

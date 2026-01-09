@@ -82,9 +82,13 @@ public class Wod {
   @NotNull
   private ScoreType scoreType;
 
-  /** ID of the creator (Coach or Admin). Null for system/global WODs. */
-  @Column(name = "creator_id")
-  private Long creatorId;
+  /** The specific user who authored this WOD (Creator/Author). */
+  @Column(name = "author_id")
+  private Long authorId;
+
+  /** The Gym (Tenant) this WOD belongs to. Null for global/system WODs. */
+  @Column(name = "gym_id")
+  private Long gymId;
 
   /** Visibility flag. If true, visible to the whole box/community. */
   @Column(name = "is_public", nullable = false)

@@ -1,10 +1,14 @@
 package apex.stellar.antares.mapper;
 
+import apex.stellar.antares.dto.MembershipSummary;
 import apex.stellar.antares.dto.PreferencesUpdateRequest;
 import apex.stellar.antares.dto.ProfileUpdateRequest;
 import apex.stellar.antares.dto.UserResponse;
+import apex.stellar.antares.model.Membership;
 import apex.stellar.antares.model.User;
+import java.util.List;
 import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
 import org.mapstruct.ReportingPolicy;
 
@@ -26,7 +30,24 @@ public interface UserMapper {
    * @param user The User entity to convert.
    * @return The corresponding UserResponse DTO, containing only public data.
    */
+  @Mapping(target = "memberships", source = "memberships")
   UserResponse toUserResponse(User user);
+
+  /**
+   * Converts a Membership entity to a MembershipSummary DTO.
+   *
+   * @param membership The Membership entity to convert.
+   * @return The corresponding MembershipSummary DTO.
+   */
+  MembershipSummary toMembershipSummary(Membership membership);
+
+  /**
+   * Converts a list of Membership entities to a list of MembershipSummary DTOs.
+   *
+   * @param memberships The list of Membership entities.
+   * @return The list of MembershipSummary DTOs.
+   */
+  List<MembershipSummary> toMembershipSummaryList(List<Membership> memberships);
 
   /**
    * Updates an existing User entity from a ProfileUpdateRequest DTO.

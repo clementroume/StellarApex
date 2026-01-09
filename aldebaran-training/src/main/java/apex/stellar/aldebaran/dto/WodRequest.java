@@ -50,6 +50,16 @@ public record WodRequest(
         @Size(max = 4000, message = "{validation.wod.notes.size}")
         String notes,
     @Schema(
+            description = "The User ID of the author.",
+            example = "1",
+            requiredMode = RequiredMode.NOT_REQUIRED)
+        Long authorId,
+    @Schema(
+            description = "The Gym ID this WOD belongs to. Null for global WODs.",
+            example = "101",
+            requiredMode = RequiredMode.NOT_REQUIRED)
+        Long gymId,
+    @Schema(
             description = "Is this WOD visible to everyone?",
             defaultValue = "false",
             example = "true",

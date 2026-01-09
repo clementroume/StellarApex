@@ -8,10 +8,13 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import apex.stellar.antares.config.BaseIntegrationTest;
 import apex.stellar.antares.dto.AuthenticationRequest;
 import apex.stellar.antares.dto.RegisterRequest;
+import apex.stellar.antares.model.Membership;
 import apex.stellar.antares.model.Role;
 import apex.stellar.antares.model.User;
 import apex.stellar.antares.repository.UserRepository;
 import jakarta.servlet.http.Cookie;
+import java.util.Collections;
+import java.util.List;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -131,6 +134,55 @@ class AuthenticationControllerVerifyIT extends BaseIntegrationTest {
         .andExpect(header().string("X-Auth-User-Locale", "en"));
   }
 
+  @Test
+  @DisplayName("Verify API: Authenticated USER with Gym Context should return Gym headers")
+  void testVerifyApi_withGymContext_shouldReturnGymHeaders() throws Exception {
+    // 1. Create User with Membership
+    createUserWithMembership("gymuser@test.com");
+    Cookie[] cookies = login("gymuser@test.com", "password123");
+
+    // 2. Perform verification with Gym Context Header
+    mockMvc
+        .perform(get("/antares/auth/verify/api").cookie(cookies).header("X-Context-Gym-Id", "100"))
+        // Then: Expect 200 OK
+        .andExpect(status().isOk())
+        // And: Check Gym-specific headers
+        .andExpect(header().string("X-Auth-Gym-Id", "100"))
+        .andExpect(header().string("X-Auth-User-Role", "ROLE_USER"))
+        .andExpect(header().exists("X-Auth-User-Permissions"));
+  }
+
+  @Test
+  @DisplayName(
+      "Verify API: Authenticated USER with Invalid Gym Context should return Forbidden (403)")
+  void testVerifyApi_withInvalidGymContext_shouldReturnForbidden() throws Exception {
+    // 1. Create User with Membership for Gym 100
+    createUserWithMembership("gymuser2@test.com");
+    Cookie[] cookies = login("gymuser2@test.com", "password123");
+
+    // 2. Perform verification with WRONG Gym Context Header
+    mockMvc
+        .perform(get("/antares/auth/verify/api").cookie(cookies).header("X-Context-Gym-Id", "999"))
+        // Then: Expect 403 Forbidden
+        .andExpect(status().isForbidden());
+  }
+
+  @Test
+  @DisplayName("Verify API: Authenticated USER without Context should default to first Membership")
+  void testVerifyApi_noContext_shouldDefaultToMembership() throws Exception {
+    // 1. Create User with Membership for Gym 100
+    createUserWithMembership("gymuser3@test.com");
+    Cookie[] cookies = login("gymuser3@test.com", "password123");
+
+    // 2. Perform verification WITHOUT a header
+    mockMvc
+        .perform(get("/antares/auth/verify/api").cookie(cookies))
+        // Then: Expect 200 OK
+        .andExpect(status().isOk())
+        // And: Should default to the membership
+        .andExpect(header().string("X-Auth-Gym-Id", "100"));
+  }
+
   // --- Helpers ---
 
   private Cookie[] registerAndLogin() throws Exception {
@@ -155,6 +207,28 @@ class AuthenticationControllerVerifyIT extends BaseIntegrationTest {
             .password(passwordEncoder.encode("adminPass123"))
             .role(Role.ROLE_ADMIN)
             .build());
+  }
+
+  private void createUserWithMembership(String email) {
+    User user =
+        User.builder()
+            .firstName("Gym")
+            .lastName("User")
+            .email(email)
+            .password(passwordEncoder.encode("password123"))
+            .role(Role.ROLE_USER)
+            .build();
+
+    Membership membership =
+        Membership.builder()
+            .gymId(100L)
+            .role(Role.ROLE_USER)
+            .permissions(Collections.emptySet())
+            .user(user)
+            .build();
+
+    user.setMemberships(List.of(membership));
+    userRepository.save(user);
   }
 
   private Cookie[] login(String email, String password) throws Exception {

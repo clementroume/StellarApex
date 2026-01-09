@@ -2,12 +2,16 @@ package apex.stellar.aldebaran.config;
 
 import static org.springframework.security.config.Customizer.withDefaults;
 
+import apex.stellar.aldebaran.security.AldebaranUserPrincipal;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.NonNull;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -106,6 +110,7 @@ public class SecurityConfig {
     return source;
   }
 
+  @Slf4j
   private static class ForwardedAuthFilter extends OncePerRequestFilter {
     /**
      * Filters incoming requests to extract authentication details from custom headers.
@@ -123,16 +128,40 @@ public class SecurityConfig {
         @NonNull FilterChain chain)
         throws ServletException, IOException {
 
-      String userId = request.getHeader("X-Auth-User-Id");
+      String userIdStr = request.getHeader("X-Auth-User-Id");
+      String gymIdStr = request.getHeader("X-Auth-Gym-Id");
       String role = request.getHeader("X-Auth-User-Role");
+      String permissionsStr = request.getHeader("X-Auth-User-Permissions");
 
-      if (userId != null && role != null) {
-        var auth =
-            new UsernamePasswordAuthenticationToken(
-                userId, null, List.of(new SimpleGrantedAuthority(role)));
-        SecurityContextHolder.getContext().setAuthentication(auth);
+      if (userIdStr != null && role != null) {
+        try {
+          Long userId = Long.parseLong(userIdStr);
+          Long gymId = gymIdStr != null ? Long.parseLong(gymIdStr) : null;
+          List<String> permissions =
+              permissionsStr != null
+                  ? Arrays.asList(permissionsStr.split(","))
+                  : Collections.emptyList();
+
+          AldebaranUserPrincipal principal =
+              AldebaranUserPrincipal.builder()
+                  .id(userId)
+                  .gymId(gymId)
+                  .role(role)
+                  .permissions(permissions)
+                  .build();
+
+          var auth =
+              new UsernamePasswordAuthenticationToken(
+                  principal, null, List.of(new SimpleGrantedAuthority(role)));
+          SecurityContextHolder.getContext().setAuthentication(auth);
+        } catch (NumberFormatException e) {
+          log.warn(
+              "Failed to parse identity headers. userId='{}', gymId='{}'. Error: {}",
+              userIdStr,
+              gymIdStr,
+              e.getMessage());
+        }
       }
-
       chain.doFilter(request, response);
     }
   }

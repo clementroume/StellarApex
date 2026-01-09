@@ -20,6 +20,8 @@ http:
           - "X-Auth-User-Id"
           - "X-Auth-User-Role"
           - "X-Auth-User-Locale"
+          - "X-Auth-Gym-Id"
+          - "X-Auth-User-Permissions"
 
     secure-headers:
       # Applies recommended HTTP security headers.

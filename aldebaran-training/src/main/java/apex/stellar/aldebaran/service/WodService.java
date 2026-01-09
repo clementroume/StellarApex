@@ -2,7 +2,6 @@ package apex.stellar.aldebaran.service;
 
 import static apex.stellar.aldebaran.config.RedisCacheConfig.CACHE_WODS;
 
-import apex.stellar.aldebaran.config.SecurityUtils;
 import apex.stellar.aldebaran.dto.WodMovementRequest;
 import apex.stellar.aldebaran.dto.WodRequest;
 import apex.stellar.aldebaran.dto.WodResponse;
@@ -19,6 +18,7 @@ import apex.stellar.aldebaran.repository.MovementRepository;
 import apex.stellar.aldebaran.repository.WodRepository;
 import apex.stellar.aldebaran.repository.WodScoreRepository;
 import apex.stellar.aldebaran.repository.projection.WodSummary;
+import apex.stellar.aldebaran.security.SecurityUtils;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -68,7 +68,8 @@ public class WodService {
    * @return A list of lightweight WOD summaries.
    */
   @Transactional(readOnly = true)
-  public List<WodSummaryResponse> getWods(String search, WodType type, String movementId, Pageable pageable) {
+  public List<WodSummaryResponse> getWods(
+      String search, WodType type, String movementId, Pageable pageable) {
     List<WodSummary> projections;
 
     if (StringUtils.hasText(search)) {
@@ -224,7 +225,7 @@ public class WodService {
   private void assignCreator(Wod wod) {
     try {
       Long userId = SecurityUtils.getCurrentUserId();
-      wod.setCreatorId(userId);
+      wod.setAuthorId(userId);
     } catch (Exception e) {
       // Log as warning but don't block creation if user context is missing or ID is non-numeric
       log.warn("Unable to assign creator ID: {}", e.getMessage());

@@ -13,5 +13,11 @@ package apex.stellar.antares.model;
  */
 public enum Role {
   ROLE_USER,
-  ROLE_ADMIN
+  ROLE_ADMIN,
+
+  // Aldebaran Training
+  ROLE_OWNER,
+  ROLE_COACH,
+  ROLE_PROGRAMMER,
+  ROLE_ATHLETE,
 }

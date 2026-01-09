@@ -99,7 +99,8 @@ CREATE TABLE wods
     title            VARCHAR(100) NOT NULL,
     wod_type         VARCHAR(50)  NOT NULL,
     score_type       VARCHAR(20)  NOT NULL,
-    creator_id       BIGINT,
+    author_id        BIGINT,
+    gym_id           BIGINT,
     is_public        BOOLEAN      NOT NULL DEFAULT FALSE,
 
     description      TEXT,
@@ -153,13 +154,13 @@ CREATE TABLE wod_movements
 CREATE TABLE wod_scores
 (
     id                    BIGSERIAL PRIMARY KEY,
-    user_id               BIGINT       NOT NULL,
-    date                  DATE         NOT NULL,
-    wod_id                BIGINT       NOT NULL REFERENCES wods (id) ON DELETE CASCADE,
+    user_id               BIGINT      NOT NULL,
+    date                  DATE        NOT NULL,
+    wod_id                BIGINT      NOT NULL REFERENCES wods (id) ON DELETE CASCADE,
 
     -- Metrics (Canonical Storage)
     time_seconds          INTEGER,
-    time_display_unit     VARCHAR(10)           DEFAULT 'SECONDS',
+    time_display_unit     VARCHAR(10)          DEFAULT 'SECONDS',
 
     rounds                INTEGER,
     reps                  INTEGER,
@@ -167,22 +168,22 @@ CREATE TABLE wod_scores
     -- Normalized Weight (KG)
     max_weight_kg         DOUBLE PRECISION,
     total_load_kg         DOUBLE PRECISION,
-    weight_display_unit   VARCHAR(10)           DEFAULT 'KG',     -- User preference for display
+    weight_display_unit   VARCHAR(10)          DEFAULT 'KG',     -- User preference for display
 
     -- Normalized Distance (Meters)
     total_distance_meters DOUBLE PRECISION,
-    distance_display_unit VARCHAR(10)           DEFAULT 'METERS', -- User preference for display
+    distance_display_unit VARCHAR(10)          DEFAULT 'METERS', -- User preference for display
 
     total_calories        INTEGER,
 
     -- Metadata
-    is_personal_record    BOOLEAN      NOT NULL DEFAULT FALSE,
-    time_capped           BOOLEAN      NOT NULL DEFAULT FALSE,
-    scaling               VARCHAR(20)  NOT NULL,
+    is_personal_record    BOOLEAN     NOT NULL DEFAULT FALSE,
+    time_capped           BOOLEAN     NOT NULL DEFAULT FALSE,
+    scaling               VARCHAR(20) NOT NULL,
     scaling_notes         TEXT,
     user_comment          TEXT,
 
-    logged_at             TIMESTAMP    NOT NULL DEFAULT NOW(),
+    logged_at             TIMESTAMP   NOT NULL DEFAULT NOW(),
 
     -- Constraints
     CONSTRAINT check_time_positive CHECK (time_seconds IS NULL OR time_seconds > 0),
@@ -217,6 +218,8 @@ CREATE INDEX idx_movements_name_trgm ON movements USING gin (name gin_trgm_ops);
 -- ----------------------------------------------------------------------------------
 CREATE INDEX idx_wod_title ON wods (title);
 CREATE INDEX idx_wod_type ON wods (wod_type);
+CREATE INDEX idx_wods_gym_id ON wods (gym_id);
+CREATE INDEX idx_wods_author_id ON wods (author_id);
 
 -- ----------------------------------------------------------------------------------
 -- WOD_SCORES (Leaderboards & History)
@@ -239,6 +242,8 @@ COMMENT ON COLUMN movement_muscles.role IS 'AGONIST, SYNERGIST, or STABILIZER';
 COMMENT ON COLUMN movement_muscles.impact_factor IS 'Activation coefficient (0.0 to 1.0)';
 
 COMMENT ON TABLE wods IS 'Workout definitions (the recipe)';
+COMMENT ON COLUMN wods.author_id IS 'User ID who created and authored the content. Null means System.';
+
 COMMENT ON TABLE wod_scores IS 'Athlete performance results (the execution)';
 COMMENT ON COLUMN wod_scores.time_display_unit IS 'User preference for display';
 COMMENT ON COLUMN wod_scores.time_seconds IS 'Canonical storage in seconds';

@@ -19,8 +19,9 @@ public record WodResponse(
     @Schema(description = "Title of the workout", example = "Murph") String title,
     @Schema(description = "Structural type", example = "FOR_TIME") WodType wodType,
     @Schema(description = "Scoring metric", example = "TIME") ScoreType scoreType,
+    @Schema(description = "ID of the author", example = "42") Long authorId,
+    @Schema(description = "ID of the gym this WOD belongs to", example = "101") Long gymId,
     @Schema(description = "Visibility status") boolean isPublic,
-    @Schema(description = "ID of the user who created this WOD", example = "42") Long creatorId,
     @Schema(description = "Full description content") String description,
     @Schema(description = "Coach notes") String notes,
 

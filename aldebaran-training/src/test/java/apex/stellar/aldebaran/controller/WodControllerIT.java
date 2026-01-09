@@ -28,7 +28,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.connection.RedisConnection;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.http.MediaType;
-import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 import tools.jackson.databind.json.JsonMapper;
 
@@ -52,7 +51,7 @@ class WodControllerIT extends BaseIntegrationTest {
     pullUp = Movement.builder().id("GY-PU-001").name("Pull-up").category(Category.PULLING).build();
     movementRepository.save(pullUp);
 
-    // Seed Initial WOD
+    // Seed Initial WOD (Created by Gym 101)
     Wod fran =
         Wod.builder()
             .title("Fran")
@@ -60,6 +59,8 @@ class WodControllerIT extends BaseIntegrationTest {
             .scoreType(ScoreType.TIME)
             .description("21-15-9 Thrusters and Pull-ups")
             .isPublic(true)
+            .gymId(101L) // Important for security checks
+            .authorId(50L)
             .build();
     wodRepository.save(fran);
   }
@@ -74,11 +75,14 @@ class WodControllerIT extends BaseIntegrationTest {
   }
 
   @Test
-  @WithMockUser(username = "athlete")
-  @DisplayName("GET /wods: should return list of summaries (Projections)")
+  @DisplayName("GET /wods: should return list of summaries")
   void testGetAllWods_Success() throws Exception {
+    // Public access allows reading
     mockMvc
-        .perform(get("/aldebaran/wods"))
+        .perform(
+            get("/aldebaran/wods")
+                .header("X-Auth-User-Id", "1")
+                .header("X-Auth-User-Role", "ROLE_USER"))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$", hasSize(1)))
         .andExpect(jsonPath("$[0].title").value("Fran"))
@@ -86,22 +90,21 @@ class WodControllerIT extends BaseIntegrationTest {
   }
 
   @Test
-  @WithMockUser(username = "athlete")
   @DisplayName("GET /wods/{id}: should return detailed WOD")
   void testGetWod_Success() throws Exception {
     Wod fran = wodRepository.findAll().get(0);
 
     mockMvc
-        .perform(get("/aldebaran/wods/" + fran.getId()))
+        .perform(
+            get("/aldebaran/wods/" + fran.getId())
+                .header("X-Auth-User-Id", "1")
+                .header("X-Auth-User-Role", "ROLE_USER"))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.title").value("Fran"));
   }
 
   @Test
-  @WithMockUser(
-      username = "coach",
-      roles = {"COACH"})
-  @DisplayName("POST /wods: should create WOD when Coach")
+  @DisplayName("POST /wods: should create WOD when Coach with WOD_WRITE permission")
   void testCreateWod_Success() throws Exception {
     WodRequest request =
         new WodRequest(
@@ -110,7 +113,9 @@ class WodControllerIT extends BaseIntegrationTest {
             ScoreType.TIME,
             "Hero Wod",
             "Wear a vest",
-            true,
+            null, // authorId (will be set by service)
+            101L, // gymId
+            true, // isPublic
             3600,
             0,
             0,
@@ -123,6 +128,11 @@ class WodControllerIT extends BaseIntegrationTest {
         .perform(
             post("/aldebaran/wods")
                 .with(csrf())
+                // Simulation des headers Traefik pour un Coach autorisé
+                .header("X-Auth-User-Id", "20")
+                .header("X-Auth-Gym-Id", "101")
+                .header("X-Auth-User-Role", "ROLE_COACH")
+                .header("X-Auth-User-Permissions", "WOD_WRITE") // Permission requise
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
         .andExpect(status().isCreated())
@@ -131,13 +141,9 @@ class WodControllerIT extends BaseIntegrationTest {
   }
 
   @Test
-  @WithMockUser(
-      username = "coach",
-      roles = {"COACH"})
-  @DisplayName("PUT /wods/{id}: should update WOD when Coach")
+  @DisplayName("PUT /wods/{id}: should update WOD when Coach of same Gym")
   void testUpdateWod_Success() throws Exception {
-    // Retrieve existing ID
-    Wod existing = wodRepository.findAll().get(0);
+    Wod existing = wodRepository.findAll().get(0); // Gym ID 101
 
     WodRequest updateRequest =
         new WodRequest(
@@ -146,6 +152,8 @@ class WodControllerIT extends BaseIntegrationTest {
             ScoreType.TIME,
             "Harder version",
             "Scale if needed",
+            null,
+            null, // GymId ignored in update
             true,
             1200,
             0,
@@ -159,35 +167,49 @@ class WodControllerIT extends BaseIntegrationTest {
         .perform(
             put("/aldebaran/wods/" + existing.getId())
                 .with(csrf())
+                // Coach du gym 101
+                .header("X-Auth-User-Id", "20")
+                .header("X-Auth-Gym-Id", "101")
+                .header("X-Auth-User-Role", "ROLE_COACH")
+                .header("X-Auth-User-Permissions", "WOD_WRITE")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(updateRequest)))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.title").value("Fran Modified"));
 
-    // Verify DB
     Wod updated = wodRepository.findByIdWithMovements(existing.getId()).orElseThrow();
     assert (updated.getTitle().equals("Fran Modified"));
   }
 
   @Test
-  @WithMockUser(
-      username = "athlete",
-      roles = {"USER"}) // Simple User
   @DisplayName("PUT /wods/{id}: should return 403 Forbidden for simple User")
   void testUpdateWod_Forbidden() throws Exception {
     Wod existing = wodRepository.findAll().get(0);
-    WodRequest request = new WodRequest(
-        "Hacked Wod",
-        WodType.AMRAP,
-        ScoreType.ROUNDS_REPS,
-        null, null, false, 0, 0, 0, null,
-        List.of(new WodMovementRequest(pullUp.getId(), 1, "10", 0.0, null, 0, null, 0.0, null, 0, null, null))
-    );
+
+    WodRequest request =
+        new WodRequest(
+            "Hacked Wod",
+            WodType.AMRAP,
+            ScoreType.ROUNDS_REPS,
+            null,
+            null,
+            null,
+            null,
+            false,
+            0,
+            0,
+            0,
+            null,
+            List.of(
+                new WodMovementRequest(
+                    pullUp.getId(), 1, "10", 0.0, null, 0, null, 0.0, null, 0, null, null)));
 
     mockMvc
         .perform(
             put("/aldebaran/wods/" + existing.getId())
                 .with(csrf())
+                .header("X-Auth-User-Id", "99")
+                .header("X-Auth-User-Role", "ROLE_USER") // Simple User
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
         .andExpect(status().isForbidden());
@@ -198,30 +220,32 @@ class WodControllerIT extends BaseIntegrationTest {
   // -------------------------------------------------------------------------
 
   @Test
-  @WithMockUser(
-      username = "admin",
-      roles = {"ADMIN"})
   @DisplayName("DELETE /wods/{id}: should delete WOD when Admin")
   void testDeleteWod_Success() throws Exception {
     Wod existing = wodRepository.findAll().get(0);
 
     mockMvc
-        .perform(delete("/aldebaran/wods/" + existing.getId()).with(csrf()))
+        .perform(
+            delete("/aldebaran/wods/" + existing.getId())
+                .with(csrf())
+                .header("X-Auth-User-Id", "1")
+                .header("X-Auth-User-Role", "ROLE_ADMIN")) // Global Admin
         .andExpect(status().isNoContent());
 
     assert (wodRepository.findById(existing.getId()).isEmpty());
   }
 
   @Test
-  @WithMockUser(
-      username = "athlete",
-      roles = {"USER"})
   @DisplayName("DELETE /wods/{id}: should return 403 Forbidden for simple User")
   void testDeleteWod_Forbidden() throws Exception {
     Wod existing = wodRepository.findAll().get(0);
 
     mockMvc
-        .perform(delete("/aldebaran/wods/" + existing.getId()).with(csrf()))
+        .perform(
+            delete("/aldebaran/wods/" + existing.getId())
+                .with(csrf())
+                .header("X-Auth-User-Id", "99")
+                .header("X-Auth-User-Role", "ROLE_USER"))
         .andExpect(status().isForbidden());
 
     assert (wodRepository.findById(existing.getId()).isPresent());
