@@ -16,6 +16,7 @@ import apex.stellar.aldebaran.repository.WodRepository;
 import apex.stellar.aldebaran.repository.WodScoreRepository;
 import apex.stellar.aldebaran.security.SecurityUtils;
 import java.time.LocalDate;
+import java.util.List; // Import List
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -26,7 +27,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.security.access.AccessDeniedException;
 
 @ExtendWith(MockitoExtension.class)
 class WodScoreServiceTest {
@@ -48,6 +48,7 @@ class WodScoreServiceTest {
     // New Request DTO with split time (5 mins 0 seconds = 300s)
     requestTime =
         new WodScoreRequest(
+            null, // userId (defaults to current)
             1L,
             LocalDate.now(),
             5,
@@ -67,7 +68,14 @@ class WodScoreServiceTest {
 
     // Entity stores normalized timeSeconds
     scoreEntityTime =
-        WodScore.builder().id(50L).wod(wodTime).userId(userId).timeSeconds(300).scaling(ScalingLevel.RX).build();
+        WodScore.builder()
+            .id(50L)
+            .wod(wodTime)
+            .userId(userId)
+            .timeSeconds(300)
+            .scaling(ScalingLevel.RX)
+            .personalRecord(false) // Default state before calc
+            .build();
   }
 
   @Test
@@ -78,21 +86,25 @@ class WodScoreServiceTest {
 
       when(wodRepository.findById(1L)).thenReturn(Optional.of(wodTime));
       when(scoreMapper.toEntity(requestTime)).thenReturn(scoreEntityTime);
-
-      // Optimized Repository Query: returns Empty (No previous PR)
-      when(scoreRepository.findByWodIdAndUserIdAndPersonalRecordTrue(1L, userId))
-          .thenReturn(Optional.empty());
-
       when(scoreRepository.save(any(WodScore.class))).thenReturn(scoreEntityTime);
       when(scoreMapper.toResponse(scoreEntityTime)).thenReturn(mock(WodScoreResponse.class));
+
+      // CORRECTION: Le service appelle findByWodIdAndUserId pour recalculer.
+      // Comme on vient de sauvegarder (étape 1 du service), la base "contient" déjà ce nouveau
+      // score.
+      when(scoreRepository.findByWodIdAndUserId(1L, userId)).thenReturn(List.of(scoreEntityTime));
 
       // When
       scoreService.logScore(requestTime);
 
       // Then
+      // On capture toutes les valeurs passées à save().
       ArgumentCaptor<WodScore> captor = ArgumentCaptor.forClass(WodScore.class);
-      verify(scoreRepository).save(captor.capture());
-      assertTrue(captor.getValue().isPersonalRecord(), "First score should be a PR");
+      // save est appelé 2 fois : 1 fois initialement (false), 1 fois lors de l'update PR (true)
+      verify(scoreRepository, atLeastOnce()).save(captor.capture());
+
+      // On vérifie que la DERNIÈRE valeur capturée (l'état final) est bien un PR
+      assertTrue(captor.getValue().isPersonalRecord(), "The final saved state should be a PR");
     }
   }
 
@@ -104,78 +116,125 @@ class WodScoreServiceTest {
 
       // Old PR = 400 seconds (Normalized)
       WodScore oldPr =
-          WodScore.builder().wod(wodTime).timeSeconds(400).personalRecord(true).build();
+          WodScore.builder()
+              .id(40L)
+              .wod(wodTime)
+              .userId(userId)
+              .timeSeconds(400)
+              .personalRecord(true)
+              .build();
 
       // New Score = 300 seconds (Better)
       scoreEntityTime.setTimeSeconds(300);
 
       when(wodRepository.findById(1L)).thenReturn(Optional.of(wodTime));
       when(scoreMapper.toEntity(requestTime)).thenReturn(scoreEntityTime);
+      when(scoreRepository.save(any(WodScore.class))).thenReturn(scoreEntityTime);
+      when(scoreMapper.toResponse(any())).thenReturn(mock(WodScoreResponse.class));
 
-      // Found previous PR
-      when(scoreRepository.findByWodIdAndUserIdAndPersonalRecordTrue(1L, userId))
-          .thenReturn(Optional.of(oldPr));
-
-      when(scoreRepository.save(any())).thenReturn(scoreEntityTime);
+      // CORRECTION: Le mock doit retourner l'ancien PR ET le nouveau score (simulant la DB après le
+      // 1er save)
+      when(scoreRepository.findByWodIdAndUserId(1L, userId))
+          .thenReturn(List.of(oldPr, scoreEntityTime));
 
       // When
       scoreService.logScore(requestTime);
 
       // Then
-      // Verify old PR is unset
-      assertFalse(oldPr.isPersonalRecord());
+      // 1. Verify old PR is downgraded (saved with false)
+      assertFalse(oldPr.isPersonalRecord(), "Old PR should be downgraded");
       verify(scoreRepository).save(oldPr);
-      // Verify new score is saved as PR
-      verify(scoreRepository).save(scoreEntityTime);
-      assertTrue(scoreEntityTime.isPersonalRecord());
+
+      // 2. Verify new score is upgraded (saved with true)
+      // Note: scoreEntityTime might be saved twice (initial + update), ensure final state is true
+      assertTrue(scoreEntityTime.isPersonalRecord(), "New score should be upgraded to PR");
     }
   }
 
   @Test
-  @DisplayName("deleteScore: should throw AccessDenied if user is not owner")
-  void testDeleteScore_Unauthorized() {
-    try (MockedStatic<SecurityUtils> utilities = mockStatic(SecurityUtils.class)) {
-      // Mock Current User as "hacker"
-      utilities.when(SecurityUtils::getCurrentUserId).thenReturn(999L);
+  @DisplayName("logScore: should use explicit userId if provided (Coach/Admin mode)")
+  void testLogScore_ExplicitUser() {
+    Long targetUser = 999L;
+    WodScoreRequest requestForOther =
+        new WodScoreRequest(
+            targetUser,
+            1L,
+            LocalDate.now(),
+            5,
+            0,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            ScalingLevel.RX,
+            false,
+            null,
+            null);
 
-      when(scoreRepository.findById(50L)).thenReturn(Optional.of(scoreEntityTime));
+    WodScore scoreForOther =
+        WodScore.builder()
+            .id(60L)
+            .wod(wodTime)
+            .userId(targetUser)
+            .timeSeconds(300)
+            .scaling(ScalingLevel.RX)
+            .build();
 
-      assertThrows(AccessDeniedException.class, () -> scoreService.deleteScore(50L));
-      verify(scoreRepository, never()).delete(any());
-    }
+    when(wodRepository.findById(1L)).thenReturn(Optional.of(wodTime));
+    when(scoreMapper.toEntity(requestForOther)).thenReturn(scoreForOther);
+    when(scoreRepository.save(any())).thenReturn(scoreForOther);
+    when(scoreMapper.toResponse(scoreForOther)).thenReturn(mock(WodScoreResponse.class));
+
+    // CORRECTION: Mock needed for the PR calculation step too
+    when(scoreRepository.findByWodIdAndUserId(1L, targetUser)).thenReturn(List.of(scoreForOther));
+
+    scoreService.logScore(requestForOther);
+
+    ArgumentCaptor<WodScore> captor = ArgumentCaptor.forClass(WodScore.class);
+    verify(scoreRepository, atLeastOnce()).save(captor.capture());
+    assertEquals(targetUser, captor.getValue().getUserId());
+  }
+
+  @Test
+  @DisplayName("updateScore: should update fields and recalculate PR")
+  void testUpdateScore_Success() {
+    when(scoreRepository.findById(50L)).thenReturn(Optional.of(scoreEntityTime));
+    when(scoreRepository.save(scoreEntityTime)).thenReturn(scoreEntityTime);
+    when(scoreMapper.toResponse(scoreEntityTime)).thenReturn(mock(WodScoreResponse.class));
+
+    // CORRECTION: Mock needed for recalculation
+    when(scoreRepository.findByWodIdAndUserId(1L, userId)).thenReturn(List.of(scoreEntityTime));
+
+    scoreService.updateScore(50L, requestTime);
+
+    verify(scoreMapper).updateEntity(requestTime, scoreEntityTime);
+    verify(scoreRepository, atLeastOnce()).save(scoreEntityTime);
   }
 
   @Test
   @DisplayName("deleteScore: should delete if user is owner")
   void testDeleteScore_Success() {
-    try (MockedStatic<SecurityUtils> utilities = mockStatic(SecurityUtils.class)) {
-      utilities.when(SecurityUtils::getCurrentUserId).thenReturn(userId);
+    when(scoreRepository.findById(50L)).thenReturn(Optional.of(scoreEntityTime));
+    // Mock recalculation after delete (list is empty effectively or contains remaining)
+    when(scoreRepository.findByWodIdAndUserId(1L, userId)).thenReturn(List.of());
 
-      when(scoreRepository.findById(50L)).thenReturn(Optional.of(scoreEntityTime));
-
-      scoreService.deleteScore(50L);
-      verify(scoreRepository).delete(scoreEntityTime);
-    }
+    scoreService.deleteScore(50L);
+    verify(scoreRepository).delete(scoreEntityTime);
   }
 
   @Test
   @DisplayName("compareScore: should calculate rank and percentile correctly")
   void testCompareScore() {
-    // Given
-    // Score ID 50, Time 300s.
-    // Total scores = 10.
-    // Better scores (faster) = 2.
-    // Expected Rank = 3.
-    // Expected Percentile = (10 - 3) / 9 * 100 = 7/9 * 100 = 77.77%
-
     when(scoreRepository.findById(50L)).thenReturn(Optional.of(scoreEntityTime));
     when(scoreRepository.countByWodIdAndScaling(1L, ScalingLevel.RX)).thenReturn(10L);
     when(scoreRepository.countBetterTime(1L, ScalingLevel.RX, 300)).thenReturn(2L);
 
-    // When
     ScoreComparisonResponse response = scoreService.compareScore(50L);
 
-    // Then
     assertEquals(3L, response.rank());
     assertEquals(10L, response.totalScores());
     assertEquals(77.77, response.percentile(), 0.01);

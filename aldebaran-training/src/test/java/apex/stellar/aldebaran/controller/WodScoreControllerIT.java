@@ -5,6 +5,7 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -48,6 +49,7 @@ class WodScoreControllerIT extends BaseIntegrationTest {
   @Autowired private StringRedisTemplate redisTemplate;
 
   private Wod fran;
+  private Wod gymWod;
 
   @BeforeEach
   void setUp() {
@@ -62,6 +64,17 @@ class WodScoreControllerIT extends BaseIntegrationTest {
             .isPublic(true)
             .build();
     wodRepository.save(fran);
+
+    // WOD privé appartenant au Gym 101
+    gymWod =
+        Wod.builder()
+            .title("Gym 101 Exclusive")
+            .wodType(WodType.AMRAP)
+            .scoreType(ScoreType.ROUNDS_REPS)
+            .gymId(101L)
+            .isPublic(false)
+            .build();
+    wodRepository.save(gymWod);
   }
 
   @AfterEach
@@ -82,6 +95,7 @@ class WodScoreControllerIT extends BaseIntegrationTest {
   void testLogScore_TimeNormalization() throws Exception {
     WodScoreRequest request =
         new WodScoreRequest(
+            null, // userId (defaults to current)
             fran.getId(),
             LocalDate.now(),
             1,
@@ -115,7 +129,7 @@ class WodScoreControllerIT extends BaseIntegrationTest {
 
     // DB Verification: Canonical storage
     List<WodScore> scores = scoreRepository.findAll();
-    assert (scores.get(0).getTimeSeconds() == 90);
+    assert (scores.getFirst().getTimeSeconds() == 90);
   }
 
   @Test
@@ -124,6 +138,7 @@ class WodScoreControllerIT extends BaseIntegrationTest {
     // 225 LBS ~ 102.058 KG
     WodScoreRequest request =
         new WodScoreRequest(
+            null,
             fran.getId(),
             LocalDate.now(),
             null,
@@ -156,7 +171,7 @@ class WodScoreControllerIT extends BaseIntegrationTest {
 
     // DB Verification: Canonical storage
     List<WodScore> scores = scoreRepository.findAll();
-    double storedKg = scores.get(0).getMaxWeightKg();
+    double storedKg = scores.getFirst().getMaxWeightKg();
     assert (storedKg > 102.0 && storedKg < 103.0);
   }
 
@@ -166,6 +181,7 @@ class WodScoreControllerIT extends BaseIntegrationTest {
     // 10 MILES ~ 16093.4 METERS
     WodScoreRequest request =
         new WodScoreRequest(
+            null,
             fran.getId(),
             LocalDate.now(),
             null,
@@ -198,7 +214,7 @@ class WodScoreControllerIT extends BaseIntegrationTest {
 
     // DB Verification: Canonical storage
     List<WodScore> scores = scoreRepository.findAll();
-    double storedMeters = scores.get(0).getTotalDistanceMeters();
+    double storedMeters = scores.getFirst().getTotalDistanceMeters();
     assert (storedMeters > 16093.0 && storedMeters < 16094.0);
   }
 
@@ -212,6 +228,7 @@ class WodScoreControllerIT extends BaseIntegrationTest {
     // 1. POST a complex score (Imperial units + Time split)
     WodScoreRequest request =
         new WodScoreRequest(
+            null,
             fran.getId(),
             LocalDate.now(),
             2,
@@ -262,6 +279,179 @@ class WodScoreControllerIT extends BaseIntegrationTest {
   // -------------------------------------------------------------------------
   // Standard Operations
   // -------------------------------------------------------------------------
+
+  @Test
+  @DisplayName("PUT /{id}: User updates own score -> 200 OK")
+  void testUpdateScore_Owner_Success() throws Exception {
+    WodScore score = createScore(100L, 100);
+
+    WodScoreRequest updateRequest =
+        new WodScoreRequest(
+            100L,
+            fran.getId(),
+            LocalDate.now(),
+            null,
+            120,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            ScalingLevel.RX,
+            false,
+            null,
+            null);
+
+    mockMvc
+        .perform(
+            put("/aldebaran/scores/" + score.getId())
+                .header("X-Auth-User-Id", "100")
+                .header("X-Auth-User-Role", "ROLE_USER")
+                .with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(updateRequest)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.timeSeconds").value(120));
+  }
+
+  @Test
+  @DisplayName("PUT /{id}: User tries to update other's score -> 403 Forbidden")
+  void testUpdateScore_OtherUser_Forbidden() throws Exception {
+    WodScore score = createScore(100L, 100); // Owner is 100
+
+    WodScoreRequest updateRequest =
+        new WodScoreRequest(
+            100L,
+            fran.getId(),
+            LocalDate.now(),
+            null,
+            120,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            ScalingLevel.RX,
+            false,
+            null,
+            null);
+
+    mockMvc
+        .perform(
+            put("/aldebaran/scores/" + score.getId())
+                .header("X-Auth-User-Id", "200") // User 200 tries to update
+                .header("X-Auth-User-Role", "ROLE_USER")
+                .with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(updateRequest)))
+        .andExpect(status().isForbidden());
+  }
+
+  @Test
+  @DisplayName("PUT /{id}: Coach updates member score (Same Gym) -> 200 OK")
+  void testUpdateScore_CoachSameGym_Success() throws Exception {
+    // Score sur un WOD du Gym 101
+    WodScore score =
+        WodScore.builder()
+            .wod(gymWod) // Gym 101
+            .userId(100L)
+            .date(LocalDate.now())
+            .scaling(ScalingLevel.RX)
+            .rounds(10)
+            .loggedAt(java.time.LocalDateTime.now())
+            .build();
+    score = scoreRepository.save(score);
+
+    WodScoreRequest updateRequest =
+        new WodScoreRequest(
+            100L,
+            gymWod.getId(),
+            LocalDate.now(),
+            null,
+            null,
+            12,
+            0,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            ScalingLevel.RX,
+            false,
+            null,
+            null);
+
+    mockMvc
+        .perform(
+            put("/aldebaran/scores/" + score.getId())
+                .header("X-Auth-User-Id", "50") // Coach
+                .header("X-Auth-Gym-Id", "101") // Same Gym
+                .header("X-Auth-User-Role", "ROLE_COACH")
+                .with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(updateRequest)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.rounds").value(12));
+  }
+
+  @Test
+  @DisplayName("POST /scores: Coach logs score for athlete (Same Gym) -> 201 Created")
+  void testLogScore_CoachForAthlete_Success() throws Exception {
+    WodScoreRequest request =
+        new WodScoreRequest(
+            100L, // Target Athlete
+            gymWod.getId(), // Gym 101 WOD
+            LocalDate.now(),
+            null,
+            null,
+            10,
+            0,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            ScalingLevel.RX,
+            false,
+            null,
+            null);
+
+    mockMvc
+        .perform(
+            post("/aldebaran/scores")
+                .header("X-Auth-User-Id", "50") // Coach
+                .header("X-Auth-Gym-Id", "101") // Same Gym
+                .header("X-Auth-User-Role", "ROLE_COACH")
+                .with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+        .andExpect(status().isCreated())
+        .andExpect(jsonPath("$.userId").value(100));
+  }
+
+  @Test
+  @DisplayName("DELETE /{id}: Admin deletes any score -> 204 No Content")
+  void testDeleteScore_Admin_Success() throws Exception {
+    WodScore score = createScore(100L, 100);
+
+    mockMvc
+        .perform(
+            delete("/aldebaran/scores/" + score.getId())
+                .header("X-Auth-User-Id", "1")
+                .header("X-Auth-User-Role", "ROLE_ADMIN")
+                .with(csrf()))
+        .andExpect(status().isNoContent());
+
+    assert (scoreRepository.findById(score.getId()).isEmpty());
+  }
 
   @Test
   @DisplayName("DELETE /{id}: should delete own score")
@@ -338,14 +528,15 @@ class WodScoreControllerIT extends BaseIntegrationTest {
   }
 
   private WodScore createScore(Long userId, int seconds) {
-    WodScore s = WodScore.builder()
-        .wod(fran)
-        .userId(userId)
-        .date(LocalDate.now())
-        .scaling(ScalingLevel.RX)
-        .timeSeconds(seconds)
-        .loggedAt(java.time.LocalDateTime.now())
-        .build();
+    WodScore s =
+        WodScore.builder()
+            .wod(fran)
+            .userId(userId)
+            .date(LocalDate.now())
+            .scaling(ScalingLevel.RX)
+            .timeSeconds(seconds)
+            .loggedAt(java.time.LocalDateTime.now())
+            .build();
     return scoreRepository.save(s);
   }
 }

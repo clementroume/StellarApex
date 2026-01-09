@@ -19,6 +19,13 @@ import java.time.LocalDate;
  */
 public record WodScoreRequest(
     @Schema(
+            description =
+                "The User ID (Athlete). Optional. Defaults to current user. "
+                    + "Admins/Coaches can specify another user.",
+            example = "123",
+            requiredMode = RequiredMode.NOT_REQUIRED)
+        Long userId,
+    @Schema(
             description = "ID of the performed WOD",
             example = "101",
             requiredMode = RequiredMode.REQUIRED)
