@@ -2,7 +2,7 @@
 services:
   # --- 1. ALTAIR - THE TRAEFIK PROXY ---
   altair-proxy:
-    image: traefik:v3.5
+    image: traefik:latest
     container_name: altair-proxy
     security_opt:
       - no-new-privileges:true # Prevent privilege escalation.
@@ -118,7 +118,7 @@ services:
 
   # --- 6. CASTOR & POLLUX - DATABASE & CACHE ---
   castor-db:
-    image: postgres:16-alpine
+    image: postgres:alpine
     container_name: castor-db
     environment:
       POSTGRES_DB: "${CASTOR_DB}"
@@ -138,7 +138,7 @@ services:
       - stellar-net
 
   pollux-cache:
-    image: redis:7-alpine
+    image: redis:alpine
     container_name: pollux-cache
     env_file: ./.env
     command: redis-server --requirepass ${POLLUX_PASSWORD}
