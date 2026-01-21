@@ -2,7 +2,7 @@
 services:
   # --- 1. ALTAIR - THE TRAEFIK PROXY ---
   altair-proxy:
-    image: traefik:v3.5
+    image: traefik:3.6
     container_name: altair-proxy
     security_opt:
       - no-new-privileges:true # Prevent privilege escalation.
