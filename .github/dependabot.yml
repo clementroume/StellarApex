@@ -86,7 +86,7 @@ updates:
   # ==============================================================================
 
   # --- Docker Compose (Root) ---
-  - package-ecosystem: "docker"
+  - package-ecosystem: "docker-compose"
     directory: "/"
     schedule:
       interval: "weekly"
