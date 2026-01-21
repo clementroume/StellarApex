@@ -48,7 +48,7 @@ updates:
       interval: "weekly"
     open-pull-requests-limit: 5
   #    groups:
-  #      spring-boot: # Ajout du groupement pour Vega aussi
+  #      spring-boot:
   #        patterns:
   #          - "org.springframework.boot:*"
 
@@ -84,6 +84,13 @@ updates:
   # ==============================================================================
   # 4. DOCKER IMAGES (BASE IMAGES)
   # ==============================================================================
+
+  # --- Docker Compose (Root) ---
+  - package-ecosystem: "docker"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
 
   # --- Antares Auth ---
   - package-ecosystem: "docker"
