@@ -2,7 +2,7 @@
 services:
   # --- 1. ALTAIR - THE TRAEFIK PROXY ---
   altair-proxy:
-    image: traefik:v3.5
+    image: traefik:v3.6
     container_name: altair-proxy
     security_opt:
       - no-new-privileges:true # Prevent privilege escalation.
@@ -118,7 +118,7 @@ services:
 
   # --- 6. CASTOR & POLLUX - DATABASE & CACHE ---
   castor-db:
-    image: postgres:17-alpine
+    image: postgres:18-alpine
     container_name: castor-db
     environment:
       POSTGRES_DB: "${CASTOR_DB}"
