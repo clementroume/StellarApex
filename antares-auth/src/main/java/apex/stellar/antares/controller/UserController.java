@@ -4,7 +4,6 @@ import apex.stellar.antares.dto.ChangePasswordRequest;
 import apex.stellar.antares.dto.PreferencesUpdateRequest;
 import apex.stellar.antares.dto.ProfileUpdateRequest;
 import apex.stellar.antares.dto.UserResponse;
-import apex.stellar.antares.mapper.UserMapper;
 import apex.stellar.antares.model.User;
 import apex.stellar.antares.service.CookieService;
 import apex.stellar.antares.service.JwtService;
@@ -31,8 +30,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * REST controller for managing the currently authenticated user's account. All endpoints in this
- * controller are protected and require a valid session.
+ * REST controller for managing the currently authenticated user's account.
+ *
+ * <p>All endpoints in this controller are protected and require a valid session. It handles profile
+ * retrieval, updates, password changes, and account deletion.
  */
 @RestController
 @RequestMapping("/antares/users")
@@ -43,13 +44,11 @@ import org.springframework.web.bind.annotation.RestController;
 public class UserController {
 
   private final UserService userService;
-  private final UserMapper userMapper;
   private final CookieService cookieService;
   private final JwtService jwtService;
 
   /**
-   * Handles GET requests to retrieve the profile of the currently authenticated user. The user is
-   * identified via the Authentication principal injected by Spring Security.
+   * Retrieves the profile of the currently authenticated user.
    *
    * @param authentication The authentication object containing the user's principal.
    * @return A ResponseEntity containing the {@link UserResponse} for the current user.
@@ -69,28 +68,32 @@ public class UserController {
   public ResponseEntity<@NonNull UserResponse> getAuthenticatedUser(Authentication authentication) {
 
     if (authentication.getPrincipal() instanceof User currentUser) {
-      return ResponseEntity.ok(userMapper.toUserResponse(currentUser));
+      return ResponseEntity.ok(userService.getProfile(currentUser));
     }
     return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
   }
 
   /**
-   * Handles PUT requests to update the authenticated user's core profile information.
+   * Updates the authenticated user's core profile information (Name, Email).
    *
-   * @param request The DTO with the updated user data, which is validated.
+   * @param request The DTO with the updated user data.
    * @param authentication The current user's authentication principal.
    * @return A ResponseEntity containing the updated {@link UserResponse}.
    */
   @PutMapping("/me/profile")
   @Operation(
       summary = "Update profile info",
-      description = "Updates first name, last name, and email.")
+      description = "Updates first name, last name, and email. Email uniqueness is checked.")
   @ApiResponses(
       value = {
         @ApiResponse(responseCode = "200", description = "Profile updated successfully"),
         @ApiResponse(
             responseCode = "400",
             description = "Validation error (e.g. invalid email format)",
+            content = @Content(schema = @Schema(hidden = true))),
+        @ApiResponse(
+            responseCode = "409",
+            description = "Conflict - Email already in use",
             content = @Content(schema = @Schema(hidden = true))),
         @ApiResponse(
             responseCode = "401",
@@ -107,9 +110,9 @@ public class UserController {
   }
 
   /**
-   * Handles PATCH requests to partially update the authenticated user's preferences.
+   * Partially updates the authenticated user's preferences (Locale, Theme).
    *
-   * @param request The DTO with the updated preferences data, which is validated.
+   * @param request The DTO with the updated preferences' data.
    * @param authentication The current user's authentication principal.
    * @return A ResponseEntity containing the updated {@link UserResponse}.
    */
@@ -120,7 +123,7 @@ public class UserController {
         @ApiResponse(responseCode = "200", description = "Preferences updated successfully"),
         @ApiResponse(
             responseCode = "400",
-            description = "Validation error (e.g. invalid locale or theme)",
+            description = "Validation error",
             content = @Content(schema = @Schema(hidden = true))),
         @ApiResponse(
             responseCode = "401",
@@ -137,11 +140,11 @@ public class UserController {
   }
 
   /**
-   * Handles PUT requests to change the authenticated user's password.
+   * Changes the authenticated user's password.
    *
-   * @param request The DTO with the current, new, and confirmation passwords, validated.
+   * @param request The DTO with current and new passwords.
    * @param authentication The current user's authentication principal.
-   * @return An empty ResponseEntity (200 OK) confirming success.
+   * @return 200 OK on success.
    */
   @PutMapping("/me/password")
   @Operation(
@@ -170,13 +173,11 @@ public class UserController {
   }
 
   /**
-   * Deletes the authenticated user's account and clears all associated sessions. This action is
-   * irreversible and removes all data related to the user's account.
+   * Permanently deletes the authenticated user's account and clears auth cookies.
    *
-   * @param authentication the authentication object representing the currently logged-in user
-   * @param response the HTTP servlet response used to manipulate response headers or cookies
-   * @return a ResponseEntity with status 204 (No Content) if the account is successfully deleted,
-   *     or status 401 (Unauthorized) if the authentication is invalid
+   * @param authentication The authentication object.
+   * @param response The HTTP response to clear cookies.
+   * @return 204 No Content on success.
    */
   @DeleteMapping("/me")
   @Operation(

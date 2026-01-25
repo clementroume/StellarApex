@@ -8,7 +8,7 @@ import apex.stellar.antares.exception.AccountLockedException;
 import apex.stellar.antares.exception.DataConflictException;
 import apex.stellar.antares.exception.ResourceNotFoundException;
 import apex.stellar.antares.mapper.UserMapper;
-import apex.stellar.antares.model.Role;
+import apex.stellar.antares.model.PlatformRole;
 import apex.stellar.antares.model.User;
 import apex.stellar.antares.repository.UserRepository;
 import jakarta.servlet.http.HttpServletResponse;
@@ -56,7 +56,7 @@ public class AuthenticationService {
                 .lastName(request.lastName())
                 .email(request.email())
                 .password(passwordEncoder.encode(request.password()))
-                .role(Role.ROLE_USER)
+                .platformRole(PlatformRole.USER)
                 .build());
 
     issueTokensAndSetCookies(savedUser, response);
@@ -163,5 +163,24 @@ public class AuthenticationService {
         response);
 
     return accessToken;
+  }
+
+  /**
+   * Impersonates a user by issuing tokens for the specified user ID.
+   *
+   * @param userId The ID of the user to impersonate.
+   * @param response The HTTP response to set cookies.
+   * @return UserResponse containing the impersonated user's details.
+   * @throws ResourceNotFoundException if the user ID does not exist.
+   */
+  @Transactional
+  public UserResponse impersonate(Long userId, HttpServletResponse response) {
+    User user =
+        repository
+            .findById(userId)
+            .orElseThrow(() -> new ResourceNotFoundException("error.user.not.found", userId));
+
+    issueTokensAndSetCookies(user, response);
+    return userMapper.toUserResponse(user);
   }
 }

@@ -10,7 +10,7 @@ CREATE TABLE users
     last_name  VARCHAR(255),
     email      VARCHAR(255)                NOT NULL UNIQUE,
     password   VARCHAR(255)                NOT NULL,
-    role       VARCHAR(50)                 NOT NULL,
+    platform_role VARCHAR(50)              NOT NULL,
     enabled    BOOLEAN                     NOT NULL DEFAULT TRUE,
     locale     VARCHAR(10)                 NOT NULL DEFAULT 'en',
     theme      VARCHAR(20)                 NOT NULL DEFAULT 'light',
@@ -22,4 +22,4 @@ CREATE TABLE users
 ALTER TABLE users
     ADD CONSTRAINT chk_theme CHECK (theme IN ('light', 'dark')),
     ADD CONSTRAINT chk_locale CHECK (locale ~ '^[a-z]{2}(-[A-Z]{2})?$'),
-    ADD CONSTRAINT chk_role CHECK (role IN ('ROLE_USER', 'ROLE_ADMIN'));
+    ADD CONSTRAINT chk_platform_role CHECK (platform_role IN ('ADMIN', 'USER'));

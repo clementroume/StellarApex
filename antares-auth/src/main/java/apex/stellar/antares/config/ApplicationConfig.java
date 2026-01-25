@@ -1,6 +1,6 @@
 package apex.stellar.antares.config;
 
-import apex.stellar.antares.model.Role;
+import apex.stellar.antares.model.PlatformRole;
 import apex.stellar.antares.model.User;
 import apex.stellar.antares.repository.UserRepository;
 import apex.stellar.antares.service.AuthenticationService;
@@ -16,6 +16,7 @@ import org.springframework.context.MessageSource;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.i18n.LocaleContextHolder;
+import org.springframework.core.annotation.Order;
 import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
@@ -105,7 +106,7 @@ public class ApplicationConfig {
    * Initializes a default admin user if no admin user currently exists.
    *
    * <p>This {@link ApplicationRunner} bean runs on application startup. It checks if any user with
-   * the {@code ROLE_ADMIN} exists and, if not, creates one using credentials from the application
+   * the {@code ADMIN} role exists and, if not, creates one using credentials from the application
    * properties.
    *
    * @param userRepository The repository to check for and save the user.
@@ -118,6 +119,7 @@ public class ApplicationConfig {
    */
   @Bean
   @Transactional
+  @Order(1)
   public ApplicationRunner adminUserInitializer(
       UserRepository userRepository,
       PasswordEncoder passwordEncoder,
@@ -126,14 +128,14 @@ public class ApplicationConfig {
       @Value("${application.admin.default-email}") String adminEmail,
       @Value("${application.admin.default-password}") String adminPassword) {
     return ignored -> {
-      if (!userRepository.existsByRole(Role.ROLE_ADMIN)) {
+      if (!userRepository.existsByPlatformRole(PlatformRole.ADMIN)) {
         User adminUser =
             User.builder()
                 .firstName(firstName)
                 .lastName(lastName)
                 .email(adminEmail)
                 .password(passwordEncoder.encode(adminPassword))
-                .role(Role.ROLE_ADMIN)
+                .platformRole(PlatformRole.ADMIN)
                 .locale("fr")
                 .theme("dark")
                 .build();

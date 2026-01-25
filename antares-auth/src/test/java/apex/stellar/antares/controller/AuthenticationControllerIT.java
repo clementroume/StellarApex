@@ -40,7 +40,7 @@ class AuthenticationControllerIT extends BaseIntegrationTest {
   void setUp() {
     userRepository.deleteAllInBatch(
         userRepository.findAll().stream()
-            .filter(u -> !u.getRole().name().equals("ROLE_ADMIN"))
+            .filter(u -> !u.getPlatformRole().name().equals("ADMIN"))
             .toList());
   }
 
@@ -70,7 +70,7 @@ class AuthenticationControllerIT extends BaseIntegrationTest {
                 .content(jsonMapper.writeValueAsString(registerRequest)))
         .andExpect(status().isCreated())
         .andExpect(jsonPath("$.email").value("test.user@example.com"))
-        .andExpect(jsonPath("$.role").value("ROLE_USER"));
+        .andExpect(jsonPath("$.platformRole").value("USER"));
 
     // === 2. Login ===
     // Given

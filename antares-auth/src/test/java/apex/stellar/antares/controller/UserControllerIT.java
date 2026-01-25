@@ -61,7 +61,7 @@ class UserControllerIT extends BaseIntegrationTest {
   void setupUserAndLogin() throws Exception {
     userRepository.deleteAll(
         userRepository.findAll().stream()
-            .filter(u -> !u.getRole().name().equals("ROLE_ADMIN"))
+            .filter(u -> !u.getPlatformRole().name().equals("ADMIN"))
             .toList());
 
     RegisterRequest registerRequest =

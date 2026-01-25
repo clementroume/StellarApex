@@ -31,10 +31,10 @@ import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 /**
- * Represents a user's membership to a specific Gym (Tenant).
+ * Represents the contractual relationship between a {@link User} and a {@link Gym}.
  *
- * <p>This entity links a {@link User} to a Gym (identified by ID) and defines their role and
- * permissions within that specific context.
+ * <p>This entity serves as the authorization context. Equality is based on the combination of
+ * {@code user} and {@code gym}.
  */
 @Getter
 @Setter
@@ -54,17 +54,31 @@ public class Membership implements Serializable {
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
 
+  /** The user holding this membership. Fetch type is LAZY for performance. */
   @ManyToOne(fetch = FetchType.LAZY, optional = false)
   @JoinColumn(name = "user_id", nullable = false)
   private User user;
 
-  @Column(name = "gym_id", nullable = false)
-  private Long gymId;
+  /** The gym to which the user belongs. Fetch type is LAZY for performance. */
+  @ManyToOne(fetch = FetchType.LAZY, optional = false)
+  @JoinColumn(name = "gym_id", nullable = false)
+  private Gym gym;
 
+  /** The current status of the membership (e.g., PENDING validation, ACTIVE). */
   @Enumerated(EnumType.STRING)
-  @Column(name = "role", nullable = false, length = 50)
-  private Role role;
+  @Column(name = "status", nullable = false, length = 20)
+  @Builder.Default
+  private MembershipStatus status = MembershipStatus.PENDING;
 
+  /** The role assigned to the user within this specific gym context. */
+  @Enumerated(EnumType.STRING)
+  @Column(name = "gym_role", nullable = false, length = 50)
+  private GymRole gymRole;
+
+  /**
+   * A set of granular permissions granted to the member. These are additive to the permissions
+   * implied by the {@code role}.
+   */
   @ElementCollection(fetch = FetchType.EAGER)
   @CollectionTable(
       name = "membership_permissions",
@@ -82,6 +96,18 @@ public class Membership implements Serializable {
   @Column(name = "updated_at", nullable = false)
   private LocalDateTime updatedAt;
 
+  // --- Helper Methods (Avoid Lazy Loading triggers) ---
+
+  public Long getGymId() {
+    return gym != null ? gym.getId() : null;
+  }
+
+  public Long getUserId() {
+    return user != null ? user.getId() : null;
+  }
+
+  // --- Effective Java: Equals & HashCode based on Business Key (User + Gym) ---
+
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -91,11 +117,36 @@ public class Membership implements Serializable {
       return false;
     }
     Membership that = (Membership) o;
-    return id != null && Objects.equals(id, that.id);
+    return Objects.equals(getUserId(), that.getUserId())
+        && Objects.equals(getGymId(), that.getGymId());
   }
 
   @Override
   public int hashCode() {
-    return getClass().hashCode();
+    return Objects.hash(getUserId(), getGymId());
+  }
+
+  @Override
+  public String toString() {
+    return "Membership{"
+        + "id="
+        + id
+        + ", userId="
+        + getUserId()
+        + ", gymId="
+        + getGymId()
+        + ", status="
+        + status
+        + ", gymRole="
+        + gymRole
+        + '}';
+  }
+
+  /** Enumeration representing the state of a user's membership. */
+  public enum MembershipStatus {
+    PENDING,
+    ACTIVE,
+    INACTIVE,
+    BANNED
   }
 }

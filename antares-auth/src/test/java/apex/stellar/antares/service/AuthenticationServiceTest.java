@@ -8,14 +8,18 @@ import static org.mockito.Mockito.*;
 
 import apex.stellar.antares.dto.AuthenticationRequest;
 import apex.stellar.antares.dto.RegisterRequest;
+import apex.stellar.antares.dto.TokenRefreshResponse;
+import apex.stellar.antares.dto.UserResponse;
 import apex.stellar.antares.exception.AccountLockedException;
 import apex.stellar.antares.exception.DataConflictException;
+import apex.stellar.antares.exception.ResourceNotFoundException;
 import apex.stellar.antares.mapper.UserMapper;
-import apex.stellar.antares.model.Role;
+import apex.stellar.antares.model.PlatformRole;
 import apex.stellar.antares.model.User;
 import apex.stellar.antares.repository.UserRepository;
 import jakarta.servlet.http.HttpServletResponse;
 import java.util.Optional;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -30,6 +34,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 @ExtendWith(MockitoExtension.class)
 class AuthenticationServiceTest {
 
+  private final String accessToken = "access_token";
+  private final String refreshToken = "refresh_token";
   @Mock private UserRepository userRepository;
   @Mock private PasswordEncoder passwordEncoder;
   @Mock private JwtService jwtService;
@@ -39,8 +45,13 @@ class AuthenticationServiceTest {
   @Mock private CookieService cookieService;
   @Mock private LoginAttemptService loginAttemptService; // Nouvelle dépendance
   @Mock private HttpServletResponse httpServletResponse;
-
   @InjectMocks private AuthenticationService authenticationService;
+
+  @BeforeEach
+  void setUp() {
+    lenient().when(jwtService.getAccessTokenCookieName()).thenReturn(accessToken);
+    lenient().when(jwtService.getRefreshTokenCookieName()).thenReturn(refreshToken);
+  }
 
   @Test
   @DisplayName("register: should create user with USER role and set cookies")
@@ -54,7 +65,7 @@ class AuthenticationServiceTest {
         .thenAnswer(
             invocation -> {
               User user = invocation.getArgument(0);
-              assertEquals(Role.ROLE_USER, user.getRole());
+              assertEquals(PlatformRole.USER, user.getPlatformRole());
               return user;
             });
     when(jwtService.generateToken(any(User.class))).thenReturn("fakeAccessToken");
@@ -158,21 +169,66 @@ class AuthenticationServiceTest {
   }
 
   @Test
+  @DisplayName("refreshToken: should issue new tokens when refresh token is valid")
+  void testRefreshToken_Success() {
+    String oldToken = "valid-refresh-token";
+    User user = new User();
+
+    when(refreshTokenService.findUserByToken(oldToken)).thenReturn(Optional.of(user));
+    when(jwtService.generateToken(user)).thenReturn("new-access-token");
+    when(refreshTokenService.createRefreshToken(user)).thenReturn("new-refresh-token");
+
+    TokenRefreshResponse response =
+        authenticationService.refreshToken(oldToken, httpServletResponse);
+
+    assertNotNull(response);
+    assertEquals("new-access-token", response.accessToken());
+    verify(cookieService)
+        .addCookie(eq(accessToken), eq("new-access-token"), anyLong(), eq(httpServletResponse));
+  }
+
+  @Test
+  @DisplayName("refreshToken: should throw NotFound if token invalid")
+  void testRefreshToken_NotFound() {
+    String oldToken = "invalid-token";
+    when(refreshTokenService.findUserByToken(oldToken)).thenReturn(Optional.empty());
+
+    assertThrows(
+        ResourceNotFoundException.class,
+        () -> authenticationService.refreshToken(oldToken, httpServletResponse));
+  }
+
+  @Test
   @DisplayName("logout: should revoke refresh token and clear cookies")
   void testLogout_shouldRevokeTokenAndClearCookies() {
     // Given
     User currentUser = new User();
-    String accessTokenName = "access_token_cookie";
-    String refreshTokenName = "refresh_token_cookie";
-    when(jwtService.getAccessTokenCookieName()).thenReturn(accessTokenName);
-    when(jwtService.getRefreshTokenCookieName()).thenReturn(refreshTokenName);
 
     // When
     authenticationService.logout(currentUser, httpServletResponse);
 
     // Then
     verify(refreshTokenService).deleteTokenForUser(currentUser);
-    verify(cookieService).clearCookie(accessTokenName, httpServletResponse);
-    verify(cookieService).clearCookie(refreshTokenName, httpServletResponse);
+    verify(cookieService).clearCookie(accessToken, httpServletResponse);
+    verify(cookieService).clearCookie(refreshToken, httpServletResponse);
+  }
+
+  @Test
+  @DisplayName("impersonate: should issue tokens for target user")
+  void testImpersonate_Success() {
+    Long targetId = 99L;
+    User targetUser = new User();
+    targetUser.setId(targetId);
+
+    when(userRepository.findById(targetId)).thenReturn(Optional.of(targetUser));
+    when(jwtService.generateToken(targetUser)).thenReturn("admin-impersonation-token");
+    when(refreshTokenService.createRefreshToken(targetUser)).thenReturn("admin-refresh-token");
+    when(userMapper.toUserResponse(targetUser)).thenReturn(mock(UserResponse.class));
+
+    authenticationService.impersonate(targetId, httpServletResponse);
+
+    verify(cookieService)
+        .addCookie(
+            eq(accessToken), eq("admin-impersonation-token"), anyLong(), eq(httpServletResponse));
   }
 }

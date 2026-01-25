@@ -5,7 +5,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 import apex.stellar.antares.config.JwtProperties;
-import apex.stellar.antares.model.Role;
+import apex.stellar.antares.model.PlatformRole;
 import apex.stellar.antares.model.User;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
@@ -50,7 +50,11 @@ class JwtServiceTest {
   @BeforeEach
   void setUp() {
     userDetails =
-        User.builder().email("test@example.com").password("password").role(Role.ROLE_USER).build();
+        User.builder()
+            .email("test@example.com")
+            .password("password")
+            .platformRole(PlatformRole.USER)
+            .build();
   }
 
   @Test
@@ -59,8 +63,10 @@ class JwtServiceTest {
     // Given
     // Mocking JWT properties specifically for this test case
     JwtProperties.AccessToken accessTokenProps = mock(JwtProperties.AccessToken.class);
-    when(jwtProperties.accessToken()).thenReturn(accessTokenProps);
-    when(accessTokenProps.expiration()).thenReturn(60000L); // 1 minute expiration
+
+    // Use lenient() because strictly speaking, other calls might happen internally
+    lenient().when(jwtProperties.accessToken()).thenReturn(accessTokenProps);
+    lenient().when(accessTokenProps.expiration()).thenReturn(60000L);
 
     // Important: The issuer must be a valid URL to satisfy Spring Security's strict validation
     when(jwtProperties.issuer()).thenReturn("https://test-issuer.com");

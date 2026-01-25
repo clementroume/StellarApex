@@ -125,7 +125,7 @@ services:
       POSTGRES_USER: "${CASTOR_USERNAME}"
       POSTGRES_PASSWORD: "${CASTOR_PASSWORD}"
     volumes:
-      - castor_data:/var/lib/postgresql/data
+      - castor_data:/var/lib/postgresql
     ports:
       - "127.0.0.1:5432:5432" # Bind to localhost only for secure local dev access.
     restart: unless-stopped

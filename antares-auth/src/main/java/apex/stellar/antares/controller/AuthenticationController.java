@@ -7,9 +7,13 @@ import apex.stellar.antares.dto.RegisterRequest;
 import apex.stellar.antares.dto.TokenRefreshResponse;
 import apex.stellar.antares.dto.UserResponse;
 import apex.stellar.antares.exception.ResourceNotFoundException;
+import apex.stellar.antares.model.Gym;
+import apex.stellar.antares.model.Gym.GymStatus;
+import apex.stellar.antares.model.GymRole;
 import apex.stellar.antares.model.Membership;
+import apex.stellar.antares.model.Membership.MembershipStatus;
 import apex.stellar.antares.model.Permission;
-import apex.stellar.antares.model.Role;
+import apex.stellar.antares.model.PlatformRole;
 import apex.stellar.antares.model.User;
 import apex.stellar.antares.repository.UserRepository;
 import apex.stellar.antares.service.AuthenticationService;
@@ -179,7 +183,7 @@ public class AuthenticationController {
 
     if (authentication.getPrincipal() instanceof User user) {
 
-      return user.getRole() == Role.ROLE_ADMIN
+      return user.getPlatformRole() == PlatformRole.ADMIN
           ? ResponseEntity.ok().build()
           : ResponseEntity.status(HttpStatus.FORBIDDEN).build();
     }
@@ -196,6 +200,8 @@ public class AuthenticationController {
    * @return a ResponseEntity with an HTTP 200 status and user headers if authenticated, or an HTTP
    *     401 status if the user is not authenticated or the authentication is null
    */
+  // In AuthenticationController.java
+
   @GetMapping("/verify/api")
   @Hidden
   @Transactional(readOnly = true)
@@ -206,56 +212,57 @@ public class AuthenticationController {
     }
 
     if (authentication.getPrincipal() instanceof User principal) {
-      // Reload user to ensure memberships are initialized and avoid LazyInitializationException
       User user = userRepository.findById(principal.getId()).orElse(principal);
-
       String gymIdHeader = request.getHeader("X-Context-Gym-Id");
-      Membership membership = null;
 
-      if (gymIdHeader != null) {
-        try {
-          Long gymId = Long.parseLong(gymIdHeader);
-          membership =
-              user.getMemberships().stream()
-                  .filter(m -> m.getGymId().equals(gymId))
-                  .findFirst()
-                  .orElse(null);
-        } catch (NumberFormatException e) {
-          log.warn("Error parsing gymId header: {}", e.getMessage());
+      // Case 1: Independent Athlete (No Gym Context)
+      if (gymIdHeader == null) {
+        return ResponseEntity.ok()
+            .header("X-Auth-User-Id", String.valueOf(user.getId()))
+            .header("X-Auth-User-Role", user.getPlatformRole().name())
+            .header("X-Auth-User-Locale", user.getLocale())
+            .build();
+      }
+
+      // Case 2: Gym Context
+      try {
+        Long gymId = Long.parseLong(gymIdHeader);
+        Membership membership =
+            user.getMemberships().stream()
+                .filter(m -> m.getGym().getId().equals(gymId))
+                .findFirst()
+                .orElse(null);
+
+        // Check Membership Existence & Status
+        if (membership == null || membership.getStatus() != MembershipStatus.ACTIVE) {
+          return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
-      } else if (!user.getMemberships().isEmpty()) {
-        // Default to first membership if no header provided
-        membership = user.getMemberships().getFirst();
-      }
 
-      if (membership == null && gymIdHeader != null) {
-        // Requested gym isn't found for the user
-        return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
-      }
+        // Check Gym Status (Allow Owner/Programmer to access pending gyms)
+        Gym gym = membership.getGym();
+        boolean isStaff =
+            membership.getGymRole() == GymRole.OWNER || membership.getGymRole() == GymRole.PROGRAMMER;
+        if (gym.getStatus() != GymStatus.ACTIVE && !isStaff) {
+          return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
 
-      ResponseEntity.BodyBuilder responseBuilder =
-          ResponseEntity.ok()
-              .header("X-Auth-User-Id", String.valueOf(user.getId()))
-              .header("X-Auth-User-Locale", user.getLocale());
-
-      if (membership != null) {
         String permissions =
             membership.getPermissions().stream()
                 .map(Permission::name)
                 .collect(Collectors.joining(","));
 
-        responseBuilder
-            .header("X-Auth-Gym-Id", String.valueOf(membership.getGymId()))
-            .header("X-Auth-User-Role", membership.getRole().name())
-            .header("X-Auth-User-Permissions", permissions);
-      } else {
-        // Fallback for users without memberships (e.g., global admins or new users)
-        responseBuilder.header("X-Auth-User-Role", user.getRole().name());
+        return ResponseEntity.ok()
+            .header("X-Auth-User-Id", String.valueOf(user.getId()))
+            .header("X-Auth-User-Locale", user.getLocale())
+            .header("X-Auth-Gym-Id", String.valueOf(gymId))
+            .header("X-Auth-User-Role", membership.getGymRole().name())
+            .header("X-Auth-User-Permissions", permissions)
+            .build();
+
+      } catch (NumberFormatException e) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
       }
-
-      return responseBuilder.build();
     }
-
     return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
   }
 

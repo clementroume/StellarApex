@@ -1,10 +1,14 @@
 package apex.stellar.antares.service;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 import apex.stellar.antares.dto.ChangePasswordRequest;
+import apex.stellar.antares.dto.PreferencesUpdateRequest;
 import apex.stellar.antares.dto.ProfileUpdateRequest;
+import apex.stellar.antares.dto.UserResponse;
+import apex.stellar.antares.exception.DataConflictException;
 import apex.stellar.antares.exception.InvalidPasswordException;
 import apex.stellar.antares.mapper.UserMapper;
 import apex.stellar.antares.model.User;
@@ -41,16 +45,77 @@ class UserServiceTest {
   }
 
   @Test
+  @DisplayName("getProfile: should map and return user response")
+  void testGetProfile_shouldReturnResponse() {
+    // Given
+    when(userMapper.toUserResponse(testUser)).thenReturn(mock(UserResponse.class));
+
+    // When
+    UserResponse response = userService.getProfile(testUser);
+
+    // Then
+    assertNotNull(response);
+    verify(userMapper).toUserResponse(testUser);
+  }
+
+  @Test
   @DisplayName("updateProfile: should call mapper and repository to save changes")
   void testUpdateProfile_shouldUpdateAndSaveChanges() {
     // Given
-    ProfileUpdateRequest request = new ProfileUpdateRequest("John", "Doe", "john.doe@example.com");
+    ProfileUpdateRequest request =
+        new ProfileUpdateRequest("John", "Doe", "test@example.com"); // Same email
 
     // When
     userService.updateProfile(testUser, request);
 
     // Then
+    verify(userRepository, never()).existsByEmail(any()); // Email didn't change
     verify(userMapper).updateFromProfile(request, testUser);
+    verify(userRepository).save(testUser);
+  }
+
+  @Test
+  @DisplayName("updateProfile: should check uniqueness when email changes")
+  void testUpdateProfile_withNewEmail_shouldCheckUniqueness() {
+    // Given
+    ProfileUpdateRequest request = new ProfileUpdateRequest("John", "Doe", "new@example.com");
+    when(userRepository.existsByEmail("new@example.com")).thenReturn(false);
+
+    // When
+    userService.updateProfile(testUser, request);
+
+    // Then
+    verify(userRepository).existsByEmail("new@example.com");
+    verify(userMapper).updateFromProfile(request, testUser);
+    verify(userRepository).save(testUser);
+  }
+
+  @Test
+  @DisplayName("updateProfile: should throw DataConflictException if email is taken")
+  void testUpdateProfile_withDuplicateEmail_shouldThrowException() {
+    // Given
+    ProfileUpdateRequest request = new ProfileUpdateRequest("John", "Doe", "taken@example.com");
+    when(userRepository.existsByEmail("taken@example.com")).thenReturn(true);
+
+    // When & Then
+    assertThrows(DataConflictException.class, () -> userService.updateProfile(testUser, request));
+    verify(userRepository, never()).save(any(User.class));
+  }
+
+  @Test
+  @DisplayName("updatePreferences: should update and save")
+  void testUpdatePreferences_shouldUpdateAndSave() {
+    // Given
+    PreferencesUpdateRequest request = new PreferencesUpdateRequest("fr", "dark");
+    when(userRepository.save(testUser)).thenReturn(testUser);
+    when(userMapper.toUserResponse(testUser)).thenReturn(mock(UserResponse.class));
+
+    // When
+    UserResponse response = userService.updatePreferences(testUser, request);
+
+    // Then
+    assertNotNull(response);
+    verify(userMapper).updateFromPreferences(request, testUser);
     verify(userRepository).save(testUser);
   }
 

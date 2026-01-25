@@ -8,13 +8,18 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import apex.stellar.antares.config.BaseIntegrationTest;
 import apex.stellar.antares.dto.AuthenticationRequest;
 import apex.stellar.antares.dto.RegisterRequest;
+import apex.stellar.antares.model.Gym;
+import apex.stellar.antares.model.Gym.GymStatus;
 import apex.stellar.antares.model.Membership;
-import apex.stellar.antares.model.Role;
+import apex.stellar.antares.model.Membership.MembershipStatus;
+import apex.stellar.antares.model.PlatformRole;
+import apex.stellar.antares.model.GymRole;
 import apex.stellar.antares.model.User;
+import apex.stellar.antares.repository.GymRepository;
+import apex.stellar.antares.repository.MembershipRepository;
 import apex.stellar.antares.repository.UserRepository;
 import jakarta.servlet.http.Cookie;
 import java.util.Collections;
-import java.util.List;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -34,16 +39,33 @@ class AuthenticationControllerVerifyIT extends BaseIntegrationTest {
   @Autowired private MockMvc mockMvc;
   @Autowired private JsonMapper jsonMapper;
   @Autowired private UserRepository userRepository;
+  @Autowired private GymRepository gymRepository;
+  @Autowired private MembershipRepository membershipRepository;
   @Autowired private PasswordEncoder passwordEncoder;
+  @Autowired private StringRedisTemplate redisTemplate;
+
+  private Gym testGym;
 
   @BeforeEach
   void setUp() {
-    // Clean slate before each test to avoid conflicts
+    // Ordre de suppression important pour les FK
+    membershipRepository.deleteAll();
+    gymRepository.deleteAll();
     userRepository.deleteAll();
+
+    // Création d'une Gym de référence
+    testGym =
+        gymRepository.save(
+            Gym.builder()
+                .name("Test Gym")
+                .status(GymStatus.ACTIVE)
+                .enrollmentCode("123456")
+                .isAutoSubscription(true)
+                .build());
   }
 
   @AfterEach
-  void cleanUpRedis(@Autowired StringRedisTemplate redisTemplate) {
+  void cleanUpRedis() {
     redisTemplate.execute(
         (RedisConnection connection) -> {
           connection.serverCommands().flushAll();
@@ -53,22 +75,18 @@ class AuthenticationControllerVerifyIT extends BaseIntegrationTest {
 
   // ==================================================================================
   // 1. ADMIN / INFRASTRUCTURE FLOW (Target: /verify/admin)
-  // Behavior: Browser-based, expects Redirects (302) or Forbidden (403).
   // ==================================================================================
 
   @Test
   @DisplayName("Verify: Unauthenticated request should redirect to login with returnUrl")
   void testVerify_whenUnauthenticated_shouldRedirectToLogin() throws Exception {
-    // Given: A request coming from Traefik (simulated headers)
     mockMvc
         .perform(
             get("/antares/auth/verify/admin")
                 .header("X-Forwarded-Proto", "https")
                 .header("X-Forwarded-Host", "admin.stellar.atlas")
                 .header("X-Forwarded-Uri", "/dashboard"))
-        // Then: Expect 302 Found (Redirect)
         .andExpect(status().isFound())
-        // Verify the Location header contains the correctly encoded returnUrl
         .andExpect(
             header()
                 .string(
@@ -79,108 +97,95 @@ class AuthenticationControllerVerifyIT extends BaseIntegrationTest {
   @Test
   @DisplayName("Verify: Authenticated USER (not admin) should be forbidden (403)")
   void testVerify_whenUserRole_shouldReturnForbidden() throws Exception {
-    // 1. Create and Login a standard USER
     Cookie[] userCookies = registerAndLogin();
 
-    // 2. Perform verification
     mockMvc
         .perform(get("/antares/auth/verify/admin").cookie(userCookies))
-        // Then: Expect 403 Forbidden (Access Denied)
         .andExpect(status().isForbidden());
   }
 
   @Test
   @DisplayName("Verify: Authenticated ADMIN should be allowed (200)")
   void testVerify_whenAdminRole_shouldReturnOk() throws Exception {
-    // 1. Create an ADMIN manually (register endpoint only creates USERS)
     createAdminInDb();
-
-    // 2. Login to get cookies
     Cookie[] adminCookies = login("admin@test.com", "adminPass123");
 
-    // 3. Perform verification
     mockMvc
         .perform(get("/antares/auth/verify/admin").cookie(adminCookies))
-        // Then: Expect 200 OK (Access Granted)
         .andExpect(status().isOk());
   }
 
   // ==================================================================================
   // 2. API / MICROSERVICE FLOW (Target: /verify/api)
-  // Behavior: XHR/AJAX based, expects Unauthorized (401) or OK (200) + Headers.
   // ==================================================================================
 
   @Test
   @DisplayName("Verify API: Unauthenticated request should return Unauthorized (401)")
   void testVerifyApi_whenUnauthenticated_shouldReturnUnauthorized() throws Exception {
-    mockMvc
-        .perform(get("/antares/auth/verify/api"))
-        // Then: Expect 401 (Triggers frontend interceptor refresh flow)
-        .andExpect(status().isUnauthorized());
+    mockMvc.perform(get("/antares/auth/verify/api")).andExpect(status().isUnauthorized());
   }
 
   @Test
-  @DisplayName("Verify API: Authenticated USER should return OK (200) and X-Auth headers")
+  @DisplayName("Verify API: Authenticated ATHLETE should return OK (200) and headers")
   void testVerifyApi_whenAuthenticated_shouldReturnHeaders() throws Exception {
     Cookie[] userCookies = registerAndLogin();
 
     mockMvc
         .perform(get("/antares/auth/verify/api").cookie(userCookies))
-        // Then: Expect 200 OK
         .andExpect(status().isOk())
-        // And: Check specific Forward Auth headers needed by Aldebaran
         .andExpect(header().exists("X-Auth-User-Id"))
-        .andExpect(header().string("X-Auth-User-Role", "ROLE_USER"))
+        .andExpect(header().string("X-Auth-User-Role", "USER"))
         .andExpect(header().string("X-Auth-User-Locale", "en"));
   }
 
   @Test
-  @DisplayName("Verify API: Authenticated USER with Gym Context should return Gym headers")
+  @DisplayName("Verify API: Authenticated ATHLETE with Gym Context should return Gym headers")
   void testVerifyApi_withGymContext_shouldReturnGymHeaders() throws Exception {
     // 1. Create User with Membership
     createUserWithMembership("gymuser@test.com");
     Cookie[] cookies = login("gymuser@test.com", "password123");
 
-    // 2. Perform verification with Gym Context Header
+    // 2. Perform verification with Gym Context Header (ID dynamique)
     mockMvc
-        .perform(get("/antares/auth/verify/api").cookie(cookies).header("X-Context-Gym-Id", "100"))
-        // Then: Expect 200 OK
+        .perform(
+            get("/antares/auth/verify/api")
+                .cookie(cookies)
+                .header("X-Context-Gym-Id", testGym.getId().toString()))
         .andExpect(status().isOk())
-        // And: Check Gym-specific headers
-        .andExpect(header().string("X-Auth-Gym-Id", "100"))
-        .andExpect(header().string("X-Auth-User-Role", "ROLE_USER"))
+        .andExpect(header().string("X-Auth-Gym-Id", testGym.getId().toString()))
+        .andExpect(header().string("X-Auth-User-Role", "ATHLETE"))
         .andExpect(header().exists("X-Auth-User-Permissions"));
   }
 
   @Test
   @DisplayName(
-      "Verify API: Authenticated USER with Invalid Gym Context should return Forbidden (403)")
+      "Verify API: Authenticated ATHLETE with Invalid Gym Context should return Forbidden (403)")
   void testVerifyApi_withInvalidGymContext_shouldReturnForbidden() throws Exception {
-    // 1. Create User with Membership for Gym 100
     createUserWithMembership("gymuser2@test.com");
     Cookie[] cookies = login("gymuser2@test.com", "password123");
 
-    // 2. Perform verification with WRONG Gym Context Header
     mockMvc
-        .perform(get("/antares/auth/verify/api").cookie(cookies).header("X-Context-Gym-Id", "999"))
-        // Then: Expect 403 Forbidden
+        .perform(
+            get("/antares/auth/verify/api")
+                .cookie(cookies)
+                .header("X-Context-Gym-Id", "999999")) // ID inexistant ou non membre
         .andExpect(status().isForbidden());
   }
 
   @Test
-  @DisplayName("Verify API: Authenticated USER without Context should default to first Membership")
-  void testVerifyApi_noContext_shouldDefaultToMembership() throws Exception {
-    // 1. Create User with Membership for Gym 100
+  @DisplayName(
+      "Verify API: Authenticated USER without Context should return Independent User info (No Gym ID)")
+  void testVerifyApi_noContext_shouldReturnUserContextOnly() throws Exception {
+    // 1. Create User with Membership (linked to testGym created in setUp)
     createUserWithMembership("gymuser3@test.com");
     Cookie[] cookies = login("gymuser3@test.com", "password123");
 
-    // 2. Perform verification WITHOUT a header
+    // 2. Perform verification WITHOUT the X-Context-Gym-Id header
     mockMvc
         .perform(get("/antares/auth/verify/api").cookie(cookies))
-        // Then: Expect 200 OK
         .andExpect(status().isOk())
-        // And: Should default to the membership
-        .andExpect(header().string("X-Auth-Gym-Id", "100"));
+        .andExpect(header().exists("X-Auth-User-Id"))
+        .andExpect(header().doesNotExist("X-Auth-Gym-Id"));
   }
 
   // --- Helpers ---
@@ -205,30 +210,30 @@ class AuthenticationControllerVerifyIT extends BaseIntegrationTest {
             .lastName("User")
             .email("admin@test.com")
             .password(passwordEncoder.encode("adminPass123"))
-            .role(Role.ROLE_ADMIN)
+            .platformRole(PlatformRole.ADMIN)
             .build());
   }
 
   private void createUserWithMembership(String email) {
     User user =
-        User.builder()
-            .firstName("Gym")
-            .lastName("User")
-            .email(email)
-            .password(passwordEncoder.encode("password123"))
-            .role(Role.ROLE_USER)
-            .build();
+        userRepository.save(
+            User.builder()
+                .firstName("Gym")
+                .lastName("User")
+                .email(email)
+                .password(passwordEncoder.encode("password123"))
+                .platformRole(PlatformRole.USER)
+                .build());
 
-    Membership membership =
+    // IMPORTANT : On sauvegarde le Membership correctement lié
+    membershipRepository.save(
         Membership.builder()
-            .gymId(100L)
-            .role(Role.ROLE_USER)
-            .permissions(Collections.emptySet())
             .user(user)
-            .build();
-
-    user.setMemberships(List.of(membership));
-    userRepository.save(user);
+            .gym(testGym) // Utilisation de la Gym créée dans setUp()
+            .gymRole(GymRole.ATHLETE)
+            .status(MembershipStatus.ACTIVE)
+            .permissions(Collections.emptySet())
+            .build());
   }
 
   private Cookie[] login(String email, String password) throws Exception {

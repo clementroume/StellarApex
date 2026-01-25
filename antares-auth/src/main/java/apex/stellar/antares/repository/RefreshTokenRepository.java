@@ -7,18 +7,20 @@ import org.springframework.data.repository.CrudRepository;
 import org.springframework.stereotype.Repository;
 
 /**
- * Repository for managing {@link RefreshToken} in Redis.
+ * Redis Repository for managing {@link RefreshToken} entities.
  *
- * <p>Spring Data Redis automatically implements these methods, managing serialization, keys, and
- * secondary indexes (like userId).
+ * <p>Leverages Spring Data Redis to handle key-value storage, serialization, and secondary index
+ * lookups (e.g., finding tokens by User ID).
  */
 @Repository
 public interface RefreshTokenRepository
     extends CrudRepository<@NonNull RefreshToken, @NonNull String> {
 
   /**
-   * Finds a token by its secondary index (userId), used to enforce the "one session per user"
-   * policy.
+   * Retrieves a refresh token using the secondary index on User ID.
+   *
+   * @param userId the ID of the user.
+   * @return an {@link Optional} containing the token if found.
    */
   Optional<RefreshToken> findByUserId(Long userId);
 }

@@ -31,10 +31,10 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
 /**
- * Represents a user in the system.
+ * Represents a registered user in the system.
  *
- * <p>This entity is mapped to the "users" table in the database and implements the Spring Security
- * {@link UserDetails} interface to integrate with the authentication and authorization processes.
+ * <p>This entity is the core identity provider, implementing Spring Security's {@link UserDetails}.
+ * Equality is determined by the unique business key: {@code email}.
  */
 @Getter
 @Setter
@@ -58,15 +58,17 @@ public class User implements UserDetails {
   @Column(name = "last_name")
   private String lastName;
 
+  /** The unique business key for the user. */
   @Column(unique = true, nullable = false)
   private String email;
 
   @Column(nullable = false)
   private String password;
 
+  /** Global platform role (ADMIN or USER). */
   @Enumerated(EnumType.STRING)
-  @Column(nullable = false, length = 50)
-  private Role role;
+  @Column(name = "platform_role", nullable = false, length = 50)
+  private PlatformRole platformRole;
 
   @Builder.Default
   @Column(nullable = false)
@@ -92,49 +94,32 @@ public class User implements UserDetails {
   @Column(name = "updated_at", nullable = false)
   private LocalDateTime updatedAt;
 
-  /**
-   * Returns the authorities granted to the user.
-   *
-   * @return A collection containing the user's role.
-   */
+  // --- Spring Security Implementation ---
+
   @Override
   @NonNull
   public Collection<? extends GrantedAuthority> getAuthorities() {
-    return List.of(new SimpleGrantedAuthority(role.name()));
+    return List.of(new SimpleGrantedAuthority("ROLE_" + platformRole.name()));
   }
 
-  /**
-   * Returns the email address used to authenticate the user.
-   *
-   * @return The user's email.
-   */
   @Override
   @NonNull
   public String getUsername() {
     return email;
   }
 
-  /**
-   * Returns the user's hashed password.
-   *
-   * @return The hashed password.
-   */
   @Override
   public String getPassword() {
     return password;
   }
 
-  /**
-   * Indicates whether the user's account is enabled.
-   *
-   * @return true if the user is enabled, false otherwise.
-   */
   @Override
   public boolean isEnabled() {
     return enabled;
   }
 
-  /** Checks equality based on the entity's ID. */
+  // --- Effective Java: Equals & HashCode based on Business Key (Email) ---
+
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -144,12 +129,26 @@ public class User implements UserDetails {
       return false;
     }
     User user = (User) o;
-    return id != null && Objects.equals(id, user.id);
+    return Objects.equals(email, user.email);
   }
 
-  /** Generates a hash code based on the class, ensuring consistency for entity lifecycle. */
   @Override
   public int hashCode() {
-    return getClass().hashCode();
+    return Objects.hash(email);
+  }
+
+  @Override
+  public String toString() {
+    return "User{"
+        + "id="
+        + id
+        + ", email='"
+        + email
+        + '\''
+        + ", platformRole="
+        + platformRole
+        + ", enabled="
+        + enabled
+        + '}';
   }
 }
