@@ -23,7 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
  * </pre>
  */
 @Slf4j
-@Service("sec")
+@Service("security")
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class AntaresSecurityService {

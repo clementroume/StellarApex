@@ -52,7 +52,7 @@ class RefreshTokenServiceTest {
 
     JwtProperties.RefreshToken refreshTokenProps = mock(JwtProperties.RefreshToken.class);
     when(jwtProperties.refreshToken()).thenReturn(refreshTokenProps);
-    when(refreshTokenProps.expiration()).thenReturn(604800000L); // 7 jours
+    when(refreshTokenProps.expiration()).thenReturn(604800000L); // 7 days
 
     // When
     String rawToken = refreshTokenService.createRefreshToken(user);
@@ -61,17 +61,17 @@ class RefreshTokenServiceTest {
     assertNotNull(rawToken);
     String hashedToken = hashValue(rawToken);
 
-    // 1. Vérifie qu'on essaie de supprimer l'ancien token
+    // 1. Verify that we try to delete the old token
     verify(refreshTokenRepository).findByUserId(user.getId());
 
-    // 2. Capture l'objet sauvegardé pour vérifier ses propriétés
+    // 2. Capture the saved object to verify its properties
     ArgumentCaptor<RefreshToken> tokenCaptor = ArgumentCaptor.forClass(RefreshToken.class);
     verify(refreshTokenRepository).save(tokenCaptor.capture());
 
     RefreshToken savedToken = tokenCaptor.getValue();
-    assertEquals(hashedToken, savedToken.getId()); // L'ID doit être le hash
+    assertEquals(hashedToken, savedToken.getId()); // ID must be the hash
     assertEquals(user.getId(), savedToken.getUserId());
-    assertEquals(604800L, savedToken.getExpiration()); // 7 jours en secondes
+    assertEquals(604800L, savedToken.getExpiration()); // 7 days in seconds
   }
 
   @Test

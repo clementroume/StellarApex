@@ -241,7 +241,8 @@ public class AuthenticationController {
         // Check Gym Status (Allow Owner/Programmer to access pending gyms)
         Gym gym = membership.getGym();
         boolean isStaff =
-            membership.getGymRole() == GymRole.OWNER || membership.getGymRole() == GymRole.PROGRAMMER;
+            membership.getGymRole() == GymRole.OWNER
+                || membership.getGymRole() == GymRole.PROGRAMMER;
         if (gym.getStatus() != GymStatus.ACTIVE && !isStaff) {
           return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
@@ -260,6 +261,7 @@ public class AuthenticationController {
             .build();
 
       } catch (NumberFormatException e) {
+        log.warn("Invalid Gym ID format: {}", gymIdHeader, e);
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
       }
     }

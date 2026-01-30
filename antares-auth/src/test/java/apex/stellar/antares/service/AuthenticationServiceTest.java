@@ -43,7 +43,7 @@ class AuthenticationServiceTest {
   @Mock private UserMapper userMapper;
   @Mock private RefreshTokenService refreshTokenService;
   @Mock private CookieService cookieService;
-  @Mock private LoginAttemptService loginAttemptService; // Nouvelle dépendance
+  @Mock private LoginAttemptService loginAttemptService;
   @Mock private HttpServletResponse httpServletResponse;
   @InjectMocks private AuthenticationService authenticationService;
 
@@ -124,7 +124,7 @@ class AuthenticationServiceTest {
 
     // Then
     verify(authenticationManager).authenticate(any(UsernamePasswordAuthenticationToken.class));
-    // Vérifie que les tentatives sont réinitialisées
+    // Verify that attempts are reset
     verify(loginAttemptService).loginSucceeded(request.email());
     verify(cookieService).addCookie(any(), eq("fakeAccessToken"), anyLong(), any());
     verify(cookieService).addCookie(any(), eq("fakeRefreshToken"), anyLong(), any());
@@ -143,8 +143,23 @@ class AuthenticationServiceTest {
         AccountLockedException.class,
         () -> authenticationService.login(request, httpServletResponse));
 
-    // Vérifie qu'on n'essaie même pas de s'authentifier
+    // Verify that we don't even try to authenticate
     verify(authenticationManager, never()).authenticate(any());
+  }
+
+  @Test
+  @DisplayName("login: should throw ResourceNotFoundException if user not found after auth")
+  void testLogin_UserNotFound_ShouldThrowException() {
+    // Given
+    AuthenticationRequest request = new AuthenticationRequest("ghost@example.com", "password");
+    when(loginAttemptService.isBlocked(any())).thenReturn(false);
+    // Auth succeeds, but repo returns empty
+    when(userRepository.findByEmail(request.email())).thenReturn(Optional.empty());
+
+    // When / Then
+    assertThrows(
+        ResourceNotFoundException.class,
+        () -> authenticationService.login(request, httpServletResponse));
   }
 
   @Test
@@ -153,7 +168,7 @@ class AuthenticationServiceTest {
     // Given
     AuthenticationRequest request = new AuthenticationRequest("hacker@example.com", "wrong");
     when(loginAttemptService.isBlocked(request.email())).thenReturn(false);
-    doThrow(new BadCredentialsException("Bad creds"))
+    doThrow(new BadCredentialsException("Bad credentials"))
         .when(authenticationManager)
         .authenticate(any());
 
@@ -162,15 +177,16 @@ class AuthenticationServiceTest {
         BadCredentialsException.class,
         () -> authenticationService.login(request, httpServletResponse));
 
-    // Vérifie que l'échec est enregistré
+    // Verify that failure is recorded
     verify(loginAttemptService).loginFailed(request.email());
-    // Vérifie qu'aucun cookie n'est posé
+    // Verify that no cookies are set
     verify(cookieService, never()).addCookie(any(), any(), anyLong(), any());
   }
 
   @Test
   @DisplayName("refreshToken: should issue new tokens when refresh token is valid")
   void testRefreshToken_Success() {
+    // Given
     String oldToken = "valid-refresh-token";
     User user = new User();
 
@@ -178,9 +194,11 @@ class AuthenticationServiceTest {
     when(jwtService.generateToken(user)).thenReturn("new-access-token");
     when(refreshTokenService.createRefreshToken(user)).thenReturn("new-refresh-token");
 
+    // When
     TokenRefreshResponse response =
         authenticationService.refreshToken(oldToken, httpServletResponse);
 
+    // Then
     assertNotNull(response);
     assertEquals("new-access-token", response.accessToken());
     verify(cookieService)
@@ -190,9 +208,11 @@ class AuthenticationServiceTest {
   @Test
   @DisplayName("refreshToken: should throw NotFound if token invalid")
   void testRefreshToken_NotFound() {
+    // Given
     String oldToken = "invalid-token";
     when(refreshTokenService.findUserByToken(oldToken)).thenReturn(Optional.empty());
 
+    // When / Then
     assertThrows(
         ResourceNotFoundException.class,
         () -> authenticationService.refreshToken(oldToken, httpServletResponse));
@@ -216,6 +236,7 @@ class AuthenticationServiceTest {
   @Test
   @DisplayName("impersonate: should issue tokens for target user")
   void testImpersonate_Success() {
+    // Given
     Long targetId = 99L;
     User targetUser = new User();
     targetUser.setId(targetId);
@@ -225,10 +246,24 @@ class AuthenticationServiceTest {
     when(refreshTokenService.createRefreshToken(targetUser)).thenReturn("admin-refresh-token");
     when(userMapper.toUserResponse(targetUser)).thenReturn(mock(UserResponse.class));
 
+    // When
     authenticationService.impersonate(targetId, httpServletResponse);
 
+    // Then
     verify(cookieService)
         .addCookie(
             eq(accessToken), eq("admin-impersonation-token"), anyLong(), eq(httpServletResponse));
+  }
+
+  @Test
+  @DisplayName("impersonate: should throw NotFound if user ID does not exist")
+  void testImpersonate_UserNotFound_ShouldThrowException() {
+    // Given
+    when(userRepository.findById(999L)).thenReturn(Optional.empty());
+
+    // When / Then
+    assertThrows(
+        ResourceNotFoundException.class,
+        () -> authenticationService.impersonate(999L, httpServletResponse));
   }
 }

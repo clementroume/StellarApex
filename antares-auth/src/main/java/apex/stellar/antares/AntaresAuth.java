@@ -12,6 +12,7 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
  */
 @SpringBootApplication
 @EnableConfigurationProperties(JwtProperties.class)
+@SuppressWarnings("java:S1118")
 public class AntaresAuth {
 
   /**
@@ -19,7 +20,7 @@ public class AntaresAuth {
    *
    * @param args command-line arguments passed to the application
    */
-  public static void main(String[] args) {
+  static void main(String[] args) {
     SpringApplication.run(AntaresAuth.class, args);
   }
 }

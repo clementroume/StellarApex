@@ -18,6 +18,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.MessageSource;
+import org.springframework.context.NoSuchMessageException;
 import org.springframework.http.MediaType;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -52,9 +53,11 @@ class GlobalExceptionHandlerTest {
   @Test
   @DisplayName("handleNotFound: Should return 404 with localized message")
   void testHandleNotFound() throws Exception {
+    // Given
     when(messageSource.getMessage(eq("error.user.not.found"), any(), any(Locale.class)))
         .thenReturn("User not found");
 
+    // When / Then
     mockMvc
         .perform(get("/test/not-found").locale(Locale.ENGLISH))
         .andExpect(status().isNotFound())
@@ -64,11 +67,27 @@ class GlobalExceptionHandlerTest {
   }
 
   @Test
+  @DisplayName("handleNotFound: Should return key if message missing (Fallback)")
+  void testHandleNotFound_MissingMessageKey() throws Exception {
+    // Given: MessageSource throws an exception for the key
+    when(messageSource.getMessage(eq("error.user.not.found"), any(), any(Locale.class)))
+        .thenThrow(new NoSuchMessageException("error.user.not.found"));
+
+    // When / Then: Should return the key itself as detail
+    mockMvc
+        .perform(get("/test/not-found").locale(Locale.ENGLISH))
+        .andExpect(status().isNotFound())
+        .andExpect(jsonPath("$.detail").value("error.user.not.found"));
+  }
+
+  @Test
   @DisplayName("handleConflict: Should return 409 with localized message")
   void testHandleConflict() throws Exception {
+    // Given
     when(messageSource.getMessage(eq("error.email.exists"), any(), any(Locale.class)))
         .thenReturn("Email already exists");
 
+    // When / Then
     mockMvc
         .perform(get("/test/conflict").locale(Locale.ENGLISH))
         .andExpect(status().isConflict())
@@ -77,11 +96,28 @@ class GlobalExceptionHandlerTest {
   }
 
   @Test
+  @DisplayName("handleInvalidPassword: Should return 400 with localized message")
+  void testHandleInvalidPassword() throws Exception {
+    // Given
+    when(messageSource.getMessage(eq("error.password.incorrect"), any(), any(Locale.class)))
+        .thenReturn("Incorrect password");
+
+    // When / Then
+    mockMvc
+        .perform(get("/test/invalid-password"))
+        .andExpect(status().isBadRequest())
+        .andExpect(jsonPath("$.title").value("Invalid Input"))
+        .andExpect(jsonPath("$.detail").value("Incorrect password"));
+  }
+
+  @Test
   @DisplayName("handleBadCredentials: Should return 401 with generic message")
   void testHandleBadCredentials() throws Exception {
+    // Given
     when(messageSource.getMessage(eq("error.credentials.bad"), any(), any(Locale.class)))
         .thenReturn("Bad credentials");
 
+    // When / Then
     mockMvc
         .perform(get("/test/bad-credentials"))
         .andExpect(status().isUnauthorized())
@@ -92,10 +128,12 @@ class GlobalExceptionHandlerTest {
   @Test
   @DisplayName("handleAccessDenied: Should return 403 with default message if key is missing")
   void testHandleAccessDenied_Generic() throws Exception {
+    // Given
     // Simulates a generic AccessDeniedException from Spring Security (no "error." prefix)
     when(messageSource.getMessage(eq("error.access.denied"), any(), any(Locale.class)))
         .thenReturn("Access Denied Default");
 
+    // When / Then
     mockMvc
         .perform(get("/test/access-denied-generic"))
         .andExpect(status().isForbidden())
@@ -105,12 +143,14 @@ class GlobalExceptionHandlerTest {
   @Test
   @DisplayName("handleAccessDenied: Should return 403 with translated message if key exists")
   void testHandleAccessDenied_WithKey() throws Exception {
+    // Given
     // Simulates a custom AccessDeniedException thrown with a specific key
     when(messageSource.getMessage(eq("error.access.denied"), any(), any(Locale.class)))
         .thenReturn("Default"); // Fallback
     when(messageSource.getMessage(eq("error.specific"), any(), eq("Default"), any(Locale.class)))
         .thenReturn("Specific Translation");
 
+    // When / Then
     mockMvc
         .perform(get("/test/access-denied-key"))
         .andExpect(status().isForbidden())
@@ -120,9 +160,11 @@ class GlobalExceptionHandlerTest {
   @Test
   @DisplayName("handleAccountLocked: Should return 429 with localized message")
   void testHandleAccountLocked() throws Exception {
+    // Given
     when(messageSource.getMessage(eq("error.account.locked"), any(), any(Locale.class)))
         .thenReturn("Account is locked");
 
+    // When / Then
     mockMvc
         .perform(get("/test/locked"))
         .andExpect(status().isTooManyRequests())
@@ -133,10 +175,12 @@ class GlobalExceptionHandlerTest {
   @Test
   @DisplayName("handleValidation: Should return 400 and aggregate field errors")
   void testHandleValidation() throws Exception {
+    // Given
     when(messageSource.getMessage(eq("error.validation"), any(), any(Locale.class)))
         .thenReturn("Validation Failed");
 
-    // Sending empty JSON to trigger @NotNull validation
+    // When / Then
+    // Sending empty JSON to trigger @NotNull validation on DummyDto
     mockMvc
         .perform(post("/test/validation").contentType(MediaType.APPLICATION_JSON).content("{}"))
         .andExpect(status().isBadRequest())
@@ -150,9 +194,11 @@ class GlobalExceptionHandlerTest {
   @Test
   @DisplayName("handleGeneric: Should return 500 for unexpected exceptions")
   void testHandleGeneric() throws Exception {
+    // Given
     when(messageSource.getMessage(eq("error.internal.server"), any(), any(Locale.class)))
         .thenReturn("Internal error");
 
+    // When / Then
     mockMvc
         .perform(get("/test/generic"))
         .andExpect(status().isInternalServerError())
@@ -175,9 +221,14 @@ class GlobalExceptionHandlerTest {
       throw new DataConflictException("error.email.exists", "email@test.com");
     }
 
+    @GetMapping("/test/invalid-password")
+    void invalidPassword() {
+      throw new InvalidPasswordException("error.password.incorrect");
+    }
+
     @GetMapping("/test/bad-credentials")
-    void badCreds() {
-      throw new BadCredentialsException("Bad creds");
+    void badCredentials() {
+      throw new BadCredentialsException("Bad credentials");
     }
 
     @GetMapping("/test/access-denied-generic")
@@ -196,7 +247,7 @@ class GlobalExceptionHandlerTest {
     }
 
     @PostMapping("/test/validation")
-    void validation(@RequestBody @Valid DummyDto dto) {
+    void validation(@RequestBody @Valid DummyDto ignoredDto) {
       // triggers MethodArgumentNotValidException if invalid
     }
 

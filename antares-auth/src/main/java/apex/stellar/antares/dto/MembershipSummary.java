@@ -1,8 +1,8 @@
 package apex.stellar.antares.dto;
 
 import apex.stellar.antares.model.Gym.GymStatus;
-import apex.stellar.antares.model.Membership.MembershipStatus;
 import apex.stellar.antares.model.GymRole;
+import apex.stellar.antares.model.Membership.MembershipStatus;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 /**

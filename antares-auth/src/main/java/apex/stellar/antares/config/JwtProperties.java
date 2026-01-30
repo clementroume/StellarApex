@@ -11,7 +11,7 @@ import org.springframework.validation.annotation.Validated;
 /**
  * Holds configuration properties for JWT tokens and cookies.
  *
- * <p>Includes robust validation rules to ensure security best practices are met at application
+ * <p>Includes robust validation rules to ensure security best practices are met at the application
  * startup (e.g., minimum secret length, safe expiration windows).
  */
 @ConfigurationProperties(prefix = "application.security.jwt")

@@ -1,8 +1,13 @@
 package apex.stellar.antares.config;
 
-import apex.stellar.antares.model.*;
+import apex.stellar.antares.model.Gym;
 import apex.stellar.antares.model.Gym.GymStatus;
+import apex.stellar.antares.model.GymRole;
+import apex.stellar.antares.model.Membership;
 import apex.stellar.antares.model.Membership.MembershipStatus;
+import apex.stellar.antares.model.Permission;
+import apex.stellar.antares.model.PlatformRole;
+import apex.stellar.antares.model.User;
 import apex.stellar.antares.repository.GymRepository;
 import apex.stellar.antares.repository.MembershipRepository;
 import apex.stellar.antares.repository.UserRepository;
@@ -37,7 +42,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class DataSeeder implements CommandLineRunner {
 
   // Explicitly define the full set of permissions for Owners/Programmers
-  private static final Set<Permission> FULL_ADMIN_PERMISSIONS =
+  private static final Set<Permission> FULL_PERMISSION_SET =
       Set.of(
           Permission.MANAGE_SETTINGS,
           Permission.MANAGE_MEMBERSHIPS,
@@ -72,11 +77,7 @@ public class DataSeeder implements CommandLineRunner {
 
     // Owner gets FULL permissions explicitly
     createUserAndMembership(
-        "owner@sparta.com",
-        GymRole.OWNER,
-        MembershipStatus.ACTIVE,
-        sparta,
-        FULL_ADMIN_PERMISSIONS);
+        "owner@sparta.com", GymRole.OWNER, MembershipStatus.ACTIVE, sparta, FULL_PERMISSION_SET);
 
     // Coach gets WOD management AND Membership management (to test delegation)
     createUserAndMembership(
@@ -86,37 +87,53 @@ public class DataSeeder implements CommandLineRunner {
         sparta,
         Set.of(Permission.WOD_WRITE, Permission.SCORE_VERIFY, Permission.MANAGE_MEMBERSHIPS));
 
+    // Coach with no specific permissions
+    createUserAndMembership(
+        "neocoach@sparta.com", GymRole.COACH, MembershipStatus.ACTIVE, sparta, Set.of());
+
+    // Athlete
     createUserAndMembership(
         "athlete@sparta.com", GymRole.ATHLETE, MembershipStatus.ACTIVE, sparta, Set.of());
 
     // 2. Zeus Programming (Virtual)
     Gym zeus = createGym("Zeus Programming", "OLYMPUS", false, true, GymStatus.ACTIVE);
 
+    // Programmer gets FULL permissions explicitly
     createUserAndMembership(
-        "prog@zeus.com",
+        "programmer@zeus.com",
         GymRole.PROGRAMMER,
         MembershipStatus.ACTIVE,
         zeus,
-        FULL_ADMIN_PERMISSIONS);
+        FULL_PERMISSION_SET);
 
+    // Active Athlete
     createUserAndMembership(
         "active@zeus.com", GymRole.ATHLETE, MembershipStatus.ACTIVE, zeus, Set.of());
+    // Pending Athlete
     createUserAndMembership(
         "pending@zeus.com", GymRole.ATHLETE, MembershipStatus.PENDING, zeus, Set.of());
 
     // 3. Pending Box (Waiting for approval)
     Gym pendingBox = createGym("Pending Box", "WAIT", true, false, GymStatus.PENDING_APPROVAL);
     createUserAndMembership(
-        "wait@box.com",
-        GymRole.OWNER,
-        MembershipStatus.ACTIVE,
-        pendingBox,
-        FULL_ADMIN_PERMISSIONS);
+        "wait@box.com", GymRole.OWNER, MembershipStatus.ACTIVE, pendingBox, FULL_PERMISSION_SET);
 
     // 4. Independent User
     createUser("free@athlete.com");
 
     log.info("DataSeeder: Seeding complete.");
+  }
+
+  /** Helper to create and save a User entity with a hashed password. */
+  private User createUser(String email) {
+    return userRepository.save(
+        User.builder()
+            .email(email)
+            .password(passwordEncoder.encode(adminPassword))
+            .firstName(email.split("@")[0])
+            .lastName("User")
+            .platformRole(PlatformRole.USER)
+            .build());
   }
 
   /** Helper to create and save a Gym entity. */
@@ -143,18 +160,6 @@ public class DataSeeder implements CommandLineRunner {
             .gymRole(gymRole)
             .status(status)
             .permissions(perms)
-            .build());
-  }
-
-  /** Helper to create and save a User entity with a hashed password. */
-  private User createUser(String email) {
-    return userRepository.save(
-        User.builder()
-            .email(email)
-            .password(passwordEncoder.encode(adminPassword))
-            .firstName(email.split("@")[0])
-            .lastName("User")
-            .platformRole(PlatformRole.USER)
             .build());
   }
 }

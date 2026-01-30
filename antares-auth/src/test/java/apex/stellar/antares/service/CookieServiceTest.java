@@ -27,8 +27,8 @@ class CookieServiceTest {
             "secret",
             "test-issuer",
             "test-audience",
-            new JwtProperties.AccessToken(1L, "access"),
-            new JwtProperties.RefreshToken(1L, "refresh"),
+            new JwtProperties.AccessToken(60000, "access"),
+            new JwtProperties.RefreshToken(3600000, "refresh"),
             new JwtProperties.CookieProperties(isSecure, "stellar.atlas"));
     cookieService = new CookieService(jwtProperties);
   }

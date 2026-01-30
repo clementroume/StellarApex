@@ -2,56 +2,41 @@ package apex.stellar.antares.controller;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import apex.stellar.antares.config.BaseIntegrationTest;
-import apex.stellar.antares.dto.AuthenticationRequest;
 import apex.stellar.antares.dto.MembershipUpdateRequest;
 import apex.stellar.antares.model.Gym;
 import apex.stellar.antares.model.Gym.GymStatus;
+import apex.stellar.antares.model.GymRole;
 import apex.stellar.antares.model.Membership;
 import apex.stellar.antares.model.Membership.MembershipStatus;
 import apex.stellar.antares.model.Permission;
-import apex.stellar.antares.model.PlatformRole;
-import apex.stellar.antares.model.GymRole;
 import apex.stellar.antares.model.User;
 import apex.stellar.antares.repository.GymRepository;
 import apex.stellar.antares.repository.MembershipRepository;
-import apex.stellar.antares.repository.UserRepository;
 import jakarta.servlet.http.Cookie;
 import java.util.Set;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.redis.connection.RedisConnection;
-import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.http.MediaType;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.MvcResult;
-import tools.jackson.databind.json.JsonMapper;
 
 class MembershipControllerIT extends BaseIntegrationTest {
 
-  @Autowired private MockMvc mockMvc;
-  @Autowired private JsonMapper jsonMapper;
   @Autowired private GymRepository gymRepository;
-  @Autowired private UserRepository userRepository;
   @Autowired private MembershipRepository membershipRepository;
-  @Autowired private PasswordEncoder passwordEncoder;
-  @Autowired private StringRedisTemplate redisTemplate;
 
-  private User ownerUser;
-  private User coachUser;
   private User memberUser;
   private Gym gym;
 
   @BeforeEach
-  void setUp() {
+  void setUp() throws Exception {
     membershipRepository.deleteAll();
     gymRepository.deleteAll();
     userRepository.deleteAll();
@@ -65,12 +50,12 @@ class MembershipControllerIT extends BaseIntegrationTest {
                 .isAutoSubscription(false)
                 .build());
 
-    // Création des users avec mot de passe connu
-    ownerUser = createUser("owner", PlatformRole.USER);
-    coachUser = createUser("coach", PlatformRole.USER);
-    memberUser = createUser("member", PlatformRole.USER);
+    // Create users with a known password
+    User ownerUser = createUser("owner");
+    User coachUser = createUser("coach");
+    memberUser = createUser("member");
 
-    // Setup Memberships
+    // Set up Memberships
     createMembership(ownerUser, gym, GymRole.OWNER, MembershipStatus.ACTIVE, Set.of());
     createMembership(
         coachUser,
@@ -81,32 +66,33 @@ class MembershipControllerIT extends BaseIntegrationTest {
     createMembership(memberUser, gym, GymRole.ATHLETE, MembershipStatus.PENDING, Set.of());
   }
 
-  @AfterEach
-  void cleanRedis() {
-    redisTemplate.execute(
-        (RedisConnection connection) -> {
-          connection.serverCommands().flushAll();
-          return null;
-        });
+  @Test
+  @DisplayName("List Memberships: Owner should see list")
+  void testGetMemberships_Success() throws Exception {
+    Cookie[] cookies = login("owner@test.com", "password1234");
+
+    mockMvc
+        .perform(get("/antares/memberships").param("gymId", gym.getId().toString()).cookie(cookies))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.length()").value(3)); // Owner, Coach, Member
   }
 
-  private Cookie[] login(String email) throws Exception {
-    AuthenticationRequest loginRequest = new AuthenticationRequest(email, "password");
-    MvcResult result =
-        mockMvc
-            .perform(
-                post("/antares/auth/login")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(jsonMapper.writeValueAsString(loginRequest)))
-            .andExpect(status().isOk())
-            .andReturn();
-    return result.getResponse().getCookies();
+  @Test
+  @DisplayName("List Memberships: Athlete should be forbidden")
+  void testGetMemberships_Forbidden() throws Exception {
+    // Member user is ATHLETE
+    Cookie[] cookies = login("member@test.com", "password1234");
+
+    mockMvc
+        .perform(get("/antares/memberships").param("gymId", gym.getId().toString()).cookie(cookies))
+        .andExpect(status().isForbidden());
   }
 
   @Test
   @DisplayName("Update Membership: Owner promotes Member to Coach")
   void testUpdateMembership_OwnerPromoteToCoach() throws Exception {
-    Cookie[] cookies = login("owner@test.com");
+    // Given
+    Cookie[] cookies = login("owner@test.com", "password1234");
     Membership target =
         membershipRepository.findByUserIdAndGymId(memberUser.getId(), gym.getId()).orElseThrow();
 
@@ -114,6 +100,7 @@ class MembershipControllerIT extends BaseIntegrationTest {
         new MembershipUpdateRequest(
             MembershipStatus.ACTIVE, GymRole.COACH, Set.of(Permission.MANAGE_MEMBERSHIPS));
 
+    // When
     mockMvc
         .perform(
             put("/antares/memberships/" + target.getId())
@@ -123,6 +110,7 @@ class MembershipControllerIT extends BaseIntegrationTest {
                 .content(jsonMapper.writeValueAsString(request)))
         .andExpect(status().isOk());
 
+    // Then
     Membership updated = membershipRepository.findById(target.getId()).orElseThrow();
     assertThat(updated.getGymRole()).isEqualTo(GymRole.COACH);
   }
@@ -130,13 +118,15 @@ class MembershipControllerIT extends BaseIntegrationTest {
   @Test
   @DisplayName("Update Membership: Coach validates Member status")
   void testUpdateMembership_CoachValidateUser() throws Exception {
-    Cookie[] cookies = login("coach@test.com");
+    // Given
+    Cookie[] cookies = login("coach@test.com", "password1234");
     Membership target =
         membershipRepository.findByUserIdAndGymId(memberUser.getId(), gym.getId()).orElseThrow();
 
     MembershipUpdateRequest request =
         new MembershipUpdateRequest(MembershipStatus.ACTIVE, GymRole.ATHLETE, Set.of());
 
+    // When
     mockMvc
         .perform(
             put("/antares/memberships/" + target.getId())
@@ -146,37 +136,114 @@ class MembershipControllerIT extends BaseIntegrationTest {
                 .content(jsonMapper.writeValueAsString(request)))
         .andExpect(status().isOk());
 
+    // Then
     Membership updated = membershipRepository.findById(target.getId()).orElseThrow();
     assertThat(updated.getStatus()).isEqualTo(MembershipStatus.ACTIVE);
   }
 
   @Test
-  @DisplayName("Update Membership: Hierarchy Breach (Promote to ADMIN) -> Forbidden")
-  void testUpdateMembership_HierarchyBreach() throws Exception {
-    Cookie[] cookies = login("owner@test.com");
-    Membership ownerMembership =
-        membershipRepository.findByUserIdAndGymId(ownerUser.getId(), gym.getId()).orElseThrow();
+  @DisplayName("Update Membership: Coach cannot change Role (Access Denied)")
+  void testUpdateMembership_CoachCannotChangeRole() throws Exception {
+    // Given: Coach tries to promote Athlete to Coach
+    Cookie[] cookies = login("coach@test.com", "password1234");
+    Membership target =
+        membershipRepository.findByUserIdAndGymId(memberUser.getId(), gym.getId()).orElseThrow();
 
-    // Trying to assign a GymRole that doesn't exist (ADMIN is PlatformRole)
-    // But wait, the DTO expects GymRole. The test was checking "Promote to ADMIN".
-    // Since ADMIN is no longer a GymRole, this test scenario changes.
-    // We should test that an Owner cannot modify a Platform Admin, OR that an Owner cannot assign a role they don't have access to.
-    // However, GymRole doesn't have ADMIN. Let's assume the test meant "Promote to OWNER" (which they are) or similar.
-    // Actually, the service logic `if (request.role() == Role.ROLE_ADMIN)` was removed/changed because ADMIN is not in GymRole.
-    // So this specific test case "Promote to ADMIN" is invalid at compilation level if we pass PlatformRole.ADMIN to a DTO expecting GymRole.
-    // We will remove this test or adapt it to "Owner cannot modify Platform Admin".
-    // Let's adapt it: Owner tries to modify another Owner (allowed) vs Admin (forbidden).
+    MembershipUpdateRequest request =
+        new MembershipUpdateRequest(
+            MembershipStatus.ACTIVE, GymRole.COACH, Set.of()); // Changed Role
 
-    // Skipping this test adaptation as the compilation would fail with GymRole.ADMIN.
+    // When / Then
+    mockMvc
+        .perform(
+            put("/antares/memberships/" + target.getId())
+                .cookie(cookies)
+                .with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(jsonMapper.writeValueAsString(request)))
+        .andExpect(status().isForbidden());
   }
 
-  private User createUser(String username, PlatformRole role) {
-    return userRepository.save(
-        User.builder()
-            .email(username + "@test.com")
-            .password(passwordEncoder.encode("password"))
-            .platformRole(role)
-            .build());
+  @Test
+  @DisplayName("Update Membership: Owner cannot modify Global Admin -> Forbidden")
+  void testUpdateMembership_OwnerCannotModifyAdmin() throws Exception {
+    // Given: A Global Admin who is also a member of the gym
+    User adminUser = createAdmin("globaladmin@test.com", "password1234");
+    createMembership(adminUser, gym, GymRole.ATHLETE, MembershipStatus.ACTIVE, Set.of());
+
+    Cookie[] cookies = login("owner@test.com", "password1234");
+    Membership target =
+        membershipRepository.findByUserIdAndGymId(adminUser.getId(), gym.getId()).orElseThrow();
+
+    MembershipUpdateRequest request =
+        new MembershipUpdateRequest(MembershipStatus.BANNED, GymRole.ATHLETE, Set.of());
+
+    // When / Then
+    mockMvc
+        .perform(
+            put("/antares/memberships/" + target.getId())
+                .cookie(cookies)
+                .with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(jsonMapper.writeValueAsString(request)))
+        .andExpect(status().isForbidden());
+  }
+
+  @Test
+  @DisplayName("Update Membership: Cross-Tenant Forbidden")
+  void testUpdateMembership_CrossTenant_Forbidden() throws Exception {
+    // Given: Create Gym B and Owner B
+    Gym gymB =
+        gymRepository.save(
+            Gym.builder()
+                .name("Gym B")
+                .status(GymStatus.ACTIVE)
+                .enrollmentCode("B")
+                .isAutoSubscription(false)
+                .build());
+    User ownerB = createUser("ownerB");
+    createMembership(ownerB, gymB, GymRole.OWNER, MembershipStatus.ACTIVE, Set.of());
+
+    Cookie[] cookies = login("ownerB@test.com", "password1234");
+
+    // When: Owner B tries to update member of Gym A
+    Membership targetInGymA =
+        membershipRepository.findByUserIdAndGymId(memberUser.getId(), gym.getId()).orElseThrow();
+
+    MembershipUpdateRequest request =
+        new MembershipUpdateRequest(MembershipStatus.BANNED, GymRole.ATHLETE, Set.of());
+
+    // Then
+    mockMvc
+        .perform(
+            put("/antares/memberships/" + targetInGymA.getId())
+                .cookie(cookies)
+                .with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(jsonMapper.writeValueAsString(request)))
+        .andExpect(status().isForbidden());
+  }
+
+  @Test
+  @DisplayName("Delete Membership: Owner can delete member")
+  void testDeleteMembership_Success() throws Exception {
+    // Given
+    Cookie[] cookies = login("owner@test.com", "password1234");
+    Membership target =
+        membershipRepository.findByUserIdAndGymId(memberUser.getId(), gym.getId()).orElseThrow();
+
+    // When
+    mockMvc
+        .perform(delete("/antares/memberships/" + target.getId()).cookie(cookies).with(csrf()))
+        .andExpect(status().isNoContent());
+
+    // Then
+    assertThat(membershipRepository.existsById(target.getId())).isFalse();
+  }
+
+  private User createUser(String username) throws Exception {
+    register(username + "@test.com", "password1234");
+    return userRepository.findByEmail(username + "@test.com").orElseThrow();
   }
 
   private void createMembership(User u, Gym g, GymRole r, MembershipStatus s, Set<Permission> p) {

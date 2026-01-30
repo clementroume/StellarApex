@@ -21,23 +21,23 @@ import org.springframework.test.util.ReflectionTestUtils;
 @ExtendWith(MockitoExtension.class)
 class LoginAttemptServiceTest {
 
-  // Constantes pour le test
+  // Constants for testing
   private final String email = "hacker@example.com";
   private final String attemptKey = "login_attempts:" + email;
   private final String lockKey = "account_locked:" + email;
   private final int maxAttempts = 3;
-  private final long lockDuration = 60000L; // 1 minute en ms
+  private final long lockDuration = 60000L; // 1 minute in ms
   @Mock private StringRedisTemplate redisTemplate;
   @Mock private ValueOperations<String, String> valueOperations;
   @InjectMocks private LoginAttemptService loginAttemptService;
 
   @BeforeEach
   void setUp() {
-    // Mock de la chaîne d'appel redisTemplate.opsForValue()
-    // 'lenient()' est utilisé car certains tests n'appellent pas cette méthode (ex: loginSucceeded)
+    // Mock the redisTemplate.opsForValue() call chain
+    // 'lenient()' is used because some tests do not call this method (e.g., loginSucceeded)
     lenient().when(redisTemplate.opsForValue()).thenReturn(valueOperations);
 
-    // Injection manuelle des propriétés @Value (normalement fait par Spring)
+    // Manually inject @Value properties (normally done by Spring)
     ReflectionTestUtils.setField(loginAttemptService, "maxAttempts", maxAttempts);
     ReflectionTestUtils.setField(loginAttemptService, "lockDurationMs", lockDuration);
   }
@@ -53,9 +53,9 @@ class LoginAttemptServiceTest {
 
     // Then
     verify(valueOperations).increment(attemptKey);
-    // Vérifie que l'expiration est définie au premier échec
+    // Verify that expiration is set on the first failure
     verify(redisTemplate).expire(attemptKey, lockDuration, TimeUnit.MILLISECONDS);
-    // Vérifie qu'on ne verrouille PAS le compte tout de suite
+    // Verify that we do NOT lock the account immediately
     verify(valueOperations, never()).set(anyString(), anyString(), anyLong(), any());
   }
 
@@ -70,7 +70,7 @@ class LoginAttemptServiceTest {
 
     // Then
     verify(valueOperations).increment(attemptKey);
-    // Pas de nouvelle expiration, pas de lock
+    // No new expiration, no lock
     verify(redisTemplate, never()).expire(anyString(), anyLong(), any());
     verify(valueOperations, never()).set(eq(lockKey), anyString(), anyLong(), any());
   }
@@ -85,9 +85,9 @@ class LoginAttemptServiceTest {
     loginAttemptService.loginFailed(email);
 
     // Then
-    // 1. On doit poser le verrou (clé 'account_locked')
+    // 1. Must set the lock (key 'account_locked')
     verify(valueOperations).set(lockKey, "true", lockDuration, TimeUnit.MILLISECONDS);
-    // 2. On doit supprimer le compteur de tentatives pour repartir propre après le ban
+    // 2. Must delete the attempt counter to start fresh after the ban
     verify(redisTemplate).delete(attemptKey);
   }
 

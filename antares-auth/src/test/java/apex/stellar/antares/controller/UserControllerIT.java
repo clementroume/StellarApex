@@ -12,22 +12,13 @@ import apex.stellar.antares.dto.AuthenticationRequest;
 import apex.stellar.antares.dto.ChangePasswordRequest;
 import apex.stellar.antares.dto.PreferencesUpdateRequest;
 import apex.stellar.antares.dto.ProfileUpdateRequest;
-import apex.stellar.antares.dto.RegisterRequest;
-import apex.stellar.antares.repository.UserRepository;
 import jakarta.servlet.http.Cookie;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
-import org.springframework.data.redis.connection.RedisConnection;
-import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.http.MediaType;
-import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.MvcResult;
-import tools.jackson.databind.json.JsonMapper;
 
 /**
  * Integration tests for user profile and settings management endpoints in {@link UserController}.
@@ -38,20 +29,7 @@ class UserControllerIT extends BaseIntegrationTest {
 
   private final String initialEmail = "profile.user@example.com";
   private final String initialPassword = "password123";
-  @Autowired private MockMvc mockMvc;
-  @Autowired private JsonMapper jsonMapper;
-  @Autowired private UserRepository userRepository;
   private Cookie[] authCookies; // Stores auth cookies for test requests
-
-  /** Cleans Redis after each test. */
-  @AfterEach
-  void cleanUpRedis(@Autowired StringRedisTemplate redisTemplate) {
-    redisTemplate.execute(
-        (RedisConnection connection) -> {
-          connection.serverCommands().flushAll();
-          return null;
-        });
-  }
 
   /**
    * Before each test: 1. Clean the user database (except admins). 2. Register a new test user. 3.
@@ -64,27 +42,7 @@ class UserControllerIT extends BaseIntegrationTest {
             .filter(u -> !u.getPlatformRole().name().equals("ADMIN"))
             .toList());
 
-    RegisterRequest registerRequest =
-        new RegisterRequest("Profile", "User", initialEmail, initialPassword);
-
-    mockMvc
-        .perform(
-            post("/antares/auth/register")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(jsonMapper.writeValueAsString(registerRequest)))
-        .andExpect(status().isCreated());
-
-    AuthenticationRequest loginRequest = new AuthenticationRequest(initialEmail, initialPassword);
-    MvcResult loginResult =
-        mockMvc
-            .perform(
-                post("/antares/auth/login")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(jsonMapper.writeValueAsString(loginRequest)))
-            .andExpect(status().isOk())
-            .andReturn();
-
-    this.authCookies = loginResult.getResponse().getCookies();
+    this.authCookies = registerAndLogin(initialEmail, initialPassword);
   }
 
   @Test
@@ -159,7 +117,7 @@ class UserControllerIT extends BaseIntegrationTest {
                 .content(jsonMapper.writeValueAsString(loginWithOldPassword)))
         .andExpect(status().isUnauthorized());
 
-    // And: Login with a new password should succeed
+    // And: Login with the new password should succeed
     AuthenticationRequest loginWithNewPassword =
         new AuthenticationRequest(initialEmail, newPassword);
     mockMvc
@@ -196,7 +154,98 @@ class UserControllerIT extends BaseIntegrationTest {
             post("/antares/auth/login")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(jsonMapper.writeValueAsString(loginRequest)))
-        .andExpect(
-            status().isUnauthorized()); // Or ResourceNotFound depending on your error handling
+        .andExpect(status().isUnauthorized());
+  }
+
+  @Test
+  @DisplayName("Update Profile: should return 409 Conflict if email is already taken")
+  void testUpdateProfile_withExistingEmail_shouldReturnConflict() throws Exception {
+    // Given: A second user exists in the database
+    register("another.user@example.com", "password123");
+
+    // When: The first user tries to take the second user's email
+    ProfileUpdateRequest conflictRequest =
+        new ProfileUpdateRequest("Conflict", "User", "another.user@example.com");
+
+    // Then: The request should be rejected with 409 Conflict
+    mockMvc
+        .perform(
+            put("/antares/users/me/profile")
+                .cookie(authCookies)
+                .with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(jsonMapper.writeValueAsString(conflictRequest)))
+        .andExpect(status().isConflict());
+  }
+
+  @Test
+  @DisplayName("Update Profile: should return 400 Bad Request for invalid data")
+  void testUpdateProfile_withInvalidData_shouldReturnBadRequest() throws Exception {
+    // Given: A request with a blank first name
+    ProfileUpdateRequest invalidRequest = new ProfileUpdateRequest("", "Doe", "valid@email.com");
+
+    // When/Then
+    mockMvc
+        .perform(
+            put("/antares/users/me/profile")
+                .cookie(authCookies)
+                .with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(jsonMapper.writeValueAsString(invalidRequest)))
+        .andExpect(status().isBadRequest());
+  }
+
+  @Test
+  @DisplayName("Update Preferences: should return 400 Bad Request for invalid locale format")
+  void testUpdatePreferences_withInvalidData_shouldReturnBadRequest() throws Exception {
+    // Given: A request with an invalid locale format
+    PreferencesUpdateRequest invalidRequest =
+        new PreferencesUpdateRequest("invalid-locale", "dark");
+
+    // When/Then
+    mockMvc
+        .perform(
+            patch("/antares/users/me/preferences")
+                .cookie(authCookies)
+                .with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(jsonMapper.writeValueAsString(invalidRequest)))
+        .andExpect(status().isBadRequest());
+  }
+
+  @Test
+  @DisplayName("Change Password: should return 400 for wrong current password")
+  void testChangePassword_withWrongCurrentPassword_shouldReturnBadRequest() throws Exception {
+    // Given
+    ChangePasswordRequest request =
+        new ChangePasswordRequest("wrong-current-password", "newPass123", "newPass123");
+
+    // When/Then
+    mockMvc
+        .perform(
+            put("/antares/users/me/password")
+                .cookie(authCookies)
+                .with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(jsonMapper.writeValueAsString(request)))
+        .andExpect(status().isBadRequest());
+  }
+
+  @Test
+  @DisplayName("Change Password: should return 400 for mismatched new passwords")
+  void testChangePassword_withMismatchedNewPassword_shouldReturnBadRequest() throws Exception {
+    // Given
+    ChangePasswordRequest request =
+        new ChangePasswordRequest(initialPassword, "newPass123", "mismatchedPass456");
+
+    // When/Then
+    mockMvc
+        .perform(
+            put("/antares/users/me/password")
+                .cookie(authCookies)
+                .with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(jsonMapper.writeValueAsString(request)))
+        .andExpect(status().isBadRequest());
   }
 }

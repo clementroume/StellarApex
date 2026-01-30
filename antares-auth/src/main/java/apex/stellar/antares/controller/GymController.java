@@ -1,6 +1,10 @@
 package apex.stellar.antares.controller;
 
-import apex.stellar.antares.dto.*;
+import apex.stellar.antares.dto.GymRequest;
+import apex.stellar.antares.dto.GymResponse;
+import apex.stellar.antares.dto.GymSettingsRequest;
+import apex.stellar.antares.dto.JoinGymRequest;
+import apex.stellar.antares.dto.MembershipResponse;
 import apex.stellar.antares.model.Gym.GymStatus;
 import apex.stellar.antares.model.User;
 import apex.stellar.antares.service.GymService;
@@ -18,7 +22,15 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 /**
  * REST Controller for managing Gym entities.
@@ -186,7 +198,7 @@ public class GymController {
    * @return The gym settings.
    */
   @GetMapping("/{gymId}/settings")
-  @PreAuthorize("@sec.hasGymPermission(#gymId, 'MANAGE_SETTINGS')")
+  @PreAuthorize("@security.hasGymPermission(#gymId, 'MANAGE_SETTINGS')")
   @Operation(summary = "Get Gym Settings", description = "Requires MANAGE_SETTINGS permission.")
   @ApiResponses(
       value = {
@@ -218,7 +230,7 @@ public class GymController {
    * @return HTTP 200 OK on success.
    */
   @PutMapping("/{gymId}/settings")
-  @PreAuthorize("@sec.hasGymPermission(#gymId, 'MANAGE_SETTINGS')")
+  @PreAuthorize("@security.hasGymPermission(#gymId, 'MANAGE_SETTINGS')")
   @Operation(summary = "Update Gym Settings", description = "Requires MANAGE_SETTINGS permission.")
   @ApiResponses(
       value = {
@@ -255,7 +267,7 @@ public class GymController {
    * @return HTTP 204 No Content on success.
    */
   @DeleteMapping("/{id}")
-  @PreAuthorize("@sec.hasGymPermission(#id, 'MANAGE_SETTINGS')")
+  @PreAuthorize("@security.hasGymPermission(#id, 'MANAGE_SETTINGS')")
   @Operation(summary = "Delete Gym", description = "Requires MANAGE_SETTINGS permission.")
   @ApiResponses(
       value = {

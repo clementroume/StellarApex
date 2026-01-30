@@ -10,17 +10,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import apex.stellar.antares.config.BaseIntegrationTest;
 import apex.stellar.antares.dto.AuthenticationRequest;
 import apex.stellar.antares.dto.RegisterRequest;
-import apex.stellar.antares.repository.UserRepository;
 import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.*;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.redis.connection.RedisConnection;
-import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.http.MediaType;
-import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.transaction.annotation.Transactional;
-import tools.jackson.databind.json.JsonMapper;
 
 /**
  * Integration tests for the {@link AuthenticationController}.
@@ -31,11 +25,8 @@ import tools.jackson.databind.json.JsonMapper;
 @Transactional
 class AuthenticationControllerIT extends BaseIntegrationTest {
 
-  @Autowired private MockMvc mockMvc;
-  @Autowired private JsonMapper jsonMapper;
-  @Autowired private UserRepository userRepository;
 
-  /** Cleans the database before each test (except for admin users). */
+  // Cleans the database before each test (except for admin users).
   @BeforeEach
   void setUp() {
     userRepository.deleteAllInBatch(
@@ -44,21 +35,11 @@ class AuthenticationControllerIT extends BaseIntegrationTest {
             .toList());
   }
 
-  /** Cleans Redis after each test to ensure isolation. */
-  @AfterEach
-  void cleanUpRedis(@Autowired StringRedisTemplate redisTemplate) {
-    redisTemplate.execute(
-        (RedisConnection connection) -> {
-          connection.serverCommands().flushAll();
-          return null;
-        });
-  }
-
   @Test
   @DisplayName("Full authentication flow: Register > Login > Access Resource > Logout")
   void testFullAuthenticationFlow_shouldSucceed() throws Exception {
     // === 1. Registration ===
-    // Given
+    // Given: A new user registration request
     RegisterRequest registerRequest =
         new RegisterRequest("Test", "User", "test.user@example.com", "password123");
 
@@ -73,11 +54,11 @@ class AuthenticationControllerIT extends BaseIntegrationTest {
         .andExpect(jsonPath("$.platformRole").value("USER"));
 
     // === 2. Login ===
-    // Given
+    // Given: Valid credentials
     AuthenticationRequest loginRequest =
         new AuthenticationRequest("test.user@example.com", "password123");
 
-    // When
+    // When: Login endpoint is called
     MvcResult loginResult =
         mockMvc
             .perform(
@@ -90,7 +71,7 @@ class AuthenticationControllerIT extends BaseIntegrationTest {
     Cookie[] loginCookies = loginResult.getResponse().getCookies();
 
     // === 3. Access Protected Resource ===
-    // Given
+    // Given: Authenticated session (cookies)
     // (User is authenticated via cookies)
     // When/Then
     mockMvc
@@ -99,7 +80,7 @@ class AuthenticationControllerIT extends BaseIntegrationTest {
         .andExpect(jsonPath("$.email").value("test.user@example.com"));
 
     // === 4. Logout ===
-    // Given
+    // Given: Authenticated session
     // (User is authenticated via cookies)
     // When/Then
     mockMvc
@@ -111,7 +92,7 @@ class AuthenticationControllerIT extends BaseIntegrationTest {
   @Test
   @DisplayName("Register: should return 409 Conflict for existing email")
   void testRegister_withExistingEmail_shouldReturnConflict() throws Exception {
-    // Given
+    // Given: An existing user
     RegisterRequest initialRequest =
         new RegisterRequest("Existing", "User", "existing.user@example.com", "password123");
     mockMvc
@@ -121,11 +102,11 @@ class AuthenticationControllerIT extends BaseIntegrationTest {
                 .content(jsonMapper.writeValueAsString(initialRequest)))
         .andExpect(status().isCreated());
 
-    // When
+    // When: Trying to register with the same email
     RegisterRequest conflictRequest =
         new RegisterRequest("Another", "User", "existing.user@example.com", "password456");
 
-    // Then
+    // Then: Conflict status is returned
     mockMvc
         .perform(
             post("/antares/auth/register")
@@ -137,7 +118,7 @@ class AuthenticationControllerIT extends BaseIntegrationTest {
   @Test
   @DisplayName("Login: should return 401 Unauthorized for wrong password")
   void testLogin_withWrongPassword_shouldReturnUnauthorized() throws Exception {
-    // Given
+    // Given: A registered user
     RegisterRequest registerRequest =
         new RegisterRequest("Login", "Test", "login.test@example.com", "correctPassword");
     mockMvc
@@ -147,11 +128,11 @@ class AuthenticationControllerIT extends BaseIntegrationTest {
                 .content(jsonMapper.writeValueAsString(registerRequest)))
         .andExpect(status().isCreated());
 
-    // When
+    // When: Login with an incorrect password
     AuthenticationRequest loginRequest =
         new AuthenticationRequest("login.test@example.com", "wrongPassword");
 
-    // Then
+    // Then: Unauthorized status
     mockMvc
         .perform(
             post("/antares/auth/login")
@@ -163,15 +144,15 @@ class AuthenticationControllerIT extends BaseIntegrationTest {
   @Test
   @DisplayName("Access Protected: should return 403 Forbidden without auth cookie")
   void testAccessProtectedResource_withoutCookie_shouldReturnForbidden() throws Exception {
-    // Given (No cookie)
-    // When/Then
+    // Given: No authentication cookies
+    // When/Then: Accessing protected resource fails
     mockMvc.perform(get("/antares/users/me").with(csrf())).andExpect(status().isUnauthorized());
   }
 
   @Test
   @DisplayName("Refresh Token: should succeed with a valid refresh token cookie")
   void testRefreshTokenFlow_shouldSucceed() throws Exception {
-    // Given
+    // Given: A logged-in user with a refresh token
     RegisterRequest registerRequest =
         new RegisterRequest("Refresh", "User", "refresh.user@example.com", "password123");
     mockMvc
@@ -192,11 +173,12 @@ class AuthenticationControllerIT extends BaseIntegrationTest {
             .andExpect(status().isOk())
             .andReturn();
     Cookie refreshTokenCookie = loginResult.getResponse().getCookie("stellar_refresh_token");
+    Assertions.assertNotNull(refreshTokenCookie, "Refresh token cookie must not be null");
 
-    // When
+    // When: Refresh token endpoint is called
     mockMvc
         .perform(post("/antares/auth/refresh-token").cookie(refreshTokenCookie).with(csrf()))
-        // Then
+        // Then: New access token is issued
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.accessToken").exists());
   }
@@ -204,12 +186,70 @@ class AuthenticationControllerIT extends BaseIntegrationTest {
   @Test
   @DisplayName("Refresh Token: should return 404 Not Found with an invalid token")
   void testRefreshTokenFlow_withInvalidToken_shouldReturnNotFound() throws Exception {
-    // Given
+    // Given: An invalid refresh token
     Cookie invalidRefreshTokenCookie = new Cookie("antares_refresh_token", "invalid-token-value");
+
+    // When/Then: Request fails
+    mockMvc
+        .perform(post("/antares/auth/refresh-token").cookie(invalidRefreshTokenCookie).with(csrf()))
+        .andExpect(status().isNotFound());
+  }
+
+  @Test
+  @DisplayName("Register: should return 400 Bad Request for invalid input")
+  void testRegister_withInvalidInput_shouldReturnBadRequest() throws Exception {
+    // Given: Request with invalid email and short password
+    RegisterRequest invalidRequest = new RegisterRequest("", "", "not-an-email", "short");
 
     // When/Then
     mockMvc
-        .perform(post("/antares/auth/refresh-token").cookie(invalidRefreshTokenCookie).with(csrf()))
+        .perform(
+            post("/antares/auth/register")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(jsonMapper.writeValueAsString(invalidRequest)))
+        .andExpect(status().isBadRequest());
+  }
+
+  @Test
+  @DisplayName("Login: should lock account after max failed attempts (HTTP 429)")
+  void testLogin_AccountLocking_shouldReturnTooManyRequests() throws Exception {
+    // Given: A registered user
+    RegisterRequest registerRequest =
+        new RegisterRequest("Lock", "User", "lock@test.com", "password123");
+    mockMvc
+        .perform(
+            post("/antares/auth/register")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(jsonMapper.writeValueAsString(registerRequest)))
+        .andExpect(status().isCreated());
+
+    AuthenticationRequest badLogin = new AuthenticationRequest("lock@test.com", "wrongpass");
+
+    // When: Failing 5 times (default max-attempts)
+    for (int i = 0; i < 5; i++) {
+      mockMvc
+          .perform(
+              post("/antares/auth/login")
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .content(jsonMapper.writeValueAsString(badLogin)))
+          .andExpect(status().isUnauthorized());
+    }
+
+    // Then: The 6th attempt should be blocked with 429 Too Many Requests
+    mockMvc
+        .perform(
+            post("/antares/auth/login")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(jsonMapper.writeValueAsString(badLogin)))
+        .andExpect(status().isTooManyRequests());
+  }
+
+  @Test
+  @DisplayName("Refresh Token: should return 404 Not Found if cookie is completely missing")
+  void testRefreshTokenFlow_missingCookie_shouldReturnNotFound() throws Exception {
+    // When/Then: Calling endpoint without any cookies
+    mockMvc
+        .perform(post("/antares/auth/refresh-token").with(csrf()))
         .andExpect(status().isNotFound());
   }
 }

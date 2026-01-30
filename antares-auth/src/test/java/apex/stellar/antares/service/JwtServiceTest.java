@@ -45,7 +45,7 @@ class JwtServiceTest {
    *
    * <p>Initializes a default {@link UserDetails} instance used across multiple tests. Note: {@code
    * jwtProperties} are not mocked globally here to avoid {@code UnnecessaryStubbingException} in
-   * tests that do not utilize them (e.g., cookie retrieval).
+   * tests that do not use them (e.g., cookie retrieval).
    */
   @BeforeEach
   void setUp() {

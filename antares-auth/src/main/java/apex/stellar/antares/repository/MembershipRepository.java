@@ -30,6 +30,7 @@ public interface MembershipRepository extends JpaRepository<Membership, Long> {
    * @return a list of memberships with initialized User data.
    */
   @EntityGraph(attributePaths = {"user"})
+  @Query("SELECT m FROM Membership m WHERE m.gym.id = :gymId")
   List<Membership> findByGymId(Long gymId);
 
   /**
@@ -42,6 +43,7 @@ public interface MembershipRepository extends JpaRepository<Membership, Long> {
    * @return a list of matching memberships with initialized User data.
    */
   @EntityGraph(attributePaths = {"user"})
+  @Query("SELECT m FROM Membership m WHERE m.gym.id = :gymId AND m.status = :status")
   List<Membership> findByGymIdAndStatus(Long gymId, MembershipStatus status);
 
   /**
