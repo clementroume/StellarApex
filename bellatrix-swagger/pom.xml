@@ -76,19 +76,27 @@
       <groupId>org.springdoc</groupId>
       <version>${springdoc.version}</version>
     </dependency>
+
     <dependency>
       <artifactId>lombok</artifactId>
       <groupId>org.projectlombok</groupId>
       <optional>true</optional>
     </dependency>
+
+    <dependency>
+      <artifactId>spring-boot-starter-opentelemetry</artifactId>
+      <groupId>org.springframework.boot</groupId>
+    </dependency>
+    <dependency>
+      <artifactId>opentelemetry-logback-appender-1.0</artifactId>
+      <groupId>io.opentelemetry.instrumentation</groupId>
+      <version>2.21.0-alpha</version>
+    </dependency>
+
     <dependency>
       <artifactId>spring-boot-starter-webmvc-test</artifactId>
       <groupId>org.springframework.boot</groupId>
       <scope>test</scope>
-    </dependency>
-    <dependency>
-      <artifactId>spring-boot-admin-starter-client</artifactId>
-      <groupId>de.codecentric</groupId>
     </dependency>
     <dependency>
       <artifactId>wiremock-standalone</artifactId>
@@ -97,18 +105,6 @@
       <version>3.13.2</version>
     </dependency>
   </dependencies>
-
-  <dependencyManagement>
-    <dependencies>
-      <dependency>
-        <artifactId>spring-boot-admin-dependencies</artifactId>
-        <groupId>de.codecentric</groupId>
-        <scope>import</scope>
-        <type>pom</type>
-        <version>${spring-boot-admin.version}</version>
-      </dependency>
-    </dependencies>
-  </dependencyManagement>
 
   <description>Bellatrix Swagger Service</description>
   <groupId>apex.stellar</groupId>
@@ -125,7 +121,6 @@
 
   <properties>
     <java.version>25</java.version>
-    <spring-boot-admin.version>4.0.0-M1</spring-boot-admin.version>
     <springdoc.version>3.0.1</springdoc.version>
   </properties>
 

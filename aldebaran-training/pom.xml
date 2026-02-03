@@ -131,10 +131,6 @@
       <optional>true</optional>
       <scope>runtime</scope>
     </dependency>
-    <dependency>
-      <artifactId>spring-boot-admin-starter-client</artifactId>
-      <groupId>de.codecentric</groupId>
-    </dependency>
 
     <dependency>
       <artifactId>postgresql</artifactId>
@@ -149,13 +145,13 @@
     </dependency>
 
     <dependency>
-      <artifactId>micrometer-tracing-bridge-brave</artifactId>
-      <groupId>io.micrometer</groupId>
+      <artifactId>spring-boot-starter-opentelemetry</artifactId>
+      <groupId>org.springframework.boot</groupId>
     </dependency>
     <dependency>
-      <artifactId>micrometer-registry-prometheus</artifactId>
-      <groupId>io.micrometer</groupId>
-      <scope>runtime</scope>
+      <artifactId>opentelemetry-logback-appender-1.0</artifactId>
+      <groupId>io.opentelemetry.instrumentation</groupId>
+      <version>2.21.0-alpha</version>
     </dependency>
 
     <dependency>
@@ -204,13 +200,6 @@
   <dependencyManagement>
     <dependencies>
       <dependency>
-        <artifactId>spring-boot-admin-dependencies</artifactId>
-        <groupId>de.codecentric</groupId>
-        <scope>import</scope>
-        <type>pom</type>
-        <version>${spring-boot-admin.version}</version>
-      </dependency>
-      <dependency>
         <artifactId>testcontainers-bom</artifactId>
         <groupId>org.testcontainers</groupId>
         <scope>import</scope>
@@ -236,7 +225,6 @@
   <properties>
     <java.version>25</java.version>
     <org.mapstruct.version>1.6.3</org.mapstruct.version>
-    <spring-boot-admin.version>4.0.0-M1</spring-boot-admin.version>
     <springdoc.version>3.0.1</springdoc.version>
   </properties>
 

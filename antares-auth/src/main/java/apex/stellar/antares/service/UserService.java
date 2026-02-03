@@ -6,6 +6,7 @@ import apex.stellar.antares.dto.ProfileUpdateRequest;
 import apex.stellar.antares.dto.UserResponse;
 import apex.stellar.antares.exception.DataConflictException;
 import apex.stellar.antares.exception.InvalidPasswordException;
+import apex.stellar.antares.exception.ResourceNotFoundException;
 import apex.stellar.antares.mapper.UserMapper;
 import apex.stellar.antares.model.User;
 import apex.stellar.antares.repository.UserRepository;
@@ -38,7 +39,12 @@ public class UserService {
    */
   @Transactional(readOnly = true)
   public UserResponse getProfile(User currentUser) {
-    return userMapper.toUserResponse(currentUser);
+    User user =
+        userRepository
+            .findById(currentUser.getId())
+            .orElseThrow(
+                () -> new ResourceNotFoundException("error.user.not.found", currentUser.getId()));
+    return userMapper.toUserResponse(user);
   }
 
   /**

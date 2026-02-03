@@ -1,0 +1,85 @@
+# ==============================================================================
+#  TEMPO CONFIGURATION
+#  Role: Distributed Tracing Backend
+# ==============================================================================
+
+server:
+  http_listen_port: 3200  # Internal HTTP API (Querying)
+  grpc_listen_port: 9096  # Internal gRPC API
+
+# --- DISTRIBUTOR ---
+# Receives traces from OTel Collector.
+distributor:
+  receivers:
+    otlp:
+      protocols:
+        grpc:
+          endpoint: "0.0.0.0:4317"
+        http:
+          endpoint: "0.0.0.0:4318"
+
+# --- INGESTER (Real-Time Tuning) ---
+# Configured for low latency visibility (Dev/Debug mode).
+# In production, increase these values to optimize batching and performance.
+ingester:
+  trace_idle_period: 1s       # Flush traces immediately after 1s of inactivity
+  max_block_duration: 1s      # Cut blocks every second
+  flush_check_period: 1s      # Check for flushing every second
+  lifecycler:
+    ring:
+      kvstore:
+        store: inmemory
+      replication_factor: 1
+    min_ready_duration: 1s
+
+# --- COMPACTOR (Retention) ---
+# Manages storage and deletes old traces to save disk space.
+compactor:
+  compaction:
+    compaction_window: 1h
+    max_block_bytes: 100_000_000
+    block_retention: 24h      # Keep traces for 24 hours only
+    compacted_block_retention: 10m
+
+memberlist:
+  bind_port: 7946             # Gossip protocol port
+
+# --- STORAGE (Local Filesystem) ---
+storage:
+  trace:
+    backend: local
+    wal:
+      path: /var/tempo/wal
+    local:
+      path: /var/tempo/blocks
+
+# --- METRICS GENERATOR (The "Brain") ---
+# Derives RED metrics (Rate, Errors, Duration) from traces and pushes them to Prometheus.
+metrics_generator:
+  processor:
+    local_blocks:
+      filter_server_spans: false # Required for TraceQL
+    span_metrics:
+      dimensions:
+        - service_name
+        - operation
+        - status_code
+        - http.method
+        - http.target
+
+  # Temporary storage for generator
+  traces_storage:
+    path: /var/tempo/generator/traces
+  storage:
+    path: /var/tempo/generator/wal
+    remote_write:
+      # Pushes generated metrics to Prometheus
+      - url: http://vega-prometheus:9090/api/v1/write
+        send_exemplars: true # Links metrics back to traces in Grafana
+
+# --- OVERRIDES ---
+# Enable the active components
+overrides:
+  defaults:
+    metrics_generator:
+      processors: [ service-graphs, local-blocks, span-metrics ]

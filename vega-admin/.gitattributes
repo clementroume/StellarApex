@@ -1,5 +1,0 @@
-# Normalize line endings for shell scripts to LF
-/mvnw text eol=lf
-
-# Normalize line endings for Windows batch scripts to CRLF
-*.cmd text eol=crlf

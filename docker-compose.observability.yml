@@ -1,0 +1,152 @@
+name: stellar-observability
+
+# ==============================================================================
+#  STELLAR APEX - OBSERVABILITY STACK (THE "VEGA" SUITE)
+# ==============================================================================
+# This file manages:
+# 1. The Collector (OpenTelemetry)
+# 2. Storage Backends (Prometheus, Loki, Tempo)
+# 3. Visualization (Grafana)
+# 4. Infrastructure Exporters (Redis, Postgres, Docker)
+# ==============================================================================
+
+services:
+  # --- 1. TELEMETRY COLLECTOR (GRAFANA ALLOY) ---
+  vega-alloy:
+    image: grafana/alloy:v1.12.2
+    container_name: vega-alloy
+    command: [ "run", "--server.http.listen-addr=0.0.0.0:12345", "/etc/alloy/config.alloy" ]
+    volumes:
+      - "./monitoring/alloy/config.alloy:/etc/alloy/config.alloy"
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+      - "vega_alloy_data:/var/lib/alloy/data"
+    ports:
+      - "4317:4317"   # OTLP gRPC
+      - "4318:4318"   # OTLP HTTP
+      - "12345:12345" # Alloy UI (Debug)
+    restart: unless-stopped
+    networks:
+      - stellar-net
+    depends_on:
+      - vega-loki
+      - vega-prometheus
+      - vega-tempo
+
+  # --- 2. METRICS STORAGE (PROMETHEUS) ---
+  vega-prometheus:
+    image: prom/prometheus:v3.9.1
+    container_name: vega-prometheus
+    volumes:
+      - "./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml"
+      - "vega_prometheus_data:/prometheus"
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.retention.time=15d"
+      - "--web.enable-remote-write-receiver" # Allows OTel/Alloy to push metrics
+      - "--web.enable-otlp-receiver"       # Native OTLP ingestion support
+      - "--enable-feature=created-timestamp-zero-ingestion"
+    restart: unless-stopped
+    networks:
+      - stellar-net
+
+  # --- 3. LOGS STORAGE (LOKI) ---
+  vega-loki:
+    image: grafana/loki:3.6.4
+    container_name: vega-loki
+    volumes:
+      - "./monitoring/loki/loki-config.yaml:/etc/loki/local-config.yaml"
+      - "vega_loki_data:/loki"
+    command: -config.file=/etc/loki/local-config.yaml
+    restart: unless-stopped
+    networks:
+      - stellar-net
+
+  # --- 4. TRACING STORAGE (TEMPO) ---
+  vega-tempo:
+    image: grafana/tempo:2.10.0
+    container_name: vega-tempo
+    command: [ "-config.file=/etc/tempo.yaml" ]
+    volumes:
+      - "./monitoring/tempo/tempo.yaml:/etc/tempo.yaml"
+      - "vega_tempo_data:/var/tempo"
+    restart: unless-stopped
+    networks:
+      - stellar-net
+
+  # --- 5. VISUALIZATION (GRAFANA) ---
+  vega-grafana:
+    image: grafana/grafana:12.3
+    container_name: vega-grafana
+    volumes:
+      - "vega_grafana_data:/var/lib/grafana"
+      # Provisioning (Datasources & Dashboards)
+      # - "./monitoring/grafana/provisioning:/etc/grafana/provisioning"
+      # - "./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards"
+    environment:
+      - GF_AUTH_PROXY_ENABLED=true
+      - GF_AUTH_PROXY_HEADER_NAME=X-Auth-User-Login
+      - GF_AUTH_PROXY_AUTO_SIGN_UP=true
+      - GF_AUTH_PROXY_HEADERS=Email:X-Auth-User-Email Role:X-Auth-User-Role Name:X-Auth-User-Name
+      - GF_AUTH_DISABLE_LOGIN_FORM=true
+    restart: unless-stopped
+    networks:
+      - stellar-net
+
+  # --- 6. INFRASTRUCTURE EXPORTERS ---
+
+  # A. Container Metrics (cAdvisor)
+  vega-cadvisor:
+    image: ghcr.io/google/cadvisor:0.56.2
+    container_name: vega-cadvisor
+    volumes:
+      - /:/rootfs:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+      - /dev/disk/:/dev/disk:ro
+    devices:
+      - /dev/kmsg
+    privileged: true
+    restart: unless-stopped
+    networks:
+      - stellar-net
+
+  # B. Database Metrics (Postgres Exporter)
+  vega-postgres:
+    image: prometheuscommunity/postgres-exporter:latest
+    container_name: vega-postgres
+    environment:
+      DATA_SOURCE_NAME: "postgresql://${CASTOR_USERNAME}:${CASTOR_PASSWORD}@castor-db:5432/${CASTOR_DB}?sslmode=disable"
+    restart: unless-stopped
+    networks:
+      - stellar-net
+
+  # C. Cache Metrics (Redis Exporter)
+  vega-redis:
+    image: oliver006/redis_exporter:latest
+    container_name: vega-redis
+    environment:
+      - REDIS_ADDR=pollux-cache:6379
+      - REDIS_PASSWORD=${POLLUX_PASSWORD}
+    restart: unless-stopped
+    networks:
+      - stellar-net
+
+# --- OBSERVABILITY VOLUMES ---
+volumes:
+  vega_prometheus_data:
+    name: vega_prometheus_data
+  vega_loki_data:
+    name: vega_loki_data
+  vega_alloy_data:
+    name: vega_alloy_data
+  vega_tempo_data:
+    name: vega_tempo_data
+  vega_grafana_data:
+    name: vega_grafana_data
+
+# --- SHARED NETWORK ---
+networks:
+  stellar-net:
+    name: stellar-net
+    driver: bridge

@@ -1,0 +1,39 @@
+# ==============================================================================
+#  PROMETHEUS CONFIGURATION
+#  Role: Metrics Storage & Time Series Database
+# ==============================================================================
+
+global:
+  scrape_interval: 15s     # How often to scrape targets by default
+  evaluation_interval: 15s # How often to evaluate recording and alerting rules
+  scrape_native_histograms: true # Enable native OTel histogram support (high fidelity)
+
+# --- OTLP INGESTION CONFIGURATION ---
+# This section is critical for the "OTLP Push" architecture.
+# It tells Prometheus how to map OpenTelemetry Resource Attributes to Prometheus Labels.
+# Requires flag: --web.enable-otlp-receiver
+otlp:
+  keep_identifying_resource_attributes: true
+  promote_resource_attributes:
+    # These attributes will become selectable labels in Grafana
+    - service.instance.id
+    - service.name        # Crucial for "Application" dropdowns
+    - service.namespace
+    - service.version
+    - deployment.environment
+    - container.name
+    - host.name
+
+# --- STORAGE SETTINGS ---
+storage:
+  tsdb:
+    # Allows accepting data with slightly old timestamps (common with OTLP push over network)
+    out_of_order_time_window: 30m
+
+# --- SCRAPE CONFIGURATIONS ---
+# Since OTel Collector handles most infrastructure scraping,
+# Prometheus only needs to scrape itself here.
+scrape_configs:
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: [ 'localhost:9090' ]

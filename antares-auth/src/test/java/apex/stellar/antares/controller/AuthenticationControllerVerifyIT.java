@@ -93,7 +93,11 @@ class AuthenticationControllerVerifyIT extends BaseIntegrationTest {
     // When / Then
     mockMvc
         .perform(get("/antares/auth/verify/admin").cookie(adminCookies))
-        .andExpect(status().isOk());
+        .andExpect(status().isOk())
+        .andExpect(header().string("X-Auth-User-Login", "auser"))
+        .andExpect(header().string("X-Auth-User-Name", "Admin User"))
+        .andExpect(header().string("X-Auth-User-Email", "admin@test.com"))
+        .andExpect(header().string("X-Auth-User-Role", "Admin"));
   }
 
   // ==================================================================================

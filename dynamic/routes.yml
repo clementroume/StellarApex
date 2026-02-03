@@ -10,6 +10,11 @@ http:
       forwardAuth:
         address: "http://antares-auth:8080/antares/auth/verify/admin"
         trustForwardHeader: true
+        authResponseHeaders:
+          - "X-Auth-User-Login"
+          - "X-Auth-User-Name"
+          - "X-Auth-User-Email"
+          - "X-Auth-User-Role"
 
     forward-auth-api:
       # Forward authentication middleware for api.
@@ -97,12 +102,12 @@ http:
         - "forward-auth-admin"                  # Secure with Admin Forward Auth.
 
 
-    # --- 5. Vega-Admin Router ---
-    vega-admin-router:
-      rule: "Host(`admin.stellar.apex`)"        # Match 'admin.stellar.apex'.
+    # --- 5. Vega-Grafana Router (Monitoring) ---
+    vega-grafana-router:
+      rule: "Host(`monitor.stellar.apex`)"      # Match 'monitor.stellar.apex'.
       entryPoints: [ "websecure" ]              # Use the 'websecure' (HTTPS) entrypoint.
       tls: true                                 # Enable TLS (HTTPS).
-      service: "vega-admin-service"             # Route to the 'vega-admin' service
+      service: "vega-grafana-service"           # Route to the 'vega-grafana' service
       middlewares:
         - "rate-limit-admin"                    # Secure with rate limiting.
         - "secure-headers"                      # Apply security headers.
@@ -146,8 +151,8 @@ http:
         servers:
           - url: "http://bellatrix-swagger:8888"
 
-    # --- 5. Vega-Admin Service ---
-    vega-admin-service:
+    # --- 5. Vega-Grafana Service ---
+    vega-grafana-service:
       loadBalancer:
         servers:
-          - url: "http://vega-admin:9090"
+          - url: "http://vega-grafana:3000"

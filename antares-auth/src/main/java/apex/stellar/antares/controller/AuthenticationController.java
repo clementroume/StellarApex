@@ -1,6 +1,8 @@
 package apex.stellar.antares.controller;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.text.Normalizer.Form.NFD;
+import static java.text.Normalizer.normalize;
 
 import apex.stellar.antares.dto.AuthenticationRequest;
 import apex.stellar.antares.dto.RegisterRequest;
@@ -33,6 +35,7 @@ import java.net.URLEncoder;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.jspecify.annotations.NonNull;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
@@ -56,6 +59,19 @@ import org.springframework.web.bind.annotation.RestController;
 @Tag(name = "Authentication", description = "Registration, Logging in, and Token Management")
 @Slf4j
 public class AuthenticationController {
+
+  private static final String HEADER_AUTH_USER_ID = "X-Auth-User-Id";
+  private static final String HEADER_AUTH_USER_LOGIN = "X-Auth-User-Login";
+  private static final String HEADER_AUTH_USER_NAME = "X-Auth-User-Name";
+  private static final String HEADER_AUTH_USER_EMAIL = "X-Auth-User-Email";
+  private static final String HEADER_AUTH_USER_ROLE = "X-Auth-User-Role";
+  private static final String HEADER_AUTH_USER_LOCALE = "X-Auth-User-Locale";
+  private static final String HEADER_AUTH_GYM_ID = "X-Auth-Gym-Id";
+  private static final String HEADER_AUTH_USER_PERMISSIONS = "X-Auth-User-Permissions";
+  private static final String HEADER_CONTEXT_GYM_ID = "X-Context-Gym-Id";
+  private static final String HEADER_FORWARDED_PROTO = "X-Forwarded-Proto";
+  private static final String HEADER_FORWARDED_HOST = "X-Forwarded-Host";
+  private static final String HEADER_FORWARDED_URI = "X-Forwarded-Uri";
 
   private final AuthenticationService authenticationService;
   private final JwtService jwtService;
@@ -184,7 +200,19 @@ public class AuthenticationController {
     if (authentication.getPrincipal() instanceof User user) {
 
       return user.getPlatformRole() == PlatformRole.ADMIN
-          ? ResponseEntity.ok().build()
+          ? ResponseEntity.ok()
+              .header(
+                  HEADER_AUTH_USER_LOGIN,
+                  (user.getFirstName().charAt(0) + user.getLastName()).toLowerCase().trim())
+              .header(
+                  HEADER_AUTH_USER_NAME,
+                  normalize(user.getFirstName() + " " + user.getLastName(), NFD)
+                      .replaceAll("\\p{M}", ""))
+              .header(HEADER_AUTH_USER_EMAIL, user.getUsername())
+              .header(
+                  HEADER_AUTH_USER_ROLE,
+                  StringUtils.capitalize(user.getPlatformRole().name().toLowerCase()))
+              .build()
           : ResponseEntity.status(HttpStatus.FORBIDDEN).build();
     }
 
@@ -213,14 +241,14 @@ public class AuthenticationController {
 
     if (authentication.getPrincipal() instanceof User principal) {
       User user = userRepository.findById(principal.getId()).orElse(principal);
-      String gymIdHeader = request.getHeader("X-Context-Gym-Id");
+      String gymIdHeader = request.getHeader(HEADER_CONTEXT_GYM_ID);
 
       // Case 1: Independent Athlete (No Gym Context)
       if (gymIdHeader == null) {
         return ResponseEntity.ok()
-            .header("X-Auth-User-Id", String.valueOf(user.getId()))
-            .header("X-Auth-User-Role", user.getPlatformRole().name())
-            .header("X-Auth-User-Locale", user.getLocale())
+            .header(HEADER_AUTH_USER_ID, String.valueOf(user.getId()))
+            .header(HEADER_AUTH_USER_ROLE, user.getPlatformRole().name())
+            .header(HEADER_AUTH_USER_LOCALE, user.getLocale())
             .build();
       }
 
@@ -253,11 +281,11 @@ public class AuthenticationController {
                 .collect(Collectors.joining(","));
 
         return ResponseEntity.ok()
-            .header("X-Auth-User-Id", String.valueOf(user.getId()))
-            .header("X-Auth-User-Locale", user.getLocale())
-            .header("X-Auth-Gym-Id", String.valueOf(gymId))
-            .header("X-Auth-User-Role", membership.getGymRole().name())
-            .header("X-Auth-User-Permissions", permissions)
+            .header(HEADER_AUTH_USER_ID, String.valueOf(user.getId()))
+            .header(HEADER_AUTH_USER_LOCALE, user.getLocale())
+            .header(HEADER_AUTH_GYM_ID, String.valueOf(gymId))
+            .header(HEADER_AUTH_USER_ROLE, membership.getGymRole().name())
+            .header(HEADER_AUTH_USER_PERMISSIONS, permissions)
             .build();
 
       } catch (NumberFormatException e) {
@@ -298,9 +326,9 @@ public class AuthenticationController {
    */
   private String buildLoginRedirectUrl(HttpServletRequest request) {
 
-    String proto = request.getHeader("X-Forwarded-Proto");
-    String host = request.getHeader("X-Forwarded-Host");
-    String uri = request.getHeader("X-Forwarded-Uri");
+    String proto = request.getHeader(HEADER_FORWARDED_PROTO);
+    String host = request.getHeader(HEADER_FORWARDED_HOST);
+    String uri = request.getHeader(HEADER_FORWARDED_URI);
 
     if (proto != null && host != null) {
       String originalUrl = proto + "://" + host + (uri != null ? uri : "");

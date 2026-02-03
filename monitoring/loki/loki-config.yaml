@@ -1,0 +1,87 @@
+# ==============================================================================
+#  LOKI CONFIGURATION (SINGLE BINARY MODE)
+#  Role: Log Aggregation System
+# ==============================================================================
+
+# Disable multi-tenancy (simplifies setup for single-organization stacks).
+# Every log stream is treated as belonging to the same tenant ("fake").
+auth_enabled: false
+
+# --- SERVER CONFIGURATION ---
+server:
+  http_listen_port: 3100
+  grpc_listen_port: 9096
+  # Ensure Loki listens on all interfaces (crucial for Docker networking)
+  http_listen_address: 0.0.0.0
+  grpc_listen_address: 0.0.0.0
+
+# --- STORAGE & PATHS ---
+# "Common" block unifies storage configuration (simplifies config since Loki 2.4+).
+common:
+  instance_addr: 127.0.0.1
+  path_prefix: /loki
+  storage:
+    filesystem:
+      chunks_directory: /loki/chunks # Where raw log data (chunks) is stored.
+      rules_directory: /loki/rules   # Where alerting rules are stored.
+  replication_factor: 1 # Single node = No replication.
+  ring:
+    kvstore:
+      store: inmemory # Metadata ring stored in RAM.
+
+# --- SCHEMA CONFIGURATION ---
+# Defines how the index is structured. "TSDB" is the modern, faster format.
+schema_config:
+  configs:
+    - from: 2024-01-01
+      store: tsdb
+      object_store: filesystem
+      schema: v13
+      index:
+        prefix: index_
+        period: 24h
+
+# --- QUERY ENGINE (PERFORMANCE) ---
+# Caching configuration to speed up dashboard loading.
+query_range:
+  results_cache:
+    cache:
+      embedded_cache:
+        enabled: true
+        max_size_mb: 100 # Uses up to 100MB of RAM to cache query results.
+
+# --- RULER (ALERTS) ---
+ruler:
+  storage:
+    type: local
+    local:
+      directory: /loki/rules
+  rule_path: /loki/rules
+  alertmanager_url: http://localhost:9093
+  ring:
+    kvstore:
+      store: inmemory
+  enable_api: true
+
+# --- LIMITS & RETENTION POLICY ---
+limits_config:
+  reject_old_samples: true
+  reject_old_samples_max_age: 168h # Reject logs older than 7 days on ingestion.
+  creation_grace_period: 10m
+  max_cache_freshness_per_query: 10m
+
+  # GLOBAL RETENTION POLICY
+  retention_period: 168h # Keep logs for 7 days (Matches reject_old_samples_max_age).
+
+# --- COMPACTOR (CLEANUP) ---
+# Responsible for merging index files and enforcing retention.
+compactor:
+  working_directory: /loki/compactor
+  compaction_interval: 10m
+  retention_enabled: true        # MUST be true for retention_period to work.
+  retention_delete_delay: 2h     # Grace period before hard deletion.
+  delete_request_store: filesystem
+
+# --- ANALYTICS ---
+analytics:
+  reporting_enabled: false       # Privacy: Do not send usage stats to Grafana Labs.

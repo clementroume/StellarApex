@@ -1,0 +1,142 @@
+// ==============================================================================
+//  ALLOY CONFIGURATION - UNIFIED TELEMETRY COLLECTOR
+//  Architecture: OTLP Forwarder + Infrastructure Scraper + Log Aggregator
+// ==============================================================================
+
+// --- 1. RECEIVERS (INPUT) ---
+
+// A. OTLP RECEIVER (PUSH MODE)
+// Receives Telemetry (Metrics, Traces, Logs) pushed by Spring Boot applications.
+otelcol.receiver.otlp "default" {
+  grpc { endpoint = "0.0.0.0:4317" }
+  http { endpoint = "0.0.0.0:4318" }
+
+  output {
+    metrics = [otelcol.processor.batch.default.input]
+    traces  = [otelcol.processor.batch.default.input]
+    logs    = [otelcol.processor.batch.default.input]
+  }
+}
+
+// B. INFRASTRUCTURE SCRAPING (PULL MODE)
+// Scrapes metrics from infrastructure components (Proxy, DB, Cache, Observability Stack).
+prometheus.scrape "infrastructure" {
+  targets = [
+    // Core Infrastructure
+    {__address__ = "altair-proxy:8082",      service = "traefik",    group = "infrastructure"},
+    {__address__ = "vega-cadvisor:8080",     service = "cadvisor",   group = "infrastructure"},
+    {__address__ = "vega-postgres:9187",     service = "postgres",   group = "infrastructure"},
+    {__address__ = "vega-redis:9121",        service = "redis",      group = "infrastructure"},
+
+    // Self-Monitoring (Observability Stack Health)
+    {__address__ = "vega-loki:3100",         service = "loki",       group = "infrastructure"},
+    {__address__ = "vega-tempo:3200",        service = "tempo",      group = "infrastructure"},
+    {__address__ = "vega-prometheus:9090",   service = "prometheus", group = "infrastructure"},
+  ]
+  scrape_interval = "15s"
+  forward_to      = [prometheus.remote_write.infra.receiver]
+}
+
+// C. SELF-MONITORING ("Monitoring the Monitor")
+// Exposes Alloy's internal health metrics to detect ingestion issues or bottlenecks.
+prometheus.exporter.self "alloy_health" {}
+
+prometheus.scrape "alloy_internal" {
+  targets    = prometheus.exporter.self.alloy_health.targets
+  forward_to = [prometheus.remote_write.infra.receiver]
+}
+
+// --- 2. LOG DISCOVERY (DOCKER SOCKET) ---
+
+// Discover running Docker containers via the Unix socket.
+discovery.docker "containers" {
+  host = "unix:///var/run/docker.sock"
+}
+
+// Log Filtering Strategy (Blacklist Mode)
+discovery.relabel "logs_infra_filter" {
+  targets = discovery.docker.containers.targets
+
+  // 1. Extract the clean container name
+  rule {
+    source_labels = ["__meta_docker_container_name"]
+    regex         = "/(.*)"
+    target_label  = "container"
+  }
+
+  // 2. Standardize the 'service_name' label to match OTel conventions
+  rule {
+    source_labels = ["__meta_docker_container_name"]
+    regex         = "/(.*)"
+    target_label  = "service_name"
+  }
+
+  // 3. Drop logs from Spring Boot applications.
+  rule {
+    source_labels = ["container"]
+    // Update this regex if you add more Spring Boot services
+    regex         = "(antares-auth|bellatrix-swagger|aldebaran-training)"
+    action        = "drop"
+  }
+}
+
+// Read logs from the filtered list of containers (Tailing)
+loki.source.docker "infra_logs" {
+  host       = "unix:///var/run/docker.sock"
+  targets    = discovery.relabel.logs_infra_filter.output
+  forward_to = [loki.write.local.receiver]
+}
+
+// --- 3. PROCESSORS ---
+
+// Batches data to optimize network throughput and reduce API calls to backends.
+otelcol.processor.batch "default" {
+  timeout         = "1s"
+  send_batch_size = 1000
+
+  output {
+    metrics = [otelcol.exporter.otlphttp.prometheus.input]
+    traces  = [otelcol.exporter.otlphttp.tempo.input]
+    logs    = [otelcol.exporter.otlphttp.loki.input]
+  }
+}
+
+// --- 4. EXPORTERS (OUTPUT) ---
+
+// A. Forward Metrics to Prometheus (via OTLP Receiver)
+otelcol.exporter.otlphttp "prometheus" {
+  client {
+    endpoint = "http://vega-prometheus:9090/api/v1/otlp"
+    tls { insecure = true }
+  }
+}
+
+// B. Forward Traces to Tempo
+otelcol.exporter.otlphttp "tempo" {
+  client {
+    endpoint = "http://vega-tempo:4318"
+    tls { insecure = true }
+  }
+}
+
+// C. Forward Application Logs to Loki (via OTLP)
+otelcol.exporter.otlphttp "loki" {
+  client {
+    endpoint = "http://vega-loki:3100/otlp"
+    tls { insecure = true }
+  }
+}
+
+// D. Write Infrastructure Logs to Loki (Direct Push)
+loki.write "local" {
+  endpoint {
+    url = "http://vega-loki:3100/loki/api/v1/push"
+  }
+}
+
+// E. Write Scraped Metrics to Prometheus (Remote Write)
+prometheus.remote_write "infra" {
+  endpoint {
+    url = "http://vega-prometheus:9090/api/v1/write"
+  }
+}

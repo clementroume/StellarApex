@@ -1,6 +1,19 @@
-# Defines the infrastructure services for the StellarApex application stack.
+name: stellar-apex-core
+
+# ==============================================================================
+#  STELLAR APEX - CORE INFRASTRUCTURE & APPLICATIONS
+# ==============================================================================
+# This Compose file manages the business logic layer: Proxy, Apps, DB, and Cache.
+# It is designed to work in tandem with 'docker-compose.observability.yml'.
+# ==============================================================================
+
+# Include the observability stack automatically (requires Docker Compose v2.20+)
+include:
+  - path: ./docker-compose.observability.yml
+
 services:
-  # --- 1. ALTAIR - THE TRAEFIK PROXY ---
+  # --- 1. ALTAIR - REVERSE PROXY (TRAEFIK) ---
+  # Handles routing, SSL termination, and load balancing.
   altair-proxy:
     image: traefik:v3.6
     container_name: altair-proxy
@@ -24,6 +37,13 @@ services:
       - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
       - "--entrypoints.websecure.address=:443"
       - "--entrypoints.websecure.http.tls=true"
+
+      # Metrics Exposure (Added for Observability)
+      - "--metrics.prometheus=true"
+      - "--metrics.prometheus.addEntryPointsLabels=true"
+      - "--metrics.prometheus.addRoutersLabels=true"
+      - "--entrypoints.metrics.address=:8082"
+      - "--metrics.prometheus.entryPoint=metrics"
 
       # --- Providers (Docker & File) ---
       - "--providers.docker=false"            # Disable Docker provider (using file provider instead).
@@ -87,7 +107,7 @@ services:
     networks:
       - stellar-net
 
-  # --- 4. BELLATRIX - SWAGGER API DOCS SERVER ---
+  # --- 5. BELLATRIX - SWAGGER API DOCS SERVER ---
   bellatrix-swagger:
     build:
       context: ./bellatrix-swagger
@@ -102,21 +122,7 @@ services:
     networks:
       - stellar-net
 
-  # --- 5. VEGA - ADMIN SPRING BOOT SERVER ---
-  vega-admin:
-    build:
-      context: ./vega-admin
-      dockerfile: Dockerfile
-    image: vega-admin:latest
-    container_name: vega-admin
-    env_file: ./.env
-    networks:
-      - stellar-net
-    depends_on:
-      - antares-auth
-    restart: unless-stopped
-
-  # --- 6. CASTOR & POLLUX - DATABASE & CACHE ---
+  # ---6. CASTOR & POLLUX - DATABASE & CACHE ---
   castor-db:
     image: postgres:18-alpine
     container_name: castor-db
