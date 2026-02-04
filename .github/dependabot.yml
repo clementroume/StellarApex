@@ -41,17 +41,6 @@ updates:
         patterns:
           - "org.springframework.boot:*"
 
-  # --- Vega Admin ---
-  - package-ecosystem: "maven"
-    directory: "/vega-admin"
-    schedule:
-      interval: "weekly"
-    open-pull-requests-limit: 5
-  #    groups:
-  #      spring-boot:
-  #        patterns:
-  #          - "org.springframework.boot:*"
-
   # --- Bellatrix Swagger ---
   - package-ecosystem: "maven"
     directory: "/bellatrix-swagger"
@@ -102,13 +91,6 @@ updates:
   # --- Aldebaran Training ---
   - package-ecosystem: "docker"
     directory: "/aldebaran-training"
-    schedule:
-      interval: "weekly"
-    open-pull-requests-limit: 3
-
-  # --- Vega Admin ---
-  - package-ecosystem: "docker"
-    directory: "/vega-admin"
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 3

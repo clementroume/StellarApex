@@ -25,7 +25,6 @@ jobs:
       frontend: ${{ steps.filter.outputs.frontend }}
       auth: ${{ steps.filter.outputs.auth }}
       training: ${{ steps.filter.outputs.training }}
-      admin: ${{ steps.filter.outputs.admin }}
       swagger: ${{ steps.filter.outputs.swagger }}
       shared: ${{ steps.filter.outputs.shared }}
       is_schedule: ${{ github.event_name == 'schedule' }}
@@ -41,8 +40,6 @@ jobs:
               - 'antares-auth/**'
             training:
               - 'aldebaran-training/**'
-            admin:
-              - 'vega-admin/**'
             swagger:
               - 'bellatrix-swagger/**'
             shared:
@@ -134,49 +131,7 @@ jobs:
           category: "/language:java-kotlin/training"
 
   # ==============================================================================
-  # JOB 2c: ANALYZE VEGA (ADMIN)
-  # ==============================================================================
-  analyze-admin:
-    needs: filter
-    # Run if: Scheduled scan OR Admin changes OR Shared config changes
-    if: needs.filter.outputs.is_schedule == 'true' || needs.filter.outputs.admin == 'true' || needs.filter.outputs.shared == 'true'
-    runs-on: ubuntu-latest
-    timeout-minutes: 120
-    permissions:
-      security-events: write
-      actions: read
-      contents: read
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v6
-
-      - name: Setup JDK 25
-        uses: actions/setup-java@v5
-        with:
-          java-version: 25
-          distribution: temurin
-          cache: maven
-
-      - name: Initialize CodeQL
-        uses: github/codeql-action/init@v4
-        with:
-          languages: java-kotlin
-          build-mode: manual
-
-      - name: Build Vega Admin
-        working-directory: ./vega-admin
-        run: |
-          chmod +x mvnw
-          ./mvnw clean package -DskipTests
-
-      - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@v4
-        with:
-          category: "/language:java-kotlin/admin"
-
-  # ==============================================================================
-  # JOB 2d: ANALYZE BELLATRIX (SWAGGER)
+  # JOB 2c: ANALYZE BELLATRIX (SWAGGER)
   # ==============================================================================
   analyze-swagger:
     needs: filter
