@@ -13,6 +13,7 @@ import apex.stellar.antares.exception.InvalidPasswordException;
 import apex.stellar.antares.mapper.UserMapper;
 import apex.stellar.antares.model.User;
 import apex.stellar.antares.repository.UserRepository;
+import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -48,6 +49,7 @@ class UserServiceTest {
   @DisplayName("getProfile: should map and return user response")
   void testGetProfile_shouldReturnResponse() {
     // Given
+    when(userRepository.findById(testUser.getId())).thenReturn(Optional.of(testUser));
     when(userMapper.toUserResponse(testUser)).thenReturn(mock(UserResponse.class));
 
     // When
