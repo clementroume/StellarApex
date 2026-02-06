@@ -13,7 +13,7 @@ microservice.
 * **Database**: PostgreSQL (managed by Flyway migrations)
 * **Cache**: Redis (for caching WODs and Master Data)
 * **Tooling**: MapStruct (DTO mapping), Lombok (boilerplate reduction)
-* **API Docs**: Springdoc (OpenAPI / Swagger)
+* **API Docs**: Springdoc OpenAPI 3.0.1
 
 ## Prerequisites
 
@@ -34,19 +34,35 @@ To build the executable JAR and run all tests:
 ./mvnw verify
 ```
 
-Ensure that you have a running PostgreSQL and Redis instance and the environment variables are set.
+This command runs all unit tests (*Test.java) and integration tests (*IT.java). Ensure that you have
+a running PostgreSQL and Redis instance and the environment variables are set.
+
+To build the JAR without running tests:
+
+```bash 
+./mvnw clean package -DskipTests 
+```
 
 ### Docker
 
-The project includes a `Dockerfile` for building a container image.
+This project uses a multi-stage Dockerfile to create a minimal, non-root, Distroless-based JRE
+image.
+The image is built as part of the root docker-compose.yml.
 
 ```bash
 docker build -t aldebaran-training .
 ```
 
-The application is designed to be run as part of the Stellar Apex ecosystem using Docker Compose. The `docker-compose.yml` file in the root of the repository defines the services, including database (`castor-db`) and cache (`pollux-cache`).
+## How to Run
 
-To run the full stack (from the root directory):
+This service is designed to be run as part of the full StellarApex stack using Docker Compose. This
+ensures all dependencies (Database, Redis, Traefik) are correctly networked and configured.
+
+### Run with Full Stack (via Root Docker Compose)
+
+To run the entire platform (Traefik, Frontend, API, Admin, DB, and Cache), use the
+`docker-compose.yml` in the project root.
+
 ```bash
 docker-compose up -d
 ```
@@ -55,17 +71,10 @@ docker-compose up -d
 
 OpenAPI documentation is enabled and available at:
 
-*   **API Docs Path:** `/aldebaran-docs`
+* **API Docs Path:** `/aldebaran-docs`
 
-Note: Swagger UI is currently disabled in the configuration (`springdoc.swagger-ui.enabled=false`). The `bellatrix-swagger` service provides a centralized Swagger UI for all services in the ecosystem.
-
-## Observability
-
-The application exposes management endpoints for monitoring and health checks.
-
-*   **Management Port:** `9092`
-*   **Endpoints:** All endpoints are exposed (`management.endpoints.web.exposure.include=*`).
-*   **Health Check:** `/actuator/health`
+Note: Swagger UI is currently disabled in the configuration (`springdoc.swagger-ui.enabled=false`).
+The `bellatrix-swagger` service provides a centralized Swagger UI for all services in the ecosystem.
 
 ## Testing
 

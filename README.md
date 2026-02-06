@@ -8,12 +8,12 @@ frontend, and a comprehensive infrastructure stack with reverse proxy, databases
 | Component     | Technology                             |
 |---------------|----------------------------------------|
 | Backend       | Java 25, Spring Boot 4.0               |
-| Frontend      | Angular 20, TypeScript, Tailwind CSS 4 |
-| Database      | PostgreSQL 16                          |
-| Cache         | Redis 7                                |
-| Reverse Proxy | Traefik 3.5                            |
-| Monitoring    | Spring Boot Admin 3.5                  |
-| API Docs      | Springdoc OpenAPI 3.0                  |
+| Frontend      | Angular 21, TypeScript, Tailwind CSS 4 |
+| Database      | PostgreSQL 18                          |
+| Cache         | Redis 8                                |
+| Reverse Proxy | Traefik 3.6                            |
+| Monitoring    | Grafana, Prometheus, Loki, Alloy       |
+| API Docs      | Springdoc OpenAPI 3.0.1                |
 
 ## Architecture Overview
 
@@ -23,8 +23,8 @@ frontend, and a comprehensive infrastructure stack with reverse proxy, databases
     ├─ https://stellar.apex              → Sirius (Angular Frontend)
     ├─ https://stellar.apex/antares      → Antares (Auth API)
     ├─ https://stellar.apex/aldebaran    → Aldebaran (Training API)
-    ├─ https://docs.stellar.apex         → Bellatrix (API Docs) [ADMIN]
-    ├─ https://admin.stellar.apex        → Vega (Monitoring) [ADMIN]
+    ├─ https://docs.stellar.apex         → Bellatrix (API Docs)      [ADMIN]
+    ├─ https://monitor.stellar.apex      → Vega (Grafana)            [ADMIN]
     └─ https://proxy.stellar.apex        → Altair (Traefik Dashboard) [ADMIN]
 ```
 
@@ -55,6 +55,13 @@ frontend, and a comprehensive infrastructure stack with reverse proxy, databases
     - Rate limiting
 - **Castor** (`castor-db`): PostgreSQL database
 - **Pollux** (`pollux-cache`): Redis cache
+
+### Observability (The "Vega" Suite)
+
+- **Vega-Grafana**: Visualization dashboards for metrics, logs, and traces.
+- **Vega-Prometheus**: Time-series database for metrics.
+- **Vega-Loki**: Log aggregation system.
+- **Vega-Alloy**: OpenTelemetry collector for telemetry data.
 
 ## Prerequisites
 
@@ -109,8 +116,9 @@ openssl req -x509 -nodes -days 365 -newkey rsa:2048
 Add to `/etc/hosts` (Linux/macOS) or `C:\Windows\System32\drivers\etc\hosts` (Windows):
 
 ```
-127.0.0.1 stellar.apex admin.stellar.apex proxy.stellar.apex docs.stellar.apex
-::1 stellar.apex admin.stellar.apex proxy.stellar.apex docs.stellar.apex
+127.0.0.1 stellar.apex monitor.stellar.apex proxy.stellar.apex docs.stellar.apex
+::1 stellar.apex monitor.stellar.apex proxy.stellar.apex docs.stellar.apex
+ 
 ```
 
 ### 4. Start the Stack
@@ -127,7 +135,7 @@ docker compose up --build -d
 | Antares Auth API       | https://stellar.apex/antares   | Public        |
 | Aldebaran Training API | https://stellar.apex/aldebaran | Authenticated |
 | Bellatrix (API Docs)   | https://docs.stellar.apex      | ADMIN only    |
-| Vega (Monitoring)      | https://admin.stellar.apex     | ADMIN only    |
+| Vega (Grafana)         | https://monitor.stellar.apex   | ADMIN only    |
 | Altair (Traefik)       | https://proxy.stellar.apex     | ADMIN only    |
 
 **Note**: Your browser will warn about the self-signed certificate. This is expected for local
@@ -161,26 +169,9 @@ Direct access to databases for development:
 
 ## Monitoring
 
-### Actuator Endpoints
+The "Vega" suite provides a complete observability stack:
 
-Each service exposes health and metrics:
-
-- **Antares**: `http://antares-auth:9090/actuator`
-- **Aldebaran**: `http://aldebaran-training:9092/actuator`
-- **Bellatrix**: `http://bellatrix-swagger:9093/actuator`
-
-### Logs
-
-View service logs:
-
-```bash
-# All services
-docker compose logs -f
-
-# Specific service
-docker compose logs -f antares-auth
-docker compose logs -f aldebaran-training
-```
+- Grafana: https://monitor.stellar.apex – Central dashboard for logs, metrics, and traces.
 
 ## Production Considerations
 
@@ -201,7 +192,7 @@ stellarapex/
 ├── aldebaran-training/    # Training API
 ├── bellatrix-swagger/     # API Documentation Gateway
 ├── sirius-app/            # Angular Frontend
-├── vega-admin/            # Monitoring Server
+├── monitoring/            # Observability stack configuration (Grafana, Prometheus, etc.)
 ├── dynamic/               # Traefik dynamic configuration
 │   ├── routes.yml         # Routing rules
 │   └── tls.yaml           # TLS certificates

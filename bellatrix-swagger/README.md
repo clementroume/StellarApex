@@ -1,10 +1,12 @@
 # Bellatrix Swagger Gateway
 
-Bellatrix is a unified API documentation gateway that aggregates OpenAPI specifications from all StellarApex microservices into a single Swagger UI interface.
+Bellatrix is a unified API documentation gateway that aggregates OpenAPI specifications from all
+StellarApex microservices into a single Swagger UI interface.
 
 ## Purpose
 
 Provides centralized access to API documentation for:
+
 - **Antares Auth**: Authentication and user management
 - **Aldebaran Training**: Workout and performance tracking
 
@@ -31,7 +33,7 @@ Access requires ADMIN role authentication via Antares Auth.
 ## Security
 
 - **Authentication**: Delegated to Traefik via Forward Auth middleware
-- **Authorization**: ADMIN role required (verified by `/antares/auth/verify`)
+- **Authorization**: ADMIN role required (verified by `/antares/auth/verify/admin`)
 - **CORS**: Configured for `stellar.apex` domain and subdomains
 
 ## Configuration
@@ -42,7 +44,6 @@ Key properties in `application.properties`:
 # Internal service URLs
 swagger.services.antares.url=http://antares-auth:8080
 swagger.services.aldebaran.url=http://aldebaran-training:8081
-
 # API documentation endpoints
 springdoc.swagger-ui.urls[0].name=Antares Auth
 springdoc.swagger-ui.urls[0].url=/antares-docs
@@ -85,14 +86,9 @@ Part of the StellarApex stack via Docker Compose:
 docker compose up bellatrix-swagger
 ```
 
-## Monitoring
-
-- **Health**: `http://bellatrix-swagger:9093/actuator/health`
-- **Metrics**: `http://bellatrix-swagger:9093/actuator/metrics`
-
 ## Technical Stack
 
 - **Framework**: Spring Boot 4.0
 - **Java**: 25
-- **Springdoc**: 3.0.0
+- **Springdoc**: 3.0.1
 - **Security**: Spring Security (permit-all mode, delegated to Traefik)

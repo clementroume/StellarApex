@@ -6,11 +6,11 @@ Boot application designed to run as a containerized microservice.
 
 ## Tech Stack
 
-* **Framework**: Spring Boot 3.5
+* **Framework**: Spring Boot 4.0
 * **Language**: Java 25
-* **Security**: Spring Security 6 (stateless), JWT (via `jjwt`)
-* **Authentication**: HttpOnly Cookies (Access + Refresh Tokens) & Double-Submit Cookie CSRF
-  Protection
+* **Security**: Spring Security 6 (stateless), OAuth2 Resource Server (JWT)
+* **Authentication**: HttpOnly Cookies (Access + Refresh Tokens)
+* **CSRF Protection**: Double-Submit Cookie
 * **Database**: PostgreSQL (managed by Flyway migrations)
 * **Cache**: Redis (for secure refresh token storage)
 * **Tooling**: MapStruct (DTO mapping), Lombok (boilerplate reduction)
@@ -88,7 +88,9 @@ docker compose logs -f antares-auth
 * `POST /login`: Authenticate and receive HttpOnly session cookies.
 * `POST /logout`: Invalidate session and clear cookies.
 * `POST /refresh-token`: Use the refresh token (cookie) to get a new access token.
-* `GET /verify`: Forward Auth login for Vega and Altair.
+* `GET /verify/admin`: Forward Auth for admin-only services (e.g., Grafana, Traefik).
+* `GET /verify/api`: Forward Auth for backend API services (e.g., Aldebaran).
+* `POST /impersonate/{userId}`: [ADMIN] Assume the identity of another user.
 
 ### User (`/antares/users`)
 
@@ -96,10 +98,25 @@ docker compose logs -f antares-auth
 * `PUT /me/profile`: Update the user's first name, last name, or email.
 * `PATCH /me/preferences`: Update the user's locale (language) and theme.
 * `PUT /me/password`: Change the user's password.
+* `DELETE /me`: Delete the current user's account.
+
+### Gym Management (`/antares/gyms`)
+
+* `POST /`: Create a new Gym (tenant).
+* `POST /join`: Join a gym using an enrollment code.
+* `GET /{gymId}/settings`: [OWNER/ADMIN] Get gym settings.
+* `PUT /{gymId}/settings`: [OWNER/ADMIN] Update gym settings.
+* `GET /`: [ADMIN] List all gyms with status filter.
+
+### Membership Management (`/antares/memberships`)
+
+* `GET /`: [OWNER/ADMIN] List members of a gym.
+* `PUT /{id}`: [OWNER/ADMIN] Update a member's role, status, or permissions.
+* `DELETE /{id}`: [OWNER/ADMIN] Remove a member from a gym.
 
 ## Database Migrations
 
-Database schema changes are managed by **Flyway**. SQL migration scripts are located in
+Flyway manages database schema changes****. SQL migration scripts are located in
 `src/main/resources/db/migration`.
 
 Flyway runs automatically on application startup to apply any pending migrations.
