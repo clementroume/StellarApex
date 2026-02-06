@@ -47,43 +47,105 @@ public interface WodRepository extends JpaRepository<Wod, Long> {
   Optional<Wod> findByIdWithMovements(@Param("id") Long id);
 
   // -------------------------------------------------------------------------
-  // PROJECTION QUERIES (Lightweight)
+  // SECURE PROJECTION QUERIES
   // -------------------------------------------------------------------------
 
   /**
-   * Retrieves all WODs as lightweight projections.
+   * Retrieves all authorized WODs as lightweight projections.
    *
-   * <p>Optimized for list views where deep nesting is not required.
-   *
+   * @param userId The ID of the authenticated user (for authorship check).
+   * @param gymId The Gym ID from the user's current context (nullable).
+   * @param isAdmin Boolean flag to bypass security checks for administrators.
    * @param pageable Pagination information.
-   * @return A list of WOD summaries.
+   * @return A pageable list of WOD summaries matching the security context.
    */
-  List<WodSummary> findAllProjectedBy(Pageable pageable);
+  @Query(
+      """
+      SELECT w FROM Wod w
+      WHERE (:isAdmin = true
+         OR w.isPublic = true
+         OR w.authorId = :userId
+         OR (:gymId IS NOT NULL AND w.gymId = :gymId))
+      """)
+  List<WodSummary> findAllSecure(
+      @Param("userId") Long userId,
+      @Param("gymId") Long gymId,
+      @Param("isAdmin") boolean isAdmin,
+      Pageable pageable);
 
   /**
-   * Searches for WODs by title using lightweight projections.
+   * Searches for authorized WODs by title.
    *
    * @param title The title fragment to search for (case-insensitive).
+   * @param userId The ID of the authenticated user.
+   * @param gymId The Gym ID from the user's current context.
+   * @param isAdmin Boolean flag for admin bypass.
    * @return A list of matching WOD summaries.
    */
-  List<WodSummary> findProjectedByTitleContainingIgnoreCase(String title);
+  @Query(
+      """
+      SELECT w FROM Wod w
+      WHERE LOWER(w.title) LIKE LOWER(CONCAT('%', :title, '%'))
+      AND (:isAdmin = true
+         OR w.isPublic = true
+         OR w.authorId = :userId
+         OR (:gymId IS NOT NULL AND w.gymId = :gymId))
+      """)
+  List<WodSummary> findByTitleSecure(
+      @Param("title") String title,
+      @Param("userId") Long userId,
+      @Param("gymId") Long gymId,
+      @Param("isAdmin") boolean isAdmin);
 
   /**
-   * Retrieves WODs by type using lightweight projections.
+   * Retrieves authorized WODs filtered by their structural type.
    *
-   * @param wodType The structural type of the WOD.
+   * @param wodType The type of WOD (e.g., AMRAP, FORTIME).
+   * @param userId The ID of the authenticated user.
+   * @param gymId The Gym ID from the user's current context.
+   * @param isAdmin Boolean flag for admin bypass.
    * @param pageable Pagination information.
-   * @return A list of matching WOD summaries.
+   * @return A pageable list of matching WOD summaries.
    */
-  List<WodSummary> findProjectedByWodType(WodType wodType, Pageable pageable);
+  @Query(
+      """
+      SELECT w FROM Wod w
+      WHERE w.wodType = :wodType
+      AND (:isAdmin = true
+         OR w.isPublic = true
+         OR w.authorId = :userId
+         OR (:gymId IS NOT NULL AND w.gymId = :gymId))
+      """)
+  List<WodSummary> findByTypeSecure(
+      @Param("wodType") WodType wodType,
+      @Param("userId") Long userId,
+      @Param("gymId") Long gymId,
+      @Param("isAdmin") boolean isAdmin,
+      Pageable pageable);
 
   /**
-   * Retrieves WODs that include a specific movement.
+   * Retrieves authorized WODs containing a specific movement.
    *
    * @param movementId The ID of the movement (e.g., "GY-PU-001").
+   * @param userId The ID of the authenticated user.
+   * @param gymId The Gym ID from the user's current context.
+   * @param isAdmin Boolean flag for admin bypass.
    * @param pageable Pagination information.
-   * @return A list of matching WOD summaries.
+   * @return A pageable list of matching WOD summaries.
    */
-  @Query("SELECT w FROM Wod w JOIN w.movements wm WHERE wm.movement.id = :movementId")
-  List<WodSummary> findProjectedByMovementId(@Param("movementId") String movementId, Pageable pageable);
+  @Query(
+      """
+      SELECT w FROM Wod w JOIN w.movements wm
+      WHERE wm.movement.id = :movementId
+      AND (:isAdmin = true
+         OR w.isPublic = true
+         OR w.authorId = :userId
+         OR (:gymId IS NOT NULL AND w.gymId = :gymId))
+      """)
+  List<WodSummary> findByMovementSecure(
+      @Param("movementId") String movementId,
+      @Param("userId") Long userId,
+      @Param("gymId") Long gymId,
+      @Param("isAdmin") boolean isAdmin,
+      Pageable pageable);
 }

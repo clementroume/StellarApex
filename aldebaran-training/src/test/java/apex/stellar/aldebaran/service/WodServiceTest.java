@@ -22,6 +22,7 @@ import apex.stellar.aldebaran.repository.MovementRepository;
 import apex.stellar.aldebaran.repository.WodRepository;
 import apex.stellar.aldebaran.repository.WodScoreRepository;
 import apex.stellar.aldebaran.repository.projection.WodSummary;
+import apex.stellar.aldebaran.security.AldebaranUserPrincipal;
 import apex.stellar.aldebaran.security.SecurityUtils;
 import java.util.HashSet;
 import java.util.List;
@@ -66,7 +67,6 @@ class WodServiceTest {
         new WodMovementRequest(
             "GY-PU-001", 1, "21-15-9", 0.0, null, 0, null, 0.0, null, 0, null, null);
 
-    // DTO Correctement aligné (13 arguments)
     wodRequest =
         new WodRequest(
             "Fran",
@@ -85,27 +85,120 @@ class WodServiceTest {
             );
   }
 
+  // =========================================================================
+  // TEST: getWods (Security Context Passing)
+  // =========================================================================
+
   @Test
-  @DisplayName("getWods: should return projected summaries using Pageable")
-  void testGetWods() {
+  @DisplayName("getWods: Standard User should pass ID and isAdmin=false to repository")
+  void testGetWods_StandardUser() {
     // Given
-    WodSummary summaryProjection = mock(WodSummary.class);
-    when(summaryProjection.getId()).thenReturn(1L);
-    when(summaryProjection.getTitle()).thenReturn("Fran");
-    when(summaryProjection.getWodType()).thenReturn(WodType.FOR_TIME);
-    when(summaryProjection.getScoreType()).thenReturn(ScoreType.TIME);
-
+    AldebaranUserPrincipal user = new AldebaranUserPrincipal(100L, 50L, "ATHLETE", List.of());
     Pageable pageable = Pageable.unpaged();
-    when(wodRepository.findAllProjectedBy(pageable)).thenReturn(List.of(summaryProjection));
 
-    // When
-    List<WodSummaryResponse> results = wodService.getWods(null, null, null, pageable);
+    WodSummary projection = mock(WodSummary.class);
+    when(wodRepository.findAllSecure(eq(100L), eq(50L), eq(false), eq(pageable)))
+        .thenReturn(List.of(projection));
 
-    // Then
-    assertEquals(1, results.size());
-    assertEquals("Fran", results.get(0).title());
-    verify(wodRepository).findAllProjectedBy(pageable);
+    try (MockedStatic<SecurityUtils> securityMock = mockStatic(SecurityUtils.class)) {
+      securityMock.when(() -> SecurityUtils.isAdmin(user)).thenReturn(false);
+
+      // When
+      List<WodSummaryResponse> results = wodService.getWods(null, null, null, pageable, user);
+
+      // Then
+      assertNotNull(results);
+      verify(wodRepository).findAllSecure(eq(100L), eq(50L), eq(false), eq(pageable));
+    }
   }
+
+  @Test
+  @DisplayName("getWods: Admin User should pass isAdmin=true to repository")
+  void testGetWods_AdminUser() {
+    // Given
+    AldebaranUserPrincipal admin = new AldebaranUserPrincipal(999L, null, "ADMIN", List.of());
+    Pageable pageable = Pageable.unpaged();
+
+    WodSummary projection = mock(WodSummary.class);
+    // Note: userId/gymId don't matter much when isAdmin=true, but verify they are passed correctly
+    when(wodRepository.findAllSecure(eq(999L), isNull(), eq(true), eq(pageable)))
+        .thenReturn(List.of(projection));
+
+    try (MockedStatic<SecurityUtils> securityMock = mockStatic(SecurityUtils.class)) {
+      securityMock.when(() -> SecurityUtils.isAdmin(admin)).thenReturn(true);
+
+      // When
+      wodService.getWods(null, null, null, pageable, admin);
+
+      // Then
+      verify(wodRepository).findAllSecure(eq(999L), isNull(), eq(true), eq(pageable));
+    }
+  }
+
+  @Test
+  @DisplayName("getWods: Search filter should use secure query")
+  void testGetWods_Search() {
+    // Given
+    AldebaranUserPrincipal user = new AldebaranUserPrincipal(100L, null, "USER", List.of());
+
+    try (MockedStatic<SecurityUtils> securityMock = mockStatic(SecurityUtils.class)) {
+      securityMock.when(() -> SecurityUtils.isAdmin(user)).thenReturn(false);
+      when(wodRepository.findByTitleSecure(eq("Fran"), eq(100L), isNull(), eq(false)))
+          .thenReturn(List.of());
+
+      // When
+      wodService.getWods("Fran", null, null, Pageable.unpaged(), user);
+
+      // Then
+      verify(wodRepository).findByTitleSecure(eq("Fran"), eq(100L), isNull(), eq(false));
+    }
+  }
+
+  @Test
+  @DisplayName("getWods: Type filter should use secure query")
+  void testGetWods_Type() {
+    AldebaranUserPrincipal user = new AldebaranUserPrincipal(100L, null, "USER", List.of());
+    Pageable pageable = Pageable.unpaged();
+
+    try (MockedStatic<SecurityUtils> securityMock = mockStatic(SecurityUtils.class)) {
+      securityMock.when(() -> SecurityUtils.isAdmin(user)).thenReturn(false);
+      when(wodRepository.findByTypeSecure(
+              eq(WodType.AMRAP), eq(100L), isNull(), eq(false), eq(pageable)))
+          .thenReturn(List.of());
+
+      // When
+      wodService.getWods(null, WodType.AMRAP, null, pageable, user);
+
+      // Then
+      verify(wodRepository)
+          .findByTypeSecure(eq(WodType.AMRAP), eq(100L), isNull(), eq(false), eq(pageable));
+    }
+  }
+
+  @Test
+  @DisplayName("getWods: Movement filter should use secure query")
+  void testGetWods_Movement() {
+    AldebaranUserPrincipal user = new AldebaranUserPrincipal(100L, null, "USER", List.of());
+    Pageable pageable = Pageable.unpaged();
+
+    try (MockedStatic<SecurityUtils> securityMock = mockStatic(SecurityUtils.class)) {
+      securityMock.when(() -> SecurityUtils.isAdmin(user)).thenReturn(false);
+      when(wodRepository.findByMovementSecure(
+              eq("GY-PU-001"), eq(100L), isNull(), eq(false), eq(pageable)))
+          .thenReturn(List.of());
+
+      // When
+      wodService.getWods(null, null, "GY-PU-001", pageable, user);
+
+      // Then
+      verify(wodRepository)
+          .findByMovementSecure(eq("GY-PU-001"), eq(100L), isNull(), eq(false), eq(pageable));
+    }
+  }
+
+  // =========================================================================
+  // TEST: Operations standard (Create/Update/Delete/Detail)
+  // =========================================================================
 
   @Test
   @DisplayName("getWodDetail: should return mapped response using optimized fetch")
@@ -145,7 +238,7 @@ class WodServiceTest {
       WodResponse response = wodService.createWod(wodRequest);
 
       assertNotNull(response);
-      assertEquals(100L, wod.getAuthorId()); // Vérifie AuthorId (pas creatorId)
+      assertEquals(100L, wod.getAuthorId()); // Vérifie AuthorId
       assertEquals(1, wod.getMovements().size());
       assertTrue(wod.getModalities().contains(Modality.GYMNASTICS));
 
@@ -169,12 +262,12 @@ class WodServiceTest {
             ScoreType.TIME,
             null,
             null,
-            null, // authorId (Long, pas int)
+            null, // authorId
             null, // gymId
             true,
             0,
             0,
-            0, // emomRounds (Manquant précédemment)
+            0,
             "21-15",
             List.of(m1, m2));
 
@@ -220,7 +313,6 @@ class WodServiceTest {
     when(wodScoreRepository.existsByWodId(1L)).thenReturn(false);
     when(wodRepository.findByIdWithMovements(1L)).thenReturn(Optional.of(wod));
 
-    // Mock du Mapper void updateEntity
     doAnswer(
             invocation -> {
               WodRequest source = invocation.getArgument(0);
@@ -236,7 +328,6 @@ class WodServiceTest {
     when(wodRepository.save(wod)).thenReturn(wod);
     when(wodMapper.toResponse(wod)).thenReturn(mock(WodResponse.class));
 
-    // CORRECTION ICI: Alignement avec les 13 arguments
     WodRequest updateRequest =
         new WodRequest(
             "Fran (Updated)",
@@ -249,8 +340,8 @@ class WodServiceTest {
             true,
             null,
             null,
-            null, // emomRounds
-            null, // repScheme
+            null,
+            null,
             List.of(
                 new WodMovementRequest(
                     "GY-PU-001", 1, "15-12-9", 0.0, null, 0, null, 0.0, null, 0, null, null)));
@@ -271,6 +362,16 @@ class WodServiceTest {
         assertThrows(WodLockedException.class, () -> wodService.updateWod(1L, wodRequest));
 
     assertEquals("error.wod.locked", ex.getMessageKey());
+    verify(wodRepository, never()).save(any());
+  }
+
+  @Test
+  @DisplayName("updateWod: should throw ResourceNotFoundException when WOD not found")
+  void testUpdateWod_NotFound() {
+    when(wodScoreRepository.existsByWodId(99L)).thenReturn(false);
+    when(wodRepository.findByIdWithMovements(99L)).thenReturn(Optional.empty());
+
+    assertThrows(ResourceNotFoundException.class, () -> wodService.updateWod(99L, wodRequest));
     verify(wodRepository, never()).save(any());
   }
 

@@ -128,7 +128,7 @@ public class WodScoreController {
    * @return The updated score.
    */
   @PutMapping("/{id}")
-  @PreAuthorize("@wodScoreSecurity.canUpdate(#id, principal)")
+  @PreAuthorize("@wodScoreSecurity.canModify(#id, principal)")
   @Operation(
       summary = "Update score",
       description = "Updates an existing score (Owner, Admin, or Coach of the gym).")
@@ -165,7 +165,7 @@ public class WodScoreController {
    * @return HTTP 204 No Content.
    */
   @DeleteMapping("/{id}")
-  @PreAuthorize("@wodScoreSecurity.canDelete(#id, principal)")
+  @PreAuthorize("@wodScoreSecurity.canModify(#id, principal)")
   @Operation(summary = "Delete score", description = "Removes a performance log.")
   @ApiResponses(
       value = {
@@ -196,6 +196,7 @@ public class WodScoreController {
    * @return The comparison metrics.
    */
   @GetMapping("/{id}/compare")
+  @PreAuthorize("@wodScoreSecurity.canView(#id, principal)")
   @Operation(summary = "Compare score", description = "Calculates rank and percentile.")
   @ApiResponses(
       value = {
@@ -224,6 +225,7 @@ public class WodScoreController {
    * @return A page of top scores.
    */
   @GetMapping("/leaderboard/{wodId}")
+  @PreAuthorize("@wodSecurity.canRead(#wodId, principal)")
   @Operation(
       summary = "Get Leaderboard",
       description = "Retrieves top scores (PRs only) for a WOD.")

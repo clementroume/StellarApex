@@ -55,10 +55,8 @@ public class AldebaranUserPrincipal implements UserDetails {
   // -------------------------------------------------------------------------
 
   /**
-   * Returns the authorities granted to the user.
-   *
-   * @return A collection containing the user's role as a {@link GrantedAuthority}. Never returns
-   *     null (returns an empty list if no role is assigned).
+   * Returns the authorities granted to the user. Adds the 'ROLE_' prefix to the raw role string to
+   * comply with Spring Security defaults.
    */
   @Override
   @NonNull
@@ -66,7 +64,9 @@ public class AldebaranUserPrincipal implements UserDetails {
     if (role == null) {
       return Collections.emptyList();
     }
-    return List.of(new SimpleGrantedAuthority(role));
+    // Defensive check: avoid double prefixing if upstream changes
+    String authority = role.startsWith("ROLE_") ? role : "ROLE_" + role;
+    return List.of(new SimpleGrantedAuthority(authority));
   }
 
   /**

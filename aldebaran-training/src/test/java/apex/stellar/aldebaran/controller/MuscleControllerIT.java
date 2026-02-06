@@ -13,17 +13,11 @@ import apex.stellar.aldebaran.dto.MuscleRequest;
 import apex.stellar.aldebaran.model.entities.Muscle;
 import apex.stellar.aldebaran.model.entities.Muscle.MuscleGroup;
 import apex.stellar.aldebaran.repository.MuscleRepository;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.redis.connection.RedisConnection;
-import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.http.MediaType;
-import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.web.servlet.MockMvc;
-import tools.jackson.databind.json.JsonMapper;
 
 /**
  * Integration tests for {@link MuscleController}.
@@ -33,11 +27,7 @@ import tools.jackson.databind.json.JsonMapper;
  */
 class MuscleControllerIT extends BaseIntegrationTest {
 
-  @Autowired private MockMvc mockMvc;
-  @Autowired private JsonMapper objectMapper;
   @Autowired private MuscleRepository muscleRepository;
-
-  @Autowired private StringRedisTemplate redisTemplate;
 
   @BeforeEach
   void setUp() {
@@ -54,30 +44,34 @@ class MuscleControllerIT extends BaseIntegrationTest {
     muscleRepository.save(chest);
   }
 
-  @AfterEach
-  void cleanUpCache() {
-    // Flush Redis to prevent cache pollution between tests
-    redisTemplate.execute(
-        (RedisConnection connection) -> {
-          connection.serverCommands().flushAll();
-          return null;
-        });
-  }
-
   // -------------------------------------------------------------------------
   // GET Operations (Read)
   // -------------------------------------------------------------------------
 
   @Test
-  @WithMockUser(username = "athlete")
   @DisplayName("GET /muscles: should return list of muscles from DB")
   void testGetAllMuscles_Success() throws Exception {
     mockMvc
-        .perform(get("/aldebaran/muscles"))
+        .perform(
+            get("/aldebaran/muscles")
+                .header("X-Auth-User-Id", "1")
+                .header("X-Auth-User-Role", "USER"))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$", hasSize(1)))
         .andExpect(jsonPath("$[0].medicalName").value("Pectoralis Major"))
         .andExpect(jsonPath("$[0].muscleGroup").value("CHEST"));
+  }
+
+  @Test
+  @DisplayName("GET /muscles/{name}: should return muscle details")
+  void testGetMuscle_Success() throws Exception {
+    mockMvc
+        .perform(
+            get("/aldebaran/muscles/Pectoralis Major")
+                .header("X-Auth-User-Id", "1")
+                .header("X-Auth-User-Role", "USER"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.medicalName").value("Pectoralis Major"));
   }
 
   // -------------------------------------------------------------------------
@@ -85,9 +79,6 @@ class MuscleControllerIT extends BaseIntegrationTest {
   // -------------------------------------------------------------------------
 
   @Test
-  @WithMockUser(
-      username = "admin",
-      roles = {"ADMIN"})
   @DisplayName("POST /muscles: should create new muscle when Admin")
   void testCreateMuscle_AsAdmin_Success() throws Exception {
     // Given
@@ -105,6 +96,8 @@ class MuscleControllerIT extends BaseIntegrationTest {
         .perform(
             post("/aldebaran/muscles")
                 .with(csrf())
+                .header("X-Auth-User-Id", "1")
+                .header("X-Auth-User-Role", "ADMIN")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
         .andExpect(status().isCreated())
@@ -116,9 +109,6 @@ class MuscleControllerIT extends BaseIntegrationTest {
   }
 
   @Test
-  @WithMockUser(
-      username = "user",
-      roles = {"USER"})
   @DisplayName("POST /muscles: should return 403 Forbidden when simple User")
   void testCreateMuscle_AsUser_Forbidden() throws Exception {
     MuscleRequest request =
@@ -128,15 +118,14 @@ class MuscleControllerIT extends BaseIntegrationTest {
         .perform(
             post("/aldebaran/muscles")
                 .with(csrf())
+                .header("X-Auth-User-Id", "2")
+                .header("X-Auth-User-Role", "USER")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
         .andExpect(status().isForbidden());
   }
 
   @Test
-  @WithMockUser(
-      username = "admin",
-      roles = {"ADMIN"})
   @DisplayName("POST /muscles: should return 409 Conflict if name exists")
   void testCreateMuscle_Conflict() throws Exception {
     // Given: Request with existing name "Pectoralis Major" (seeded in setUp)
@@ -148,6 +137,8 @@ class MuscleControllerIT extends BaseIntegrationTest {
         .perform(
             post("/aldebaran/muscles")
                 .with(csrf())
+                .header("X-Auth-User-Id", "1")
+                .header("X-Auth-User-Role", "ADMIN")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
         .andExpect(status().isConflict())
@@ -160,9 +151,6 @@ class MuscleControllerIT extends BaseIntegrationTest {
   // -------------------------------------------------------------------------
 
   @Test
-  @WithMockUser(
-      username = "admin",
-      roles = {"ADMIN"})
   @DisplayName("PUT /muscles/{id}: should update existing muscle")
   void testUpdateMuscle_Success() throws Exception {
     // Given: Retrieve the seeded muscle to get its generated ID
@@ -183,6 +171,8 @@ class MuscleControllerIT extends BaseIntegrationTest {
         .perform(
             put("/aldebaran/muscles/" + existing.getId())
                 .with(csrf())
+                .header("X-Auth-User-Id", "1")
+                .header("X-Auth-User-Role", "ADMIN")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(updateRequest)))
         .andExpect(status().isOk())
@@ -190,9 +180,6 @@ class MuscleControllerIT extends BaseIntegrationTest {
   }
 
   @Test
-  @WithMockUser(
-      username = "admin",
-      roles = {"ADMIN"})
   @DisplayName("PUT /muscles/{id}: should return 404 if ID unknown")
   void testUpdateMuscle_NotFound() throws Exception {
     MuscleRequest request = new MuscleRequest("Unknown", "U", "U", null, null, MuscleGroup.LEGS);
@@ -201,6 +188,8 @@ class MuscleControllerIT extends BaseIntegrationTest {
         .perform(
             put("/aldebaran/muscles/99999")
                 .with(csrf())
+                .header("X-Auth-User-Id", "1")
+                .header("X-Auth-User-Role", "ADMIN")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
         .andExpect(status().isNotFound())

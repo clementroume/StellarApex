@@ -21,7 +21,6 @@ import org.springframework.security.config.annotation.method.configuration.Enabl
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
@@ -152,7 +151,7 @@ public class SecurityConfig {
 
           var auth =
               new UsernamePasswordAuthenticationToken(
-                  principal, null, List.of(new SimpleGrantedAuthority(role)));
+                  principal, null, principal.getAuthorities());
           SecurityContextHolder.getContext().setAuthentication(auth);
         } catch (NumberFormatException e) {
           log.warn(

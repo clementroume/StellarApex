@@ -1,13 +1,19 @@
 package apex.stellar.aldebaran.config;
 
+import org.junit.jupiter.api.AfterEach;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.data.redis.connection.RedisConnection;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.test.web.servlet.MockMvc;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.postgresql.PostgreSQLContainer;
 import org.testcontainers.utility.DockerImageName;
+import tools.jackson.databind.json.JsonMapper;
 
 /**
  * Base class for all Integration Tests.
@@ -44,6 +50,10 @@ public abstract class BaseIntegrationTest {
     redis.start();
   }
 
+  @Autowired protected MockMvc mockMvc;
+  @Autowired protected JsonMapper objectMapper;
+  @Autowired protected StringRedisTemplate redisTemplate;
+
   // --- Configuration Injection ---
 
   @DynamicPropertySource
@@ -56,5 +66,14 @@ public abstract class BaseIntegrationTest {
             "YjQ1ZGRjYjU5YjYwNzZkMWY2MzE4YmFiY2Y4ZjgxMGE0YzY4ZmIwYmZkOTRkMjYxYmVjZGU1Y2Y3YWQyYjQzYw==");
     registry.add("application.security.jwt.expiration", () -> 3600000); // 1 hour
     registry.add("application.security.jwt.refresh-token.expiration", () -> 86400000); // 1 day
+  }
+
+  @AfterEach
+  void cleanUpCache() {
+    redisTemplate.execute(
+        (RedisConnection connection) -> {
+          connection.serverCommands().flushAll();
+          return null;
+        });
   }
 }

@@ -21,17 +21,12 @@ import apex.stellar.aldebaran.repository.WodRepository;
 import apex.stellar.aldebaran.repository.WodScoreRepository;
 import java.time.LocalDate;
 import java.util.List;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.redis.connection.RedisConnection;
-import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.http.MediaType;
-import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
-import tools.jackson.databind.json.JsonMapper;
 
 /**
  * Integration tests for {@link WodScoreController}.
@@ -42,11 +37,8 @@ import tools.jackson.databind.json.JsonMapper;
 @Transactional
 class WodScoreControllerIT extends BaseIntegrationTest {
 
-  @Autowired private MockMvc mockMvc;
-  @Autowired private JsonMapper objectMapper;
   @Autowired private WodScoreRepository scoreRepository;
   @Autowired private WodRepository wodRepository;
-  @Autowired private StringRedisTemplate redisTemplate;
 
   private Wod fran;
   private Wod gymWod;
@@ -75,15 +67,6 @@ class WodScoreControllerIT extends BaseIntegrationTest {
             .isPublic(false)
             .build();
     wodRepository.save(gymWod);
-  }
-
-  @AfterEach
-  void cleanUpCache() {
-    redisTemplate.execute(
-        (RedisConnection connection) -> {
-          connection.serverCommands().flushAll();
-          return null;
-        });
   }
 
   // -------------------------------------------------------------------------
@@ -277,6 +260,62 @@ class WodScoreControllerIT extends BaseIntegrationTest {
   }
 
   // -------------------------------------------------------------------------
+  // GET Operations (History & Leaderboard)
+  // -------------------------------------------------------------------------
+
+  @Test
+  @DisplayName("GET /scores/me: should return user history")
+  void testGetMyScores_Success() throws Exception {
+    createScore(100L, 120);
+
+    mockMvc
+        .perform(
+            get("/aldebaran/scores/me")
+                .header("X-Auth-User-Id", "100")
+                .header("X-Auth-User-Role", "USER"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.content", hasSize(1)))
+        .andExpect(jsonPath("$.content[0].timeSeconds").value(120));
+  }
+
+  @Test
+  @DisplayName("GET /leaderboard/{wodId}: should return PRs")
+  void testGetLeaderboard_Success() throws Exception {
+    createScore(101L, 100);
+    createScore(102L, 120);
+
+    mockMvc
+        .perform(
+            get("/aldebaran/scores/leaderboard/" + fran.getId())
+                .header("X-Auth-User-Id", "100")
+                .header("X-Auth-User-Role", "USER"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.content", hasSize(2)));
+  }
+
+  @Test
+  @DisplayName("GET /leaderboard/{wodId}: Gym WOD should be restricted to members")
+  void testGetLeaderboard_GymAccess() throws Exception {
+    // Member of Gym 101 -> OK
+    mockMvc
+        .perform(
+            get("/aldebaran/scores/leaderboard/" + gymWod.getId())
+                .header("X-Auth-User-Id", "50")
+                .header("X-Auth-Gym-Id", "101")
+                .header("X-Auth-User-Role", "ATHLETE"))
+        .andExpect(status().isOk());
+
+    // Member of Gym 102 -> Forbidden
+    mockMvc
+        .perform(
+            get("/aldebaran/scores/leaderboard/" + gymWod.getId())
+                .header("X-Auth-User-Id", "60")
+                .header("X-Auth-Gym-Id", "102")
+                .header("X-Auth-User-Role", "ATHLETE"))
+        .andExpect(status().isForbidden());
+  }
+
+  // -------------------------------------------------------------------------
   // Standard Operations
   // -------------------------------------------------------------------------
 
@@ -309,7 +348,7 @@ class WodScoreControllerIT extends BaseIntegrationTest {
         .perform(
             put("/aldebaran/scores/" + score.getId())
                 .header("X-Auth-User-Id", "100")
-                .header("X-Auth-User-Role", "ROLE_USER")
+                .header("X-Auth-User-Role", "USER")
                 .with(csrf())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(updateRequest)))
@@ -346,7 +385,7 @@ class WodScoreControllerIT extends BaseIntegrationTest {
         .perform(
             put("/aldebaran/scores/" + score.getId())
                 .header("X-Auth-User-Id", "200") // User 200 tries to update
-                .header("X-Auth-User-Role", "ROLE_USER")
+                .header("X-Auth-User-Role", "USER")
                 .with(csrf())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(updateRequest)))
@@ -393,7 +432,8 @@ class WodScoreControllerIT extends BaseIntegrationTest {
             put("/aldebaran/scores/" + score.getId())
                 .header("X-Auth-User-Id", "50") // Coach
                 .header("X-Auth-Gym-Id", "101") // Same Gym
-                .header("X-Auth-User-Role", "ROLE_COACH")
+                .header("X-Auth-User-Role", "COACH")
+                .header("X-Auth-User-Permissions", "SCORE_VERIFY")
                 .with(csrf())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(updateRequest)))
@@ -429,12 +469,83 @@ class WodScoreControllerIT extends BaseIntegrationTest {
             post("/aldebaran/scores")
                 .header("X-Auth-User-Id", "50") // Coach
                 .header("X-Auth-Gym-Id", "101") // Same Gym
-                .header("X-Auth-User-Role", "ROLE_COACH")
+                .header("X-Auth-User-Role", "COACH")
+                .header("X-Auth-User-Permissions", "SCORE_VERIFY")
                 .with(csrf())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
         .andExpect(status().isCreated())
         .andExpect(jsonPath("$.userId").value(100));
+  }
+
+  @Test
+  @DisplayName("POST /scores: Coach cannot log for athlete in different gym")
+  void testLogScore_CoachDifferentGym_Forbidden() throws Exception {
+    WodScoreRequest request =
+        new WodScoreRequest(
+            100L, // Target Athlete
+            gymWod.getId(), // Gym 101 WOD
+            LocalDate.now(),
+            10,
+            0,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            ScalingLevel.RX,
+            false,
+            null,
+            null);
+
+    mockMvc
+        .perform(
+            post("/aldebaran/scores")
+                .header("X-Auth-User-Id", "60") // Coach
+                .header("X-Auth-Gym-Id", "102") // Different Gym
+                .header("X-Auth-User-Role", "COACH")
+                .with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+        .andExpect(status().isForbidden());
+  }
+
+  @Test
+  @DisplayName("POST /scores: should return 400 for future date")
+  void testLogScore_ValidationFailure() throws Exception {
+    WodScoreRequest request =
+        new WodScoreRequest(
+            null,
+            fran.getId(),
+            LocalDate.now().plusDays(1), // Future
+            10,
+            0,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            ScalingLevel.RX,
+            false,
+            null,
+            null);
+
+    mockMvc
+        .perform(
+            post("/aldebaran/scores")
+                .header("X-Auth-User-Id", "100")
+                .header("X-Auth-User-Role", "USER")
+                .with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+        .andExpect(status().isBadRequest())
+        .andExpect(jsonPath("$.title").value("Validation Error"));
   }
 
   @Test
@@ -446,7 +557,7 @@ class WodScoreControllerIT extends BaseIntegrationTest {
         .perform(
             delete("/aldebaran/scores/" + score.getId())
                 .header("X-Auth-User-Id", "1")
-                .header("X-Auth-User-Role", "ROLE_ADMIN")
+                .header("X-Auth-User-Role", "ADMIN")
                 .with(csrf()))
         .andExpect(status().isNoContent());
 
@@ -535,6 +646,7 @@ class WodScoreControllerIT extends BaseIntegrationTest {
             .date(LocalDate.now())
             .scaling(ScalingLevel.RX)
             .timeSeconds(seconds)
+            .personalRecord(true)
             .loggedAt(java.time.LocalDateTime.now())
             .build();
     return scoreRepository.save(s);

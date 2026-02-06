@@ -62,7 +62,8 @@ public class WodController {
   @GetMapping
   @Operation(
       summary = "List WODs",
-      description = "Retrieves summaries of available workouts. Supports filtering by title, type, or specific movement.")
+      description =
+          "Retrieves summaries of available workouts. Supports filtering by title, type, or specific movement.")
   @ApiResponses(
       value = {
         @ApiResponse(responseCode = "200", description = "WODs retrieved"),
@@ -74,10 +75,13 @@ public class WodController {
   public ResponseEntity<List<WodSummaryResponse>> getWods(
       @Parameter(description = "Search by title") @RequestParam(required = false) String search,
       @Parameter(description = "Filter by WOD Type") @RequestParam(required = false) WodType type,
-      @Parameter(description = "Filter by Movement ID (e.g. 'WL-SQ-001')") @RequestParam(required = false) String movementId,
+      @Parameter(description = "Filter by Movement ID (e.g. 'WL-SQ-001')")
+          @RequestParam(required = false)
+          String movementId,
       @Parameter(description = "Pagination (page, size)") @PageableDefault(size = 20)
-          Pageable pageable) {
-    return ResponseEntity.ok(wodService.getWods(search, type, movementId, pageable));
+          Pageable pageable,
+      @AuthenticationPrincipal AldebaranUserPrincipal principal) {
+    return ResponseEntity.ok(wodService.getWods(search, type, movementId, pageable, principal));
   }
 
   /**
@@ -90,6 +94,7 @@ public class WodController {
    * @return The detailed WOD definition.
    */
   @GetMapping("/{id}")
+  @PreAuthorize("@wodSecurity.canRead(#id, principal)")
   @Operation(summary = "Get WOD details", description = "Retrieves the full recipe of a workout.")
   @ApiResponses(
       value = {
@@ -167,7 +172,7 @@ public class WodController {
    * @return The updated WOD response.
    */
   @PutMapping("/{id}")
-  @PreAuthorize("@wodSecurity.canUpdate(#id, principal)")
+  @PreAuthorize("@wodSecurity.canModify(#id, principal)")
   @Operation(
       summary = "Update WOD",
       description = "Updates an existing workout (Admin/Coach only).")
@@ -218,7 +223,7 @@ public class WodController {
    * @return HTTP 204 No Content.
    */
   @DeleteMapping("/{id}")
-  @PreAuthorize("@wodSecurity.canDelete(#id, principal)")
+  @PreAuthorize("@wodSecurity.canModify(#id, principal)")
   @Operation(
       summary = "Delete WOD",
       description = "Removes a workout definition (Admin/Coach only).")

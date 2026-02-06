@@ -18,6 +18,7 @@ import apex.stellar.aldebaran.repository.MovementRepository;
 import apex.stellar.aldebaran.repository.WodRepository;
 import apex.stellar.aldebaran.repository.WodScoreRepository;
 import apex.stellar.aldebaran.repository.projection.WodSummary;
+import apex.stellar.aldebaran.security.AldebaranUserPrincipal;
 import apex.stellar.aldebaran.security.SecurityUtils;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -69,23 +70,34 @@ public class WodService {
    */
   @Transactional(readOnly = true)
   public List<WodSummaryResponse> getWods(
-      String search, WodType type, String movementId, Pageable pageable) {
+      String search,
+      WodType type,
+      String movementId,
+      Pageable pageable,
+      AldebaranUserPrincipal principal) {
+
+    // 1. Prepare Security Context
+    // If principal is null (should not happen due to auth guards), fallback to restrictive
+    // defaults.
+    Long userId = principal != null ? principal.getId() : -1L;
+    Long gymId = principal != null ? principal.getGymId() : null;
+    boolean isAdmin = SecurityUtils.isAdmin(principal);
+
     List<WodSummary> projections;
 
+    // 2. Execute Optimized & Secure Query based on filters
     if (StringUtils.hasText(search)) {
-      // Search by title (Projection)
-      projections = wodRepository.findProjectedByTitleContainingIgnoreCase(search);
+      projections = wodRepository.findByTitleSecure(search, userId, gymId, isAdmin);
     } else if (StringUtils.hasText(movementId)) {
-      // Filter by contained movement
-      projections = wodRepository.findProjectedByMovementId(movementId, pageable);
+      projections =
+          wodRepository.findByMovementSecure(movementId, userId, gymId, isAdmin, pageable);
     } else if (type != null) {
-      // Filter by type (Projection)
-      projections = wodRepository.findProjectedByWodType(type, pageable);
+      projections = wodRepository.findByTypeSecure(type, userId, gymId, isAdmin, pageable);
     } else {
-      // Find all (Projection)
-      projections = wodRepository.findAllProjectedBy(pageable);
+      projections = wodRepository.findAllSecure(userId, gymId, isAdmin, pageable);
     }
 
+    // 3. Map Projection to DTO
     return projections.stream()
         .map(
             p ->

@@ -6,6 +6,7 @@ import apex.stellar.aldebaran.dto.MovementMuscleRequest;
 import apex.stellar.aldebaran.dto.MovementRequest;
 import apex.stellar.aldebaran.dto.MovementResponse;
 import apex.stellar.aldebaran.dto.MovementSummaryResponse;
+import apex.stellar.aldebaran.exception.DataConflictException;
 import apex.stellar.aldebaran.exception.ResourceNotFoundException;
 import apex.stellar.aldebaran.mapper.MovementMapper;
 import apex.stellar.aldebaran.model.entities.Movement;
@@ -139,6 +140,11 @@ public class MovementService {
   @Transactional
   @CacheEvict(value = CACHE_MOVEMENTS, allEntries = true)
   public MovementResponse createMovement(MovementRequest request) {
+
+    if (movementRepository.existsByNameIgnoreCase(request.name())) {
+      throw new DataConflictException("error.movement.duplicate");
+    }
+
     Movement movement = movementMapper.toEntity(request);
 
     // 1. Generate Business ID

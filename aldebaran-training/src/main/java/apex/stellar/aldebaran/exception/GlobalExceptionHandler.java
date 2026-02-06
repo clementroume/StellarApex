@@ -11,13 +11,13 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.NonNull;
 import org.springframework.context.MessageSource;
+import org.springframework.context.NoSuchMessageException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
-import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -28,7 +28,8 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExcep
 /**
  * Centralized exception handler for Aldebaran Training API.
  *
- * <p>Converts application exceptions into standard RFC 7807 Problem Details.
+ * <p>Converts application exceptions into standard RFC 7807 Problem Details. Titles are
+ * standardized (English) while details are internationalized via {@link MessageSource}.
  */
 @RestControllerAdvice
 @RequiredArgsConstructor
@@ -39,7 +40,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
   /**
    * Handles {@link ResourceNotFoundException} when a requested resource cannot be found. Returns a
-   * 404 Not Found status with a localized error message.
+   * 404 Not Found status.
    *
    * @param ex The thrown exception containing the message key and arguments.
    * @param request The current HTTP request.
@@ -51,10 +52,8 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
       ResourceNotFoundException ex, HttpServletRequest request, Locale locale) {
 
     log.debug("Resource not found: {}", ex.getMessage());
-    String title = messageSource.getMessage("error.title.not.found", null, locale);
-    String message = messageSource.getMessage(ex.getMessageKey(), ex.getArgs(), locale);
-
-    return createProblemResponse(HttpStatus.NOT_FOUND, title, message, request);
+    String message = getLocalizedMessage(ex.getMessageKey(), ex.getArgs(), locale);
+    return createProblemResponse(HttpStatus.NOT_FOUND, "Resource Not Found", message, request);
   }
 
   /**
@@ -71,30 +70,26 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
       DataConflictException ex, HttpServletRequest request, Locale locale) {
 
     log.warn("Data conflict on request [{}]: {}", request.getRequestURI(), ex.getMessage());
-    String title = messageSource.getMessage("error.title.conflict", null, locale);
-    String message = messageSource.getMessage(ex.getMessageKey(), ex.getArgs(), locale);
-
-    return createProblemResponse(HttpStatus.CONFLICT, title, message, request);
+    String message = getLocalizedMessage(ex.getMessageKey(), ex.getArgs(), locale);
+    return createProblemResponse(HttpStatus.CONFLICT, "Data Conflict", message, request);
   }
 
   /**
-   * Handles {@link WodLockedException} when modification is attempted on a locked WOD.
-   * Returns 409 Conflict.
+   * Handles {@link WodLockedException} when modification is attempted on a locked WOD. Returns 409
+   * Conflict.
    */
   @ExceptionHandler(WodLockedException.class)
   public ResponseEntity<@NonNull ProblemDetail> handleWodLocked(
       WodLockedException ex, HttpServletRequest request, Locale locale) {
 
     log.warn("WOD Locked: {}", ex.getMessage());
-    String title = messageSource.getMessage("error.title.locked", null, locale);
-    String message = messageSource.getMessage(ex.getMessageKey(), ex.getArgs(), locale);
-    return createProblemResponse(
-        HttpStatus.CONFLICT, title, message, request);
+    String message = getLocalizedMessage(ex.getMessageKey(), ex.getArgs(), locale);
+    return createProblemResponse(HttpStatus.CONFLICT, "Resource Locked", message, request);
   }
 
   /**
-   * Handles {@link ConstraintViolationException} triggered by JPA/Hibernate Validator (e.g. @ValidScore).
-   * Returns 400 Bad Request with the validation message.
+   * Handles {@link ConstraintViolationException} triggered by JPA/Hibernate Validator
+   * (e.g. @ValidScore). Returns 400 Bad Request with the validation message.
    */
   @ExceptionHandler(ConstraintViolationException.class)
   public ResponseEntity<@NonNull ProblemDetail> handleConstraintViolation(
@@ -106,8 +101,8 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
             .collect(Collectors.joining("; "));
 
     log.warn("Constraint violation: {}", errors);
-    String title = messageSource.getMessage("error.validation", null, locale);
-    return createProblemResponse(HttpStatus.BAD_REQUEST, title, errors, request);
+    // Use generic validation title, detail contains specifics
+    return createProblemResponse(HttpStatus.BAD_REQUEST, "Validation Error", errors, request);
   }
 
   /**
@@ -119,39 +114,37 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
       EntityNotFoundException ex, HttpServletRequest request, Locale locale) {
 
     log.debug("Entity not found: {}", ex.getMessage());
-    String title = messageSource.getMessage("error.title.entity.not.found", null, locale);
     return createProblemResponse(
-        HttpStatus.NOT_FOUND, title, ex.getMessage(), request);
+        HttpStatus.NOT_FOUND, "Entity Not Found", ex.getMessage(), request);
   }
 
   /**
    * Handles {@link AccessDeniedException} when a user lacks the necessary permissions. Returns a
    * 403 Forbidden status.
    *
+   * @param ex The exception.
    * @param request The current HTTP request.
    * @param locale The locale for message translation.
    * @return A {@link ResponseEntity} containing the {@link ProblemDetail}.
    */
   @ExceptionHandler(AccessDeniedException.class)
   public ResponseEntity<@NonNull ProblemDetail> handleAccessDenied(
-      HttpServletRequest request, Locale locale) {
+      AccessDeniedException ex, HttpServletRequest request, Locale locale) {
+    log.warn("Access denied for {}: {}", request.getRequestURI(), ex.getMessage());
 
-    log.warn("Access denied for {}", request.getRequestURI());
-    String title = messageSource.getMessage("error.title.access.denied", null, locale);
-    String message = messageSource.getMessage("error.access.denied", null, locale);
+    String defaultMessage = getLocalizedMessage("error.access.denied", null, locale);
+    String message = defaultMessage;
 
-    return createProblemResponse(HttpStatus.FORBIDDEN, title, message, request);
+    if (ex.getMessage() != null && ex.getMessage().startsWith("error.")) {
+      message = messageSource.getMessage(ex.getMessage(), null, defaultMessage, locale);
+    }
+
+    return createProblemResponse(HttpStatus.FORBIDDEN, "Access Denied", message, request);
   }
 
   /**
    * Overrides the standard Spring MVC validation handler to provide detailed field error logging
    * and a customized ProblemDetail response.
-   *
-   * @param ex The exception containing validation errors.
-   * @param headers The headers to be written to the response.
-   * @param status The selected response status code (400 Bad Request).
-   * @param request The current web request.
-   * @return A {@link ResponseEntity} with the validation errors formatted in the 'detail' field.
    */
   @Override
   protected ResponseEntity<@NonNull Object> handleMethodArgumentNotValid(
@@ -160,25 +153,18 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
       @NonNull HttpStatusCode status,
       WebRequest request) {
 
-    // Aggregates all field errors into a single string for logging and the response detail.
     String errors =
-        ex.getBindingResult().getAllErrors().stream()
-            .map(
-                error -> {
-                  if (error instanceof FieldError fieldError) {
-                    return fieldError.getField() + ": " + error.getDefaultMessage();
-                  }
-                  return error.getDefaultMessage();
-                })
+        ex.getBindingResult().getFieldErrors().stream()
+            .map(error -> error.getField() + ": " + error.getDefaultMessage())
             .collect(Collectors.joining("; "));
 
-    // Cast to ServletWebRequest to access the raw HttpServletRequest URI
     String requestUri = ((ServletWebRequest) request).getRequest().getRequestURI();
     log.info("Validation errors on [{}]: {}", requestUri, errors);
 
-    // Customize the standard ProblemDetail provided by the exception
     ProblemDetail problemDetail = ex.getBody();
-    problemDetail.setTitle(messageSource.getMessage("error.validation", null, request.getLocale()));
+    // We use the localized message for title if available, otherwise default
+    // Note: Antares uses a specific key for validation title, we keep it consistent here
+    problemDetail.setTitle(getLocalizedMessage("error.validation", null, request.getLocale()));
     problemDetail.setDetail(errors);
     problemDetail.setInstance(URI.create(requestUri));
 
@@ -199,12 +185,13 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
       Exception ex, HttpServletRequest request, Locale locale) {
 
     log.error("Unhandled exception caught for request {}", request.getRequestURI(), ex);
-    String title = messageSource.getMessage("error.title.internal.server", null, locale);
-    String message = messageSource.getMessage("error.internal.server", null, locale);
+    String message = getLocalizedMessage("error.internal.server", null, locale);
 
     return createProblemResponse(
-        HttpStatus.INTERNAL_SERVER_ERROR, title, message, request);
+        HttpStatus.INTERNAL_SERVER_ERROR, "Internal Server Error", message, request);
   }
+
+  // --- Helpers ---
 
   private ResponseEntity<@NonNull ProblemDetail> createProblemResponse(
       HttpStatus status, String title, String detail, HttpServletRequest request) {
@@ -214,5 +201,15 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     problemDetail.setInstance(URI.create(request.getRequestURI()));
 
     return ResponseEntity.status(status).body(problemDetail);
+  }
+
+  /** Safely retrieves a localized message. Returns the key itself if not found. */
+  private String getLocalizedMessage(String key, Object[] args, Locale locale) {
+    try {
+      return messageSource.getMessage(key, args, locale);
+    } catch (NoSuchMessageException e) {
+      log.warn("No message found for key '{}'", key, e);
+      return key;
+    }
   }
 }

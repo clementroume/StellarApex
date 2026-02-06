@@ -44,4 +44,10 @@ public interface MovementRepository extends JpaRepository<Movement, String> {
    * Gymnastics movements").
    */
   List<MovementSummary> findProjectedByCategory(Category category);
+
+  /**
+   * Checks for the existence of an entity (e.g., Movement) in the database by its name, ignoring
+   * case differences.
+   */
+  boolean existsByNameIgnoreCase(String name);
 }

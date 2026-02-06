@@ -21,18 +21,12 @@ import apex.stellar.aldebaran.repository.MovementRepository;
 import apex.stellar.aldebaran.repository.MuscleRepository;
 import java.util.Collections;
 import java.util.List;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.redis.connection.RedisConnection;
-import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.http.MediaType;
-import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
-import tools.jackson.databind.json.JsonMapper;
 
 /**
  * Integration tests for {@link MovementController}.
@@ -42,11 +36,8 @@ import tools.jackson.databind.json.JsonMapper;
 @Transactional
 class MovementControllerIT extends BaseIntegrationTest {
 
-  @Autowired private MockMvc mockMvc;
-  @Autowired private JsonMapper objectMapper;
   @Autowired private MovementRepository movementRepository;
   @Autowired private MuscleRepository muscleRepository;
-  @Autowired private StringRedisTemplate redisTemplate;
 
   @BeforeEach
   void setUp() {
@@ -73,25 +64,19 @@ class MovementControllerIT extends BaseIntegrationTest {
     movementRepository.save(backSquat);
   }
 
-  @AfterEach
-  void cleanUpCache() {
-    redisTemplate.execute(
-        (RedisConnection connection) -> {
-          connection.serverCommands().flushAll();
-          return null;
-        });
-  }
-
   // -------------------------------------------------------------------------
   // GET Operations
   // -------------------------------------------------------------------------
 
   @Test
-  @WithMockUser(username = "athlete")
   @DisplayName("GET /movements: should return summaries matching query")
   void testSearchMovements_Success() throws Exception {
     mockMvc
-        .perform(get("/aldebaran/movements").param("query", "Squat"))
+        .perform(
+            get("/aldebaran/movements")
+                .param("query", "Squat")
+                .header("X-Auth-User-Id", "1")
+                .header("X-Auth-User-Role", "USER"))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$", hasSize(1)))
         .andExpect(jsonPath("$[0].id").value("WL-SQ-001"))
@@ -100,22 +85,26 @@ class MovementControllerIT extends BaseIntegrationTest {
   }
 
   @Test
-  @WithMockUser(username = "athlete")
   @DisplayName("GET /movements/{id}: should return detailed response")
   void testGetMovement_Success() throws Exception {
     mockMvc
-        .perform(get("/aldebaran/movements/WL-SQ-001"))
+        .perform(
+            get("/aldebaran/movements/WL-SQ-001")
+                .header("X-Auth-User-Id", "1")
+                .header("X-Auth-User-Role", "USER"))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.id").value("WL-SQ-001"))
         .andExpect(jsonPath("$.name").value("Back Squat"));
   }
 
   @Test
-  @WithMockUser(username = "athlete")
   @DisplayName("GET /movements/{id}: should return 404 for unknown ID")
   void testGetMovement_NotFound() throws Exception {
     mockMvc
-        .perform(get("/aldebaran/movements/UNKNOWN-ID"))
+        .perform(
+            get("/aldebaran/movements/UNKNOWN-ID")
+                .header("X-Auth-User-Id", "1")
+                .header("X-Auth-User-Role", "USER"))
         .andExpect(status().isNotFound())
         .andExpect(jsonPath("$.title").value("Resource Not Found"));
   }
@@ -125,9 +114,6 @@ class MovementControllerIT extends BaseIntegrationTest {
   // -------------------------------------------------------------------------
 
   @Test
-  @WithMockUser(
-      username = "admin",
-      roles = {"ADMIN"})
   @DisplayName("POST /movements: should create new movement and generate ID")
   void testCreateMovement_Success() throws Exception {
     // Given
@@ -153,6 +139,8 @@ class MovementControllerIT extends BaseIntegrationTest {
         .perform(
             post("/aldebaran/movements")
                 .with(csrf())
+                .header("X-Auth-User-Id", "1")
+                .header("X-Auth-User-Role", "ADMIN")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
         .andExpect(status().isCreated())
@@ -162,9 +150,6 @@ class MovementControllerIT extends BaseIntegrationTest {
   }
 
   @Test
-  @WithMockUser(
-      username = "user",
-      roles = {"USER"})
   @DisplayName("POST /movements: should return 403 Forbidden for non-admin")
   void testCreateMovement_Forbidden() throws Exception {
     MovementRequest request =
@@ -188,6 +173,8 @@ class MovementControllerIT extends BaseIntegrationTest {
         .perform(
             post("/aldebaran/movements")
                 .with(csrf())
+                .header("X-Auth-User-Id", "2")
+                .header("X-Auth-User-Role", "USER")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
         .andExpect(status().isForbidden());
@@ -198,9 +185,6 @@ class MovementControllerIT extends BaseIntegrationTest {
   // -------------------------------------------------------------------------
 
   @Test
-  @WithMockUser(
-      username = "admin",
-      roles = {"ADMIN"})
   @DisplayName("PUT /movements/{id}: should update existing movement")
   void testUpdateMovement_Success() throws Exception {
     MovementRequest updateRequest =
@@ -224,6 +208,8 @@ class MovementControllerIT extends BaseIntegrationTest {
         .perform(
             put("/aldebaran/movements/WL-SQ-001")
                 .with(csrf())
+                .header("X-Auth-User-Id", "1")
+                .header("X-Auth-User-Role", "ADMIN")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(updateRequest)))
         .andExpect(status().isOk())

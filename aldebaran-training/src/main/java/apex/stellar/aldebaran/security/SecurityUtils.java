@@ -6,25 +6,30 @@ import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 
 /**
- * Utility class for accessing security context information within the application.
+ * Utility class for accessing security context information and evaluating common role-based
+ * policies.
  *
  * <p>This helper provides static accessors to retrieve the currently authenticated user's details
- * (ID, Gym, etc.) from the Spring Security context, avoiding repetitive casting and null checks in
- * the service layer.
+ * and encapsulates reusable authorization logic (e.g., checking for Admin or Staff privileges).
  */
 public final class SecurityUtils {
 
+  private static final String ADMIN = "ADMIN";
+  private static final String OWNER = "OWNER";
+  private static final String PROGRAMMER = "PROGRAMMER";
+  private static final String COACH = "COACH";
+  private static final String SCORE_VERIFY = "SCORE_VERIFY";
+  private static final String WOD_WRITE = "WOD_WRITE";
+
   private SecurityUtils() {
-    // Private constructor to prevent instantiation of utility class
+    // Private constructor to prevent instantiation
   }
 
   /**
    * Retrieves the ID of the currently authenticated user.
    *
-   * <p>This method expects the security context to contain an {@link AldebaranUserPrincipal}.
-   *
    * @return The unique identifier (ID) of the authenticated user.
-   * @throws IllegalStateException If no user is authenticated or the principal type is invalid.
+   * @throws IllegalStateException If no user is authenticated.
    */
   public static Long getCurrentUserId() {
     return getPrincipal()
@@ -33,23 +38,46 @@ public final class SecurityUtils {
             () -> new IllegalStateException("Current user ID not found in security context"));
   }
 
-  /**
-   * Retrieves the Gym ID associated with the current user's context.
-   *
-   * <p>Useful for multi-tenant filtering in services.
-   *
-   * @return The Gym ID if present, or null if the user has no gym context (e.g., global admin or
-   *     personal scope).
-   */
-  public static Long getCurrentGymId() {
-    return getPrincipal().map(AldebaranUserPrincipal::getGymId).orElse(null);
+  /** Checks if the current user is a Platform Administrator. */
+  public static boolean isAdmin(AldebaranUserPrincipal principal) {
+    return principal != null && ADMIN.equals(principal.getRole());
   }
 
   /**
-   * Internal helper to extract the {@link AldebaranUserPrincipal} safely.
-   *
-   * @return An Optional containing the principal if authentication is valid.
+   * Checks if the user has write access to WODs within their Gym. Valid for: Owners, Programmers,
+   * and Coaches with specific permission.
    */
+  public static boolean hasWodWriteAccess(AldebaranUserPrincipal principal) {
+    if (principal.getGymId() == null) {
+      return false;
+    }
+    return isOwnerOrProgrammer(principal)
+        || (isCoach(principal) && principal.hasPermission(WOD_WRITE));
+  }
+
+  /**
+   * Checks if the user has authority to verify/modify scores of other athletes. Valid for: Owners,
+   * Programmers, and Coaches with specific permission.
+   */
+  public static boolean hasScoreVerificationRights(AldebaranUserPrincipal principal) {
+    if (principal.getGymId() == null) {
+      return false;
+    }
+    return isOwnerOrProgrammer(principal)
+        || (isCoach(principal) && principal.hasPermission(SCORE_VERIFY));
+  }
+
+  // --- Internal Role Helpers ---
+
+  private static boolean isOwnerOrProgrammer(AldebaranUserPrincipal principal) {
+    String role = principal.getRole();
+    return OWNER.equals(role) || PROGRAMMER.equals(role);
+  }
+
+  private static boolean isCoach(AldebaranUserPrincipal principal) {
+    return COACH.equals(principal.getRole());
+  }
+
   private static Optional<AldebaranUserPrincipal> getPrincipal() {
     return Optional.of(SecurityContextHolder.getContext())
         .map(SecurityContext::getAuthentication)

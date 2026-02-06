@@ -71,6 +71,51 @@ class MuscleServiceTest {
   }
 
   @Test
+  @DisplayName("getMusclesByGroup: should return filtered list")
+  void testGetMusclesByGroup() {
+    // Given
+    when(muscleRepository.findByMuscleGroup(MuscleGroup.CHEST)).thenReturn(List.of(muscleEntity));
+    when(muscleMapper.toResponse(muscleEntity)).thenReturn(muscleResponse);
+
+    // When
+    List<MuscleResponse> result = muscleService.getMusclesByGroup(MuscleGroup.CHEST);
+
+    // Then
+    assertNotNull(result);
+    assertEquals(1, result.size());
+    verify(muscleRepository).findByMuscleGroup(MuscleGroup.CHEST);
+  }
+
+  @Test
+  @DisplayName("getMuscle: should return muscle when found")
+  void testGetMuscle_Success() {
+    // Given
+    String name = "Pectoralis Major";
+    when(muscleRepository.findByMedicalName(name)).thenReturn(Optional.of(muscleEntity));
+    when(muscleMapper.toResponse(muscleEntity)).thenReturn(muscleResponse);
+
+    // When
+    MuscleResponse result = muscleService.getMuscle(name);
+
+    // Then
+    assertNotNull(result);
+    assertEquals(name, result.medicalName());
+  }
+
+  @Test
+  @DisplayName("getMuscle: should throw ResourceNotFoundException when not found")
+  void testGetMuscle_NotFound() {
+    // Given
+    String name = "Unknown";
+    when(muscleRepository.findByMedicalName(name)).thenReturn(Optional.empty());
+
+    // When & Then
+    ResourceNotFoundException ex =
+        assertThrows(ResourceNotFoundException.class, () -> muscleService.getMuscle(name));
+    assertEquals("error.muscle.not.found", ex.getMessageKey());
+  }
+
+  @Test
   @DisplayName("createMuscle: should create and return muscle when name is unique")
   void testCreateMuscle_Success() {
     // Given
@@ -139,6 +184,30 @@ class MuscleServiceTest {
 
     assertEquals("error.muscle.not.found", ex.getMessageKey());
     verify(muscleRepository, never()).save(any());
+  }
+
+  @Test
+  @DisplayName("updateMuscle: should allow renaming if new name is unique")
+  void testUpdateMuscle_RenameSuccess() {
+    // Given
+    Long id = 1L;
+    Muscle existing = Muscle.builder().id(id).medicalName("Old Name").build();
+    MuscleRequest renameRequest =
+        new MuscleRequest("New Name", "Common", "Commun", "Desc", "Desc", MuscleGroup.CHEST);
+
+    when(muscleRepository.findById(id)).thenReturn(Optional.of(existing));
+    // Simulate that "New Name" does not exist
+    when(muscleRepository.findByMedicalName("New Name")).thenReturn(Optional.empty());
+
+    when(muscleRepository.save(existing)).thenReturn(existing);
+    when(muscleMapper.toResponse(existing)).thenReturn(mock(MuscleResponse.class));
+
+    // When
+    muscleService.updateMuscle(id, renameRequest);
+
+    // Then
+    verify(muscleMapper).updateEntity(renameRequest, existing);
+    verify(muscleRepository).save(existing);
   }
 
   @Test

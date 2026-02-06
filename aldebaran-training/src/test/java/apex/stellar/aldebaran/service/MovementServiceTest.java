@@ -8,6 +8,7 @@ import apex.stellar.aldebaran.dto.MovementMuscleRequest;
 import apex.stellar.aldebaran.dto.MovementRequest;
 import apex.stellar.aldebaran.dto.MovementResponse;
 import apex.stellar.aldebaran.dto.MovementSummaryResponse;
+import apex.stellar.aldebaran.exception.DataConflictException;
 import apex.stellar.aldebaran.exception.ResourceNotFoundException;
 import apex.stellar.aldebaran.mapper.MovementMapper;
 import apex.stellar.aldebaran.model.entities.Movement;
@@ -104,6 +105,52 @@ class MovementServiceTest {
   }
 
   @Test
+  @DisplayName("searchMovements: should return all when query is empty")
+  void testSearchMovements_EmptyQuery() {
+    // Given
+    MovementSummary projection = mock(MovementSummary.class);
+    when(movementRepository.findAllProjectedBy()).thenReturn(List.of(projection));
+
+    // When
+    List<MovementSummaryResponse> results = movementService.searchMovements("");
+
+    // Then
+    assertEquals(1, results.size());
+    verify(movementRepository).findAllProjectedBy();
+  }
+
+  @Test
+  @DisplayName("getMovementsByCategory: should return filtered list")
+  void testGetMovementsByCategory() {
+    // Given
+    MovementSummary projection = mock(MovementSummary.class);
+    when(movementRepository.findProjectedByCategory(Category.SQUAT))
+        .thenReturn(List.of(projection));
+
+    // When
+    List<MovementSummaryResponse> results = movementService.getMovementsByCategory(Category.SQUAT);
+
+    // Then
+    assertEquals(1, results.size());
+    verify(movementRepository).findProjectedByCategory(Category.SQUAT);
+  }
+
+  @Test
+  @DisplayName("getMovement: should return details when found")
+  void testGetMovement_Success() {
+    // Given
+    when(movementRepository.findById("WL-SQ-1234")).thenReturn(Optional.of(movement));
+    when(movementMapper.toResponse(movement)).thenReturn(mock(MovementResponse.class));
+
+    // When
+    MovementResponse result = movementService.getMovement("WL-SQ-1234");
+
+    // Then
+    assertNotNull(result);
+    verify(movementRepository).findById("WL-SQ-1234");
+  }
+
+  @Test
   @DisplayName("getMovement: should throw exception when ID not found")
   void testGetMovement_NotFound() {
     when(movementRepository.findById("INVALID")).thenReturn(Optional.empty());
@@ -141,11 +188,13 @@ class MovementServiceTest {
   @DisplayName("createMovement: should generate semantic ID based on category")
   void testCreateMovement_GeneratesSemanticId() {
     // Given: A movement entity from mapper (ID is null or temporary)
-    Movement newMovement = Movement.builder()
-        .name("Deadlift")
-        .category(Category.DEADLIFT) // Should generate prefix "WL-DL" (Weightlifting - Deadlift)
-        .targetedMuscles(new HashSet<>())
-        .build();
+    Movement newMovement =
+        Movement.builder()
+            .name("Deadlift")
+            .category(
+                Category.DEADLIFT) // Should generate prefix "WL-DL" (Weightlifting - Deadlift)
+            .targetedMuscles(new HashSet<>())
+            .build();
 
     when(movementMapper.toEntity(request)).thenReturn(newMovement);
     when(muscleRepository.findByMedicalName(any())).thenReturn(Optional.of(muscle));
@@ -158,7 +207,9 @@ class MovementServiceTest {
 
     // Then
     assertNotNull(newMovement.getId());
-    assertTrue(newMovement.getId().startsWith("WL-DL-"), "ID should start with semantic prefix 'WL-DL-' but was " + newMovement.getId());
+    assertTrue(
+        newMovement.getId().startsWith("WL-DL-"),
+        "ID should start with semantic prefix 'WL-DL-' but was " + newMovement.getId());
   }
 
   @Test
@@ -195,5 +246,42 @@ class MovementServiceTest {
     // Logic check: The list size is 1 because we cleared the old one and added the new request one
     assertEquals(1, movement.getTargetedMuscles().size());
     verify(movementRepository).save(movement);
+  }
+
+  @Test
+  @DisplayName("updateMovement: should throw exception when ID not found")
+  void testUpdateMovement_NotFound() {
+    when(movementRepository.findById("INVALID")).thenReturn(Optional.empty());
+
+    assertThrows(
+        ResourceNotFoundException.class, () -> movementService.updateMovement("INVALID", request));
+  }
+
+  @Test
+  @DisplayName("updateMovement: should throw exception if muscle name is invalid")
+  void testUpdateMovement_InvalidMuscle() {
+    String id = "WL-SQ-1234";
+    when(movementRepository.findById(id)).thenReturn(Optional.of(movement));
+    when(muscleRepository.findByMedicalName("Quadriceps")).thenReturn(Optional.empty());
+
+    ResourceNotFoundException ex =
+        assertThrows(
+            ResourceNotFoundException.class, () -> movementService.updateMovement(id, request));
+
+    assertEquals("error.muscle.name.not.found", ex.getMessageKey());
+  }
+
+  @Test
+  @DisplayName("createMovement: should throw DataConflictException if name already exists")
+  void testCreateMovement_DuplicateName() {
+    // GIVEN
+    when(movementRepository.existsByNameIgnoreCase(request.name())).thenReturn(true);
+
+    // WHEN / THEN
+    DataConflictException ex =
+        assertThrows(DataConflictException.class, () -> movementService.createMovement(request));
+
+    assertEquals("error.movement.duplicate", ex.getMessageKey());
+    verify(movementRepository, never()).save(any());
   }
 }

@@ -2,7 +2,6 @@ package apex.stellar.aldebaran.security;
 
 import apex.stellar.aldebaran.dto.WodScoreRequest;
 import apex.stellar.aldebaran.model.entities.Wod;
-import apex.stellar.aldebaran.model.entities.WodScore;
 import apex.stellar.aldebaran.repository.WodRepository;
 import apex.stellar.aldebaran.repository.WodScoreRepository;
 import java.util.Objects;
@@ -11,109 +10,144 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Security bean responsible for evaluating authorization logic for WodScore resources.
+ * Security bean guarding WOD Scores (Participation & Moderation).
  *
- * <p>Enforces the strict authorization matrix for creating, reading, updating, and deleting scores
- * based on roles (Admin, Coach, User) and context (Gym ownership, Data ownership).
+ * <p>This component enforces authorization rules for logging and managing scores:
+ *
+ * <ul>
+ *   <li><b>Participation (Self):</b> Athletes can log scores for Public WODs, their Gym's WODs, or
+ *       their Private WODs.
+ *   <li><b>Moderation (Staff):</b> Coaches/Owners can log or correct scores for other athletes
+ *       <i>within their Gym context</i>.
+ * </ul>
+ *
+ * <p><b>Strategy regarding "Not Found":</b> Methods return {@code true} if the resource ID is not
+ * found. This delegates the responsibility to the Service layer to throw a proper {@code
+ * ResourceNotFoundException} (HTTP 404), rather than triggering a generic {@code
+ * AccessDeniedException} (HTTP 403).
  */
 @Component("wodScoreSecurity")
 @RequiredArgsConstructor
 public class WodScoreSecurity {
 
-  private static final String ROLE_ADMIN = "ROLE_ADMIN";
-  private static final String ROLE_COACH = "ROLE_COACH";
-  private static final String ROLE_OWNER = "ROLE_OWNER";
-  private static final String ROLE_PROGRAMMER = "ROLE_PROGRAMMER";
-
   private final WodScoreRepository scoreRepository;
   private final WodRepository wodRepository;
 
   /**
-   * Evaluates if the user can create a score.
+   * Evaluates if the authenticated user is authorized to view a specific score.
    *
-   * <ul>
-   *   <li>ADMIN: Always allowed.
-   *   <li>USER: Allowed if creating for themselves.
-   *   <li>COACH: Allowed if creating for an athlete, provided the WOD belongs to the Coach's gym.
-   * </ul>
+   * @param scoreId The unique identifier of the score.
+   * @param principal The authenticated user context.
+   * @return {@code true} if authorized or if the score is not found (deferring to 404).
    */
   @Transactional(readOnly = true)
-  public boolean canCreate(WodScoreRequest request, AldebaranUserPrincipal principal) {
-    if (isAdmin(principal)) {
+  public boolean canView(Long scoreId, AldebaranUserPrincipal principal) {
+
+    if (SecurityUtils.isAdmin(principal)) {
       return true;
     }
 
-    Long targetUserId = request.userId() != null ? request.userId() : principal.getId();
+    return scoreRepository
+        .findById(scoreId)
+        .map(
+            score -> {
+              // 1. My Score -> Always visible
+              if (Objects.equals(score.getUserId(), principal.getId())) {
+                return true;
+              }
 
-    // Case: User creating for themselves
-    if (Objects.equals(targetUserId, principal.getId())) {
-      return true;
-    }
+              Wod wod = score.getWod();
 
-    // Case: Coach/Staff creating for someone else
-    // Must verify that the WOD belongs to the Coach's gym context
-    if (isStaff(principal)) {
-      return wodRepository
-          .findById(request.wodId())
-          .map(wod -> Objects.equals(wod.getGymId(), principal.getGymId()))
-          .orElse(false);
-    }
+              // 2. Public WOD -> Visible to everyone (Global Leaderboard)
+              if (wod.isPublic()) {
+                return true;
+              }
 
-    return false;
+              // 3. Gym WOD -> Visible to all members of that gym (Gym Leaderboard)
+              if (wod.getGymId() != null) {
+                return Objects.equals(wod.getGymId(), principal.getGymId());
+              }
+
+              // 4. Private WOD -> Visible only to the owner (already covered by step 1)
+              return false;
+            })
+        .orElse(true); // Allow service to handle 404
   }
 
   /**
-   * Evaluates if the user can update a specific score.
+   * Evaluates if the authenticated user is authorized to create (log) a score. Handles both
+   * Self-Participation and Staff Moderation.
    *
-   * <ul>
-   *   <li>ADMIN: Always allowed.
-   *   <li>OWNER: Allowed if the score belongs to them.
-   *   <li>STAFF: Allowed if the WOD belongs to their gym (Moderation).
-   * </ul>
+   * @param request The score creation payload.
+   * @param principal The authenticated user context.
+   * @return {@code true} if authorized or if the WOD is not found (deferring to 404).
+   */
+  public boolean canCreate(WodScoreRequest request, AldebaranUserPrincipal principal) {
+
+    if (SecurityUtils.isAdmin(principal)) {
+      return true;
+    }
+
+    // Determine intent: Self-logging vs Logging for others
+    Long targetUserId = request.userId() != null ? request.userId() : principal.getId();
+    boolean isSelf = Objects.equals(targetUserId, principal.getId());
+
+    return wodRepository
+        .findById(request.wodId())
+        .map(
+            wod -> {
+              // CASE A: Self-Participation
+              if (isSelf) {
+                // 1. Public: Open to all
+                if (wod.isPublic()) {
+                  return true;
+                }
+                // 2. Gym: Must be a member
+                if (wod.getGymId() != null) {
+                  return Objects.equals(wod.getGymId(), principal.getGymId());
+                }
+                // 3. Private: Author only
+                return Objects.equals(wod.getAuthorId(), principal.getId());
+              }
+
+              // CASE B: Staff Moderation (Logging for someone else)
+              // Requires: Gym WOD + Same Gym Context + Verification Rights
+              return wod.getGymId() != null
+                  && Objects.equals(wod.getGymId(), principal.getGymId())
+                  && SecurityUtils.hasScoreVerificationRights(principal);
+            })
+        .orElse(true); // Allow service to handle 404
+  }
+
+  /**
+   * Evaluates if the authenticated user is authorized to update OR delete a score.
+   *
+   * @param scoreId The unique identifier of the score.
+   * @param principal The authenticated user context.
+   * @return {@code true} if authorized or if the score is not found (deferring to 404).
    */
   @Transactional(readOnly = true)
-  public boolean canUpdate(Long scoreId, AldebaranUserPrincipal principal) {
-    return scoreRepository
-        .findById(scoreId)
-        .map(score -> checkWriteAccess(score, principal))
-        .orElse(false);
-  }
+  public boolean canModify(Long scoreId, AldebaranUserPrincipal principal) {
 
-  /** Evaluates if the user can delete a specific score. Rules mirror Update rules. */
-  @Transactional(readOnly = true)
-  public boolean canDelete(Long scoreId, AldebaranUserPrincipal principal) {
-    return scoreRepository
-        .findById(scoreId)
-        .map(score -> checkWriteAccess(score, principal))
-        .orElse(false);
-  }
-
-  /** Internal logic to verify write access (Update/Delete) against an existing Score entity. */
-  private boolean checkWriteAccess(WodScore score, AldebaranUserPrincipal principal) {
-    if (isAdmin(principal)) {
+    if (SecurityUtils.isAdmin(principal)) {
       return true;
     }
 
-    // Owner: The user who performed the workout
-    if (Objects.equals(score.getUserId(), principal.getId())) {
-      return true;
-    }
+    return scoreRepository
+        .findById(scoreId)
+        .map(
+            score -> {
+              // 1. Self-Correction: Users can always modify their own scores
+              if (Objects.equals(score.getUserId(), principal.getId())) {
+                return true;
+              }
 
-    // Staff (Moderation): Can edit scores linked to WODs of their gym
-    if (isStaff(principal)) {
-      Wod wod = score.getWod(); // Eagerly loaded in most cases or lazily fetched here
-      return Objects.equals(wod.getGymId(), principal.getGymId());
-    }
-
-    return false;
-  }
-
-  private boolean isAdmin(AldebaranUserPrincipal principal) {
-    return ROLE_ADMIN.equals(principal.getRole());
-  }
-
-  private boolean isStaff(AldebaranUserPrincipal principal) {
-    String role = principal.getRole();
-    return ROLE_OWNER.equals(role) || ROLE_PROGRAMMER.equals(role) || ROLE_COACH.equals(role);
+              // 2. Staff Moderation: Must be Gym WOD + Same Gym + Rights
+              Wod wod = score.getWod();
+              return wod.getGymId() != null
+                  && Objects.equals(wod.getGymId(), principal.getGymId())
+                  && SecurityUtils.hasScoreVerificationRights(principal);
+            })
+        .orElse(true); // Allow service to handle 404
   }
 }
