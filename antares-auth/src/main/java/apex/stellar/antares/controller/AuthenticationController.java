@@ -17,7 +17,7 @@ import apex.stellar.antares.model.Membership.MembershipStatus;
 import apex.stellar.antares.model.Permission;
 import apex.stellar.antares.model.PlatformRole;
 import apex.stellar.antares.model.User;
-import apex.stellar.antares.repository.UserRepository;
+import apex.stellar.antares.repository.jpa.UserRepository;
 import apex.stellar.antares.service.AuthenticationService;
 import apex.stellar.antares.service.JwtService;
 import io.swagger.v3.oas.annotations.Hidden;

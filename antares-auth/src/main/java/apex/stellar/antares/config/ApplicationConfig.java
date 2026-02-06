@@ -2,7 +2,7 @@ package apex.stellar.antares.config;
 
 import apex.stellar.antares.model.PlatformRole;
 import apex.stellar.antares.model.User;
-import apex.stellar.antares.repository.UserRepository;
+import apex.stellar.antares.repository.jpa.UserRepository;
 import apex.stellar.antares.service.AuthenticationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -18,6 +18,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.core.annotation.Order;
 import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
+import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.core.AuthenticationException;
@@ -38,6 +39,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Configuration
 @RequiredArgsConstructor
 @EnableJpaAuditing
+@EnableJpaRepositories(basePackages = "apex.stellar.antares.repository.jpa")
 @Slf4j
 public class ApplicationConfig {
 

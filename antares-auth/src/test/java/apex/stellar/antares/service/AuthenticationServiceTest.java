@@ -16,7 +16,7 @@ import apex.stellar.antares.exception.ResourceNotFoundException;
 import apex.stellar.antares.mapper.UserMapper;
 import apex.stellar.antares.model.PlatformRole;
 import apex.stellar.antares.model.User;
-import apex.stellar.antares.repository.UserRepository;
+import apex.stellar.antares.repository.jpa.UserRepository;
 import jakarta.servlet.http.HttpServletResponse;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;

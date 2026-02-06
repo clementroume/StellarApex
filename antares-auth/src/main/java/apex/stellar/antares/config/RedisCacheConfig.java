@@ -18,7 +18,7 @@ import org.springframework.validation.annotation.Validated;
 /** Configuration class for Redis Caching and Repositories. */
 @Configuration
 @EnableCaching
-@EnableRedisRepositories(basePackages = "apex.stellar.antares.repository")
+@EnableRedisRepositories(basePackages = "apex.stellar.antares.repository.redis")
 @EnableConfigurationProperties(RedisCacheConfig.CacheProperties.class)
 public class RedisCacheConfig {
 

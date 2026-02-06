@@ -12,7 +12,7 @@ import apex.stellar.antares.exception.DataConflictException;
 import apex.stellar.antares.exception.InvalidPasswordException;
 import apex.stellar.antares.mapper.UserMapper;
 import apex.stellar.antares.model.User;
-import apex.stellar.antares.repository.UserRepository;
+import apex.stellar.antares.repository.jpa.UserRepository;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;

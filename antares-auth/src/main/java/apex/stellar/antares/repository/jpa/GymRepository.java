@@ -1,4 +1,4 @@
-package apex.stellar.antares.repository;
+package apex.stellar.antares.repository.jpa;
 
 import apex.stellar.antares.model.Gym;
 import apex.stellar.antares.model.Gym.GymStatus;

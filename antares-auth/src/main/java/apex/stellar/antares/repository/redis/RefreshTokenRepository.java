@@ -1,4 +1,4 @@
-package apex.stellar.antares.repository;
+package apex.stellar.antares.repository.redis;
 
 import apex.stellar.antares.model.RefreshToken;
 import java.util.Optional;

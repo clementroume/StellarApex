@@ -7,7 +7,7 @@ import apex.stellar.antares.dto.AuthenticationRequest;
 import apex.stellar.antares.dto.RegisterRequest;
 import apex.stellar.antares.model.PlatformRole;
 import apex.stellar.antares.model.User;
-import apex.stellar.antares.repository.UserRepository;
+import apex.stellar.antares.repository.jpa.UserRepository;
 import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.AfterEach;
 import org.springframework.beans.factory.annotation.Autowired;

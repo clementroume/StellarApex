@@ -3,8 +3,8 @@ package apex.stellar.antares.service;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-import apex.stellar.antares.model.*;
-import apex.stellar.antares.repository.MembershipRepository;
+import apex.stellar.antares.model.*; 
+import apex.stellar.antares.repository.jpa.MembershipRepository;
 import java.util.Optional;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;

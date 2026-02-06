@@ -1,4 +1,4 @@
-package apex.stellar.antares.controller;
+ package apex.stellar.antares.controller;
 
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;

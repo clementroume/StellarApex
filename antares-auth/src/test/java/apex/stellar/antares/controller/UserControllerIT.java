@@ -1,4 +1,4 @@
-package apex.stellar.antares.controller;
+ package apex.stellar.antares.controller;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;

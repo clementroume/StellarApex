@@ -1,6 +1,6 @@
-package apex.stellar.antares.repository;
+package apex.stellar.antares.repository.jpa;
 
-import apex.stellar.antares.config.ApplicationConfig;
+import apex.stellar.antares.config.ApplicationConfig; // This import will be updated later
 import apex.stellar.antares.model.PlatformRole;
 import apex.stellar.antares.model.User;
 import java.util.Optional;

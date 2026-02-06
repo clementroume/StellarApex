@@ -5,7 +5,7 @@ import apex.stellar.antares.dto.MembershipUpdateRequest;
 import apex.stellar.antares.model.Membership;
 import apex.stellar.antares.model.Membership.MembershipStatus;
 import apex.stellar.antares.model.User;
-import apex.stellar.antares.repository.MembershipRepository;
+import apex.stellar.antares.repository.jpa.MembershipRepository;
 import apex.stellar.antares.service.MembershipService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
