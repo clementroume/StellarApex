@@ -4,7 +4,12 @@ import static org.springframework.security.config.Customizer.withDefaults;
 
 import apex.stellar.antares.model.User;
 import com.nimbusds.jose.jwk.source.ImmutableSecret;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
 import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
@@ -37,10 +42,13 @@ import org.springframework.security.oauth2.server.resource.web.BearerTokenResolv
 import org.springframework.security.oauth2.server.resource.web.DefaultBearerTokenResolver;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
+import org.springframework.security.web.csrf.CsrfFilter;
+import org.springframework.security.web.csrf.CsrfToken;
 import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.springframework.web.filter.OncePerRequestFilter;
 
 /**
  * Main security configuration for the Antares API.
@@ -80,6 +88,7 @@ public class SecurityConfig {
     // The RequestAttributeHandler makes the CSRF token available as a request attribute,
     // which is required for the XorCsrfTokenRequestAttributeHandler default in Spring Security 6.
     CsrfTokenRequestAttributeHandler requestHandler = new CsrfTokenRequestAttributeHandler();
+    requestHandler.setCsrfRequestAttributeName("_csrf");
 
     http.cors(withDefaults()) // Delegate to the corsConfigurationSource bean
         .csrf(
@@ -102,6 +111,7 @@ public class SecurityConfig {
                     // Require authentication for all other endpoints
                     .anyRequest()
                     .authenticated())
+        .addFilterAfter(new CsrfCookieFilter(), CsrfFilter.class)
         .sessionManagement(
             session ->
                 session
@@ -255,6 +265,37 @@ public class SecurityConfig {
       }
       return OAuth2TokenValidatorResult.failure(
           new OAuth2Error("invalid_token", "The required audience is missing", null));
+    }
+  }
+
+  /**
+   * Filter that forces CSRF token generation on every request.
+   *
+   * <p>In Spring Security 6+, CSRF tokens use "deferred loading" by default. This means the token
+   * cookie is only created when explicitly accessed. This filter ensures the token is generated and
+   * sent to the client on every request, enabling the Double-Submit Cookie pattern.
+   *
+   * <p>Without this filter, the XSRF-TOKEN cookie would not appear in the browser.
+   */
+  private static class CsrfCookieFilter extends OncePerRequestFilter {
+
+    @Override
+    protected void doFilterInternal(
+        HttpServletRequest request,
+        @NonNull HttpServletResponse response,
+        @NonNull FilterChain filterChain)
+        throws ServletException, IOException {
+
+      // Access the CSRF token - this triggers generation and cookie creation
+      CsrfToken csrfToken = (CsrfToken) request.getAttribute(CsrfToken.class.getName());
+
+      // Force token resolution by calling getToken()
+      // This ensures the cookie is set in the response
+      if (csrfToken != null) {
+        csrfToken.getToken();
+      }
+
+      filterChain.doFilter(request, response);
     }
   }
 }

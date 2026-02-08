@@ -66,6 +66,7 @@ public abstract class BaseIntegrationTest {
             "YjQ1ZGRjYjU5YjYwNzZkMWY2MzE4YmFiY2Y4ZjgxMGE0YzY4ZmIwYmZkOTRkMjYxYmVjZGU1Y2Y3YWQyYjQzYw==");
     registry.add("application.security.jwt.expiration", () -> 3600000); // 1 hour
     registry.add("application.security.jwt.refresh-token.expiration", () -> 86400000); // 1 day
+    registry.add("application.security.internal-secret", () -> "test-internal-secret");
   }
 
   @AfterEach

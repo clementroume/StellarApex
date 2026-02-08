@@ -42,6 +42,9 @@ public class SecurityConfig {
   @Value("${cors.allowed-origins}")
   private String allowedOrigins;
 
+  @Value("${application.security.internal-secret}")
+  private String internalSecret;
+
   /**
    * Configures the security filter chain for the application, including CSRF protection, CORS
    * configuration, authentication, and session management. This method returns a fully built {@link
@@ -82,7 +85,8 @@ public class SecurityConfig {
                     .authenticated())
         .sessionManagement(
             session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-        .addFilterBefore(new ForwardedAuthFilter(), UsernamePasswordAuthenticationFilter.class);
+        .addFilterBefore(
+            new ForwardedAuthFilter(internalSecret), UsernamePasswordAuthenticationFilter.class);
     return http.build();
   }
 
@@ -111,6 +115,13 @@ public class SecurityConfig {
 
   @Slf4j
   private static class ForwardedAuthFilter extends OncePerRequestFilter {
+
+    private final String internalSecret;
+
+    public ForwardedAuthFilter(String internalSecret) {
+      this.internalSecret = internalSecret;
+    }
+
     /**
      * Filters incoming requests to extract authentication details from custom headers.
      *
@@ -126,6 +137,14 @@ public class SecurityConfig {
         @NonNull HttpServletResponse response,
         @NonNull FilterChain chain)
         throws ServletException, IOException {
+
+      String headerSecret = request.getHeader("X-Internal-Secret");
+
+      if (headerSecret == null || !headerSecret.equals(internalSecret)) {
+        response.sendError(
+            HttpServletResponse.SC_FORBIDDEN, "Access Denied: Invalid Internal Secret");
+        return;
+      }
 
       String userIdStr = request.getHeader("X-Auth-User-Id");
       String gymIdStr = request.getHeader("X-Auth-Gym-Id");
@@ -150,8 +169,7 @@ public class SecurityConfig {
                   .build();
 
           var auth =
-              new UsernamePasswordAuthenticationToken(
-                  principal, null, principal.getAuthorities());
+              new UsernamePasswordAuthenticationToken(principal, null, principal.getAuthorities());
           SecurityContextHolder.getContext().setAuthentication(auth);
         } catch (NumberFormatException e) {
           log.warn(

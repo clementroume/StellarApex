@@ -27,6 +27,7 @@ http:
           - "X-Auth-User-Locale"
           - "X-Auth-Gym-Id"
           - "X-Auth-User-Permissions"
+          - "X-Internal-Secret"
 
     secure-headers:
       # Applies recommended HTTP security headers.

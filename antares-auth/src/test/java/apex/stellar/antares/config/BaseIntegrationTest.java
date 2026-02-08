@@ -65,6 +65,7 @@ public abstract class BaseIntegrationTest {
     registry.add("application.security.jwt.issuer", () -> "antares-test-issuer");
     registry.add("application.security.jwt.audience", () -> "antares-test-audience");
     registry.add("application.security.jwt.cookie.domain", () -> "antares-domain");
+    registry.add("application.security.internal-secret", () -> "test-internal-secret");
   }
 
   @AfterEach

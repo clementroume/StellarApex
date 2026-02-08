@@ -72,6 +72,7 @@ public class AuthenticationController {
   private static final String HEADER_FORWARDED_PROTO = "X-Forwarded-Proto";
   private static final String HEADER_FORWARDED_HOST = "X-Forwarded-Host";
   private static final String HEADER_FORWARDED_URI = "X-Forwarded-Uri";
+  private static final String HEADER_INTERNAL_SECRET = "X-Internal-Secret";
 
   private final AuthenticationService authenticationService;
   private final JwtService jwtService;
@@ -79,6 +80,9 @@ public class AuthenticationController {
 
   @Value("${application.frontend.login.url}")
   private String loginBaseUrl;
+
+  @Value("${application.security.internal-secret}")
+  private String internalSecret;
 
   /**
    * Handles POST requests to register a new user.
@@ -249,6 +253,7 @@ public class AuthenticationController {
             .header(HEADER_AUTH_USER_ID, String.valueOf(user.getId()))
             .header(HEADER_AUTH_USER_ROLE, user.getPlatformRole().name())
             .header(HEADER_AUTH_USER_LOCALE, user.getLocale())
+            .header(HEADER_INTERNAL_SECRET, internalSecret)
             .build();
       }
 
@@ -286,6 +291,7 @@ public class AuthenticationController {
             .header(HEADER_AUTH_GYM_ID, String.valueOf(gymId))
             .header(HEADER_AUTH_USER_ROLE, membership.getGymRole().name())
             .header(HEADER_AUTH_USER_PERMISSIONS, permissions)
+            .header(HEADER_INTERNAL_SECRET, internalSecret)
             .build();
 
       } catch (NumberFormatException e) {
