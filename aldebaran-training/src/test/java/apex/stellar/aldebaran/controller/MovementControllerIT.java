@@ -76,7 +76,8 @@ class MovementControllerIT extends BaseIntegrationTest {
             get("/aldebaran/movements")
                 .param("query", "Squat")
                 .header("X-Auth-User-Id", "1")
-                .header("X-Auth-User-Role", "USER"))
+                .header("X-Auth-User-Role", "USER")
+                .header("X-Internal-Secret", "test-internal-secret"))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$", hasSize(1)))
         .andExpect(jsonPath("$[0].id").value("WL-SQ-001"))
@@ -91,7 +92,8 @@ class MovementControllerIT extends BaseIntegrationTest {
         .perform(
             get("/aldebaran/movements/WL-SQ-001")
                 .header("X-Auth-User-Id", "1")
-                .header("X-Auth-User-Role", "USER"))
+                .header("X-Auth-User-Role", "USER")
+                .header("X-Internal-Secret", "test-internal-secret"))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.id").value("WL-SQ-001"))
         .andExpect(jsonPath("$.name").value("Back Squat"));
@@ -104,7 +106,8 @@ class MovementControllerIT extends BaseIntegrationTest {
         .perform(
             get("/aldebaran/movements/UNKNOWN-ID")
                 .header("X-Auth-User-Id", "1")
-                .header("X-Auth-User-Role", "USER"))
+                .header("X-Auth-User-Role", "USER")
+                .header("X-Internal-Secret", "test-internal-secret"))
         .andExpect(status().isNotFound())
         .andExpect(jsonPath("$.title").value("Resource Not Found"));
   }
@@ -141,6 +144,7 @@ class MovementControllerIT extends BaseIntegrationTest {
                 .with(csrf())
                 .header("X-Auth-User-Id", "1")
                 .header("X-Auth-User-Role", "ADMIN")
+                .header("X-Internal-Secret", "test-internal-secret")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
         .andExpect(status().isCreated())
@@ -175,6 +179,7 @@ class MovementControllerIT extends BaseIntegrationTest {
                 .with(csrf())
                 .header("X-Auth-User-Id", "2")
                 .header("X-Auth-User-Role", "USER")
+                .header("X-Internal-Secret", "test-internal-secret")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
         .andExpect(status().isForbidden());
@@ -210,6 +215,7 @@ class MovementControllerIT extends BaseIntegrationTest {
                 .with(csrf())
                 .header("X-Auth-User-Id", "1")
                 .header("X-Auth-User-Role", "ADMIN")
+                .header("X-Internal-Secret", "test-internal-secret")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(updateRequest)))
         .andExpect(status().isOk())

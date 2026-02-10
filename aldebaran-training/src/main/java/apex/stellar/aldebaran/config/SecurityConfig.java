@@ -20,12 +20,11 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
-import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -57,23 +56,8 @@ public class SecurityConfig {
   @Bean
   public SecurityFilterChain securityFilterChain(HttpSecurity http) {
 
-    // CSRF Configuration:
-    // We use a cookie-based repository. Crucially, 'withHttpOnlyFalse' is used, so the Angular
-    // frontend can read the CSRF token from the cookie and include it in the 'X-XSRF-TOKEN' header.
-    CookieCsrfTokenRepository csrfRepository = CookieCsrfTokenRepository.withHttpOnlyFalse();
-    csrfRepository.setCookieCustomizer(builder -> builder.secure(true).sameSite("Strict"));
-
-    // The RequestAttributeHandler makes the CSRF token available as a request attribute,
-    // which is required for the XorCsrfTokenRequestAttributeHandler default in Spring Security 6.
-    CsrfTokenRequestAttributeHandler requestHandler = new CsrfTokenRequestAttributeHandler();
-
     http.cors(withDefaults())
-        .csrf(
-            csrf ->
-                csrf.csrfTokenRepository(csrfRepository)
-                    .csrfTokenRequestHandler(requestHandler)
-                    // On ignore CSRF uniquement pour les endpoints techniques (monitoring).
-                    .ignoringRequestMatchers("/actuator/**"))
+        .csrf(AbstractHttpConfigurer::disable)
         .authorizeHttpRequests(
             auth ->
                 auth
@@ -105,7 +89,15 @@ public class SecurityConfig {
     CorsConfiguration configuration = new CorsConfiguration();
     configuration.setAllowedOriginPatterns(List.of(allowedOrigins));
     configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
-    configuration.setAllowedHeaders(List.of("Authorization", "Content-Type", "X-XSRF-TOKEN"));
+    configuration.setAllowedHeaders(
+        List.of(
+            "Authorization",
+            "Content-Type",
+            "X-Internal-Secret",
+            "X-Auth-User-Id",
+            "X-Auth-Gym-Id",
+            "X-Auth-User-Role",
+            "X-Auth-User-Permissions"));
     configuration.setAllowCredentials(true);
 
     UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();

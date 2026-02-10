@@ -1,7 +1,6 @@
 package apex.stellar.aldebaran.controller;
 
 import static org.hamcrest.Matchers.hasSize;
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -101,7 +100,7 @@ class WodScoreControllerIT extends BaseIntegrationTest {
             post("/aldebaran/scores")
                 .header("X-Auth-User-Id", "100")
                 .header("X-Auth-User-Role", "USER")
-                .with(csrf())
+                .header("X-Internal-Secret", "test-internal-secret")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
         .andExpect(status().isCreated())
@@ -144,7 +143,7 @@ class WodScoreControllerIT extends BaseIntegrationTest {
             post("/aldebaran/scores")
                 .header("X-Auth-User-Id", "100")
                 .header("X-Auth-User-Role", "USER")
-                .with(csrf())
+                .header("X-Internal-Secret", "test-internal-secret")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
         .andExpect(status().isCreated())
@@ -187,7 +186,7 @@ class WodScoreControllerIT extends BaseIntegrationTest {
             post("/aldebaran/scores")
                 .header("X-Auth-User-Id", "100")
                 .header("X-Auth-User-Role", "USER")
-                .with(csrf())
+                .header("X-Internal-Secret", "test-internal-secret")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
         .andExpect(status().isCreated())
@@ -234,7 +233,7 @@ class WodScoreControllerIT extends BaseIntegrationTest {
             post("/aldebaran/scores")
                 .header("X-Auth-User-Id", "100")
                 .header("X-Auth-User-Role", "USER")
-                .with(csrf())
+                .header("X-Internal-Secret", "test-internal-secret")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
         .andExpect(status().isCreated());
@@ -244,7 +243,8 @@ class WodScoreControllerIT extends BaseIntegrationTest {
         .perform(
             get("/aldebaran/scores/me?wodId=" + fran.getId())
                 .header("X-Auth-User-Id", "100")
-                .header("X-Auth-User-Role", "USER"))
+                .header("X-Auth-User-Role", "USER")
+                .header("X-Internal-Secret", "test-internal-secret"))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.content", hasSize(1)))
         // Verify Time reconstruction
@@ -272,7 +272,8 @@ class WodScoreControllerIT extends BaseIntegrationTest {
         .perform(
             get("/aldebaran/scores/me")
                 .header("X-Auth-User-Id", "100")
-                .header("X-Auth-User-Role", "USER"))
+                .header("X-Auth-User-Role", "USER")
+                .header("X-Internal-Secret", "test-internal-secret"))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.content", hasSize(1)))
         .andExpect(jsonPath("$.content[0].timeSeconds").value(120));
@@ -288,7 +289,8 @@ class WodScoreControllerIT extends BaseIntegrationTest {
         .perform(
             get("/aldebaran/scores/leaderboard/" + fran.getId())
                 .header("X-Auth-User-Id", "100")
-                .header("X-Auth-User-Role", "USER"))
+                .header("X-Auth-User-Role", "USER")
+                .header("X-Internal-Secret", "test-internal-secret"))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.content", hasSize(2)));
   }
@@ -302,7 +304,8 @@ class WodScoreControllerIT extends BaseIntegrationTest {
             get("/aldebaran/scores/leaderboard/" + gymWod.getId())
                 .header("X-Auth-User-Id", "50")
                 .header("X-Auth-Gym-Id", "101")
-                .header("X-Auth-User-Role", "ATHLETE"))
+                .header("X-Auth-User-Role", "ATHLETE")
+                .header("X-Internal-Secret", "test-internal-secret"))
         .andExpect(status().isOk());
 
     // Member of Gym 102 -> Forbidden
@@ -311,7 +314,8 @@ class WodScoreControllerIT extends BaseIntegrationTest {
             get("/aldebaran/scores/leaderboard/" + gymWod.getId())
                 .header("X-Auth-User-Id", "60")
                 .header("X-Auth-Gym-Id", "102")
-                .header("X-Auth-User-Role", "ATHLETE"))
+                .header("X-Auth-User-Role", "ATHLETE")
+                .header("X-Internal-Secret", "test-internal-secret"))
         .andExpect(status().isForbidden());
   }
 
@@ -349,7 +353,7 @@ class WodScoreControllerIT extends BaseIntegrationTest {
             put("/aldebaran/scores/" + score.getId())
                 .header("X-Auth-User-Id", "100")
                 .header("X-Auth-User-Role", "USER")
-                .with(csrf())
+                .header("X-Internal-Secret", "test-internal-secret")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(updateRequest)))
         .andExpect(status().isOk())
@@ -386,7 +390,7 @@ class WodScoreControllerIT extends BaseIntegrationTest {
             put("/aldebaran/scores/" + score.getId())
                 .header("X-Auth-User-Id", "200") // User 200 tries to update
                 .header("X-Auth-User-Role", "USER")
-                .with(csrf())
+                .header("X-Internal-Secret", "test-internal-secret")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(updateRequest)))
         .andExpect(status().isForbidden());
@@ -434,7 +438,7 @@ class WodScoreControllerIT extends BaseIntegrationTest {
                 .header("X-Auth-Gym-Id", "101") // Same Gym
                 .header("X-Auth-User-Role", "COACH")
                 .header("X-Auth-User-Permissions", "SCORE_VERIFY")
-                .with(csrf())
+                .header("X-Internal-Secret", "test-internal-secret")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(updateRequest)))
         .andExpect(status().isOk())
@@ -471,7 +475,7 @@ class WodScoreControllerIT extends BaseIntegrationTest {
                 .header("X-Auth-Gym-Id", "101") // Same Gym
                 .header("X-Auth-User-Role", "COACH")
                 .header("X-Auth-User-Permissions", "SCORE_VERIFY")
-                .with(csrf())
+                .header("X-Internal-Secret", "test-internal-secret")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
         .andExpect(status().isCreated())
@@ -507,7 +511,7 @@ class WodScoreControllerIT extends BaseIntegrationTest {
                 .header("X-Auth-User-Id", "60") // Coach
                 .header("X-Auth-Gym-Id", "102") // Different Gym
                 .header("X-Auth-User-Role", "COACH")
-                .with(csrf())
+                .header("X-Internal-Secret", "test-internal-secret")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
         .andExpect(status().isForbidden());
@@ -541,7 +545,7 @@ class WodScoreControllerIT extends BaseIntegrationTest {
             post("/aldebaran/scores")
                 .header("X-Auth-User-Id", "100")
                 .header("X-Auth-User-Role", "USER")
-                .with(csrf())
+                .header("X-Internal-Secret", "test-internal-secret")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
         .andExpect(status().isBadRequest())
@@ -558,7 +562,7 @@ class WodScoreControllerIT extends BaseIntegrationTest {
             delete("/aldebaran/scores/" + score.getId())
                 .header("X-Auth-User-Id", "1")
                 .header("X-Auth-User-Role", "ADMIN")
-                .with(csrf()))
+                .header("X-Internal-Secret", "test-internal-secret"))
         .andExpect(status().isNoContent());
 
     assert (scoreRepository.findById(score.getId()).isEmpty());
@@ -583,7 +587,7 @@ class WodScoreControllerIT extends BaseIntegrationTest {
             delete("/aldebaran/scores/" + score.getId())
                 .header("X-Auth-User-Id", "100")
                 .header("X-Auth-User-Role", "USER")
-                .with(csrf()))
+                .header("X-Internal-Secret", "test-internal-secret"))
         .andExpect(status().isNoContent());
   }
 
@@ -606,7 +610,7 @@ class WodScoreControllerIT extends BaseIntegrationTest {
             delete("/aldebaran/scores/" + score.getId())
                 .header("X-Auth-User-Id", "999")
                 .header("X-Auth-User-Role", "USER")
-                .with(csrf()))
+                .header("X-Internal-Secret", "test-internal-secret"))
         .andExpect(status().isForbidden());
   }
 
@@ -631,7 +635,8 @@ class WodScoreControllerIT extends BaseIntegrationTest {
         .perform(
             get("/aldebaran/scores/" + scoreB.getId() + "/compare")
                 .header("X-Auth-User-Id", "102")
-                .header("X-Auth-User-Role", "USER"))
+                .header("X-Auth-User-Role", "USER")
+                .header("X-Internal-Secret", "test-internal-secret"))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.rank").value(2))
         .andExpect(jsonPath("$.totalScores").value(3))

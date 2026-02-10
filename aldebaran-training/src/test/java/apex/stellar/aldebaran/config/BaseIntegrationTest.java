@@ -67,6 +67,11 @@ public abstract class BaseIntegrationTest {
     registry.add("application.security.jwt.expiration", () -> 3600000); // 1 hour
     registry.add("application.security.jwt.refresh-token.expiration", () -> 86400000); // 1 day
     registry.add("application.security.internal-secret", () -> "test-internal-secret");
+
+    registry.add("management.tracing.sampling.probability", () -> "0");
+    registry.add("management.otlp.metrics.export.enabled", () -> "false");
+    registry.add("management.tracing.export.otlp.enabled", () -> "false");
+    registry.add("management.logging.export.otlp.enabled", () -> "false");
   }
 
   @AfterEach

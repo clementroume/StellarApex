@@ -9,12 +9,16 @@ import apex.stellar.antares.model.PlatformRole;
 import apex.stellar.antares.model.User;
 import apex.stellar.antares.repository.jpa.UserRepository;
 import jakarta.servlet.http.Cookie;
+import java.util.Arrays;
 import org.junit.jupiter.api.AfterEach;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.data.redis.connection.RedisConnection;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.http.MediaType;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
@@ -22,9 +26,6 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.postgresql.PostgreSQLContainer;
-import org.springframework.data.redis.connection.RedisConnection;
-import org.springframework.data.redis.core.StringRedisTemplate;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import tools.jackson.databind.json.JsonMapper;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
@@ -66,6 +67,11 @@ public abstract class BaseIntegrationTest {
     registry.add("application.security.jwt.audience", () -> "antares-test-audience");
     registry.add("application.security.jwt.cookie.domain", () -> "antares-domain");
     registry.add("application.security.internal-secret", () -> "test-internal-secret");
+
+    registry.add("management.tracing.sampling.probability", () -> "0");
+    registry.add("management.otlp.metrics.export.enabled", () -> "false");
+    registry.add("management.tracing.export.otlp.enabled", () -> "false");
+    registry.add("management.logging.export.otlp.enabled", () -> "false");
   }
 
   @AfterEach
@@ -114,5 +120,13 @@ public abstract class BaseIntegrationTest {
             .password(passwordEncoder.encode(password))
             .platformRole(PlatformRole.ADMIN)
             .build());
+  }
+
+  protected String getXsrfToken(Cookie[] cookies) {
+    return Arrays.stream(cookies)
+        .filter(c -> "XSRF-TOKEN".equals(c.getName()))
+        .map(Cookie::getValue)
+        .findFirst()
+        .orElseThrow(() -> new AssertionError("XSRF-TOKEN cookie not found"));
   }
 }

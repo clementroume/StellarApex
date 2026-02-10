@@ -53,21 +53,11 @@
         <configuration>
           <!--suppress UnresolvedMavenProperty -->
           <argLine>-javaagent:${org.mockito:mockito-core:jar} -Xshare:off</argLine>
+          <includes>
+            <include>**/*IT.java</include>
+          </includes>
+          <reuseForks>false</reuseForks>
         </configuration>
-        <executions>
-          <execution>
-            <configuration>
-              <includes>
-                <include>**/*IT.java</include>
-              </includes>
-            </configuration>
-            <goals>
-              <goal>integration-test</goal>
-              <goal>verify</goal>
-            </goals>
-            <id>integration-tests</id>
-          </execution>
-        </executions>
         <groupId>org.apache.maven.plugins</groupId>
       </plugin>
 

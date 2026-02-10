@@ -55,7 +55,8 @@ class MuscleControllerIT extends BaseIntegrationTest {
         .perform(
             get("/aldebaran/muscles")
                 .header("X-Auth-User-Id", "1")
-                .header("X-Auth-User-Role", "USER"))
+                .header("X-Auth-User-Role", "USER")
+                .header("X-Internal-Secret", "test-internal-secret"))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$", hasSize(1)))
         .andExpect(jsonPath("$[0].medicalName").value("Pectoralis Major"))
@@ -69,7 +70,8 @@ class MuscleControllerIT extends BaseIntegrationTest {
         .perform(
             get("/aldebaran/muscles/Pectoralis Major")
                 .header("X-Auth-User-Id", "1")
-                .header("X-Auth-User-Role", "USER"))
+                .header("X-Auth-User-Role", "USER")
+                .header("X-Internal-Secret", "test-internal-secret"))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.medicalName").value("Pectoralis Major"));
   }
@@ -98,6 +100,7 @@ class MuscleControllerIT extends BaseIntegrationTest {
                 .with(csrf())
                 .header("X-Auth-User-Id", "1")
                 .header("X-Auth-User-Role", "ADMIN")
+                .header("X-Internal-Secret", "test-internal-secret")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
         .andExpect(status().isCreated())
@@ -120,6 +123,7 @@ class MuscleControllerIT extends BaseIntegrationTest {
                 .with(csrf())
                 .header("X-Auth-User-Id", "2")
                 .header("X-Auth-User-Role", "USER")
+                .header("X-Internal-Secret", "test-internal-secret")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
         .andExpect(status().isForbidden());
@@ -139,6 +143,7 @@ class MuscleControllerIT extends BaseIntegrationTest {
                 .with(csrf())
                 .header("X-Auth-User-Id", "1")
                 .header("X-Auth-User-Role", "ADMIN")
+                .header("X-Internal-Secret", "test-internal-secret")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
         .andExpect(status().isConflict())
@@ -173,6 +178,7 @@ class MuscleControllerIT extends BaseIntegrationTest {
                 .with(csrf())
                 .header("X-Auth-User-Id", "1")
                 .header("X-Auth-User-Role", "ADMIN")
+                .header("X-Internal-Secret", "test-internal-secret")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(updateRequest)))
         .andExpect(status().isOk())
@@ -190,6 +196,7 @@ class MuscleControllerIT extends BaseIntegrationTest {
                 .with(csrf())
                 .header("X-Auth-User-Id", "1")
                 .header("X-Auth-User-Role", "ADMIN")
+                .header("X-Internal-Secret", "test-internal-secret")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
         .andExpect(status().isNotFound())

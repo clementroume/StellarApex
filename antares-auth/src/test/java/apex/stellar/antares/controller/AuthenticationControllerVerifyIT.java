@@ -243,6 +243,7 @@ class AuthenticationControllerVerifyIT extends BaseIntegrationTest {
             .perform(
                 post("/antares/gyms")
                     .cookie(cookies)
+                    .header("X-XSRF-TOKEN", getXsrfToken(cookies))
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(jsonMapper.writeValueAsString(gymRequest)))
             .andExpect(status().isCreated())
@@ -278,12 +279,14 @@ class AuthenticationControllerVerifyIT extends BaseIntegrationTest {
   // --- Helpers ---
   private Cookie[] registerLoginAndJoin(String email, Gym gym) throws Exception {
     Cookie[] cookies = registerAndLogin(email, "password123");
+    String csrf = getXsrfToken(cookies);
 
     JoinGymRequest joinRequest = new JoinGymRequest(gym.getId(), gym.getEnrollmentCode());
     mockMvc
         .perform(
             post("/antares/gyms/join")
                 .cookie(cookies)
+                .header("X-XSRF-TOKEN", csrf)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(jsonMapper.writeValueAsString(joinRequest)))
         .andExpect(status().isOk());

@@ -71,7 +71,8 @@ class WodControllerIT extends BaseIntegrationTest {
         .perform(
             get("/aldebaran/wods")
                 .header("X-Auth-User-Id", "1")
-                .header("X-Auth-User-Role", "USER"))
+                .header("X-Auth-User-Role", "USER")
+                .header("X-Internal-Secret", "test-internal-secret"))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$", hasSize(1)))
         .andExpect(jsonPath("$[0].title").value("Fran"))
@@ -95,7 +96,8 @@ class WodControllerIT extends BaseIntegrationTest {
             get("/aldebaran/wods")
                 .param("search", "Grace")
                 .header("X-Auth-User-Id", "1")
-                .header("X-Auth-User-Role", "USER"))
+                .header("X-Auth-User-Role", "USER")
+                .header("X-Internal-Secret", "test-internal-secret"))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$", hasSize(1)))
         .andExpect(jsonPath("$[0].title").value("Grace"));
@@ -109,7 +111,8 @@ class WodControllerIT extends BaseIntegrationTest {
             get("/aldebaran/wods")
                 .param("type", "FOR_TIME")
                 .header("X-Auth-User-Id", "1")
-                .header("X-Auth-User-Role", "USER"))
+                .header("X-Auth-User-Role", "USER")
+                .header("X-Internal-Secret", "test-internal-secret"))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$", hasSize(1)))
         .andExpect(jsonPath("$[0].title").value("Fran"));
@@ -118,13 +121,14 @@ class WodControllerIT extends BaseIntegrationTest {
   @Test
   @DisplayName("GET /wods/{id}: should return detailed WOD")
   void testGetWod_Success() throws Exception {
-    Wod fran = wodRepository.findAll().get(0);
+    Wod fran = wodRepository.findAll().getFirst();
 
     mockMvc
         .perform(
             get("/aldebaran/wods/" + fran.getId())
                 .header("X-Auth-User-Id", "1")
-                .header("X-Auth-User-Role", "USER"))
+                .header("X-Auth-User-Role", "USER")
+                .header("X-Internal-Secret", "test-internal-secret"))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.title").value("Fran"));
   }
@@ -136,7 +140,8 @@ class WodControllerIT extends BaseIntegrationTest {
         .perform(
             get("/aldebaran/wods/99999")
                 .header("X-Auth-User-Id", "1")
-                .header("X-Auth-User-Role", "USER"))
+                .header("X-Auth-User-Role", "USER")
+                .header("X-Internal-Secret", "test-internal-secret"))
         .andExpect(status().isNotFound());
   }
 
@@ -159,7 +164,8 @@ class WodControllerIT extends BaseIntegrationTest {
         .perform(
             get("/aldebaran/wods/" + privateWod.getId())
                 .header("X-Auth-User-Id", "100")
-                .header("X-Auth-User-Role", "USER"))
+                .header("X-Auth-User-Role", "USER")
+                .header("X-Internal-Secret", "test-internal-secret"))
         .andExpect(status().isOk());
 
     // When: Other user requests -> Forbidden
@@ -167,7 +173,8 @@ class WodControllerIT extends BaseIntegrationTest {
         .perform(
             get("/aldebaran/wods/" + privateWod.getId())
                 .header("X-Auth-User-Id", "200")
-                .header("X-Auth-User-Role", "USER"))
+                .header("X-Auth-User-Role", "USER")
+                .header("X-Internal-Secret", "test-internal-secret"))
         .andExpect(status().isForbidden());
   }
 
@@ -191,7 +198,8 @@ class WodControllerIT extends BaseIntegrationTest {
             get("/aldebaran/wods/" + gymWod.getId())
                 .header("X-Auth-User-Id", "50")
                 .header("X-Auth-Gym-Id", "101")
-                .header("X-Auth-User-Role", "ATHLETE"))
+                .header("X-Auth-User-Role", "ATHLETE")
+                .header("X-Internal-Secret", "test-internal-secret"))
         .andExpect(status().isOk());
 
     // When: Member of Gym 102 requests -> Forbidden
@@ -200,7 +208,8 @@ class WodControllerIT extends BaseIntegrationTest {
             get("/aldebaran/wods/" + gymWod.getId())
                 .header("X-Auth-User-Id", "60")
                 .header("X-Auth-Gym-Id", "102")
-                .header("X-Auth-User-Role", "ATHLETE"))
+                .header("X-Auth-User-Role", "ATHLETE")
+                .header("X-Internal-Secret", "test-internal-secret"))
         .andExpect(status().isForbidden());
   }
 
@@ -233,7 +242,8 @@ class WodControllerIT extends BaseIntegrationTest {
                 .header("X-Auth-User-Id", "20")
                 .header("X-Auth-Gym-Id", "101")
                 .header("X-Auth-User-Role", "COACH")
-                .header("X-Auth-User-Permissions", "WOD_WRITE") // Permission requise
+                .header("X-Auth-User-Permissions", "WOD_WRITE")
+                .header("X-Internal-Secret", "test-internal-secret") // Permission requise
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
         .andExpect(status().isCreated())
@@ -249,12 +259,18 @@ class WodControllerIT extends BaseIntegrationTest {
             "My Custom WOD",
             WodType.EMOM,
             ScoreType.NONE,
-            null, null,
+            null,
+            null,
             100L, // authorId matches User
             null, // No Gym
             false, // Private
-            null, 60, 10, null,
-            List.of(new WodMovementRequest(pullUp.getId(), 1, "10", 0.0, null, 0, null, 0.0, null, 0, null, null)));
+            null,
+            60,
+            10,
+            null,
+            List.of(
+                new WodMovementRequest(
+                    pullUp.getId(), 1, "10", 0.0, null, 0, null, 0.0, null, 0, null, null)));
 
     mockMvc
         .perform(
@@ -262,6 +278,7 @@ class WodControllerIT extends BaseIntegrationTest {
                 .with(csrf())
                 .header("X-Auth-User-Id", "100")
                 .header("X-Auth-User-Role", "USER")
+                .header("X-Internal-Secret", "test-internal-secret")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
         .andExpect(status().isCreated());
@@ -275,12 +292,18 @@ class WodControllerIT extends BaseIntegrationTest {
             "Owner WOD",
             WodType.FOR_TIME,
             ScoreType.TIME,
-            null, null,
+            null,
+            null,
             null,
             101L, // Gym 101
             false,
-            null, null, null, null,
-            List.of(new WodMovementRequest(pullUp.getId(), 1, "50", 0.0, null, 0, null, 0.0, null, 0, null, null)));
+            null,
+            null,
+            null,
+            null,
+            List.of(
+                new WodMovementRequest(
+                    pullUp.getId(), 1, "50", 0.0, null, 0, null, 0.0, null, 0, null, null)));
 
     mockMvc
         .perform(
@@ -288,7 +311,8 @@ class WodControllerIT extends BaseIntegrationTest {
                 .with(csrf())
                 .header("X-Auth-User-Id", "10")
                 .header("X-Auth-Gym-Id", "101")
-                .header("X-Auth-User-Role", "OWNER") // Owner
+                .header("X-Auth-User-Role", "OWNER")
+                .header("X-Internal-Secret", "test-internal-secret") // Owner
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
         .andExpect(status().isCreated());
@@ -302,12 +326,18 @@ class WodControllerIT extends BaseIntegrationTest {
             "Unauthorized WOD",
             WodType.FOR_TIME,
             ScoreType.TIME,
-            null, null,
+            null,
+            null,
             null,
             101L, // Gym 101
             false,
-            null, null, null, null,
-            List.of(new WodMovementRequest(pullUp.getId(), 1, "50", 0.0, null, 0, null, 0.0, null, 0, null, null)));
+            null,
+            null,
+            null,
+            null,
+            List.of(
+                new WodMovementRequest(
+                    pullUp.getId(), 1, "50", 0.0, null, 0, null, 0.0, null, 0, null, null)));
 
     mockMvc
         .perform(
@@ -316,6 +346,7 @@ class WodControllerIT extends BaseIntegrationTest {
                 .header("X-Auth-User-Id", "20")
                 .header("X-Auth-Gym-Id", "101")
                 .header("X-Auth-User-Role", "COACH")
+                .header("X-Internal-Secret", "test-internal-secret")
                 // No Permissions header
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
@@ -330,12 +361,18 @@ class WodControllerIT extends BaseIntegrationTest {
             "Cross Gym WOD",
             WodType.FOR_TIME,
             ScoreType.TIME,
-            null, null,
+            null,
+            null,
             null,
             101L, // Target Gym 101
             false,
-            null, null, null, null,
-            List.of(new WodMovementRequest(pullUp.getId(), 1, "50", 0.0, null, 0, null, 0.0, null, 0, null, null)));
+            null,
+            null,
+            null,
+            null,
+            List.of(
+                new WodMovementRequest(
+                    pullUp.getId(), 1, "50", 0.0, null, 0, null, 0.0, null, 0, null, null)));
 
     mockMvc
         .perform(
@@ -344,6 +381,7 @@ class WodControllerIT extends BaseIntegrationTest {
                 .header("X-Auth-User-Id", "10")
                 .header("X-Auth-Gym-Id", "102") // User is in Gym 102
                 .header("X-Auth-User-Role", "OWNER")
+                .header("X-Internal-Secret", "test-internal-secret")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
         .andExpect(status().isForbidden());
@@ -374,6 +412,7 @@ class WodControllerIT extends BaseIntegrationTest {
                 .with(csrf())
                 .header("X-Auth-User-Id", "1")
                 .header("X-Auth-User-Role", "ADMIN")
+                .header("X-Internal-Secret", "test-internal-secret")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(invalidRequest)))
         .andExpect(status().isBadRequest())
@@ -383,7 +422,7 @@ class WodControllerIT extends BaseIntegrationTest {
   @Test
   @DisplayName("PUT /wods/{id}: should update WOD when Coach of same Gym")
   void testUpdateWod_Success() throws Exception {
-    Wod existing = wodRepository.findAll().get(0); // Gym ID 101
+    Wod existing = wodRepository.findAll().getFirst(); // Gym ID 101
 
     WodRequest updateRequest =
         new WodRequest(
@@ -412,6 +451,7 @@ class WodControllerIT extends BaseIntegrationTest {
                 .header("X-Auth-Gym-Id", "101")
                 .header("X-Auth-User-Role", "COACH")
                 .header("X-Auth-User-Permissions", "WOD_WRITE")
+                .header("X-Internal-Secret", "test-internal-secret")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(updateRequest)))
         .andExpect(status().isOk())
@@ -424,7 +464,7 @@ class WodControllerIT extends BaseIntegrationTest {
   @Test
   @DisplayName("PUT /wods/{id}: should return 403 Forbidden for simple User")
   void testUpdateWod_Forbidden() throws Exception {
-    Wod existing = wodRepository.findAll().get(0);
+    Wod existing = wodRepository.findAll().getFirst();
 
     WodRequest request =
         new WodRequest(
@@ -449,7 +489,8 @@ class WodControllerIT extends BaseIntegrationTest {
             put("/aldebaran/wods/" + existing.getId())
                 .with(csrf())
                 .header("X-Auth-User-Id", "99")
-                .header("X-Auth-User-Role", "USER") // Simple User
+                .header("X-Auth-User-Role", "USER")
+                .header("X-Internal-Secret", "test-internal-secret") // Simple User
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
         .andExpect(status().isForbidden());
@@ -472,8 +513,18 @@ class WodControllerIT extends BaseIntegrationTest {
             "My WOD Updated",
             WodType.FOR_TIME,
             ScoreType.TIME,
-            null, null, null, null, false, null, null, null, null,
-            List.of(new WodMovementRequest(pullUp.getId(), 1, "10", 0.0, null, 0, null, 0.0, null, 0, null, null)));
+            null,
+            null,
+            null,
+            null,
+            false,
+            null,
+            null,
+            null,
+            null,
+            List.of(
+                new WodMovementRequest(
+                    pullUp.getId(), 1, "10", 0.0, null, 0, null, 0.0, null, 0, null, null)));
 
     mockMvc
         .perform(
@@ -481,6 +532,7 @@ class WodControllerIT extends BaseIntegrationTest {
                 .with(csrf())
                 .header("X-Auth-User-Id", "100") // Author
                 .header("X-Auth-User-Role", "USER")
+                .header("X-Internal-Secret", "test-internal-secret")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(updateRequest)))
         .andExpect(status().isOk());
@@ -503,8 +555,18 @@ class WodControllerIT extends BaseIntegrationTest {
             "Hacked",
             WodType.FOR_TIME,
             ScoreType.TIME,
-            null, null, null, null, false, null, null, null, null,
-            List.of(new WodMovementRequest(pullUp.getId(), 1, "10", 0.0, null, 0, null, 0.0, null, 0, null, null)));
+            null,
+            null,
+            null,
+            null,
+            false,
+            null,
+            null,
+            null,
+            null,
+            List.of(
+                new WodMovementRequest(
+                    pullUp.getId(), 1, "10", 0.0, null, 0, null, 0.0, null, 0, null, null)));
 
     mockMvc
         .perform(
@@ -512,6 +574,7 @@ class WodControllerIT extends BaseIntegrationTest {
                 .with(csrf())
                 .header("X-Auth-User-Id", "200") // Not Author
                 .header("X-Auth-User-Role", "USER")
+                .header("X-Internal-Secret", "test-internal-secret")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(updateRequest)))
         .andExpect(status().isForbidden());
@@ -544,6 +607,7 @@ class WodControllerIT extends BaseIntegrationTest {
                 .with(csrf())
                 .header("X-Auth-User-Id", "1")
                 .header("X-Auth-User-Role", "ADMIN")
+                .header("X-Internal-Secret", "test-internal-secret")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
         .andExpect(status().isNotFound());
@@ -552,7 +616,7 @@ class WodControllerIT extends BaseIntegrationTest {
   @Test
   @DisplayName("PUT /wods/{id}: should return 409 Conflict if WOD is locked (has scores)")
   void testUpdateWod_Locked() throws Exception {
-    Wod existing = wodRepository.findAll().get(0);
+    Wod existing = wodRepository.findAll().getFirst();
 
     // Create a score to lock the WOD
     WodScore score =
@@ -589,6 +653,7 @@ class WodControllerIT extends BaseIntegrationTest {
                 .with(csrf())
                 .header("X-Auth-User-Id", "1")
                 .header("X-Auth-User-Role", "ADMIN")
+                .header("X-Internal-Secret", "test-internal-secret")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(updateRequest)))
         .andExpect(status().isConflict())
@@ -602,14 +667,15 @@ class WodControllerIT extends BaseIntegrationTest {
   @Test
   @DisplayName("DELETE /wods/{id}: should delete WOD when Admin")
   void testDeleteWod_Success() throws Exception {
-    Wod existing = wodRepository.findAll().get(0);
+    Wod existing = wodRepository.findAll().getFirst();
 
     mockMvc
         .perform(
             delete("/aldebaran/wods/" + existing.getId())
                 .with(csrf())
                 .header("X-Auth-User-Id", "1")
-                .header("X-Auth-User-Role", "ADMIN")) // Global Admin
+                .header("X-Auth-User-Role", "ADMIN")
+                .header("X-Internal-Secret", "test-internal-secret")) // Global Admin
         .andExpect(status().isNoContent());
 
     assert (wodRepository.findById(existing.getId()).isEmpty());
@@ -618,14 +684,15 @@ class WodControllerIT extends BaseIntegrationTest {
   @Test
   @DisplayName("DELETE /wods/{id}: should return 403 Forbidden for simple User")
   void testDeleteWod_Forbidden() throws Exception {
-    Wod existing = wodRepository.findAll().get(0);
+    Wod existing = wodRepository.findAll().getFirst();
 
     mockMvc
         .perform(
             delete("/aldebaran/wods/" + existing.getId())
                 .with(csrf())
                 .header("X-Auth-User-Id", "99")
-                .header("X-Auth-User-Role", "USER"))
+                .header("X-Auth-User-Role", "USER")
+                .header("X-Internal-Secret", "test-internal-secret"))
         .andExpect(status().isForbidden());
 
     assert (wodRepository.findById(existing.getId()).isPresent());
