@@ -3,7 +3,6 @@ package apex.stellar.aldebaran.config;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import java.time.Duration;
-import java.util.HashMap;
 import java.util.Map;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -17,15 +16,16 @@ import org.springframework.data.redis.serializer.GenericJacksonJsonRedisSerializ
 import org.springframework.data.redis.serializer.RedisSerializationContext;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
 import org.springframework.validation.annotation.Validated;
-import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * Redis cache configuration with custom TTL per data type.
  *
  * <p><b>Invalidation Strategy:</b>
+ *
  * <ul>
- *   <li><b>Movements:</b> Updates evict all entries (details and lists) to ensure consistency.</li>
- *   <li><b>WODs:</b> Individual eviction on update/delete.</li>
+ *   <li><b>Movements:</b> Updates evict all entries (details and lists) to ensure consistency.
+ *   <li><b>WODs:</b> Individual eviction on update/delete.
  * </ul>
  *
  * <p>Cache Strategy:
@@ -53,15 +53,17 @@ public class RedisCacheConfig {
    *     manager.
    * @param properties an instance of {@link CacheProperties} containing TTL settings for the
    *     different cache categories.
+   * @param objectMapper the Spring-managed ObjectMapper for consistent serialization.
    * @return a {@link RedisCacheManager} instance with the specified configurations.
    */
   @Bean
   public RedisCacheManager cacheManager(
-      RedisConnectionFactory connectionFactory, CacheProperties properties) {
+      RedisConnectionFactory connectionFactory,
+      CacheProperties properties,
+      ObjectMapper objectMapper) {
 
-    // ObjectMapper
-    JsonMapper mapper = JsonMapper.builder().findAndAddModules().build();
-    GenericJacksonJsonRedisSerializer serializer = new GenericJacksonJsonRedisSerializer(mapper);
+    GenericJacksonJsonRedisSerializer serializer =
+        new GenericJacksonJsonRedisSerializer(objectMapper);
 
     RedisCacheConfiguration defaultConfig =
         RedisCacheConfiguration.defaultCacheConfig()
@@ -73,15 +75,24 @@ public class RedisCacheConfig {
             .serializeValuesWith(
                 RedisSerializationContext.SerializationPair.fromSerializer(serializer));
 
-    Map<String, RedisCacheConfiguration> cacheConfigurations = new HashMap<>();
+    // Apply Key Prefix if configured (Environment Isolation)
+    if (properties.keyPrefix() != null && !properties.keyPrefix().isBlank()) {
+      defaultConfig =
+          defaultConfig.computePrefixWith(
+              cacheName -> properties.keyPrefix() + "::" + cacheName + "::");
+    }
 
     RedisCacheConfiguration masterDataConfig =
         defaultConfig.entryTtl(Duration.ofMillis(properties.masterDataTtl()));
-    cacheConfigurations.put(CACHE_MOVEMENTS, masterDataConfig);
-    cacheConfigurations.put(CACHE_MUSCLES, masterDataConfig);
 
-    cacheConfigurations.put(
-        CACHE_WODS, defaultConfig.entryTtl(Duration.ofMillis(properties.wodsTtl())));
+    RedisCacheConfiguration wodsConfig =
+        defaultConfig.entryTtl(Duration.ofMillis(properties.wodsTtl()));
+
+    Map<String, RedisCacheConfiguration> cacheConfigurations =
+        Map.of(
+            CACHE_MOVEMENTS, masterDataConfig,
+            CACHE_MUSCLES, masterDataConfig,
+            CACHE_WODS, wodsConfig);
 
     return RedisCacheManager.builder(connectionFactory)
         .cacheDefaults(defaultConfig)
@@ -98,5 +109,6 @@ public class RedisCacheConfig {
   public record CacheProperties(
       @NotNull @Positive Long defaultTtl,
       @NotNull @Positive Long masterDataTtl,
-      @NotNull @Positive Long wodsTtl) {}
+      @NotNull @Positive Long wodsTtl,
+      String keyPrefix) {}
 }

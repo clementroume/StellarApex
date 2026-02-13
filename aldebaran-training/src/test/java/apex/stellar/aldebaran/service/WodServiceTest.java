@@ -23,7 +23,7 @@ import apex.stellar.aldebaran.repository.WodRepository;
 import apex.stellar.aldebaran.repository.WodScoreRepository;
 import apex.stellar.aldebaran.repository.projection.WodSummary;
 import apex.stellar.aldebaran.security.AldebaranUserPrincipal;
-import apex.stellar.aldebaran.security.SecurityUtils;
+import apex.stellar.aldebaran.security.SecurityService;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
@@ -33,7 +33,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Pageable;
 
@@ -44,6 +43,7 @@ class WodServiceTest {
   @Mock private MovementRepository movementRepository;
   @Mock private WodScoreRepository wodScoreRepository;
   @Mock private WodMapper wodMapper;
+  @Mock private SecurityService securityService;
 
   @InjectMocks private WodService wodService;
 
@@ -97,19 +97,17 @@ class WodServiceTest {
     Pageable pageable = Pageable.unpaged();
 
     WodSummary projection = mock(WodSummary.class);
-    when(wodRepository.findAllSecure(eq(100L), eq(50L), eq(false), eq(pageable)))
+    when(wodRepository.findAllSecure(100L, 50L, false, pageable))
         .thenReturn(List.of(projection));
 
-    try (MockedStatic<SecurityUtils> securityMock = mockStatic(SecurityUtils.class)) {
-      securityMock.when(() -> SecurityUtils.isAdmin(user)).thenReturn(false);
+    when(securityService.isAdmin(user)).thenReturn(false);
 
-      // When
-      List<WodSummaryResponse> results = wodService.getWods(null, null, null, pageable, user);
+    // When
+    List<WodSummaryResponse> results = wodService.getWods(null, null, null, pageable, user);
 
-      // Then
-      assertNotNull(results);
-      verify(wodRepository).findAllSecure(eq(100L), eq(50L), eq(false), eq(pageable));
-    }
+    // Then
+    assertNotNull(results);
+    verify(wodRepository).findAllSecure(100L, 50L, false, pageable);
   }
 
   @Test
@@ -124,15 +122,13 @@ class WodServiceTest {
     when(wodRepository.findAllSecure(eq(999L), isNull(), eq(true), eq(pageable)))
         .thenReturn(List.of(projection));
 
-    try (MockedStatic<SecurityUtils> securityMock = mockStatic(SecurityUtils.class)) {
-      securityMock.when(() -> SecurityUtils.isAdmin(admin)).thenReturn(true);
+    when(securityService.isAdmin(admin)).thenReturn(true);
 
-      // When
-      wodService.getWods(null, null, null, pageable, admin);
+    // When
+    wodService.getWods(null, null, null, pageable, admin);
 
-      // Then
-      verify(wodRepository).findAllSecure(eq(999L), isNull(), eq(true), eq(pageable));
-    }
+    // Then
+    verify(wodRepository).findAllSecure(eq(999L), isNull(), eq(true), eq(pageable));
   }
 
   @Test
@@ -141,17 +137,15 @@ class WodServiceTest {
     // Given
     AldebaranUserPrincipal user = new AldebaranUserPrincipal(100L, null, "USER", List.of());
 
-    try (MockedStatic<SecurityUtils> securityMock = mockStatic(SecurityUtils.class)) {
-      securityMock.when(() -> SecurityUtils.isAdmin(user)).thenReturn(false);
-      when(wodRepository.findByTitleSecure(eq("Fran"), eq(100L), isNull(), eq(false)))
-          .thenReturn(List.of());
+    when(securityService.isAdmin(user)).thenReturn(false);
+    when(wodRepository.findByTitleSecure(eq("Fran"), eq(100L), isNull(), eq(false)))
+        .thenReturn(List.of());
 
-      // When
-      wodService.getWods("Fran", null, null, Pageable.unpaged(), user);
+    // When
+    wodService.getWods("Fran", null, null, Pageable.unpaged(), user);
 
-      // Then
-      verify(wodRepository).findByTitleSecure(eq("Fran"), eq(100L), isNull(), eq(false));
-    }
+    // Then
+    verify(wodRepository).findByTitleSecure(eq("Fran"), eq(100L), isNull(), eq(false));
   }
 
   @Test
@@ -160,19 +154,17 @@ class WodServiceTest {
     AldebaranUserPrincipal user = new AldebaranUserPrincipal(100L, null, "USER", List.of());
     Pageable pageable = Pageable.unpaged();
 
-    try (MockedStatic<SecurityUtils> securityMock = mockStatic(SecurityUtils.class)) {
-      securityMock.when(() -> SecurityUtils.isAdmin(user)).thenReturn(false);
-      when(wodRepository.findByTypeSecure(
-              eq(WodType.AMRAP), eq(100L), isNull(), eq(false), eq(pageable)))
-          .thenReturn(List.of());
+    when(securityService.isAdmin(user)).thenReturn(false);
+    when(wodRepository.findByTypeSecure(
+            eq(WodType.AMRAP), eq(100L), isNull(), eq(false), eq(pageable)))
+        .thenReturn(List.of());
 
-      // When
-      wodService.getWods(null, WodType.AMRAP, null, pageable, user);
+    // When
+    wodService.getWods(null, WodType.AMRAP, null, pageable, user);
 
-      // Then
-      verify(wodRepository)
-          .findByTypeSecure(eq(WodType.AMRAP), eq(100L), isNull(), eq(false), eq(pageable));
-    }
+    // Then
+    verify(wodRepository)
+        .findByTypeSecure(eq(WodType.AMRAP), eq(100L), isNull(), eq(false), eq(pageable));
   }
 
   @Test
@@ -181,19 +173,17 @@ class WodServiceTest {
     AldebaranUserPrincipal user = new AldebaranUserPrincipal(100L, null, "USER", List.of());
     Pageable pageable = Pageable.unpaged();
 
-    try (MockedStatic<SecurityUtils> securityMock = mockStatic(SecurityUtils.class)) {
-      securityMock.when(() -> SecurityUtils.isAdmin(user)).thenReturn(false);
-      when(wodRepository.findByMovementSecure(
-              eq("GY-PU-001"), eq(100L), isNull(), eq(false), eq(pageable)))
-          .thenReturn(List.of());
+    when(securityService.isAdmin(user)).thenReturn(false);
+    when(wodRepository.findByMovementSecure(
+            eq("GY-PU-001"), eq(100L), isNull(), eq(false), eq(pageable)))
+        .thenReturn(List.of());
 
-      // When
-      wodService.getWods(null, null, "GY-PU-001", pageable, user);
+    // When
+    wodService.getWods(null, null, "GY-PU-001", pageable, user);
 
-      // Then
-      verify(wodRepository)
-          .findByMovementSecure(eq("GY-PU-001"), eq(100L), isNull(), eq(false), eq(pageable));
-    }
+    // Then
+    verify(wodRepository)
+        .findByMovementSecure(eq("GY-PU-001"), eq(100L), isNull(), eq(false), eq(pageable));
   }
 
   // =========================================================================
@@ -232,19 +222,17 @@ class WodServiceTest {
     when(wodRepository.save(wod)).thenReturn(wod);
     when(wodMapper.toResponse(wod)).thenReturn(mock(WodResponse.class));
 
-    try (MockedStatic<SecurityUtils> utilities = mockStatic(SecurityUtils.class)) {
-      utilities.when(SecurityUtils::getCurrentUserId).thenReturn(100L);
+    when(securityService.getCurrentUserId()).thenReturn(100L);
 
-      WodResponse response = wodService.createWod(wodRequest);
+    WodResponse response = wodService.createWod(wodRequest);
 
-      assertNotNull(response);
-      assertEquals(100L, wod.getAuthorId()); // Vérifie AuthorId
-      assertEquals(1, wod.getMovements().size());
-      assertTrue(wod.getModalities().contains(Modality.GYMNASTICS));
+    assertNotNull(response);
+    assertEquals(100L, wod.getAuthorId()); // Vérifie AuthorId
+    assertEquals(1, wod.getMovements().size());
+    assertTrue(wod.getModalities().contains(Modality.GYMNASTICS));
 
-      verify(movementRepository).findAllById(any());
-      verify(wodRepository).save(wod);
-    }
+    verify(movementRepository).findAllById(any());
+    verify(wodRepository).save(wod);
   }
 
   @Test
@@ -284,14 +272,12 @@ class WodServiceTest {
 
     when(movementRepository.findAllById(any())).thenReturn(List.of(move1, move2));
 
-    try (MockedStatic<SecurityUtils> utilities = mockStatic(SecurityUtils.class)) {
-      utilities.when(SecurityUtils::getCurrentUserId).thenReturn(100L);
+    when(securityService.getCurrentUserId()).thenReturn(100L);
 
-      wodService.createWod(batchRequest);
+    wodService.createWod(batchRequest);
 
-      verify(movementRepository, times(1)).findAllById(any());
-      verify(movementRepository, never()).findById(any());
-    }
+    verify(movementRepository, times(1)).findAllById(any());
+    verify(movementRepository, never()).findById(any());
   }
 
   @Test
@@ -351,6 +337,45 @@ class WodServiceTest {
     verify(wodMapper).updateEntity(updateRequest, wod);
     assertEquals(1, wod.getMovements().size());
     verify(wodRepository).save(wod);
+  }
+
+  @Test
+  @DisplayName("updateWod: Smart Merge should preserve existing entities if order matches")
+  void testUpdateWod_SmartMerge_PreservesEntities() {
+    // Given: Existing WOD with one movement (ID 500)
+    WodMovement existingMovement = new WodMovement();
+    existingMovement.setId(500L);
+    existingMovement.setOrderIndex(1);
+    existingMovement.setRepsScheme("21-15-9");
+    existingMovement.setMovement(movement);
+    existingMovement.setWod(wod);
+
+    wod.getMovements().add(existingMovement);
+
+    when(wodScoreRepository.existsByWodId(1L)).thenReturn(false);
+    when(wodRepository.findByIdWithMovements(1L)).thenReturn(Optional.of(wod));
+    when(movementRepository.findAllById(any())).thenReturn(List.of(movement));
+    when(wodRepository.save(wod)).thenReturn(wod);
+    when(wodMapper.toResponse(wod)).thenReturn(mock(WodResponse.class));
+
+    WodMovement tempMovement = new WodMovement();
+    tempMovement.setRepsScheme("15-12-9"); // New value
+    tempMovement.setOrderIndex(1);
+    when(wodMapper.toWodMovementEntity(any())).thenReturn(tempMovement);
+
+    WodRequest updateRequest =
+        new WodRequest(
+            "Fran", WodType.FOR_TIME, ScoreType.TIME, null, null, null, null, true, null, null, null, null,
+            List.of(new WodMovementRequest("GY-PU-001", 1, "15-12-9", 0.0, null, 0, null, 0.0, null, 0, null, null)));
+
+    // When
+    wodService.updateWod(1L, updateRequest);
+
+    // Then
+    assertEquals(1, wod.getMovements().size());
+    WodMovement resultMovement = wod.getMovements().getFirst();
+    assertEquals(500L, resultMovement.getId(), "Should preserve entity ID");
+    assertEquals("15-12-9", resultMovement.getRepsScheme(), "Should update fields");
   }
 
   @Test

@@ -23,6 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class WodSecurity {
 
   private final WodRepository wodRepository;
+  private final SecurityService securityService;
 
   /**
    * Evaluates if the authenticated user is authorized to view a specific WOD.
@@ -33,7 +34,7 @@ public class WodSecurity {
    */
   @Transactional(readOnly = true)
   public boolean canRead(Long wodId, AldebaranUserPrincipal principal) {
-    if (SecurityUtils.isAdmin(principal)) {
+    if (securityService.isAdmin(principal)) {
       return true;
     }
 
@@ -66,7 +67,7 @@ public class WodSecurity {
    */
   public boolean canCreate(WodRequest request, AldebaranUserPrincipal principal) {
 
-    if (SecurityUtils.isAdmin(principal)) {
+    if (securityService.isAdmin(principal)) {
       return true;
     }
 
@@ -74,7 +75,7 @@ public class WodSecurity {
     if (request.gymId() != null) {
       // Must be in the target gym + Have Staff Write Rights
       return Objects.equals(principal.getGymId(), request.gymId())
-          && SecurityUtils.hasWodWriteAccess(principal);
+          && securityService.hasWodWriteAccess(principal);
     }
 
     // Personal WOD Creation (Self-service)
@@ -91,7 +92,7 @@ public class WodSecurity {
   @Transactional(readOnly = true)
   public boolean canModify(Long wodId, AldebaranUserPrincipal principal) {
 
-    if (SecurityUtils.isAdmin(principal)) {
+    if (securityService.isAdmin(principal)) {
       return true;
     }
 
@@ -102,7 +103,7 @@ public class WodSecurity {
               // Gym WOD: Same Gym + Staff Rights
               if (wod.getGymId() != null) {
                 return Objects.equals(principal.getGymId(), wod.getGymId())
-                    && SecurityUtils.hasWodWriteAccess(principal);
+                    && securityService.hasWodWriteAccess(principal);
               }
 
               // Personal WOD: Author only

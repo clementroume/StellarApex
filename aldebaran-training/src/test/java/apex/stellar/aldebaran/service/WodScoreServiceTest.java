@@ -15,9 +15,8 @@ import apex.stellar.aldebaran.model.entities.WodScore;
 import apex.stellar.aldebaran.model.entities.WodScore.ScalingLevel;
 import apex.stellar.aldebaran.repository.WodRepository;
 import apex.stellar.aldebaran.repository.WodScoreRepository;
-import apex.stellar.aldebaran.security.SecurityUtils;
+import apex.stellar.aldebaran.security.SecurityService;
 import java.time.LocalDate;
-import java.util.List; // Import List
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -26,7 +25,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -39,6 +37,8 @@ class WodScoreServiceTest {
   @Mock private WodScoreRepository scoreRepository;
   @Mock private WodRepository wodRepository;
   @Mock private WodScoreMapper scoreMapper;
+  @Mock private SecurityService securityService;
+  @Mock private WodPrService wodPrService;
   @InjectMocks private WodScoreService scoreService;
 
   private Wod wodTime;
@@ -85,34 +85,30 @@ class WodScoreServiceTest {
   @Test
   @DisplayName("getMyScores: should return user scores filtered by WOD")
   void testGetMyScores_WithWodId() {
-    try (MockedStatic<SecurityUtils> utilities = mockStatic(SecurityUtils.class)) {
-      utilities.when(SecurityUtils::getCurrentUserId).thenReturn(userId);
-      Pageable pageable = PageRequest.of(0, 20);
+    when(securityService.getCurrentUserId()).thenReturn(userId);
+    Pageable pageable = PageRequest.of(0, 20);
 
-      when(scoreRepository.findByUserIdAndWodId(eq(userId), eq(1L), any(Pageable.class)))
-          .thenReturn(Page.empty());
+    when(scoreRepository.findByUserIdAndWodId(eq(userId), eq(1L), any(Pageable.class)))
+        .thenReturn(Page.empty());
 
-      Page<WodScoreResponse> result = scoreService.getMyScores(1L, pageable);
+    Page<WodScoreResponse> result = scoreService.getMyScores(1L, pageable);
 
-      assertNotNull(result);
-      verify(scoreRepository).findByUserIdAndWodId(eq(userId), eq(1L), any(Pageable.class));
-    }
+    assertNotNull(result);
+    verify(scoreRepository).findByUserIdAndWodId(eq(userId), eq(1L), any(Pageable.class));
   }
 
   @Test
   @DisplayName("getMyScores: should return all user scores when no WOD filter")
   void testGetMyScores_NoFilter() {
-    try (MockedStatic<SecurityUtils> utilities = mockStatic(SecurityUtils.class)) {
-      utilities.when(SecurityUtils::getCurrentUserId).thenReturn(userId);
-      Pageable pageable = PageRequest.of(0, 20);
+    when(securityService.getCurrentUserId()).thenReturn(userId);
+    Pageable pageable = PageRequest.of(0, 20);
 
-      when(scoreRepository.findByUserId(eq(userId), any(Pageable.class))).thenReturn(Page.empty());
+    when(scoreRepository.findByUserId(eq(userId), any(Pageable.class))).thenReturn(Page.empty());
 
-      Page<WodScoreResponse> result = scoreService.getMyScores(null, pageable);
+    Page<WodScoreResponse> result = scoreService.getMyScores(null, pageable);
 
-      assertNotNull(result);
-      verify(scoreRepository).findByUserId(eq(userId), any(Pageable.class));
-    }
+    assertNotNull(result);
+    verify(scoreRepository).findByUserId(eq(userId), any(Pageable.class));
   }
 
   @Test
@@ -135,71 +131,25 @@ class WodScoreServiceTest {
   @Test
   @DisplayName("logScore: should save new PR when no previous history")
   void testLogScore_NewPr() {
-    try (MockedStatic<SecurityUtils> utilities = mockStatic(SecurityUtils.class)) {
-      utilities.when(SecurityUtils::getCurrentUserId).thenReturn(userId);
+    when(securityService.getCurrentUserId()).thenReturn(userId);
 
-      when(wodRepository.findById(1L)).thenReturn(Optional.of(wodTime));
-      when(scoreMapper.toEntity(requestTime)).thenReturn(scoreEntityTime);
-      when(scoreRepository.save(any(WodScore.class))).thenReturn(scoreEntityTime);
-      when(scoreMapper.toResponse(scoreEntityTime)).thenReturn(mock(WodScoreResponse.class));
+    when(wodRepository.findById(1L)).thenReturn(Optional.of(wodTime));
+    when(scoreMapper.toEntity(requestTime)).thenReturn(scoreEntityTime);
+    when(scoreRepository.save(any(WodScore.class))).thenReturn(scoreEntityTime);
+    when(scoreMapper.toResponse(scoreEntityTime)).thenReturn(mock(WodScoreResponse.class));
 
-      when(scoreRepository.findByWodIdAndUserId(1L, userId)).thenReturn(List.of(scoreEntityTime));
+    when(wodPrService.updatePrStatus(wodTime, userId, 50L)).thenReturn(true);
 
-      // When
-      scoreService.logScore(requestTime);
+    // When
+    scoreService.logScore(requestTime);
 
-      // Then
-      // On capture toutes les valeurs passées à save().
-      ArgumentCaptor<WodScore> captor = ArgumentCaptor.forClass(WodScore.class);
-      // save est appelé 2 fois : 1 fois initialement (false), 1 fois lors de l'update PR (true)
-      verify(scoreRepository, atLeastOnce()).save(captor.capture());
+    // Then
+    // On capture toutes les valeurs passées à save().
+    ArgumentCaptor<WodScore> captor = ArgumentCaptor.forClass(WodScore.class);
+    verify(scoreRepository).save(captor.capture());
+    verify(wodPrService).updatePrStatus(wodTime, userId, 50L);
 
-      // On vérifie que la DERNIÈRE valeur capturée (l'état final) est bien un PR
-      assertTrue(captor.getValue().isPersonalRecord(), "The final saved state should be a PR");
-    }
-  }
-
-  @Test
-  @DisplayName("logScore: should verify PR calculation (Time: Lower is Better)")
-  void testLogScore_TimeImprovement() {
-    try (MockedStatic<SecurityUtils> utilities = mockStatic(SecurityUtils.class)) {
-      utilities.when(SecurityUtils::getCurrentUserId).thenReturn(userId);
-
-      // Old PR = 400 seconds (Normalized)
-      WodScore oldPr =
-          WodScore.builder()
-              .id(40L)
-              .wod(wodTime)
-              .userId(userId)
-              .timeSeconds(400)
-              .personalRecord(true)
-              .build();
-
-      // New Score = 300 seconds (Better)
-      scoreEntityTime.setTimeSeconds(300);
-
-      when(wodRepository.findById(1L)).thenReturn(Optional.of(wodTime));
-      when(scoreMapper.toEntity(requestTime)).thenReturn(scoreEntityTime);
-      when(scoreRepository.save(any(WodScore.class))).thenReturn(scoreEntityTime);
-      when(scoreMapper.toResponse(any())).thenReturn(mock(WodScoreResponse.class));
-
-      // CORRECTION: Le mock doit retourner l'ancien PR ET le nouveau score (simulant la DB après le
-      // 1er save)
-      when(scoreRepository.findByWodIdAndUserId(1L, userId))
-          .thenReturn(List.of(oldPr, scoreEntityTime));
-
-      // When
-      scoreService.logScore(requestTime);
-
-      // Then
-      // 1. Verify old PR is downgraded (saved with false)
-      assertFalse(oldPr.isPersonalRecord(), "Old PR should be downgraded");
-      verify(scoreRepository).save(oldPr);
-
-      // 2. Verify new score is upgraded (saved with true)
-      // Note: scoreEntityTime might be saved twice (initial + update), ensure final state is true
-      assertTrue(scoreEntityTime.isPersonalRecord(), "New score should be upgraded to PR");
-    }
+    assertTrue(captor.getValue().isPersonalRecord(), "The final saved state should be a PR");
   }
 
   @Test
@@ -241,7 +191,7 @@ class WodScoreServiceTest {
     when(scoreMapper.toResponse(scoreForOther)).thenReturn(mock(WodScoreResponse.class));
 
     // CORRECTION: Mock needed for the PR calculation step too
-    when(scoreRepository.findByWodIdAndUserId(1L, targetUser)).thenReturn(List.of(scoreForOther));
+    when(wodPrService.updatePrStatus(wodTime, targetUser, 60L)).thenReturn(true);
 
     scoreService.logScore(requestForOther);
 
@@ -287,8 +237,7 @@ class WodScoreServiceTest {
     when(scoreRepository.save(scoreEntityTime)).thenReturn(scoreEntityTime);
     when(scoreMapper.toResponse(scoreEntityTime)).thenReturn(mock(WodScoreResponse.class));
 
-    // CORRECTION: Mock needed for recalculation
-    when(scoreRepository.findByWodIdAndUserId(1L, userId)).thenReturn(List.of(scoreEntityTime));
+    when(wodPrService.updatePrStatus(any(), eq(userId), eq(50L))).thenReturn(true);
 
     scoreService.updateScore(50L, requestTime);
 
@@ -310,11 +259,10 @@ class WodScoreServiceTest {
   @DisplayName("deleteScore: should delete if user is owner")
   void testDeleteScore_Success() {
     when(scoreRepository.findById(50L)).thenReturn(Optional.of(scoreEntityTime));
-    // Mock recalculation after delete (list is empty effectively or contains remaining)
-    when(scoreRepository.findByWodIdAndUserId(1L, userId)).thenReturn(List.of());
 
     scoreService.deleteScore(50L);
     verify(scoreRepository).delete(scoreEntityTime);
+    verify(wodPrService).updatePrStatus(any(), eq(userId), isNull());
   }
 
   @Test
@@ -341,78 +289,107 @@ class WodScoreServiceTest {
   }
 
   @Test
-  @DisplayName("logScore: Should correctly calculate PR for AMRAP (Higher is Better)")
-  void testLogScore_AmrapImprovement() {
-    try (MockedStatic<SecurityUtils> utilities = mockStatic(SecurityUtils.class)) {
-      utilities.when(SecurityUtils::getCurrentUserId).thenReturn(userId);
+  @DisplayName("compareScore: ROUNDS_REPS should call countBetterRoundsReps")
+  void testCompareScore_RoundsReps() {
+    Wod wod = Wod.builder().id(2L).scoreType(ScoreType.ROUNDS_REPS).build();
+    WodScore score = WodScore.builder()
+        .id(51L)
+        .wod(wod)
+        .scaling(ScalingLevel.RX)
+        .rounds(5)
+        .reps(10)
+        .build();
 
-      // WOD AMRAP (Rounds + Reps)
-      Wod wodAmrap = Wod.builder().id(2L).scoreType(ScoreType.ROUNDS_REPS).build();
+    when(scoreRepository.findById(51L)).thenReturn(Optional.of(score));
+    when(scoreRepository.countByWodIdAndScaling(2L, ScalingLevel.RX)).thenReturn(10L);
+    when(scoreRepository.countBetterRoundsReps(2L, ScalingLevel.RX, 5, 10)).thenReturn(3L);
 
-      // Old PR: 10 Rounds + 0 Reps
-      WodScore oldPr =
-          WodScore.builder()
-              .id(60L)
-              .wod(wodAmrap)
-              .userId(userId)
-              .rounds(10)
-              .reps(0)
-              .personalRecord(true)
-              .build();
+    ScoreComparisonResponse response = scoreService.compareScore(51L);
 
-      // New Score: 10 Rounds + 5 Reps (Better!)
-      // Note: We use the Entity directly for simplicity in setup
-      WodScore newScore =
-          WodScore.builder()
-              .id(61L)
-              .wod(wodAmrap)
-              .userId(userId)
-              .rounds(10)
-              .reps(5)
-              .personalRecord(false)
-              .build();
+    assertEquals(4L, response.rank()); // 3 better -> rank 4
+    verify(scoreRepository).countBetterRoundsReps(2L, ScalingLevel.RX, 5, 10);
+  }
 
-      // Request matching the new score
-      WodScoreRequest requestAmrap =
-          new WodScoreRequest(
-              null,
-              2L,
-              LocalDate.now(),
-              null,
-              null,
-              10,
-              5, // 10 rounds, 5 reps
-              null,
-              null,
-              null,
-              null,
-              null,
-              null,
-              ScalingLevel.RX,
-              false,
-              null,
-              null);
+  @Test
+  @DisplayName("compareScore: WEIGHT should call countBetterWeight")
+  void testCompareScore_Weight() {
+    Wod wod = Wod.builder().id(3L).scoreType(ScoreType.WEIGHT).build();
+    WodScore score = WodScore.builder()
+        .id(52L)
+        .wod(wod)
+        .scaling(ScalingLevel.RX)
+        .maxWeightKg(100.0)
+        .build();
 
-      // Mocks
-      when(wodRepository.findById(2L)).thenReturn(Optional.of(wodAmrap));
-      when(scoreMapper.toEntity(requestAmrap)).thenReturn(newScore);
-      when(scoreRepository.save(any(WodScore.class))).thenReturn(newScore);
-      when(scoreMapper.toResponse(any())).thenReturn(mock(WodScoreResponse.class));
+    when(scoreRepository.findById(52L)).thenReturn(Optional.of(score));
+    when(scoreRepository.countByWodIdAndScaling(3L, ScalingLevel.RX)).thenReturn(5L);
+    when(scoreRepository.countBetterWeight(3L, ScalingLevel.RX, 100.0)).thenReturn(1L);
 
-      // DB returns both for comparison logic
-      when(scoreRepository.findByWodIdAndUserId(2L, userId)).thenReturn(List.of(oldPr, newScore));
+    ScoreComparisonResponse response = scoreService.compareScore(52L);
 
-      // When
-      scoreService.logScore(requestAmrap);
+    assertEquals(2L, response.rank());
+    verify(scoreRepository).countBetterWeight(3L, ScalingLevel.RX, 100.0);
+  }
 
-      // Then
-      // 1. Old PR lost status
-      assertFalse(oldPr.isPersonalRecord(), "Old AMRAP PR should be downgraded");
-      verify(scoreRepository).save(oldPr);
+  @Test
+  @DisplayName("compareScore: DISTANCE should call countBetterDistance")
+  void testCompareScore_Distance() {
+    Wod wod = Wod.builder().id(4L).scoreType(ScoreType.DISTANCE).build();
+    WodScore score = WodScore.builder()
+        .id(53L)
+        .wod(wod)
+        .scaling(ScalingLevel.RX)
+        .totalDistanceMeters(5000.0)
+        .build();
 
-      // 2. New Score gained status
-      // (We check the object passed to save, or the object state if modified in place)
-      assertTrue(newScore.isPersonalRecord(), "New AMRAP score should be upgraded to PR");
-    }
+    when(scoreRepository.findById(53L)).thenReturn(Optional.of(score));
+    when(scoreRepository.countByWodIdAndScaling(4L, ScalingLevel.RX)).thenReturn(20L);
+    when(scoreRepository.countBetterDistance(4L, ScalingLevel.RX, 5000.0)).thenReturn(5L);
+
+    ScoreComparisonResponse response = scoreService.compareScore(53L);
+
+    assertEquals(6L, response.rank());
+    verify(scoreRepository).countBetterDistance(4L, ScalingLevel.RX, 5000.0);
+  }
+
+  @Test
+  @DisplayName("compareScore: NONE should return rank 1 (0 better)")
+  void testCompareScore_None() {
+    Wod wod = Wod.builder().id(5L).scoreType(ScoreType.NONE).build();
+    WodScore score = WodScore.builder()
+        .id(54L)
+        .wod(wod)
+        .scaling(ScalingLevel.RX)
+        .build();
+
+    when(scoreRepository.findById(54L)).thenReturn(Optional.of(score));
+    when(scoreRepository.countByWodIdAndScaling(5L, ScalingLevel.RX)).thenReturn(10L);
+
+    ScoreComparisonResponse response = scoreService.compareScore(54L);
+
+    assertEquals(1L, response.rank()); // better is hardcoded to 0
+    assertEquals(100.0, response.percentile()); // (10-1)/(10-1) * 100 = 100%
+  }
+
+  @Test
+  @DisplayName("compareScore: Single entry should handle division by zero")
+  void testCompareScore_SingleEntry() {
+    Wod wod = Wod.builder().id(6L).scoreType(ScoreType.TIME).build();
+    WodScore score = WodScore.builder()
+        .id(55L)
+        .wod(wod)
+        .scaling(ScalingLevel.RX)
+        .timeSeconds(60)
+        .build();
+
+    when(scoreRepository.findById(55L)).thenReturn(Optional.of(score));
+    when(scoreRepository.countByWodIdAndScaling(6L, ScalingLevel.RX)).thenReturn(1L); // Only me
+    when(scoreRepository.countBetterTime(6L, ScalingLevel.RX, 60)).thenReturn(0L);
+
+    ScoreComparisonResponse response = scoreService.compareScore(55L);
+
+    assertEquals(1L, response.rank());
+    assertEquals(1L, response.totalScores());
+    assertEquals(100.0, response.percentile());
   }
 }

@@ -37,12 +37,12 @@ public abstract class BaseIntegrationTest {
 
   @ServiceConnection // Spring Boot 3.1+ magic: automatically configures spring.datasource.*
   static final PostgreSQLContainer postgres =
-      new PostgreSQLContainer(DockerImageName.parse("postgres:16-alpine"));
+      new PostgreSQLContainer(DockerImageName.parse("postgres:18-alpine"));
 
   @ServiceConnection(name = "redis") // Automatically configures spring.data.redis.*
   @SuppressWarnings("resource")
   static final GenericContainer<?> redis =
-      new GenericContainer<>(DockerImageName.parse("redis:7-alpine")).withExposedPorts(6379);
+      new GenericContainer<>(DockerImageName.parse("redis:8-alpine")).withExposedPorts(6379);
 
   static {
     // Parallel startup for speed

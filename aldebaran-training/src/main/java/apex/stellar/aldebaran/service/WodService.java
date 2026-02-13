@@ -19,7 +19,7 @@ import apex.stellar.aldebaran.repository.WodRepository;
 import apex.stellar.aldebaran.repository.WodScoreRepository;
 import apex.stellar.aldebaran.repository.projection.WodSummary;
 import apex.stellar.aldebaran.security.AldebaranUserPrincipal;
-import apex.stellar.aldebaran.security.SecurityUtils;
+import apex.stellar.aldebaran.security.SecurityService;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -51,6 +51,7 @@ public class WodService {
   private final MovementRepository movementRepository;
   private final WodScoreRepository wodScoreRepository;
   private final WodMapper wodMapper;
+  private final SecurityService securityService;
 
   // =========================================================================
   // READ OPERATIONS (Optimized)
@@ -81,7 +82,7 @@ public class WodService {
     // defaults.
     Long userId = principal != null ? principal.getId() : -1L;
     Long gymId = principal != null ? principal.getGymId() : null;
-    boolean isAdmin = SecurityUtils.isAdmin(principal);
+    boolean isAdmin = securityService.isAdmin(principal);
 
     List<WodSummary> projections;
 
@@ -153,7 +154,7 @@ public class WodService {
     assignCreator(wod);
 
     // 2. Link Movements & Calculate Modalities
-    processWodMovements(wod, request.movements());
+    mergeWodMovements(wod, request.movements());
 
     Wod savedWod = wodRepository.save(wod);
     log.info(
@@ -169,7 +170,7 @@ public class WodService {
    *
    * <ul>
    *   <li>Loads entity with {@code EntityGraph} to ensure collections are initialized.
-   *   <li>Clears existing movements and rebuilds the list (simplifies logic vs merging).
+   *   <li>Uses "Smart Merge" to update movements in place, avoiding table churn.
    *   <li>Recalculates Modalities based on new movements.
    * </ul>
    *
@@ -194,15 +195,8 @@ public class WodService {
     // Update basic fields via Mapper (or setters if partial update logic is complex)
     wodMapper.updateEntity(request, existingWod);
 
-    // Update Movements (Clear and Replace strategy)
-    if (existingWod.getMovements() != null) {
-      existingWod.getMovements().clear();
-    }
-    if (existingWod.getModalities() != null) {
-      existingWod.getModalities().clear();
-    }
-
-    processWodMovements(existingWod, request.movements());
+    // Smart Merge Movements
+    mergeWodMovements(existingWod, request.movements());
 
     Wod savedWod = wodRepository.save(existingWod);
     log.info("Updated WOD id={}", savedWod.getId());
@@ -236,7 +230,7 @@ public class WodService {
    */
   private void assignCreator(Wod wod) {
     try {
-      Long userId = SecurityUtils.getCurrentUserId();
+      Long userId = securityService.getCurrentUserId();
       wod.setAuthorId(userId);
     } catch (Exception e) {
       // Log as warning but don't block creation if user context is missing or ID is non-numeric
@@ -245,13 +239,15 @@ public class WodService {
   }
 
   /**
-   * Orchestrates the linking of Movement Entities to the WOD. Aggregates {@link Modality} to the
-   * WOD level for searching.
+   * Orchestrates the linking of Movement Entities to the WOD using a Smart Merge strategy.
+   *
+   * <p>Matches existing movements by {@code orderIndex} to update them in place, avoiding
+   * unnecessary deletes and inserts.
    *
    * @param wod The parent WOD entity.
    * @param requests The list of movement requests.
    */
-  private void processWodMovements(Wod wod, List<WodMovementRequest> requests) {
+  private void mergeWodMovements(Wod wod, List<WodMovementRequest> requests) {
     if (requests == null || requests.isEmpty()) {
       return;
     }
@@ -263,7 +259,7 @@ public class WodService {
       wod.setModalities(new HashSet<>());
     }
 
-    // 1. Optimize: Fetch all movements in one query (N+1 fix)
+    // 1. Pre-fetch Movements (Optimization)
     Set<String> movementIds =
         requests.stream().map(WodMovementRequest::movementId).collect(Collectors.toSet());
 
@@ -271,26 +267,76 @@ public class WodService {
         movementRepository.findAllById(movementIds).stream()
             .collect(Collectors.toMap(Movement::getId, Function.identity()));
 
-    // 2. Validate existence
     if (movementMap.size() != movementIds.size()) {
       List<String> missingIds =
           movementIds.stream().filter(id -> !movementMap.containsKey(id)).toList();
       throw new ResourceNotFoundException("error.movement.not.found", missingIds);
     }
 
-    // 3. Map and Link
+    // 2. Map existing WodMovements by OrderIndex for quick lookup
+    Map<Integer, WodMovement> existingMap =
+        wod.getMovements().stream()
+            .collect(Collectors.toMap(WodMovement::getOrderIndex, Function.identity()));
+
+    List<WodMovement> updatedList = new ArrayList<>();
+    Set<Modality> newModalities = new HashSet<>();
+
+    // 3. Process Requests
     for (WodMovementRequest req : requests) {
       Movement movement = movementMap.get(req.movementId());
-      WodMovement link = wodMapper.toWodMovementEntity(req);
-      link.setWod(wod);
-      link.setMovement(movement);
+      WodMovement wodMovement;
 
-      wod.getMovements().add(link);
+      if (existingMap.containsKey(req.orderIndex())) {
+        // UPDATE existing (Preserve ID)
+        wodMovement = existingMap.get(req.orderIndex());
+        updateWodMovementFields(wodMovement, req);
+      } else {
+        // CREATE new
+        wodMovement = wodMapper.toWodMovementEntity(req);
+        wodMovement.setWod(wod);
+      }
+
+      // Ensure relationship is set/updated
+      wodMovement.setMovement(movement);
+
+      updatedList.add(wodMovement);
 
       // Aggregate Modality (e.g., Pull-up -> GYMNASTICS)
       if (movement.getModality() != null) {
-        wod.getModalities().add(movement.getModality());
+        newModalities.add(movement.getModality());
       }
     }
+
+    // 4. Apply changes to the collection (Orphan Removal + Add New)
+    List<WodMovement> currentList = wod.getMovements();
+
+    // Remove items that are no longer present in the updated list
+    currentList.removeIf(existing -> !updatedList.contains(existing));
+
+    // Add new items
+    for (WodMovement item : updatedList) {
+      if (!currentList.contains(item)) {
+        currentList.add(item);
+      }
+    }
+
+    // 5. Update Modalities
+    wod.getModalities().clear();
+    wod.getModalities().addAll(newModalities);
+  }
+
+  private void updateWodMovementFields(WodMovement target, WodMovementRequest source) {
+    WodMovement temp = wodMapper.toWodMovementEntity(source);
+    target.setRepsScheme(temp.getRepsScheme());
+    target.setWeight(temp.getWeight());
+    target.setWeightUnit(temp.getWeightUnit());
+    target.setDurationSeconds(temp.getDurationSeconds());
+    target.setDurationDisplayUnit(temp.getDurationDisplayUnit());
+    target.setDistance(temp.getDistance());
+    target.setDistanceUnit(temp.getDistanceUnit());
+    target.setCalories(temp.getCalories());
+    target.setNotes(temp.getNotes());
+    target.setScalingOptions(temp.getScalingOptions());
+    target.setOrderIndex(temp.getOrderIndex());
   }
 }

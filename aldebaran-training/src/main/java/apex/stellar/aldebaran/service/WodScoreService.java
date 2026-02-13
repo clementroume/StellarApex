@@ -11,8 +11,7 @@ import apex.stellar.aldebaran.model.entities.WodScore;
 import apex.stellar.aldebaran.model.entities.WodScore.ScalingLevel;
 import apex.stellar.aldebaran.repository.WodRepository;
 import apex.stellar.aldebaran.repository.WodScoreRepository;
-import apex.stellar.aldebaran.security.SecurityUtils;
-import java.util.List;
+import apex.stellar.aldebaran.security.SecurityService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -20,6 +19,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
@@ -39,11 +39,13 @@ public class WodScoreService {
   private final WodScoreRepository scoreRepository;
   private final WodRepository wodRepository;
   private final WodScoreMapper scoreMapper;
+  private final SecurityService securityService;
+  private final WodPrService wodPrService;
 
   /** Retrieves all scores for the currently authenticated user. */
   @Transactional(readOnly = true)
   public Page<WodScoreResponse> getMyScores(Long wodId, Pageable pageable) {
-    Long userId = SecurityUtils.getCurrentUserId();
+    Long userId = securityService.getCurrentUserId();
 
     Pageable sortedPageable =
         pageable.getSort().isSorted()
@@ -83,11 +85,11 @@ public class WodScoreService {
    * <p>Supports logging for a third party (if authorized by Security layer). Automatically
    * calculates PR status.
    */
-  @Transactional
+  @Transactional(isolation = Isolation.SERIALIZABLE)
   public WodScoreResponse logScore(WodScoreRequest request) {
     // Determine target User ID: Use request ID if present (Admin/Coach), otherwise current user
     Long targetUserId =
-        request.userId() != null ? request.userId() : SecurityUtils.getCurrentUserId();
+        request.userId() != null ? request.userId() : securityService.getCurrentUserId();
 
     Wod wod =
         wodRepository
@@ -104,7 +106,7 @@ public class WodScoreService {
 
     // 2. Recalculate PRs for this user/WOD
     // We pass the new score's ID so the helper knows which one is 'current'
-    boolean isNewPr = updatePersonalRecordStatus(wod, targetUserId, score.getId());
+    boolean isNewPr = wodPrService.updatePrStatus(wod, targetUserId, score.getId());
 
     // 3. Update the local object reference.
     // The helper method has already saved the 'true' state to DB if needed.
@@ -118,7 +120,7 @@ public class WodScoreService {
    *
    * <p>Recalculates PR status as the updated score might become (or stop being) the PR.
    */
-  @Transactional
+  @Transactional(isolation = Isolation.SERIALIZABLE)
   public WodScoreResponse updateScore(Long id, WodScoreRequest request) {
     WodScore score =
         scoreRepository
@@ -141,7 +143,7 @@ public class WodScoreService {
     scoreRepository.save(score);
 
     // Recalculate PRs
-    boolean isPr = updatePersonalRecordStatus(score.getWod(), score.getUserId(), score.getId());
+    boolean isPr = wodPrService.updatePrStatus(score.getWod(), score.getUserId(), score.getId());
     score.setPersonalRecord(isPr);
 
     return scoreMapper.toResponse(score);
@@ -152,7 +154,7 @@ public class WodScoreService {
    *
    * <p>@PreAuthorize handles security checks. If a PR is deleted, the next best score is promoted.
    */
-  @Transactional
+  @Transactional(isolation = Isolation.SERIALIZABLE)
   public void deleteScore(Long scoreId) {
     WodScore score =
         scoreRepository
@@ -165,7 +167,7 @@ public class WodScoreService {
     scoreRepository.delete(score);
 
     // Recalculate PRs after deletion (pass null as current ID since it's deleted)
-    updatePersonalRecordStatus(wod, userId, null);
+    wodPrService.updatePrStatus(wod, userId, null);
   }
 
   /** Calculates rank and percentile. */
@@ -208,94 +210,6 @@ public class WodScoreService {
     double percentile = total > 1 ? ((double) (total - rank) / (total - 1)) * 100.0 : 100.0;
 
     return new ScoreComparisonResponse(rank, total, percentile);
-  }
-
-  // -------------------------------------------------------------------------
-  // PR Calculation Logic
-  // -------------------------------------------------------------------------
-
-  /**
-   * Re-evaluates all scores for a given User/WOD combination to determine the single PR. This
-   * handles Insert, Update, and Delete scenarios robustly. * @param wod The WOD being scored
-   *
-   * @param userId The user ID
-   * @param currentScoreId The ID of the score currently being processed (log/update), or null if
-   *     deleting.
-   * @return true if the currentScoreId is the new PR, false otherwise.
-   */
-  private boolean updatePersonalRecordStatus(Wod wod, Long userId, Long currentScoreId) {
-    if (wod.getScoreType() == ScoreType.NONE) {
-      return false;
-    }
-
-    List<WodScore> allScores = scoreRepository.findByWodIdAndUserId(wod.getId(), userId);
-    if (allScores.isEmpty()) {
-      return false;
-    }
-
-    // Find the best score
-    WodScore bestScore =
-        allScores.stream()
-            .reduce((s1, s2) -> isBetterScore(s1, s2, wod.getScoreType()) ? s1 : s2)
-            .orElse(allScores.getFirst());
-
-    boolean currentIsPr = false;
-
-    // Update flags
-    for (WodScore s : allScores) {
-      boolean isBest = s.getId().equals(bestScore.getId());
-
-      // Capture result for the specific score we are interested in
-      if (s.getId().equals(currentScoreId)) {
-        currentIsPr = isBest;
-      }
-
-      // Only write to DB if the state has actually changed to avoid unnecessary updates
-      if (s.isPersonalRecord() != isBest) {
-        s.setPersonalRecord(isBest);
-        scoreRepository.save(s);
-      }
-    }
-
-    return currentIsPr;
-  }
-
-  private boolean isBetterScore(WodScore current, WodScore other, ScoreType type) {
-    return switch (type) {
-      case TIME -> compareTime(current, other);
-      case ROUNDS_REPS -> compareRoundsReps(current, other);
-      case REPS -> compareValues(current.getReps(), other.getReps());
-      case WEIGHT -> compareValues(current.getMaxWeightKg(), other.getMaxWeightKg());
-      case LOAD -> compareValues(current.getTotalLoadKg(), other.getTotalLoadKg());
-      case CALORIES -> compareValues(current.getTotalCalories(), other.getTotalCalories());
-      case DISTANCE ->
-          compareValues(current.getTotalDistanceMeters(), other.getTotalDistanceMeters());
-      case NONE -> false;
-    };
-  }
-
-  private boolean compareTime(WodScore current, WodScore other) {
-    if (current.getTimeSeconds() == null) {
-      return false;
-    }
-    return other.getTimeSeconds() == null || current.getTimeSeconds() < other.getTimeSeconds();
-  }
-
-  private boolean compareRoundsReps(WodScore current, WodScore other) {
-    int currentRounds = current.getRounds() != null ? current.getRounds() : 0;
-    int otherRounds = other.getRounds() != null ? other.getRounds() : 0;
-    if (currentRounds != otherRounds) {
-      return currentRounds > otherRounds;
-    }
-    int currentReps = current.getReps() != null ? current.getReps() : 0;
-    int otherReps = other.getReps() != null ? other.getReps() : 0;
-    return currentReps > otherReps;
-  }
-
-  private boolean compareValues(Number current, Number other) {
-    double c = current != null ? current.doubleValue() : 0.0;
-    double o = other != null ? other.doubleValue() : 0.0;
-    return c > o;
   }
 
   private Sort getSortForScoreType(ScoreType type) {

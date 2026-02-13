@@ -32,6 +32,7 @@ public class WodScoreSecurity {
 
   private final WodScoreRepository scoreRepository;
   private final WodRepository wodRepository;
+  private final SecurityService securityService;
 
   /**
    * Evaluates if the authenticated user is authorized to view a specific score.
@@ -43,7 +44,7 @@ public class WodScoreSecurity {
   @Transactional(readOnly = true)
   public boolean canView(Long scoreId, AldebaranUserPrincipal principal) {
 
-    if (SecurityUtils.isAdmin(principal)) {
+    if (securityService.isAdmin(principal)) {
       return true;
     }
 
@@ -84,7 +85,7 @@ public class WodScoreSecurity {
    */
   public boolean canCreate(WodScoreRequest request, AldebaranUserPrincipal principal) {
 
-    if (SecurityUtils.isAdmin(principal)) {
+    if (securityService.isAdmin(principal)) {
       return true;
     }
 
@@ -114,7 +115,7 @@ public class WodScoreSecurity {
               // Requires: Gym WOD + Same Gym Context + Verification Rights
               return wod.getGymId() != null
                   && Objects.equals(wod.getGymId(), principal.getGymId())
-                  && SecurityUtils.hasScoreVerificationRights(principal);
+                  && securityService.hasScoreVerificationRights(principal);
             })
         .orElse(true); // Allow service to handle 404
   }
@@ -129,7 +130,7 @@ public class WodScoreSecurity {
   @Transactional(readOnly = true)
   public boolean canModify(Long scoreId, AldebaranUserPrincipal principal) {
 
-    if (SecurityUtils.isAdmin(principal)) {
+    if (securityService.isAdmin(principal)) {
       return true;
     }
 
@@ -146,7 +147,7 @@ public class WodScoreSecurity {
               Wod wod = score.getWod();
               return wod.getGymId() != null
                   && Objects.equals(wod.getGymId(), principal.getGymId())
-                  && SecurityUtils.hasScoreVerificationRights(principal);
+                  && securityService.hasScoreVerificationRights(principal);
             })
         .orElse(true); // Allow service to handle 404
   }

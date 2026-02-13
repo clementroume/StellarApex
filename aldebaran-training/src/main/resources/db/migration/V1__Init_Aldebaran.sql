@@ -95,6 +95,7 @@ ALTER TABLE movements
 CREATE TABLE wods
 (
     id               BIGSERIAL PRIMARY KEY,
+    version          BIGINT,
 
     title            VARCHAR(100) NOT NULL,
     wod_type         VARCHAR(50)  NOT NULL,

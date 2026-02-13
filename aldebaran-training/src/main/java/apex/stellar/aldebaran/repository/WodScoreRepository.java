@@ -3,7 +3,6 @@ package apex.stellar.aldebaran.repository;
 import apex.stellar.aldebaran.model.entities.WodScore;
 import apex.stellar.aldebaran.model.entities.WodScore.ScalingLevel;
 import java.util.List;
-import java.util.Optional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
@@ -53,18 +52,6 @@ public interface WodScoreRepository extends JpaRepository<WodScore, Long> {
   List<WodScore> findByWodIdAndUserId(Long wodId, Long userId);
 
   /**
-   * Finds the existing Personal Record (PR) for a specific user on a specific WOD.
-   *
-   * <p>Used by the Service to compare a new score against the previous best.
-   *
-   * @param wodId The ID of the WOD.
-   * @param userId The ID of the athlete.
-   * @return An Optional containing the PR score if it exists.
-   */
-  @EntityGraph(attributePaths = {"wod"})
-  Optional<WodScore> findByWodIdAndUserIdAndPersonalRecordTrue(Long wodId, Long userId);
-
-  /**
    * Checks if any scores exist for a given WOD.
    *
    * @param wodId The ID of the WOD.
@@ -87,33 +74,102 @@ public interface WodScoreRepository extends JpaRepository<WodScore, Long> {
   // LEADERBOARD / RANKING QUERIES
   // -------------------------------------------------------------------------
 
+  /**
+   * Counts the total number of Personal Records (PRs) for a given WOD and scaling.
+   *
+   * @param wodId The WOD ID.
+   * @param scaling The scaling level.
+   * @return The count of PRs.
+   */
+  @Query("""
+      SELECT COUNT(s) FROM WodScore s
+      WHERE s.wod.id = :wodId
+      AND s.scaling = :scaling
+      AND s.personalRecord = true
+      """)
   long countByWodIdAndScaling(Long wodId, ScalingLevel scaling);
 
-  @Query(
-      "SELECT COUNT(s) FROM WodScore s WHERE s.wod.id = :wodId AND s.scaling = :scaling AND s.timeSeconds < :time")
+  /**
+   * Counts how many PRs have a better (lower) time.
+   */
+  @Query("""
+      SELECT COUNT(s) FROM WodScore s
+      WHERE s.wod.id = :wodId
+      AND s.scaling = :scaling
+      AND s.personalRecord = true
+      AND s.timeSeconds < :time
+      """)
   long countBetterTime(Long wodId, ScalingLevel scaling, Integer time);
 
-  @Query(
-      "SELECT COUNT(s) FROM WodScore s WHERE s.wod.id = :wodId AND s.scaling = :scaling AND (s.rounds > :rounds OR (s.rounds = :rounds AND s.reps > :reps))")
+  /**
+   * Counts how many PRs have a better (higher) score in Rounds + Reps.
+   */
+  @Query("""
+      SELECT COUNT(s) FROM WodScore s
+      WHERE s.wod.id = :wodId
+      AND s.scaling = :scaling
+      AND s.personalRecord = true
+      AND (s.rounds > :rounds OR (s.rounds = :rounds AND s.reps > :reps))
+      """)
   long countBetterRoundsReps(Long wodId, ScalingLevel scaling, Integer rounds, Integer reps);
 
-  @Query(
-      "SELECT COUNT(s) FROM WodScore s WHERE s.wod.id = :wodId AND s.scaling = :scaling AND s.reps > :reps")
+  /**
+   * Counts how many PRs have more reps.
+   */
+  @Query("""
+      SELECT COUNT(s) FROM WodScore s
+      WHERE s.wod.id = :wodId
+      AND s.scaling = :scaling
+      AND s.personalRecord = true
+      AND s.reps > :reps
+      """)
   long countBetterReps(Long wodId, ScalingLevel scaling, Integer reps);
 
-  @Query(
-      "SELECT COUNT(s) FROM WodScore s WHERE s.wod.id = :wodId AND s.scaling = :scaling AND s.maxWeightKg > :weight")
+  /**
+   * Counts how many PRs have a heavier weight.
+   */
+  @Query("""
+      SELECT COUNT(s) FROM WodScore s
+      WHERE s.wod.id = :wodId
+      AND s.scaling = :scaling
+      AND s.personalRecord = true
+      AND s.maxWeightKg > :weight
+      """)
   long countBetterWeight(Long wodId, ScalingLevel scaling, Double weight);
 
-  @Query(
-      "SELECT COUNT(s) FROM WodScore s WHERE s.wod.id = :wodId AND s.scaling = :scaling AND s.totalLoadKg > :load")
+  /**
+   * Counts how many PRs have a higher total load.
+   */
+  @Query("""
+      SELECT COUNT(s) FROM WodScore s
+      WHERE s.wod.id = :wodId
+      AND s.scaling = :scaling
+      AND s.personalRecord = true
+      AND s.totalLoadKg > :load
+      """)
   long countBetterLoad(Long wodId, ScalingLevel scaling, Double load);
 
-  @Query(
-      "SELECT COUNT(s) FROM WodScore s WHERE s.wod.id = :wodId AND s.scaling = :scaling AND s.totalDistanceMeters > :distance")
+  /**
+   * Counts how many PRs have a greater distance.
+   */
+  @Query("""
+      SELECT COUNT(s) FROM WodScore s
+      WHERE s.wod.id = :wodId
+      AND s.scaling = :scaling
+      AND s.personalRecord = true
+      AND s.totalDistanceMeters > :distance
+      """)
   long countBetterDistance(Long wodId, ScalingLevel scaling, Double distance);
 
-  @Query(
-      "SELECT COUNT(s) FROM WodScore s WHERE s.wod.id = :wodId AND s.scaling = :scaling AND s.totalCalories > :calories")
+  /**
+   * Counts how many PRs have more calories.
+   */
+  @Query("""
+      SELECT COUNT(s) FROM WodScore s
+      WHERE s.wod.id = :wodId
+      AND s.scaling = :scaling
+      AND s.personalRecord = true
+      AND s.totalCalories > :calories
+      """)
   long countBetterCalories(Long wodId, ScalingLevel scaling, Integer calories);
 }
