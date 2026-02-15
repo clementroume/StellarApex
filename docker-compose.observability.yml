@@ -13,7 +13,7 @@ name: stellar-observability
 services:
   # --- 1. TELEMETRY COLLECTOR (GRAFANA ALLOY) ---
   vega-alloy:
-    image: grafana/alloy:v1.13.0
+    image: grafana/alloy:v1.13.1
     container_name: vega-alloy
     command: [ "run", "--server.http.listen-addr=0.0.0.0:12345", "/etc/alloy/config.alloy" ]
     volumes:
