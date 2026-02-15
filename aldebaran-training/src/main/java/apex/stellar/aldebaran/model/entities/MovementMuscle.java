@@ -21,6 +21,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
+import lombok.ToString;
 
 /**
  * Represents the weighted biomechanical relationship between a {@link Movement} and a {@link
@@ -46,6 +47,7 @@ public class MovementMuscle {
   @JoinColumn(name = "movement_id", nullable = false)
   @NotNull
   @JsonIgnore
+  @ToString.Exclude
   private Movement movement;
 
   @ManyToOne(fetch = FetchType.LAZY)
@@ -70,6 +72,28 @@ public class MovementMuscle {
   @DecimalMax("1.0")
   @Builder.Default
   private Double impactFactor = 1.0;
+
+  // -------------------------------------------------------------------------
+  // Equality
+  // -------------------------------------------------------------------------
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+
+    if (!(o instanceof MovementMuscle other)) {
+      return false;
+    }
+
+    return id != null && id.equals(other.getId());
+  }
+
+  @Override
+  public int hashCode() {
+    return getClass().hashCode();
+  }
 
   // ==================================================================================
   // INNER ENUM: MUSCLE ROLE

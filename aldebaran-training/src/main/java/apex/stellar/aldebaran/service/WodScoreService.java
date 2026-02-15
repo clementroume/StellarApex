@@ -14,9 +14,9 @@ import apex.stellar.aldebaran.repository.WodScoreRepository;
 import apex.stellar.aldebaran.security.SecurityService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Isolation;
@@ -44,7 +44,7 @@ public class WodScoreService {
 
   /** Retrieves all scores for the currently authenticated user. */
   @Transactional(readOnly = true)
-  public Page<WodScoreResponse> getMyScores(Long wodId, Pageable pageable) {
+  public Slice<WodScoreResponse> getMyScores(Long wodId, Pageable pageable) {
     Long userId = securityService.getCurrentUserId();
 
     Pageable sortedPageable =
@@ -53,7 +53,7 @@ public class WodScoreService {
             : PageRequest.of(
                 pageable.getPageNumber(), pageable.getPageSize(), Sort.by("date").descending());
 
-    Page<WodScore> scores =
+    Slice<WodScore> scores =
         (wodId != null)
             ? scoreRepository.findByUserIdAndWodId(userId, wodId, sortedPageable)
             : scoreRepository.findByUserId(userId, sortedPageable);
@@ -63,7 +63,7 @@ public class WodScoreService {
 
   /** Retrieves the leaderboard for a specific WOD. */
   @Transactional(readOnly = true)
-  public Page<WodScoreResponse> getLeaderboard(
+  public Slice<WodScoreResponse> getLeaderboard(
       Long wodId, ScalingLevel scaling, Pageable pageable) {
     Wod wod =
         wodRepository

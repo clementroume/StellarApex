@@ -2,6 +2,7 @@ package apex.stellar.aldebaran.dto;
 
 import apex.stellar.aldebaran.model.entities.WodScore.ScalingLevel;
 import apex.stellar.aldebaran.model.enums.Unit;
+import apex.stellar.aldebaran.validation.ValidScoreRequest;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.media.Schema.RequiredMode;
 import jakarta.validation.constraints.DecimalMin;
@@ -17,6 +18,7 @@ import java.time.LocalDate;
  * <p>Adapts time input to allow users to enter data naturally (e.g., "1 min 30" or "90 sec"). The
  * API will infer the preferred display format based on which fields are populated.
  */
+@ValidScoreRequest
 public record WodScoreRequest(
     @Schema(
             description =

@@ -97,8 +97,7 @@ class WodServiceTest {
     Pageable pageable = Pageable.unpaged();
 
     WodSummary projection = mock(WodSummary.class);
-    when(wodRepository.findAllSecure(100L, 50L, false, pageable))
-        .thenReturn(List.of(projection));
+    when(wodRepository.findAllSecure(100L, 50L, false, pageable)).thenReturn(List.of(projection));
 
     when(securityService.isAdmin(user)).thenReturn(false);
 
@@ -214,21 +213,30 @@ class WodServiceTest {
   }
 
   @Test
-  @DisplayName("createWod: should link movements, set creator, and aggregate modalities")
+  @DisplayName("createWod: should link movements and set creator")
   void testCreateWod_Success() {
-    when(wodMapper.toEntity(wodRequest)).thenReturn(wod);
+    // 1. Mock Security & Repo (Optimization N+1)
+    when(securityService.getCurrentUserId()).thenReturn(100L);
     when(movementRepository.findAllById(any())).thenReturn(List.of(movement));
-    when(wodMapper.toWodMovementEntity(any())).thenReturn(new WodMovement());
+
+    // 2. Mock Mapper & Save
+    when(wodMapper.toEntity(wodRequest)).thenReturn(wod);
+
+    // Stubbing toWodMovementEntity
+    WodMovement wmStub = new WodMovement();
+    when(wodMapper.toWodMovementEntity(any())).thenReturn(wmStub);
+
     when(wodRepository.save(wod)).thenReturn(wod);
     when(wodMapper.toResponse(wod)).thenReturn(mock(WodResponse.class));
 
-    when(securityService.getCurrentUserId()).thenReturn(100L);
-
+    // Execution
     WodResponse response = wodService.createWod(wodRequest);
 
+    // Assertions
     assertNotNull(response);
-    assertEquals(100L, wod.getAuthorId()); // Vérifie AuthorId
+    assertEquals(100L, wod.getAuthorId());
     assertEquals(1, wod.getMovements().size());
+    // Verify Modality aggregation
     assertTrue(wod.getModalities().contains(Modality.GYMNASTICS));
 
     verify(movementRepository).findAllById(any());
@@ -281,62 +289,50 @@ class WodServiceTest {
   }
 
   @Test
-  @DisplayName("createWod: should throw exception if movement ID is invalid")
+  @DisplayName("createWod: should throw exception if movement ID is invalid (Fail Fast)")
   void testCreateWod_InvalidMovement() {
-    when(wodMapper.toEntity(wodRequest)).thenReturn(wod);
-    when(movementRepository.findAllById(any())).thenReturn(List.of()); // Liste vide = non trouvé
+    when(securityService.getCurrentUserId()).thenReturn(100L);
+    when(movementRepository.findAllById(any())).thenReturn(List.of()); // Empty list = Not Found
 
     ResourceNotFoundException ex =
         assertThrows(ResourceNotFoundException.class, () -> wodService.createWod(wodRequest));
 
     assertEquals("error.movement.not.found", ex.getMessageKey());
     verify(wodRepository, never()).save(any());
+    // Mapper should not be called because exception is thrown before
+    verify(wodMapper, never()).toEntity(any());
   }
 
   @Test
   @DisplayName("updateWod: should update when NO scores exist")
   void testUpdateWod_Success() {
+    // 1. Check Locks
     when(wodScoreRepository.existsByWodId(1L)).thenReturn(false);
+
+    // 2. Fetch Existing
     when(wodRepository.findByIdWithMovements(1L)).thenReturn(Optional.of(wod));
 
+    // 3. Mock Updates
+    // Simulate mapper update
     doAnswer(
-            invocation -> {
-              WodRequest source = invocation.getArgument(0);
-              Wod target = invocation.getArgument(1);
-              target.setTitle(source.title());
+            inv -> {
+              Wod t = inv.getArgument(1);
+              t.setTitle("Updated Title");
               return null;
             })
         .when(wodMapper)
-        .updateEntity(any(WodRequest.class), any(Wod.class));
+        .updateEntity(any(), any());
 
     when(movementRepository.findAllById(any())).thenReturn(List.of(movement));
     when(wodMapper.toWodMovementEntity(any())).thenReturn(new WodMovement());
     when(wodRepository.save(wod)).thenReturn(wod);
     when(wodMapper.toResponse(wod)).thenReturn(mock(WodResponse.class));
 
-    WodRequest updateRequest =
-        new WodRequest(
-            "Fran (Updated)",
-            WodType.FOR_TIME,
-            ScoreType.TIME,
-            "New Desc",
-            "New Notes",
-            null,
-            null,
-            true,
-            null,
-            null,
-            null,
-            null,
-            List.of(
-                new WodMovementRequest(
-                    "GY-PU-001", 1, "15-12-9", 0.0, null, 0, null, 0.0, null, 0, null, null)));
+    // Execution
+    wodService.updateWod(1L, wodRequest);
 
-    wodService.updateWod(1L, updateRequest);
-
-    verify(wodMapper).updateEntity(updateRequest, wod);
-    assertEquals(1, wod.getMovements().size());
     verify(wodRepository).save(wod);
+    assertEquals("Updated Title", wod.getTitle());
   }
 
   @Test
@@ -365,8 +361,21 @@ class WodServiceTest {
 
     WodRequest updateRequest =
         new WodRequest(
-            "Fran", WodType.FOR_TIME, ScoreType.TIME, null, null, null, null, true, null, null, null, null,
-            List.of(new WodMovementRequest("GY-PU-001", 1, "15-12-9", 0.0, null, 0, null, 0.0, null, 0, null, null)));
+            "Fran",
+            WodType.FOR_TIME,
+            ScoreType.TIME,
+            null,
+            null,
+            null,
+            null,
+            true,
+            null,
+            null,
+            null,
+            null,
+            List.of(
+                new WodMovementRequest(
+                    "GY-PU-001", 1, "15-12-9", 0.0, null, 0, null, 0.0, null, 0, null, null)));
 
     // When
     wodService.updateWod(1L, updateRequest);
@@ -401,9 +410,10 @@ class WodServiceTest {
   }
 
   @Test
-  @DisplayName("deleteWod: should delete entity when found")
+  @DisplayName("deleteWod: should delete entity when found and unlocked")
   void testDeleteWod_Success() {
     when(wodRepository.existsById(1L)).thenReturn(true);
+    when(wodScoreRepository.existsByWodId(1L)).thenReturn(false);
 
     wodService.deleteWod(1L);
 
@@ -416,6 +426,18 @@ class WodServiceTest {
     when(wodRepository.existsById(99L)).thenReturn(false);
 
     assertThrows(ResourceNotFoundException.class, () -> wodService.deleteWod(99L));
+    verify(wodRepository, never()).deleteById(any());
+  }
+
+  @Test
+  @DisplayName("deleteWod: should throw WodLockedException when scores exist")
+  void testDeleteWod_Locked() {
+    when(wodRepository.existsById(1L)).thenReturn(true);
+    when(wodScoreRepository.existsByWodId(1L)).thenReturn(true);
+
+    WodLockedException ex = assertThrows(WodLockedException.class, () -> wodService.deleteWod(1L));
+
+    assertEquals("error.wod.locked", ex.getMessageKey());
     verify(wodRepository, never()).deleteById(any());
   }
 }

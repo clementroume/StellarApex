@@ -85,16 +85,15 @@ public class Muscle {
     if (this == o) {
       return true;
     }
-    if (o == null || getClass() != o.getClass()) {
+    if (!(o instanceof Muscle other)) {
       return false;
     }
-    Muscle muscle = (Muscle) o;
-    return medicalName != null && medicalName.equals(muscle.medicalName);
+    return getMedicalName() != null && getMedicalName().equals(other.getMedicalName());
   }
 
   @Override
   public int hashCode() {
-    return medicalName != null ? medicalName.hashCode() : 0;
+    return getMedicalName() != null ? getMedicalName().hashCode() : 0;
   }
 
   // -------------------------------------------------------------------------

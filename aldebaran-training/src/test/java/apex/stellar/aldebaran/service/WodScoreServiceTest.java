@@ -29,6 +29,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
 
 @ExtendWith(MockitoExtension.class)
 class WodScoreServiceTest {
@@ -91,7 +92,7 @@ class WodScoreServiceTest {
     when(scoreRepository.findByUserIdAndWodId(eq(userId), eq(1L), any(Pageable.class)))
         .thenReturn(Page.empty());
 
-    Page<WodScoreResponse> result = scoreService.getMyScores(1L, pageable);
+    Slice<WodScoreResponse> result = scoreService.getMyScores(1L, pageable);
 
     assertNotNull(result);
     verify(scoreRepository).findByUserIdAndWodId(eq(userId), eq(1L), any(Pageable.class));
@@ -105,7 +106,7 @@ class WodScoreServiceTest {
 
     when(scoreRepository.findByUserId(eq(userId), any(Pageable.class))).thenReturn(Page.empty());
 
-    Page<WodScoreResponse> result = scoreService.getMyScores(null, pageable);
+    Slice<WodScoreResponse> result = scoreService.getMyScores(null, pageable);
 
     assertNotNull(result);
     verify(scoreRepository).findByUserId(eq(userId), any(Pageable.class));
@@ -120,7 +121,7 @@ class WodScoreServiceTest {
             eq(1L), eq(ScalingLevel.RX), any(Pageable.class)))
         .thenReturn(Page.empty());
 
-    Page<WodScoreResponse> result = scoreService.getLeaderboard(1L, ScalingLevel.RX, pageable);
+    Slice<WodScoreResponse> result = scoreService.getLeaderboard(1L, ScalingLevel.RX, pageable);
 
     assertNotNull(result);
     verify(scoreRepository)
@@ -292,13 +293,8 @@ class WodScoreServiceTest {
   @DisplayName("compareScore: ROUNDS_REPS should call countBetterRoundsReps")
   void testCompareScore_RoundsReps() {
     Wod wod = Wod.builder().id(2L).scoreType(ScoreType.ROUNDS_REPS).build();
-    WodScore score = WodScore.builder()
-        .id(51L)
-        .wod(wod)
-        .scaling(ScalingLevel.RX)
-        .rounds(5)
-        .reps(10)
-        .build();
+    WodScore score =
+        WodScore.builder().id(51L).wod(wod).scaling(ScalingLevel.RX).rounds(5).reps(10).build();
 
     when(scoreRepository.findById(51L)).thenReturn(Optional.of(score));
     when(scoreRepository.countByWodIdAndScaling(2L, ScalingLevel.RX)).thenReturn(10L);
@@ -314,12 +310,8 @@ class WodScoreServiceTest {
   @DisplayName("compareScore: WEIGHT should call countBetterWeight")
   void testCompareScore_Weight() {
     Wod wod = Wod.builder().id(3L).scoreType(ScoreType.WEIGHT).build();
-    WodScore score = WodScore.builder()
-        .id(52L)
-        .wod(wod)
-        .scaling(ScalingLevel.RX)
-        .maxWeightKg(100.0)
-        .build();
+    WodScore score =
+        WodScore.builder().id(52L).wod(wod).scaling(ScalingLevel.RX).maxWeightKg(100.0).build();
 
     when(scoreRepository.findById(52L)).thenReturn(Optional.of(score));
     when(scoreRepository.countByWodIdAndScaling(3L, ScalingLevel.RX)).thenReturn(5L);
@@ -335,12 +327,13 @@ class WodScoreServiceTest {
   @DisplayName("compareScore: DISTANCE should call countBetterDistance")
   void testCompareScore_Distance() {
     Wod wod = Wod.builder().id(4L).scoreType(ScoreType.DISTANCE).build();
-    WodScore score = WodScore.builder()
-        .id(53L)
-        .wod(wod)
-        .scaling(ScalingLevel.RX)
-        .totalDistanceMeters(5000.0)
-        .build();
+    WodScore score =
+        WodScore.builder()
+            .id(53L)
+            .wod(wod)
+            .scaling(ScalingLevel.RX)
+            .totalDistanceMeters(5000.0)
+            .build();
 
     when(scoreRepository.findById(53L)).thenReturn(Optional.of(score));
     when(scoreRepository.countByWodIdAndScaling(4L, ScalingLevel.RX)).thenReturn(20L);
@@ -356,11 +349,7 @@ class WodScoreServiceTest {
   @DisplayName("compareScore: NONE should return rank 1 (0 better)")
   void testCompareScore_None() {
     Wod wod = Wod.builder().id(5L).scoreType(ScoreType.NONE).build();
-    WodScore score = WodScore.builder()
-        .id(54L)
-        .wod(wod)
-        .scaling(ScalingLevel.RX)
-        .build();
+    WodScore score = WodScore.builder().id(54L).wod(wod).scaling(ScalingLevel.RX).build();
 
     when(scoreRepository.findById(54L)).thenReturn(Optional.of(score));
     when(scoreRepository.countByWodIdAndScaling(5L, ScalingLevel.RX)).thenReturn(10L);
@@ -375,12 +364,8 @@ class WodScoreServiceTest {
   @DisplayName("compareScore: Single entry should handle division by zero")
   void testCompareScore_SingleEntry() {
     Wod wod = Wod.builder().id(6L).scoreType(ScoreType.TIME).build();
-    WodScore score = WodScore.builder()
-        .id(55L)
-        .wod(wod)
-        .scaling(ScalingLevel.RX)
-        .timeSeconds(60)
-        .build();
+    WodScore score =
+        WodScore.builder().id(55L).wod(wod).scaling(ScalingLevel.RX).timeSeconds(60).build();
 
     when(scoreRepository.findById(55L)).thenReturn(Optional.of(score));
     when(scoreRepository.countByWodIdAndScaling(6L, ScalingLevel.RX)).thenReturn(1L); // Only me

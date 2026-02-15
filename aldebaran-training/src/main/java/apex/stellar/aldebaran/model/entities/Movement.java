@@ -185,15 +185,14 @@ public class Movement {
     if (this == o) {
       return true;
     }
-    if (o == null || getClass() != o.getClass()) {
+    if (!(o instanceof Movement other)) {
       return false;
     }
-    Movement movement = (Movement) o;
-    return id != null && id.equals(movement.id);
+    return id != null && id.equals(other.getId());
   }
 
   @Override
   public int hashCode() {
-    return id != null ? id.hashCode() : 0;
+    return getClass().hashCode();
   }
 }

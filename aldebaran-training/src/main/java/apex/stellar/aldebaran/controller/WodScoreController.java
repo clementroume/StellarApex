@@ -15,8 +15,8 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -64,7 +64,7 @@ public class WodScoreController {
             description = "Unauthorized - User is not authenticated",
             content = @Content(schema = @Schema(hidden = true)))
       })
-  public ResponseEntity<Page<WodScoreResponse>> getMyScores(
+  public ResponseEntity<Slice<WodScoreResponse>> getMyScores(
       @Parameter(description = "Filter by WOD ID") @RequestParam(required = false) Long wodId,
       @Parameter(description = "Pagination (page, size)") @PageableDefault(size = 20)
           Pageable pageable) {
@@ -241,7 +241,7 @@ public class WodScoreController {
             description = "Unauthorized",
             content = @Content(schema = @Schema(hidden = true)))
       })
-  public ResponseEntity<Page<WodScoreResponse>> getLeaderboard(
+  public ResponseEntity<Slice<WodScoreResponse>> getLeaderboard(
       @PathVariable Long wodId,
       @Parameter(description = "Scaling level (RX, SCALED...)") @RequestParam(defaultValue = "RX")
           ScalingLevel scaling,

@@ -63,6 +63,7 @@ public class WodMovement {
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "movement_id", nullable = false)
   @NotNull
+  @ToString.Exclude
   private Movement movement;
 
   /** Sequence order within the WOD (e.g., 1 for the first movement, 2 for the second). */
@@ -128,6 +129,28 @@ public class WodMovement {
   @Column(name = "calories")
   @Min(0)
   private Integer calories;
+
+  // -------------------------------------------------------------------------
+  // Equality
+  // -------------------------------------------------------------------------
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+
+    if (!(o instanceof WodMovement other)) {
+      return false;
+    }
+
+    return getId() != null && getId().equals(other.getId());
+  }
+
+  @Override
+  public int hashCode() {
+    return getClass().hashCode();
+  }
 
   // -------------------------------------------------------------------------
   // Metadata & Instructions

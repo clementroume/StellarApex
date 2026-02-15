@@ -6,10 +6,10 @@ import apex.stellar.aldebaran.dto.MovementSummaryResponse;
 import apex.stellar.aldebaran.model.enums.Category;
 import apex.stellar.aldebaran.service.MovementService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
-import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -39,7 +39,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/aldebaran/movements")
 @RequiredArgsConstructor
 @Tag(name = "Movements", description = "Exercise catalog management")
-public class MovementController {
+public class MovementController { 
 
   private final MovementService movementService;
 

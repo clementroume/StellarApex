@@ -34,6 +34,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
+import lombok.ToString;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
@@ -158,6 +159,7 @@ public class Wod {
   @OneToMany(mappedBy = "wod", cascade = CascadeType.ALL, orphanRemoval = true)
   @OrderBy("orderIndex ASC")
   @Builder.Default
+  @ToString.Exclude
   private List<WodMovement> movements = new ArrayList<>();
 
   // -------------------------------------------------------------------------

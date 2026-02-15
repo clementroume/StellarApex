@@ -37,10 +37,18 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 /**
- * Service for managing Workout of the Day (WOD) definitions.
+ * Service responsible for the lifecycle management of Workout of the Day (WOD) entities.
  *
- * <p>Handles the lifecycle of {@link Wod} entities, including the orchestration of nested {@link
- * WodMovement} components and the aggregation of training modalities.
+ * <p>This service orchestrates the creation, modification, and retrieval of WODs.
+ *
+ * <p><b>Performance Strategy:</b>
+ *
+ * <ul>
+ *   <li><b>Batch Fetching:</b> Uses {@code findAllById} to load associated movements in a single
+ *       query, eliminating N+1 issues.
+ *   <li><b>Read-Optimized:</b> Uses Database Projections for lists and EntityGraphs for details.
+ *   <li><b>Smart Updates:</b> Updates collections in-place to minimize database churn.
+ * </ul>
  */
 @Service
 @RequiredArgsConstructor
@@ -54,19 +62,20 @@ public class WodService {
   private final SecurityService securityService;
 
   // =========================================================================
-  // READ OPERATIONS (Optimized)
+  // READ OPERATIONS
   // =========================================================================
 
   /**
-   * Retrieves a list of WODs based on filters.
+   * Retrieves a paginated list of WOD summaries based on filters.
    *
-   * <p><b>Optimization:</b> Uses Database Projections ({@link WodSummary}) exclusively. This avoids
-   * loading the heavy `movements` collection for simple list views.
+   * <p><b>Optimization:</b> Uses {@link WodSummary} projections to fetch only essential data,
+   * avoiding the cost of loading full entities and their relationships.
    *
-   * @param search Optional title search string.
+   * @param search Optional title search term.
    * @param type Optional WOD type filter.
    * @param movementId Optional movement ID filter.
-   * @param pageable Pagination information.
+   * @param pageable Pagination settings.
+   * @param principal The authenticated user (for security filtering).
    * @return A list of lightweight WOD summaries.
    */
   @Transactional(readOnly = true)
@@ -116,9 +125,8 @@ public class WodService {
   /**
    * Retrieves full details of a specific WOD.
    *
-   * <p><b>Optimization:</b> Uses {@link org.springframework.data.jpa.repository.EntityGraph} via
-   * {@code findByIdWithMovements} to fetch the WOD and all its associated movements in a single SQL
-   * query, preventing N+1 issues.
+   * <p><b>Optimization:</b> Uses {@code EntityGraph} to fetch the WOD and all movements in a single
+   * query. Results are cached to reduce database load.
    *
    * @param id The WOD ID.
    * @return The detailed response.
@@ -134,72 +142,118 @@ public class WodService {
   }
 
   // =========================================================================
-  // WRITE OPERATIONS (Transactional)
+  // WRITE OPERATIONS
   // =========================================================================
 
   /**
    * Creates a new WOD.
    *
-   * <p>Automatically links the creator from the {@code X-Auth-User-Id} header and aggregates
-   * modalities (e.g., GYMNASTICS) from the movements.
+   * <p><b>Optimization:</b> Pre-fetches all referenced movements in a single SQL query using a Map
+   * structure. This prevents the "N+1 Selects" problem while keeping the logic within a single
+   * transaction scope.
    *
    * @param request The creation payload.
    * @return The created WOD details.
    */
   @Transactional
   public WodResponse createWod(WodRequest request) {
+    Long authorId = securityService.getCurrentUserId();
+
+    // 1. Optimization: Batch fetch all required movements in ONE query
+    Set<String> movementIds =
+        request.movements().stream()
+            .map(WodMovementRequest::movementId)
+            .collect(Collectors.toSet());
+
+    Map<String, Movement> movements =
+        movementRepository.findAllById(movementIds).stream()
+            .collect(Collectors.toMap(Movement::getId, Function.identity()));
+
+    // Validation: Ensure all requested movements exist
+    if (movements.size() != movementIds.size()) {
+      throw new ResourceNotFoundException("error.movement.not.found");
+    }
+
+    // 2. Build Entity
     Wod wod = wodMapper.toEntity(request);
+    wod.setAuthorId(authorId);
 
-    // 1. Assign Creator from Security Context (ForwardedAuthFilter)
-    assignCreator(wod);
+    // Ensure collections are initialized
+    if (wod.getMovements() == null) {
+      wod.setMovements(new ArrayList<>());
+    }
+    if (wod.getModalities() == null) {
+      wod.setModalities(new HashSet<>());
+    }
 
-    // 2. Link Movements & Calculate Modalities
-    mergeWodMovements(wod, request.movements());
+    // 3. Link Relations (In-Memory operation, extremely fast)
+    request
+        .movements()
+        .forEach(
+            item -> {
+              Movement movement = movements.get(item.movementId());
 
+              WodMovement wm = wodMapper.toWodMovementEntity(item);
+              wm.setWod(wod);
+              wm.setMovement(movement);
+
+              wod.getMovements().add(wm);
+
+              // Aggregate Modality (e.g., Gymnastics, Weightlifting)
+              if (movement.getModality() != null) {
+                wod.getModalities().add(movement.getModality());
+              }
+            });
+
+    // 4. Save & Map
     Wod savedWod = wodRepository.save(wod);
+
     log.info(
         "Created WOD id={} with {} movements", savedWod.getId(), savedWod.getMovements().size());
 
+    // Mapping occurs inside the transaction, avoiding LazyInitializationException
     return wodMapper.toResponse(savedWod);
   }
 
   /**
    * Updates an existing WOD.
    *
-   * <p>Strategies:
+   * <p><b>Strategy:</b>
    *
    * <ul>
-   *   <li>Loads entity with {@code EntityGraph} to ensure collections are initialized.
-   *   <li>Uses "Smart Merge" to update movements in place, avoiding table churn.
-   *   <li>Recalculates Modalities based on new movements.
+   *   <li>Checks for data integrity (locks WOD if scores exist).
+   *   <li>Uses "Smart Merge" to update movements in-place, preserving IDs and reducing DB churn.
    * </ul>
    *
    * @param id The ID of the WOD to update.
    * @param request The update payload.
    * @return The updated WOD details.
-   * @throws ResourceNotFoundException if the WOD is not found.
+   * @throws WodLockedException if the WOD has linked scores.
    */
   @Transactional
   @CacheEvict(value = CACHE_WODS, key = "#id")
   public WodResponse updateWod(Long id, WodRequest request) {
-    // Integrity Check: Lock WOD if scores exist
+    // 1. Integrity Check: Lock WOD if scores exist
     if (wodScoreRepository.existsByWodId(id)) {
       throw new WodLockedException("error.wod.locked", id);
     }
 
+    // 2. Fetch Existing Data (with movements to allow merging)
     Wod existingWod =
         wodRepository
             .findByIdWithMovements(id)
             .orElseThrow(() -> new ResourceNotFoundException("error.wod.not.found", id));
 
-    // Update basic fields via Mapper (or setters if partial update logic is complex)
+    // 3. Update Scalar Fields
     wodMapper.updateEntity(request, existingWod);
 
-    // Smart Merge Movements
+    // 4. Smart Merge Movements
     mergeWodMovements(existingWod, request.movements());
 
+    // 5. Save & Return
     Wod savedWod = wodRepository.save(existingWod);
     log.info("Updated WOD id={}", savedWod.getId());
+
     return wodMapper.toResponse(savedWod);
   }
 
@@ -207,7 +261,7 @@ public class WodService {
    * Deletes a WOD definition.
    *
    * @param id The ID of the WOD to delete.
-   * @throws ResourceNotFoundException if the WOD is not found.
+   * @throws ResourceNotFoundException if the WOD does not exist.
    */
   @Transactional
   @CacheEvict(value = CACHE_WODS, key = "#id")
@@ -215,6 +269,11 @@ public class WodService {
     if (!wodRepository.existsById(id)) {
       throw new ResourceNotFoundException("error.wod.not.found", id);
     }
+
+    if (wodScoreRepository.existsByWodId(id)) {
+      throw new WodLockedException("error.wod.locked", id);
+    }
+
     wodRepository.deleteById(id);
     log.info("Deleted WOD id={}", id);
   }
@@ -224,25 +283,8 @@ public class WodService {
   // =========================================================================
 
   /**
-   * Assigns the creator ID to the WOD based on the current authenticated user context.
-   *
-   * @param wod The WOD entity to update.
-   */
-  private void assignCreator(Wod wod) {
-    try {
-      Long userId = securityService.getCurrentUserId();
-      wod.setAuthorId(userId);
-    } catch (Exception e) {
-      // Log as warning but don't block creation if user context is missing or ID is non-numeric
-      log.warn("Unable to assign creator ID: {}", e.getMessage());
-    }
-  }
-
-  /**
-   * Orchestrates the linking of Movement Entities to the WOD using a Smart Merge strategy.
-   *
-   * <p>Matches existing movements by {@code orderIndex} to update them in place, avoiding
-   * unnecessary deletes and inserts.
+   * Orchestrates the linking of Movement Entities to the WOD using a Smart Merge strategy. Matches
+   * existing movements by {@code orderIndex} to update them in place.
    *
    * @param wod The parent WOD entity.
    * @param requests The list of movement requests.
@@ -259,7 +301,7 @@ public class WodService {
       wod.setModalities(new HashSet<>());
     }
 
-    // 1. Pre-fetch Movements (Optimization)
+    // 1. Batch Fetch Movements (Optimization)
     Set<String> movementIds =
         requests.stream().map(WodMovementRequest::movementId).collect(Collectors.toSet());
 
@@ -268,12 +310,10 @@ public class WodService {
             .collect(Collectors.toMap(Movement::getId, Function.identity()));
 
     if (movementMap.size() != movementIds.size()) {
-      List<String> missingIds =
-          movementIds.stream().filter(id -> !movementMap.containsKey(id)).toList();
-      throw new ResourceNotFoundException("error.movement.not.found", missingIds);
+      throw new ResourceNotFoundException("error.movement.not.found");
     }
 
-    // 2. Map existing WodMovements by OrderIndex for quick lookup
+    // 2. Map existing items by OrderIndex for O(1) lookup
     Map<Integer, WodMovement> existingMap =
         wod.getMovements().stream()
             .collect(Collectors.toMap(WodMovement::getOrderIndex, Function.identity()));
@@ -281,52 +321,48 @@ public class WodService {
     List<WodMovement> updatedList = new ArrayList<>();
     Set<Modality> newModalities = new HashSet<>();
 
-    // 3. Process Requests
+    // 3. Process Request Items
     for (WodMovementRequest req : requests) {
       Movement movement = movementMap.get(req.movementId());
-      WodMovement wodMovement;
+      WodMovement target;
 
       if (existingMap.containsKey(req.orderIndex())) {
-        // UPDATE existing (Preserve ID)
-        wodMovement = existingMap.get(req.orderIndex());
-        updateWodMovementFields(wodMovement, req);
+        // Update existing entity (Preserve ID)
+        target = existingMap.get(req.orderIndex());
+        updateWodMovementFields(target, req);
       } else {
-        // CREATE new
-        wodMovement = wodMapper.toWodMovementEntity(req);
-        wodMovement.setWod(wod);
+        // Create new entity
+        target = wodMapper.toWodMovementEntity(req);
+        target.setWod(wod);
       }
 
-      // Ensure relationship is set/updated
-      wodMovement.setMovement(movement);
+      target.setMovement(movement);
+      updatedList.add(target);
 
-      updatedList.add(wodMovement);
-
-      // Aggregate Modality (e.g., Pull-up -> GYMNASTICS)
       if (movement.getModality() != null) {
         newModalities.add(movement.getModality());
       }
     }
 
-    // 4. Apply changes to the collection (Orphan Removal + Add New)
-    List<WodMovement> currentList = wod.getMovements();
+    // 4. Orphan Removal (Remove items not present in the new list)
+    wod.getMovements().removeIf(curr -> !updatedList.contains(curr));
 
-    // Remove items that are no longer present in the updated list
-    currentList.removeIf(existing -> !updatedList.contains(existing));
-
-    // Add new items
+    // 5. Add New Items
     for (WodMovement item : updatedList) {
-      if (!currentList.contains(item)) {
-        currentList.add(item);
+      if (!wod.getMovements().contains(item)) {
+        wod.getMovements().add(item);
       }
     }
 
-    // 5. Update Modalities
+    // 6. Update Aggregated Modalities
     wod.getModalities().clear();
     wod.getModalities().addAll(newModalities);
   }
 
   private void updateWodMovementFields(WodMovement target, WodMovementRequest source) {
+    // Leverage Mapper logic to create a temporary entity, then copy fields
     WodMovement temp = wodMapper.toWodMovementEntity(source);
+
     target.setRepsScheme(temp.getRepsScheme());
     target.setWeight(temp.getWeight());
     target.setWeightUnit(temp.getWeightUnit());

@@ -9,6 +9,9 @@ import apex.stellar.aldebaran.model.entities.Wod.WodType;
 import apex.stellar.aldebaran.model.entities.WodScore.ScalingLevel;
 import apex.stellar.aldebaran.model.enums.Category;
 import apex.stellar.aldebaran.model.enums.Equipment;
+import apex.stellar.aldebaran.validation.ScoreRequestValidator;
+import jakarta.validation.ConstraintValidator;
+import jakarta.validation.ConstraintValidatorFactory;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validator;
 import java.time.LocalDate;
@@ -37,8 +40,31 @@ class DtoLocalizationTest {
 
     LocalValidatorFactoryBean factoryBean = new LocalValidatorFactoryBean();
     factoryBean.setValidationMessageSource(messageSource);
-    factoryBean.afterPropertiesSet();
 
+    factoryBean.setConstraintValidatorFactory(
+        new ConstraintValidatorFactory() {
+          @Override
+          public <T extends ConstraintValidator<?, ?>> T getInstance(Class<T> key) {
+            if (key == ScoreRequestValidator.class) {
+              var instance = new ScoreRequestValidator();
+              instance.setMessageSource(messageSource);
+              return key.cast(instance);
+            }
+
+            try {
+              return key.getDeclaredConstructor().newInstance();
+            } catch (Exception e) {
+              throw new RuntimeException("Impossible d'instancier " + key, e);
+            }
+          }
+
+          @Override
+          public void releaseInstance(ConstraintValidator<?, ?> instance) {
+            // Rien à faire ici
+          }
+        });
+
+    factoryBean.afterPropertiesSet();
     this.validator = factoryBean;
   }
 
@@ -84,6 +110,7 @@ class DtoLocalizationTest {
   @Test
   @DisplayName("WodRequest: Size & Min constraints (EN & FR)")
   void testWodRequest_Constraints() {
+    //noinspection DataFlowIssue
     WodRequest request =
         new WodRequest(
             "A".repeat(101),
@@ -139,6 +166,7 @@ class DtoLocalizationTest {
   @Test
   @DisplayName("WodMovementRequest: Value constraints (EN & FR)")
   void testWodMovementRequest_Constraints() {
+    //noinspection DataFlowIssue
     WodMovementRequest request =
         new WodMovementRequest(
             "ID", 0, "A".repeat(51), -1.0, null, -1, null, -1.0, null, -1, null, null);
@@ -208,7 +236,7 @@ class DtoLocalizationTest {
   @DisplayName("MovementRequest: Logic & Size constraints (EN & FR)")
   void testMovementRequest_Constraints() {
     String longName = "A".repeat(51);
-    String longUrl = "http://" + "a".repeat(510);
+    String longUrl = "https://" + "a".repeat(510);
 
     MovementRequest request =
         new MovementRequest(
@@ -326,6 +354,7 @@ class DtoLocalizationTest {
   @Test
   @DisplayName("WodScoreRequest: Value constraints (EN & FR)")
   void testWodScoreRequest_Constraints() {
+    //noinspection DataFlowIssue
     WodScoreRequest request =
         new WodScoreRequest(
             null,

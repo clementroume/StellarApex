@@ -145,7 +145,8 @@ CREATE TABLE wod_movements
     notes                 TEXT,
     scaling_options       TEXT,
 
-    CONSTRAINT check_order_positive CHECK (order_index > 0)
+    CONSTRAINT check_order_positive CHECK (order_index > 0),
+    CONSTRAINT uk_wod_movement_order UNIQUE (wod_id, order_index)
 );
 
 -- ----------------------------------------------------------------------------------
@@ -202,11 +203,6 @@ CREATE TABLE wod_scores
 CREATE INDEX idx_movement_muscles_movement ON movement_muscles (movement_id);
 CREATE INDEX idx_movement_muscles_muscle ON movement_muscles (muscle_id);
 CREATE INDEX idx_movement_muscles_role ON movement_muscles (role, impact_factor);
-
--- ----------------------------------------------------------------------------------
--- WOD_MOVEMENTS (WOD structure queries)
--- ----------------------------------------------------------------------------------
-CREATE INDEX idx_wod_movements_wod_order ON wod_movements (wod_id, order_index);
 
 -- ----------------------------------------------------------------------------------
 -- MOVEMENTS (Search & Filtering)
