@@ -63,7 +63,7 @@ services:
 
   # --- 4. TRACING STORAGE (TEMPO) ---
   vega-tempo:
-    image: grafana/tempo:2.10.0
+    image: grafana/tempo:2.10.1
     container_name: vega-tempo
     command: [ "-config.file=/etc/tempo.yaml" ]
     volumes:
