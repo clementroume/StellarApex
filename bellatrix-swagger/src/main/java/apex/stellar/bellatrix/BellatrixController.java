@@ -26,6 +26,9 @@ public class BellatrixController {
   @Value("${swagger.services.aldebaran.url}")
   private String aldebaranUrl;
 
+  @Value("${application.security.internal-secret}")
+  private String internalSecret;
+
   /**
    * Proxy for the authentication service (Antares) documentation. Calls the internal endpoint
    * /antares-docs.
@@ -41,6 +44,11 @@ public class BellatrixController {
    */
   @GetMapping(value = "/aldebaran-docs", produces = MediaType.APPLICATION_JSON_VALUE)
   public String getAldebaranApiDocs() {
-    return restClient.get().uri(aldebaranUrl + "/aldebaran-docs").retrieve().body(String.class);
+    return restClient
+        .get()
+        .uri(aldebaranUrl + "/aldebaran-docs")
+        .header("X-Internal-Secret", internalSecret)
+        .retrieve()
+        .body(String.class);
   }
 }
