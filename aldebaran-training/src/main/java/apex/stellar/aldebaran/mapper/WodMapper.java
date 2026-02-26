@@ -7,6 +7,7 @@ import apex.stellar.aldebaran.dto.WodResponse;
 import apex.stellar.aldebaran.dto.WodSummaryResponse;
 import apex.stellar.aldebaran.model.entities.Wod;
 import apex.stellar.aldebaran.model.entities.WodMovement;
+import apex.stellar.aldebaran.repository.projection.WodSummary;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
@@ -45,15 +46,16 @@ public interface WodMapper {
    * @param wod The source entity.
    * @return The complete WOD definition.
    */
+  @Mapping(target = "isPublic", source = "public")
   WodResponse toResponse(Wod wod);
 
   /**
-   * Converts a Wod entity to a summary DTO.
+   * Converts a lightweight WOD projection into a corresponding response DTO.
    *
-   * @param wod The source entity.
-   * @return A lightweight summary for lists.
+   * @param projection The WodSummary projection containing the source data.
+   * @return A WodSummaryResponse DTO with mapped fields for lightweight WOD representation.
    */
-  WodSummaryResponse toSummary(Wod wod);
+  WodSummaryResponse toSummary(WodSummary projection);
 
   /**
    * Maps a creation request to a Wod entity.
@@ -97,6 +99,7 @@ public interface WodMapper {
    * @param wodMovement The source entity.
    * @return The DTO including the prescribed details and the movement definition.
    */
+  @SuppressWarnings("unused")
   @Mapping(target = "movement", source = "movement") // Delegates to MovementMapper
   WodMovementResponse toWodMovementResponse(WodMovement wodMovement);
 

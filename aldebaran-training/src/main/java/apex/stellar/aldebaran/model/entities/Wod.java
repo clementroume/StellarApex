@@ -17,7 +17,6 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.OrderBy;
 import jakarta.persistence.Table;
-import jakarta.persistence.Transient;
 import jakarta.persistence.Version;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
@@ -175,23 +174,6 @@ public class Wod {
   @LastModifiedDate
   @Column(name = "updated_at", nullable = false)
   private LocalDateTime updatedAt;
-
-  // -------------------------------------------------------------------------
-  // Helper Methods (Transient)
-  // -------------------------------------------------------------------------
-
-  /**
-   * Determines if this WOD is considered a Benchmark based on its type.
-   *
-   * <p>A Benchmark is a reference workout used to test fitness and track progress. Includes "The
-   * Girls", "Hero" WODs, and specific custom benchmarks.
-   */
-  @Transient
-  public boolean isBenchmark() {
-    return wodType == WodType.GIRLS
-        || wodType == WodType.HERO
-        || wodType == WodType.CUSTOM_BENCHMARK;
-  }
 
   // -------------------------------------------------------------------------
   // Equality

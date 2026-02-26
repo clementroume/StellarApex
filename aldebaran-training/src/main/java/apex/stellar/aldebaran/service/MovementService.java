@@ -6,6 +6,7 @@ import apex.stellar.aldebaran.dto.MovementMuscleRequest;
 import apex.stellar.aldebaran.dto.MovementRequest;
 import apex.stellar.aldebaran.dto.MovementResponse;
 import apex.stellar.aldebaran.dto.MovementSummaryResponse;
+import apex.stellar.aldebaran.dto.MuscleResponse;
 import apex.stellar.aldebaran.exception.DataConflictException;
 import apex.stellar.aldebaran.exception.ResourceNotFoundException;
 import apex.stellar.aldebaran.mapper.MovementMapper;
@@ -46,6 +47,7 @@ public class MovementService {
 
   private final MovementRepository movementRepository;
   private final MuscleRepository muscleRepository;
+  private final MuscleService muscleService;
   private final MovementMapper movementMapper;
 
   /**
@@ -72,37 +74,7 @@ public class MovementService {
     }
 
     // Map projection interface to DTO
-    return projections.stream()
-        .map(
-            p ->
-                new MovementSummaryResponse(
-                    p.getId(),
-                    p.getName(),
-                    p.getNameAbbreviation(),
-                    p.getCategory(),
-                    p.getImageUrl()))
-        .toList();
-  }
-
-  /**
-   * Retrieves movements filtered by category using lightweight projections.
-   *
-   * @param category The functional category to filter by.
-   * @return A list of movement summaries.
-   */
-  @Transactional(readOnly = true)
-  @Cacheable(value = CACHE_MOVEMENTS, key = "'cat-' + #category.name()")
-  public List<MovementSummaryResponse> getMovementsByCategory(Category category) {
-    return movementRepository.findProjectedByCategory(category).stream()
-        .map(
-            p ->
-                new MovementSummaryResponse(
-                    p.getId(),
-                    p.getName(),
-                    p.getNameAbbreviation(),
-                    p.getCategory(),
-                    p.getImageUrl()))
-        .toList();
+    return projections.stream().map(movementMapper::toSummary).toList();
   }
 
   /**
@@ -115,10 +87,26 @@ public class MovementService {
   @Transactional(readOnly = true)
   @Cacheable(value = CACHE_MOVEMENTS, key = "#id")
   public MovementResponse getMovement(String id) {
+
     return movementRepository
         .findById(id)
         .map(movementMapper::toResponse)
         .orElseThrow(() -> new ResourceNotFoundException("error.movement.not.found", id));
+  }
+
+  /**
+   * Retrieves movements filtered by category using lightweight projections.
+   *
+   * @param category The functional category to filter by.
+   * @return A list of movement summaries.
+   */
+  @Transactional(readOnly = true)
+  @Cacheable(value = CACHE_MOVEMENTS, key = "'cat-' + #category.name()")
+  public List<MovementSummaryResponse> getMovementsByCategory(Category category) {
+
+    return movementRepository.findProjectedByCategory(category).stream()
+        .map(movementMapper::toSummary)
+        .toList();
   }
 
   /**
@@ -185,6 +173,10 @@ public class MovementService {
             .findById(id)
             .orElseThrow(() -> new ResourceNotFoundException("error.movement.not.found", id));
 
+    if (movementRepository.existsByNameIgnoreCase(request.name())) {
+      throw new DataConflictException("error.movement.duplicate");
+    }
+
     movementMapper.updateEntity(request, movement);
 
     // Re-process muscle links (Full Replacement)
@@ -212,13 +204,8 @@ public class MovementService {
    * @throws ResourceNotFoundException if the referenced muscle name does not exist.
    */
   private void linkMuscleToMovement(Movement movement, MovementMuscleRequest req) {
-    Muscle muscle =
-        muscleRepository
-            .findByMedicalName(req.medicalName())
-            .orElseThrow(
-                () ->
-                    new ResourceNotFoundException(
-                        "error.muscle.name.not.found", req.medicalName()));
+    MuscleResponse muscleResponse = muscleService.getMuscle(req.medicalName());
+    Muscle muscle = muscleRepository.getReferenceById(muscleResponse.id());
 
     MovementMuscle joinEntity = movementMapper.toMuscleEntity(req);
     joinEntity.setMovement(movement);

@@ -1,48 +1,49 @@
 package apex.stellar.aldebaran.service;
 
 import apex.stellar.aldebaran.dto.ScoreComparisonResponse;
+import apex.stellar.aldebaran.dto.WodResponse;
 import apex.stellar.aldebaran.dto.WodScoreRequest;
 import apex.stellar.aldebaran.dto.WodScoreResponse;
 import apex.stellar.aldebaran.exception.ResourceNotFoundException;
 import apex.stellar.aldebaran.mapper.WodScoreMapper;
-import apex.stellar.aldebaran.model.entities.Wod;
 import apex.stellar.aldebaran.model.entities.Wod.ScoreType;
 import apex.stellar.aldebaran.model.entities.WodScore;
 import apex.stellar.aldebaran.model.entities.WodScore.ScalingLevel;
 import apex.stellar.aldebaran.repository.WodRepository;
 import apex.stellar.aldebaran.repository.WodScoreRepository;
 import apex.stellar.aldebaran.security.SecurityService;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Service for logging and managing athlete performance scores.
- *
- * <p>Handles PR (Personal Record) calculations, DTO mapping, and lifecycle management. Security
- * checks are delegated to the Controller/Security Bean layer.
+ * Service responsible for managing WOD (Workout of the Day) scores. Handles logging, updating,
+ * deleting, and calculating personal records and leaderboards.
  */
 @Service
 @RequiredArgsConstructor
-@Slf4j
 public class WodScoreService {
 
-  private static final String ERROR_WOD_NOT_FOUND = "error.wod.not.found";
   private static final String ERROR_SCORE_NOT_FOUND = "error.score.not.found";
 
   private final WodScoreRepository scoreRepository;
   private final WodRepository wodRepository;
   private final WodScoreMapper scoreMapper;
   private final SecurityService securityService;
-  private final WodPrService wodPrService;
+  private final WodService wodService;
 
-  /** Retrieves all scores for the currently authenticated user. */
+  /**
+   * Retrieves a paginated list of scores for the currently authenticated user.
+   *
+   * @param wodId Optional WOD ID to filter scores.
+   * @param pageable Pagination and sorting information.
+   * @return A slice of WodScoreResponse objects.
+   */
   @Transactional(readOnly = true)
   public Slice<WodScoreResponse> getMyScores(Long wodId, Pageable pageable) {
     Long userId = securityService.getCurrentUserId();
@@ -61,116 +62,83 @@ public class WodScoreService {
     return scores.map(scoreMapper::toResponse);
   }
 
-  /** Retrieves the leaderboard for a specific WOD. */
-  @Transactional(readOnly = true)
-  public Slice<WodScoreResponse> getLeaderboard(
-      Long wodId, ScalingLevel scaling, Pageable pageable) {
-    Wod wod =
-        wodRepository
-            .findById(wodId)
-            .orElseThrow(() -> new ResourceNotFoundException(ERROR_WOD_NOT_FOUND, wodId));
-
-    Sort sort = getSortForScoreType(wod.getScoreType());
-    Pageable sortedPageable =
-        PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), sort);
-
-    return scoreRepository
-        .findByWodIdAndScalingAndPersonalRecordTrue(wodId, scaling, sortedPageable)
-        .map(scoreMapper::toResponse);
-  }
-
   /**
-   * Logs a new score.
+   * Logs a new score for a WOD.
    *
-   * <p>Supports logging for a third party (if authorized by Security layer). Automatically
-   * calculates PR status.
+   * @param request The score details.
+   * @return The newly created WodScoreResponse.
    */
-  @Transactional(isolation = Isolation.SERIALIZABLE)
+  @Transactional
   public WodScoreResponse logScore(WodScoreRequest request) {
-    // Determine target User ID: Use request ID if present (Admin/Coach), otherwise current user
     Long targetUserId =
         request.userId() != null ? request.userId() : securityService.getCurrentUserId();
 
-    Wod wod =
-        wodRepository
-            .findById(request.wodId())
-            .orElseThrow(() -> new ResourceNotFoundException(ERROR_WOD_NOT_FOUND, request.wodId()));
+    WodScore newScore = scoreMapper.toEntity(request);
+    newScore.setWod(wodRepository.getReferenceById(request.wodId()));
+    newScore.setUserId(targetUserId);
+    newScore.setLoggedAt(java.time.LocalDateTime.now());
 
-    WodScore score = scoreMapper.toEntity(request);
-    score.setWod(wod);
-    score.setUserId(targetUserId);
-    score.setLoggedAt(java.time.LocalDateTime.now());
+    WodScore savedScore = scoreRepository.save(newScore);
 
-    // 1. Save first to generate ID (needed for PR comparison)
-    score = scoreRepository.save(score);
+    recalculatePrsForUser(request.wodId(), targetUserId);
 
-    // 2. Recalculate PRs for this user/WOD
-    // We pass the new score's ID so the helper knows which one is 'current'
-    boolean isNewPr = wodPrService.updatePrStatus(wod, targetUserId, score.getId());
-
-    // 3. Update the local object reference.
-    // The helper method has already saved the 'true' state to DB if needed.
-    score.setPersonalRecord(isNewPr);
-
-    return scoreMapper.toResponse(score);
+    return scoreMapper.toResponse(savedScore);
   }
 
   /**
    * Updates an existing score.
    *
-   * <p>Recalculates PR status as the updated score might become (or stop being) the PR.
+   * @param id The ID of the score to update.
+   * @param request The updated score details.
+   * @return The updated WodScoreResponse.
    */
-  @Transactional(isolation = Isolation.SERIALIZABLE)
+  @Transactional
   public WodScoreResponse updateScore(Long id, WodScoreRequest request) {
-    WodScore score =
+    WodScore existingScore =
         scoreRepository
             .findById(id)
             .orElseThrow(() -> new ResourceNotFoundException(ERROR_SCORE_NOT_FOUND, id));
 
-    // Update fields via Mapper
-    scoreMapper.updateEntity(request, score);
+    scoreMapper.updateEntity(request, existingScore);
 
-    // Ensure WOD consistency (in case WOD ID was tampered with, though usually immutable in UI)
-    if (!score.getWod().getId().equals(request.wodId())) {
-      Wod newWod =
-          wodRepository
-              .findById(request.wodId())
-              .orElseThrow(
-                  () -> new ResourceNotFoundException(ERROR_WOD_NOT_FOUND, request.wodId()));
-      score.setWod(newWod);
+    if (!existingScore.getWod().getId().equals(request.wodId())) {
+      existingScore.setWod(wodRepository.getReferenceById(request.wodId()));
     }
 
-    scoreRepository.save(score);
+    WodScore savedScore = scoreRepository.save(existingScore);
 
-    // Recalculate PRs
-    boolean isPr = wodPrService.updatePrStatus(score.getWod(), score.getUserId(), score.getId());
-    score.setPersonalRecord(isPr);
+    recalculatePrsForUser(request.wodId(), savedScore.getUserId());
 
-    return scoreMapper.toResponse(score);
+    return scoreMapper.toResponse(savedScore);
   }
 
   /**
-   * Deletes a score.
+   * Deletes a score and triggers a PR recalculation for the user.
    *
-   * <p>@PreAuthorize handles security checks. If a PR is deleted, the next best score is promoted.
+   * @param scoreId The ID of the score to delete.
    */
-  @Transactional(isolation = Isolation.SERIALIZABLE)
+  @Transactional
   public void deleteScore(Long scoreId) {
     WodScore score =
         scoreRepository
             .findById(scoreId)
             .orElseThrow(() -> new ResourceNotFoundException(ERROR_SCORE_NOT_FOUND, scoreId));
 
+    Long wodId = score.getWod().getId();
     Long userId = score.getUserId();
-    Wod wod = score.getWod();
 
     scoreRepository.delete(score);
+    scoreRepository.flush();
 
-    // Recalculate PRs after deletion (pass null as current ID since it's deleted)
-    wodPrService.updatePrStatus(wod, userId, null);
+    recalculatePrsForUser(wodId, userId);
   }
 
-  /** Calculates rank and percentile. */
+  /**
+   * Compares a specific score against all other scores for the same WOD and scaling.
+   *
+   * @param scoreId The ID of the score to compare.
+   * @return A ScoreComparisonResponse containing rank and percentile.
+   */
   @Transactional(readOnly = true)
   public ScoreComparisonResponse compareScore(Long scoreId) {
     WodScore score =
@@ -178,31 +146,29 @@ public class WodScoreService {
             .findById(scoreId)
             .orElseThrow(() -> new ResourceNotFoundException(ERROR_SCORE_NOT_FOUND, scoreId));
 
-    Wod wod = score.getWod();
-    long total = scoreRepository.countByWodIdAndScaling(wod.getId(), score.getScaling());
+    Long wodId = score.getWod().getId();
+    WodResponse wodResponse = wodService.getWodDetail(wodId);
+
+    long total = scoreRepository.countByWodIdAndScaling(wodId, score.getScaling());
 
     long better =
-        switch (wod.getScoreType()) {
+        switch (wodResponse.scoreType()) {
           case TIME ->
-              scoreRepository.countBetterTime(
-                  wod.getId(), score.getScaling(), score.getTimeSeconds());
+              scoreRepository.countBetterTime(wodId, score.getScaling(), score.getTimeSeconds());
           case ROUNDS_REPS ->
               scoreRepository.countBetterRoundsReps(
-                  wod.getId(), score.getScaling(), score.getRounds(), score.getReps());
-          case REPS ->
-              scoreRepository.countBetterReps(wod.getId(), score.getScaling(), score.getReps());
+                  wodId, score.getScaling(), score.getRounds(), score.getReps());
+          case REPS -> scoreRepository.countBetterReps(wodId, score.getScaling(), score.getReps());
           case WEIGHT ->
-              scoreRepository.countBetterWeight(
-                  wod.getId(), score.getScaling(), score.getMaxWeightKg());
+              scoreRepository.countBetterWeight(wodId, score.getScaling(), score.getMaxWeightKg());
           case LOAD ->
-              scoreRepository.countBetterLoad(
-                  wod.getId(), score.getScaling(), score.getTotalLoadKg());
+              scoreRepository.countBetterLoad(wodId, score.getScaling(), score.getTotalLoadKg());
           case DISTANCE ->
               scoreRepository.countBetterDistance(
-                  wod.getId(), score.getScaling(), score.getTotalDistanceMeters());
+                  wodId, score.getScaling(), score.getTotalDistanceMeters());
           case CALORIES ->
               scoreRepository.countBetterCalories(
-                  wod.getId(), score.getScaling(), score.getTotalCalories());
+                  wodId, score.getScaling(), score.getTotalCalories());
           case NONE -> 0;
         };
 
@@ -212,6 +178,135 @@ public class WodScoreService {
     return new ScoreComparisonResponse(rank, total, percentile);
   }
 
+  /**
+   * Retrieves the leaderboard for a specific WOD and scaling level.
+   *
+   * @param wodId The ID of the WOD.
+   * @param scaling The scaling level (e.g., RX, Scaled).
+   * @param pageable Pagination information.
+   * @return A slice of WodScoreResponse objects representing the leaderboard.
+   */
+  @Transactional(readOnly = true)
+  public Slice<WodScoreResponse> getLeaderboard(
+      Long wodId, ScalingLevel scaling, Pageable pageable) {
+    WodResponse wod = wodService.getWodDetail(wodId);
+
+    Sort sort = getSortForScoreType(wod.scoreType());
+    Pageable sortedPageable =
+        PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), sort);
+
+    return scoreRepository
+        .findByWodIdAndScalingAndPersonalRecordTrue(wodId, scaling, sortedPageable)
+        .map(scoreMapper::toResponse);
+  }
+
+  /**
+   * Recalculates which score is the Personal Record (PR) for a user on a specific WOD.
+   *
+   * @param wodId The ID of the WOD.
+   * @param userId The ID of the user.
+   */
+  private void recalculatePrsForUser(Long wodId, Long userId) {
+    WodResponse wodResponse = wodService.getWodDetail(wodId);
+
+    if (wodResponse.scoreType() == ScoreType.NONE) {
+      return;
+    }
+
+    List<WodScore> allScores = scoreRepository.findByWodIdAndUserId(wodId, userId);
+    if (allScores.isEmpty()) {
+      return;
+    }
+
+    // 1. Reset all PR flags in memory
+    allScores.forEach(s -> s.setPersonalRecord(false));
+
+    // 2. Find the absolute best score
+    WodScore bestScore =
+        allScores.stream()
+            .reduce((s1, s2) -> isBetterScore(s1, s2, wodResponse.scoreType()) ? s1 : s2)
+            .orElse(allScores.getFirst());
+
+    // 3. Mark the winner
+    bestScore.setPersonalRecord(true);
+
+    // 4. Save to DB (Hibernate will only issue UPDATEs for rows that actually changed)
+    scoreRepository.saveAll(allScores);
+  }
+
+  /**
+   * Compares two scores to determine which one is better based on the WOD score type.
+   *
+   * @param current The first score to compare.
+   * @param other The second score to compare.
+   * @param type The scoring type of the WOD.
+   * @return true if the current score is better than the other score, false otherwise.
+   */
+  private boolean isBetterScore(WodScore current, WodScore other, ScoreType type) {
+    return switch (type) {
+      case TIME -> compareTime(current, other);
+      case ROUNDS_REPS -> compareRoundsReps(current, other);
+      case REPS -> compareValues(current.getReps(), other.getReps());
+      case WEIGHT -> compareValues(current.getMaxWeightKg(), other.getMaxWeightKg());
+      case LOAD -> compareValues(current.getTotalLoadKg(), other.getTotalLoadKg());
+      case CALORIES -> compareValues(current.getTotalCalories(), other.getTotalCalories());
+      case DISTANCE ->
+          compareValues(current.getTotalDistanceMeters(), other.getTotalDistanceMeters());
+      case NONE -> false;
+    };
+  }
+
+  /**
+   * Compares two scores for time-based WODs.
+   *
+   * @param current The current score.
+   * @param other The other score.
+   * @return true if the current time is faster (lower) than other time.
+   */
+  private boolean compareTime(WodScore current, WodScore other) {
+    if (current.getTimeSeconds() == null) {
+      return false;
+    }
+    return other.getTimeSeconds() == null || current.getTimeSeconds() < other.getTimeSeconds();
+  }
+
+  /**
+   * Compares two scores for AMRAP WODs (Rounds + Reps).
+   *
+   * @param current The current score.
+   * @param other The other score.
+   * @return true if the current has more rounds, or same rounds and more reps.
+   */
+  private boolean compareRoundsReps(WodScore current, WodScore other) {
+    int currentRounds = current.getRounds() != null ? current.getRounds() : 0;
+    int otherRounds = other.getRounds() != null ? other.getRounds() : 0;
+    if (currentRounds != otherRounds) {
+      return currentRounds > otherRounds;
+    }
+    int currentReps = current.getReps() != null ? current.getReps() : 0;
+    int otherReps = other.getReps() != null ? other.getReps() : 0;
+    return currentReps > otherReps;
+  }
+
+  /**
+   * Compares two numeric values where a higher value is better.
+   *
+   * @param current The current value.
+   * @param other The other value.
+   * @return true if the current is greater than the other.
+   */
+  private boolean compareValues(Number current, Number other) {
+    double c = current != null ? current.doubleValue() : 0.0;
+    double o = other != null ? other.doubleValue() : 0.0;
+    return c > o;
+  }
+
+  /**
+   * Determines the sorting order for the leaderboard based on the WOD's score type.
+   *
+   * @param type The scoring type.
+   * @return A Sort object configured for the specific type.
+   */
   private Sort getSortForScoreType(ScoreType type) {
     return switch (type) {
       case TIME -> Sort.by("timeSeconds").ascending();

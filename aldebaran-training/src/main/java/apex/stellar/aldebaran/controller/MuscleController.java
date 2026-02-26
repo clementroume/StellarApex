@@ -7,7 +7,6 @@ import apex.stellar.aldebaran.service.MuscleService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
-import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -99,6 +98,7 @@ public class MuscleController {
             content = @Content(schema = @Schema(hidden = true)))
       })
   public ResponseEntity<MuscleResponse> getMuscle(@PathVariable String medicalName) {
+
     return ResponseEntity.ok(muscleService.getMuscle(medicalName));
   }
 
@@ -137,17 +137,8 @@ public class MuscleController {
             description = "Unauthorized",
             content = @Content(schema = @Schema(hidden = true)))
       })
-  @io.swagger.v3.oas.annotations.parameters.RequestBody(
-      content =
-          @Content(
-              examples =
-                  @ExampleObject(
-                      name = "Pectoralis Example",
-                      value =
-                          """
-          { "medicalName": "Pectoralis Major", "commonNameEn": "Chest", "muscleGroup": "CHEST" }
-          """)))
   public ResponseEntity<MuscleResponse> createMuscle(@Valid @RequestBody MuscleRequest request) {
+
     return ResponseEntity.status(HttpStatus.CREATED).body(muscleService.createMuscle(request));
   }
 
@@ -190,18 +181,9 @@ public class MuscleController {
             description = "Unauthorized",
             content = @Content(schema = @Schema(hidden = true)))
       })
-  @io.swagger.v3.oas.annotations.parameters.RequestBody(
-      content =
-          @Content(
-              examples =
-                  @ExampleObject(
-                      name = "Update Example",
-                      value =
-                          """
-          { "medicalName": "Pectoralis Major", "commonNameEn": "Upper Chest", "muscleGroup": "CHEST" }
-          """)))
   public ResponseEntity<MuscleResponse> updateMuscle(
       @PathVariable Long id, @Valid @RequestBody MuscleRequest request) {
+    
     return ResponseEntity.ok(muscleService.updateMuscle(id, request));
   }
 }

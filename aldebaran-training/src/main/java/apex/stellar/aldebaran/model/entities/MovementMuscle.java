@@ -65,7 +65,7 @@ public class MovementMuscle {
    * A coefficient (0.0 to 1.0) representing the degree of muscle activation. Used to weight the
    * training volume attribution.
    *
-   * <p>Default is 1.0 (Full activation).
+   * <p>The default is 1.0 (Full activation).
    */
   @Column(name = "impact_factor", nullable = false)
   @DecimalMin("0.0")

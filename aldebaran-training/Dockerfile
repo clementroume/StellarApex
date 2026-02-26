@@ -56,7 +56,7 @@ COPY --from=optimizer /app/extracted/snapshot-dependencies/ ./
 COPY --from=optimizer /app/extracted/application/ ./
 
 # Expose application ports
-EXPOSE 8081 9092
+EXPOSE 8081
 
 # Start the application using the Spring Boot JarLauncher.
 # It automatically reconstructs the classpath from the layers.

@@ -275,8 +275,6 @@ class ScoreValidatorTest {
     assertFalse(validator.isValid(score, context));
 
     // 4. Verify
-    // Property: "Le score ne correspond pas au type ''{0}''. Champs requis manquants."
-    // Java MessageFormat converts '' to ' -> So we expect 'TIME'
     verify(context)
         .buildConstraintViolationWithTemplate(
             "Le score ne correspond pas au type '" + expectedType + "'. Champs requis manquants.");

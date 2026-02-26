@@ -1,18 +1,20 @@
 package apex.stellar.aldebaran.security;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import apex.stellar.aldebaran.dto.WodRequest;
-import apex.stellar.aldebaran.model.entities.Wod;
-import apex.stellar.aldebaran.repository.WodRepository;
+import apex.stellar.aldebaran.dto.WodResponse;
+import apex.stellar.aldebaran.exception.ResourceNotFoundException;
+import apex.stellar.aldebaran.service.WodService;
 import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -23,9 +25,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class WodSecurityTest {
 
-  @Mock private WodRepository wodRepository;
   @Mock private SecurityService securityService;
   @InjectMocks private WodSecurity wodSecurity;
+  @Mock private WodService wodService;
 
   // --- canRead Checks ---
 
@@ -39,20 +41,18 @@ class WodSecurityTest {
     boolean result = wodSecurity.canRead(10L, admin);
 
     assertTrue(result);
-    verify(wodRepository, never()).findById(any());
+    verify(wodService, never()).getWodDetail(any());
   }
 
   @Test
-  @DisplayName("canRead: Returns true if WOD not found (delegates 404 to service)")
+  @DisplayName("canRead: Throws Exception if WOD not found (Fail-Closed)")
   void canRead_WodNotFound_ReturnsTrue() {
     AldebaranUserPrincipal user =
         new AldebaranUserPrincipal(2L, 100L, "ATHLETE", Collections.emptyList());
-    when(securityService.isAdmin(user)).thenReturn(false);
-    when(wodRepository.findById(10L)).thenReturn(Optional.empty());
 
-    boolean result = wodSecurity.canRead(10L, user);
+    when(wodService.getWodDetail(10L)).thenThrow(new ResourceNotFoundException("error", 10L));
 
-    assertTrue(result);
+    assertThrows(ResourceNotFoundException.class, () -> wodSecurity.canRead(10L, user));
   }
 
   @Test
@@ -60,10 +60,11 @@ class WodSecurityTest {
   void canRead_PublicWod_ReturnsTrue() {
     AldebaranUserPrincipal user =
         new AldebaranUserPrincipal(2L, null, "USER", Collections.emptyList());
-    Wod publicWod = Wod.builder().id(10L).isPublic(true).build();
+    WodResponse publicWod = mock(WodResponse.class);
 
     when(securityService.isAdmin(user)).thenReturn(false);
-    when(wodRepository.findById(10L)).thenReturn(Optional.of(publicWod));
+    when(publicWod.isPublic()).thenReturn(true);
+    when(wodService.getWodDetail(10L)).thenReturn(publicWod);
 
     boolean result = wodSecurity.canRead(10L, user);
 
@@ -75,10 +76,12 @@ class WodSecurityTest {
   void canRead_GymWod_SameGym_ReturnsTrue() {
     AldebaranUserPrincipal user =
         new AldebaranUserPrincipal(2L, 100L, "ATHLETE", Collections.emptyList());
-    Wod gymWod = Wod.builder().id(10L).isPublic(false).gymId(100L).build();
+    WodResponse gymWod = mock(WodResponse.class);
 
     when(securityService.isAdmin(user)).thenReturn(false);
-    when(wodRepository.findById(10L)).thenReturn(Optional.of(gymWod));
+    when(gymWod.isPublic()).thenReturn(false);
+    when(gymWod.gymId()).thenReturn(100L);
+    when(wodService.getWodDetail(10L)).thenReturn(gymWod);
 
     boolean result = wodSecurity.canRead(10L, user);
 
@@ -90,10 +93,12 @@ class WodSecurityTest {
   void canRead_GymWod_DifferentGym_ReturnsFalse() {
     AldebaranUserPrincipal user =
         new AldebaranUserPrincipal(2L, 200L, "ATHLETE", Collections.emptyList());
-    Wod gymWod = Wod.builder().id(10L).isPublic(false).gymId(100L).build();
+    WodResponse gymWod = mock(WodResponse.class);
 
     when(securityService.isAdmin(user)).thenReturn(false);
-    when(wodRepository.findById(10L)).thenReturn(Optional.of(gymWod));
+    when(gymWod.isPublic()).thenReturn(false);
+    when(gymWod.gymId()).thenReturn(100L);
+    when(wodService.getWodDetail(10L)).thenReturn(gymWod);
 
     boolean result = wodSecurity.canRead(10L, user);
 
@@ -105,10 +110,13 @@ class WodSecurityTest {
   void canRead_PrivateWod_Author_ReturnsTrue() {
     AldebaranUserPrincipal author =
         new AldebaranUserPrincipal(2L, 100L, "ATHLETE", Collections.emptyList());
-    Wod privateWod = Wod.builder().id(10L).isPublic(false).gymId(null).authorId(2L).build();
+    WodResponse privateWod = mock(WodResponse.class);
 
     when(securityService.isAdmin(author)).thenReturn(false);
-    when(wodRepository.findById(10L)).thenReturn(Optional.of(privateWod));
+    when(privateWod.isPublic()).thenReturn(false);
+    when(privateWod.gymId()).thenReturn(null);
+    when(privateWod.authorId()).thenReturn(2L);
+    when(wodService.getWodDetail(10L)).thenReturn(privateWod);
 
     boolean result = wodSecurity.canRead(10L, author);
 
@@ -120,10 +128,13 @@ class WodSecurityTest {
   void canRead_PrivateWod_NotAuthor_ReturnsFalse() {
     AldebaranUserPrincipal otherUser =
         new AldebaranUserPrincipal(3L, 100L, "ATHLETE", Collections.emptyList());
-    Wod privateWod = Wod.builder().id(10L).isPublic(false).gymId(null).authorId(2L).build();
+    WodResponse privateWod = mock(WodResponse.class);
 
     when(securityService.isAdmin(otherUser)).thenReturn(false);
-    when(wodRepository.findById(10L)).thenReturn(Optional.of(privateWod));
+    when(privateWod.isPublic()).thenReturn(false);
+    when(privateWod.gymId()).thenReturn(null);
+    when(privateWod.authorId()).thenReturn(2L);
+    when(wodService.getWodDetail(10L)).thenReturn(privateWod);
 
     boolean result = wodSecurity.canRead(10L, otherUser);
 
@@ -307,7 +318,7 @@ class WodSecurityTest {
     boolean result = wodSecurity.canModify(10L, admin);
 
     assertTrue(result);
-    verify(wodRepository, never()).findById(any());
+    verify(wodService, never()).getWodDetail(any());
   }
 
   @Test
@@ -316,11 +327,9 @@ class WodSecurityTest {
     AldebaranUserPrincipal user =
         new AldebaranUserPrincipal(2L, 100L, "ATHLETE", Collections.emptyList());
     when(securityService.isAdmin(user)).thenReturn(false);
-    when(wodRepository.findById(10L)).thenReturn(Optional.empty());
+    when(wodService.getWodDetail(10L)).thenThrow(new ResourceNotFoundException("error", 10L));
 
-    boolean result = wodSecurity.canModify(10L, user);
-
-    assertTrue(result);
+    assertThrows(ResourceNotFoundException.class, () -> wodSecurity.canModify(10L, user));
   }
 
   @Test
@@ -328,10 +337,11 @@ class WodSecurityTest {
   void canModify_GymWod_Owner_SameGym_ReturnsTrue() {
     AldebaranUserPrincipal owner =
         new AldebaranUserPrincipal(2L, 100L, "OWNER", Collections.emptyList());
-    Wod gymWod = Wod.builder().id(10L).gymId(100L).build();
+    WodResponse gymWod = mock(WodResponse.class);
+    when(gymWod.gymId()).thenReturn(100L);
 
     when(securityService.isAdmin(owner)).thenReturn(false);
-    when(wodRepository.findById(10L)).thenReturn(Optional.of(gymWod));
+    when(wodService.getWodDetail(10L)).thenReturn(gymWod);
     when(securityService.hasWodWriteAccess(owner)).thenReturn(true);
 
     boolean result = wodSecurity.canModify(10L, owner);
@@ -344,10 +354,11 @@ class WodSecurityTest {
   void canModify_GymWod_Programmer_SameGym_ReturnsTrue() {
     AldebaranUserPrincipal programmer =
         new AldebaranUserPrincipal(3L, 100L, "PROGRAMMER", Collections.emptyList());
-    Wod gymWod = Wod.builder().id(10L).gymId(100L).build();
+    WodResponse gymWod = mock(WodResponse.class);
+    when(gymWod.gymId()).thenReturn(100L);
 
     when(securityService.isAdmin(programmer)).thenReturn(false);
-    when(wodRepository.findById(10L)).thenReturn(Optional.of(gymWod));
+    when(wodService.getWodDetail(10L)).thenReturn(gymWod);
     when(securityService.hasWodWriteAccess(programmer)).thenReturn(true);
 
     boolean result = wodSecurity.canModify(10L, programmer);
@@ -360,10 +371,11 @@ class WodSecurityTest {
   void canModify_GymWod_Coach_WithRights_ReturnsTrue() {
     AldebaranUserPrincipal coach =
         new AldebaranUserPrincipal(4L, 100L, "COACH", List.of("WOD_WRITE"));
-    Wod gymWod = Wod.builder().id(10L).gymId(100L).build();
+    WodResponse gymWod = mock(WodResponse.class);
+    when(gymWod.gymId()).thenReturn(100L);
 
     when(securityService.isAdmin(coach)).thenReturn(false);
-    when(wodRepository.findById(10L)).thenReturn(Optional.of(gymWod));
+    when(wodService.getWodDetail(10L)).thenReturn(gymWod);
     when(securityService.hasWodWriteAccess(coach)).thenReturn(true);
 
     boolean result = wodSecurity.canModify(10L, coach);
@@ -376,10 +388,11 @@ class WodSecurityTest {
   void canModify_GymWod_User_ReturnsFalse() {
     AldebaranUserPrincipal user =
         new AldebaranUserPrincipal(5L, 100L, "ATHLETE", Collections.emptyList());
-    Wod gymWod = Wod.builder().id(10L).gymId(100L).build();
+    WodResponse gymWod = mock(WodResponse.class);
+    when(gymWod.gymId()).thenReturn(100L);
 
     when(securityService.isAdmin(user)).thenReturn(false);
-    when(wodRepository.findById(10L)).thenReturn(Optional.of(gymWod));
+    when(wodService.getWodDetail(10L)).thenReturn(gymWod);
     when(securityService.hasWodWriteAccess(user)).thenReturn(false);
 
     boolean result = wodSecurity.canModify(10L, user);
@@ -392,10 +405,11 @@ class WodSecurityTest {
   void canModify_GymWod_DifferentGym_Owner_ReturnsFalse() {
     AldebaranUserPrincipal owner =
         new AldebaranUserPrincipal(2L, 200L, "OWNER", Collections.emptyList());
-    Wod gymWod = Wod.builder().id(10L).gymId(100L).build();
+    WodResponse gymWod = mock(WodResponse.class);
+    when(gymWod.gymId()).thenReturn(100L);
 
     when(securityService.isAdmin(owner)).thenReturn(false);
-    when(wodRepository.findById(10L)).thenReturn(Optional.of(gymWod));
+    when(wodService.getWodDetail(10L)).thenReturn(gymWod);
 
     boolean result = wodSecurity.canModify(10L, owner);
 
@@ -409,10 +423,11 @@ class WodSecurityTest {
   void canModify_GymWod_DifferentGym_Programmer_ReturnsFalse() {
     AldebaranUserPrincipal owner =
         new AldebaranUserPrincipal(3L, 300L, "PROGRAMMER", Collections.emptyList());
-    Wod gymWod = Wod.builder().id(10L).gymId(100L).build();
+    WodResponse gymWod = mock(WodResponse.class);
+    when(gymWod.gymId()).thenReturn(100L);
 
     when(securityService.isAdmin(owner)).thenReturn(false);
-    when(wodRepository.findById(10L)).thenReturn(Optional.of(gymWod));
+    when(wodService.getWodDetail(10L)).thenReturn(gymWod);
 
     boolean result = wodSecurity.canModify(10L, owner);
 
@@ -426,10 +441,12 @@ class WodSecurityTest {
   void canModify_PrivateWod_Author_ReturnsTrue() {
     AldebaranUserPrincipal author =
         new AldebaranUserPrincipal(2L, 100L, "USER", Collections.emptyList());
-    Wod privateWod = Wod.builder().id(10L).gymId(null).authorId(2L).build();
+    WodResponse privateWod = mock(WodResponse.class);
+    when(privateWod.gymId()).thenReturn(null);
+    when(privateWod.authorId()).thenReturn(2L);
 
     when(securityService.isAdmin(author)).thenReturn(false);
-    when(wodRepository.findById(10L)).thenReturn(Optional.of(privateWod));
+    when(wodService.getWodDetail(10L)).thenReturn(privateWod);
 
     boolean result = wodSecurity.canModify(10L, author);
 
@@ -441,10 +458,12 @@ class WodSecurityTest {
   void canModify_PrivateWod_NotAuthor_ReturnsFalse() {
     AldebaranUserPrincipal otherUser =
         new AldebaranUserPrincipal(3L, 100L, "ATHLETE", Collections.emptyList());
-    Wod privateWod = Wod.builder().id(10L).gymId(null).authorId(2L).build();
+    WodResponse privateWod = mock(WodResponse.class);
+    when(privateWod.gymId()).thenReturn(null);
+    when(privateWod.authorId()).thenReturn(2L);
 
     when(securityService.isAdmin(otherUser)).thenReturn(false);
-    when(wodRepository.findById(10L)).thenReturn(Optional.of(privateWod));
+    when(wodService.getWodDetail(10L)).thenReturn(privateWod);
 
     boolean result = wodSecurity.canModify(10L, otherUser);
 

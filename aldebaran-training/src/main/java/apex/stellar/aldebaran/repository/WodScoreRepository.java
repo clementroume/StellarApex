@@ -2,11 +2,13 @@ package apex.stellar.aldebaran.repository;
 
 import apex.stellar.aldebaran.model.entities.WodScore;
 import apex.stellar.aldebaran.model.entities.WodScore.ScalingLevel;
+import jakarta.persistence.LockModeType;
 import java.util.List;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
@@ -19,7 +21,7 @@ import org.springframework.stereotype.Repository;
 public interface WodScoreRepository extends JpaRepository<WodScore, Long> {
 
   /**
-   * Retrieves the score history for a specific user, ordered by date (newest first).
+   * Retrieves the score history for a specific user, ordered by date (the newest first).
    *
    * <p><b>Optimization:</b> Uses {@link EntityGraph} to eagerly load the associated {@code Wod}
    * entity. This prevents the N+1 select problem when mapping the list to response DTOs that
@@ -49,6 +51,8 @@ public interface WodScoreRepository extends JpaRepository<WodScore, Long> {
    * @param userId The ID of the user.
    * @return List of scores.
    */
+  @Lock(LockModeType.PESSIMISTIC_WRITE)
+  @Query("SELECT s FROM WodScore s WHERE s.wod.id = :wodId AND s.userId = :userId")
   List<WodScore> findByWodIdAndUserId(Long wodId, Long userId);
 
   /**
@@ -90,7 +94,14 @@ public interface WodScoreRepository extends JpaRepository<WodScore, Long> {
       """)
   long countByWodIdAndScaling(Long wodId, ScalingLevel scaling);
 
-  /** Counts how many PRs have a better (lower) time. */
+  /**
+   * Counts how many PRs have a better (lower) time.
+   *
+   * @param wodId The WOD ID.
+   * @param scaling The scaling level.
+   * @param time The time to compare against.
+   * @return The count of better scores.
+   */
   @Query(
       """
       SELECT COUNT(s) FROM WodScore s
@@ -101,7 +112,15 @@ public interface WodScoreRepository extends JpaRepository<WodScore, Long> {
       """)
   long countBetterTime(Long wodId, ScalingLevel scaling, Integer time);
 
-  /** Counts how many PRs have a better (higher) score in Rounds + Reps. */
+  /**
+   * Counts how many PRs have a better (higher) score in Rounds and Reps.
+   *
+   * @param wodId The WOD ID.
+   * @param scaling The scaling level.
+   * @param rounds The number of rounds to compare against.
+   * @param reps The number of reps to compare against.
+   * @return The count of better scores.
+   */
   @Query(
       """
       SELECT COUNT(s) FROM WodScore s
@@ -112,7 +131,14 @@ public interface WodScoreRepository extends JpaRepository<WodScore, Long> {
       """)
   long countBetterRoundsReps(Long wodId, ScalingLevel scaling, Integer rounds, Integer reps);
 
-  /** Counts how many PRs have more reps. */
+  /**
+   * Counts how many PRs have more reps.
+   *
+   * @param wodId The WOD ID.
+   * @param scaling The scaling level.
+   * @param reps The number of reps to compare against.
+   * @return The count of better scores.
+   */
   @Query(
       """
       SELECT COUNT(s) FROM WodScore s
@@ -123,7 +149,14 @@ public interface WodScoreRepository extends JpaRepository<WodScore, Long> {
       """)
   long countBetterReps(Long wodId, ScalingLevel scaling, Integer reps);
 
-  /** Counts how many PRs have a heavier weight. */
+  /**
+   * Counts how many PRs have a heavier weight.
+   *
+   * @param wodId The WOD ID.
+   * @param scaling The scaling level.
+   * @param weight The weight to compare against.
+   * @return The count of better scores.
+   */
   @Query(
       """
       SELECT COUNT(s) FROM WodScore s
@@ -134,7 +167,14 @@ public interface WodScoreRepository extends JpaRepository<WodScore, Long> {
       """)
   long countBetterWeight(Long wodId, ScalingLevel scaling, Double weight);
 
-  /** Counts how many PRs have a higher total load. */
+  /**
+   * Counts how many PRs have a higher total load.
+   *
+   * @param wodId The WOD ID.
+   * @param scaling The scaling level.
+   * @param load The total load to compare against.
+   * @return The count of better scores.
+   */
   @Query(
       """
       SELECT COUNT(s) FROM WodScore s
@@ -145,7 +185,14 @@ public interface WodScoreRepository extends JpaRepository<WodScore, Long> {
       """)
   long countBetterLoad(Long wodId, ScalingLevel scaling, Double load);
 
-  /** Counts how many PRs have a greater distance. */
+  /**
+   * Counts how many PRs have a greater distance.
+   *
+   * @param wodId The WOD ID.
+   * @param scaling The scaling level.
+   * @param distance The distance to compare against.
+   * @return The count of better scores.
+   */
   @Query(
       """
       SELECT COUNT(s) FROM WodScore s
@@ -156,7 +203,14 @@ public interface WodScoreRepository extends JpaRepository<WodScore, Long> {
       """)
   long countBetterDistance(Long wodId, ScalingLevel scaling, Double distance);
 
-  /** Counts how many PRs have more calories. */
+  /**
+   * Counts how many PRs have more calories.
+   *
+   * @param wodId The WOD ID.
+   * @param scaling The scaling level.
+   * @param calories The calories to compare against.
+   * @return The count of better scores.
+   */
   @Query(
       """
       SELECT COUNT(s) FROM WodScore s

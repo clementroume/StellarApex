@@ -132,7 +132,7 @@ class MuscleControllerIT extends BaseIntegrationTest {
   @Test
   @DisplayName("POST /muscles: should return 409 Conflict if name exists")
   void testCreateMuscle_Conflict() throws Exception {
-    // Given: Request with existing name "Pectoralis Major" (seeded in setUp)
+    // Given: Request with the existing name "Pectoralis Major" (seeded in setUp)
     MuscleRequest request =
         new MuscleRequest("Pectoralis Major", "Chest", "Pec", null, null, MuscleGroup.CHEST);
 

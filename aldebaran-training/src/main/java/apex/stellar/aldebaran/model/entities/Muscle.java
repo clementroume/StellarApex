@@ -103,7 +103,7 @@ public class Muscle {
    * High-level categorization of muscles into major anatomical groups.
    *
    * <p>This enumeration allows for a macroscopic analysis of training volume. It helps answer
-   * questions like "Is the athlete training their Upper Body enough compared to their Lower Body?".
+   * questions like "Is the athlete training their Upper Body enough compared to their Lower Body?"
    */
   @Getter
   @RequiredArgsConstructor

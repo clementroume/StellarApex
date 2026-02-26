@@ -4,7 +4,6 @@ import apex.stellar.aldebaran.dto.ScoreComparisonResponse;
 import apex.stellar.aldebaran.dto.WodScoreRequest;
 import apex.stellar.aldebaran.dto.WodScoreResponse;
 import apex.stellar.aldebaran.model.entities.WodScore.ScalingLevel;
-import apex.stellar.aldebaran.security.AldebaranUserPrincipal;
 import apex.stellar.aldebaran.service.WodScoreService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -21,7 +20,6 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -68,6 +66,7 @@ public class WodScoreController {
       @Parameter(description = "Filter by WOD ID") @RequestParam(required = false) Long wodId,
       @Parameter(description = "Pagination (page, size)") @PageableDefault(size = 20)
           Pageable pageable) {
+
     return ResponseEntity.ok(scoreService.getMyScores(wodId, pageable));
   }
 
@@ -83,7 +82,6 @@ public class WodScoreController {
    * </ul>
    *
    * @param request The score details.
-   * @param principal The authenticated user.
    * @return The created score.
    */
   @PostMapping
@@ -105,9 +103,8 @@ public class WodScoreController {
             description = "Unauthorized",
             content = @Content(schema = @Schema(hidden = true)))
       })
-  public ResponseEntity<WodScoreResponse> logScore(
-      @Valid @RequestBody WodScoreRequest request,
-      @AuthenticationPrincipal AldebaranUserPrincipal principal) {
+  public ResponseEntity<WodScoreResponse> logScore(@Valid @RequestBody WodScoreRequest request) {
+
     return ResponseEntity.status(HttpStatus.CREATED).body(scoreService.logScore(request));
   }
 
@@ -124,7 +121,6 @@ public class WodScoreController {
    *
    * @param id The ID of the score to update.
    * @param request The updated score details.
-   * @param principal The authenticated user.
    * @return The updated score.
    */
   @PutMapping("/{id}")
@@ -149,9 +145,8 @@ public class WodScoreController {
             content = @Content(schema = @Schema(hidden = true)))
       })
   public ResponseEntity<WodScoreResponse> updateScore(
-      @PathVariable Long id,
-      @Valid @RequestBody WodScoreRequest request,
-      @AuthenticationPrincipal AldebaranUserPrincipal principal) {
+      @PathVariable Long id, @Valid @RequestBody WodScoreRequest request) {
+
     return ResponseEntity.ok(scoreService.updateScore(id, request));
   }
 
@@ -161,7 +156,6 @@ public class WodScoreController {
    * <p><b>Security:</b> Follows the same rules as Update.
    *
    * @param id The ID of the score to delete.
-   * @param principal The authenticated user.
    * @return HTTP 204 No Content.
    */
   @DeleteMapping("/{id}")
@@ -183,9 +177,9 @@ public class WodScoreController {
             description = "Unauthorized",
             content = @Content(schema = @Schema(hidden = true)))
       })
-  public ResponseEntity<Void> deleteScore(
-      @PathVariable Long id, @AuthenticationPrincipal AldebaranUserPrincipal principal) {
+  public ResponseEntity<Void> deleteScore(@PathVariable Long id) {
     scoreService.deleteScore(id);
+
     return ResponseEntity.noContent().build();
   }
 
@@ -219,13 +213,13 @@ public class WodScoreController {
    *
    * <p>Returns only the best score (PR) per athlete for the given scaling level.
    *
-   * @param wodId The ID of the WOD.
+   * @param id The ID of the WOD.
    * @param scaling The scaling level to filter by (default: RX).
    * @param pageable Pagination info.
    * @return A page of top scores.
    */
-  @GetMapping("/leaderboard/{wodId}")
-  @PreAuthorize("@wodSecurity.canRead(#wodId, principal)")
+  @GetMapping("/leaderboard/{id}")
+  @PreAuthorize("@wodSecurity.canRead(#id, principal)")
   @Operation(
       summary = "Get Leaderboard",
       description = "Retrieves top scores (PRs only) for a WOD.")
@@ -242,11 +236,12 @@ public class WodScoreController {
             content = @Content(schema = @Schema(hidden = true)))
       })
   public ResponseEntity<Slice<WodScoreResponse>> getLeaderboard(
-      @PathVariable Long wodId,
+      @PathVariable Long id,
       @Parameter(description = "Scaling level (RX, SCALED...)") @RequestParam(defaultValue = "RX")
           ScalingLevel scaling,
       @Parameter(description = "Pagination (page, size)") @PageableDefault(size = 20)
           Pageable pageable) {
-    return ResponseEntity.ok(scoreService.getLeaderboard(wodId, scaling, pageable));
+
+    return ResponseEntity.ok(scoreService.getLeaderboard(id, scaling, pageable));
   }
 }

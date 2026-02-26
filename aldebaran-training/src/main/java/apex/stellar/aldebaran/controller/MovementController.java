@@ -8,7 +8,6 @@ import apex.stellar.aldebaran.service.MovementService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
-import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -39,7 +38,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/aldebaran/movements")
 @RequiredArgsConstructor
 @Tag(name = "Movements", description = "Exercise catalog management")
-public class MovementController { 
+public class MovementController {
 
   private final MovementService movementService;
 
@@ -67,6 +66,7 @@ public class MovementController {
       })
   public ResponseEntity<List<MovementSummaryResponse>> searchMovements(
       @Parameter(description = "Search term") @RequestParam(defaultValue = "") String query) {
+
     return ResponseEntity.ok(movementService.searchMovements(query));
   }
 
@@ -96,6 +96,7 @@ public class MovementController {
             content = @Content(schema = @Schema(hidden = true)))
       })
   public ResponseEntity<MovementResponse> getMovement(@PathVariable String id) {
+
     return ResponseEntity.ok(movementService.getMovement(id));
   }
 
@@ -121,6 +122,7 @@ public class MovementController {
       })
   public ResponseEntity<List<MovementSummaryResponse>> getMovementsByCategory(
       @PathVariable Category category) {
+
     return ResponseEntity.ok(movementService.getMovementsByCategory(category));
   }
 
@@ -153,21 +155,9 @@ public class MovementController {
             description = "Unauthorized",
             content = @Content(schema = @Schema(hidden = true)))
       })
-  @io.swagger.v3.oas.annotations.parameters.RequestBody(
-      content =
-          @Content(
-              examples =
-                  @ExampleObject(
-                      name = "Back Squat Example",
-                      value =
-                          """
-          {
-            "name": "Back Squat", "nameAbbreviation": "BS", "category": "SQUAT", "equipment": ["BARBELL", "PLATES"],
-            "techniques": [], "muscles": [{"medicalName": "Quadriceps Femoris", "role": "AGONIST", "impactFactor": 1.0}],
-            "involvesBodyweight": true, "bodyweightFactor": 1.0
-          }""")))
   public ResponseEntity<MovementResponse> createMovement(
       @Valid @RequestBody MovementRequest request) {
+
     return ResponseEntity.status(HttpStatus.CREATED).body(movementService.createMovement(request));
   }
 
@@ -208,20 +198,9 @@ public class MovementController {
             description = "Unauthorized",
             content = @Content(schema = @Schema(hidden = true)))
       })
-  @io.swagger.v3.oas.annotations.parameters.RequestBody(
-      content =
-          @Content(
-              examples =
-                  @ExampleObject(
-                      name = "Update Example",
-                      value =
-                          """
-          {
-            "name": "Back Squat (High Bar)", "nameAbbreviation": "HBBS", "category": "SQUAT", "equipment": ["BARBELL"],
-            "techniques": ["HIGH_BAR"], "muscles": [], "involvesBodyweight": true, "bodyweightFactor": 1.0
-          }""")))
   public ResponseEntity<MovementResponse> updateMovement(
       @PathVariable String id, @Valid @RequestBody MovementRequest request) {
+
     return ResponseEntity.ok(movementService.updateMovement(id, request));
   }
 }

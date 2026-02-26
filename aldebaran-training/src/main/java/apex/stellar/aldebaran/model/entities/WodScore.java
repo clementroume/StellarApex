@@ -84,7 +84,7 @@ public class WodScore {
   @Min(0)
   private Integer timeSeconds;
 
-  /** Preferred display format (Minutes vs Seconds). */
+  /** Preferred display format (Minutes vs. Seconds). */
   @Enumerated(EnumType.STRING)
   @Column(name = "time_display_unit", length = 10)
   @Builder.Default
@@ -112,7 +112,7 @@ public class WodScore {
   @DecimalMin("0.0")
   private Double totalLoadKg;
 
-  /** The unit preferred by the user for display (e.g. LBS). */
+  /** The unit preferred by the user for display (e.g., LBS). */
   @Enumerated(EnumType.STRING)
   @Column(name = "weight_display_unit", length = 10)
   @Builder.Default
@@ -125,7 +125,7 @@ public class WodScore {
   @DecimalMin("0.0")
   private Double totalDistanceMeters;
 
-  /** The unit preferred by the user for display (e.g. MILES). */
+  /** The unit preferred by the user for display (e.g., MILES). */
   @Enumerated(EnumType.STRING)
   @Column(name = "distance_display_unit", length = 10)
   @Builder.Default
@@ -139,7 +139,6 @@ public class WodScore {
   // STATUS & METADATA
   // -------------------------------------------------------------------------
 
-  /** Is this the user's best score (PR) for this WOD? */
   @Column(name = "is_personal_record", nullable = false)
   @Builder.Default
   private boolean personalRecord = false;

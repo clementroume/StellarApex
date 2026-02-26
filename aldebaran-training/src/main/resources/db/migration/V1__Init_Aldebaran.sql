@@ -208,6 +208,7 @@ CREATE INDEX idx_movement_muscles_role ON movement_muscles (role, impact_factor)
 -- MOVEMENTS (Search & Filtering)
 -- ----------------------------------------------------------------------------------
 CREATE INDEX idx_movements_category ON movements (category);
+-- noinspection SqlResolve
 CREATE INDEX idx_movements_name_trgm ON movements USING gin (name gin_trgm_ops);
 
 -- ----------------------------------------------------------------------------------

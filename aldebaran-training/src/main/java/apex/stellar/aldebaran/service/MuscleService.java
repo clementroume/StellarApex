@@ -19,10 +19,18 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Service class responsible for managing the anatomical muscle catalog.
+ * Service class that handles business logic related to muscles.
  *
- * <p>This service handles the lifecycle of {@link Muscle} entities. Read operations are cached at
- * the DTO level to optimize performance and prevent JPA lazy-loading issues.
+ * <p>Provides functionalities to manage, retrieve, and update muscle records in
+ * a catalog. Supports filtering by anatomical groups and caching mechanisms for
+ * performance optimization.
+ *
+ * <p>The service uses {@link MuscleRepository} for data access and {@link MuscleMapper}
+ * for mapping between entity and response/request objects. Caching is implemented
+ * using keys based on the type of operation to ensure data consistency and efficiency.
+ *
+ * <p>Transactions are managed at the method level to ensure atomic operations and
+ * consistency within the database.
  */
 @Service
 @RequiredArgsConstructor
@@ -35,13 +43,14 @@ public class MuscleService {
   /**
    * Retrieves all muscles available in the catalog.
    *
-   * <p>Results are cached under the "muscles" key to reduce database load.
+   * <p>Results are cached under the "muscles" key to reduce the database load.
    *
    * @return A list of {@link MuscleResponse} objects representing all muscles.
    */
   @Transactional(readOnly = true)
   @Cacheable(value = CACHE_MUSCLES, key = "'all'")
   public List<MuscleResponse> getAllMuscles() {
+
     return muscleRepository.findAll().stream().map(muscleMapper::toResponse).toList();
   }
 
@@ -54,6 +63,7 @@ public class MuscleService {
   @Transactional(readOnly = true)
   @Cacheable(value = CACHE_MUSCLES, key = "'group-' + #group.name()")
   public List<MuscleResponse> getMusclesByGroup(MuscleGroup group) {
+
     return muscleRepository.findByMuscleGroup(group).stream()
         .map(muscleMapper::toResponse)
         .toList();
@@ -71,6 +81,7 @@ public class MuscleService {
   @Transactional(readOnly = true)
   @Cacheable(value = CACHE_MUSCLES, key = "#medicalName")
   public MuscleResponse getMuscle(String medicalName) {
+
     return muscleRepository
         .findByMedicalName(medicalName)
         .map(muscleMapper::toResponse)
@@ -90,14 +101,15 @@ public class MuscleService {
   @Transactional
   @CacheEvict(value = CACHE_MUSCLES, allEntries = true)
   public MuscleResponse createMuscle(MuscleRequest request) {
-    if (muscleRepository.findByMedicalName(request.medicalName()).isPresent()) {
+
+    if (muscleRepository.existsByMedicalNameIgnoreCase(request.medicalName())) {
       throw new DataConflictException("error.muscle.name.exists", request.medicalName());
     }
 
     Muscle muscle = muscleMapper.toEntity(request);
     Muscle savedMuscle = muscleRepository.save(muscle);
-
     log.info("Created new muscle: {} (ID: {})", savedMuscle.getMedicalName(), savedMuscle.getId());
+
     return muscleMapper.toResponse(savedMuscle);
   }
 
@@ -116,21 +128,21 @@ public class MuscleService {
   @Transactional
   @CacheEvict(value = CACHE_MUSCLES, allEntries = true)
   public MuscleResponse updateMuscle(Long id, MuscleRequest request) {
+
     Muscle muscle =
         muscleRepository
             .findById(id)
             .orElseThrow(() -> new ResourceNotFoundException("error.muscle.not.found", id));
 
-    // Check for unique name conflict if the name is being changed
-    if (!muscle.getMedicalName().equals(request.medicalName())
-        && muscleRepository.findByMedicalName(request.medicalName()).isPresent()) {
+    if (!muscle.getMedicalName().equalsIgnoreCase(request.medicalName())
+        && muscleRepository.existsByMedicalNameIgnoreCase(request.medicalName())) {
       throw new DataConflictException("error.muscle.name.exists", request.medicalName());
     }
 
     muscleMapper.updateEntity(request, muscle);
     Muscle savedMuscle = muscleRepository.save(muscle);
-
     log.info("Updated muscle: {} (ID: {})", savedMuscle.getMedicalName(), savedMuscle.getId());
+
     return muscleMapper.toResponse(savedMuscle);
   }
 }

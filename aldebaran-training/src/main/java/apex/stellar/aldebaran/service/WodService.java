@@ -2,6 +2,7 @@ package apex.stellar.aldebaran.service;
 
 import static apex.stellar.aldebaran.config.RedisCacheConfig.CACHE_WODS;
 
+import apex.stellar.aldebaran.dto.MovementResponse;
 import apex.stellar.aldebaran.dto.WodMovementRequest;
 import apex.stellar.aldebaran.dto.WodRequest;
 import apex.stellar.aldebaran.dto.WodResponse;
@@ -18,7 +19,6 @@ import apex.stellar.aldebaran.repository.MovementRepository;
 import apex.stellar.aldebaran.repository.WodRepository;
 import apex.stellar.aldebaran.repository.WodScoreRepository;
 import apex.stellar.aldebaran.repository.projection.WodSummary;
-import apex.stellar.aldebaran.security.AldebaranUserPrincipal;
 import apex.stellar.aldebaran.security.SecurityService;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -32,6 +32,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -57,13 +58,10 @@ public class WodService {
 
   private final WodRepository wodRepository;
   private final MovementRepository movementRepository;
+  private final MovementService movementService;
   private final WodScoreRepository wodScoreRepository;
   private final WodMapper wodMapper;
   private final SecurityService securityService;
-
-  // =========================================================================
-  // READ OPERATIONS
-  // =========================================================================
 
   /**
    * Retrieves a paginated list of WOD summaries based on filters.
@@ -75,58 +73,32 @@ public class WodService {
    * @param type Optional WOD type filter.
    * @param movementId Optional movement ID filter.
    * @param pageable Pagination settings.
-   * @param principal The authenticated user (for security filtering).
    * @return A list of lightweight WOD summaries.
    */
   @Transactional(readOnly = true)
-  public List<WodSummaryResponse> getWods(
-      String search,
-      WodType type,
-      String movementId,
-      Pageable pageable,
-      AldebaranUserPrincipal principal) {
+  public Slice<WodSummaryResponse> getWods(
+      String search, WodType type, String movementId, Pageable pageable) {
 
-    // 1. Prepare Security Context
-    // If principal is null (should not happen due to auth guards), fallback to restrictive
-    // defaults.
-    Long userId = principal != null ? principal.getId() : -1L;
-    Long gymId = principal != null ? principal.getGymId() : null;
-    boolean isAdmin = securityService.isAdmin(principal);
+    Slice<WodSummary> projections;
 
-    List<WodSummary> projections;
-
-    // 2. Execute Optimized & Secure Query based on filters
     if (StringUtils.hasText(search)) {
-      projections = wodRepository.findByTitleSecure(search, userId, gymId, isAdmin);
+      projections = wodRepository.findByTitleSecure(search, pageable);
     } else if (StringUtils.hasText(movementId)) {
-      projections =
-          wodRepository.findByMovementSecure(movementId, userId, gymId, isAdmin, pageable);
+      projections = wodRepository.findByMovementSecure(movementId, pageable);
     } else if (type != null) {
-      projections = wodRepository.findByTypeSecure(type, userId, gymId, isAdmin, pageable);
+      projections = wodRepository.findByTypeSecure(type, pageable);
     } else {
-      projections = wodRepository.findAllSecure(userId, gymId, isAdmin, pageable);
+      projections = wodRepository.findAllSecure(pageable);
     }
 
-    // 3. Map Projection to DTO
-    return projections.stream()
-        .map(
-            p ->
-                new WodSummaryResponse(
-                    p.getId(),
-                    p.getTitle(),
-                    p.getWodType(),
-                    p.getScoreType(),
-                    p.getRepScheme(),
-                    p.getTimeCapSeconds(),
-                    p.getCreatedAt()))
-        .toList();
+    return projections.map(wodMapper::toSummary);
   }
 
   /**
    * Retrieves full details of a specific WOD.
    *
    * <p><b>Optimization:</b> Uses {@code EntityGraph} to fetch the WOD and all movements in a single
-   * query. Results are cached to reduce database load.
+   * query. Results are cached to reduce the database load.
    *
    * @param id The WOD ID.
    * @return The detailed response.
@@ -135,15 +107,12 @@ public class WodService {
   @Transactional(readOnly = true)
   @Cacheable(value = CACHE_WODS, key = "#id")
   public WodResponse getWodDetail(Long id) {
+
     return wodRepository
         .findByIdWithMovements(id)
         .map(wodMapper::toResponse)
         .orElseThrow(() -> new ResourceNotFoundException("error.wod.not.found", id));
   }
-
-  // =========================================================================
-  // WRITE OPERATIONS
-  // =========================================================================
 
   /**
    * Creates a new WOD.
@@ -159,22 +128,7 @@ public class WodService {
   public WodResponse createWod(WodRequest request) {
     Long authorId = securityService.getCurrentUserId();
 
-    // 1. Optimization: Batch fetch all required movements in ONE query
-    Set<String> movementIds =
-        request.movements().stream()
-            .map(WodMovementRequest::movementId)
-            .collect(Collectors.toSet());
-
-    Map<String, Movement> movements =
-        movementRepository.findAllById(movementIds).stream()
-            .collect(Collectors.toMap(Movement::getId, Function.identity()));
-
-    // Validation: Ensure all requested movements exist
-    if (movements.size() != movementIds.size()) {
-      throw new ResourceNotFoundException("error.movement.not.found");
-    }
-
-    // 2. Build Entity
+    // 1. Build Entity
     Wod wod = wodMapper.toEntity(request);
     wod.setAuthorId(authorId);
 
@@ -186,12 +140,15 @@ public class WodService {
       wod.setModalities(new HashSet<>());
     }
 
-    // 3. Link Relations (In-Memory operation, extremely fast)
+    // 2. Link Relations (In-Memory operation, extremely fast)
     request
         .movements()
         .forEach(
             item -> {
-              Movement movement = movements.get(item.movementId());
+              final MovementResponse movementResponse =
+                  movementService.getMovement(item.movementId());
+
+              Movement movement = movementRepository.getReferenceById(item.movementId());
 
               WodMovement wm = wodMapper.toWodMovementEntity(item);
               wm.setWod(wod);
@@ -200,12 +157,13 @@ public class WodService {
               wod.getMovements().add(wm);
 
               // Aggregate Modality (e.g., Gymnastics, Weightlifting)
-              if (movement.getModality() != null) {
-                wod.getModalities().add(movement.getModality());
+              if (movementResponse.category() != null
+                  && movementResponse.category().getModality() != null) {
+                wod.getModalities().add(movementResponse.category().getModality());
               }
             });
 
-    // 4. Save & Map
+    // 3. Save & Map
     Wod savedWod = wodRepository.save(wod);
 
     log.info(
@@ -278,10 +236,6 @@ public class WodService {
     log.info("Deleted WOD id={}", id);
   }
 
-  // =========================================================================
-  // INTERNAL HELPERS
-  // =========================================================================
-
   /**
    * Orchestrates the linking of Movement Entities to the WOD using a Smart Merge strategy. Matches
    * existing movements by {@code orderIndex} to update them in place.
@@ -301,19 +255,7 @@ public class WodService {
       wod.setModalities(new HashSet<>());
     }
 
-    // 1. Batch Fetch Movements (Optimization)
-    Set<String> movementIds =
-        requests.stream().map(WodMovementRequest::movementId).collect(Collectors.toSet());
-
-    Map<String, Movement> movementMap =
-        movementRepository.findAllById(movementIds).stream()
-            .collect(Collectors.toMap(Movement::getId, Function.identity()));
-
-    if (movementMap.size() != movementIds.size()) {
-      throw new ResourceNotFoundException("error.movement.not.found");
-    }
-
-    // 2. Map existing items by OrderIndex for O(1) lookup
+    // 1. Map existing items by OrderIndex for O(1) lookup
     Map<Integer, WodMovement> existingMap =
         wod.getMovements().stream()
             .collect(Collectors.toMap(WodMovement::getOrderIndex, Function.identity()));
@@ -321,17 +263,19 @@ public class WodService {
     List<WodMovement> updatedList = new ArrayList<>();
     Set<Modality> newModalities = new HashSet<>();
 
-    // 3. Process Request Items
+    // 2. Process Request Items
     for (WodMovementRequest req : requests) {
-      Movement movement = movementMap.get(req.movementId());
+      final MovementResponse movementResponse = movementService.getMovement(req.movementId());
+      Movement movement = movementRepository.getReferenceById(req.movementId());
+
       WodMovement target;
 
       if (existingMap.containsKey(req.orderIndex())) {
-        // Update existing entity (Preserve ID)
+        // Update the existing entity (Preserve ID)
         target = existingMap.get(req.orderIndex());
         updateWodMovementFields(target, req);
       } else {
-        // Create new entity
+        // Create a new entity
         target = wodMapper.toWodMovementEntity(req);
         target.setWod(wod);
       }
@@ -339,26 +283,27 @@ public class WodService {
       target.setMovement(movement);
       updatedList.add(target);
 
-      if (movement.getModality() != null) {
-        newModalities.add(movement.getModality());
+      if (movementResponse.category() != null
+          && movementResponse.category().getModality() != null) {
+        newModalities.add(movementResponse.category().getModality());
       }
     }
 
-    // 4. Orphan Removal (Remove items not present in the new list)
-    wod.getMovements().removeIf(curr -> !updatedList.contains(curr));
+    // 3. Replace List
+    wod.getMovements().clear();
+    wod.getMovements().addAll(updatedList);
 
-    // 5. Add New Items
-    for (WodMovement item : updatedList) {
-      if (!wod.getMovements().contains(item)) {
-        wod.getMovements().add(item);
-      }
-    }
-
-    // 6. Update Aggregated Modalities
+    // 4. Update Aggregated Modalities
     wod.getModalities().clear();
     wod.getModalities().addAll(newModalities);
   }
 
+  /**
+   * Updates the fields of an existing WodMovement entity with values from the request DTO.
+   *
+   * @param target The existing WodMovement entity to update.
+   * @param source The request DTO containing the new values.
+   */
   private void updateWodMovementFields(WodMovement target, WodMovementRequest source) {
     // Leverage Mapper logic to create a temporary entity, then copy fields
     WodMovement temp = wodMapper.toWodMovementEntity(source);

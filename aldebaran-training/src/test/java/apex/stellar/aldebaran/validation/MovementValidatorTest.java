@@ -17,7 +17,6 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
-// Not used for MessageSource anymore, but kept for context if needed
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.context.support.ResourceBundleMessageSource;
@@ -32,13 +31,14 @@ class MovementValidatorTest {
 
   @BeforeEach
   void setUp() {
-    // 1. Setup Real MessageSource to verify properties files existence
+    // 1. Set up Real MessageSource
     ResourceBundleMessageSource realMessageSource = new ResourceBundleMessageSource();
-    realMessageSource.setBasename("messages"); // Checks messages.properties and messages_fr.properties
+    realMessageSource.setBasename(
+        "messages"); // Checks messages.properties and messages_fr.properties
     realMessageSource.setDefaultEncoding("UTF-8");
     realMessageSource.setUseCodeAsDefaultMessage(true);
 
-    // Inject real source into validator
+    // Inject the real source into the validator
     validator.setMessageSource(realMessageSource);
 
     // 2. Mock Context chain
@@ -64,10 +64,7 @@ class MovementValidatorTest {
   @Test
   @DisplayName("isValid: should return true when bodyweight involved and factor > 0")
   void testIsValid_BodyweightTrue_FactorPositive() {
-    Movement movement = Movement.builder()
-        .involvesBodyweight(true)
-        .bodyweightFactor(1.0)
-        .build();
+    Movement movement = Movement.builder().involvesBodyweight(true).bodyweightFactor(1.0).build();
 
     assertTrue(validator.isValid(movement, context));
   }
@@ -75,10 +72,7 @@ class MovementValidatorTest {
   @Test
   @DisplayName("isValid: should return true when bodyweight NOT involved and factor is 0")
   void testIsValid_BodyweightFalse_FactorZero() {
-    Movement movement = Movement.builder()
-        .involvesBodyweight(false)
-        .bodyweightFactor(0.0)
-        .build();
+    Movement movement = Movement.builder().involvesBodyweight(false).bodyweightFactor(0.0).build();
 
     assertTrue(validator.isValid(movement, context));
   }
@@ -100,10 +94,11 @@ class MovementValidatorTest {
     LocaleContextHolder.setLocale(Locale.ENGLISH);
     prepareContextMock();
 
-    Movement movement = Movement.builder()
-        .involvesBodyweight(true)
-        .bodyweightFactor(0.0) // Invalid
-        .build();
+    Movement movement =
+        Movement.builder()
+            .involvesBodyweight(true)
+            .bodyweightFactor(0.0) // Invalid
+            .build();
 
     // Execute
     boolean isValid = validator.isValid(movement, context);
@@ -112,7 +107,9 @@ class MovementValidatorTest {
     assertFalse(isValid);
 
     // Check that the context was called with the REAL message from messages.properties
-    verify(context).buildConstraintViolationWithTemplate("Bodyweight factor configuration is invalid relative to 'involvesBodyweight'.");
+    verify(context)
+        .buildConstraintViolationWithTemplate(
+            "Bodyweight factor configuration is invalid relative to 'involvesBodyweight'.");
   }
 
   @Test
@@ -122,10 +119,11 @@ class MovementValidatorTest {
     LocaleContextHolder.setLocale(Locale.FRENCH);
     prepareContextMock();
 
-    Movement movement = Movement.builder()
-        .involvesBodyweight(false)
-        .bodyweightFactor(0.5) // Invalid
-        .build();
+    Movement movement =
+        Movement.builder()
+            .involvesBodyweight(false)
+            .bodyweightFactor(0.5) // Invalid
+            .build();
 
     // Execute
     boolean isValid = validator.isValid(movement, context);
@@ -134,6 +132,8 @@ class MovementValidatorTest {
     assertFalse(isValid);
 
     // Check that the context was called with the REAL message from messages_fr.properties
-    verify(context).buildConstraintViolationWithTemplate("La configuration du facteur de poids de corps est invalide par rapport à 'involvesBodyweight'.");
+    verify(context)
+        .buildConstraintViolationWithTemplate(
+            "La configuration du facteur de poids de corps est invalide par rapport à 'involvesBodyweight'.");
   }
 }

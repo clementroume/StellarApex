@@ -9,7 +9,7 @@ import lombok.RequiredArgsConstructor;
  * <p>The hierarchy is defined as: <strong>Movement -> Family -> Modality</strong>. Example: "Squat
  * Clean" -> "Clean" -> Weightlifting.
  *
- * <p>This structure enables program analysis (e.g. detecting biases), performance tracking, and
+ * <p>This structure enables program analysis (e.g., detecting biases), performance tracking, and
  * filtering based on the unified {@link Modality}.
  */
 @Getter

@@ -1,7 +1,8 @@
 package apex.stellar.aldebaran.security;
 
 import apex.stellar.aldebaran.dto.WodRequest;
-import apex.stellar.aldebaran.repository.WodRepository;
+import apex.stellar.aldebaran.dto.WodResponse;
+import apex.stellar.aldebaran.service.WodService;
 import java.util.Objects;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -22,40 +23,45 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class WodSecurity {
 
-  private final WodRepository wodRepository;
   private final SecurityService securityService;
+  private final WodService wodService;
 
   /**
-   * Evaluates if the authenticated user is authorized to view a specific WOD.
+   * Determines whether the authenticated user is authorized to read the specified WOD (Workout of
+   * the Day).
    *
-   * @param wodId The unique identifier of the WOD.
-   * @param principal The authenticated user context.
-   * @return {@code true} if authorized or if WOD is not found (deferring to 404).
+   * <p>The method evaluates the user's privileges based on the WOD's visibility (public,
+   * gym-specific, or private), the user's role (e.g., administrator), and the context of the user's
+   * gym and authored content.
+   *
+   * @param wodId The WOD to be evaluated.
+   * @param principal The authenticated user context, represented as an {@link
+   *     AldebaranUserPrincipal}. Contains RBAC (Role-Based Access Control) and tenant-specific
+   *     information.
+   * @return {@code true} if the user is authorized to read the specified WOD, otherwise {@code
+   *     false}.
    */
   @Transactional(readOnly = true)
   public boolean canRead(Long wodId, AldebaranUserPrincipal principal) {
+
     if (securityService.isAdmin(principal)) {
       return true;
     }
 
-    return wodRepository
-        .findById(wodId)
-        .map(
-            wod -> {
-              // 1. Public: Open to everyone
-              if (wod.isPublic()) {
-                return true;
-              }
+    WodResponse wod = wodService.getWodDetail(wodId);
 
-              // 2. Gym WOD: Must be in the same gym context
-              if (wod.getGymId() != null) {
-                return Objects.equals(wod.getGymId(), principal.getGymId());
-              }
+    // 1. Public: Open to everyone
+    if (wod.isPublic()) {
+      return true;
+    }
 
-              // 3. Private WOD: Must be the author
-              return Objects.equals(wod.getAuthorId(), principal.getId());
-            })
-        .orElse(true); // Allow service to handle 404
+    // 2. Gym WOD: Must be in the same gym context
+    if (wod.gymId() != null) {
+      return Objects.equals(wod.gymId(), principal.getGymId());
+    }
+
+    // 3. Private WOD: Must be the author
+    return Objects.equals(wod.authorId(), principal.getId());
   }
 
   /**
@@ -96,19 +102,15 @@ public class WodSecurity {
       return true;
     }
 
-    return wodRepository
-        .findById(wodId)
-        .map(
-            wod -> {
-              // Gym WOD: Same Gym + Staff Rights
-              if (wod.getGymId() != null) {
-                return Objects.equals(principal.getGymId(), wod.getGymId())
-                    && securityService.hasWodWriteAccess(principal);
-              }
+    WodResponse wod = wodService.getWodDetail(wodId);
 
-              // Personal WOD: Author only
-              return Objects.equals(wod.getAuthorId(), principal.getId());
-            })
-        .orElse(true); // Allow service to handle 404
+    // Gym WOD: Same Gym + Staff Rights
+    if (wod.gymId() != null) {
+      return Objects.equals(principal.getGymId(), wod.gymId())
+          && securityService.hasWodWriteAccess(principal);
+    }
+
+    // Personal WOD: Author only
+    return Objects.equals(wod.authorId(), principal.getId());
   }
 }

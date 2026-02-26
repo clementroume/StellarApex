@@ -9,8 +9,8 @@ import org.springframework.stereotype.Service;
 /**
  * Service for accessing security context information and evaluating common role-based policies.
  *
- * <p>This bean provides accessors to retrieve the currently authenticated user's details
- * and encapsulates reusable authorization logic (e.g., checking for Admin or Staff privileges).
+ * <p>This bean provides accessors to retrieve the currently authenticated user's details and
+ * encapsulates reusable authorization logic (e.g., checking for Admin or Staff privileges).
  */
 @Service
 public class SecurityService {
@@ -38,6 +38,25 @@ public class SecurityService {
   /** Checks if the current user is a Platform Administrator. */
   public boolean isAdmin(AldebaranUserPrincipal principal) {
     return principal != null && ADMIN.equals(principal.getRole());
+  }
+
+  /**
+   * Retrieves the Gym ID associated with the currently authenticated user.
+   *
+   * @return The unique identifier (ID) of the gym associated with the authenticated user, or {@code
+   *     null} if no gym ID is available in the security context.
+   */
+  @SuppressWarnings("unused")
+  public Long getCurrentUserGymId() {
+    return getPrincipal().map(AldebaranUserPrincipal::getGymId).orElse(null);
+  }
+
+  /**
+   * Safe check if the current authenticated user is an Admin. Used specifically for SpEL queries.
+   */
+  @SuppressWarnings("unused")
+  public boolean isCurrentUserAdmin() {
+    return getPrincipal().map(p -> ADMIN.equals(p.getRole())).orElse(false);
   }
 
   /**

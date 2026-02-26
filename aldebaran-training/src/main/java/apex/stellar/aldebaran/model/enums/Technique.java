@@ -10,9 +10,9 @@ import lombok.RequiredArgsConstructor;
  * nature. Examples:
  *
  * <ul>
- *   <li>"Strict" vs "Kipping" (Execution Style)
- *   <li>"Hang" vs "From Blocks" (Starting Position)
- *   <li>"Single Arm" vs "Bilateral" (Unilateralism)
+ *   <li>"Strict" vs. "Kipping" (Execution Style)
+ *   <li>"Hang" vs. "From Blocks" (Starting Position)
+ *   <li>"Single Arm" vs. "Bilateral" (Unilateralism)
  * </ul>
  *
  * <p>This allows for a compact exercise database (e.g., one "Snatch" entity with multiple technique
@@ -117,7 +117,7 @@ public enum Technique {
 
   /** Categorizes techniques by their primary effect on the movement. */
   public enum TechniqueCategory {
-    /** Changes the tempo or dynamic quality of the movement (e.g., Strict vs Kipping). */
+    /** Changes the tempo or dynamic quality of the movement (e.g., Strict vs. Kipping). */
     STYLE,
     /** Changes how the implement is gripped or the foot stance. */
     GRIP_STANCE,

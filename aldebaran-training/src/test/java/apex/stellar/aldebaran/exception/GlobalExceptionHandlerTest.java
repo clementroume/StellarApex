@@ -27,7 +27,7 @@ class GlobalExceptionHandlerTest {
 
   @BeforeEach
   void setUp() {
-    // Load REAL messages.properties from classpath
+    // Load REAL messages.properties from the classpath
     ResourceBundleMessageSource realMessageSource = new ResourceBundleMessageSource();
     realMessageSource.setBasename("messages");
     realMessageSource.setDefaultEncoding("UTF-8");
@@ -354,10 +354,14 @@ class GlobalExceptionHandlerTest {
       throw new RuntimeException("Boom");
     }
 
+    @SuppressWarnings("unused")
     @PostMapping("/error/validation")
-    void validation(@RequestBody @Valid DummyDto dto) {}
+    void validation(@RequestBody @Valid DummyDto dto) {
+      /* Empty DTO */
+    }
   }
 
+  @SuppressWarnings({"LombokGetterMayBeUsed", "LombokSetterMayBeUsed", "unused"})
   static class DummyDto {
     @NotNull String field;
 

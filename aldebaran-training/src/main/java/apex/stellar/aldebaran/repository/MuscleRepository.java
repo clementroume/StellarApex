@@ -25,6 +25,14 @@ public interface MuscleRepository extends JpaRepository<Muscle, Long> {
   Optional<Muscle> findByMedicalName(String medicalName);
 
   /**
+   * Checks if a muscle with the specified medical name exists in the data store.
+   *
+   * @param medicalName The Latin/Medical name of the muscle to be checked.
+   * @return {@code true} if a muscle with the given medical name exists, {@code false} otherwise.
+   */
+  boolean existsByMedicalNameIgnoreCase(String medicalName);
+
+  /**
    * Retrieves all muscles belonging to a specific anatomical group.
    *
    * @param muscleGroup The target muscle group (e.g., CHEST, LEGS).

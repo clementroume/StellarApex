@@ -9,7 +9,7 @@ import org.springframework.data.web.config.EnableSpringDataWebSupport;
 import org.springframework.data.web.config.EnableSpringDataWebSupport.PageSerializationMode;
 
 /**
- * Main entry point for the Orion Training microservice.
+ * Main entry point for the Aldebaran Training microservice.
  *
  * <p>This service manages exercise catalogs, workout logging, performance tracking, and muscle
  * balance analysis for athletes and coaches.
@@ -18,6 +18,7 @@ import org.springframework.data.web.config.EnableSpringDataWebSupport.PageSerial
 @EnableJpaAuditing
 @EnableCaching
 @EnableSpringDataWebSupport(pageSerializationMode = PageSerializationMode.VIA_DTO)
+@SuppressWarnings("java:S1118")
 public class AldebaranTraining {
 
   /**
@@ -25,7 +26,7 @@ public class AldebaranTraining {
    *
    * @param args Command line arguments.
    */
-  public static void main(String[] args) {
+  static void main(String[] args) {
     SpringApplication.run(AldebaranTraining.class, args);
   }
 }

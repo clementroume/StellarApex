@@ -1,7 +1,6 @@
 package apex.stellar.aldebaran.model.entities;
 
 import apex.stellar.aldebaran.model.enums.Unit;
-import apex.stellar.aldebaran.model.enums.Unit.UnitType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -13,7 +12,6 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
-import jakarta.persistence.Transient;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
@@ -168,40 +166,4 @@ public class WodMovement {
    */
   @Column(name = "scaling_options", columnDefinition = "TEXT")
   private String scalingOptions;
-
-  // -------------------------------------------------------------------------
-  // Helper: Conversion Accessors (Transient)
-  // -------------------------------------------------------------------------
-
-  /** Helper to get normalized KG weight for calculations. */
-  @Transient
-  public Double getWeightInKg() {
-    if (weight == null || weightUnit == null) {
-      return null;
-    }
-    return weightUnit.getType() == UnitType.MASS ? weightUnit.toBase(weight) : null;
-  }
-
-  /** Helper to get normalized Meters distance for calculations. */
-  @Transient
-  public Double getDistanceInMeters() {
-    if (distance == null || distanceUnit == null) {
-      return null;
-    }
-    return distanceUnit.getType() == UnitType.DISTANCE ? distanceUnit.toBase(distance) : null;
-  }
-
-  /** Extracts the 'Minutes' part for a split display (Min:Sec). Ex: 90 seconds -> returns 1. */
-  @Transient
-  public Integer getDurationMinutesPart() {
-    return durationSeconds != null ? durationSeconds / 60 : null;
-  }
-
-  /**
-   * Extracts the 'Seconds' remainder for a split display (Min:Sec). Ex: 90 seconds -> returns 30.
-   */
-  @Transient
-  public Integer getDurationSecondsPart() {
-    return durationSeconds != null ? durationSeconds % 60 : null;
-  }
 }

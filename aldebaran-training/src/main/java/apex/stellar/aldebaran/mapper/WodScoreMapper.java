@@ -21,7 +21,7 @@ import org.mapstruct.ReportingPolicy;
  *   <li><b>Display (Entity -> Response):</b> Converts canonical units back to the user's preferred
  *       display unit (stored in the entity) using {@link Unit#fromBase(double)}.
  *   <li><b>Time Handling:</b> Aggregates split time inputs (Minutes/Seconds) into total seconds for
- *       storage, and splits them back for display.
+ *       storage and splits them back for display.
  * </ul>
  */
 @Mapper(
@@ -34,6 +34,13 @@ public interface WodScoreMapper {
   // Entity -> Response
   // -------------------------------------------------------------------------
 
+  /**
+   * Maps a WodScore entity to a WodScoreResponse DTO by transforming and formatting various
+   * properties.
+   *
+   * @param score The WOD score entity to be transformed into a response object.
+   * @return A WodScoreResponse containing the transformed data from the WOD score entity.
+   */
   @Mapping(target = "wodSummary", source = "wod")
   @Mapping(target = "userId", source = "userId")
   @Mapping(target = "timeMinutesPart", source = "score", qualifiedByName = "calculateMinutes")
@@ -48,16 +55,20 @@ public interface WodScoreMapper {
   // -------------------------------------------------------------------------
   // Request -> Entity
   // -------------------------------------------------------------------------
-
+  /**
+   * Maps a WodScoreRequest to a WodScore entity while applying specific transformations and
+   * ignoring certain fields.
+   *
+   * @param request The WodScoreRequest containing the data to transform into a WodScore entity.
+   * @return A WodScore entity populated with the transformed data from the request.
+   */
   @Mapping(target = "id", ignore = true)
   @Mapping(target = "wod", ignore = true)
   @Mapping(target = "userId", ignore = true)
   @Mapping(target = "loggedAt", ignore = true)
   @Mapping(target = "personalRecord", ignore = true)
-  // Smart Time Mapping
   @Mapping(target = "timeSeconds", source = "request", qualifiedByName = "calculateTotalSeconds")
   @Mapping(target = "timeDisplayUnit", source = "request", qualifiedByName = "inferTimeDisplayUnit")
-  // Normalization
   @Mapping(target = "maxWeightKg", source = "request", qualifiedByName = "normalizeMaxWeight")
   @Mapping(target = "totalLoadKg", source = "request", qualifiedByName = "normalizeTotalLoad")
   @Mapping(
@@ -68,6 +79,13 @@ public interface WodScoreMapper {
   @Mapping(target = "distanceDisplayUnit", source = "distanceUnit")
   WodScore toEntity(WodScoreRequest request);
 
+  /**
+   * Updates an existing WodScore entity with data from a WodScoreRequest while applying specific
+   * transformations and ignoring certain fields.
+   *
+   * @param request The WodScoreRequest containing the data to be used for updating the entity.
+   * @param entity The WodScore entity to be updated. This is the target object of the mapping.
+   */
   @Mapping(target = "id", ignore = true)
   @Mapping(target = "wod", ignore = true)
   @Mapping(target = "userId", ignore = true)
@@ -95,6 +113,7 @@ public interface WodScoreMapper {
    * @param req The score request containing time fields.
    * @return The total time in seconds, or null if no time is provided.
    */
+  @SuppressWarnings("unused")
   @Named("calculateTotalSeconds")
   default Integer calculateTotalSeconds(WodScoreRequest req) {
     if (req.timeMinutes() == null && req.timeSeconds() == null) {
@@ -109,11 +128,13 @@ public interface WodScoreMapper {
    * Infers the preferred time display unit based on the provided input fields.
    *
    * @param req The score request.
-   * @return {@link Unit#MINUTES} if minutes were explicitly provided, otherwise {@link Unit#SECONDS}.
+   * @return {@link Unit#MINUTES} if minutes were explicitly provided, otherwise {@link
+   *     Unit#SECONDS}.
    */
+  @SuppressWarnings("unused")
   @Named("inferTimeDisplayUnit")
   default Unit inferTimeDisplayUnit(WodScoreRequest req) {
-    // If user explicitly provided minutes, we assume they prefer "Minutes" display
+    // If a user explicitly provided minutes, we assume they prefer the "Minutes" display
     if (req.timeMinutes() != null) {
       return Unit.MINUTES;
     }
@@ -127,6 +148,7 @@ public interface WodScoreMapper {
    * @param s The WOD score entity.
    * @return The number of full minutes, or null if time is not set.
    */
+  @SuppressWarnings("unused")
   @Named("calculateMinutes")
   default Integer calculateMinutes(WodScore s) {
     return s.getTimeSeconds() != null ? s.getTimeSeconds() / 60 : null;
@@ -138,6 +160,7 @@ public interface WodScoreMapper {
    * @param s The WOD score entity.
    * @return The remaining seconds (0-59), or null if time is not set.
    */
+  @SuppressWarnings("unused")
   @Named("calculateSeconds")
   default Integer calculateSeconds(WodScore s) {
     return s.getTimeSeconds() != null ? s.getTimeSeconds() % 60 : null;
@@ -153,6 +176,7 @@ public interface WodScoreMapper {
    * @param req The score request.
    * @return The weight in KG, or null if not provided.
    */
+  @SuppressWarnings("unused")
   @Named("normalizeMaxWeight")
   default Double normalizeMaxWeight(WodScoreRequest req) {
     if (req.maxWeight() == null || req.weightUnit() == null) {
@@ -167,6 +191,7 @@ public interface WodScoreMapper {
    * @param req The score request.
    * @return The total load in KG, or null if not provided.
    */
+  @SuppressWarnings("unused")
   @Named("normalizeTotalLoad")
   default Double normalizeTotalLoad(WodScoreRequest req) {
     if (req.totalLoad() == null || req.weightUnit() == null) {
@@ -181,6 +206,7 @@ public interface WodScoreMapper {
    * @param req The score request.
    * @return The distance in Meters, or null if not provided.
    */
+  @SuppressWarnings("unused")
   @Named("normalizeDistance")
   default Double normalizeDistance(WodScoreRequest req) {
     if (req.totalDistance() == null || req.distanceUnit() == null) {
@@ -199,6 +225,7 @@ public interface WodScoreMapper {
    * @param s The WOD score entity.
    * @return The weight in the user's preferred unit.
    */
+  @SuppressWarnings("unused")
   @Named("mapMaxWeightToDisplay")
   default Double mapMaxWeightToDisplay(WodScore s) {
     if (s.getMaxWeightKg() == null || s.getWeightDisplayUnit() == null) {
@@ -213,6 +240,7 @@ public interface WodScoreMapper {
    * @param s The WOD score entity.
    * @return The total load in the user's preferred unit.
    */
+  @SuppressWarnings("unused")
   @Named("mapTotalLoadToDisplay")
   default Double mapTotalLoadToDisplay(WodScore s) {
     if (s.getTotalLoadKg() == null || s.getWeightDisplayUnit() == null) {
@@ -227,6 +255,7 @@ public interface WodScoreMapper {
    * @param s The WOD score entity.
    * @return The distance in the user's preferred unit.
    */
+  @SuppressWarnings("unused")
   @Named("mapDistanceToDisplay")
   default Double mapDistanceToDisplay(WodScore s) {
     if (s.getTotalDistanceMeters() == null || s.getDistanceDisplayUnit() == null) {

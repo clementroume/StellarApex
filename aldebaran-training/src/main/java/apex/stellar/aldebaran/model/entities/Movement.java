@@ -161,6 +161,7 @@ public class Movement {
    * Checks if this movement typically involves tracking tonnage (Load * Reps). Essential for UI
    * logic (e.g., hiding the "Weight" field for Running).
    */
+  @SuppressWarnings("unused")
   @Transient
   public boolean isLoadBearing() {
     Modality mod = getModality();

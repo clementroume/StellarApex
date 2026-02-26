@@ -66,7 +66,7 @@ class MuscleServiceTest {
     // Then
     assertNotNull(result);
     assertEquals(1, result.size());
-    assertEquals("Pectoralis Major", result.get(0).medicalName());
+    assertEquals("Pectoralis Major", result.getFirst().medicalName());
     verify(muscleRepository).findAll();
   }
 
@@ -119,8 +119,8 @@ class MuscleServiceTest {
   @DisplayName("createMuscle: should create and return muscle when name is unique")
   void testCreateMuscle_Success() {
     // Given
-    when(muscleRepository.findByMedicalName(muscleRequest.medicalName()))
-        .thenReturn(Optional.empty());
+    when(muscleRepository.existsByMedicalNameIgnoreCase(muscleRequest.medicalName()))
+        .thenReturn(false);
     when(muscleMapper.toEntity(muscleRequest)).thenReturn(muscleEntity);
     when(muscleRepository.save(muscleEntity)).thenReturn(muscleEntity);
     when(muscleMapper.toResponse(muscleEntity)).thenReturn(muscleResponse);
@@ -138,8 +138,8 @@ class MuscleServiceTest {
   @DisplayName("createMuscle: should throw DataConflictException when name exists")
   void testCreateMuscle_Conflict() {
     // Given
-    when(muscleRepository.findByMedicalName(muscleRequest.medicalName()))
-        .thenReturn(Optional.of(muscleEntity));
+    when(muscleRepository.existsByMedicalNameIgnoreCase(muscleRequest.medicalName()))
+        .thenReturn(true);
 
     // When & Then
     DataConflictException ex =
@@ -155,9 +155,6 @@ class MuscleServiceTest {
     // Given
     Long id = 1L;
     when(muscleRepository.findById(id)).thenReturn(Optional.of(muscleEntity));
-    // Name hasn't changed or is same as current, so no conflict check failure simulated here
-    // If name changed, we would need to mock findByMedicalName returning empty
-
     when(muscleRepository.save(muscleEntity)).thenReturn(muscleEntity);
     when(muscleMapper.toResponse(muscleEntity)).thenReturn(muscleResponse);
 
@@ -194,10 +191,8 @@ class MuscleServiceTest {
     Muscle existing = Muscle.builder().id(id).medicalName("Old Name").build();
     MuscleRequest renameRequest =
         new MuscleRequest("New Name", "Common", "Commun", "Desc", "Desc", MuscleGroup.CHEST);
-
     when(muscleRepository.findById(id)).thenReturn(Optional.of(existing));
-    // Simulate that "New Name" does not exist
-    when(muscleRepository.findByMedicalName("New Name")).thenReturn(Optional.empty());
+    when(muscleRepository.existsByMedicalNameIgnoreCase("New Name")).thenReturn(false);
 
     when(muscleRepository.save(existing)).thenReturn(existing);
     when(muscleMapper.toResponse(existing)).thenReturn(mock(MuscleResponse.class));
@@ -215,14 +210,10 @@ class MuscleServiceTest {
   void testUpdateMuscle_Conflict() {
     // Given
     Long id = 1L;
-    // Existing muscle in DB
     Muscle existingMuscle = Muscle.builder().id(id).medicalName("Old Name").build();
-
-    // Request tries to rename it to "Pectoralis Major"
-    // But "Pectoralis Major" already belongs to another muscle
     when(muscleRepository.findById(id)).thenReturn(Optional.of(existingMuscle));
-    when(muscleRepository.findByMedicalName(muscleRequest.medicalName()))
-        .thenReturn(Optional.of(new Muscle())); // Another muscle
+    when(muscleRepository.existsByMedicalNameIgnoreCase(muscleRequest.medicalName()))
+        .thenReturn(true);
 
     // When & Then
     assertThrows(DataConflictException.class, () -> muscleService.updateMuscle(id, muscleRequest));

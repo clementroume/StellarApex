@@ -117,14 +117,25 @@ class WodScoreControllerIT extends BaseIntegrationTest {
   @Test
   @DisplayName("POST /scores: should normalize Weight Input (LBS -> KG)")
   void testLogScore_WeightNormalization() throws Exception {
+
+    Wod heavyWod =
+        wodRepository.save(
+            Wod.builder()
+                .title("1RM Squat")
+                .wodType(WodType.STRENGTH)
+                .scoreType(ScoreType.WEIGHT)
+                .isPublic(true)
+                .authorId(100L)
+                .build());
+
     // 225 LBS ~ 102.058 KG
     WodScoreRequest request =
         new WodScoreRequest(
             null,
-            fran.getId(),
+            heavyWod.getId(),
             LocalDate.now(),
             null,
-            600,
+            null,
             null,
             null,
             225.0,
@@ -160,14 +171,25 @@ class WodScoreControllerIT extends BaseIntegrationTest {
   @Test
   @DisplayName("POST /scores: should normalize Distance Input (MILES -> METERS)")
   void testLogScore_DistanceNormalization() throws Exception {
+
+    Wod runWod =
+        wodRepository.save(
+            Wod.builder()
+                .title("5K Run")
+                .wodType(WodType.FOR_TIME)
+                .scoreType(ScoreType.DISTANCE) // TRÈS IMPORTANT
+                .isPublic(true)
+                .authorId(100L)
+                .build());
+
     // 10 MILES ~ 16093.4 METERS
     WodScoreRequest request =
         new WodScoreRequest(
             null,
-            fran.getId(),
+            runWod.getId(),
             LocalDate.now(),
             null,
-            600,
+            null,
             null,
             null,
             null,
@@ -205,23 +227,34 @@ class WodScoreControllerIT extends BaseIntegrationTest {
   // -------------------------------------------------------------------------
 
   @Test
-  @DisplayName("Round-Trip: POST in LBS/MILES -> DB (KG/M) -> GET in LBS/MILES")
+  @DisplayName("Round-Trip: POST in LBS -> DB (KG) -> GET in LBS")
   void testRoundTrip_Conversion() throws Exception {
+
+    Wod heavyWod =
+        wodRepository.save(
+            Wod.builder()
+                .title("1RM Bench")
+                .wodType(WodType.STRENGTH)
+                .scoreType(ScoreType.WEIGHT)
+                .isPublic(true)
+                .authorId(100L)
+                .build());
+
     // 1. POST a complex score (Imperial units + Time split)
     WodScoreRequest request =
         new WodScoreRequest(
             null,
-            fran.getId(),
+            heavyWod.getId(),
             LocalDate.now(),
-            2,
-            15, // 2min 15s (135s)
             null,
             null,
-            135.0, // 135 LBS
+            null,
+            null,
+            135.0,
             null,
             Unit.LBS,
-            5.0, // 5 MILES
-            Unit.MILES,
+            null,
+            null,
             null,
             ScalingLevel.RX,
             false,
@@ -241,22 +274,135 @@ class WodScoreControllerIT extends BaseIntegrationTest {
     // 2. GET the history
     mockMvc
         .perform(
-            get("/aldebaran/scores/me?wodId=" + fran.getId())
+            get("/aldebaran/scores/me?wodId=" + heavyWod.getId())
                 .header("X-Auth-User-Id", "100")
                 .header("X-Auth-User-Role", "USER")
                 .header("X-Internal-Secret", "test-internal-secret"))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.content", hasSize(1)))
-        // Verify Time reconstruction
-        .andExpect(jsonPath("$.content[0].timeSeconds").value(135))
-        .andExpect(jsonPath("$.content[0].timeMinutesPart").value(2))
-        .andExpect(jsonPath("$.content[0].timeSecondsPart").value(15))
         // Verify Weight reconstruction (should be exactly 135.0 LBS)
         .andExpect(jsonPath("$.content[0].maxWeight").value(135.0))
-        .andExpect(jsonPath("$.content[0].weightUnit").value("LBS"))
+        .andExpect(jsonPath("$.content[0].weightUnit").value("LBS"));
+  }
+
+  @Test
+  @DisplayName("Round-Trip: POST in MILES -> DB (METERS) -> GET in MILES")
+  void testRoundTrip_DistanceConversion() throws Exception {
+    // 1. Create a WOD specifically for Distance
+    Wod runWod =
+        wodRepository.save(
+            Wod.builder()
+                .title("5K Run")
+                .wodType(WodType.FOR_TIME)
+                .scoreType(ScoreType.DISTANCE) // STRICT REQUIREMENT FOR DISTANCE
+                .isPublic(true)
+                .authorId(100L)
+                .build());
+
+    // 2. POST a score in Imperial units (5.0 MILES)
+    WodScoreRequest request =
+        new WodScoreRequest(
+            null,
+            runWod.getId(),
+            LocalDate.now(),
+            null, // timeMinutes
+            null, // timeSeconds
+            null, // rounds
+            null, // reps
+            null, // maxWeight
+            null, // totalLoad
+            null, // weightUnit
+            5.0, // totalDistance
+            Unit.MILES, // distanceUnit
+            null, // totalCalories
+            ScalingLevel.RX,
+            false,
+            null,
+            null);
+
+    mockMvc
+        .perform(
+            post("/aldebaran/scores")
+                .header("X-Auth-User-Id", "100")
+                .header("X-Auth-User-Role", "USER")
+                .header("X-Internal-Secret", "test-internal-secret")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+        .andExpect(status().isCreated());
+
+    // 3. GET the history and verify it is served back in MILES exactly as inputted
+    mockMvc
+        .perform(
+            get("/aldebaran/scores/me?wodId=" + runWod.getId())
+                .header("X-Auth-User-Id", "100")
+                .header("X-Auth-User-Role", "USER")
+                .header("X-Internal-Secret", "test-internal-secret"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.content", hasSize(1)))
         // Verify Distance reconstruction (should be exactly 5.0 MILES)
         .andExpect(jsonPath("$.content[0].totalDistance").value(5.0))
         .andExpect(jsonPath("$.content[0].distanceUnit").value("MILES"));
+  }
+
+  @Test
+  @DisplayName("Round-Trip: POST Time (Min:Sec) -> DB (Total Sec) -> GET (Min:Sec)")
+  void testRoundTrip_TimeConversion() throws Exception {
+    // 1. Create a WOD specifically for Time
+    Wod timeWod =
+        wodRepository.save(
+            Wod.builder()
+                .title("Sprint")
+                .wodType(WodType.FOR_TIME)
+                .scoreType(ScoreType.TIME) // STRICT REQUIREMENT FOR TIME
+                .isPublic(true)
+                .authorId(100L)
+                .build());
+
+    // 2. POST a score with split time (2 min 15 sec)
+    WodScoreRequest request =
+        new WodScoreRequest(
+            null,
+            timeWod.getId(),
+            LocalDate.now(),
+            2, // timeMinutes
+            15, // timeSeconds
+            null, // rounds
+            null, // reps
+            null, // maxWeight
+            null, // totalLoad
+            null, // weightUnit
+            null, // totalDistance
+            null, // distanceUnit
+            null, // totalCalories
+            ScalingLevel.RX,
+            false,
+            null,
+            null);
+
+    mockMvc
+        .perform(
+            post("/aldebaran/scores")
+                .header("X-Auth-User-Id", "100")
+                .header("X-Auth-User-Role", "USER")
+                .header("X-Internal-Secret", "test-internal-secret")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+        .andExpect(status().isCreated());
+
+    // 3. GET the history and verify split time reconstruction
+    mockMvc
+        .perform(
+            get("/aldebaran/scores/me?wodId=" + timeWod.getId())
+                .header("X-Auth-User-Id", "100")
+                .header("X-Auth-User-Role", "USER")
+                .header("X-Internal-Secret", "test-internal-secret"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.content", hasSize(1)))
+        // Verify Time reconstruction (Total seconds + Split parts)
+        .andExpect(jsonPath("$.content[0].timeSeconds").value(135))
+        .andExpect(jsonPath("$.content[0].timeMinutesPart").value(2))
+        .andExpect(jsonPath("$.content[0].timeSecondsPart").value(15))
+        .andExpect(jsonPath("$.content[0].timeDisplayUnit").value("MINUTES"));
   }
 
   // -------------------------------------------------------------------------

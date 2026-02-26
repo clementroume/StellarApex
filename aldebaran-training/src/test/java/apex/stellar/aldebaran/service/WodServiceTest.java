@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
+import apex.stellar.aldebaran.dto.MovementResponse;
 import apex.stellar.aldebaran.dto.WodMovementRequest;
 import apex.stellar.aldebaran.dto.WodRequest;
 import apex.stellar.aldebaran.dto.WodResponse;
@@ -22,7 +23,6 @@ import apex.stellar.aldebaran.repository.MovementRepository;
 import apex.stellar.aldebaran.repository.WodRepository;
 import apex.stellar.aldebaran.repository.WodScoreRepository;
 import apex.stellar.aldebaran.repository.projection.WodSummary;
-import apex.stellar.aldebaran.security.AldebaranUserPrincipal;
 import apex.stellar.aldebaran.security.SecurityService;
 import java.util.HashSet;
 import java.util.List;
@@ -35,12 +35,15 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
+import org.springframework.data.domain.SliceImpl;
 
 @ExtendWith(MockitoExtension.class)
 class WodServiceTest {
 
   @Mock private WodRepository wodRepository;
   @Mock private MovementRepository movementRepository;
+  @Mock private MovementService movementService;
   @Mock private WodScoreRepository wodScoreRepository;
   @Mock private WodMapper wodMapper;
   @Mock private SecurityService securityService;
@@ -86,103 +89,71 @@ class WodServiceTest {
   }
 
   // =========================================================================
-  // TEST: getWods (Security Context Passing)
+  // TEST: getWods (Routing to Secure Queries)
   // =========================================================================
 
   @Test
-  @DisplayName("getWods: Standard User should pass ID and isAdmin=false to repository")
-  void testGetWods_StandardUser() {
+  @DisplayName("getWods: No filters should route to findAllSecure")
+  void testGetWods_NoFilters() {
     // Given
-    AldebaranUserPrincipal user = new AldebaranUserPrincipal(100L, 50L, "ATHLETE", List.of());
     Pageable pageable = Pageable.unpaged();
-
-    WodSummary projection = mock(WodSummary.class);
-    when(wodRepository.findAllSecure(100L, 50L, false, pageable)).thenReturn(List.of(projection));
-
-    when(securityService.isAdmin(user)).thenReturn(false);
+    Slice<WodSummary> slice = new SliceImpl<>(List.of(mock(WodSummary.class)));
+    when(wodRepository.findAllSecure(pageable)).thenReturn(slice);
 
     // When
-    List<WodSummaryResponse> results = wodService.getWods(null, null, null, pageable, user);
+    Slice<WodSummaryResponse> results = wodService.getWods(null, null, null, pageable);
 
     // Then
     assertNotNull(results);
-    verify(wodRepository).findAllSecure(100L, 50L, false, pageable);
+    verify(wodRepository).findAllSecure(pageable);
   }
 
   @Test
-  @DisplayName("getWods: Admin User should pass isAdmin=true to repository")
-  void testGetWods_AdminUser() {
-    // Given
-    AldebaranUserPrincipal admin = new AldebaranUserPrincipal(999L, null, "ADMIN", List.of());
-    Pageable pageable = Pageable.unpaged();
-
-    WodSummary projection = mock(WodSummary.class);
-    // Note: userId/gymId don't matter much when isAdmin=true, but verify they are passed correctly
-    when(wodRepository.findAllSecure(eq(999L), isNull(), eq(true), eq(pageable)))
-        .thenReturn(List.of(projection));
-
-    when(securityService.isAdmin(admin)).thenReturn(true);
-
-    // When
-    wodService.getWods(null, null, null, pageable, admin);
-
-    // Then
-    verify(wodRepository).findAllSecure(eq(999L), isNull(), eq(true), eq(pageable));
-  }
-
-  @Test
-  @DisplayName("getWods: Search filter should use secure query")
+  @DisplayName("getWods: Search filter should route to findByTitleSecure")
   void testGetWods_Search() {
     // Given
-    AldebaranUserPrincipal user = new AldebaranUserPrincipal(100L, null, "USER", List.of());
+    Pageable pageable = Pageable.unpaged();
+    Slice<WodSummary> emptySlice = new SliceImpl<>(List.of());
 
-    when(securityService.isAdmin(user)).thenReturn(false);
-    when(wodRepository.findByTitleSecure(eq("Fran"), eq(100L), isNull(), eq(false)))
-        .thenReturn(List.of());
+    when(wodRepository.findByTitleSecure("Fran", pageable)).thenReturn(emptySlice);
 
     // When
-    wodService.getWods("Fran", null, null, Pageable.unpaged(), user);
+    wodService.getWods("Fran", null, null, pageable);
 
     // Then
-    verify(wodRepository).findByTitleSecure(eq("Fran"), eq(100L), isNull(), eq(false));
+    verify(wodRepository).findByTitleSecure("Fran", pageable);
   }
 
   @Test
-  @DisplayName("getWods: Type filter should use secure query")
+  @DisplayName("getWods: Type filter should route to findByTypeSecure")
   void testGetWods_Type() {
-    AldebaranUserPrincipal user = new AldebaranUserPrincipal(100L, null, "USER", List.of());
+    // Given
     Pageable pageable = Pageable.unpaged();
+    Slice<WodSummary> emptySlice = new SliceImpl<>(List.of());
 
-    when(securityService.isAdmin(user)).thenReturn(false);
-    when(wodRepository.findByTypeSecure(
-            eq(WodType.AMRAP), eq(100L), isNull(), eq(false), eq(pageable)))
-        .thenReturn(List.of());
+    when(wodRepository.findByTypeSecure(WodType.AMRAP, pageable)).thenReturn(emptySlice);
 
     // When
-    wodService.getWods(null, WodType.AMRAP, null, pageable, user);
+    wodService.getWods(null, WodType.AMRAP, null, pageable);
 
     // Then
-    verify(wodRepository)
-        .findByTypeSecure(eq(WodType.AMRAP), eq(100L), isNull(), eq(false), eq(pageable));
+    verify(wodRepository).findByTypeSecure(WodType.AMRAP, pageable);
   }
 
   @Test
-  @DisplayName("getWods: Movement filter should use secure query")
+  @DisplayName("getWods: Movement filter should route to findByMovementSecure")
   void testGetWods_Movement() {
-    AldebaranUserPrincipal user = new AldebaranUserPrincipal(100L, null, "USER", List.of());
+    // Given
     Pageable pageable = Pageable.unpaged();
+    Slice<WodSummary> emptySlice = new SliceImpl<>(List.of());
 
-    when(securityService.isAdmin(user)).thenReturn(false);
-    when(wodRepository.findByMovementSecure(
-            eq("GY-PU-001"), eq(100L), isNull(), eq(false), eq(pageable)))
-        .thenReturn(List.of());
+    when(wodRepository.findByMovementSecure("GY-PU-001", pageable)).thenReturn(emptySlice);
 
     // When
-    wodService.getWods(null, null, "GY-PU-001", pageable, user);
+    wodService.getWods(null, null, "GY-PU-001", pageable);
 
     // Then
-    verify(wodRepository)
-        .findByMovementSecure(eq("GY-PU-001"), eq(100L), isNull(), eq(false), eq(pageable));
+    verify(wodRepository).findByMovementSecure("GY-PU-001", pageable);
   }
 
   // =========================================================================
@@ -213,19 +184,22 @@ class WodServiceTest {
   }
 
   @Test
-  @DisplayName("createWod: should link movements and set creator")
+  @DisplayName("createWod: should link movements and set creator using cached MovementService")
   void testCreateWod_Success() {
-    // 1. Mock Security & Repo (Optimization N+1)
     when(securityService.getCurrentUserId()).thenReturn(100L);
-    when(movementRepository.findAllById(any())).thenReturn(List.of(movement));
 
-    // 2. Mock Mapper & Save
+    // Mock Redis Hit
+    apex.stellar.aldebaran.dto.MovementResponse mockMovementDto =
+        mock(apex.stellar.aldebaran.dto.MovementResponse.class);
+    when(mockMovementDto.category()).thenReturn(Category.PULLING);
+    when(movementService.getMovement("GY-PU-001")).thenReturn(mockMovementDto);
+
+    // Mock Proxy JPA
+    when(movementRepository.getReferenceById("GY-PU-001")).thenReturn(movement);
+
     when(wodMapper.toEntity(wodRequest)).thenReturn(wod);
-
-    // Stubbing toWodMovementEntity
     WodMovement wmStub = new WodMovement();
     when(wodMapper.toWodMovementEntity(any())).thenReturn(wmStub);
-
     when(wodRepository.save(wod)).thenReturn(wod);
     when(wodMapper.toResponse(wod)).thenReturn(mock(WodResponse.class));
 
@@ -236,71 +210,80 @@ class WodServiceTest {
     assertNotNull(response);
     assertEquals(100L, wod.getAuthorId());
     assertEquals(1, wod.getMovements().size());
-    // Verify Modality aggregation
-    assertTrue(wod.getModalities().contains(Modality.GYMNASTICS));
+    assertTrue(wod.getModalities().contains(Modality.GYMNASTICS)); // Verified from Category.PULLING
 
-    verify(movementRepository).findAllById(any());
+    verify(movementService).getMovement("GY-PU-001");
+    verify(movementRepository).getReferenceById("GY-PU-001");
     verify(wodRepository).save(wod);
   }
 
   @Test
-  @DisplayName("createWod: should optimize DB calls by fetching all movements in batch")
-  void testCreateWod_BatchOptimization() {
-    WodMovementRequest m1 =
-        new WodMovementRequest("GY-PU-001", 1, "21", 0.0, null, 0, null, 0.0, null, 0, null, null);
-    WodMovementRequest m2 =
-        new WodMovementRequest("WL-SQ-001", 2, "15", 0.0, null, 0, null, 0.0, null, 0, null, null);
-
-    WodRequest batchRequest =
+  @DisplayName("createWod: should correctly aggregate multiple distinct modalities via DTOs")
+  void testCreateWod_ModalityAggregation() {
+    // Requests with 2 distinct movements
+    WodRequest multiModalityRequest =
         new WodRequest(
-            "Batch WOD",
+            "Diane",
             WodType.FOR_TIME,
             ScoreType.TIME,
             null,
             null,
-            null, // authorId
-            null, // gymId
+            null,
+            null,
             true,
-            0,
-            0,
-            0,
-            "21-15",
-            List.of(m1, m2));
-
-    Movement move1 = Movement.builder().id("GY-PU-001").category(Category.PULLING).build();
-    Movement move2 = Movement.builder().id("WL-SQ-001").category(Category.SQUAT).build();
-
-    Wod newWod = new Wod();
-    newWod.setMovements(new java.util.ArrayList<>());
-    newWod.setModalities(new HashSet<>());
-    when(wodMapper.toEntity(batchRequest)).thenReturn(newWod);
-    when(wodMapper.toWodMovementEntity(any())).thenReturn(new WodMovement());
-    when(wodRepository.save(any(Wod.class))).thenReturn(newWod);
-    when(wodMapper.toResponse(any(Wod.class))).thenReturn(mock(WodResponse.class));
-
-    when(movementRepository.findAllById(any())).thenReturn(List.of(move1, move2));
+            null,
+            null,
+            null,
+            "21-15-9",
+            List.of(
+                new WodMovementRequest(
+                    "WL-DL", 1, "21", null, null, 0, null, 225.0, null, 0, null, null),
+                new WodMovementRequest(
+                    "GY-PU", 2, "21", null, null, 0, null, 0.0, null, 0, null, null)));
 
     when(securityService.getCurrentUserId()).thenReturn(100L);
 
-    wodService.createWod(batchRequest);
+    // DTO Mocks
+    apex.stellar.aldebaran.dto.MovementResponse mockGymDto =
+        mock(apex.stellar.aldebaran.dto.MovementResponse.class);
+    when(mockGymDto.category()).thenReturn(Category.PULLING);
+    apex.stellar.aldebaran.dto.MovementResponse mockWlDto =
+        mock(apex.stellar.aldebaran.dto.MovementResponse.class);
+    when(mockWlDto.category()).thenReturn(Category.DEADLIFT);
 
-    verify(movementRepository, times(1)).findAllById(any());
-    verify(movementRepository, never()).findById(any());
+    when(movementService.getMovement("GY-PU")).thenReturn(mockGymDto);
+    when(movementService.getMovement("WL-DL")).thenReturn(mockWlDto);
+
+    when(movementRepository.getReferenceById(anyString())).thenReturn(new Movement());
+
+    when(wodMapper.toEntity(any())).thenReturn(wod);
+    when(wodMapper.toWodMovementEntity(any())).thenReturn(new WodMovement());
+    when(wodRepository.save(wod)).thenReturn(wod);
+
+    // When
+    wodService.createWod(multiModalityRequest);
+
+    // Then
+    assertEquals(2, wod.getModalities().size(), "Should aggregate exactly 2 distinct modalities");
+    assertTrue(wod.getModalities().contains(Modality.GYMNASTICS));
+    assertTrue(wod.getModalities().contains(Modality.WEIGHTLIFTING));
   }
 
   @Test
   @DisplayName("createWod: should throw exception if movement ID is invalid (Fail Fast)")
   void testCreateWod_InvalidMovement() {
     when(securityService.getCurrentUserId()).thenReturn(100L);
-    when(movementRepository.findAllById(any())).thenReturn(List.of()); // Empty list = Not Found
+
+    when(wodMapper.toEntity(any())).thenReturn(new Wod());
+
+    when(movementService.getMovement(any()))
+        .thenThrow(new ResourceNotFoundException("error.movement.not.found"));
 
     ResourceNotFoundException ex =
         assertThrows(ResourceNotFoundException.class, () -> wodService.createWod(wodRequest));
 
     assertEquals("error.movement.not.found", ex.getMessageKey());
     verify(wodRepository, never()).save(any());
-    // Mapper should not be called because exception is thrown before
-    verify(wodMapper, never()).toEntity(any());
   }
 
   @Test
@@ -323,7 +306,10 @@ class WodServiceTest {
         .when(wodMapper)
         .updateEntity(any(), any());
 
-    when(movementRepository.findAllById(any())).thenReturn(List.of(movement));
+    MovementResponse mockMovementDto = mock(MovementResponse.class);
+    when(movementService.getMovement(any())).thenReturn(mockMovementDto);
+    when(movementRepository.getReferenceById(any())).thenReturn(movement);
+
     when(wodMapper.toWodMovementEntity(any())).thenReturn(new WodMovement());
     when(wodRepository.save(wod)).thenReturn(wod);
     when(wodMapper.toResponse(wod)).thenReturn(mock(WodResponse.class));
@@ -338,7 +324,6 @@ class WodServiceTest {
   @Test
   @DisplayName("updateWod: Smart Merge should preserve existing entities if order matches")
   void testUpdateWod_SmartMerge_PreservesEntities() {
-    // Given: Existing WOD with one movement (ID 500)
     WodMovement existingMovement = new WodMovement();
     existingMovement.setId(500L);
     existingMovement.setOrderIndex(1);
@@ -350,12 +335,17 @@ class WodServiceTest {
 
     when(wodScoreRepository.existsByWodId(1L)).thenReturn(false);
     when(wodRepository.findByIdWithMovements(1L)).thenReturn(Optional.of(wod));
-    when(movementRepository.findAllById(any())).thenReturn(List.of(movement));
+
+    apex.stellar.aldebaran.dto.MovementResponse mockMovementDto =
+        mock(apex.stellar.aldebaran.dto.MovementResponse.class);
+    when(movementService.getMovement("GY-PU-001")).thenReturn(mockMovementDto);
+    when(movementRepository.getReferenceById("GY-PU-001")).thenReturn(movement);
+
     when(wodRepository.save(wod)).thenReturn(wod);
     when(wodMapper.toResponse(wod)).thenReturn(mock(WodResponse.class));
 
     WodMovement tempMovement = new WodMovement();
-    tempMovement.setRepsScheme("15-12-9"); // New value
+    tempMovement.setRepsScheme("15-12-9");
     tempMovement.setOrderIndex(1);
     when(wodMapper.toWodMovementEntity(any())).thenReturn(tempMovement);
 
@@ -377,10 +367,8 @@ class WodServiceTest {
                 new WodMovementRequest(
                     "GY-PU-001", 1, "15-12-9", 0.0, null, 0, null, 0.0, null, 0, null, null)));
 
-    // When
     wodService.updateWod(1L, updateRequest);
 
-    // Then
     assertEquals(1, wod.getMovements().size());
     WodMovement resultMovement = wod.getMovements().getFirst();
     assertEquals(500L, resultMovement.getId(), "Should preserve entity ID");
@@ -407,6 +395,95 @@ class WodServiceTest {
 
     assertThrows(ResourceNotFoundException.class, () -> wodService.updateWod(99L, wodRequest));
     verify(wodRepository, never()).save(any());
+  }
+
+  @Test
+  @DisplayName("updateWod: Smart Merge should remove orphans when a movement is deleted")
+  void testUpdateWod_SmartMerge_OrphanRemoval() {
+    // Given: Existing WOD with movement Order 1
+    WodMovement existingOrphan = new WodMovement();
+    existingOrphan.setId(500L);
+    existingOrphan.setOrderIndex(1); // Mouvement qui va être supprimé
+    wod.getMovements().add(existingOrphan);
+
+    when(wodScoreRepository.existsByWodId(1L)).thenReturn(false);
+    when(wodRepository.findByIdWithMovements(1L)).thenReturn(Optional.of(wod));
+
+    // On simule l'ajout d'un nouveau mouvement Order 2.
+    MovementResponse mockMovementDto = mock(MovementResponse.class);
+    when(movementService.getMovement(any())).thenReturn(mockMovementDto);
+    when(movementRepository.getReferenceById(any())).thenReturn(movement);
+
+    WodMovement newMovement = new WodMovement();
+    newMovement.setOrderIndex(2);
+    when(wodMapper.toWodMovementEntity(any())).thenReturn(newMovement);
+
+    when(wodRepository.save(wod)).thenReturn(wod);
+
+    // Update Request contains ONLY Order 2 (Order 1 is omitted, thus deleted)
+    WodRequest updateRequest =
+        new WodRequest(
+            "Fran",
+            WodType.FOR_TIME,
+            ScoreType.TIME,
+            null,
+            null,
+            null,
+            null,
+            true,
+            null,
+            null,
+            null,
+            null,
+            List.of(
+                new WodMovementRequest(
+                    "GY-PU-001", 2, "15", null, null, 0, null, null, null, 0, null, null)));
+
+    // When
+    wodService.updateWod(1L, updateRequest);
+
+    // Then
+    assertEquals(1, wod.getMovements().size(), "Should contain exactly 1 movement after merge");
+    assertEquals(
+        2,
+        wod.getMovements().getFirst().getOrderIndex(),
+        "The remaining movement must be the new one (Order 2)");
+    assertFalse(
+        wod.getMovements().contains(existingOrphan),
+        "The orphan movement (Order 1) should be removed");
+  }
+
+  @Test
+  @DisplayName("updateWod: should handle update with empty movements gracefully")
+  void testUpdateWod_EmptyMovements() {
+    // Given
+    when(wodScoreRepository.existsByWodId(1L)).thenReturn(false);
+    when(wodRepository.findByIdWithMovements(1L)).thenReturn(Optional.of(wod));
+    when(wodMapper.toResponse(wod)).thenReturn(mock(WodResponse.class));
+    when(wodRepository.save(wod)).thenReturn(wod);
+
+    WodRequest emptyMovementsRequest =
+        new WodRequest(
+            "Empty",
+            WodType.FOR_TIME,
+            ScoreType.TIME,
+            null,
+            null,
+            null,
+            null,
+            true,
+            null,
+            null,
+            null,
+            null,
+            List.of()); // Liste vide !
+
+    // When
+    assertDoesNotThrow(() -> wodService.updateWod(1L, emptyMovementsRequest));
+
+    // Then
+    verify(movementService, never()).getMovement(anyString());
+    verify(movementRepository, never()).getReferenceById(anyString());
   }
 
   @Test

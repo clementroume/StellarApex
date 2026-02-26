@@ -33,7 +33,7 @@ public record MovementResponse(
     @Schema(
             description = "Indicates if this movement typically requires an external load (weight)",
             example = "true")
-        boolean isLoadBearing,
+        boolean loadBearing,
 
     // --- Internationalized Content ---
     @Schema(description = "Description in English") String descriptionEn,

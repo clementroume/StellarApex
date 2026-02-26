@@ -10,44 +10,51 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 /**
- * Repository interface for managing {@link Movement} entities.
- *
- * <p>Acts as the primary data access layer for the exercise catalog (Master Data). Caching is
- * delegated to the Service layer to handle DTOs directly.
+ * Repository interface for {@link Movement} entities. Provides standard CRUD operations and custom
+ * query methods for movement data.
  */
 @Repository
 public interface MovementRepository extends JpaRepository<Movement, String> {
 
-  // -------------------------------------------------------------------------
-  // FULL ENTITY QUERIES (For Detail/Edit/Audit Views)
-  // -------------------------------------------------------------------------
-
-  /** Retrieves a movement by ID. */
+  /**
+   * Retrieves a movement by its unique identifier.
+   *
+   * @param id the unique identifier of the movement
+   * @return an {@link Optional} containing the movement if found, or empty otherwise
+   */
   @Override
   @NonNull Optional<Movement> findById(String id);
 
-  // -------------------------------------------------------------------------
-  // PROJECTION QUERIES (For List/Search Views - Optimized)
-  // -------------------------------------------------------------------------
+  /**
+   * Checks if a movement exists with the given name, ignoring case.
+   *
+   * @param name the name to check
+   * @return true if a movement with the name exists, false otherwise
+   */
+  boolean existsByNameIgnoreCase(String name);
 
   /**
-   * Returns all movements as lightweight projections. ~70% faster than findAll() for listing
-   * screens.
+   * Retrieves a list of all movements projected as {@link MovementSummary}.
+   *
+   * @return a list of movement summaries
    */
   List<MovementSummary> findAllProjectedBy();
 
-  /** Searches movements by name (projection). Ideal for autocomplete and public search results. */
+  /**
+   * Finds movements whose names contain the specified string, ignoring case, returning them as
+   * {@link MovementSummary} projections.
+   *
+   * @param name the string to search for within movement names
+   * @return a list of matching movement summaries
+   */
   List<MovementSummary> findProjectedByNameContainingIgnoreCase(String name);
 
   /**
-   * Retrieves movements by category as projections. Enables efficient filtering (e.g., "Show me all
-   * Gymnastics movements").
+   * Finds movements belonging to a specific category, returning them as {@link MovementSummary}
+   * projections.
+   *
+   * @param category the category to filter by
+   * @return a list of movement summaries in the specified category
    */
   List<MovementSummary> findProjectedByCategory(Category category);
-
-  /**
-   * Checks for the existence of an entity (e.g., Movement) in the database by its name, ignoring
-   * case differences.
-   */
-  boolean existsByNameIgnoreCase(String name);
 }

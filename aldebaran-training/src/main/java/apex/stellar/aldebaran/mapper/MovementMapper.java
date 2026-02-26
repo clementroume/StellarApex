@@ -7,6 +7,7 @@ import apex.stellar.aldebaran.dto.MovementResponse;
 import apex.stellar.aldebaran.dto.MovementSummaryResponse;
 import apex.stellar.aldebaran.model.entities.Movement;
 import apex.stellar.aldebaran.model.entities.MovementMuscle;
+import apex.stellar.aldebaran.repository.projection.MovementSummary;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
@@ -49,14 +50,13 @@ public interface MovementMapper {
   MovementResponse toResponse(Movement movement);
 
   /**
-   * Converts a Movement entity to a lightweight Summary DTO.
+   * Maps a {@link MovementSummary} projection to a {@link MovementSummaryResponse} DTO.
    *
-   * <p>Used for list views and autocomplete where full details are not required.
-   *
-   * @param movement The source entity.
-   * @return The summary DTO.
+   * @param projection The source projection containing lightweight movement information.
+   * @return A response DTO with id, name, abbreviation, category, and thumbnail URL for display
+   *     purposes.
    */
-  MovementSummaryResponse toSummary(Movement movement);
+  MovementSummaryResponse toSummary(MovementSummary projection);
 
   /**
    * Maps a creation request to a Movement entity.
@@ -96,7 +96,8 @@ public interface MovementMapper {
    * @param movementMuscle The source join entity.
    * @return The DTO including the muscle details and role.
    */
-  @Mapping(target = "muscle", source = "muscle") // Delegates to MuscleMapper
+  @SuppressWarnings("unused")
+  @Mapping(target = "muscle", source = "muscle")
   MovementMuscleResponse toMuscleResponse(MovementMuscle movementMuscle);
 
   /**

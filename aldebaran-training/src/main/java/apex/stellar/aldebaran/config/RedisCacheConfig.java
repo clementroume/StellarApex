@@ -1,8 +1,12 @@
 package apex.stellar.aldebaran.config;
 
+import apex.stellar.aldebaran.dto.MovementSummaryResponse;
+import apex.stellar.aldebaran.dto.MuscleResponse;
+import apex.stellar.aldebaran.dto.WodResponse;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import java.time.Duration;
+import java.util.List;
 import java.util.Map;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -12,49 +16,38 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.cache.RedisCacheConfiguration;
 import org.springframework.data.redis.cache.RedisCacheManager;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
-import org.springframework.data.redis.serializer.GenericJacksonJsonRedisSerializer;
+import org.springframework.data.redis.serializer.JacksonJsonRedisSerializer;
 import org.springframework.data.redis.serializer.RedisSerializationContext;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
 import org.springframework.validation.annotation.Validated;
 import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.type.TypeFactory;
 
 /**
- * Redis cache configuration with custom TTL per data type.
- *
- * <p><b>Invalidation Strategy:</b>
- *
- * <ul>
- *   <li><b>Movements:</b> Updates evict all entries (details and lists) to ensure consistency.
- *   <li><b>WODs:</b> Individual eviction on update/delete.
- * </ul>
- *
- * <p>Cache Strategy:
- *
- * <ul>
- *   <li>Master Data (Movements, Muscles): 24h TTL
- *   <li>WODs: 1h TTL
- * </ul>
+ * Configuration class for Redis-based caching. Sets up specific serializers and TTLs for different
+ * cache regions.
  */
 @Configuration
 @EnableCaching
 @EnableConfigurationProperties(RedisCacheConfig.CacheProperties.class)
 public class RedisCacheConfig {
 
+  /** Cache name for movement master data. */
   public static final String CACHE_MOVEMENTS = "movements";
+
+  /** Cache name for muscle master data. */
   public static final String CACHE_MUSCLES = "muscles";
+
+  /** Cache name for Workout of the Day (WOD) data. */
   public static final String CACHE_WODS = "wods";
 
   /**
-   * Configures a {@link RedisCacheManager} bean with custom TTL (Time-to-Live) values for different
-   * cache categories. This method sets up default serialization for keys and values, applies a
-   * default TTL, and optionally overrides it for specific cache configurations.
+   * Configures the {@link RedisCacheManager} with custom serializers for specific DTOs.
    *
-   * @param connectionFactory the {@link RedisConnectionFactory} to be used for creating the cache
-   *     manager.
-   * @param properties an instance of {@link CacheProperties} containing TTL settings for the
-   *     different cache categories.
-   * @param objectMapper the Spring-managed ObjectMapper for consistent serialization.
-   * @return a {@link RedisCacheManager} instance with the specified configurations.
+   * @param connectionFactory the Redis connection factory
+   * @param properties validated cache configuration properties
+   * @param objectMapper the Jackson object mapper for JSON serialization
+   * @return a configured RedisCacheManager
    */
   @Bean
   public RedisCacheManager cacheManager(
@@ -62,47 +55,58 @@ public class RedisCacheConfig {
       CacheProperties properties,
       ObjectMapper objectMapper) {
 
-    GenericJacksonJsonRedisSerializer serializer =
-        new GenericJacksonJsonRedisSerializer(objectMapper);
+    TypeFactory tf = objectMapper.getTypeFactory();
 
-    RedisCacheConfiguration defaultConfig =
+    var wodType = tf.constructType(WodResponse.class);
+    var wodSerializer = new JacksonJsonRedisSerializer<>(objectMapper, wodType);
+
+    var movementsType = tf.constructCollectionType(List.class, MovementSummaryResponse.class);
+    var movementsSerializer = new JacksonJsonRedisSerializer<>(objectMapper, movementsType);
+
+    var musclesType = tf.constructCollectionType(List.class, MuscleResponse.class);
+    var musclesSerializer = new JacksonJsonRedisSerializer<>(objectMapper, musclesType);
+
+    RedisCacheConfiguration baseConfig =
         RedisCacheConfiguration.defaultCacheConfig()
             .entryTtl(Duration.ofMillis(properties.defaultTtl()))
             .disableCachingNullValues()
             .serializeKeysWith(
                 RedisSerializationContext.SerializationPair.fromSerializer(
-                    new StringRedisSerializer()))
-            .serializeValuesWith(
-                RedisSerializationContext.SerializationPair.fromSerializer(serializer));
-
-    // Apply Key Prefix if configured (Environment Isolation)
-    if (properties.keyPrefix() != null && !properties.keyPrefix().isBlank()) {
-      defaultConfig =
-          defaultConfig.computePrefixWith(
-              cacheName -> properties.keyPrefix() + "::" + cacheName + "::");
-    }
-
-    RedisCacheConfiguration masterDataConfig =
-        defaultConfig.entryTtl(Duration.ofMillis(properties.masterDataTtl()));
-
-    RedisCacheConfiguration wodsConfig =
-        defaultConfig.entryTtl(Duration.ofMillis(properties.wodsTtl()));
+                    new StringRedisSerializer()));
 
     Map<String, RedisCacheConfiguration> cacheConfigurations =
         Map.of(
-            CACHE_MOVEMENTS, masterDataConfig,
-            CACHE_MUSCLES, masterDataConfig,
-            CACHE_WODS, wodsConfig);
+            CACHE_WODS,
+                baseConfig
+                    .entryTtl(Duration.ofMillis(properties.wodsTtl()))
+                    .serializeValuesWith(
+                        RedisSerializationContext.SerializationPair.fromSerializer(wodSerializer)),
+            CACHE_MOVEMENTS,
+                baseConfig
+                    .entryTtl(Duration.ofMillis(properties.masterDataTtl()))
+                    .serializeValuesWith(
+                        RedisSerializationContext.SerializationPair.fromSerializer(
+                            movementsSerializer)),
+            CACHE_MUSCLES,
+                baseConfig
+                    .entryTtl(Duration.ofMillis(properties.masterDataTtl()))
+                    .serializeValuesWith(
+                        RedisSerializationContext.SerializationPair.fromSerializer(
+                            musclesSerializer)));
 
     return RedisCacheManager.builder(connectionFactory)
-        .cacheDefaults(defaultConfig)
+        .cacheDefaults(baseConfig)
         .withInitialCacheConfigurations(cacheConfigurations)
         .build();
   }
 
   /**
-   * Inner configuration record for Cache properties. Maps properties starting with
-   * 'application.cache'.
+   * Configuration properties for caching.
+   *
+   * @param defaultTtl Default time-to-live in milliseconds.
+   * @param masterDataTtl TTL for master data (movements, muscles) in milliseconds.
+   * @param wodsTtl TTL for WOD data in milliseconds.
+   * @param keyPrefix Optional prefix for Redis keys.
    */
   @ConfigurationProperties(prefix = "application.cache")
   @Validated

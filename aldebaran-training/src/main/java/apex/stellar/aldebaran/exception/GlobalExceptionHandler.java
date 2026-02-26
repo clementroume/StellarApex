@@ -2,11 +2,10 @@ package apex.stellar.aldebaran.exception;
 
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
-import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
 import java.net.URI;
+import java.util.List;
 import java.util.Locale;
-import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.NonNull;
@@ -41,11 +40,6 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
   /**
    * Handles {@link ResourceNotFoundException} when a requested resource cannot be found. Returns a
    * 404 Not Found status.
-   *
-   * @param ex The thrown exception containing the message key and arguments.
-   * @param request The current HTTP request.
-   * @param locale The locale for message translation.
-   * @return A {@link ResponseEntity} containing the {@link ProblemDetail}.
    */
   @ExceptionHandler(ResourceNotFoundException.class)
   public ResponseEntity<@NonNull ProblemDetail> handleNotFound(
@@ -58,12 +52,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
   /**
    * Handles {@link DataConflictException} when a request conflicts with the current state of the
-   * server. Returns a 409 Conflict status.
-   *
-   * @param ex The thrown exception.
-   * @param request The current HTTP request.
-   * @param locale The locale for message translation.
-   * @return A {@link ResponseEntity} containing the {@link ProblemDetail}.
+   * server. Returns a 409-Conflict status.
    */
   @ExceptionHandler(DataConflictException.class)
   public ResponseEntity<@NonNull ProblemDetail> handleConflict(
@@ -89,20 +78,33 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
   /**
    * Handles {@link ConstraintViolationException} triggered by JPA/Hibernate Validator
-   * (e.g. @ValidScore). Returns 400 Bad Request with the validation message.
+   * (e.g., @ValidScore). Returns 400 Bad Request with a structured array of validation errors.
    */
   @ExceptionHandler(ConstraintViolationException.class)
   public ResponseEntity<@NonNull ProblemDetail> handleConstraintViolation(
       ConstraintViolationException ex, HttpServletRequest request, Locale locale) {
 
-    String errors =
+    List<FieldErrorDetail> errors =
         ex.getConstraintViolations().stream()
-            .map(ConstraintViolation::getMessage)
-            .collect(Collectors.joining("; "));
+            .map(
+                violation -> {
+                  String path = violation.getPropertyPath().toString();
+                  String field =
+                      path.substring(path.lastIndexOf('.') + 1); // Extract final property name
+                  return new FieldErrorDetail(field, violation.getMessage());
+                })
+            .toList();
 
     log.warn("Constraint violation: {}", errors);
-    // Use generic validation title, detail contains specifics
-    return createProblemResponse(HttpStatus.BAD_REQUEST, "Validation Error", errors, request);
+
+    ProblemDetail problemDetail =
+        ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, "Validation failed");
+    problemDetail.setTitle(getLocalizedMessage("error.validation", null, locale));
+    problemDetail.setInstance(URI.create(request.getRequestURI()));
+
+    problemDetail.setProperty("errors", errors);
+
+    return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(problemDetail);
   }
 
   /**
@@ -111,7 +113,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
    */
   @ExceptionHandler(EntityNotFoundException.class)
   public ResponseEntity<@NonNull ProblemDetail> handleEntityNotFound(
-      EntityNotFoundException ex, HttpServletRequest request, Locale locale) {
+      EntityNotFoundException ex, HttpServletRequest request) {
 
     log.debug("Entity not found: {}", ex.getMessage());
     return createProblemResponse(
@@ -121,11 +123,6 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
   /**
    * Handles {@link AccessDeniedException} when a user lacks the necessary permissions. Returns a
    * 403 Forbidden status.
-   *
-   * @param ex The exception.
-   * @param request The current HTTP request.
-   * @param locale The locale for message translation.
-   * @return A {@link ResponseEntity} containing the {@link ProblemDetail}.
    */
   @ExceptionHandler(AccessDeniedException.class)
   public ResponseEntity<@NonNull ProblemDetail> handleAccessDenied(
@@ -144,29 +141,29 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
   /**
    * Overrides the standard Spring MVC validation handler to provide detailed field error logging
-   * and a customized ProblemDetail response.
+   * and a customized ProblemDetail response with a structured array of errors.
    */
   @Override
   protected ResponseEntity<@NonNull Object> handleMethodArgumentNotValid(
-      MethodArgumentNotValidException ex,
+      @NonNull MethodArgumentNotValidException ex,
       @NonNull HttpHeaders headers,
       @NonNull HttpStatusCode status,
-      WebRequest request) {
+      @NonNull WebRequest request) {
 
-    String errors =
+    List<FieldErrorDetail> errors =
         ex.getBindingResult().getFieldErrors().stream()
-            .map(error -> error.getField() + ": " + error.getDefaultMessage())
-            .collect(Collectors.joining("; "));
+            .map(error -> new FieldErrorDetail(error.getField(), error.getDefaultMessage()))
+            .toList();
 
     String requestUri = ((ServletWebRequest) request).getRequest().getRequestURI();
     log.info("Validation errors on [{}]: {}", requestUri, errors);
 
     ProblemDetail problemDetail = ex.getBody();
-    // We use the localized message for title if available, otherwise default
-    // Note: Antares uses a specific key for validation title, we keep it consistent here
     problemDetail.setTitle(getLocalizedMessage("error.validation", null, request.getLocale()));
-    problemDetail.setDetail(errors);
+    problemDetail.setDetail("Validation failed"); // Generic detail string
     problemDetail.setInstance(URI.create(requestUri));
+
+    problemDetail.setProperty("errors", errors);
 
     return createResponseEntity(problemDetail, headers, status, request);
   }
@@ -174,11 +171,6 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
   /**
    * Catch-all handler for any unexpected runtime exceptions. Logs the full stack trace and returns
    * a generic 500 Internal Server Error.
-   *
-   * @param ex The unexpected exception.
-   * @param request The current HTTP request.
-   * @param locale The locale for message translation.
-   * @return A {@link ResponseEntity} containing the {@link ProblemDetail}.
    */
   @ExceptionHandler(Exception.class)
   public ResponseEntity<@NonNull ProblemDetail> handleGeneric(
@@ -212,4 +204,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
       return key;
     }
   }
+
+  /** Structured representation of a validation error for a specific field. */
+  public record FieldErrorDetail(String field, String message) {}
 }

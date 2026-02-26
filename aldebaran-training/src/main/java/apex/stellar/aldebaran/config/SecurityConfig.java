@@ -31,7 +31,8 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 /**
- * Security configuration for Aldebaran Training API. Uses JWT from Antares Auth for authentication.
+ * Configuration class for Spring Security. Configures CORS, CSRF, session management, and custom
+ * authentication filters to handle internal requests forwarded from the API Gateway.
  */
 @Configuration
 @EnableWebSecurity
@@ -45,13 +46,10 @@ public class SecurityConfig {
   private String internalSecret;
 
   /**
-   * Configures the security filter chain for the application, including CSRF protection, CORS
-   * configuration, authentication, and session management. This method returns a fully built {@link
-   * SecurityFilterChain} tailored to the application's security needs.
+   * Configures the security filter chain.
    *
-   * @param http the {@link HttpSecurity} configuration object that allows customization of various
-   *     security aspects, such as authentication, session policies, and request authorization.
-   * @return a {@link SecurityFilterChain} instance configured with the defined security policies.
+   * @param http the {@link HttpSecurity} to modify
+   * @return the built {@link SecurityFilterChain}
    */
   @Bean
   public SecurityFilterChain securityFilterChain(HttpSecurity http) {
@@ -75,14 +73,9 @@ public class SecurityConfig {
   }
 
   /**
-   * Creates and configures a {@link CorsConfigurationSource} bean to define Cross-Origin Resource
-   * Sharing (CORS) policies for the application. This includes setting allowed origins, HTTP
-   * methods, headers, and credentials for incoming requests matching the specified paths.
+   * Configures CORS settings for the application.
    *
-   * <p>The CORS configuration is registered for all paths ("/**") to ensure compliance with
-   * security requirements while enabling cross-origin requests from authorized sources.
-   *
-   * @return an instance of {@link CorsConfigurationSource} containing the specified CORS policies.
+   * @return a {@link CorsConfigurationSource} with the defined settings
    */
   @Bean
   public CorsConfigurationSource corsConfigurationSource() {
@@ -105,6 +98,10 @@ public class SecurityConfig {
     return source;
   }
 
+  /**
+   * Filter responsible for validating the internal secret and extracting user identity from headers
+   * provided by the API Gateway.
+   */
   @Slf4j
   private static class ForwardedAuthFilter extends OncePerRequestFilter {
 
@@ -115,13 +112,13 @@ public class SecurityConfig {
     }
 
     /**
-     * Filters incoming requests to extract authentication details from custom headers.
+     * Processes the incoming request to validate the internal secret and establish authentication.
      *
-     * @param request The HTTP request.
-     * @param response The HTTP response.
-     * @param chain The filter chain.
-     * @throws ServletException If a servlet error occurs.
-     * @throws IOException If an I/O error occurs.
+     * @param request the {@link HttpServletRequest}
+     * @param response the {@link HttpServletResponse}
+     * @param chain the {@link FilterChain}
+     * @throws ServletException if a servlet-specific error occurs
+     * @throws IOException if an I/O error occurs
      */
     @Override
     protected void doFilterInternal(
@@ -172,6 +169,18 @@ public class SecurityConfig {
         }
       }
       chain.doFilter(request, response);
+    }
+
+    /**
+     * Determines whether the filter should be skipped for the given request.
+     *
+     * @param request the current HTTP request
+     * @return {@code true} if the filter should not be applied, {@code false} otherwise
+     */
+    @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) {
+      String path = request.getServletPath();
+      return path.startsWith("/actuator") || path.startsWith("/aldebaran-docs");
     }
   }
 }

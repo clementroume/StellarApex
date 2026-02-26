@@ -74,9 +74,9 @@ class WodControllerIT extends BaseIntegrationTest {
                 .header("X-Auth-User-Role", "USER")
                 .header("X-Internal-Secret", "test-internal-secret"))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$", hasSize(1)))
-        .andExpect(jsonPath("$[0].title").value("Fran"))
-        .andExpect(jsonPath("$[0].wodType").value("FOR_TIME"));
+        .andExpect(jsonPath("$.content", hasSize(1)))
+        .andExpect(jsonPath("$.content[0].title").value("Fran"))
+        .andExpect(jsonPath("$.content[0].wodType").value("FOR_TIME"));
   }
 
   @Test
@@ -99,8 +99,8 @@ class WodControllerIT extends BaseIntegrationTest {
                 .header("X-Auth-User-Role", "USER")
                 .header("X-Internal-Secret", "test-internal-secret"))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$", hasSize(1)))
-        .andExpect(jsonPath("$[0].title").value("Grace"));
+        .andExpect(jsonPath("$.content", hasSize(1)))
+        .andExpect(jsonPath("$.content[0].title").value("Grace"));
   }
 
   @Test
@@ -114,8 +114,8 @@ class WodControllerIT extends BaseIntegrationTest {
                 .header("X-Auth-User-Role", "USER")
                 .header("X-Internal-Secret", "test-internal-secret"))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$", hasSize(1)))
-        .andExpect(jsonPath("$[0].title").value("Fran"));
+        .andExpect(jsonPath("$.content", hasSize(1)))
+        .andExpect(jsonPath("$.content[0].title").value("Fran"));
   }
 
   @Test
