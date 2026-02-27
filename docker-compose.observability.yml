@@ -51,7 +51,7 @@ services:
 
   # --- 3. LOGS STORAGE (LOKI) ---
   vega-loki:
-    image: grafana/loki:3.6.6
+    image: grafana/loki:3.6.7
     container_name: vega-loki
     volumes:
       - "./monitoring/loki/loki-config.yaml:/etc/loki/local-config.yaml"
