@@ -7,7 +7,7 @@ import {
   withInterceptors
 } from '@angular/common/http';
 import {authInterceptor} from './auth.interceptor';
-import {AuthService} from '../services/auth.service';
+import {AuthService} from '../../api/antares/services/auth.service';
 import {Router} from '@angular/router';
 import {of, throwError} from 'rxjs';
 import {environment} from '../../../environments/environment';

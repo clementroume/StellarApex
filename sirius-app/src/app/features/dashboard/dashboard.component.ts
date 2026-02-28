@@ -1,7 +1,7 @@
-import { ChangeDetectionStrategy, Component } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { NavbarComponent } from '../../core/components/navbar/navbar.component';
-import { TranslateModule } from '@ngx-translate/core';
+import {ChangeDetectionStrategy, Component} from '@angular/core';
+import {CommonModule} from '@angular/common';
+import {NavbarComponent} from '../../core/layout/navbar/navbar.component';
+import {TranslateModule} from '@ngx-translate/core';
 
 /**
  * The main dashboard component.

@@ -10,4 +10,5 @@ export const environment = {
    * This is used by services like AuthService to construct full endpoint URLs.
    */
   authUrl: '/antares',
+  trainingUrl: '/aldebaran'
 };

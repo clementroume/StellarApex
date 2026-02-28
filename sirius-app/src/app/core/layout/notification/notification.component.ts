@@ -1,6 +1,6 @@
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { NotificationService } from '../../services/notification.service';
+import {ChangeDetectionStrategy, Component, inject} from '@angular/core';
+import {CommonModule} from '@angular/common';
+import {NotificationService} from '../../services/notification.service';
 
 /**
  * A global component to display toast notifications.

@@ -1,6 +1,7 @@
-import { Routes } from '@angular/router';
-import { LoginComponent } from './login/login.component';
-import { RegisterComponent } from './register/register.component';
+import {Routes} from '@angular/router';
+import {LoginComponent} from './login/login.component';
+import {RegisterComponent} from './register/register.component';
+import {AuthComponent} from './auth.component';
 
 /**
  * Defines the child routes for the authentication feature area.
@@ -8,20 +9,26 @@ import { RegisterComponent } from './register/register.component';
  */
 export const AUTH_ROUTES: Routes = [
   {
-    // The route for the user login page.
-    path: 'login',
-    component: LoginComponent
-  },
-  {
-    // The route for the new user registration page.
-    path: 'register',
-    component: RegisterComponent
-  },
-  {
-    // Default route for the '/auth' path.
-    // Redirects any navigation to '/auth' directly to '/auth/login'.
+    // Le composant parent qui sert de layout pour l'authentification
     path: '',
-    redirectTo: 'login',
-    pathMatch: 'full'
+    component: AuthComponent,
+    children: [
+      {
+        // The route for the user login page.
+        path: 'login',
+        component: LoginComponent
+      },
+      {
+        // The route for the new user registration page.
+        path: 'register',
+        component: RegisterComponent
+      },
+      {
+        // Default route for the '/auth' path.
+        path: '',
+        redirectTo: 'login',
+        pathMatch: 'full'
+      }
+    ]
   }
 ];

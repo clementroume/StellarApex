@@ -1,6 +1,6 @@
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { LoadingService } from '../../services/loading.service';
+import {ChangeDetectionStrategy, Component, inject} from '@angular/core';
+import {CommonModule} from '@angular/common';
+import {LoadingService} from '../../services/loading.service';
 
 /**
  * A global loader component that displays a full-screen spinner.

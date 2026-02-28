@@ -1,9 +1,9 @@
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { RouterModule } from '@angular/router';
-import { AuthService } from '../../services/auth.service';
-import { ThemeService } from '../../services/theme.service';
-import { TranslateModule } from '@ngx-translate/core';
+import {ChangeDetectionStrategy, Component, inject} from '@angular/core';
+import {CommonModule} from '@angular/common';
+import {RouterModule} from '@angular/router';
+import {AuthService} from '../../../api/antares/services/auth.service';
+import {ThemeService} from '../../services/theme.service';
+import {TranslateModule} from '@ngx-translate/core';
 
 /**
  * The main navigation bar for the application.
@@ -37,5 +37,12 @@ export class NavbarComponent {
    */
   logout(): void {
     this.authService.logout().subscribe();
+  }
+
+  closeDropdown(): void {
+    const activeElement = document.activeElement as HTMLElement;
+    if (activeElement) {
+      activeElement.blur();
+    }
   }
 }

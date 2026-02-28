@@ -1,7 +1,7 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { GlobalLoaderComponent } from './global-loader.component';
-import { LoadingService } from '../../services/loading.service';
-import { signal, WritableSignal } from '@angular/core';
+import {ComponentFixture, TestBed} from '@angular/core/testing';
+import {GlobalLoaderComponent} from './global-loader.component';
+import {LoadingService} from '../../services/loading.service';
+import {signal, WritableSignal} from '@angular/core';
 
 describe('GlobalLoaderComponent', () => {
   let component: GlobalLoaderComponent;
@@ -18,7 +18,7 @@ describe('GlobalLoaderComponent', () => {
         // Provide a mock LoadingService that uses our controllable signal
         {
           provide: LoadingService,
-          useValue: { isLoading: mockIsLoading.asReadonly() }
+          useValue: {isLoading: mockIsLoading.asReadonly()}
         }
       ]
     }).compileComponents();

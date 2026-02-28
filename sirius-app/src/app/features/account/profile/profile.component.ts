@@ -1,7 +1,8 @@
 import {ChangeDetectionStrategy, Component, inject, OnInit} from '@angular/core';
 import {CommonModule} from '@angular/common';
 import {FormBuilder, FormGroup, ReactiveFormsModule, Validators} from '@angular/forms';
-import {AuthService} from '../../../core/services/auth.service';
+import {AuthService} from '../../../api/antares/services/auth.service';
+import {UserService} from '../../../api/antares/services/user.service';
 import {TranslateModule, TranslateService} from '@ngx-translate/core';
 import {NotificationService} from '../../../core/services/notification.service';
 import {HttpErrorResponse} from '@angular/common/http';
@@ -23,6 +24,7 @@ export class ProfileComponent implements OnInit {
   public readonly profileForm: FormGroup;
 
   public readonly authService = inject(AuthService);
+  public readonly userService = inject(UserService);
   private readonly fb = inject(FormBuilder);
   private readonly notificationService = inject(NotificationService);
   private readonly translate = inject(TranslateService);
@@ -71,7 +73,7 @@ export class ProfileComponent implements OnInit {
       return;
     }
 
-    this.authService.updateProfile(this.profileForm.value).subscribe({
+    this.userService.updateProfile(this.profileForm.value).subscribe({
       next: () => {
         this.translate.get('PROFILE.SUCCESS_UPDATE').subscribe((message: string) => {
           this.notificationService.showSuccess(message);

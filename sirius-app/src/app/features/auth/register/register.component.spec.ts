@@ -4,7 +4,7 @@ import {provideHttpClient} from '@angular/common/http';
 import {provideHttpClientTesting} from '@angular/common/http/testing';
 import {provideRouter} from '@angular/router';
 import {TranslateModule} from '@ngx-translate/core';
-import {AuthService} from '../../../core/services/auth.service';
+import {AuthService} from '../../../api/antares/services/auth.service';
 import {of} from 'rxjs';
 
 describe('RegisterComponent', () => {

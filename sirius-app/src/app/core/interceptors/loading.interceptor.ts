@@ -1,7 +1,7 @@
-import { HttpInterceptorFn } from '@angular/common/http';
-import { inject } from '@angular/core';
-import { finalize } from 'rxjs';
-import { LoadingService } from '../services/loading.service';
+import {HttpInterceptorFn} from '@angular/common/http';
+import {inject} from '@angular/core';
+import {finalize} from 'rxjs';
+import {LoadingService} from '../services/loading.service';
 
 /**
  * A functional interceptor that automatically manages a global loading indicator.

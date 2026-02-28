@@ -1,0 +1,87 @@
+<div class="container mx-auto px-4 py-8 max-w-3xl">
+
+  <div class="mb-6 flex items-center gap-4">
+    <a routerLink="/muscles"
+       class="btn btn-sm btn-ghost">&larr; {{ 'MUSCLE.FORM.BACK' | translate }}</a>
+    <h1 class="text-3xl font-bold">
+      {{ (isEditMode() ? 'MUSCLE.FORM.TITLE_EDIT' : 'MUSCLE.FORM.TITLE_ADD') | translate }}
+    </h1>
+  </div>
+
+  <div class="bg-base-100 shadow-xl rounded-box p-6 lg:p-8">
+    <form [formGroup]="muscleForm" (ngSubmit)="onSubmit()" class="space-y-6">
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="form-control w-full">
+          <label class="label"><span
+            class="label-text font-semibold">{{ 'MUSCLE.FORM.MEDICAL_NAME' | translate }}</span></label>
+          <input type="text" formControlName="medicalName" class="input input-bordered w-full"
+                 [class.input-error]="muscleForm.controls.medicalName.invalid && muscleForm.controls.medicalName.touched"
+                 [placeholder]="'MUSCLE.FORM.MEDICAL_NAME_PH' | translate"/>
+          @if (muscleForm.controls.medicalName.invalid && muscleForm.controls.medicalName.touched) {
+            <label class="label"><span
+              class="label-text-alt text-error">{{ 'MUSCLE.FORM.ERROR_MEDICAL_NAME' | translate }}</span></label>
+          }
+        </div>
+
+        <div class="form-control w-full">
+          <label class="label"><span
+            class="label-text font-semibold">{{ 'MUSCLE.FORM.GROUP' | translate }}</span></label>
+          <select formControlName="muscleGroup" class="select select-bordered w-full"
+                  [class.select-error]="muscleForm.controls.muscleGroup.invalid && muscleForm.controls.muscleGroup.touched">
+            <option value="" disabled selected>{{ 'MUSCLE.FORM.GROUP_PH' | translate }}</option>
+            @for (group of muscleGroups; track group) {
+              <option [value]="group">{{ 'MUSCLE.GROUPS.' + group | translate }}</option>
+            }
+          </select>
+        </div>
+      </div>
+
+      <div class="divider">{{ 'MUSCLE.FORM.COMMON_NAMES' | translate }}</div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="form-control w-full">
+          <label class="label"><span
+            class="label-text font-semibold">{{ 'MUSCLE.FORM.NAME_FR' | translate }}</span></label>
+          <input type="text" formControlName="commonNameFr" class="input input-bordered w-full"
+                 [placeholder]="'MUSCLE.FORM.NAME_FR_PH' | translate"/>
+        </div>
+        <div class="form-control w-full">
+          <label class="label"><span
+            class="label-text font-semibold">{{ 'MUSCLE.FORM.NAME_EN' | translate }}</span></label>
+          <input type="text" formControlName="commonNameEn" class="input input-bordered w-full"
+                 [placeholder]="'MUSCLE.FORM.NAME_EN_PH' | translate"/>
+        </div>
+      </div>
+
+      <div class="divider">{{ 'MUSCLE.FORM.DESCRIPTIONS' | translate }}</div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="form-control w-full">
+          <label class="label"><span
+            class="label-text font-semibold">{{ 'MUSCLE.FORM.DESC_FR' | translate }}</span></label>
+          <textarea formControlName="descriptionFr" class="textarea textarea-bordered h-24"
+                    [placeholder]="'MUSCLE.FORM.DESC_FR_PH' | translate"></textarea>
+        </div>
+        <div class="form-control w-full">
+          <label class="label"><span
+            class="label-text font-semibold">{{ 'MUSCLE.FORM.DESC_EN' | translate }}</span></label>
+          <textarea formControlName="descriptionEn" class="textarea textarea-bordered h-24"
+                    [placeholder]="'MUSCLE.FORM.DESC_EN_PH' | translate"></textarea>
+        </div>
+      </div>
+
+      <div class="mt-8 flex justify-end gap-4">
+        <a routerLink="/muscles" class="btn btn-ghost">{{ 'MUSCLE.FORM.CANCEL' | translate }}</a>
+        <button type="submit" class="btn btn-primary"
+                [disabled]="muscleForm.invalid || isLoading()">
+          @if (isLoading()) {
+            <span class="loading loading-spinner"></span>
+          }
+          {{ (isEditMode() ? 'MUSCLE.FORM.SUBMIT_EDIT' : 'MUSCLE.FORM.SUBMIT_ADD') | translate }}
+        </button>
+      </div>
+
+    </form>
+  </div>
+</div>

@@ -1,5 +1,10 @@
 {
+  "GLOBAL": {
+    "ERROR_UNEXPECTED": "Une erreur inattendue est survenue."
+  },
   "NAVBAR": {
+    "CATALOG": "Catalogue",
+    "MUSCLES": "Muscles",
     "MY_ACCOUNT": "Mon Compte",
     "LOG_OUT": "Se déconnecter",
     "LOG_IN": "Se connecter"
@@ -64,5 +69,60 @@
     "DELETE_MODAL_CONFIRM": "Oui, supprimer mon compte",
     "DELETE_MODAL_CANCEL": "Annuler",
     "SUCCESS_DELETE": "Votre compte a été supprimé avec succès. Au revoir !"
+  },
+  "MUSCLE": {
+    "LIST": {
+      "TITLE": "Catalogue Anatomique",
+      "ADD_BUTTON": "Ajouter un muscle",
+      "TABLE": {
+        "MEDICAL_NAME": "Nom Médical (Latin)",
+        "COMMON_NAME": "Nom Commun",
+        "GROUP": "Groupe Musculaire",
+        "ACTIONS": "Actions"
+      },
+      "EMPTY": "Aucun muscle trouvé.",
+      "ACTION_DETAILS": "Détails",
+      "MODAL": {
+        "MEDICAL_NAME": "Nom Médical (Business Key)",
+        "DESCRIPTION": "Description",
+        "NO_DESC": "Aucune description disponible.",
+        "CLOSE": "Fermer",
+        "EDIT": "Modifier"
+      }
+    },
+    "FORM": {
+      "BACK": "Retour",
+      "TITLE_EDIT": "Modifier le muscle",
+      "TITLE_ADD": "Ajouter un muscle",
+      "MEDICAL_NAME": "Nom Médical (Latin) *",
+      "MEDICAL_NAME_PH": "Ex: Pectoralis Major",
+      "ERROR_MEDICAL_NAME": "Ce champ est requis et doit être unique.",
+      "GROUP": "Groupe Musculaire *",
+      "GROUP_PH": "Sélectionnez un groupe",
+      "COMMON_NAMES": "Noms Communs",
+      "NAME_FR": "Nom en Français",
+      "NAME_FR_PH": "Ex: Pectoraux",
+      "NAME_EN": "Nom en Anglais",
+      "NAME_EN_PH": "Ex: Chest",
+      "DESCRIPTIONS": "Descriptions",
+      "DESC_FR": "Description (FR)",
+      "DESC_FR_PH": "Description anatomique...",
+      "DESC_EN": "Description (EN)",
+      "DESC_EN_PH": "Anatomical description...",
+      "CANCEL": "Annuler",
+      "SUBMIT_EDIT": "Enregistrer les modifications",
+      "SUBMIT_ADD": "Créer le muscle",
+      "SUCCESS_UPDATE": "Muscle mis à jour avec succès.",
+      "SUCCESS_CREATE": "Nouveau muscle créé avec succès."
+    },
+    "GROUPS": {
+      "CHEST": "Pectoraux",
+      "BACK": "Dos",
+      "LEGS": "Jambes",
+      "ARMS": "Bras",
+      "SHOULDERS": "Épaules",
+      "CORE": "Tronc / Abdos",
+      "FULL_BODY": "Corps entier"
+    }
   }
 }

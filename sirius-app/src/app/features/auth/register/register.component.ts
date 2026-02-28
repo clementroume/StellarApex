@@ -10,7 +10,7 @@ import {
   Validators
 } from '@angular/forms';
 import {Router, RouterModule} from '@angular/router';
-import {AuthService} from '../../../core/services/auth.service';
+import {AuthService} from '../../../api/antares/services/auth.service';
 import {TranslateModule} from '@ngx-translate/core';
 import {NotificationService} from '../../../core/services/notification.service';
 import {HttpErrorResponse} from '@angular/common/http';

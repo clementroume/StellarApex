@@ -1,109 +1,109 @@
-<div class="hero min-h-screen bg-base-200">
-  <div class="hero-content flex-col lg:flex-row-reverse">
+<div class="hero-content flex-col lg:flex-row-reverse">
 
-    <div class="text-center lg:text-left lg:pl-10">
-      <h1 class="text-5xl font-bold">{{ 'REGISTER.TITLE' | translate }}</h1>
-      <p class="py-6">{{ 'REGISTER.SUBTITLE' | translate }}</p>
-    </div>
+  <div class="text-center lg:text-left lg:pl-10">
+    <h1 class="text-5xl font-bold">{{ 'REGISTER.TITLE' | translate }}</h1>
+    <p class="py-6">{{ 'REGISTER.SUBTITLE' | translate }}</p>
+  </div>
 
-    <div class="card shrink-0 w-full max-w-sm shadow-2xl bg-base-100">
-      <form (ngSubmit)="onSubmit()" [formGroup]="registerForm" class="card-body">
+  <div class="card shrink-0 w-full max-w-sm shadow-2xl bg-base-100">
+    <form (ngSubmit)="onSubmit()" [formGroup]="registerForm" class="card-body">
 
-        <label class="input validator w-full">
-          <svg class="h-[1em] opacity-50" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-            <g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"
-               stroke-width="2.5">
-              <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path>
-              <circle cx="12" cy="7" r="4"></circle>
-            </g>
-          </svg>
-          <input [placeholder]="'REGISTER.FIRST_NAME_PLACEHOLDER' | translate" formControlName="firstName"
-                 maxlength="50" required type="text"/>
-        </label>
+      <label class="input validator w-full">
+        <svg class="h-[1em] opacity-50" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"
+             stroke-width="2.5">
+            <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path>
+            <circle cx="12" cy="7" r="4"></circle>
+          </g>
+        </svg>
+        <input [placeholder]="'REGISTER.FIRST_NAME_PLACEHOLDER' | translate"
+               formControlName="firstName"
+               maxlength="50" required type="text"/>
+      </label>
 
-        <label class="input validator w-full mt-4">
-          <svg class="h-[1em] opacity-50" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-            <g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"
-               stroke-width="2.5">
-              <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path>
-              <circle cx="12" cy="7" r="4"></circle>
-            </g>
-          </svg>
-          <input [placeholder]="'REGISTER.LAST_NAME_PLACEHOLDER' | translate" formControlName="lastName"
-                 maxlength="50" required type="text"/>
-        </label>
+      <label class="input validator w-full mt-4">
+        <svg class="h-[1em] opacity-50" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"
+             stroke-width="2.5">
+            <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path>
+            <circle cx="12" cy="7" r="4"></circle>
+          </g>
+        </svg>
+        <input [placeholder]="'REGISTER.LAST_NAME_PLACEHOLDER' | translate"
+               formControlName="lastName"
+               maxlength="50" required type="text"/>
+      </label>
 
-        <label class="input validator w-full mt-4">
-          <svg class="h-[1em] opacity-50" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-            <g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"
-               stroke-width="2.5">
-              <rect height="16" rx="2" width="20" x="2" y="4"></rect>
-              <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"></path>
-            </g>
-          </svg>
-          <input formControlName="email" placeholder="email@example.com" required type="email"/>
-        </label>
-        <div class="validator-hint hidden">Enter valid email address</div>
+      <label class="input validator w-full mt-4">
+        <svg class="h-[1em] opacity-50" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"
+             stroke-width="2.5">
+            <rect height="16" rx="2" width="20" x="2" y="4"></rect>
+            <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"></path>
+          </g>
+        </svg>
+        <input formControlName="email" placeholder="email@example.com" required type="email"/>
+      </label>
+      <div class="validator-hint hidden">Enter valid email address</div>
 
-        <label class="input validator w-full mt-4">
-          <svg class="h-[1em] opacity-50" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-            <g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"
-               stroke-width="2.5">
-              <path
-                d="M2.586 17.414A2 2 0 0 0 2 18.828V21a1 1 0 0 0 1 1h3a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h1a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h.172a2 2 0 0 0 1.414-.586l.814-.814a6.5 6.5 0 1 0-4-4z"></path>
-              <circle cx="16.5" cy="7.5" fill="currentColor" r=".5"></circle>
-            </g>
-          </svg>
-          <input
-            formControlName="password"
-            minlength="8"
-            pattern="(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{8,}"
-            placeholder="Password"
-            required
-            title="Must be more than 8 characters, including number, lowercase letter, uppercase letter"
-            type="password"
-          />
-        </label>
-        <p class="validator-hint hidden text-xs">
-          Must be more than 8 characters, including <br/>
-          At least one number, one lowercase, one uppercase letter
+      <label class="input validator w-full mt-4">
+        <svg class="h-[1em] opacity-50" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"
+             stroke-width="2.5">
+            <path
+              d="M2.586 17.414A2 2 0 0 0 2 18.828V21a1 1 0 0 0 1 1h3a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h1a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h.172a2 2 0 0 0 1.414-.586l.814-.814a6.5 6.5 0 1 0-4-4z"></path>
+            <circle cx="16.5" cy="7.5" fill="currentColor" r=".5"></circle>
+          </g>
+        </svg>
+        <input
+          formControlName="password"
+          minlength="8"
+          pattern="(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{8,}"
+          placeholder="Password"
+          required
+          title="Must be more than 8 characters, including number, lowercase letter, uppercase letter"
+          type="password"
+        />
+      </label>
+      <p class="validator-hint hidden text-xs">
+        Must be more than 8 characters, including <br/>
+        At least one number, one lowercase, one uppercase letter
+      </p>
+
+      <label class="input validator w-full mt-4">
+        <svg class="h-[1em] opacity-50" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"
+             stroke-width="2.5">
+            <path
+              d="M2.586 17.414A2 2 0 0 0 2 18.828V21a1 1 0 0 0 1 1h3a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h1a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h.172a2 2 0 0 0 1.414-.586l.814-.814a6.5 6.5 0 1 0-4-4z"></path>
+            <circle cx="16.5" cy="7.5" fill="currentColor" r=".5"></circle>
+          </g>
+        </svg>
+        <input
+          [placeholder]="'REGISTER.CONFIRM_PASSWORD' | translate"
+          formControlName="confirmationPassword"
+          required
+          type="password"
+        />
+      </label>
+
+      @if (registerForm.errors?.['passwordsMismatch'] && registerForm.get(
+        'confirmationPassword')?.touched) {
+        <p class="validator-hint text-error text-xs mt-1">
+          {{ 'REGISTER.PASSWORDS_MISMATCH' | translate }}
         </p>
+      }
 
-        <label class="input validator w-full mt-4">
-          <svg class="h-[1em] opacity-50" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-            <g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"
-               stroke-width="2.5">
-              <path
-                d="M2.586 17.414A2 2 0 0 0 2 18.828V21a1 1 0 0 0 1 1h3a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h1a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h.172a2 2 0 0 0 1.414-.586l.814-.814a6.5 6.5 0 1 0-4-4z"></path>
-              <circle cx="16.5" cy="7.5" fill="currentColor" r=".5"></circle>
-            </g>
-          </svg>
-          <input
-            [placeholder]="'REGISTER.CONFIRM_PASSWORD' | translate"
-            formControlName="confirmationPassword"
-            required
-            type="password"
-          />
-        </label>
+      <div class="form-control mt-6">
+        <button [disabled]="registerForm.invalid" class="btn btn-primary"
+                type="submit">{{ 'REGISTER.SIGN_UP' | translate }}
+        </button>
+      </div>
 
-        @if (registerForm.errors?.['passwordsMismatch'] && registerForm.get(
-          'confirmationPassword')?.touched) {
-          <p class="validator-hint text-error text-xs mt-1">
-            {{ 'REGISTER.PASSWORDS_MISMATCH' | translate }}
-          </p>
-        }
-
-        <div class="form-control mt-6">
-          <button [disabled]="registerForm.invalid" class="btn btn-primary"
-                  type="submit">{{ 'REGISTER.SIGN_UP' | translate }}
-          </button>
-        </div>
-
-        <label class="label">
-          <a class="label-text-alt link link-hover"
-             routerLink="/auth/login">{{ 'REGISTER.HAVE_ACCOUNT' | translate }}</a>
-        </label>
-      </form>
-    </div>
+      <label class="label">
+        <a class="label-text-alt link link-hover"
+           routerLink="/auth/login">{{ 'REGISTER.HAVE_ACCOUNT' | translate }}</a>
+      </label>
+    </form>
   </div>
 </div>

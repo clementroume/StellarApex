@@ -2,16 +2,13 @@ import {HttpClient} from '@angular/common/http';
 import {computed, inject, Injectable, signal} from '@angular/core';
 import {Router} from '@angular/router';
 import {catchError, Observable, of, tap} from 'rxjs';
-import {environment} from '../../../environments/environment';
+import {environment} from '../../../../environments/environment';
+import {UserResponse} from '../models/user.model';
 import {
   AuthenticationRequest,
-  ChangePasswordRequest,
-  PreferencesUpdateRequest,
-  ProfileUpdateRequest,
   RegisterRequest,
-  TokenRefreshResponse,
-  User
-} from '../models/user.model';
+  TokenRefreshResponse
+} from '../models/auth.model';
 
 /**
  * A singleton service responsible for all authentication-related operations
@@ -25,7 +22,7 @@ export class AuthService {
   // --- State Management with Signals ---
 
   // Private writable signal for the user state. `undefined` means the state is unknown (initial load).
-  private readonly _currentUser = signal<User | null | undefined>(undefined);
+  private readonly _currentUser = signal<UserResponse | null | undefined>(undefined);
 
   /** A public readonly signal representing the current authenticated user. */
   public readonly currentUser = this._currentUser.asReadonly();
@@ -40,8 +37,8 @@ export class AuthService {
    * This should be called once when the application initializes (e.g., by the AuthGuard).
    * @returns An Observable that emits the User object or null.
    */
-  initCurrentUser(): Observable<User | null> {
-    return this.http.get<User>(this.buildUrl('/users/me')).pipe(
+  initCurrentUser(): Observable<UserResponse | null> {
+    return this.http.get<UserResponse>(this.buildUrl('/users/me')).pipe(
       tap(user => this._currentUser.set(user)),
       catchError(() => {
         this._currentUser.set(null);
@@ -50,14 +47,22 @@ export class AuthService {
     );
   }
 
+  /**
+   * Allows other services (like UserService) to update the current user state
+   * when data changes (e.g. profile update, theme change).
+   */
+  updateCurrentUser(user: UserResponse | null | undefined): void {
+    this._currentUser.set(user);
+  }
+
   // --- Authentication Methods ---
 
   /**
    * Sends a registration request. On success, sets the current user signal.
    * @param payload The user's registration data.
    */
-  register(payload: RegisterRequest): Observable<User> {
-    return this.http.post<User>(this.buildUrl('/auth/register'), payload).pipe(
+  register(payload: RegisterRequest): Observable<UserResponse> {
+    return this.http.post<UserResponse>(this.buildUrl('/auth/register'), payload).pipe(
       tap(user => this._currentUser.set(user))
     );
   }
@@ -66,8 +71,8 @@ export class AuthService {
    * Sends a login request. On success, sets the current user signal.
    * @param payload The user's credentials.
    */
-  login(payload: AuthenticationRequest): Observable<User> {
-    return this.http.post<User>(this.buildUrl('/auth/login'), payload).pipe(
+  login(payload: AuthenticationRequest): Observable<UserResponse> {
+    return this.http.post<UserResponse>(this.buildUrl('/auth/login'), payload).pipe(
       tap(user => this._currentUser.set(user))
     );
   }
@@ -91,53 +96,6 @@ export class AuthService {
    */
   refreshToken(): Observable<TokenRefreshResponse> {
     return this.http.post<TokenRefreshResponse>(this.buildUrl('/auth/refresh-token'), {});
-  }
-
-  // --- User Profile Methods ---
-
-  /**
-   * Updates the user's profile. On success, updates the current user signal.
-   * @param payload The updated profile data.
-   */
-  updateProfile(payload: ProfileUpdateRequest): Observable<User> {
-    return this.http.put<User>(this.buildUrl('/users/me/profile'), payload).pipe(
-      tap(user => this._currentUser.set(user))
-    );
-  }
-
-  /**
-   * Updates the user's preferences. On success, updates the current user signal.
-   * @param payload The updated preferences data.
-   */
-  updatePreferences(payload: PreferencesUpdateRequest): Observable<User> {
-    return this.http.patch<User>(this.buildUrl('/users/me/preferences'), payload).pipe(
-      tap(user => this._currentUser.set(user))
-    );
-  }
-
-  /**
-   * Changes the current user's password.
-   * @param payload The password change data.
-   */
-  changePassword(payload: ChangePasswordRequest): Observable<void> {
-    return this.http.put<void>(this.buildUrl('/users/me/password'), payload);
-  }
-
-
-  /**
-   * Deletes the account of the currently authenticated user.
-   * This method sends a DELETE request to the server to remove the user's account,
-   * resets the current user state to null, and redirects to the registration page.
-   *
-   * @return {Observable<void>} An observable that completes when the account deletion process finishes.
-   */
-  deleteAccount(): Observable<void> {
-    return this.http.delete<void>(this.buildUrl('/users/me')).pipe(
-      tap(() => {
-        this._currentUser.set(null);
-        void this.router.navigate(['/auth/register']);
-      })
-    );
   }
 
   // --- Private Helper ---

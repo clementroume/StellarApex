@@ -1,5 +1,6 @@
 package apex.stellar.aldebaran.service;
 
+import static apex.stellar.aldebaran.config.RedisCacheConfig.CACHE_MUSCLE;
 import static apex.stellar.aldebaran.config.RedisCacheConfig.CACHE_MUSCLES;
 
 import apex.stellar.aldebaran.dto.MuscleRequest;
@@ -21,16 +22,15 @@ import org.springframework.transaction.annotation.Transactional;
 /**
  * Service class that handles business logic related to muscles.
  *
- * <p>Provides functionalities to manage, retrieve, and update muscle records in
- * a catalog. Supports filtering by anatomical groups and caching mechanisms for
- * performance optimization.
+ * <p>Provides functionalities to manage, retrieve, and update muscle records in a catalog. Supports
+ * filtering by anatomical groups and caching mechanisms for performance optimization.
  *
- * <p>The service uses {@link MuscleRepository} for data access and {@link MuscleMapper}
- * for mapping between entity and response/request objects. Caching is implemented
- * using keys based on the type of operation to ensure data consistency and efficiency.
+ * <p>The service uses {@link MuscleRepository} for data access and {@link MuscleMapper} for mapping
+ * between entity and response/request objects. Caching is implemented using keys based on the type
+ * of operation to ensure data consistency and efficiency.
  *
- * <p>Transactions are managed at the method level to ensure atomic operations and
- * consistency within the database.
+ * <p>Transactions are managed at the method level to ensure atomic operations and consistency
+ * within the database.
  */
 @Service
 @RequiredArgsConstructor
@@ -79,7 +79,7 @@ public class MuscleService {
    * @throws ResourceNotFoundException if the muscle does not exist.
    */
   @Transactional(readOnly = true)
-  @Cacheable(value = CACHE_MUSCLES, key = "#medicalName")
+  @Cacheable(value = CACHE_MUSCLE, key = "#medicalName")
   public MuscleResponse getMuscle(String medicalName) {
 
     return muscleRepository
@@ -99,7 +99,9 @@ public class MuscleService {
    * @throws DataConflictException if a muscle with the same medical name already exists.
    */
   @Transactional
-  @CacheEvict(value = CACHE_MUSCLES, allEntries = true)
+  @CacheEvict(
+      value = {CACHE_MUSCLES, CACHE_MUSCLE},
+      allEntries = true)
   public MuscleResponse createMuscle(MuscleRequest request) {
 
     if (muscleRepository.existsByMedicalNameIgnoreCase(request.medicalName())) {
@@ -126,7 +128,9 @@ public class MuscleService {
    * @throws DataConflictException if the new medical name conflicts with another existing muscle.
    */
   @Transactional
-  @CacheEvict(value = CACHE_MUSCLES, allEntries = true)
+  @CacheEvict(
+      value = {CACHE_MUSCLES, CACHE_MUSCLE},
+      allEntries = true)
   public MuscleResponse updateMuscle(Long id, MuscleRequest request) {
 
     Muscle muscle =

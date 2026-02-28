@@ -1,5 +1,10 @@
 {
+  "GLOBAL": {
+    "ERROR_UNEXPECTED": "An unexpected error occurred."
+  },
   "NAVBAR": {
+    "CATALOG": "Catalog",
+    "MUSCLES": "Muscles",
     "MY_ACCOUNT": "My Account",
     "LOG_OUT": "Log out",
     "LOG_IN": "Log in"
@@ -61,5 +66,60 @@
     "DELETE_MODAL_CONFIRM": "Yes, delete my account",
     "DELETE_MODAL_CANCEL": "Cancel",
     "SUCCESS_DELETE": "Your account has been successfully deleted. Goodbye!"
+  },
+  "MUSCLE": {
+    "LIST": {
+      "TITLE": "Anatomical Catalog",
+      "ADD_BUTTON": "Add a muscle",
+      "TABLE": {
+        "MEDICAL_NAME": "Medical Name (Latin)",
+        "COMMON_NAME": "Common Name",
+        "GROUP": "Muscle Group",
+        "ACTIONS": "Actions"
+      },
+      "EMPTY": "No muscle found.",
+      "ACTION_DETAILS": "Details",
+      "MODAL": {
+        "MEDICAL_NAME": "Medical Name (Business Key)",
+        "DESCRIPTION": "Description",
+        "NO_DESC": "No description available.",
+        "CLOSE": "Close",
+        "EDIT": "Edit"
+      }
+    },
+    "FORM": {
+      "BACK": "Back",
+      "TITLE_EDIT": "Edit muscle",
+      "TITLE_ADD": "Add a muscle",
+      "MEDICAL_NAME": "Medical Name (Latin) *",
+      "MEDICAL_NAME_PH": "Ex: Pectoralis Major",
+      "ERROR_MEDICAL_NAME": "This field is required and must be unique.",
+      "GROUP": "Muscle Group *",
+      "GROUP_PH": "Select a group",
+      "COMMON_NAMES": "Common Names",
+      "NAME_FR": "French Name",
+      "NAME_FR_PH": "Ex: Pectoraux",
+      "NAME_EN": "English Name",
+      "NAME_EN_PH": "Ex: Chest",
+      "DESCRIPTIONS": "Descriptions",
+      "DESC_FR": "Description (FR)",
+      "DESC_FR_PH": "Anatomical description (FR)...",
+      "DESC_EN": "Description (EN)",
+      "DESC_EN_PH": "Anatomical description (EN)...",
+      "CANCEL": "Cancel",
+      "SUBMIT_EDIT": "Save changes",
+      "SUBMIT_ADD": "Create muscle",
+      "SUCCESS_UPDATE": "Muscle updated successfully.",
+      "SUCCESS_CREATE": "New muscle created successfully."
+    },
+    "GROUPS": {
+      "CHEST": "Chest",
+      "BACK": "Back",
+      "LEGS": "Legs",
+      "ARMS": "Arms",
+      "SHOULDERS": "Shoulders",
+      "CORE": "Core / Abs",
+      "FULL_BODY": "Full Body"
+    }
   }
 }

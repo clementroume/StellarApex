@@ -1,0 +1,116 @@
+<div class="container mx-auto px-4 py-8">
+  <div class="flex justify-between items-center mb-6">
+    <h1 class="text-3xl font-bold">{{ 'MUSCLE.LIST.TITLE' | translate }}</h1>
+
+    @if (isAdmin()) {
+      <a routerLink="new" class="btn btn-primary">
+        + {{ 'MUSCLE.LIST.ADD_BUTTON' | translate }}
+      </a>
+    }
+  </div>
+
+  <div class="overflow-x-auto bg-base-100 shadow-xl rounded-box">
+    <table class="table table-zebra w-full">
+      <thead>
+      <tr>
+        <th class="cursor-pointer hover:bg-base-200" (click)="sortBy('medicalName')">
+          {{ 'MUSCLE.LIST.TABLE.MEDICAL_NAME' | translate }}
+          @if (sortColumn() === 'medicalName') {
+            <span>{{ sortDirection() === 'asc' ? '↑' : '↓' }}</span>
+          }
+        </th>
+        <th class="cursor-pointer hover:bg-base-200" (click)="sortBy('commonName')">
+          {{ 'MUSCLE.LIST.TABLE.COMMON_NAME' | translate }}
+          @if (sortColumn() === 'commonName') {
+            <span>{{ sortDirection() === 'asc' ? '↑' : '↓' }}</span>
+          }
+        </th>
+        <th class="cursor-pointer hover:bg-base-200" (click)="sortBy('muscleGroup')">
+          {{ 'MUSCLE.LIST.TABLE.GROUP' | translate }}
+          @if (sortColumn() === 'muscleGroup') {
+            <span>{{ sortDirection() === 'asc' ? '↑' : '↓' }}</span>
+          }
+        </th>
+        <th>{{ 'MUSCLE.LIST.TABLE.ACTIONS' | translate }}</th>
+      </tr>
+      </thead>
+      <tbody>
+        @for (muscle of sortedMuscles(); track muscle.id) {
+          <tr class="hover">
+            <td class="font-semibold">{{ muscle.medicalName }}</td>
+            <td>{{ getLocalizedName(muscle) }}</td>
+            <td>
+              <div class="badge badge-neutral">{{
+                  'MUSCLE.GROUPS.' + muscle.muscleGroup | translate
+                }}
+              </div>
+            </td>
+            <td>
+              <button class="btn btn-sm btn-outline" (click)="openDetails(muscle)">
+                {{ 'MUSCLE.LIST.ACTION_DETAILS' | translate }}
+              </button>
+            </td>
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="4"
+                class="text-center py-8 text-base-content/50">{{ 'MUSCLE.LIST.EMPTY' | translate }}
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<dialog id="muscle_detail_modal" class="modal modal-bottom sm:modal-middle">
+  <div class="modal-box relative">
+    <form method="dialog">
+      <button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">✕</button>
+    </form>
+
+    @if (selectedMuscle(); as muscle) {
+      <h3 class="font-bold text-2xl mb-2">{{ getLocalizedName(muscle) }}</h3>
+      <div class="badge badge-primary mb-4">{{
+          'MUSCLE.GROUPS.' + muscle.muscleGroup | translate
+        }}
+      </div>
+
+      <div
+        class="w-full h-48 bg-base-200 rounded-lg flex items-center justify-center mb-6 border border-dashed border-base-content/30">
+        <span
+          class="text-base-content/50 italic">{{ 'MUSCLE.LIST.MODAL.IMAGE_TODO' | translate }}</span>
+      </div>
+
+      <div class="space-y-4">
+        <div>
+          <span
+            class="font-semibold text-sm opacity-70">{{ 'MUSCLE.LIST.MODAL.MEDICAL_NAME' | translate }}</span>
+          <p class="text-lg">{{ muscle.medicalName }}</p>
+        </div>
+
+        <div>
+          <span
+            class="font-semibold text-sm opacity-70">{{ 'MUSCLE.LIST.MODAL.DESCRIPTION' | translate }}</span>
+          <p [class.italic]="!getLocalizedDescription(muscle)"
+             [class.opacity-80]="!getLocalizedDescription(muscle)">
+            {{ getLocalizedDescription(muscle) || ('MUSCLE.LIST.MODAL.NO_DESC' | translate) }}
+          </p>
+        </div>
+      </div>
+
+      <div class="modal-action mt-6">
+        <form method="dialog">
+          <button class="btn">{{ 'MUSCLE.LIST.MODAL.CLOSE' | translate }}</button>
+        </form>
+        @if (isAdmin()) {
+          <a [routerLink]="['edit', muscle.medicalName]"
+             class="btn btn-secondary">{{ 'MUSCLE.LIST.MODAL.EDIT' | translate }}</a>
+        }
+      </div>
+    }
+  </div>
+  <form method="dialog" class="modal-backdrop">
+    <button>close</button>
+  </form>
+</dialog>

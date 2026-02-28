@@ -35,7 +35,10 @@ public class RedisCacheConfig {
   /** Cache name for movement master data. */
   public static final String CACHE_MOVEMENTS = "movements";
 
-  /** Cache name for muscle master data. */
+  /** Cache name for a specific muscle. */
+  public static final String CACHE_MUSCLE = "muscle";
+
+  /** Cache name for all muscles. */
   public static final String CACHE_MUSCLES = "muscles";
 
   /** Cache name for Workout of the Day (WOD) data. */
@@ -66,6 +69,9 @@ public class RedisCacheConfig {
     var musclesType = tf.constructCollectionType(List.class, MuscleResponse.class);
     var musclesSerializer = new JacksonJsonRedisSerializer<>(objectMapper, musclesType);
 
+    var singleMuscleType = tf.constructType(MuscleResponse.class);
+    var singleMuscleSerializer = new JacksonJsonRedisSerializer<>(objectMapper, singleMuscleType);
+
     RedisCacheConfiguration baseConfig =
         RedisCacheConfiguration.defaultCacheConfig()
             .entryTtl(Duration.ofMillis(properties.defaultTtl()))
@@ -77,22 +83,27 @@ public class RedisCacheConfig {
     Map<String, RedisCacheConfiguration> cacheConfigurations =
         Map.of(
             CACHE_WODS,
-                baseConfig
-                    .entryTtl(Duration.ofMillis(properties.wodsTtl()))
-                    .serializeValuesWith(
-                        RedisSerializationContext.SerializationPair.fromSerializer(wodSerializer)),
+            baseConfig
+                .entryTtl(Duration.ofMillis(properties.wodsTtl()))
+                .serializeValuesWith(
+                    RedisSerializationContext.SerializationPair.fromSerializer(wodSerializer)),
             CACHE_MOVEMENTS,
-                baseConfig
-                    .entryTtl(Duration.ofMillis(properties.masterDataTtl()))
-                    .serializeValuesWith(
-                        RedisSerializationContext.SerializationPair.fromSerializer(
-                            movementsSerializer)),
+            baseConfig
+                .entryTtl(Duration.ofMillis(properties.masterDataTtl()))
+                .serializeValuesWith(
+                    RedisSerializationContext.SerializationPair.fromSerializer(
+                        movementsSerializer)),
             CACHE_MUSCLES,
-                baseConfig
-                    .entryTtl(Duration.ofMillis(properties.masterDataTtl()))
-                    .serializeValuesWith(
-                        RedisSerializationContext.SerializationPair.fromSerializer(
-                            musclesSerializer)));
+            baseConfig
+                .entryTtl(Duration.ofMillis(properties.masterDataTtl()))
+                .serializeValuesWith(
+                    RedisSerializationContext.SerializationPair.fromSerializer(musclesSerializer)),
+            CACHE_MUSCLE,
+            baseConfig
+                .entryTtl(Duration.ofMillis(properties.masterDataTtl()))
+                .serializeValuesWith(
+                    RedisSerializationContext.SerializationPair.fromSerializer(
+                        singleMuscleSerializer)));
 
     return RedisCacheManager.builder(connectionFactory)
         .cacheDefaults(baseConfig)

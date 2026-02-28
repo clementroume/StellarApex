@@ -4,11 +4,12 @@ import {HttpErrorResponse, provideHttpClient} from '@angular/common/http';
 import {provideHttpClientTesting} from '@angular/common/http/testing';
 import {provideRouter} from '@angular/router';
 import {TranslateModule, TranslateService} from '@ngx-translate/core';
-import {AuthService} from '../../../core/services/auth.service';
+import {AuthService} from '../../../api/antares/services/auth.service';
+import {UserService} from '../../../api/antares/services/user.service';
 import {NotificationService} from '../../../core/services/notification.service';
 import {of, throwError} from 'rxjs';
 import {signal} from '@angular/core';
-import {User} from '../../../core/models/user.model';
+import {UserResponse} from '../../../api/antares/models/user.model';
 
 describe('SettingsComponent', () => {
   let component: SettingsComponent;
@@ -17,13 +18,15 @@ describe('SettingsComponent', () => {
 
   // Mocks
   let authServiceSpy: jasmine.SpyObj<AuthService>;
+  let userServiceSpy: jasmine.SpyObj<UserService>;
   let notificationServiceSpy: jasmine.SpyObj<NotificationService>;
 
   beforeEach(async () => {
     // Create mocks for business logic services
-    authServiceSpy = jasmine.createSpyObj('AuthService', ['changePassword', 'updatePreferences', 'deleteAccount'], {
-      currentUser: signal<User | null>({theme: 'light', locale: 'en'} as User)
+    authServiceSpy = jasmine.createSpyObj('AuthService', [], {
+      currentUser: signal<UserResponse | null>({theme: 'light', locale: 'en'} as UserResponse)
     });
+    userServiceSpy = jasmine.createSpyObj('UserService', ['changePassword', 'updatePreferences', 'deleteAccount']);
 
     notificationServiceSpy = jasmine.createSpyObj('NotificationService', ['showSuccess', 'showError']);
 
@@ -37,6 +40,7 @@ describe('SettingsComponent', () => {
         provideHttpClientTesting(),
         provideRouter([]),
         {provide: AuthService, useValue: authServiceSpy},
+        {provide: UserService, useValue: userServiceSpy},
         {provide: NotificationService, useValue: notificationServiceSpy}
       ]
     }).compileComponents();
@@ -94,11 +98,11 @@ describe('SettingsComponent', () => {
       form.controls['newPassword'].setValue('newPassword123');
       form.controls['confirmationPassword'].setValue('newPassword123');
 
-      authServiceSpy.changePassword.and.returnValue(of(void 0));
+      userServiceSpy.changePassword.and.returnValue(of(void 0));
 
       component.onSubmitPassword();
 
-      expect(authServiceSpy.changePassword).toHaveBeenCalled();
+      expect(userServiceSpy.changePassword).toHaveBeenCalled();
       expect(notificationServiceSpy.showSuccess).toHaveBeenCalled();
       expect(form.pristine).toBeTrue();
     });
@@ -112,11 +116,11 @@ describe('SettingsComponent', () => {
     });
 
     it('should call deleteAccount service on confirmation and close modal on success', () => {
-      authServiceSpy.deleteAccount.and.returnValue(of(void 0));
+      userServiceSpy.deleteAccount.and.returnValue(of(void 0));
 
       component.confirmDeleteAccount();
 
-      expect(authServiceSpy.deleteAccount).toHaveBeenCalled();
+      expect(userServiceSpy.deleteAccount).toHaveBeenCalled();
       expect(component.deleteModal.nativeElement.close).toHaveBeenCalled();
       expect(notificationServiceSpy.showSuccess).toHaveBeenCalledWith('SETTINGS.SUCCESS_DELETE');
     });
@@ -126,7 +130,7 @@ describe('SettingsComponent', () => {
         error: {detail: 'Deletion failed'},
         status: 500
       });
-      authServiceSpy.deleteAccount.and.returnValue(throwError(() => errorResponse));
+      userServiceSpy.deleteAccount.and.returnValue(throwError(() => errorResponse));
 
       component.confirmDeleteAccount();
 

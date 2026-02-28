@@ -1,6 +1,7 @@
-import { effect, Injectable, signal, inject } from '@angular/core';
-import { AuthService } from './auth.service';
-import { PreferencesUpdateRequest } from '../models/user.model';
+import {effect, inject, Injectable, signal} from '@angular/core';
+import {AuthService} from '../../api/antares/services/auth.service';
+import {UserService} from '../../api/antares/services/user.service';
+import {PreferencesUpdateRequest} from '../../api/antares/models/user.model';
 
 export type Theme = 'light' | 'dark';
 
@@ -15,6 +16,8 @@ export type Theme = 'light' | 'dark';
 })
 export class ThemeService {
   private readonly authService = inject(AuthService);
+  private readonly userService = inject(UserService);
+
 
   // Private writable signal for the current theme.
   private readonly _currentTheme = signal<Theme>(this.getInitialTheme());
@@ -53,7 +56,7 @@ export class ThemeService {
         theme: newTheme,
       };
 
-      this.authService.updatePreferences(preferences).subscribe({
+      this.userService.updatePreferences(preferences).subscribe({
         error: (err) => {
           console.error('Failed to update theme preference:', err);
           // Revert to the original theme on failure to maintain consistency.

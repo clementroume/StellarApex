@@ -1,9 +1,9 @@
-import { ChangeDetectionStrategy, Component, effect, inject } from '@angular/core';
-import { RouterOutlet } from '@angular/router';
-import { TranslateService } from '@ngx-translate/core';
-import { AuthService } from './core/services/auth.service';
-import {GlobalLoaderComponent} from './core/components/global-loader/global-loader.component';
-import {NotificationComponent} from './core/components/notification/notification.component';
+import {ChangeDetectionStrategy, Component, effect, inject} from '@angular/core';
+import {RouterOutlet} from '@angular/router';
+import {TranslateService} from '@ngx-translate/core';
+import {AuthService} from './api/antares/services/auth.service';
+import {GlobalLoaderComponent} from './core/layout/global-loader/global-loader.component';
+import {NotificationComponent} from './core/layout/notification/notification.component';
 
 /**
  * The root component of the application.

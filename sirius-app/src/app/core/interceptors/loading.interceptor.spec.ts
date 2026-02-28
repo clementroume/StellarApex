@@ -1,8 +1,8 @@
-import { TestBed } from '@angular/core/testing';
-import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
-import { HttpClient, provideHttpClient, withInterceptors } from '@angular/common/http';
-import { loadingInterceptor } from './loading.interceptor';
-import { LoadingService } from '../services/loading.service';
+import {TestBed} from '@angular/core/testing';
+import {HttpTestingController, provideHttpClientTesting} from '@angular/common/http/testing';
+import {HttpClient, provideHttpClient, withInterceptors} from '@angular/common/http';
+import {loadingInterceptor} from './loading.interceptor';
+import {LoadingService} from '../services/loading.service';
 
 describe('loadingInterceptor', () => {
   let httpMock: HttpTestingController;
@@ -46,13 +46,14 @@ describe('loadingInterceptor', () => {
     const hideSpy = spyOn(loadingService, 'hide').and.callThrough();
 
     httpClient.get('/api/test').subscribe({
-      error: () => {} // Catch the error to prevent it from failing the test
+      error: () => {
+      } // Catch the error to prevent it from failing the test
     });
 
     expect(showSpy).toHaveBeenCalledTimes(1);
 
     const req = httpMock.expectOne('/api/test');
-    req.flush({}, { status: 500, statusText: 'Server Error' });
+    req.flush({}, {status: 500, statusText: 'Server Error'});
 
     expect(hideSpy).toHaveBeenCalledTimes(1);
   });

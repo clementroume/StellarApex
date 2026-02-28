@@ -1,27 +1,29 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { ProfileComponent } from './profile.component';
-import { provideHttpClient } from '@angular/common/http';
-import { provideHttpClientTesting } from '@angular/common/http/testing';
-import { provideRouter } from '@angular/router';
-import { TranslateModule } from '@ngx-translate/core';
-import { AuthService } from '../../../core/services/auth.service';
-import { signal } from '@angular/core';
-import { User } from '../../../core/models/user.model';
+import {ComponentFixture, TestBed} from '@angular/core/testing';
+import {ProfileComponent} from './profile.component';
+import {provideHttpClient} from '@angular/common/http';
+import {provideHttpClientTesting} from '@angular/common/http/testing';
+import {provideRouter} from '@angular/router';
+import {TranslateModule} from '@ngx-translate/core';
+import {AuthService} from '../../../api/antares/services/auth.service';
+import {UserService} from '../../../api/antares/services/user.service';
+import {signal} from '@angular/core';
+import {UserResponse} from '../../../api/antares/models/user.model';
 
 describe('ProfileComponent', () => {
   let component: ProfileComponent;
   let fixture: ComponentFixture<ProfileComponent>;
 
-  const mockUser: User = {
+  const mockUser: UserResponse = {
     id: 1, email: 'test@test.com', firstName: 'John', lastName: 'Doe',
-    role: 'ROLE_USER', enabled: true, locale: 'en', theme: 'light',
-    createdAt: '', updatedAt: ''
+    platformRole: 'USER', memberships: [], locale: 'en', theme: 'light',
+    createdAt: ''
   };
 
   beforeEach(async () => {
     const authServiceMock = {
       currentUser: signal(mockUser),
     };
+    const userServiceSpy = jasmine.createSpyObj('UserService', ['updateProfile']);
 
     await TestBed.configureTestingModule({
       imports: [ProfileComponent, TranslateModule.forRoot()],
@@ -29,7 +31,8 @@ describe('ProfileComponent', () => {
         provideHttpClient(),
         provideHttpClientTesting(),
         provideRouter([]),
-        { provide: AuthService, useValue: authServiceMock }
+        {provide: AuthService, useValue: authServiceMock},
+        {provide: UserService, useValue: userServiceSpy}
       ]
     }).compileComponents();
 

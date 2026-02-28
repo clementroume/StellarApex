@@ -9,12 +9,12 @@ import {
   ValidatorFn,
   Validators
 } from '@angular/forms';
-import {AuthService} from '../../../core/services/auth.service';
+import {AuthService} from '../../../api/antares/services/auth.service';
+import {UserService} from '../../../api/antares/services/user.service';
 import {TranslateModule, TranslateService} from '@ngx-translate/core';
 import {NotificationService} from '../../../core/services/notification.service';
 import {HttpErrorResponse} from '@angular/common/http';
-import {ThemeService} from '../../../core/services/theme.service';
-import {PreferencesUpdateRequest} from '../../../core/models/user.model';
+import {PreferencesUpdateRequest} from '../../../api/antares/models/user.model';
 import {ProblemDetail} from '../../../core/models/problem-detail.model';
 
 /**
@@ -41,9 +41,9 @@ export class SettingsComponent {
   public readonly translate = inject(TranslateService);
   @ViewChild('deleteModal') deleteModal!: ElementRef<HTMLDialogElement>;
   private readonly authService = inject(AuthService);
+  private readonly userService = inject(UserService);
   private readonly fb = inject(FormBuilder);
   private readonly notificationService = inject(NotificationService);
-  private readonly themeService = inject(ThemeService);
 
   constructor() {
     this.passwordForm = this.fb.group({
@@ -61,7 +61,7 @@ export class SettingsComponent {
       return;
     }
 
-    this.authService.changePassword(this.passwordForm.value).subscribe({
+    this.userService.changePassword(this.passwordForm.value).subscribe({
       next: () => {
         this.translate.get('SETTINGS.SUCCESS_PASSWORD_UPDATE').subscribe((message: string) => {
           this.notificationService.showSuccess(message);
@@ -90,7 +90,7 @@ export class SettingsComponent {
         theme: currentUser.theme
       };
 
-      this.authService.updatePreferences(preferences).subscribe({
+      this.userService.updatePreferences(preferences).subscribe({
         error: (err) => {
           console.error('Failed to update language preference:', err);
           // Revert to the previous language on failure.
@@ -109,7 +109,7 @@ export class SettingsComponent {
   }
 
   confirmDeleteAccount(): void {
-    this.authService.deleteAccount().subscribe({
+    this.userService.deleteAccount().subscribe({
       next: () => {
         this.closeDeleteConfirmation();
         this.translate.get('SETTINGS.SUCCESS_DELETE').subscribe((msg) => {

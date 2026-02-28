@@ -1,10 +1,15 @@
-import { TestBed } from '@angular/core/testing';
-import { CanActivateFn, Router, RouterStateSnapshot, ActivatedRouteSnapshot } from '@angular/router';
-import { authGuard } from './auth.guard';
-import { AuthService } from '../services/auth.service';
-import { of } from 'rxjs';
-import { provideRouter } from '@angular/router';
-import { User } from '../models/user.model';
+import {TestBed} from '@angular/core/testing';
+import {
+  ActivatedRouteSnapshot,
+  CanActivateFn,
+  provideRouter,
+  Router,
+  RouterStateSnapshot
+} from '@angular/router';
+import {authGuard} from './auth.guard';
+import {AuthService} from '../../api/antares/services/auth.service';
+import {of} from 'rxjs';
+import {UserResponse} from '../../api/antares/models/user.model';
 
 describe('authGuard', () => {
   let authServiceSpy: jasmine.SpyObj<AuthService>;
@@ -15,8 +20,8 @@ describe('authGuard', () => {
     TestBed.runInInjectionContext(() => authGuard(route, state));
 
   const dummyRoute = {} as ActivatedRouteSnapshot;
-  const dummyState = { url: '/dashboard' } as RouterStateSnapshot;
-  const dummyUser = { id: 1 } as User;
+  const dummyState = {url: '/dashboard'} as RouterStateSnapshot;
+  const dummyUser = {id: 1} as UserResponse;
 
   beforeEach(() => {
     const authSpy = jasmine.createSpyObj('AuthService', ['initCurrentUser'], {
@@ -28,8 +33,8 @@ describe('authGuard', () => {
     TestBed.configureTestingModule({
       providers: [
         provideRouter([]),
-        { provide: AuthService, useValue: authSpy },
-        { provide: Router, useValue: routerSpyObj },
+        {provide: AuthService, useValue: authSpy},
+        {provide: Router, useValue: routerSpyObj},
       ],
     });
 
@@ -54,7 +59,7 @@ describe('authGuard', () => {
     const canActivate = executeGuard(dummyRoute, dummyState);
 
     expect(canActivate).toBeFalse();
-    expect(routerSpy.navigate).toHaveBeenCalledWith(['/auth/login'], { queryParams: { returnUrl: '/dashboard' } });
+    expect(routerSpy.navigate).toHaveBeenCalledWith(['/auth/login'], {queryParams: {returnUrl: '/dashboard'}});
   });
 
   it('should initialize and allow access if user is valid (slow path)', (done) => {
@@ -77,7 +82,7 @@ describe('authGuard', () => {
 
     canActivate$.subscribe((canActivate: boolean) => {
       expect(canActivate).toBeFalse();
-      expect(routerSpy.navigate).toHaveBeenCalledWith(['/auth/login'], { queryParams: { returnUrl: '/dashboard' } });
+      expect(routerSpy.navigate).toHaveBeenCalledWith(['/auth/login'], {queryParams: {returnUrl: '/dashboard'}});
       done();
     });
   });

@@ -1,4 +1,4 @@
-<div class="navbar bg-base-100 rounded-box shadow-lg mb-8">
+<div class="navbar bg-base-100 rounded-box shadow-lg">
 
   <div class="flex-1">
     <a class="btn btn-ghost text-xl" routerLink="/dashboard">StellarApex</a>
@@ -27,6 +27,22 @@
 
     @if (authService.currentUser(); as user) {
       <div class="dropdown dropdown-end">
+        <div tabindex="0" role="button" class="btn btn-ghost">
+          {{ 'NAVBAR.CATALOG' | translate }}
+          <svg class="inline-block w-4 h-4 stroke-current" fill="none" viewBox="0 0 24 24"
+               xmlns="http://www.w3.org/2000/svg">
+            <path d="M19 9l-7 7-7-7" stroke-linecap="round" stroke-linejoin="round"
+                  stroke-width="2"></path>
+          </svg>
+        </div>
+        <ul tabindex="0"
+            class="dropdown-content z-[1] menu p-2 shadow bg-base-100 rounded-box w-52">
+          <li><a routerLink="/muscles"
+                 (click)="closeDropdown()">{{ 'NAVBAR.MUSCLES' | translate }}</a></li>
+        </ul>
+      </div>
+
+      <div class="dropdown dropdown-end">
         <div class="btn btn-ghost" role="button" tabindex="0">
           {{ user.firstName }} {{ user.lastName }}
           <svg class="inline-block w-4 h-4 stroke-current" fill="none" viewBox="0 0 24 24"
@@ -37,7 +53,8 @@
         </div>
         <ul class="dropdown-content z-[1] menu p-2 shadow bg-base-100 rounded-box w-52"
             tabindex="0">
-          <li><a routerLink="/my-account">{{ 'NAVBAR.MY_ACCOUNT' | translate }}</a></li>
+          <li><a routerLink="/my-account"
+                 (click)="closeDropdown()">{{ 'NAVBAR.MY_ACCOUNT' | translate }}</a></li>
           <li><a (click)="logout()">{{ 'NAVBAR.LOG_OUT' | translate }}</a></li>
         </ul>
       </div>

@@ -3,8 +3,9 @@ import {provideHttpClient} from '@angular/common/http';
 import {HttpTestingController, provideHttpClientTesting} from '@angular/common/http/testing';
 import {provideRouter, Router} from '@angular/router';
 import {AuthService} from './auth.service';
-import {AuthenticationRequest, ChangePasswordRequest, User} from '../models/user.model';
-import {environment} from '../../../environments/environment';
+import {environment} from '../../../../environments/environment';
+import {AuthenticationRequest} from '../models/auth.model';
+import {UserResponse} from '../models/user.model';
 
 describe('AuthService', () => {
   let service: AuthService;
@@ -14,17 +15,16 @@ describe('AuthService', () => {
 
   const base = `${environment.authUrl}`;
 
-  const dummyUser: User = {
+  const dummyUser: UserResponse = {
     id: 1,
     firstName: 'John',
     lastName: 'Doe',
     email: 'john.doe@test.com',
-    role: 'ROLE_USER',
-    enabled: true,
+    platformRole: 'USER',
     locale: 'en',
     theme: 'light',
     createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString()
+    memberships: []
   };
 
   beforeEach(() => {
@@ -97,43 +97,6 @@ describe('AuthService', () => {
       req.flush({}, {status: 500, statusText: 'Server Error'});
       expect(service.currentUser()).toBeNull();
       expect(navigateSpy).toHaveBeenCalledWith(['/auth/login']);
-    });
-  });
-
-  describe('changePassword', () => {
-    it('should PUT to correct URL and emit null on success', () => {
-      const payload: ChangePasswordRequest = {
-        currentPassword: '1',
-        newPassword: '2',
-        confirmationPassword: '2'
-      };
-      service.changePassword(payload).subscribe(res => {
-        expect(res).toBeNull();
-      });
-      const req = httpMock.expectOne(`${base}/users/me/password`);
-      expect(req.request.method).toBe('PUT');
-      req.flush(null, {status: 200, statusText: 'OK'});
-    });
-  });
-
-  describe('deleteAccount', () => {
-    it('should DELETE to correct URL, clear user state, and navigate to register', () => {
-      // Given: A user is logged in
-      (service as any)._currentUser.set(dummyUser);
-
-      // When
-      service.deleteAccount().subscribe();
-
-      // Then: Verify the HTTP request
-      const req = httpMock.expectOne(`${base}/users/me`);
-      expect(req.request.method).toBe('DELETE');
-      req.flush(null, {status: 204, statusText: 'No Content'});
-
-      // Verify state clearing
-      expect(service.currentUser()).toBeNull();
-
-      // Verify redirection
-      expect(navigateSpy).toHaveBeenCalledWith(['/auth/register']);
     });
   });
 });

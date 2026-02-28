@@ -1,7 +1,7 @@
-import { inject } from '@angular/core';
-import { CanActivateFn, Router, RouterStateSnapshot } from '@angular/router';
-import { AuthService } from '../services/auth.service';
-import { map, tap } from 'rxjs';
+import {inject} from '@angular/core';
+import {CanActivateFn, Router, RouterStateSnapshot} from '@angular/router';
+import {AuthService} from '../../api/antares/services/auth.service';
+import {map, tap} from 'rxjs';
 
 /**
  * A functional route guard that protects routes from unauthenticated access.
@@ -19,7 +19,7 @@ export const authGuard: CanActivateFn = (_, state: RouterStateSnapshot) => {
     const isAuthenticated = authService.isAuthenticated();
     if (!isAuthenticated) {
       // If not authenticated, redirect to the login page.
-      void router.navigate(['/auth/login'], { queryParams: { returnUrl: state.url } });
+      void router.navigate(['/auth/login'], {queryParams: {returnUrl: state.url}});
     }
     return isAuthenticated;
   }
@@ -30,7 +30,7 @@ export const authGuard: CanActivateFn = (_, state: RouterStateSnapshot) => {
     tap(isAuthenticated => {
       if (!isAuthenticated) {
         // If the check reveals no user, redirect to login.
-        void router.navigate(['/auth/login'], { queryParams: { returnUrl: state.url } });
+        void router.navigate(['/auth/login'], {queryParams: {returnUrl: state.url}});
       }
     })
   );

@@ -1,7 +1,7 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { NotificationComponent } from './notification.component';
-import { NotificationService, Notification } from '../../services/notification.service';
-import { signal, WritableSignal } from '@angular/core';
+import {ComponentFixture, TestBed} from '@angular/core/testing';
+import {NotificationComponent} from './notification.component';
+import {Notification, NotificationService} from '../../services/notification.service';
+import {signal, WritableSignal} from '@angular/core';
 
 describe('NotificationComponent', () => {
   let component: NotificationComponent;
@@ -16,7 +16,7 @@ describe('NotificationComponent', () => {
       providers: [
         {
           provide: NotificationService,
-          useValue: { notification: mockNotification.asReadonly() }
+          useValue: {notification: mockNotification.asReadonly()}
         }
       ]
     }).compileComponents();
@@ -39,7 +39,7 @@ describe('NotificationComponent', () => {
 
   it('should display a success alert for a success notification', () => {
     // Arrange
-    mockNotification.set({ message: 'Success!', type: 'success' });
+    mockNotification.set({message: 'Success!', type: 'success'});
     fixture.detectChanges();
 
     // Act
@@ -53,7 +53,7 @@ describe('NotificationComponent', () => {
 
   it('should display an error alert for an error notification', () => {
     // Arrange
-    mockNotification.set({ message: 'Error!', type: 'error' });
+    mockNotification.set({message: 'Error!', type: 'error'});
     fixture.detectChanges();
 
     // Act
