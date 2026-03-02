@@ -70,6 +70,6 @@ export class ThemeService {
    * Retrieves the initial theme from localStorage, defaulting to 'light'.
    */
   private getInitialTheme(): Theme {
-    return (localStorage.getItem('theme') as Theme) ?? 'light';
+    return (localStorage.getItem('theme') as Theme) ?? 'dark';
   }
 }

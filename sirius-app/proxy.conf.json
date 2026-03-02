@@ -1,0 +1,24 @@
+{
+  "/antares": {
+    "target": "https://stellar.apex",
+    "secure": false,
+    "changeOrigin": true,
+    "headers": {
+      "Origin": "https://stellar.apex"
+    },
+    "cookieDomainRewrite": {
+      "stellar.apex": "localhost"
+    }
+  },
+  "/aldebaran": {
+    "target": "https://stellar.apex",
+    "secure": false,
+    "changeOrigin": true,
+    "headers": {
+      "Origin": "https://stellar.apex"
+    },
+    "cookieDomainRewrite": {
+      "stellar.apex": "localhost"
+    }
+  }
+}

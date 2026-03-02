@@ -7,6 +7,7 @@ import {TranslateModule} from '@ngx-translate/core';
 import {NotificationService} from '../../../core/services/notification.service';
 import {HttpErrorResponse} from '@angular/common/http';
 import {ProblemDetail} from '../../../core/models/problem-detail.model';
+import {NgIcon} from '@ng-icons/core';
 
 /**
  * Handles the user login page.
@@ -15,7 +16,7 @@ import {ProblemDetail} from '../../../core/models/problem-detail.model';
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterModule, TranslateModule],
+  imports: [CommonModule, ReactiveFormsModule, RouterModule, TranslateModule, NgIcon],
   templateUrl: './login.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

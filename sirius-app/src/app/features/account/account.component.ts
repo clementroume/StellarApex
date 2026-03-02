@@ -1,7 +1,7 @@
 import {ChangeDetectionStrategy, Component} from '@angular/core';
 import {RouterModule} from '@angular/router';
-import {NavbarComponent} from '../../core/layout/navbar/navbar.component';
 import {TranslateModule} from '@ngx-translate/core';
+import {NgIcon} from '@ng-icons/core';
 
 /**
  * The shell component for the user account section.
@@ -13,7 +13,7 @@ import {TranslateModule} from '@ngx-translate/core';
 @Component({
   selector: 'app-account',
   standalone: true,
-  imports: [RouterModule, NavbarComponent, TranslateModule],
+  imports: [RouterModule, TranslateModule, NgIcon],
   templateUrl: './account.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

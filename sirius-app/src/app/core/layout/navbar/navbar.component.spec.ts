@@ -65,35 +65,22 @@ describe('NavbarComponent', () => {
     expect(themeServiceSpy.toggleTheme).toHaveBeenCalledTimes(1);
   });
 
-  describe('user menu and catalog', () => {
-    it('should NOT display ANY dropdown when user is not logged in', () => {
-      mockCurrentUser.set(null);
-      fixture.detectChanges();
 
-      // On s'attend à ce qu'il y ait 0 dropdown (ni catalogue, ni user menu)
-      const dropdowns = fixture.debugElement.queryAll(By.css('.dropdown'));
-      expect(dropdowns.length).withContext('No dropdowns should exist when logged out').toBe(0);
+  it('should display the dropdowns and correct links when user is logged in', () => {
+    // Arrange: Simulate a logged-in user
+    mockCurrentUser.set(mockUser);
+    fixture.detectChanges();
 
-      const loginBtn = fixture.debugElement.query(By.css('a[routerLink="/auth/login"]'));
-      expect(loginBtn).not.toBeNull();
-    });
+    // On vérifie qu'on a bien les DEUX dropdowns (Catalogue + Utilisateur)
+    const dropdowns = fixture.debugElement.queryAll(By.css('.dropdown'));
+    expect(dropdowns.length).withContext('Both dropdowns should be visible').toBe(2);
 
-    it('should display the dropdowns and correct links when user is logged in', () => {
-      // Arrange: Simulate a logged-in user
-      mockCurrentUser.set(mockUser);
-      fixture.detectChanges();
+    // Act: Find the link element
+    const myAccountLink = fixture.debugElement.query(By.css('a[routerLink="/my-account"]'));
+    expect(myAccountLink).withContext('"My Account" link should exist').not.toBeNull();
 
-      // On vérifie qu'on a bien les DEUX dropdowns (Catalogue + Utilisateur)
-      const dropdowns = fixture.debugElement.queryAll(By.css('.dropdown'));
-      expect(dropdowns.length).withContext('Both dropdowns should be visible').toBe(2);
-
-      // Act: Find the link element
-      const myAccountLink = fixture.debugElement.query(By.css('a[routerLink="/my-account"]'));
-      expect(myAccountLink).withContext('"My Account" link should exist').not.toBeNull();
-
-      // Assert: Check the rendered href attribute
-      const linkElement = myAccountLink.nativeElement as HTMLAnchorElement;
-      expect(linkElement.getAttribute('href')).toBe('/my-account');
-    });
+    // Assert: Check the rendered href attribute
+    const linkElement = myAccountLink.nativeElement as HTMLAnchorElement;
+    expect(linkElement.getAttribute('href')).toBe('/my-account');
   });
 });

@@ -4,6 +4,7 @@ import {RouterModule} from '@angular/router';
 import {AuthService} from '../../../api/antares/services/auth.service';
 import {ThemeService} from '../../services/theme.service';
 import {TranslateModule} from '@ngx-translate/core';
+import {NgIcon} from '@ng-icons/core';
 
 /**
  * The main navigation bar for the application.
@@ -14,7 +15,7 @@ import {TranslateModule} from '@ngx-translate/core';
 @Component({
   selector: 'app-navbar',
   standalone: true,
-  imports: [CommonModule, RouterModule, TranslateModule],
+  imports: [CommonModule, RouterModule, TranslateModule, NgIcon],
   templateUrl: './navbar.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

@@ -7,6 +7,7 @@ import {TranslateModule, TranslateService} from '@ngx-translate/core';
 import {NotificationService} from '../../../core/services/notification.service';
 import {HttpErrorResponse} from '@angular/common/http';
 import {ProblemDetail} from '../../../core/models/problem-detail.model';
+import {NgIcon} from '@ng-icons/core';
 
 /**
  * Component for displaying and editing the user's profile information.
@@ -15,7 +16,7 @@ import {ProblemDetail} from '../../../core/models/problem-detail.model';
 @Component({
   selector: 'app-profile',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, TranslateModule],
+  imports: [CommonModule, ReactiveFormsModule, TranslateModule, NgIcon],
   templateUrl: './profile.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

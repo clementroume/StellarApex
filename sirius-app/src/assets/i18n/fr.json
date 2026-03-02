@@ -7,7 +7,8 @@
     "MUSCLES": "Muscles",
     "MY_ACCOUNT": "Mon Compte",
     "LOG_OUT": "Se déconnecter",
-    "LOG_IN": "Se connecter"
+    "LOG_IN": "Se connecter",
+    "TOGGLE_THEME": "Basculer le thème clair/sombre"
   },
   "DASHBOARD": {
     "TITLE": "Tableau de Bord",

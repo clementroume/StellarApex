@@ -15,6 +15,7 @@ import {TranslateModule} from '@ngx-translate/core';
 import {NotificationService} from '../../../core/services/notification.service';
 import {HttpErrorResponse} from '@angular/common/http';
 import {ProblemDetail} from '../../../core/models/problem-detail.model';
+import {NgIcon} from '@ng-icons/core';
 
 export const passwordMatchValidator: ValidatorFn = (control: AbstractControl): ValidationErrors | null => {
   const password = control.get('password');
@@ -31,7 +32,7 @@ export const passwordMatchValidator: ValidatorFn = (control: AbstractControl): V
 @Component({
   selector: 'app-register',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterModule, TranslateModule],
+  imports: [CommonModule, ReactiveFormsModule, RouterModule, TranslateModule, NgIcon],
   templateUrl: './register.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

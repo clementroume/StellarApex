@@ -16,6 +16,7 @@ import {NotificationService} from '../../../core/services/notification.service';
 import {HttpErrorResponse} from '@angular/common/http';
 import {PreferencesUpdateRequest} from '../../../api/antares/models/user.model';
 import {ProblemDetail} from '../../../core/models/problem-detail.model';
+import {NgIcon} from '@ng-icons/core';
 
 /**
  * Custom validator to check if the new password and confirmation password fields match.
@@ -32,7 +33,7 @@ export const passwordMatchValidator: ValidatorFn = (control: AbstractControl): V
 @Component({
   selector: 'app-settings',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, TranslateModule],
+  imports: [CommonModule, ReactiveFormsModule, TranslateModule, NgIcon],
   templateUrl: './settings.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

@@ -3,14 +3,14 @@
     <h1 class="text-3xl font-bold">{{ 'MUSCLE.LIST.TITLE' | translate }}</h1>
 
     @if (isAdmin()) {
-      <a routerLink="new" class="btn btn-primary">
+      <a routerLink="new" class="btn btn-secondary">
         + {{ 'MUSCLE.LIST.ADD_BUTTON' | translate }}
       </a>
     }
   </div>
 
-  <div class="overflow-x-auto bg-base-100 shadow-xl rounded-box">
-    <table class="table table-zebra w-full">
+  <div class="overflow-x-auto bg-base-100 rounded-box border border-base-content/5">
+    <table class="table w-full">
       <thead>
       <tr>
         <th class="cursor-pointer hover:bg-base-200" (click)="sortBy('medicalName')">
@@ -46,7 +46,7 @@
               </div>
             </td>
             <td>
-              <button class="btn btn-sm btn-outline" (click)="openDetails(muscle)">
+              <button class="btn btn-sm btn-neutral" (click)="openDetails(muscle)">
                 {{ 'MUSCLE.LIST.ACTION_DETAILS' | translate }}
               </button>
             </td>

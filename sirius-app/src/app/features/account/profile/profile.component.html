@@ -1,25 +1,16 @@
-<div class="card bg-base-100 shadow-xl">
+<div class="card bg-base-100">
   <div class="card-body">
 
     <div class="flex justify-between items-center mb-4">
       <h2 class="card-title flex gap-2">
-        <svg class="h-6 w-6 opacity-50" fill="none" stroke="currentColor"
-             stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24"
-             xmlns="http://www.w3.org/2000/svg">
-          <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/>
-          <circle cx="12" cy="7" r="4"/>
-        </svg>
+        <ng-icon name="heroUser" class="text-2xl"></ng-icon>
         {{ 'PROFILE.TITLE' | translate }}
       </h2>
 
       @if (!isEditing) {
         <button (click)="enterEditMode()" [title]="'PROFILE.EDIT' | translate"
-                class="btn btn-neutral btn-sm btn-square">
-          <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-linecap="round"
-               stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24"
-               xmlns="http://www.w3.org/2000/svg">
-            <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/>
-          </svg>
+                class="btn btn-ghost btn-sm btn-square">
+          <ng-icon name="heroPencilSquare" class="text-2xl"></ng-icon>
         </button>
       }
     </div>
@@ -64,44 +55,25 @@
 
             <label class="fieldset-label">{{ 'REGISTER.FIRST_NAME' | translate }}</label>
             <label class="input validator w-full">
-              <svg class="h-[1em] opacity-50" viewBox="0 0 24 24"
-                   xmlns="http://www.w3.org/2000/svg">
-                <g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"
-                   stroke-width="2.5">
-                  <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path>
-                  <circle cx="12" cy="7" r="4"></circle>
-                </g>
-              </svg>
-              <input [placeholder]="'REGISTER.FIRST_NAME_PLACEHOLDER' | translate" formControlName="firstName" maxlength="50" required
+              <ng-icon name="heroUser" class="text-xl"></ng-icon>
+              <input [placeholder]="'REGISTER.FIRST_NAME_PLACEHOLDER' | translate"
+                     formControlName="firstName" maxlength="50" required
                      type="text"/>
             </label>
             <p class="validator-hint hidden">Max 50 characters</p>
 
             <label class="fieldset-label mt-3">{{ 'REGISTER.LAST_NAME' | translate }}</label>
             <label class="input validator w-full">
-              <svg class="h-[1em] opacity-50" viewBox="0 0 24 24"
-                   xmlns="http://www.w3.org/2000/svg">
-                <g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"
-                   stroke-width="2.5">
-                  <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path>
-                  <circle cx="12" cy="7" r="4"></circle>
-                </g>
-              </svg>
-              <input [placeholder]="'REGISTER.LAST_NAME_PLACEHOLDER' | translate" formControlName="lastName" maxlength="50" required
+              <ng-icon name="heroUser" class="text-xl"></ng-icon>
+              <input [placeholder]="'REGISTER.LAST_NAME_PLACEHOLDER' | translate"
+                     formControlName="lastName" maxlength="50" required
                      type="text"/>
             </label>
             <p class="validator-hint hidden">Max 50 characters</p>
 
             <label class="fieldset-label mt-3">{{ 'LOGIN.EMAIL' | translate }}</label>
             <label class="input validator w-full">
-              <svg class="h-[1em] opacity-50" viewBox="0 0 24 24"
-                   xmlns="http://www.w3.org/2000/svg">
-                <g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"
-                   stroke-width="2.5">
-                  <rect height="16" rx="2" width="20" x="2" y="4"></rect>
-                  <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"></path>
-                </g>
-              </svg>
+              <ng-icon name="heroEnvelope" class="text-xl"></ng-icon>
               <input formControlName="email" required type="email"/>
             </label>
             <div class="validator-hint hidden">Enter valid email address</div>
@@ -110,7 +82,8 @@
               <button (click)="onCancel()" class="btn btn-ghost" type="button">
                 {{ 'PROFILE.CANCEL' | translate }}
               </button>
-              <button [disabled]="profileForm.invalid || profileForm.pristine" class="btn btn-primary"
+              <button [disabled]="profileForm.invalid || profileForm.pristine"
+                      class="btn btn-primary"
                       type="submit">
                 {{ 'PROFILE.SAVE' | translate }}
               </button>

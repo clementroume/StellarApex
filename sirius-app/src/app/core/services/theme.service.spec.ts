@@ -57,12 +57,12 @@ describe('ThemeService', () => {
     });
 
     it('should initialize with "light" theme by default', () => {
-      expect(service.currentTheme()).toBe('light');
+      expect(service.currentTheme()).toBe('dark');
     });
 
     it('should toggle theme from light to dark', () => {
       service.toggleTheme();
-      expect(service.currentTheme()).toBe('dark');
+      expect(service.currentTheme()).toBe('light');
     });
 
     it('should call updatePreferences when a user is logged in', () => {
@@ -73,7 +73,7 @@ describe('ThemeService', () => {
 
       expect(userServiceSpy.updatePreferences).toHaveBeenCalledWith({
         locale: 'en',
-        theme: 'dark' // The service starts at 'light', so it toggles to 'dark'
+        theme: 'light' // The service starts at 'light', so it toggles to 'dark'
       });
     });
 

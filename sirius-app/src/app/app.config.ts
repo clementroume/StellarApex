@@ -8,6 +8,19 @@ import {provideTranslateHttpLoader} from '@ngx-translate/http-loader';
 import {routes} from './app.routes';
 import {authInterceptor} from './core/interceptors/auth.interceptor';
 import {loadingInterceptor} from './core/interceptors/loading.interceptor';
+import {provideIcons} from '@ng-icons/core';
+import {
+  heroChevronDown,
+  heroCog8Tooth,
+  heroEnvelope,
+  heroExclamationTriangle,
+  heroGlobeAlt,
+  heroKey,
+  heroMoon,
+  heroPencilSquare,
+  heroSun,
+  heroUser
+} from '@ng-icons/heroicons/outline';
 
 /**
  * The main application configuration for this standalone Angular application.
@@ -20,11 +33,11 @@ export const appConfig: ApplicationConfig = {
     provideRouter(
       routes,
       withComponentInputBinding(), // Binds route parameters directly to component inputs.
-      withViewTransitions() // Enables native View Transitions for smoother route changes. [cite: 4222]
+      withViewTransitions() // Enables native View Transitions for smoother route changes.
     ),
 
     // 2. HTTP CLIENT CONFIGURATION
-    // Configures the HttpClient with a chain of functional interceptors. [cite: 1993]
+    // Configures the HttpClient with a chain of functional interceptors.
     provideHttpClient(
       // Activate XSRF protection
       withXsrfConfiguration({
@@ -47,5 +60,19 @@ export const appConfig: ApplicationConfig = {
       }),
       fallbackLang: 'en'
     }),
+
+    // 4. GLOBAL ICON IMPORT
+    provideIcons({
+      heroUser,
+      heroEnvelope,
+      heroKey,
+      heroCog8Tooth,
+      heroPencilSquare,
+      heroGlobeAlt,
+      heroExclamationTriangle,
+      heroSun,
+      heroMoon,
+      heroChevronDown
+    })
   ],
 };

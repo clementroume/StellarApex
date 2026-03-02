@@ -1,6 +1,5 @@
 import {ChangeDetectionStrategy, Component} from '@angular/core';
 import {CommonModule} from '@angular/common';
-import {NavbarComponent} from '../../core/layout/navbar/navbar.component';
 import {TranslateModule} from '@ngx-translate/core';
 
 /**
@@ -10,7 +9,7 @@ import {TranslateModule} from '@ngx-translate/core';
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, NavbarComponent, TranslateModule],
+  imports: [CommonModule, TranslateModule],
   templateUrl: './dashboard.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
