@@ -2,7 +2,7 @@ import {inject, Injectable} from '@angular/core';
 import {HttpClient, HttpParams} from '@angular/common/http';
 import {Observable} from 'rxjs';
 import {environment} from '../../../../environments/environment';
-import {WodRequest, WodResponse, WodSummaryResponse, WodType} from '../models/wod.model';
+import {WodReferenceData, WodRequest, WodResponse, WodSummaryResponse,} from '../models/wod.model';
 import {Slice} from '../../../core/models/pagination.model';
 
 @Injectable({providedIn: 'root'})
@@ -11,14 +11,14 @@ export class WodService {
 
   getWods(
     search?: string,
-    type?: WodType,
+    type?: string,
     movementId?: string,
     page: number = 0,
     size: number = 20
   ): Observable<Slice<WodSummaryResponse>> {
     let params = new HttpParams()
-    .set('page', page)
-    .set('size', size);
+      .set('page', page)
+      .set('size', size);
 
     if (search) params = params.set('search', search);
     if (type) params = params.set('type', type);
@@ -41,6 +41,10 @@ export class WodService {
 
   deleteWod(id: number): Observable<void> {
     return this.http.delete<void>(this.buildUrl(`/wods/${id}`));
+  }
+
+  getReferenceData(): Observable<WodReferenceData> {
+    return this.http.get<WodReferenceData>(this.buildUrl('/wods/reference-data'));
   }
 
   private buildUrl(path: string): string {

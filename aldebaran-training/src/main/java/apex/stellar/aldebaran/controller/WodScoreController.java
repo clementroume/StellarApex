@@ -1,6 +1,7 @@
 package apex.stellar.aldebaran.controller;
 
 import apex.stellar.aldebaran.dto.ScoreComparisonResponse;
+import apex.stellar.aldebaran.dto.WodScoreReferenceData;
 import apex.stellar.aldebaran.dto.WodScoreRequest;
 import apex.stellar.aldebaran.dto.WodScoreResponse;
 import apex.stellar.aldebaran.model.entities.WodScore.ScalingLevel;
@@ -243,5 +244,14 @@ public class WodScoreController {
           Pageable pageable) {
 
     return ResponseEntity.ok(scoreService.getLeaderboard(id, scaling, pageable));
+  }
+
+  /** Retrieves reference data (scaling levels) for score submission forms. */
+  @GetMapping("/reference-data")
+  @Operation(
+      summary = "Get WOD score reference data",
+      description = "Returns available scaling levels for logging a score.")
+  public ResponseEntity<WodScoreReferenceData> getReferenceData() {
+    return ResponseEntity.ok(scoreService.getReferenceData());
   }
 }

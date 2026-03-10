@@ -1,8 +1,8 @@
-import { TestBed } from '@angular/core/testing';
-import { AppComponent } from './app.component';
-import { provideHttpClient } from '@angular/common/http';
-import { provideHttpClientTesting } from '@angular/common/http/testing';
-import { TranslateModule } from '@ngx-translate/core';
+import {TestBed} from '@angular/core/testing';
+import {AppComponent} from './app.component';
+import {provideHttpClient} from '@angular/common/http';
+import {provideHttpClientTesting} from '@angular/common/http/testing';
+import {TranslateModule} from '@ngx-translate/core';
 
 describe('AppComponent', () => {
   beforeEach(async () => {
@@ -15,7 +15,7 @@ describe('AppComponent', () => {
       providers: [
         // Provide HttpClient and its testing mock for the AuthService dependency
         provideHttpClient(),
-        provideHttpClientTesting(),
+        provideHttpClientTesting()
       ]
     }).compileComponents();
   });

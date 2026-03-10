@@ -3,7 +3,6 @@ package apex.stellar.aldebaran.repository;
 import apex.stellar.aldebaran.model.entities.Muscle;
 import apex.stellar.aldebaran.model.entities.Muscle.MuscleGroup;
 import java.util.List;
-import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -15,14 +14,6 @@ import org.springframework.stereotype.Repository;
  */
 @Repository
 public interface MuscleRepository extends JpaRepository<Muscle, Long> {
-
-  /**
-   * Retrieves a muscle by its unique medical name.
-   *
-   * @param medicalName The Latin/Medical name of the muscle.
-   * @return An {@link Optional} containing the muscle if found.
-   */
-  Optional<Muscle> findByMedicalName(String medicalName);
 
   /**
    * Checks if a muscle with the specified medical name exists in the data store.

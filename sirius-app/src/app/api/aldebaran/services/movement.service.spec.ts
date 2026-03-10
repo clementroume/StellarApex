@@ -3,12 +3,7 @@ import {HttpTestingController, provideHttpClientTesting} from '@angular/common/h
 import {provideHttpClient} from '@angular/common/http';
 import {MovementService} from './movement.service';
 import {environment} from '../../../../environments/environment';
-import {
-  Category,
-  MovementRequest,
-  MovementResponse,
-  MovementSummaryResponse
-} from '../models/movement.model';
+import {MovementRequest, MovementResponse, MovementSummaryResponse} from '../models/movement.model';
 
 describe('MovementService', () => {
   let service: MovementService;
@@ -16,14 +11,14 @@ describe('MovementService', () => {
   const base = environment.trainingUrl;
 
   const mockMovementSummary: MovementSummaryResponse = {
-    id: 'WL-SQ-001',
+    id: 1,
     name: 'Back Squat',
     category: 'SQUAT',
   };
 
   const mockMovementResponse: MovementResponse = {
     bodyweightFactor: 0,
-    id: 'WL-SQ-001',
+    id: 1,
     name: 'Back Squat',
     category: 'SQUAT',
     equipment: ['BARBELL'],
@@ -58,19 +53,11 @@ describe('MovementService', () => {
   });
 
   it('getMovement should GET from /movements/{id}', () => {
-    const movementId = 'WL-SQ-001';
+    const movementId = 1;
     service.getMovement(movementId).subscribe();
     const req = httpMock.expectOne(`${base}/movements/${movementId}`);
     expect(req.request.method).toBe('GET');
     req.flush(mockMovementResponse);
-  });
-
-  it('getMovementsByCategory should GET from /movements/category/{category}', () => {
-    const category: Category = 'SQUAT';
-    service.getMovementsByCategory(category).subscribe();
-    const req = httpMock.expectOne(`${base}/movements/category/${category}`);
-    expect(req.request.method).toBe('GET');
-    req.flush([mockMovementSummary]);
   });
 
   it('createMovement should POST to /movements', () => {
@@ -88,7 +75,7 @@ describe('MovementService', () => {
   });
 
   it('updateMovement should PUT to /movements/{id}', () => {
-    const movementId = 'WL-SQ-001';
+    const movementId = 1;
     const payload: MovementRequest = {
       equipment: [], techniques: [],
       name: 'High-Bar Back Squat',

@@ -3,9 +3,6 @@ package apex.stellar.aldebaran.validation;
 import apex.stellar.aldebaran.model.entities.Movement;
 import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.MessageSource;
-import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.stereotype.Component;
 
 /**
@@ -25,8 +22,6 @@ import org.springframework.stereotype.Component;
  */
 @Component
 public class MovementValidator implements ConstraintValidator<ValidMovement, Movement> {
-
-  private MessageSource messageSource;
 
   /**
    * Validates the consistency between the bodyweight flag and the bodyweight factor.
@@ -49,27 +44,12 @@ public class MovementValidator implements ConstraintValidator<ValidMovement, Mov
     }
 
     if (!isValid) {
-      String errorMessage =
-          messageSource.getMessage(
-              "validation.movement.bodyweight.consistency",
-              null,
-              "Invalid movement configuration",
-              LocaleContextHolder.getLocale());
-
       context.disableDefaultConstraintViolation();
-      context.buildConstraintViolationWithTemplate(errorMessage).addConstraintViolation();
+      context
+          .buildConstraintViolationWithTemplate("{validation.movement.bodyweight.consistency}")
+          .addConstraintViolation();
     }
 
     return isValid;
-  }
-
-  /**
-   * Sets the message source for internationalized error messages.
-   *
-   * @param messageSource The Spring MessageSource.
-   */
-  @Autowired
-  public void setMessageSource(MessageSource messageSource) {
-    this.messageSource = messageSource;
   }
 }

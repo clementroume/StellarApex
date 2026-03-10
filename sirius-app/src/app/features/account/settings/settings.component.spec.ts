@@ -10,6 +10,8 @@ import {NotificationService} from '../../../core/services/notification.service';
 import {of, throwError} from 'rxjs';
 import {signal} from '@angular/core';
 import {UserResponse} from '../../../api/antares/models/user.model';
+import {provideIcons} from '@ng-icons/core';
+import {APP_ICONS} from '../../../app.config';
 
 describe('SettingsComponent', () => {
   let component: SettingsComponent;
@@ -39,6 +41,7 @@ describe('SettingsComponent', () => {
         provideHttpClient(),
         provideHttpClientTesting(),
         provideRouter([]),
+        provideIcons(APP_ICONS),
         {provide: AuthService, useValue: authServiceSpy},
         {provide: UserService, useValue: userServiceSpy},
         {provide: NotificationService, useValue: notificationServiceSpy}
@@ -52,12 +55,11 @@ describe('SettingsComponent', () => {
     translateService.setDefaultLang('en');
     translateService.use('en');
 
-    // 1. Initialiser la vue d'abord (Angular va lier le vrai élément DOM à deleteModal)
+    // 1. Initialize the view first (Angular will bind the real DOM element to deleteModal)
     fixture.detectChanges();
 
-    // 2. Écraser l'élément réel par notre Mock AVEC des Spies
-    // Cela nous permet de vérifier si showModal() et close() sont appelés,
-    // même si l'environnement de test ne supporte pas nativement <dialog>
+    // 2. Overwrite the real element with our Mock WITH Spies
+    // This allows us to verify if showModal() and close() are called
     component.deleteModal = {
       nativeElement: jasmine.createSpyObj('HTMLDialogElement', ['showModal', 'close'])
     };
@@ -91,16 +93,13 @@ describe('SettingsComponent', () => {
 
     it('should call authService.changePassword on submit', () => {
       const form = component.passwordForm;
-
-      // CORRECTION : Utiliser un mot de passe valide (> 8 caractères)
-      // Sinon le formulaire est invalide et le service n'est jamais appelé
       form.controls['currentPassword'].setValue('oldPassword123');
-      form.controls['newPassword'].setValue('newPassword123');
-      form.controls['confirmationPassword'].setValue('newPassword123');
+      form.controls['newPassword'].setValue('newPassword123A');
+      form.controls['confirmationPassword'].setValue('newPassword123A');
 
       userServiceSpy.changePassword.and.returnValue(of(void 0));
 
-      component.onSubmitPassword();
+      component.onSubmit();
 
       expect(userServiceSpy.changePassword).toHaveBeenCalled();
       expect(notificationServiceSpy.showSuccess).toHaveBeenCalled();
@@ -111,7 +110,6 @@ describe('SettingsComponent', () => {
   describe('Delete Account', () => {
     it('should open the confirmation modal', () => {
       component.openDeleteConfirmation();
-      // Maintenant nativeElement.showModal est bien un Spy
       expect(component.deleteModal.nativeElement.showModal).toHaveBeenCalled();
     });
 

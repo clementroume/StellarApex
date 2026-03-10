@@ -5,9 +5,9 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.media.Schema.RequiredMode;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
+import java.util.List;
 
 /**
  * DTO for specifying a single movement within a WOD creation or update request.
@@ -16,12 +16,9 @@ import jakarta.validation.constraints.Size;
  * prescription (Rx) for this workflow.
  */
 public record WodMovementRequest(
-    @Schema(
-            description = "ID of the movement to include (Business Key or UUID)",
-            example = "WL-SQ-001",
-            requiredMode = RequiredMode.REQUIRED)
-        @NotBlank(message = "{validation.movement.id.required}")
-        String movementId,
+    @Schema(description = "ID of the movement", example = "1", requiredMode = RequiredMode.REQUIRED)
+        @NotNull(message = "{validation.movement.id.required}")
+        Long movementId,
     @Schema(
             description = "Sequence order in the WOD (1-based)",
             example = "1",
@@ -77,6 +74,16 @@ public record WodMovementRequest(
             requiredMode = RequiredMode.NOT_REQUIRED)
         @Min(value = 0, message = "{validation.value.positive}")
         Integer calories,
+    @Schema(
+            description = "List of equipment used for this movement in this WOD",
+            example = "[\"BARBELL\", \"DUMBBELL\"]",
+            requiredMode = RequiredMode.NOT_REQUIRED)
+        List<String> equipment,
+    @Schema(
+            description = "List of techniques/styles used for this movement in this WOD",
+            example = "[\"SUMO\", \"TOUCH_AND_GO\"]",
+            requiredMode = RequiredMode.NOT_REQUIRED)
+        List<String> techniques,
 
     // --- Instructions ---
 

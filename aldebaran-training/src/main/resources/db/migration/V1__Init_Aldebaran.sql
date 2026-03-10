@@ -23,6 +23,7 @@ CREATE TABLE muscles
     description_en TEXT,
     description_fr TEXT,
     muscle_group   VARCHAR(50)  NOT NULL,
+    image_url      VARCHAR(512),
 
     -- Audit
     created_at     TIMESTAMP    NOT NULL DEFAULT NOW(),
@@ -31,7 +32,7 @@ CREATE TABLE muscles
 
 CREATE TABLE movements
 (
-    id                  VARCHAR(20) PRIMARY KEY, -- Business Key (e.g., WL-SQ-001)
+    id                  BIGSERIAL PRIMARY KEY,
 
     name                VARCHAR(50)      NOT NULL,
     name_abbreviation   VARCHAR(20),
@@ -59,7 +60,7 @@ CREATE TABLE movements
 CREATE TABLE movement_muscles
 (
     id            BIGSERIAL PRIMARY KEY,
-    movement_id   VARCHAR(20)      NOT NULL REFERENCES movements (id) ON DELETE CASCADE,
+    movement_id   BIGINT           NOT NULL REFERENCES movements (id) ON DELETE CASCADE,
     muscle_id     BIGINT           NOT NULL REFERENCES muscles (id) ON DELETE CASCADE,
     role          VARCHAR(50)      NOT NULL,
     impact_factor DOUBLE PRECISION NOT NULL DEFAULT 1.0,
@@ -70,13 +71,13 @@ CREATE TABLE movement_muscles
 -- Collection Tables
 CREATE TABLE movement_equipment
 (
-    movement_id VARCHAR(20) NOT NULL REFERENCES movements (id) ON DELETE CASCADE,
+    movement_id BIGINT      NOT NULL REFERENCES movements (id) ON DELETE CASCADE,
     equipment   VARCHAR(50) NOT NULL
 );
 
 CREATE TABLE movement_variations
 (
-    movement_id VARCHAR(20) NOT NULL REFERENCES movements (id) ON DELETE CASCADE,
+    movement_id BIGINT      NOT NULL REFERENCES movements (id) ON DELETE CASCADE,
     technique   VARCHAR(50) NOT NULL
 );
 
@@ -125,9 +126,9 @@ CREATE TABLE wod_modalities
 CREATE TABLE wod_movements
 (
     id                    BIGSERIAL PRIMARY KEY,
-    wod_id                BIGINT      NOT NULL REFERENCES wods (id) ON DELETE CASCADE,
-    movement_id           VARCHAR(20) NOT NULL REFERENCES movements (id),
-    order_index           INTEGER     NOT NULL,
+    wod_id                BIGINT  NOT NULL REFERENCES wods (id) ON DELETE CASCADE,
+    movement_id           BIGINT  NOT NULL REFERENCES movements (id),
+    order_index           INTEGER NOT NULL,
 
     reps_scheme           VARCHAR(50),
 
@@ -147,6 +148,19 @@ CREATE TABLE wod_movements
 
     CONSTRAINT check_order_positive CHECK (order_index > 0),
     CONSTRAINT uk_wod_movement_order UNIQUE (wod_id, order_index)
+);
+
+-- Collection Tables
+CREATE TABLE wod_movement_equipment
+(
+    wod_movement_id BIGINT      NOT NULL REFERENCES wod_movements (id) ON DELETE CASCADE,
+    equipment       VARCHAR(50) NOT NULL
+);
+
+CREATE TABLE wod_movement_techniques
+(
+    wod_movement_id BIGINT      NOT NULL REFERENCES wod_movements (id) ON DELETE CASCADE,
+    technique       VARCHAR(50) NOT NULL
 );
 
 -- ----------------------------------------------------------------------------------
@@ -220,6 +234,12 @@ CREATE INDEX idx_wods_gym_id ON wods (gym_id);
 CREATE INDEX idx_wods_author_id ON wods (author_id);
 
 -- ----------------------------------------------------------------------------------
+-- WODS MOVEMENTS
+-- ----------------------------------------------------------------------------------
+CREATE INDEX idx_wod_movement_eq ON wod_movement_equipment (wod_movement_id);
+CREATE INDEX idx_wod_movement_tech ON wod_movement_techniques (wod_movement_id);
+
+-- ----------------------------------------------------------------------------------
 -- WOD_SCORES (Leaderboards & History)
 -- ----------------------------------------------------------------------------------
 CREATE INDEX idx_user_date ON wod_scores (user_id, date DESC);
@@ -232,7 +252,6 @@ CREATE INDEX idx_wod_scores_wod_scaling ON wod_scores (wod_id, scaling, time_sec
 -- ==================================================================================
 
 COMMENT ON TABLE movements IS 'Master catalog of exercises/movements';
-COMMENT ON COLUMN movements.id IS 'Business key format: {MODALITY}-{FAMILY}-{SEQUENCE} (e.g., WL-SQ-001)';
 COMMENT ON COLUMN movements.bodyweight_factor IS 'Percentage of bodyweight involved (0.0 to 1.0)';
 
 COMMENT ON TABLE movement_muscles IS 'Weighted relationship between movements and muscles';

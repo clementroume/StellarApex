@@ -1,14 +1,12 @@
 <div class="card bg-base-100">
   <div class="card-body">
-
     <div class="flex justify-between items-center mb-4">
       <h2 class="card-title flex gap-2">
         <ng-icon name="heroUser" class="text-2xl"></ng-icon>
         {{ 'PROFILE.TITLE' | translate }}
       </h2>
-
       @if (!isEditing) {
-        <button (click)="enterEditMode()" [title]="'PROFILE.EDIT' | translate"
+        <button (click)="enterEditMode()" [title]="'GLOBAL.EDIT' | translate"
                 class="btn btn-ghost btn-sm btn-square">
           <ng-icon name="heroPencilSquare" class="text-2xl"></ng-icon>
         </button>
@@ -16,79 +14,61 @@
     </div>
 
     @if (authService.currentUser(); as user) {
-
       @if (!isEditing) {
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-
           <div class="flex flex-col gap-1">
-            <span
-              class="text-xs font-bold text-base-content/50 uppercase tracking-wide">{{ 'REGISTER.FIRST_NAME' | translate }}</span>
-            <div class="flex items-center gap-2 text-lg">
-              <span class="font-medium">{{ user.firstName }}</span>
-            </div>
+            <span class="text-xs font-bold text-base-content/50 uppercase">{{ 'GLOBAL.FIRST_NAME' | translate }}</span>
+            <span class="font-medium text-lg">{{ user.firstName }}</span>
           </div>
-
           <div class="flex flex-col gap-1">
-            <span
-              class="text-xs font-bold text-base-content/50 uppercase tracking-wide">{{ 'REGISTER.LAST_NAME' | translate }}</span>
-            <div class="flex items-center gap-2 text-lg">
-              <span class="font-medium">{{ user.lastName }}</span>
-            </div>
+            <span class="text-xs font-bold text-base-content/50 uppercase">{{ 'GLOBAL.LAST_NAME' | translate }}</span>
+            <span class="font-medium text-lg">{{ user.lastName }}</span>
           </div>
-
           <div class="flex flex-col gap-1 md:col-span-2">
-            <span
-              class="text-xs font-bold text-base-content/50 uppercase tracking-wide">{{ 'LOGIN.EMAIL' | translate }}</span>
+            <span class="text-xs font-bold text-base-content/50 uppercase">{{ 'GLOBAL.EMAIL' | translate }}</span>
             <div class="flex items-center gap-2 text-lg">
               <span class="font-medium">{{ user.email }}</span>
-              <div class="badge badge-success badge-xs badge-outline gap-1">Verified</div>
+              <div class="badge badge-success badge-xs badge-outline">Verified</div>
             </div>
           </div>
         </div>
       }
 
       @if (isEditing) {
-        <form (ngSubmit)="onSave()" [formGroup]="profileForm">
-
+        <form (ngSubmit)="onSubmit()" [formGroup]="profileForm">
           <fieldset class="fieldset bg-base-200/50 border-base-300 rounded-box w-full border p-4">
             <legend class="fieldset-legend">{{ 'ACCOUNT.MENU_INFO' | translate }}</legend>
 
-            <label class="fieldset-label">{{ 'REGISTER.FIRST_NAME' | translate }}</label>
+            <label class="fieldset-label">{{ 'GLOBAL.FIRST_NAME' | translate }}</label>
             <label class="input validator w-full">
               <ng-icon name="heroUser" class="text-xl"></ng-icon>
-              <input [placeholder]="'REGISTER.FIRST_NAME_PLACEHOLDER' | translate"
-                     formControlName="firstName" maxlength="50" required
-                     type="text"/>
+              <input [placeholder]="'GLOBAL.FIRST_NAME_PH' | translate" formControlName="firstName" maxlength="50"
+                     required type="text"/>
             </label>
-            <p class="validator-hint hidden">Max 50 characters</p>
+            <p class="validator-hint hidden">{{ 'GLOBAL.ERROR_MAX_50' | translate }}</p>
 
-            <label class="fieldset-label mt-3">{{ 'REGISTER.LAST_NAME' | translate }}</label>
+            <label class="fieldset-label mt-3">{{ 'GLOBAL.LAST_NAME' | translate }}</label>
             <label class="input validator w-full">
               <ng-icon name="heroUser" class="text-xl"></ng-icon>
-              <input [placeholder]="'REGISTER.LAST_NAME_PLACEHOLDER' | translate"
-                     formControlName="lastName" maxlength="50" required
-                     type="text"/>
+              <input [placeholder]="'GLOBAL.LAST_NAME_PH' | translate" formControlName="lastName" maxlength="50"
+                     required type="text"/>
             </label>
-            <p class="validator-hint hidden">Max 50 characters</p>
+            <p class="validator-hint hidden">{{ 'GLOBAL.ERROR_MAX_50' | translate }}</p>
 
-            <label class="fieldset-label mt-3">{{ 'LOGIN.EMAIL' | translate }}</label>
+            <label class="fieldset-label mt-3">{{ 'GLOBAL.EMAIL' | translate }}</label>
             <label class="input validator w-full">
               <ng-icon name="heroEnvelope" class="text-xl"></ng-icon>
-              <input formControlName="email" required type="email"/>
+              <input formControlName="email" required type="email" [placeholder]="'GLOBAL.EMAIL' | translate"/>
             </label>
-            <div class="validator-hint hidden">Enter valid email address</div>
+            <div class="validator-hint hidden">{{ 'GLOBAL.ERROR_EMAIL' | translate }}</div>
 
             <div class="card-actions justify-end mt-6">
-              <button (click)="onCancel()" class="btn btn-ghost" type="button">
-                {{ 'PROFILE.CANCEL' | translate }}
+              <button (click)="onCancel()" class="btn btn-ghost" type="button">{{ 'GLOBAL.CANCEL' | translate }}
               </button>
-              <button [disabled]="profileForm.invalid || profileForm.pristine"
-                      class="btn btn-primary"
-                      type="submit">
-                {{ 'PROFILE.SAVE' | translate }}
+              <button [disabled]="profileForm.invalid || profileForm.pristine" class="btn btn-primary"
+                      type="submit">{{ 'GLOBAL.SAVE' | translate }}
               </button>
             </div>
-
           </fieldset>
         </form>
       }

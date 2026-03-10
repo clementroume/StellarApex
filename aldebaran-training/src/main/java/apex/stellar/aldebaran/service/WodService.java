@@ -4,6 +4,7 @@ import static apex.stellar.aldebaran.config.RedisCacheConfig.CACHE_WODS;
 
 import apex.stellar.aldebaran.dto.MovementResponse;
 import apex.stellar.aldebaran.dto.WodMovementRequest;
+import apex.stellar.aldebaran.dto.WodReferenceData;
 import apex.stellar.aldebaran.dto.WodRequest;
 import apex.stellar.aldebaran.dto.WodResponse;
 import apex.stellar.aldebaran.dto.WodSummaryResponse;
@@ -12,16 +13,20 @@ import apex.stellar.aldebaran.exception.WodLockedException;
 import apex.stellar.aldebaran.mapper.WodMapper;
 import apex.stellar.aldebaran.model.entities.Movement;
 import apex.stellar.aldebaran.model.entities.Wod;
+import apex.stellar.aldebaran.model.entities.Wod.ScoreType;
 import apex.stellar.aldebaran.model.entities.Wod.WodType;
 import apex.stellar.aldebaran.model.entities.WodMovement;
 import apex.stellar.aldebaran.model.enums.Category.Modality;
+import apex.stellar.aldebaran.model.enums.Unit;
 import apex.stellar.aldebaran.repository.MovementRepository;
 import apex.stellar.aldebaran.repository.WodRepository;
 import apex.stellar.aldebaran.repository.WodScoreRepository;
 import apex.stellar.aldebaran.repository.projection.WodSummary;
 import apex.stellar.aldebaran.security.SecurityService;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -77,13 +82,13 @@ public class WodService {
    */
   @Transactional(readOnly = true)
   public Slice<WodSummaryResponse> getWods(
-      String search, WodType type, String movementId, Pageable pageable) {
+      String search, WodType type, Long movementId, Pageable pageable) {
 
     Slice<WodSummary> projections;
 
     if (StringUtils.hasText(search)) {
       projections = wodRepository.findByTitleSecure(search, pageable);
-    } else if (StringUtils.hasText(movementId)) {
+    } else if (movementId != null) {
       projections = wodRepository.findByMovementSecure(movementId, pageable);
     } else if (type != null) {
       projections = wodRepository.findByTypeSecure(type, pageable);
@@ -237,6 +242,25 @@ public class WodService {
   }
 
   /**
+   * Retrieves reference data for workouts, including available WOD types, score types, and unit
+   * group mappings.
+   *
+   * @return An instance of WodReferenceData containing lists of WOD types, score types, and a map
+   *     of unit group types to their respective units.
+   */
+  public WodReferenceData getReferenceData() {
+    List<String> wodTypes = Arrays.stream(WodType.values()).map(Enum::name).toList();
+    List<String> scoreTypes = Arrays.stream(ScoreType.values()).map(Enum::name).toList();
+
+    Map<String, List<String>> unitGroups = new LinkedHashMap<>();
+    for (Unit u : Unit.values()) {
+      unitGroups.computeIfAbsent(u.getType().name(), k -> new ArrayList<>()).add(u.name());
+    }
+
+    return new WodReferenceData(wodTypes, scoreTypes, unitGroups);
+  }
+
+  /**
    * Orchestrates the linking of Movement Entities to the WOD using a Smart Merge strategy. Matches
    * existing movements by {@code orderIndex} to update them in place.
    *
@@ -319,5 +343,15 @@ public class WodService {
     target.setNotes(temp.getNotes());
     target.setScalingOptions(temp.getScalingOptions());
     target.setOrderIndex(temp.getOrderIndex());
+
+    target.getEquipment().clear();
+    if (temp.getEquipment() != null) {
+      target.getEquipment().addAll(temp.getEquipment());
+    }
+
+    target.getTechniques().clear();
+    if (temp.getTechniques() != null) {
+      target.getTechniques().addAll(temp.getTechniques());
+    }
   }
 }

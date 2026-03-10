@@ -6,6 +6,8 @@ import {provideRouter} from '@angular/router';
 import {TranslateModule} from '@ngx-translate/core';
 import {AuthService} from '../../../api/antares/services/auth.service';
 import {of} from 'rxjs';
+import {provideIcons} from '@ng-icons/core';
+import {APP_ICONS} from '../../../app.config';
 
 describe('LoginComponent', () => {
   let component: LoginComponent;
@@ -21,6 +23,7 @@ describe('LoginComponent', () => {
         provideHttpClient(),
         provideHttpClientTesting(),
         provideRouter([]),
+        provideIcons(APP_ICONS),
         {provide: AuthService, useValue: authServiceSpy}
       ]
     }).compileComponents();
@@ -55,13 +58,12 @@ describe('LoginComponent', () => {
     // Arrange
     component.loginForm.controls['email'].setValue('test@test.com');
     component.loginForm.controls['password'].setValue('password');
-    // On force une URL externe via la propriété privée (ou via queryParams si on mockait ActivatedRoute)
-    (component as any).returnUrl = 'http://external-site.com';
+    (component as any).returnUrl = 'https://external-site.com';
 
     // Act
     component.onSubmit();
 
     // Assert
-    expect(component.redirectToExternal).toHaveBeenCalledWith('http://external-site.com');
+    expect(component.redirectToExternal).toHaveBeenCalledWith('https://external-site.com');
   });
 });

@@ -4,6 +4,8 @@ import {TranslateService} from '@ngx-translate/core';
 import {AuthService} from './api/antares/services/auth.service';
 import {GlobalLoaderComponent} from './core/layout/global-loader/global-loader.component';
 import {NotificationComponent} from './core/layout/notification/notification.component';
+import {MuscleModalComponent} from './shared/components/muscle-modal/muscle-modal.component';
+import {MovementModalComponent} from './shared/components/movement-modal/movement-modal.component';
 
 /**
  * The root component of the application.
@@ -15,7 +17,7 @@ import {NotificationComponent} from './core/layout/notification/notification.com
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [RouterOutlet, GlobalLoaderComponent, NotificationComponent],
+  imports: [RouterOutlet, GlobalLoaderComponent, NotificationComponent, MuscleModalComponent, MovementModalComponent],
   templateUrl: './app.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush, // Best practice for performance
 })

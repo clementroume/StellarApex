@@ -1,0 +1,74 @@
+<div class="container mx-auto pb-12">
+  <div class="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
+    <h1 class="text-3xl font-bold">{{ 'MOVEMENT.LIST.TITLE' | translate }}</h1>
+
+    <div class="flex items-center gap-4 w-full sm:w-auto">
+      <label class="input input-bordered flex items-center gap-2 w-full sm:w-64">
+        <input type="text" class="grow" [placeholder]="'MOVEMENT.LIST.SEARCH' | translate"
+               (input)="onSearchChange($event)"/>
+        <ng-icon name="heroMagnifyingGlass" class="opacity-70"></ng-icon>
+      </label>
+
+      @if (isAdmin()) {
+        <a routerLink="/movements/new" class="btn btn-secondary whitespace-nowrap">
+          + {{ 'MOVEMENT.LIST.ADD_BUTTON' | translate }}
+        </a>
+      }
+    </div>
+  </div>
+
+  @if (isLoading() && movements().length === 0) {
+    <div class="flex justify-center p-12">
+      <span class="loading loading-spinner loading-lg text-primary"></span>
+    </div>
+  } @else if (movements().length === 0) {
+    <div class="text-center py-12 text-base-content/50 bg-base-100 rounded-box shadow">
+      {{ 'MOVEMENT.LIST.EMPTY' | translate }}
+    </div>
+  } @else {
+    @for (modality of modalityKeys(); track modality) {
+      @if (groupedMovements().get(modality)!.length > 0) {
+
+        <h2 class="text-2xl font-bold mt-8 mb-4 flex items-center gap-2">
+          {{ 'MOVEMENT.MODALITIES.' + modality | translate }}
+          <div class="badge badge-neutral">{{ groupedMovements().get(modality)?.length }}</div>
+        </h2>
+
+        <div class="overflow-x-auto bg-base-100 rounded-box shadow mb-8">
+          <table class="table table-zebra w-full">
+            <thead>
+            <tr>
+              <th class="w-1/2">{{ 'MOVEMENT.LIST.TABLE.NAME' | translate }}</th>
+              <th>{{ 'MOVEMENT.LIST.TABLE.ABBREVIATION' | translate }}</th>
+              <th>{{ 'MOVEMENT.LIST.TABLE.CATEGORY' | translate }}</th>
+              <th class="text-right">{{ 'GLOBAL.ACTIONS' | translate }}</th>
+            </tr>
+            </thead>
+            <tbody>
+              @for (movement of groupedMovements().get(modality); track movement.id) {
+                <tr>
+                  <td class="font-medium">{{ movement.name }}</td>
+                  <td>
+                    @if (movement.nameAbbreviation) {
+                      <div class="badge badge-ghost">{{ movement.nameAbbreviation }}</div>
+                    }
+                  </td>
+                  <td>
+                    <div class="badge badge-outline">
+                      {{ 'MOVEMENT.CATEGORIES.' + movement.category | translate }}
+                    </div>
+                  </td>
+                  <td class="text-right">
+                    <button class="btn btn-sm btn-neutral" (click)="openDetails(movement.id)">
+                      {{ 'GLOBAL.DETAILS' | translate }}
+                    </button>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    }
+  }
+</div>

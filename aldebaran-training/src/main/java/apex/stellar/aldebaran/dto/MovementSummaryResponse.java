@@ -9,7 +9,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
  * <p>Used for autocomplete dropdowns and search results to optimize bandwidth.
  */
 public record MovementSummaryResponse(
-    @Schema(description = "Business ID", example = "WL-SQ-001") String id,
+    @Schema(description = "Movement ID", example = "1") Long id,
     @Schema(description = "Display name", example = "Back Squat") String name,
     @Schema(description = "Short abbreviation", example = "BS") String nameAbbreviation,
     @Schema(description = "Functional category", example = "DEADLIFT") Category category,

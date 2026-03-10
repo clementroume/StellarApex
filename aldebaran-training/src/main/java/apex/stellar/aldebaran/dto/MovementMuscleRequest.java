@@ -5,7 +5,6 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.media.Schema.RequiredMode;
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
 /**
@@ -15,11 +14,11 @@ import jakarta.validation.constraints.NotNull;
  */
 public record MovementMuscleRequest(
     @Schema(
-            description = "Medical name of the muscle (must exist in DB)",
-            example = "Quadriceps Femoris",
+            description = "Internal ID of the muscle",
+            example = "1",
             requiredMode = RequiredMode.REQUIRED)
-        @NotBlank(message = "{validation.muscle.medicalName.required}")
-        String medicalName,
+        @NotNull(message = "{validation.muscle.id.required}")
+        Long muscleId,
     @Schema(
             description = "Biomechanical role",
             example = "AGONIST",
@@ -34,9 +33,7 @@ public record MovementMuscleRequest(
         @DecimalMin(value = "0.0", message = "{validation.muscle.impactFactor.min}")
         @DecimalMax(value = "1.0", message = "{validation.muscle.impactFactor.max}")
         Double impactFactor) {
-  /**
-   * Compact constructor that applies default values for the impact factor if null.
-   */
+  /** Compact constructor that applies default values for the impact factor if null. */
   public MovementMuscleRequest {
     if (impactFactor == null) {
       impactFactor = 1.0;

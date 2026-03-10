@@ -1,5 +1,6 @@
 package apex.stellar.aldebaran.config;
 
+import apex.stellar.aldebaran.dto.MovementResponse;
 import apex.stellar.aldebaran.dto.MovementSummaryResponse;
 import apex.stellar.aldebaran.dto.MuscleResponse;
 import apex.stellar.aldebaran.dto.WodResponse;
@@ -32,8 +33,11 @@ import tools.jackson.databind.type.TypeFactory;
 @EnableConfigurationProperties(RedisCacheConfig.CacheProperties.class)
 public class RedisCacheConfig {
 
-  /** Cache name for movement master data. */
+  /** Cache name for movement master data (Lists). */
   public static final String CACHE_MOVEMENTS = "movements";
+
+  /** Cache name for a single movement detail. */
+  public static final String CACHE_MOVEMENT = "movement";
 
   /** Cache name for a specific muscle. */
   public static final String CACHE_MUSCLE = "muscle";
@@ -66,6 +70,10 @@ public class RedisCacheConfig {
     var movementsType = tf.constructCollectionType(List.class, MovementSummaryResponse.class);
     var movementsSerializer = new JacksonJsonRedisSerializer<>(objectMapper, movementsType);
 
+    var singleMovementType = tf.constructType(MovementResponse.class);
+    var singleMovementSerializer =
+        new JacksonJsonRedisSerializer<>(objectMapper, singleMovementType);
+
     var musclesType = tf.constructCollectionType(List.class, MuscleResponse.class);
     var musclesSerializer = new JacksonJsonRedisSerializer<>(objectMapper, musclesType);
 
@@ -93,6 +101,12 @@ public class RedisCacheConfig {
                 .serializeValuesWith(
                     RedisSerializationContext.SerializationPair.fromSerializer(
                         movementsSerializer)),
+            CACHE_MOVEMENT,
+            baseConfig
+                .entryTtl(Duration.ofMillis(properties.masterDataTtl()))
+                .serializeValuesWith(
+                    RedisSerializationContext.SerializationPair.fromSerializer(
+                        singleMovementSerializer)),
             CACHE_MUSCLES,
             baseConfig
                 .entryTtl(Duration.ofMillis(properties.masterDataTtl()))

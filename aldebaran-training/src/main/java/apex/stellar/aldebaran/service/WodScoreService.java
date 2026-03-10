@@ -2,6 +2,7 @@ package apex.stellar.aldebaran.service;
 
 import apex.stellar.aldebaran.dto.ScoreComparisonResponse;
 import apex.stellar.aldebaran.dto.WodResponse;
+import apex.stellar.aldebaran.dto.WodScoreReferenceData;
 import apex.stellar.aldebaran.dto.WodScoreRequest;
 import apex.stellar.aldebaran.dto.WodScoreResponse;
 import apex.stellar.aldebaran.exception.ResourceNotFoundException;
@@ -12,6 +13,7 @@ import apex.stellar.aldebaran.model.entities.WodScore.ScalingLevel;
 import apex.stellar.aldebaran.repository.WodRepository;
 import apex.stellar.aldebaran.repository.WodScoreRepository;
 import apex.stellar.aldebaran.security.SecurityService;
+import java.util.Arrays;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
@@ -198,6 +200,12 @@ public class WodScoreService {
     return scoreRepository
         .findByWodIdAndScalingAndPersonalRecordTrue(wodId, scaling, sortedPageable)
         .map(scoreMapper::toResponse);
+  }
+
+  /** Retrieves reference data for WOD Score forms. */
+  public WodScoreReferenceData getReferenceData() {
+    List<String> scalingLevels = Arrays.stream(ScalingLevel.values()).map(Enum::name).toList();
+    return new WodScoreReferenceData(scalingLevels);
   }
 
   /**

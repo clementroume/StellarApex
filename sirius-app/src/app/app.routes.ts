@@ -34,7 +34,11 @@ export const routes: Routes = [
       {
         path: 'muscles',
         loadChildren: () => import('./features/muscles/muscles.routes').then(m => m.MUSCLE_ROUTES)
-      }
+      },
+      {
+        path: 'movements',
+        loadChildren: () => import('./features/movements/movements.routes').then(m => m.MOVEMENT_ROUTES)
+      },
     ]
   },
 

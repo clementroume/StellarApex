@@ -29,6 +29,8 @@ class MuscleControllerIT extends BaseIntegrationTest {
 
   @Autowired private MuscleRepository muscleRepository;
 
+  private Long testMuscleId;
+
   @BeforeEach
   void setUp() {
     // Clear DB to ensure a clean state for each test
@@ -42,6 +44,7 @@ class MuscleControllerIT extends BaseIntegrationTest {
             .muscleGroup(MuscleGroup.CHEST)
             .build();
     muscleRepository.save(chest);
+    testMuscleId = chest.getId();
   }
 
   // -------------------------------------------------------------------------
@@ -64,11 +67,11 @@ class MuscleControllerIT extends BaseIntegrationTest {
   }
 
   @Test
-  @DisplayName("GET /muscles/{name}: should return muscle details")
+  @DisplayName("GET /muscles/{id}: should return muscle details")
   void testGetMuscle_Success() throws Exception {
     mockMvc
         .perform(
-            get("/aldebaran/muscles/Pectoralis Major")
+            get("/aldebaran/muscles/" + testMuscleId)
                 .header("X-Auth-User-Id", "1")
                 .header("X-Auth-User-Role", "USER")
                 .header("X-Internal-Secret", "test-internal-secret"))
@@ -91,7 +94,8 @@ class MuscleControllerIT extends BaseIntegrationTest {
             "Dorsaux",
             "Back muscle",
             "Muscle du dos",
-            MuscleGroup.BACK);
+            MuscleGroup.BACK,
+            null);
 
     // When/Then
     mockMvc
@@ -107,7 +111,9 @@ class MuscleControllerIT extends BaseIntegrationTest {
         .andExpect(jsonPath("$.medicalName").value("Latissimus Dorsi"));
 
     // Verify persistence
-    boolean exists = muscleRepository.findByMedicalName("Latissimus Dorsi").isPresent();
+    boolean exists =
+        muscleRepository.findAll().stream()
+            .anyMatch(m -> "Latissimus Dorsi".equals(m.getMedicalName()));
     assert (exists);
   }
 
@@ -115,7 +121,7 @@ class MuscleControllerIT extends BaseIntegrationTest {
   @DisplayName("POST /muscles: should return 403 Forbidden when simple User")
   void testCreateMuscle_AsUser_Forbidden() throws Exception {
     MuscleRequest request =
-        new MuscleRequest("Biceps Brachii", "Biceps", "Biceps", null, null, MuscleGroup.ARMS);
+        new MuscleRequest("Biceps Brachii", "Biceps", "Biceps", null, null, MuscleGroup.ARMS, null);
 
     mockMvc
         .perform(
@@ -134,7 +140,7 @@ class MuscleControllerIT extends BaseIntegrationTest {
   void testCreateMuscle_Conflict() throws Exception {
     // Given: Request with the existing name "Pectoralis Major" (seeded in setUp)
     MuscleRequest request =
-        new MuscleRequest("Pectoralis Major", "Chest", "Pec", null, null, MuscleGroup.CHEST);
+        new MuscleRequest("Pectoralis Major", "Chest", "Pec", null, null, MuscleGroup.CHEST, null);
 
     // When/Then
     mockMvc
@@ -147,7 +153,6 @@ class MuscleControllerIT extends BaseIntegrationTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
         .andExpect(status().isConflict())
-        // Verify that the GlobalExceptionHandler mapped DataConflictException correctly
         .andExpect(jsonPath("$.title").value("Data Conflict"));
   }
 
@@ -158,10 +163,6 @@ class MuscleControllerIT extends BaseIntegrationTest {
   @Test
   @DisplayName("PUT /muscles/{id}: should update existing muscle")
   void testUpdateMuscle_Success() throws Exception {
-    // Given: Retrieve the seeded muscle to get its generated ID
-    Muscle existing = muscleRepository.findByMedicalName("Pectoralis Major").orElseThrow();
-
-    // Request to update common name
     MuscleRequest updateRequest =
         new MuscleRequest(
             "Pectoralis Major",
@@ -169,12 +170,13 @@ class MuscleControllerIT extends BaseIntegrationTest {
             "Pectoraux",
             null,
             null,
-            MuscleGroup.CHEST);
+            MuscleGroup.CHEST,
+            null);
 
     // When/Then
     mockMvc
         .perform(
-            put("/aldebaran/muscles/" + existing.getId())
+            put("/aldebaran/muscles/" + testMuscleId)
                 .with(csrf())
                 .header("X-Auth-User-Id", "1")
                 .header("X-Auth-User-Role", "ADMIN")
@@ -188,7 +190,8 @@ class MuscleControllerIT extends BaseIntegrationTest {
   @Test
   @DisplayName("PUT /muscles/{id}: should return 404 if ID unknown")
   void testUpdateMuscle_NotFound() throws Exception {
-    MuscleRequest request = new MuscleRequest("Unknown", "U", "U", null, null, MuscleGroup.LEGS);
+    MuscleRequest request =
+        new MuscleRequest("Unknown", "U", "U", null, null, MuscleGroup.LEGS, null);
 
     mockMvc
         .perform(

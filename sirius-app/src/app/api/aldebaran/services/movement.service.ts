@@ -3,7 +3,7 @@ import {HttpClient, HttpParams} from '@angular/common/http';
 import {Observable} from 'rxjs';
 import {environment} from '../../../../environments/environment';
 import {
-  Category,
+  MovementReferenceData,
   MovementRequest,
   MovementResponse,
   MovementSummaryResponse
@@ -18,20 +18,20 @@ export class MovementService {
     return this.http.get<MovementSummaryResponse[]>(this.buildUrl('/movements'), {params});
   }
 
-  getMovement(id: string): Observable<MovementResponse> {
+  getMovement(id: number): Observable<MovementResponse> {
     return this.http.get<MovementResponse>(this.buildUrl(`/movements/${id}`));
-  }
-
-  getMovementsByCategory(category: Category): Observable<MovementSummaryResponse[]> {
-    return this.http.get<MovementSummaryResponse[]>(this.buildUrl(`/movements/category/${category}`));
   }
 
   createMovement(request: MovementRequest): Observable<MovementResponse> {
     return this.http.post<MovementResponse>(this.buildUrl('/movements'), request);
   }
 
-  updateMovement(id: string, request: MovementRequest): Observable<MovementResponse> {
+  updateMovement(id: number, request: MovementRequest): Observable<MovementResponse> {
     return this.http.put<MovementResponse>(this.buildUrl(`/movements/${id}`), request);
+  }
+
+  getReferenceData(): Observable<MovementReferenceData> {
+    return this.http.get<MovementReferenceData>(this.buildUrl(`/movements/reference-data`));
   }
 
   private buildUrl(path: string): string {

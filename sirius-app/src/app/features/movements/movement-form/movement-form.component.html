@@ -1,0 +1,237 @@
+<div class="container mx-auto max-w-5xl pb-12 mt-8">
+  <div class="mb-6 flex items-center gap-4">
+    <a routerLink="/movements" class="btn btn-sm btn-ghost">
+      &larr; {{ 'GLOBAL.BACK' | translate }}
+    </a>
+    <h1 class="text-3xl font-bold">
+      {{ (isEditMode() ? 'MOVEMENT.FORM.TITLE_EDIT' : 'MOVEMENT.FORM.TITLE_ADD') | translate }}
+    </h1>
+  </div>
+
+  <form [formGroup]="movementForm" (ngSubmit)="onSubmit()" class="flex flex-col gap-8">
+
+    <div class="card bg-base-100 shadow-xl">
+      <div class="card-body">
+        <h2 class="card-title mb-4">{{ 'MOVEMENT.FORM.SECTION_BASIC' | translate }}</h2>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <label class="form-control w-full md:col-span-2">
+            <div class="label"><span class="label-text">{{ 'MOVEMENT.FORM.NAME' | translate }}
+              *</span></div>
+            <input type="text" formControlName="name" class="input input-bordered w-full"/>
+          </label>
+          <label class="form-control w-full">
+            <div class="label"><span
+              class="label-text">{{ 'MOVEMENT.FORM.ABBREVIATION' | translate }}</span></div>
+            <input type="text" formControlName="nameAbbreviation"
+                   class="input input-bordered w-full" placeholder="Ex: BMU"/>
+          </label>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
+          <label class="form-control w-full">
+            <div class="label"><span class="label-text">{{ 'MOVEMENT.FORM.CATEGORY' | translate }}
+              *</span></div>
+            <select formControlName="category" class="select select-bordered w-full">
+              <option value="" disabled>{{ 'MOVEMENT.FORM.SELECT_CATEGORY' | translate }}</option>
+              @for (group of categoryGroups(); track group.modality) {
+                <optgroup [label]="'MOVEMENT.MODALITIES.' + group.modality | translate">
+                  @for (cat of group.items; track cat) {
+                    <option [value]="cat">{{ 'MOVEMENT.CATEGORIES.' + cat | translate }}</option>
+                  }
+                </optgroup>
+              }
+            </select>
+          </label>
+        </div>
+
+        <div class="form-control mt-4 border border-base-300 rounded-box p-4 bg-base-200/50">
+          <label class="label cursor-pointer justify-start gap-4">
+            <input type="checkbox" formControlName="involvesBodyweight"
+                   class="checkbox checkbox-primary"/>
+            <span class="label-text font-bold">{{ 'MOVEMENT.FORM.INVOLVES_BW' | translate }}</span>
+          </label>
+          @if (movementForm.get('involvesBodyweight')?.value) {
+            <label class="form-control w-full max-w-xs mt-2">
+              <div class="label"><span
+                class="label-text">{{ 'MOVEMENT.FORM.BW_FACTOR' | translate }}</span></div>
+              <input type="number" step="0.1" formControlName="bodyweightFactor"
+                     class="input input-bordered w-full"/>
+            </label>
+          }
+        </div>
+      </div>
+    </div>
+
+    <div class="card bg-base-100 shadow-xl">
+      <div class="card-body">
+        <h2 class="card-title mb-4">{{ 'MOVEMENT.FORM.SECTION_DESCRIPTIONS' | translate }}</h2>
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div class="flex flex-col gap-4">
+            <label class="form-control w-full">
+              <div class="label"><span class="label-text font-semibold">Description (FR)</span>
+              </div>
+              <textarea formControlName="descriptionFr" class="textarea textarea-bordered h-24"
+                        placeholder="Ex: Flexion des jambes..."></textarea>
+            </label>
+            <label class="form-control w-full">
+              <div class="label"><span class="label-text font-semibold">Coaching Cues (FR)</span>
+              </div>
+              <textarea formControlName="coachingCuesFr" class="textarea textarea-bordered h-20"
+                        placeholder="Ex: Gardez le dos droit..."></textarea>
+            </label>
+          </div>
+          <div class="flex flex-col gap-4">
+            <label class="form-control w-full">
+              <div class="label"><span class="label-text font-semibold">Description (EN)</span>
+              </div>
+              <textarea formControlName="descriptionEn" class="textarea textarea-bordered h-24"
+                        placeholder="Ex: A squat is..."></textarea>
+            </label>
+            <label class="form-control w-full">
+              <div class="label"><span class="label-text font-semibold">Coaching Cues (EN)</span>
+              </div>
+              <textarea formControlName="coachingCuesEn" class="textarea textarea-bordered h-20"
+                        placeholder="Ex: Keep your chest up..."></textarea>
+            </label>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card bg-base-100 shadow-xl">
+      <div class="card-body">
+        <h2 class="card-title mb-4">{{ 'MOVEMENT.FORM.SECTION_MEDIA' | translate }}</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <label class="form-control w-full">
+            <div class="label"><span class="label-text">Image URL</span></div>
+            <input type="url" formControlName="imageUrl" class="input input-bordered w-full"
+                   placeholder="https://..."/>
+          </label>
+          <label class="form-control w-full">
+            <div class="label"><span class="label-text">Video URL (YouTube/Vimeo)</span></div>
+            <input type="url" formControlName="videoUrl" class="input input-bordered w-full"
+                   placeholder="https://..."/>
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <div class="card bg-base-100 shadow-xl">
+      <div class="card-body">
+        <h2 class="card-title mb-6">{{ 'MOVEMENT.FORM.EQUIPMENT' | translate }}</h2>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          @for (group of equipmentGroups(); track group.category) {
+            <div>
+              <h3
+                class="font-semibold text-sm text-base-content/70 border-b border-base-300 pb-1 mb-3">
+                {{ 'MOVEMENT.EQUIPMENT_CATEGORIES.' + group.category | translate }}
+              </h3>
+              <div class="flex flex-col gap-2 items-start">
+                @for (eq of group.items; track eq) {
+                  <button type="button"
+                          class="badge badge-lg cursor-pointer transition-colors text-left py-3 h-auto leading-tight w-full justify-start"
+                          [class.badge-primary]="isItemSelected('equipment', eq)"
+                          [class.badge-outline]="!isItemSelected('equipment', eq)"
+                          (click)="toggleSelection('equipment', eq)">
+                    {{ 'MOVEMENT.EQUIPMENT.' + eq | translate }}
+                  </button>
+                }
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+
+    <div class="card bg-base-100 shadow-xl">
+      <div class="card-body">
+        <h2 class="card-title mb-6">{{ 'MOVEMENT.FORM.TECHNIQUES' | translate }}</h2>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          @for (group of techniqueGroups(); track group.category) {
+            <div>
+              <h3
+                class="font-semibold text-sm text-base-content/70 border-b border-base-300 pb-1 mb-3">
+                {{ 'MOVEMENT.TECHNIQUE_CATEGORIES.' + group.category | translate }}
+              </h3>
+              <div class="flex flex-wrap gap-2">
+                @for (tech of group.items; track tech) {
+                  <button type="button" class="badge badge-lg cursor-pointer transition-colors"
+                          [class.badge-secondary]="isItemSelected('techniques', tech)"
+                          [class.badge-outline]="!isItemSelected('techniques', tech)"
+                          (click)="toggleSelection('techniques', tech)">
+                    {{ 'MOVEMENT.TECHNIQUES.' + tech | translate }}
+                  </button>
+                }
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+
+    <div class="card bg-base-100 shadow-xl">
+      <div class="card-body">
+        <div class="flex justify-between items-center mb-4">
+          <h2 class="card-title">{{ 'MOVEMENT.FORM.SECTION_MUSCLES' | translate }}</h2>
+          <button type="button" class="btn btn-sm btn-secondary btn-outline" (click)="addMuscle()">
+            <ng-icon name="heroPlus"></ng-icon>
+            {{ 'MOVEMENT.FORM.ADD_MUSCLE' | translate }}
+          </button>
+        </div>
+
+        @if (musclesFormArray.controls.length === 0) {
+          <p
+            class="text-center text-base-content/50 py-4">{{ 'MOVEMENT.FORM.NO_MUSCLES' | translate }}</p>
+        }
+
+        <div formArrayName="muscles" class="flex flex-col gap-4">
+          @for (muscleCtrl of musclesFormArray.controls; track $index) {
+            <div [formGroupName]="$index"
+                 class="flex flex-col sm:flex-row gap-4 items-end bg-base-200 p-4 rounded-box">
+              <label class="form-control w-full sm:w-1/3">
+                <div class="label"><span class="label-text">{{ 'MOVEMENT.FORM.MUSCLE' | translate }}</span></div>
+                <select formControlName="muscleId" class="select select-bordered w-full">
+                  <option [ngValue]="null" disabled>-</option>
+                  @for (m of availableMuscles(); track m.id) {
+                    <option [ngValue]="m.id">
+                      {{ m.commonNameFr || m.commonNameEn || m.medicalName }}
+                    </option>
+                  }
+                </select>
+              </label>
+
+              <label class="form-control w-full sm:w-1/3">
+                <div class="label"><span
+                  class="label-text">{{ 'MOVEMENT.FORM.ROLE' | translate }}</span></div>
+                <select formControlName="role" class="select select-bordered w-full">
+                  @for (r of muscleRoles(); track r) {
+                    <option [value]="r">{{ 'MOVEMENT.ROLES.' + r | translate }}</option>
+                  }
+                </select>
+              </label>
+
+              <button type="button" class="btn btn-square btn-error btn-outline"
+                      (click)="removeMuscle($index)">
+                <ng-icon name="heroTrash"></ng-icon>
+              </button>
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+
+    <div class="mt-8 flex justify-end gap-4">
+      <a routerLink="/movements" class="btn btn-ghost">{{ 'GLOBAL.CANCEL' | translate }}</a>
+      <button type="submit" class="btn btn-primary"
+              [disabled]="movementForm.invalid || isLoading()">
+        @if (isLoading()) {
+          <span class="loading loading-spinner"></span>
+        }
+        {{ (isEditMode() ? 'GLOBAL.EDIT' : 'GLOBAL.SAVE') | translate }}
+      </button>
+    </div>
+
+  </form>
+</div>

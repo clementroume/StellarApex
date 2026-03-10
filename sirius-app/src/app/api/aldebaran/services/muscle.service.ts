@@ -2,13 +2,13 @@ import {inject, Injectable} from '@angular/core';
 import {HttpClient, HttpParams} from '@angular/common/http';
 import {Observable} from 'rxjs';
 import {environment} from '../../../../environments/environment';
-import {MuscleGroup, MuscleRequest, MuscleResponse} from '../models/muscle.model';
+import {MuscleReferenceData, MuscleRequest, MuscleResponse} from '../models/muscle.model';
 
 @Injectable({providedIn: 'root'})
 export class MuscleService {
   private readonly http = inject(HttpClient);
 
-  getMuscles(group?: MuscleGroup): Observable<MuscleResponse[]> {
+  getMuscles(group?: string): Observable<MuscleResponse[]> {
     let params = new HttpParams();
     if (group) {
       params = params.set('group', group);
@@ -16,8 +16,8 @@ export class MuscleService {
     return this.http.get<MuscleResponse[]>(this.buildUrl('/muscles'), {params});
   }
 
-  getMuscle(medicalName: string): Observable<MuscleResponse> {
-    return this.http.get<MuscleResponse>(this.buildUrl(`/muscles/${medicalName}`));
+  getMuscle(id: number): Observable<MuscleResponse> {
+    return this.http.get<MuscleResponse>(this.buildUrl(`/muscles/${id}`));
   }
 
   createMuscle(request: MuscleRequest): Observable<MuscleResponse> {
@@ -27,6 +27,10 @@ export class MuscleService {
   updateMuscle(id: number, request: MuscleRequest): Observable<MuscleResponse> {
     // Note: Update uses the technical ID (Long), while Get uses the medical name (String)
     return this.http.put<MuscleResponse>(this.buildUrl(`/muscles/${id}`), request);
+  }
+
+  getReferenceData(): Observable<MuscleReferenceData> {
+    return this.http.get<MuscleReferenceData>(this.buildUrl(`/muscles/reference-data`));
   }
 
   private buildUrl(path: string): string {

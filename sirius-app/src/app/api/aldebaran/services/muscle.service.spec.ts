@@ -3,7 +3,7 @@ import {HttpTestingController, provideHttpClientTesting} from '@angular/common/h
 import {provideHttpClient} from '@angular/common/http';
 import {MuscleService} from './muscle.service';
 import {environment} from '../../../../environments/environment';
-import {MuscleGroup, MuscleRequest, MuscleResponse} from '../models/muscle.model';
+import {MuscleRequest, MuscleResponse} from '../models/muscle.model';
 
 describe('MuscleService', () => {
   let service: MuscleService;
@@ -43,19 +43,19 @@ describe('MuscleService', () => {
   });
 
   it('getMuscles should include group param if provided', () => {
-    const group: MuscleGroup = 'CHEST';
+    const group: string = 'CHEST';
     service.getMuscles(group).subscribe();
     const req = httpMock.expectOne(`${base}/muscles?group=${group}`);
     expect(req.request.method).toBe('GET');
     req.flush([mockMuscleResponse]);
   });
 
-  it('getMuscle should GET from /muscles/{medicalName}', () => {
-    const medicalName = 'Pectoralis Major';
-    service.getMuscle(medicalName).subscribe(response => {
+  it('getMuscle should GET from /muscles/{id}', () => {
+    const id = 1;
+    service.getMuscle(id).subscribe(response => {
       expect(response).toEqual(mockMuscleResponse);
     });
-    const req = httpMock.expectOne(`${base}/muscles/${medicalName}`);
+    const req = httpMock.expectOne(`${base}/muscles/${id}`);
     expect(req.request.method).toBe('GET');
     req.flush(mockMuscleResponse);
   });

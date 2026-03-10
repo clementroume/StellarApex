@@ -1,42 +1,4 @@
-import {Modality, MovementResponse} from './movement.model';
-
-export type WodType =
-// --- Time-based ---
-  | 'AMRAP'
-  | 'EMOM'
-  | 'FOR_TIME'
-  | 'TABATA'
-  // --- Training Focus ---
-  | 'STRENGTH'
-  | 'SKILL'
-  | 'ACCESSORY'
-  // --- Special Formats ---
-  | 'CHIPPER'
-// --- Benchmarks ---
-  | 'GIRLS'
-  | 'HERO'
-  | 'CUSTOM_BENCHMARK'
-// --- Other ---
-  | 'CUSTOM';
-export type ScoreType =
-  | 'TIME'
-  | 'ROUNDS_REPS'
-  | 'REPS'
-  | 'WEIGHT'
-  | 'LOAD'
-  | 'CALORIES'
-  | 'DISTANCE'
-  | 'NONE';
-export type Unit =
-  | 'KG'
-  | 'LBS'
-  | 'SECONDS'
-  | 'MINUTES'
-  | 'METERS'
-  | 'KILOMETERS'
-  | 'FEET'
-  | 'YARDS'
-  | 'MILES';
+import {MovementResponse} from './movement.model';
 
 /**
  * DTO for creating or updating a WOD.
@@ -44,8 +6,8 @@ export type Unit =
  */
 export interface WodRequest {
   title: string;
-  wodType: WodType;
-  scoreType: ScoreType;
+  wodType: string;
+  scoreType: string;
   description?: string;
   notes?: string;
   authorId?: number;
@@ -65,8 +27,8 @@ export interface WodRequest {
 export interface WodResponse {
   id: number;
   title: string;
-  wodType: WodType;
-  scoreType: ScoreType;
+  wodType: string;
+  scoreType: string;
   authorId?: number;
   gymId?: number;
   isPublic: boolean;
@@ -76,7 +38,7 @@ export interface WodResponse {
   emomInterval?: number;
   emomRounds?: number;
   repScheme?: string;
-  modalities: Modality[];
+  modalities: string[];
   movements: WodMovementResponse[];
   createdAt: string;
   updatedAt: string;
@@ -89,8 +51,8 @@ export interface WodResponse {
 export interface WodSummaryResponse {
   id: number;
   title: string;
-  wodType: WodType;
-  scoreType: ScoreType;
+  wodType: string;
+  scoreType: string;
   repScheme?: string;
   timeCapSeconds?: number;
   createdAt: string;
@@ -101,16 +63,18 @@ export interface WodSummaryResponse {
  * Mirrors `WodMovementRequest`.
  */
 export interface WodMovementRequest {
-  movementId: string;
+  movementId: number;
   orderIndex: number;
   repsScheme?: string;
   weight?: number;
-  weightUnit?: Unit;
+  weightUnit?: string;
   durationSeconds?: number;
-  durationDisplayUnit?: Unit;
+  durationDisplayUnit?: string;
   distance?: number;
-  distanceUnit?: Unit;
+  distanceUnit?: string;
   calories?: number;
+  equipment?: string[];
+  techniques?: string[];
   notes?: string;
   scalingOptions?: string;
 }
@@ -124,15 +88,23 @@ export interface WodMovementResponse {
   orderIndex: number;
   repsScheme?: string;
   weight?: number;
-  weightUnit?: Unit;
+  weightUnit?: string;
   durationSeconds?: number;
-  durationDisplayUnit?: Unit;
+  durationDisplayUnit?: string;
   distance?: number;
-  distanceUnit?: Unit;
+  distanceUnit?: string;
   calories?: number;
+  equipment?: string[];
+  techniques?: string[];
   notes?: string;
   scalingOptions?: string;
   movement: MovementResponse;
+}
+
+export interface WodReferenceData {
+  wodTypes: string[];
+  scoreTypes: string[];
+  unitGroups: Record<string, string[]>;
 }
 
 

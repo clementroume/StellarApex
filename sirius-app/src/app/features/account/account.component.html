@@ -1,11 +1,8 @@
 <div class="p-4 sm:p-8">
   <h1 class="text-4xl font-bold mb-8 max-w-5xl mx-auto">{{ 'ACCOUNT.TITLE' | translate }}</h1>
-
   <div class="flex flex-col md:flex-row gap-8 max-w-5xl mx-auto">
-
     <aside class="md:w-1/4">
-      <ul
-        class="menu menu-horizontal md:menu-vertical bg-base-100 rounded-box w-full justify-center gap-5">
+      <ul class="menu menu-horizontal md:menu-vertical bg-base-100 rounded-box w-full justify-center gap-5">
         <li routerLinkActive="border border-secondary rounded-box">
           <a routerLink="profile" routerLinkActive="active">
             <ng-icon name="heroUser" class="text-2xl"></ng-icon>
@@ -20,10 +17,8 @@
         </li>
       </ul>
     </aside>
-
     <main class="flex-1">
       <router-outlet></router-outlet>
     </main>
-
   </div>
 </div>

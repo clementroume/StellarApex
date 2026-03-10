@@ -1,15 +1,7 @@
-export type MuscleGroup =
-  | 'LEGS'
-  | 'BACK'
-  | 'CHEST'
-  | 'SHOULDERS'
-  | 'ARMS'
-  | 'CORE';
-
-export type MuscleRole =
-  | 'AGONIST'
-  | 'SYNERGIST'
-  | 'STABILIZER';
+export interface MuscleReferenceData {
+  muscleGroups: string[];
+  muscleRoles: string[];
+}
 
 /**
  * DTO for creating or updating an anatomical muscle entry.
@@ -21,7 +13,8 @@ export interface MuscleRequest {
   commonNameFr?: string;
   descriptionEn?: string;
   descriptionFr?: string;
-  muscleGroup: MuscleGroup;
+  muscleGroup: string;
+  imageUrl?: string;
 }
 
 /**
@@ -35,5 +28,6 @@ export interface MuscleResponse {
   commonNameFr?: string;
   descriptionEn?: string;
   descriptionFr?: string;
-  muscleGroup: MuscleGroup;
+  muscleGroup: string;
+  imageUrl?: string;
 }

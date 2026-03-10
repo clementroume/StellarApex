@@ -1,0 +1,87 @@
+<dialog #movementModal class="modal modal-bottom sm:modal-middle" (close)="onClose()">
+  <div class="modal-box relative">
+    <form method="dialog">
+      <button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">✕</button>
+    </form>
+
+    @if (dialogService.movementToView(); as movement) {
+      <h3 class="font-bold text-2xl mb-2">
+        {{ movement.name }}
+        @if (movement.nameAbbreviation) {
+          <span class="text-lg opacity-50 ml-2">({{ movement.nameAbbreviation }})</span>
+        }
+      </h3>
+
+      <div class="badge badge-primary mb-4">
+        {{ 'MOVEMENT.CATEGORIES.' + movement.category | translate }}
+      </div>
+
+      <div
+        class="w-full h-48 bg-base-200 rounded-lg flex items-center justify-center mb-6 overflow-hidden relative border border-base-content/10">
+        @if (movement.imageUrl) {
+          <img [src]="movement.imageUrl" alt="Movement Image" class="w-full h-full object-cover"/>
+        } @else {
+          <span class="text-base-content/50 italic">{{ 'GLOBAL.NO_IMAGE' | translate }}</span>
+        }
+        @if (movement.videoUrl) {
+          <a [href]="movement.videoUrl" target="_blank"
+             class="absolute inset-0 flex items-center justify-center bg-black/40 hover:bg-black/50 transition-colors group cursor-pointer">
+            <div
+              class="w-16 h-16 rounded-full bg-primary flex items-center justify-center text-primary-content group-hover:scale-110 transition-transform shadow-lg">
+              <ng-icon name="heroPlay" class="text-3xl ml-1"></ng-icon>
+            </div>
+          </a>
+        }
+      </div>
+
+      <div class="space-y-6">
+        <div>
+          <span class="font-semibold text-sm opacity-70">{{ 'GLOBAL.DESCRIPTION' | translate }}</span>
+          <p [class.italic]="!getLocalizedDescription(movement)"
+             [class.opacity-80]="!getLocalizedDescription(movement)">
+            {{ getLocalizedDescription(movement) || ('GLOBAL.NO_DESCRIPTION' | translate) }}
+          </p>
+        </div>
+
+        <div>
+          <span class="font-semibold text-sm opacity-70">{{ 'MOVEMENT.LIST.MODAL.COACHING_CUES' | translate }}</span>
+          <p [class.italic]="!getLocalizedCues(movement)"
+             [class.opacity-80]="!getLocalizedCues(movement)">
+            {{ getLocalizedCues(movement) || ('MOVEMENT.LIST.MODAL.NO_CUES' | translate) }}
+          </p>
+        </div>
+
+        <div>
+          <span class="font-semibold text-sm opacity-70">{{ 'MOVEMENT.LIST.MODAL.TARGETED_MUSCLES' | translate }}</span>
+          @if (movement.targetedMuscles.length > 0) {
+            <div class="flex flex-wrap gap-2 mt-2">
+              @for (target of movement.targetedMuscles; track target.muscle.id) {
+                <div class="badge badge-outline cursor-pointer hover:bg-base-300 transition-colors"
+                     (click)="openMuscle(target.muscle.id, $event)">
+                  {{ getLocalizedMuscleName(target.muscle) }}
+                  <span class="opacity-50 ml-1">({{ 'MUSCLE.ROLES.' + target.role | translate }})</span>
+                </div>
+              }
+            </div>
+          } @else {
+            <p class="italic opacity-80">{{ 'MOVEMENT.LIST.MODAL.NO_MUSCLES' | translate }}</p>
+          }
+        </div>
+      </div>
+
+      <div class="modal-action mt-6 border-t border-base-200 pt-4">
+        <form method="dialog">
+          <button class="btn">{{ 'GLOBAL.CLOSE' | translate }}</button>
+        </form>
+        @if (isAdmin()) {
+          <a [routerLink]="['/movements/edit', movement.id]" (click)="onClose()" class="btn btn-secondary">
+            {{ 'GLOBAL.EDIT' | translate }}
+          </a>
+        }
+      </div>
+    }
+  </div>
+  <form method="dialog" class="modal-backdrop">
+    <button>close</button>
+  </form>
+</dialog>

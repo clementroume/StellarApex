@@ -27,7 +27,7 @@ export class MuscleFormComponent implements OnInit {
   isLoading = signal<boolean>(false);
   private readonly databaseId = signal<number | null>(null);
 
-  muscleGroups = ['CHEST', 'BACK', 'LEGS', 'ARMS', 'SHOULDERS', 'CORE', 'FULL_BODY'];
+  muscleGroups = signal<string[]>([]);
 
   muscleForm = this.fb.nonNullable.group({
     medicalName: ['', [Validators.required, Validators.maxLength(100)]],
@@ -35,22 +35,25 @@ export class MuscleFormComponent implements OnInit {
     commonNameFr: ['', [Validators.maxLength(100)]],
     descriptionEn: ['', [Validators.maxLength(2000)]],
     descriptionFr: ['', [Validators.maxLength(2000)]],
-    muscleGroup: ['', [Validators.required]]
+    muscleGroup: ['', [Validators.required]],
+    imageUrl: ['', [Validators.maxLength(512)]],
   });
 
   ngOnInit(): void {
-    const medicalNameParam = this.route.snapshot.paramMap.get('id');
-    if (medicalNameParam) {
+    this.muscleService.getReferenceData().subscribe(ref => this.muscleGroups.set(ref.muscleGroups));
+
+    const idParam = this.route.snapshot.paramMap.get('id');
+    if (idParam && !Number.isNaN(Number(idParam))) {
       this.isEditMode.set(true);
-      this.loadMuscle(medicalNameParam);
+      this.loadMuscle(Number(idParam));
     }
   }
 
-  private loadMuscle(medicalName: string): void {
+  private loadMuscle(id: number): void {
     this.isLoading.set(true);
     this.muscleForm.disable();
 
-    this.muscleService.getMuscle(medicalName).subscribe({
+    this.muscleService.getMuscle(id).subscribe({
       next: (muscle) => {
         this.databaseId.set(muscle.id);
         this.muscleForm.patchValue({
@@ -59,11 +62,11 @@ export class MuscleFormComponent implements OnInit {
           commonNameFr: muscle.commonNameFr || '',
           descriptionEn: muscle.descriptionEn || '',
           descriptionFr: muscle.descriptionFr || '',
-          muscleGroup: muscle.muscleGroup as string
+          muscleGroup: muscle.muscleGroup,
+          imageUrl: muscle.imageUrl || ''
         });
 
         this.muscleForm.enable();
-        this.muscleForm.controls.medicalName.disable();
         this.isLoading.set(false);
       },
       error: (err: HttpErrorResponse) => {

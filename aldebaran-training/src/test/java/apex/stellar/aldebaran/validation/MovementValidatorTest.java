@@ -2,59 +2,54 @@ package apex.stellar.aldebaran.validation;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 import apex.stellar.aldebaran.model.entities.Movement;
-import jakarta.validation.ConstraintValidatorContext;
-import jakarta.validation.ConstraintValidatorContext.ConstraintViolationBuilder;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.Validator;
+import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.context.support.ResourceBundleMessageSource;
+import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
 
-@ExtendWith(MockitoExtension.class)
 class MovementValidatorTest {
 
-  @InjectMocks private MovementValidator validator;
-
-  private ConstraintValidatorContext context;
-  private ConstraintViolationBuilder builder;
+  private Validator validator;
 
   @BeforeEach
   void setUp() {
-    // 1. Set up Real MessageSource
-    ResourceBundleMessageSource realMessageSource = new ResourceBundleMessageSource();
-    realMessageSource.setBasename(
-        "messages"); // Checks messages.properties and messages_fr.properties
-    realMessageSource.setDefaultEncoding("UTF-8");
-    realMessageSource.setUseCodeAsDefaultMessage(true);
+    // Initialisation du vrai moteur de validation de Spring/Hibernate
+    ResourceBundleMessageSource messageSource = new ResourceBundleMessageSource();
+    messageSource.setBasename("messages");
+    messageSource.setDefaultEncoding("UTF-8");
 
-    // Inject the real source into the validator
-    validator.setMessageSource(realMessageSource);
+    LocalValidatorFactoryBean factoryBean = new LocalValidatorFactoryBean();
+    factoryBean.setValidationMessageSource(messageSource);
+    factoryBean.afterPropertiesSet();
 
-    // 2. Mock Context chain
-    context = mock(ConstraintValidatorContext.class);
-    builder = mock(ConstraintViolationBuilder.class);
+    this.validator = factoryBean.getValidator();
   }
 
   @AfterEach
   void tearDown() {
-    // Reset Locale to avoid polluting other tests
     LocaleContextHolder.resetLocaleContext();
   }
 
-  private void prepareContextMock() {
-    when(context.buildConstraintViolationWithTemplate(anyString())).thenReturn(builder);
-    when(builder.addConstraintViolation()).thenReturn(context);
+  /** Vérifie que l'erreur métier spécifique à la cohérence du poids de corps n'est PAS présente. */
+  private void assertValidConsistency(Movement movement) {
+    Set<ConstraintViolation<Movement>> violations = validator.validate(movement);
+    boolean hasConsistencyError =
+        violations.stream()
+            .anyMatch(
+                v -> "{validation.movement.bodyweight.consistency}".equals(v.getMessageTemplate()));
+    assertFalse(
+        hasConsistencyError,
+        "Le mouvement devrait être valide concernant la contrainte de poids de corps");
   }
 
   // =========================================================================
@@ -65,75 +60,74 @@ class MovementValidatorTest {
   @DisplayName("isValid: should return true when bodyweight involved and factor > 0")
   void testIsValid_BodyweightTrue_FactorPositive() {
     Movement movement = Movement.builder().involvesBodyweight(true).bodyweightFactor(1.0).build();
-
-    assertTrue(validator.isValid(movement, context));
+    assertValidConsistency(movement);
   }
 
   @Test
   @DisplayName("isValid: should return true when bodyweight NOT involved and factor is 0")
   void testIsValid_BodyweightFalse_FactorZero() {
     Movement movement = Movement.builder().involvesBodyweight(false).bodyweightFactor(0.0).build();
-
-    assertTrue(validator.isValid(movement, context));
+    assertValidConsistency(movement);
   }
 
   @Test
   @DisplayName("isValid: should return true for null object (handled by @NotNull)")
   void testIsValid_NullObject() {
-    assertTrue(validator.isValid(null, context));
+    MovementValidator customValidator = new MovementValidator();
+    // Appel direct de la méthode pour tester le null-check interne (le validateur réel rejette null
+    // à la racine)
+    assertTrue(customValidator.isValid(null, null));
   }
 
   // =========================================================================
-  // I18N MESSAGING TESTS (Checking Properties content)
+  // I18N AND INVALIDITY TESTS
   // =========================================================================
 
   @Test
-  @DisplayName("isValid: should fail with ENGLISH message when inconsistent")
-  void testIsValid_Inconsistent_English() {
-    // Set Locale to English
+  @DisplayName(
+      "Validation i18n (EN): should fail with English message when bodyweight true, factor 0")
+  void testIsValid_Inconsistent_English_BodyweightTrue_FactorZero() {
     LocaleContextHolder.setLocale(Locale.ENGLISH);
-    prepareContextMock();
 
     Movement movement =
         Movement.builder()
             .involvesBodyweight(true)
-            .bodyweightFactor(0.0) // Invalid
+            .bodyweightFactor(0.0) // Invalide !
             .build();
 
-    // Execute
-    boolean isValid = validator.isValid(movement, context);
+    Set<ConstraintViolation<Movement>> violations = validator.validate(movement);
+    assertFalse(violations.isEmpty(), "There should be validation errors");
 
-    // Verify
-    assertFalse(isValid);
+    List<String> messages = violations.stream().map(ConstraintViolation::getMessage).toList();
 
-    // Check that the context was called with the REAL message from messages.properties
-    verify(context)
-        .buildConstraintViolationWithTemplate(
-            "Bodyweight factor configuration is invalid relative to 'involvesBodyweight'.");
+    String expectedMessage =
+        "Bodyweight factor configuration is invalid relative to 'involvesBodyweight'.";
+    assertTrue(
+        messages.contains(expectedMessage),
+        "Expected message not found. Actual messages: " + messages);
   }
 
   @Test
-  @DisplayName("isValid: should fail with FRENCH message when inconsistent")
-  void testIsValid_Inconsistent_French() {
-    // Set Locale to French
+  @DisplayName(
+      "Validation i18n (FR): should fail with French message when bodyweight false, factor positive")
+  void testIsValid_Inconsistent_French_BodyweightFalse_FactorPositive() {
     LocaleContextHolder.setLocale(Locale.FRENCH);
-    prepareContextMock();
 
     Movement movement =
         Movement.builder()
             .involvesBodyweight(false)
-            .bodyweightFactor(0.5) // Invalid
+            .bodyweightFactor(0.5) // Invalide !
             .build();
 
-    // Execute
-    boolean isValid = validator.isValid(movement, context);
+    Set<ConstraintViolation<Movement>> violations = validator.validate(movement);
+    assertFalse(violations.isEmpty(), "There should be validation errors");
 
-    // Verify
-    assertFalse(isValid);
+    List<String> messages = violations.stream().map(ConstraintViolation::getMessage).toList();
 
-    // Check that the context was called with the REAL message from messages_fr.properties
-    verify(context)
-        .buildConstraintViolationWithTemplate(
-            "La configuration du facteur de poids de corps est invalide par rapport à 'involvesBodyweight'.");
+    String expectedMessage =
+        "La configuration du facteur de poids de corps est invalide par rapport à 'involvesBodyweight'.";
+    assertTrue(
+        messages.contains(expectedMessage),
+        "Expected message not found. Actual messages: " + messages);
   }
 }

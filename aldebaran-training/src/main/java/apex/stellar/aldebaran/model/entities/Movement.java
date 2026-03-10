@@ -5,20 +5,7 @@ import apex.stellar.aldebaran.model.enums.Category.Modality;
 import apex.stellar.aldebaran.model.enums.Equipment;
 import apex.stellar.aldebaran.model.enums.Technique;
 import apex.stellar.aldebaran.validation.ValidMovement;
-import jakarta.persistence.CascadeType;
-import jakarta.persistence.CollectionTable;
-import jakarta.persistence.Column;
-import jakarta.persistence.ElementCollection;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EntityListeners;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.OneToMany;
-import jakarta.persistence.Table;
-import jakarta.persistence.Transient;
+import jakarta.persistence.*;
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
@@ -48,11 +35,9 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 @ValidMovement
 public class Movement {
 
-  /** Business key: {MODALITY_CODE}-{FAMILY_CODE}-{SEQUENCE}. */
   @Id
-  @Column(length = 20, nullable = false)
-  @NotBlank
-  private String id;
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  private Long id;
 
   @Column(nullable = false, length = 50)
   @NotBlank
@@ -166,15 +151,6 @@ public class Movement {
   public boolean isLoadBearing() {
     Modality mod = getModality();
     return mod != null && mod.isLoadBearing();
-  }
-
-  /**
-   * Generates the semantic prefix for business IDs (e.g., "WL-SQ"). Used by services to generate
-   * the full ID.
-   */
-  @Transient
-  public String getSemanticIdPrefix() {
-    return category != null ? category.semanticIdPrefix() : null;
   }
 
   // -------------------------------------------------------------------------

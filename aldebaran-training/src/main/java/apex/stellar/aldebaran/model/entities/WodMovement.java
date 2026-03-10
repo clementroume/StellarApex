@@ -1,21 +1,13 @@
 package apex.stellar.aldebaran.model.entities;
 
 import apex.stellar.aldebaran.model.enums.Unit;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
+import java.util.HashSet;
+import java.util.Set;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -128,6 +120,39 @@ public class WodMovement {
   @Min(0)
   private Integer calories;
 
+  @ElementCollection
+  @CollectionTable(
+      name = "wod_movement_equipment",
+      joinColumns = @JoinColumn(name = "wod_movement_id"))
+  @Column(name = "equipment")
+  @Builder.Default
+  private Set<String> equipment = new HashSet<>();
+
+  @ElementCollection
+  @CollectionTable(
+      name = "wod_movement_techniques",
+      joinColumns = @JoinColumn(name = "wod_movement_id"))
+  @Column(name = "technique")
+  @Builder.Default
+  private Set<String> techniques = new HashSet<>();
+
+  // -------------------------------------------------------------------------
+  // Metadata & Instructions
+  // -------------------------------------------------------------------------
+
+  /**
+   * Specific instructions for this movement in this WOD context. Ex: "Touch and go", "Unbroken".
+   */
+  @Column(name = "notes", columnDefinition = "TEXT")
+  private String notes;
+
+  /**
+   * Suggested scaling options displayed to the athlete. Ex: "Use PVC", "Knee push-ups", "Reduce
+   * weight to 40kg".
+   */
+  @Column(name = "scaling_options", columnDefinition = "TEXT")
+  private String scalingOptions;
+
   // -------------------------------------------------------------------------
   // Equality
   // -------------------------------------------------------------------------
@@ -149,21 +174,4 @@ public class WodMovement {
   public int hashCode() {
     return getClass().hashCode();
   }
-
-  // -------------------------------------------------------------------------
-  // Metadata & Instructions
-  // -------------------------------------------------------------------------
-
-  /**
-   * Specific instructions for this movement in this WOD context. Ex: "Touch and go", "Unbroken".
-   */
-  @Column(name = "notes", columnDefinition = "TEXT")
-  private String notes;
-
-  /**
-   * Suggested scaling options displayed to the athlete. Ex: "Use PVC", "Knee push-ups", "Reduce
-   * weight to 40kg".
-   */
-  @Column(name = "scaling_options", columnDefinition = "TEXT")
-  private String scalingOptions;
 }

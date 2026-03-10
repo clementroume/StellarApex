@@ -69,7 +69,7 @@ export class ProfileComponent implements OnInit {
   /**
    * Handles the submission of the profile update form.
    */
-  onSave(): void {
+  onSubmit(): void {
     if (this.profileForm.invalid) {
       return;
     }

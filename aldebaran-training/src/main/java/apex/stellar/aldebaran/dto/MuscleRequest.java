@@ -49,4 +49,10 @@ public record MuscleRequest(
             example = "CHEST",
             requiredMode = RequiredMode.REQUIRED)
         @NotNull(message = "{validation.muscle.group.required}")
-        MuscleGroup muscleGroup) {}
+        MuscleGroup muscleGroup,
+    @Schema(
+            description = "Link to muscle image",
+            example = "https://example.com/image.jpg",
+            requiredMode = RequiredMode.NOT_REQUIRED)
+        @Size(max = 255, message = "{validation.muscle.image_url.size}")
+        String imageUrl) {}

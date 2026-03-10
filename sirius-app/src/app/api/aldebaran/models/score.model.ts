@@ -1,10 +1,4 @@
-import {Unit, WodSummaryResponse} from './wod.model';
-
-export type ScalingLevel =
-  | 'RX'
-  | 'SCALED'
-  | 'ELITE'
-  | 'CUSTOM';
+import {WodSummaryResponse} from './wod.model';
 
 /**
  * DTO for logging a new workout performance.
@@ -20,11 +14,11 @@ export interface WodScoreRequest {
   reps?: number;
   maxWeight?: number;
   totalLoad?: number;
-  weightUnit?: Unit;
+  weightUnit?: string;
   totalDistance?: number;
-  distanceUnit?: Unit;
+  distanceUnit?: string;
   totalCalories?: number;
-  scaling: ScalingLevel;
+  scaling: string;
   timeCapped: boolean;
   scalingNotes?: string;
   userComment?: string;
@@ -42,16 +36,16 @@ export interface WodScoreResponse {
   timeSeconds?: number;
   timeMinutesPart?: number;
   timeSecondsPart?: number;
-  timeDisplayUnit?: Unit;
+  timeDisplayUnit?: string;
   rounds?: number;
   reps?: number;
   maxWeight?: number;
   totalLoad?: number;
-  weightUnit?: Unit;
+  weightUnit?: string;
   totalDistance?: number;
-  distanceUnit?: Unit;
+  distanceUnit?: string;
   totalCalories?: number;
-  scaling: ScalingLevel;
+  scaling: string;
   personalRecord: boolean;
   timeCapped: boolean;
   userComment?: string;
@@ -62,4 +56,8 @@ export interface ScoreComparisonResponse {
   rank: number;
   totalScores: number;
   percentile: number;
+}
+
+export interface WodScoreReferenceData {
+  scalingLevels: string[];
 }

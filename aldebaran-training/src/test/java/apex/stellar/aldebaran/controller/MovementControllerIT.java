@@ -1,7 +1,6 @@
 package apex.stellar.aldebaran.controller;
 
 import static org.hamcrest.Matchers.hasSize;
-import static org.hamcrest.Matchers.startsWith;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -39,6 +38,9 @@ class MovementControllerIT extends BaseIntegrationTest {
   @Autowired private MovementRepository movementRepository;
   @Autowired private MuscleRepository muscleRepository;
 
+  private Long testMovementId;
+  private Long testMuscleId;
+
   @BeforeEach
   void setUp() {
     movementRepository.deleteAll();
@@ -52,16 +54,17 @@ class MovementControllerIT extends BaseIntegrationTest {
             .muscleGroup(MuscleGroup.LEGS)
             .build();
     muscleRepository.save(quadriceps);
+    testMuscleId = quadriceps.getId();
 
     // Seed Initial Movement
     Movement backSquat =
         Movement.builder()
-            .id("WL-SQ-001")
             .name("Back Squat")
             .category(Category.SQUAT)
             .targetedMuscles(new java.util.HashSet<>())
             .build();
     movementRepository.save(backSquat);
+    testMovementId = backSquat.getId();
   }
 
   // -------------------------------------------------------------------------
@@ -80,7 +83,7 @@ class MovementControllerIT extends BaseIntegrationTest {
                 .header("X-Internal-Secret", "test-internal-secret"))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$", hasSize(1)))
-        .andExpect(jsonPath("$[0].id").value("WL-SQ-001"))
+        .andExpect(jsonPath("$[0].id").value(testMovementId))
         .andExpect(jsonPath("$[0].name").value("Back Squat"))
         .andExpect(jsonPath("$[0].category").value("SQUAT"));
   }
@@ -90,12 +93,12 @@ class MovementControllerIT extends BaseIntegrationTest {
   void testGetMovement_Success() throws Exception {
     mockMvc
         .perform(
-            get("/aldebaran/movements/WL-SQ-001")
+            get("/aldebaran/movements/" + testMovementId)
                 .header("X-Auth-User-Id", "1")
                 .header("X-Auth-User-Role", "USER")
                 .header("X-Internal-Secret", "test-internal-secret"))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.id").value("WL-SQ-001"))
+        .andExpect(jsonPath("$.id").value(testMovementId))
         .andExpect(jsonPath("$.name").value("Back Squat"));
   }
 
@@ -104,7 +107,7 @@ class MovementControllerIT extends BaseIntegrationTest {
   void testGetMovement_NotFound() throws Exception {
     mockMvc
         .perform(
-            get("/aldebaran/movements/UNKNOWN-ID")
+            get("/aldebaran/movements/9999")
                 .header("X-Auth-User-Id", "1")
                 .header("X-Auth-User-Role", "USER")
                 .header("X-Internal-Secret", "test-internal-secret"))
@@ -127,7 +130,7 @@ class MovementControllerIT extends BaseIntegrationTest {
             Category.SQUAT,
             Collections.emptySet(),
             Collections.emptySet(),
-            List.of(new MovementMuscleRequest("Quadriceps Femoris", MuscleRole.AGONIST, 1.0)),
+            List.of(new MovementMuscleRequest(testMuscleId, MuscleRole.AGONIST, 1.0)),
             true,
             1.0,
             "English Desc",
@@ -149,8 +152,7 @@ class MovementControllerIT extends BaseIntegrationTest {
                 .content(objectMapper.writeValueAsString(request)))
         .andExpect(status().isCreated())
         .andExpect(jsonPath("$.name").value("Front Squat"))
-        // Verify Semantic ID generation (Category SQUAT -> WL-SQ prefix)
-        .andExpect(jsonPath("$.id", startsWith("WL-SQ-")));
+        .andExpect(jsonPath("$.id").isNumber());
   }
 
   @Test
@@ -199,7 +201,7 @@ class MovementControllerIT extends BaseIntegrationTest {
             Category.SQUAT,
             Collections.emptySet(),
             Collections.emptySet(),
-            List.of(new MovementMuscleRequest("Quadriceps Femoris", MuscleRole.AGONIST, 1.0)),
+            List.of(new MovementMuscleRequest(testMuscleId, MuscleRole.AGONIST, 1.0)),
             true,
             1.0,
             null,
@@ -211,7 +213,7 @@ class MovementControllerIT extends BaseIntegrationTest {
 
     mockMvc
         .perform(
-            put("/aldebaran/movements/WL-SQ-001")
+            put("/aldebaran/movements/" + testMovementId)
                 .with(csrf())
                 .header("X-Auth-User-Id", "1")
                 .header("X-Auth-User-Role", "ADMIN")

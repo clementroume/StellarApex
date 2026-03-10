@@ -57,7 +57,7 @@ export class SettingsComponent {
   /**
    * Handles the password change form submission.
    */
-  onSubmitPassword(): void {
+  onSubmit(): void {
     if (this.passwordForm.invalid) {
       return;
     }

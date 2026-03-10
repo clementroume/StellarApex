@@ -64,12 +64,11 @@ class WodServiceTest {
             .modalities(new HashSet<>())
             .build();
 
-    movement = Movement.builder().id("GY-PU-001").category(Category.PULLING).build();
+    movement = Movement.builder().id(1L).category(Category.PULLING).build();
 
     WodMovementRequest movementRequest =
         new WodMovementRequest(
-            "GY-PU-001", 1, "21-15-9", 0.0, null, 0, null, 0.0, null, 0, null, null);
-
+            1L, 1, "21-15-9", 0.0, null, 0, null, 0.0, null, 0, null, null, null, null);
     wodRequest =
         new WodRequest(
             "Fran",
@@ -147,13 +146,13 @@ class WodServiceTest {
     Pageable pageable = Pageable.unpaged();
     Slice<WodSummary> emptySlice = new SliceImpl<>(List.of());
 
-    when(wodRepository.findByMovementSecure("GY-PU-001", pageable)).thenReturn(emptySlice);
+    when(wodRepository.findByMovementSecure(1L, pageable)).thenReturn(emptySlice);
 
     // When
-    wodService.getWods(null, null, "GY-PU-001", pageable);
+    wodService.getWods(null, null, 1L, pageable);
 
     // Then
-    verify(wodRepository).findByMovementSecure("GY-PU-001", pageable);
+    verify(wodRepository).findByMovementSecure(1L, pageable);
   }
 
   // =========================================================================
@@ -192,10 +191,10 @@ class WodServiceTest {
     apex.stellar.aldebaran.dto.MovementResponse mockMovementDto =
         mock(apex.stellar.aldebaran.dto.MovementResponse.class);
     when(mockMovementDto.category()).thenReturn(Category.PULLING);
-    when(movementService.getMovement("GY-PU-001")).thenReturn(mockMovementDto);
+    when(movementService.getMovement(1L)).thenReturn(mockMovementDto);
 
     // Mock Proxy JPA
-    when(movementRepository.getReferenceById("GY-PU-001")).thenReturn(movement);
+    when(movementRepository.getReferenceById(1L)).thenReturn(movement);
 
     when(wodMapper.toEntity(wodRequest)).thenReturn(wod);
     WodMovement wmStub = new WodMovement();
@@ -212,8 +211,8 @@ class WodServiceTest {
     assertEquals(1, wod.getMovements().size());
     assertTrue(wod.getModalities().contains(Modality.GYMNASTICS)); // Verified from Category.PULLING
 
-    verify(movementService).getMovement("GY-PU-001");
-    verify(movementRepository).getReferenceById("GY-PU-001");
+    verify(movementService).getMovement(1L);
+    verify(movementRepository).getReferenceById(1L);
     verify(wodRepository).save(wod);
   }
 
@@ -237,9 +236,9 @@ class WodServiceTest {
             "21-15-9",
             List.of(
                 new WodMovementRequest(
-                    "WL-DL", 1, "21", null, null, 0, null, 225.0, null, 0, null, null),
+                    1L, 1, "21", null, null, 0, null, 225.0, null, 0, null, null, null, null),
                 new WodMovementRequest(
-                    "GY-PU", 2, "21", null, null, 0, null, 0.0, null, 0, null, null)));
+                    2L, 2, "21", null, null, 0, null, 0.0, null, 0, null, null, null, null)));
 
     when(securityService.getCurrentUserId()).thenReturn(100L);
 
@@ -251,10 +250,10 @@ class WodServiceTest {
         mock(apex.stellar.aldebaran.dto.MovementResponse.class);
     when(mockWlDto.category()).thenReturn(Category.DEADLIFT);
 
-    when(movementService.getMovement("GY-PU")).thenReturn(mockGymDto);
-    when(movementService.getMovement("WL-DL")).thenReturn(mockWlDto);
+    when(movementService.getMovement(1L)).thenReturn(mockGymDto);
+    when(movementService.getMovement(2L)).thenReturn(mockWlDto);
 
-    when(movementRepository.getReferenceById(anyString())).thenReturn(new Movement());
+    when(movementRepository.getReferenceById(anyLong())).thenReturn(new Movement());
 
     when(wodMapper.toEntity(any())).thenReturn(wod);
     when(wodMapper.toWodMovementEntity(any())).thenReturn(new WodMovement());
@@ -338,8 +337,8 @@ class WodServiceTest {
 
     apex.stellar.aldebaran.dto.MovementResponse mockMovementDto =
         mock(apex.stellar.aldebaran.dto.MovementResponse.class);
-    when(movementService.getMovement("GY-PU-001")).thenReturn(mockMovementDto);
-    when(movementRepository.getReferenceById("GY-PU-001")).thenReturn(movement);
+    when(movementService.getMovement(1L)).thenReturn(mockMovementDto);
+    when(movementRepository.getReferenceById(1L)).thenReturn(movement);
 
     when(wodRepository.save(wod)).thenReturn(wod);
     when(wodMapper.toResponse(wod)).thenReturn(mock(WodResponse.class));
@@ -365,7 +364,7 @@ class WodServiceTest {
             null,
             List.of(
                 new WodMovementRequest(
-                    "GY-PU-001", 1, "15-12-9", 0.0, null, 0, null, 0.0, null, 0, null, null)));
+                    1L, 1, "15-12-9", 0.0, null, 0, null, 0.0, null, 0, null, null, null, null)));
 
     wodService.updateWod(1L, updateRequest);
 
@@ -437,8 +436,7 @@ class WodServiceTest {
             null,
             List.of(
                 new WodMovementRequest(
-                    "GY-PU-001", 2, "15", null, null, 0, null, null, null, 0, null, null)));
-
+                    1L, 2, "15", null, null, 0, null, null, null, 0, null, null, null, null)));
     // When
     wodService.updateWod(1L, updateRequest);
 
@@ -482,8 +480,8 @@ class WodServiceTest {
     assertDoesNotThrow(() -> wodService.updateWod(1L, emptyMovementsRequest));
 
     // Then
-    verify(movementService, never()).getMovement(anyString());
-    verify(movementRepository, never()).getReferenceById(anyString());
+    verify(movementService, never()).getMovement(anyLong());
+    verify(movementRepository, never()).getReferenceById(anyLong());
   }
 
   @Test

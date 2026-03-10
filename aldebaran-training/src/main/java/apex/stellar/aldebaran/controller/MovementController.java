@@ -1,9 +1,9 @@
 package apex.stellar.aldebaran.controller;
 
+import apex.stellar.aldebaran.dto.MovementReferenceData;
 import apex.stellar.aldebaran.dto.MovementRequest;
 import apex.stellar.aldebaran.dto.MovementResponse;
 import apex.stellar.aldebaran.dto.MovementSummaryResponse;
-import apex.stellar.aldebaran.model.enums.Category;
 import apex.stellar.aldebaran.service.MovementService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -95,35 +95,9 @@ public class MovementController {
             description = "Unauthorized",
             content = @Content(schema = @Schema(hidden = true)))
       })
-  public ResponseEntity<MovementResponse> getMovement(@PathVariable String id) {
+  public ResponseEntity<MovementResponse> getMovement(@PathVariable Long id) {
 
     return ResponseEntity.ok(movementService.getMovement(id));
-  }
-
-  /**
-   * Retrieves movements filtered by functional category.
-   *
-   * <p>Defined with a specific path prefix to avoid ambiguity with ID lookup.
-   *
-   * @param category The category to filter by (e.g., DEADLIFT).
-   * @return A list of movement summaries.
-   */
-  @GetMapping("/category/{category}")
-  @Operation(
-      summary = "Filter by category",
-      description = "Retrieves movements for a specific functional category.")
-  @ApiResponses(
-      value = {
-        @ApiResponse(responseCode = "200", description = "Movements retrieved"),
-        @ApiResponse(
-            responseCode = "401",
-            description = "Unauthorized",
-            content = @Content(schema = @Schema(hidden = true)))
-      })
-  public ResponseEntity<List<MovementSummaryResponse>> getMovementsByCategory(
-      @PathVariable Category category) {
-
-    return ResponseEntity.ok(movementService.getMovementsByCategory(category));
   }
 
   /**
@@ -199,8 +173,17 @@ public class MovementController {
             content = @Content(schema = @Schema(hidden = true)))
       })
   public ResponseEntity<MovementResponse> updateMovement(
-      @PathVariable String id, @Valid @RequestBody MovementRequest request) {
+      @PathVariable Long id, @Valid @RequestBody MovementRequest request) {
 
     return ResponseEntity.ok(movementService.updateMovement(id, request));
+  }
+
+  /** Retrieves structured reference data (categories, equipments, techniques) for UI forms. */
+  @GetMapping("/reference-data")
+  @Operation(
+      summary = "Get movement reference data",
+      description = "Returns grouped enums for building dynamic forms.")
+  public ResponseEntity<MovementReferenceData> getReferenceData() {
+    return ResponseEntity.ok(movementService.getReferenceData());
   }
 }

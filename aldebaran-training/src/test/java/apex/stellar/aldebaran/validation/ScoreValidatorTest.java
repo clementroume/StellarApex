@@ -2,46 +2,38 @@ package apex.stellar.aldebaran.validation;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 import apex.stellar.aldebaran.model.entities.Wod;
 import apex.stellar.aldebaran.model.entities.Wod.ScoreType;
 import apex.stellar.aldebaran.model.entities.WodScore;
-import jakarta.validation.ConstraintValidatorContext;
-import jakarta.validation.ConstraintValidatorContext.ConstraintViolationBuilder;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.Validator;
+import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.context.support.ResourceBundleMessageSource;
+import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
 
-@ExtendWith(MockitoExtension.class)
 class ScoreValidatorTest {
 
-  @InjectMocks private ScoreValidator validator;
-
-  private ConstraintValidatorContext context;
-  private ConstraintViolationBuilder builder;
+  private Validator validator;
 
   @BeforeEach
   void setUp() {
-    ResourceBundleMessageSource realMessageSource = new ResourceBundleMessageSource();
-    realMessageSource.setBasename("messages");
-    realMessageSource.setDefaultEncoding("UTF-8");
-    realMessageSource.setUseCodeAsDefaultMessage(true);
+    ResourceBundleMessageSource messageSource = new ResourceBundleMessageSource();
+    messageSource.setBasename("messages");
+    messageSource.setDefaultEncoding("UTF-8");
 
-    validator.setMessageSource(realMessageSource);
+    LocalValidatorFactoryBean factoryBean = new LocalValidatorFactoryBean();
+    factoryBean.setValidationMessageSource(messageSource);
+    factoryBean.afterPropertiesSet();
 
-    context = mock(ConstraintValidatorContext.class);
-    builder = mock(ConstraintViolationBuilder.class);
+    this.validator = factoryBean.getValidator();
   }
 
   @AfterEach
@@ -49,13 +41,28 @@ class ScoreValidatorTest {
     LocaleContextHolder.resetLocaleContext();
   }
 
-  private void prepareContextForFailure() {
-    when(context.buildConstraintViolationWithTemplate(anyString())).thenReturn(builder);
-    when(builder.addConstraintViolation()).thenReturn(context);
-  }
-
   private WodScore createScore(ScoreType type) {
     return WodScore.builder().wod(Wod.builder().scoreType(type).build()).build();
+  }
+
+  /** Vérifie que l'erreur de type custom n'est PAS présente */
+  private void assertValidScoreType(WodScore score) {
+    Set<ConstraintViolation<WodScore>> violations = validator.validate(score);
+    boolean hasTypeError =
+        violations.stream()
+            .anyMatch(v -> "{wod.score.invalid.type}".equals(v.getMessageTemplate()));
+    assertFalse(
+        hasTypeError, "Le score devrait être valide pour ce type (aucune erreur custom attendue)");
+  }
+
+  /** Vérifie que l'erreur de type custom EST bien présente */
+  private void assertInvalidScoreType(WodScore score) {
+    Set<ConstraintViolation<WodScore>> violations = validator.validate(score);
+    boolean hasTypeError =
+        violations.stream()
+            .anyMatch(v -> "{wod.score.invalid.type}".equals(v.getMessageTemplate()));
+    assertTrue(
+        hasTypeError, "Le score devrait être invalide pour ce type (erreur custom attendue)");
   }
 
   // =========================================================================
@@ -67,17 +74,15 @@ class ScoreValidatorTest {
   void testTime_Valid() {
     WodScore score = createScore(ScoreType.TIME);
     score.setTimeSeconds(120);
-    assertTrue(validator.isValid(score, context));
+    assertValidScoreType(score);
   }
 
   @Test
   @DisplayName("TIME: Invalid if timeSeconds is null")
   void testTime_Invalid() {
     WodScore score = createScore(ScoreType.TIME);
-    score.setTimeSeconds(null); // Explicit
-
-    prepareContextForFailure();
-    assertFalse(validator.isValid(score, context));
+    score.setTimeSeconds(null);
+    assertInvalidScoreType(score);
   }
 
   // =========================================================================
@@ -89,7 +94,7 @@ class ScoreValidatorTest {
   void testRoundsReps_ValidRounds() {
     WodScore score = createScore(ScoreType.ROUNDS_REPS);
     score.setRounds(5);
-    assertTrue(validator.isValid(score, context));
+    assertValidScoreType(score);
   }
 
   @Test
@@ -97,17 +102,14 @@ class ScoreValidatorTest {
   void testRoundsReps_ValidReps() {
     WodScore score = createScore(ScoreType.ROUNDS_REPS);
     score.setReps(50);
-    assertTrue(validator.isValid(score, context));
+    assertValidScoreType(score);
   }
 
   @Test
   @DisplayName("ROUNDS_REPS: Invalid if both are null")
   void testRoundsReps_Invalid() {
     WodScore score = createScore(ScoreType.ROUNDS_REPS);
-    // Rounds & Reps null
-
-    prepareContextForFailure();
-    assertFalse(validator.isValid(score, context));
+    assertInvalidScoreType(score);
   }
 
   // =========================================================================
@@ -119,17 +121,14 @@ class ScoreValidatorTest {
   void testReps_Valid() {
     WodScore score = createScore(ScoreType.REPS);
     score.setReps(100);
-    assertTrue(validator.isValid(score, context));
+    assertValidScoreType(score);
   }
 
   @Test
   @DisplayName("REPS: Invalid if Reps is null")
   void testReps_Invalid() {
     WodScore score = createScore(ScoreType.REPS);
-    // Reps null
-
-    prepareContextForFailure();
-    assertFalse(validator.isValid(score, context));
+    assertInvalidScoreType(score);
   }
 
   // =========================================================================
@@ -141,16 +140,14 @@ class ScoreValidatorTest {
   void testWeight_Valid() {
     WodScore score = createScore(ScoreType.WEIGHT);
     score.setMaxWeightKg(100.0);
-    assertTrue(validator.isValid(score, context));
+    assertValidScoreType(score);
   }
 
   @Test
   @DisplayName("WEIGHT: Invalid if MaxWeightKg is null")
   void testWeight_Invalid() {
     WodScore score = createScore(ScoreType.WEIGHT);
-
-    prepareContextForFailure();
-    assertFalse(validator.isValid(score, context));
+    assertInvalidScoreType(score);
   }
 
   // =========================================================================
@@ -162,16 +159,14 @@ class ScoreValidatorTest {
   void testLoad_Valid() {
     WodScore score = createScore(ScoreType.LOAD);
     score.setTotalLoadKg(5000.0);
-    assertTrue(validator.isValid(score, context));
+    assertValidScoreType(score);
   }
 
   @Test
   @DisplayName("LOAD: Invalid if TotalLoadKg is null")
   void testLoad_Invalid() {
     WodScore score = createScore(ScoreType.LOAD);
-
-    prepareContextForFailure();
-    assertFalse(validator.isValid(score, context));
+    assertInvalidScoreType(score);
   }
 
   // =========================================================================
@@ -183,16 +178,14 @@ class ScoreValidatorTest {
   void testCalories_Valid() {
     WodScore score = createScore(ScoreType.CALORIES);
     score.setTotalCalories(50);
-    assertTrue(validator.isValid(score, context));
+    assertValidScoreType(score);
   }
 
   @Test
   @DisplayName("CALORIES: Invalid if TotalCalories is null")
   void testCalories_Invalid() {
     WodScore score = createScore(ScoreType.CALORIES);
-
-    prepareContextForFailure();
-    assertFalse(validator.isValid(score, context));
+    assertInvalidScoreType(score);
   }
 
   // =========================================================================
@@ -204,16 +197,14 @@ class ScoreValidatorTest {
   void testDistance_Valid() {
     WodScore score = createScore(ScoreType.DISTANCE);
     score.setTotalDistanceMeters(2000.0);
-    assertTrue(validator.isValid(score, context));
+    assertValidScoreType(score);
   }
 
   @Test
   @DisplayName("DISTANCE: Invalid if TotalDistanceMeters is null")
   void testDistance_Invalid() {
     WodScore score = createScore(ScoreType.DISTANCE);
-
-    prepareContextForFailure();
-    assertFalse(validator.isValid(score, context));
+    assertInvalidScoreType(score);
   }
 
   // =========================================================================
@@ -224,14 +215,14 @@ class ScoreValidatorTest {
   @DisplayName("NONE: Always valid")
   void testNone_Valid() {
     WodScore score = createScore(ScoreType.NONE);
-    assertTrue(validator.isValid(score, context));
+    assertValidScoreType(score);
   }
 
   @Test
-  @DisplayName("Null Handling: Valid if object or Wod is null (ignored)")
+  @DisplayName("Null Handling: Valid if Wod is null (ignored)")
   void testNullSafety() {
-    assertTrue(validator.isValid(null, context));
-    assertTrue(validator.isValid(new WodScore(), context)); // Wod is null
+    WodScore score = new WodScore(); // Wod est null
+    assertValidScoreType(score);
   }
 
   // =========================================================================
@@ -239,44 +230,36 @@ class ScoreValidatorTest {
   // =========================================================================
 
   @Test
-  @DisplayName("I18N EN: Should return correct English message")
+  @DisplayName("I18N EN: Should return correct English message with dynamic parameter")
   void testMessage_EN() {
-    // 1. Setup Context
     LocaleContextHolder.setLocale(Locale.ENGLISH);
-    prepareContextForFailure();
 
-    // 2. Create Invalid Score
     WodScore score = createScore(ScoreType.TIME);
-    // Assuming ScoreType.TIME.getDisplayName() returns "Time" or "TIME"
-    // Adjust expectations based on your Enum implementation
     String expectedType = ScoreType.TIME.getDisplayName();
 
-    // 3. Execute
-    assertFalse(validator.isValid(score, context));
+    Set<ConstraintViolation<WodScore>> violations = validator.validate(score);
 
-    // 4. Verify (Property: "Score does not match WOD type {0}. Missing required fields.")
-    verify(context)
-        .buildConstraintViolationWithTemplate(
-            "Score does not match WOD type " + expectedType + ". Missing required fields.");
+    List<String> messages = violations.stream().map(ConstraintViolation::getMessage).toList();
+
+    String expectedMessage =
+        "Score does not match WOD type " + expectedType + ". Missing required fields.";
+    assertTrue(messages.contains(expectedMessage), "Actual messages: " + messages);
   }
 
   @Test
-  @DisplayName("I18N FR: Should return correct French message with quotes")
+  @DisplayName("I18N FR: Should return correct French message with dynamic parameter")
   void testMessage_FR() {
-    // 1. Setup Context
     LocaleContextHolder.setLocale(Locale.FRENCH);
-    prepareContextForFailure();
 
-    // 2. Create Invalid Score
     WodScore score = createScore(ScoreType.TIME);
     String expectedType = ScoreType.TIME.getDisplayName();
 
-    // 3. Execute
-    assertFalse(validator.isValid(score, context));
+    Set<ConstraintViolation<WodScore>> violations = validator.validate(score);
 
-    // 4. Verify
-    verify(context)
-        .buildConstraintViolationWithTemplate(
-            "Le score ne correspond pas au type '" + expectedType + "'. Champs requis manquants.");
+    List<String> messages = violations.stream().map(ConstraintViolation::getMessage).toList();
+
+    String expectedMessage =
+        "Le score ne correspond pas au type " + expectedType + ". Champs requis manquants.";
+    assertTrue(messages.contains(expectedMessage), "Actual messages: " + messages);
   }
 }

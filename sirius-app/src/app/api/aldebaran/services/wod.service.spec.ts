@@ -3,7 +3,7 @@ import {HttpTestingController, provideHttpClientTesting} from '@angular/common/h
 import {provideHttpClient} from '@angular/common/http';
 import {WodService} from './wod.service';
 import {environment} from '../../../../environments/environment';
-import {WodRequest, WodResponse, WodSummaryResponse, WodType} from '../models/wod.model';
+import {WodReferenceData, WodRequest, WodResponse, WodSummaryResponse} from '../models/wod.model';
 import {Slice} from '../../../core/models/pagination.model';
 
 describe('WodService', () => {
@@ -41,6 +41,15 @@ describe('WodService', () => {
     updatedAt: new Date().toISOString(),
   };
 
+  const mockReferenceData: WodReferenceData = {
+    wodTypes: ['AMRAP', 'FOR_TIME', 'EMOM'],
+    scoreTypes: ['TIME', 'REPS', 'LOAD'],
+    unitGroups: {
+      'WEIGHT': ['KG', 'LBS'],
+      'DISTANCE': ['METERS', 'KILOMETERS']
+    }
+  };
+
   beforeEach(() => {
     TestBed.configureTestingModule({
       providers: [WodService, provideHttpClient(), provideHttpClientTesting()],
@@ -68,7 +77,7 @@ describe('WodService', () => {
 
   it('getWods should include optional filters', () => {
     const search = 'Fran';
-    const type: WodType = 'FOR_TIME';
+    const type: string = 'FOR_TIME';
     const movementId = 'WL-SQ-001';
     service.getWods(search, type, movementId).subscribe();
 
@@ -123,5 +132,15 @@ describe('WodService', () => {
     const req = httpMock.expectOne(`${base}/wods/${wodId}`);
     expect(req.request.method).toBe('DELETE');
     req.flush(null, {status: 204, statusText: 'No Content'});
+  });
+
+  it('getReferenceData should GET from /wods/reference-data', () => {
+    service.getReferenceData().subscribe(response => {
+      expect(response).toEqual(mockReferenceData);
+    });
+
+    const req = httpMock.expectOne(`${base}/wods/reference-data`);
+    expect(req.request.method).toBe('GET');
+    req.flush(mockReferenceData);
   });
 });

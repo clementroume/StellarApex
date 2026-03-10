@@ -42,7 +42,13 @@ public interface WodRepository extends JpaRepository<Wod, Long> {
    * @param id The unique identifier of the WOD.
    * @return An {@link Optional} containing the WOD if found.
    */
-  @EntityGraph(attributePaths = {"movements", "movements.movement"})
+  @EntityGraph(
+      attributePaths = {
+        "movements",
+        "movements.movement",
+        "movements.equipment",
+        "movements.techniques"
+      })
   @Query("SELECT w FROM Wod w WHERE w.id = :id")
   Optional<Wod> findByIdWithMovements(@Param("id") Long id);
 
@@ -104,7 +110,7 @@ public interface WodRepository extends JpaRepository<Wod, Long> {
   /**
    * Retrieves authorized WODs containing a specific movement.
    *
-   * @param movementId The ID of the movement (e.g., "GY-PU-001").
+   * @param movementId The ID of the movement (e.g., "1").
    * @param pageable Pagination information.
    * @return A pageable list of matching WOD summaries.
    */
@@ -117,5 +123,5 @@ public interface WodRepository extends JpaRepository<Wod, Long> {
          OR w.authorId = ?#{@securityService.getCurrentUserId()}
          OR (w.gymId IS NOT NULL AND w.gymId = ?#{@securityService.getCurrentUserGymId()}))
       """)
-  Slice<WodSummary> findByMovementSecure(@Param("movementId") String movementId, Pageable pageable);
+  Slice<WodSummary> findByMovementSecure(@Param("movementId") Long movementId, Pageable pageable);
 }

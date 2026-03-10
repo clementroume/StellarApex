@@ -2,7 +2,7 @@
 
   <div class="mb-6 flex items-center gap-4">
     <a routerLink="/muscles"
-       class="btn btn-sm btn-ghost">&larr; {{ 'MUSCLE.FORM.BACK' | translate }}</a>
+       class="btn btn-sm btn-ghost">&larr; {{ 'GLOBAL.BACK' | translate }}</a>
     <h1 class="text-3xl font-bold">
       {{ (isEditMode() ? 'MUSCLE.FORM.TITLE_EDIT' : 'MUSCLE.FORM.TITLE_ADD') | translate }}
     </h1>
@@ -30,7 +30,7 @@
           <select formControlName="muscleGroup" class="select select-bordered w-full"
                   [class.select-error]="muscleForm.controls.muscleGroup.invalid && muscleForm.controls.muscleGroup.touched">
             <option value="" disabled selected>{{ 'MUSCLE.FORM.GROUP_PH' | translate }}</option>
-            @for (group of muscleGroups; track group) {
+            @for (group of muscleGroups(); track group) {
               <option [value]="group">{{ 'MUSCLE.GROUPS.' + group | translate }}</option>
             }
           </select>
@@ -71,14 +71,20 @@
         </div>
       </div>
 
+      <label class="form-control w-full mt-4">
+        <div class="label"><span class="label-text">Image URL</span></div>
+        <input type="url" formControlName="imageUrl" class="input input-bordered w-full"
+               placeholder="https://..."/>
+      </label>
+
       <div class="mt-8 flex justify-end gap-4">
-        <a routerLink="/muscles" class="btn btn-ghost">{{ 'MUSCLE.FORM.CANCEL' | translate }}</a>
+        <a routerLink="/muscles" class="btn btn-ghost">{{ 'GLOBAL.CANCEL' | translate }}</a>
         <button type="submit" class="btn btn-primary"
                 [disabled]="muscleForm.invalid || isLoading()">
           @if (isLoading()) {
             <span class="loading loading-spinner"></span>
           }
-          {{ (isEditMode() ? 'MUSCLE.FORM.SUBMIT_EDIT' : 'MUSCLE.FORM.SUBMIT_ADD') | translate }}
+          {{ (isEditMode() ? 'GLOBAL.EDIT' : 'GLOBAL.SAVE') | translate }}
         </button>
       </div>
 

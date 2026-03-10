@@ -10,18 +10,53 @@ import {authInterceptor} from './core/interceptors/auth.interceptor';
 import {loadingInterceptor} from './core/interceptors/loading.interceptor';
 import {provideIcons} from '@ng-icons/core';
 import {
+  heroArrowLeft,
+  heroArrowRightOnRectangle,
+  heroBars3,
   heroChevronDown,
   heroCog8Tooth,
   heroEnvelope,
   heroExclamationTriangle,
+  heroEye,
   heroGlobeAlt,
   heroKey,
+  heroMagnifyingGlass,
   heroMoon,
   heroPencilSquare,
+  heroPlay,
+  heroPlus,
   heroSun,
-  heroUser
+  heroTrash,
+  heroUser,
+  heroVideoCamera
 } from '@ng-icons/heroicons/outline';
+import {hugeBodyPartMuscle, hugeDashboardSpeed01, hugeKettlebell, hugeWorkoutStretching} from '@ng-icons/huge-icons';
 
+export const APP_ICONS = {
+  heroUser,
+  heroEnvelope,
+  heroKey,
+  heroCog8Tooth,
+  heroPencilSquare,
+  heroGlobeAlt,
+  heroExclamationTriangle,
+  heroSun,
+  heroMoon,
+  heroChevronDown,
+  heroMagnifyingGlass,
+  heroArrowLeft,
+  heroPlus,
+  heroTrash,
+  hugeBodyPartMuscle,
+  hugeKettlebell,
+  heroEye,
+  hugeWorkoutStretching,
+  heroVideoCamera,
+  heroPlay,
+  heroBars3,
+  heroArrowRightOnRectangle,
+  hugeDashboardSpeed01
+};
 /**
  * The main application configuration for this standalone Angular application.
  * It sets up all the core providers for routing, HTTP client, and internationalization.
@@ -62,17 +97,6 @@ export const appConfig: ApplicationConfig = {
     }),
 
     // 4. GLOBAL ICON IMPORT
-    provideIcons({
-      heroUser,
-      heroEnvelope,
-      heroKey,
-      heroCog8Tooth,
-      heroPencilSquare,
-      heroGlobeAlt,
-      heroExclamationTriangle,
-      heroSun,
-      heroMoon,
-      heroChevronDown
-    })
+    provideIcons(APP_ICONS)
   ],
 };

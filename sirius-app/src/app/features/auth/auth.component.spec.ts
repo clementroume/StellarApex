@@ -19,11 +19,11 @@ describe('AuthComponent', () => {
     fixture.detectChanges();
   });
 
-  it('devrait créer le composant', () => {
+  it('should create the component', () => {
     expect(component).toBeTruthy();
   });
 
-  it('devrait contenir une balise <router-outlet> pour afficher les pages enfants', () => {
+  it('should contain a <router-outlet> tag to display child pages', () => {
     const routerOutlet = fixture.nativeElement.querySelector('router-outlet');
     expect(routerOutlet).not.toBeNull();
   });

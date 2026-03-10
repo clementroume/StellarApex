@@ -1,5 +1,6 @@
 package apex.stellar.aldebaran.controller;
 
+import apex.stellar.aldebaran.dto.WodReferenceData;
 import apex.stellar.aldebaran.dto.WodRequest;
 import apex.stellar.aldebaran.dto.WodResponse;
 import apex.stellar.aldebaran.dto.WodSummaryResponse;
@@ -73,9 +74,8 @@ public class WodController {
   public ResponseEntity<Slice<WodSummaryResponse>> getWods(
       @Parameter(description = "Search by title") @RequestParam(required = false) String search,
       @Parameter(description = "Filter by WOD Type") @RequestParam(required = false) WodType type,
-      @Parameter(description = "Filter by Movement ID (e.g. 'WL-SQ-001')")
-          @RequestParam(required = false)
-          String movementId,
+      @Parameter(description = "Filter by Movement ID (e.g. '1')") @RequestParam(required = false)
+          Long movementId,
       @Parameter(description = "Pagination (page, size)") @PageableDefault(size = 20)
           Pageable pageable) {
 
@@ -214,5 +214,14 @@ public class WodController {
 
     wodService.deleteWod(id);
     return ResponseEntity.noContent().build();
+  }
+
+  /** Retrieves reference data (types, units) for UI forms. */
+  @GetMapping("/reference-data")
+  @Operation(
+      summary = "Get WOD reference data",
+      description = "Returns available WOD types, score types, and units.")
+  public ResponseEntity<WodReferenceData> getReferenceData() {
+    return ResponseEntity.ok(wodService.getReferenceData());
   }
 }

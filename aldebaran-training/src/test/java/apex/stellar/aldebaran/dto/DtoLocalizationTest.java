@@ -9,9 +9,6 @@ import apex.stellar.aldebaran.model.entities.Wod.WodType;
 import apex.stellar.aldebaran.model.entities.WodScore.ScalingLevel;
 import apex.stellar.aldebaran.model.enums.Category;
 import apex.stellar.aldebaran.model.enums.Equipment;
-import apex.stellar.aldebaran.validation.ScoreRequestValidator;
-import jakarta.validation.ConstraintValidator;
-import jakarta.validation.ConstraintValidatorFactory;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validator;
 import java.time.LocalDate;
@@ -22,18 +19,16 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.context.support.ResourceBundleMessageSource;
 import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
 
 class DtoLocalizationTest {
 
   private Validator validator;
-  private Locale originalLocale;
 
   @BeforeEach
   void setUp() {
-    originalLocale = Locale.getDefault();
-
     ResourceBundleMessageSource messageSource = new ResourceBundleMessageSource();
     messageSource.setBasename("messages");
     messageSource.setDefaultEncoding("UTF-8");
@@ -41,36 +36,14 @@ class DtoLocalizationTest {
     LocalValidatorFactoryBean factoryBean = new LocalValidatorFactoryBean();
     factoryBean.setValidationMessageSource(messageSource);
 
-    factoryBean.setConstraintValidatorFactory(
-        new ConstraintValidatorFactory() {
-          @Override
-          public <T extends ConstraintValidator<?, ?>> T getInstance(Class<T> key) {
-            if (key == ScoreRequestValidator.class) {
-              var instance = new ScoreRequestValidator();
-              instance.setMessageSource(messageSource);
-              return key.cast(instance);
-            }
-
-            try {
-              return key.getDeclaredConstructor().newInstance();
-            } catch (Exception e) {
-              throw new RuntimeException("Impossible d'instancier " + key, e);
-            }
-          }
-
-          @Override
-          public void releaseInstance(ConstraintValidator<?, ?> instance) {
-            // Rien à faire ici
-          }
-        });
-
     factoryBean.afterPropertiesSet();
+
     this.validator = factoryBean;
   }
 
   @AfterEach
   void tearDown() {
-    Locale.setDefault(originalLocale);
+    LocaleContextHolder.resetLocaleContext();
   }
 
   @Test
@@ -92,14 +65,14 @@ class DtoLocalizationTest {
             null,
             Collections.emptyList());
 
-    Locale.setDefault(Locale.ENGLISH);
+    LocaleContextHolder.setLocale(Locale.ENGLISH);
     Set<ConstraintViolation<WodRequest>> violationsEn = validator.validate(request);
     assertViolation(violationsEn, "title", "WOD title is required.");
     assertViolation(violationsEn, "wodType", "WOD type is required.");
     assertViolation(violationsEn, "scoreType", "Score type is required.");
     assertViolation(violationsEn, "movements", "A WOD must contain at least one movement.");
 
-    Locale.setDefault(Locale.FRENCH);
+    LocaleContextHolder.setLocale(Locale.FRENCH);
     Set<ConstraintViolation<WodRequest>> violationsFr = validator.validate(request);
     assertViolation(violationsFr, "title", "Le titre du WOD est requis.");
     assertViolation(violationsFr, "wodType", "Le type de WOD est requis.");
@@ -127,9 +100,10 @@ class DtoLocalizationTest {
             null,
             Collections.singletonList(
                 new WodMovementRequest(
-                    "1", 1, null, null, null, null, null, null, null, null, null, null)));
+                    1L, 1, null, null, null, null, null, null, null, null, null, null, null,
+                    null)));
 
-    Locale.setDefault(Locale.ENGLISH);
+    LocaleContextHolder.setLocale(Locale.ENGLISH);
     Set<ConstraintViolation<WodRequest>> violationsEn = validator.validate(request);
     assertViolation(violationsEn, "title", "WOD title cannot exceed 100 characters.");
     assertViolation(violationsEn, "description", "Description cannot exceed 4000 characters.");
@@ -137,7 +111,7 @@ class DtoLocalizationTest {
     assertViolation(violationsEn, "timeCapSeconds", "Time cap must be 0 or positive.");
     assertViolation(violationsEn, "emomInterval", "EMOM settings must be 0 or positive.");
 
-    Locale.setDefault(Locale.FRENCH);
+    LocaleContextHolder.setLocale(Locale.FRENCH);
     Set<ConstraintViolation<WodRequest>> violationsFr = validator.validate(request);
     assertViolation(violationsFr, "title", "Le titre du WOD ne peut pas dépasser 100 caractères.");
     assertViolation(
@@ -150,14 +124,14 @@ class DtoLocalizationTest {
   void testWodMovementRequest_Required() {
     WodMovementRequest request =
         new WodMovementRequest(
-            "", null, null, null, null, null, null, null, null, null, null, null);
+            null, null, null, null, null, null, null, null, null, null, null, null, null, null);
 
-    Locale.setDefault(Locale.ENGLISH);
+    LocaleContextHolder.setLocale(Locale.ENGLISH);
     Set<ConstraintViolation<WodMovementRequest>> violationsEn = validator.validate(request);
     assertViolation(violationsEn, "movementId", "Movement ID is required.");
     assertViolation(violationsEn, "orderIndex", "Order index is required.");
 
-    Locale.setDefault(Locale.FRENCH);
+    LocaleContextHolder.setLocale(Locale.FRENCH);
     Set<ConstraintViolation<WodMovementRequest>> violationsFr = validator.validate(request);
     assertViolation(violationsFr, "movementId", "L'identifiant du mouvement est requis.");
     assertViolation(violationsFr, "orderIndex", "L'index d'ordre est requis.");
@@ -169,9 +143,8 @@ class DtoLocalizationTest {
     //noinspection DataFlowIssue
     WodMovementRequest request =
         new WodMovementRequest(
-            "ID", 0, "A".repeat(51), -1.0, null, -1, null, -1.0, null, -1, null, null);
-
-    Locale.setDefault(Locale.ENGLISH);
+            1L, 0, "A".repeat(51), -1.0, null, -1, null, -1.0, null, -1, null, null, null, null);
+    LocaleContextHolder.setLocale(Locale.ENGLISH);
     Set<ConstraintViolation<WodMovementRequest>> violationsEn = validator.validate(request);
 
     assertViolation(violationsEn, "orderIndex", "Order index must be positive.");
@@ -183,14 +156,14 @@ class DtoLocalizationTest {
   @Test
   @DisplayName("MuscleRequest: Required fields (EN & FR)")
   void testMuscleRequest_Required() {
-    MuscleRequest request = new MuscleRequest("", null, null, null, null, null);
+    MuscleRequest request = new MuscleRequest("", null, null, null, null, null, null);
 
-    Locale.setDefault(Locale.ENGLISH);
+    LocaleContextHolder.setLocale(Locale.ENGLISH);
     Set<ConstraintViolation<MuscleRequest>> violationsEn = validator.validate(request);
     assertViolation(violationsEn, "medicalName", "Medical name is required.");
     assertViolation(violationsEn, "muscleGroup", "Muscle group is required.");
 
-    Locale.setDefault(Locale.FRENCH);
+    LocaleContextHolder.setLocale(Locale.FRENCH);
     Set<ConstraintViolation<MuscleRequest>> violationsFr = validator.validate(request);
     assertViolation(violationsFr, "medicalName", "Le nom médical est requis.");
     assertViolation(violationsFr, "muscleGroup", "Le groupe musculaire est requis.");
@@ -201,14 +174,14 @@ class DtoLocalizationTest {
   void testMuscleRequest_Size() {
     String longName = "A".repeat(101);
     MuscleRequest request =
-        new MuscleRequest(longName, longName, null, null, null, MuscleGroup.CHEST);
+        new MuscleRequest(longName, longName, null, null, null, MuscleGroup.CHEST, null);
 
-    Locale.setDefault(Locale.ENGLISH);
+    LocaleContextHolder.setLocale(Locale.ENGLISH);
     Set<ConstraintViolation<MuscleRequest>> violationsEn = validator.validate(request);
     assertViolation(violationsEn, "medicalName", "Medical name cannot exceed 100 characters.");
     assertViolation(violationsEn, "commonNameEn", "Common name cannot exceed 100 characters.");
 
-    Locale.setDefault(Locale.FRENCH);
+    LocaleContextHolder.setLocale(Locale.FRENCH);
     Set<ConstraintViolation<MuscleRequest>> violationsFr = validator.validate(request);
     assertViolation(
         violationsFr, "medicalName", "Le nom médical ne peut pas dépasser 100 caractères.");
@@ -221,12 +194,12 @@ class DtoLocalizationTest {
         new MovementRequest(
             "", null, null, null, null, null, false, null, null, null, null, null, null, null);
 
-    Locale.setDefault(Locale.ENGLISH);
+    LocaleContextHolder.setLocale(Locale.ENGLISH);
     Set<ConstraintViolation<MovementRequest>> violationsEn = validator.validate(request);
     assertViolation(violationsEn, "name", "Movement name is required.");
     assertViolation(violationsEn, "category", "Category is required.");
 
-    Locale.setDefault(Locale.FRENCH);
+    LocaleContextHolder.setLocale(Locale.FRENCH);
     Set<ConstraintViolation<MovementRequest>> violationsFr = validator.validate(request);
     assertViolation(violationsFr, "name", "Le nom du mouvement est requis.");
     assertViolation(violationsFr, "category", "La catégorie est requise.");
@@ -255,7 +228,7 @@ class DtoLocalizationTest {
             longUrl,
             null);
 
-    Locale.setDefault(Locale.ENGLISH);
+    LocaleContextHolder.setLocale(Locale.ENGLISH);
     Set<ConstraintViolation<MovementRequest>> violationsEn = validator.validate(request);
 
     assertViolation(violationsEn, "name", "Movement name cannot exceed 50 characters.");
@@ -287,26 +260,26 @@ class DtoLocalizationTest {
   @Test
   @DisplayName("MovementMuscleRequest: Required fields (EN & FR)")
   void testMovementMuscleRequest_Required() {
-    MovementMuscleRequest request = new MovementMuscleRequest("", null, null);
+    MovementMuscleRequest request = new MovementMuscleRequest(null, null, null);
 
-    Locale.setDefault(Locale.ENGLISH);
+    LocaleContextHolder.setLocale(Locale.ENGLISH);
     Set<ConstraintViolation<MovementMuscleRequest>> violationsEn = validator.validate(request);
-    assertViolation(violationsEn, "medicalName", "Medical name is required.");
+    assertViolation(violationsEn, "muscleId", "ID is required.");
     assertViolation(violationsEn, "role", "Muscle role is required.");
 
-    Locale.setDefault(Locale.FRENCH);
+    LocaleContextHolder.setLocale(Locale.FRENCH);
     Set<ConstraintViolation<MovementMuscleRequest>> violationsFr = validator.validate(request);
-    assertViolation(violationsFr, "medicalName", "Le nom médical est requis.");
+    assertViolation(violationsFr, "muscleId", "L'ID est requis.");
     assertViolation(violationsFr, "role", "Le rôle du muscle est requis.");
   }
 
   @Test
   @DisplayName("MovementMuscleRequest: Impact Factor Range (EN)")
   void testMovementMuscleRequest_Range() {
-    MovementMuscleRequest reqMax = new MovementMuscleRequest("Name", MuscleRole.AGONIST, 1.1);
-    MovementMuscleRequest reqMin = new MovementMuscleRequest("Name", MuscleRole.AGONIST, -0.1);
+    MovementMuscleRequest reqMax = new MovementMuscleRequest(1L, MuscleRole.AGONIST, 1.1);
+    MovementMuscleRequest reqMin = new MovementMuscleRequest(1L, MuscleRole.AGONIST, -0.1);
 
-    Locale.setDefault(Locale.ENGLISH);
+    LocaleContextHolder.setLocale(Locale.ENGLISH);
 
     Set<ConstraintViolation<MovementMuscleRequest>> vMax = validator.validate(reqMax);
     assertViolation(vMax, "impactFactor", "Impact factor must be at most 1.0.");
@@ -338,13 +311,13 @@ class DtoLocalizationTest {
             null,
             null);
 
-    Locale.setDefault(Locale.ENGLISH);
+    LocaleContextHolder.setLocale(Locale.ENGLISH);
     Set<ConstraintViolation<WodScoreRequest>> violationsEn = validator.validate(request);
     assertViolation(violationsEn, "wodId", "WOD ID is required.");
     assertViolation(violationsEn, "date", "Date cannot be in the future.");
     assertViolation(violationsEn, "scaling", "Scaling level is required.");
 
-    Locale.setDefault(Locale.FRENCH);
+    LocaleContextHolder.setLocale(Locale.FRENCH);
     Set<ConstraintViolation<WodScoreRequest>> violationsFr = validator.validate(request);
     assertViolation(violationsFr, "wodId", "L'ID du WOD est requis.");
     assertViolation(violationsFr, "date", "La date ne peut pas être dans le futur.");
@@ -375,7 +348,7 @@ class DtoLocalizationTest {
             "A".repeat(4001),
             null);
 
-    Locale.setDefault(Locale.ENGLISH);
+    LocaleContextHolder.setLocale(Locale.ENGLISH);
     Set<ConstraintViolation<WodScoreRequest>> violations = validator.validate(request);
 
     assertViolation(violations, "timeMinutes", "Value must be 0 or positive.");

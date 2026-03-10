@@ -66,6 +66,9 @@ public class Muscle {
   @NotNull
   private MuscleGroup muscleGroup;
 
+  @Column(name = "image_url")
+  private String imageUrl;
+
   // -------------------------------------------------------------------------
   // Audit
   // -------------------------------------------------------------------------

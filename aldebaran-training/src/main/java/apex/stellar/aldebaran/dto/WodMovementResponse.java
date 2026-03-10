@@ -2,6 +2,7 @@ package apex.stellar.aldebaran.dto;
 
 import apex.stellar.aldebaran.model.enums.Unit;
 import io.swagger.v3.oas.annotations.media.Schema;
+import java.util.List;
 
 /**
  * Nested DTO for WodResponse.
@@ -22,6 +23,10 @@ public record WodMovementResponse(
     @Schema(description = "Distance value", example = "400.0") Double distance,
     @Schema(description = "Unit for distance", example = "METERS") Unit distanceUnit,
     @Schema(description = "Calories target", example = "20") Integer calories,
+    @Schema(description = "Equipment chosen for this WOD movement", example = "[\"BARBELL\"]")
+        List<String> equipment,
+    @Schema(description = "Techniques chosen for this WOD movement", example = "[\"SUMO\"]")
+        List<String> techniques,
     @Schema(description = "Movement specific notes", example = "Butterfly allowed") String notes,
     @Schema(description = "Scaling options text", example = "Use bands") String scalingOptions,
     @Schema(description = "The standard movement definition details") MovementResponse movement) {}

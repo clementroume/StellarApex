@@ -46,11 +46,24 @@ class MuscleServiceTest {
 
     muscleRequest =
         new MuscleRequest(
-            "Pectoralis Major", "Chest", "Pectoraux", "Desc EN", "Desc FR", MuscleGroup.CHEST);
+            "Pectoralis Major",
+            "Chest",
+            "Pectoraux",
+            "Desc EN",
+            "Desc FR",
+            MuscleGroup.CHEST,
+            null);
 
     muscleResponse =
         new MuscleResponse(
-            1L, "Pectoralis Major", "Chest", "Pectoraux", "Desc EN", "Desc FR", MuscleGroup.CHEST);
+            1L,
+            "Pectoralis Major",
+            "Chest",
+            "Pectoraux",
+            "Desc EN",
+            "Desc FR",
+            MuscleGroup.CHEST,
+            null);
   }
 
   @Test
@@ -90,28 +103,28 @@ class MuscleServiceTest {
   @DisplayName("getMuscle: should return muscle when found")
   void testGetMuscle_Success() {
     // Given
-    String name = "Pectoralis Major";
-    when(muscleRepository.findByMedicalName(name)).thenReturn(Optional.of(muscleEntity));
+    Long id = 1L;
+    when(muscleRepository.findById(id)).thenReturn(Optional.of(muscleEntity));
     when(muscleMapper.toResponse(muscleEntity)).thenReturn(muscleResponse);
 
     // When
-    MuscleResponse result = muscleService.getMuscle(name);
+    MuscleResponse result = muscleService.getMuscle(id);
 
     // Then
     assertNotNull(result);
-    assertEquals(name, result.medicalName());
+    assertEquals(id, result.id());
   }
 
   @Test
   @DisplayName("getMuscle: should throw ResourceNotFoundException when not found")
   void testGetMuscle_NotFound() {
     // Given
-    String name = "Unknown";
-    when(muscleRepository.findByMedicalName(name)).thenReturn(Optional.empty());
+    Long id = 99L;
+    when(muscleRepository.findById(id)).thenReturn(Optional.empty());
 
     // When & Then
     ResourceNotFoundException ex =
-        assertThrows(ResourceNotFoundException.class, () -> muscleService.getMuscle(name));
+        assertThrows(ResourceNotFoundException.class, () -> muscleService.getMuscle(id));
     assertEquals("error.muscle.not.found", ex.getMessageKey());
   }
 
@@ -190,7 +203,7 @@ class MuscleServiceTest {
     Long id = 1L;
     Muscle existing = Muscle.builder().id(id).medicalName("Old Name").build();
     MuscleRequest renameRequest =
-        new MuscleRequest("New Name", "Common", "Commun", "Desc", "Desc", MuscleGroup.CHEST);
+        new MuscleRequest("New Name", "Common", "Commun", "Desc", "Desc", MuscleGroup.CHEST, null);
     when(muscleRepository.findById(id)).thenReturn(Optional.of(existing));
     when(muscleRepository.existsByMedicalNameIgnoreCase("New Name")).thenReturn(false);
 

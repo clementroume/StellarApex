@@ -26,4 +26,6 @@ public record MuscleResponse(
     @Schema(description = "Description in English") String descriptionEn,
     @Schema(description = "Description in French") String descriptionFr,
     @Schema(description = "Major anatomical muscle group", example = "CHEST")
-        MuscleGroup muscleGroup) {}
+        MuscleGroup muscleGroup,
+    @Schema(description = "Link to muscle image", example = "https://example.com/image.jpg")
+        String imageUrl) {}

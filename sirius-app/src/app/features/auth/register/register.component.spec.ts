@@ -6,6 +6,8 @@ import {provideRouter} from '@angular/router';
 import {TranslateModule} from '@ngx-translate/core';
 import {AuthService} from '../../../api/antares/services/auth.service';
 import {of} from 'rxjs';
+import {provideIcons} from '@ng-icons/core';
+import {APP_ICONS} from '../../../app.config';
 
 describe('RegisterComponent', () => {
   let component: RegisterComponent;
@@ -22,6 +24,7 @@ describe('RegisterComponent', () => {
         provideHttpClient(),
         provideHttpClientTesting(),
         provideRouter([]),
+        provideIcons(APP_ICONS),
         {provide: AuthService, useValue: authServiceSpy}
       ]
     }).compileComponents();

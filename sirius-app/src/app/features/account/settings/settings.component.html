@@ -1,58 +1,42 @@
 <div class="card bg-base-100">
   <div class="card-body gap-8">
-
     <h2 class="card-title flex gap-2 mb-2">
       <ng-icon name="heroCog8Tooth" class="text-2xl" color="var(--color-accent)"></ng-icon>
       {{ 'SETTINGS.TITLE' | translate }}
     </h2>
 
-    <form (ngSubmit)="onSubmitPassword()" [formGroup]="passwordForm">
+    <form (ngSubmit)="onSubmit()" [formGroup]="passwordForm">
       <fieldset class="fieldset bg-base-200 border-base-300 rounded-box w-full border p-4">
         <legend class="fieldset-legend">{{ 'SETTINGS.PASSWORD_SUBTITLE' | translate }}</legend>
 
         <label class="fieldset-label">{{ 'SETTINGS.CURRENT_PASSWORD' | translate }}</label>
         <label class="input validator w-full">
           <ng-icon name="heroKey" class="opacity-50"></ng-icon>
-          <input [placeholder]="'SETTINGS.CURRENT_PASSWORD' | translate"
-                 formControlName="currentPassword"
-                 required type="password"/>
+          <input [placeholder]="'SETTINGS.CURRENT_PASSWORD' | translate" formControlName="currentPassword" required
+                 type="password"/>
         </label>
 
         <label class="fieldset-label mt-3">{{ 'SETTINGS.NEW_PASSWORD' | translate }}</label>
         <label class="input validator w-full">
           <ng-icon name="heroKey" class="opacity-50"></ng-icon>
-          <input
-            [placeholder]="'SETTINGS.NEW_PASSWORD' | translate"
-            formControlName="newPassword"
-            minlength="8"
-            pattern="(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{8,}"
-            required
-            title="Must be more than 8 characters, including number, lowercase letter, uppercase letter"
-            type="password"
-          />
+          <input [placeholder]="'SETTINGS.NEW_PASSWORD' | translate" formControlName="newPassword" minlength="8"
+                 pattern="(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{8,}" required type="password"/>
         </label>
-        <p class="validator-hint hidden text-xs">
-          Must be more than 8 characters, including <br/>
-          At least one number, one lowercase, one uppercase letter
-        </p>
+        <p class="validator-hint hidden text-xs">{{ 'GLOBAL.ERROR_PASSWORD_RULES' | translate }}</p>
 
-        <label class="fieldset-label mt-3">{{ 'SETTINGS.CONFIRM_PASSWORD' | translate }}</label>
+        <label class="fieldset-label mt-3">{{ 'GLOBAL.CONFIRM_PASSWORD' | translate }}</label>
         <label class="input validator w-full">
           <ng-icon name="heroKey" class="opacity-50"></ng-icon>
-          <input [placeholder]="'SETTINGS.CONFIRM_PASSWORD' | translate"
-                 formControlName="confirmationPassword"
-                 required type="password"/>
+          <input [placeholder]="'GLOBAL.CONFIRM_PASSWORD' | translate" formControlName="confirmationPassword" required
+                 type="password"/>
         </label>
-        @if (passwordForm.errors?.['passwordsMismatch'] && passwordForm.get(
-          'confirmationPassword')?.touched) {
-          <p class="validator-hint text-error text-xs mt-1">
-            {{ 'SETTINGS.PASSWORDS_MISMATCH' | translate }}
-          </p>
+        @if (passwordForm.errors?.['passwordsMismatch'] && passwordForm.get('confirmationPassword')?.touched) {
+          <p class="validator-hint text-error text-xs mt-1">{{ 'GLOBAL.PASSWORDS_MISMATCH' | translate }}</p>
         }
 
         <div class="card-actions justify-end mt-4">
-          <button [disabled]="passwordForm.invalid" class="btn btn-primary" type="submit">
-            {{ 'SETTINGS.CHANGE_PASSWORD_BTN' | translate }}
+          <button [disabled]="passwordForm.invalid" class="btn btn-primary"
+                  type="submit">{{ 'SETTINGS.CHANGE_PASSWORD_BTN' | translate }}
           </button>
         </div>
       </fieldset>
@@ -60,12 +44,10 @@
 
     <fieldset class="fieldset bg-base-200 border-base-300 rounded-box w-full border p-4">
       <legend class="fieldset-legend">{{ 'SETTINGS.LANGUAGE_TITLE' | translate }}</legend>
-
       <label class="fieldset-label">{{ 'SETTINGS.LANGUAGE_LABEL' | translate }}</label>
       <div class="join w-full">
         <div class="btn btn-square join-item bg-base-100 border-base-300 cursor-default">
-          <ng-icon name="heroGlobeAlt" class="opacity-75"
-                   color="var(--color-accent)" size="2em"></ng-icon>
+          <ng-icon name="heroGlobeAlt" class="opacity-75" color="var(--color-accent)" size="2em"></ng-icon>
         </div>
         <select (change)="changeLanguage($event)" class="select join-item w-full bg-base-100">
           <option [selected]="translate.currentLang === 'en'" value="en">English</option>
@@ -79,17 +61,13 @@
         <ng-icon name="heroExclamationTriangle" class="text-2xl"></ng-icon>
         {{ 'SETTINGS.DANGER_ZONE_TITLE' | translate }}
       </legend>
-
       <div class="flex flex-col sm:flex-row justify-between items-center gap-4">
-        <span class="text-sm text-base-content/70">
-           {{ 'SETTINGS.DELETE_MODAL_DESC' | translate }}
-        </span>
-        <button (click)="openDeleteConfirmation()" class="btn btn-error btn-sm text-white">
-          {{ 'SETTINGS.DELETE_ACCOUNT_BTN' | translate }}
+        <span class="text-sm text-base-content/70">{{ 'SETTINGS.DELETE_MODAL_DESC' | translate }}</span>
+        <button (click)="openDeleteConfirmation()"
+                class="btn btn-error btn-sm text-white">{{ 'SETTINGS.DELETE_ACCOUNT_BTN' | translate }}
         </button>
       </div>
     </fieldset>
-
   </div>
 </div>
 
@@ -101,9 +79,7 @@
     </h3>
     <div class="modal-action">
       <form class="flex gap-2" method="dialog">
-        <button (click)="closeDeleteConfirmation()"
-                class="btn">{{ 'SETTINGS.DELETE_MODAL_CANCEL' | translate }}
-        </button>
+        <button (click)="closeDeleteConfirmation()" class="btn">{{ 'GLOBAL.CANCEL' | translate }}</button>
         <button (click)="confirmDeleteAccount()"
                 class="btn btn-error text-white">{{ 'SETTINGS.DELETE_MODAL_CONFIRM' | translate }}
         </button>

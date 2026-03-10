@@ -4,32 +4,15 @@ import apex.stellar.aldebaran.model.entities.Wod.ScoreType;
 import apex.stellar.aldebaran.model.entities.WodScore;
 import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.MessageSource;
-import org.springframework.context.i18n.LocaleContextHolder;
+import org.hibernate.validator.constraintvalidation.HibernateConstraintValidatorContext;
 import org.springframework.stereotype.Component;
 
-/**
- * Validates that the WodScore fields correspond to the WOD's scoring type.
- *
- * <p>Checks are performed against the normalized fields (e.g., {@code maxWeightKg}) to ensure data
- * consistency regardless of the display unit.
- */
+/** Validates that the WodScore fields correspond to the WOD's scoring type. */
 @Component
 public class ScoreValidator implements ConstraintValidator<ValidScore, WodScore> {
 
-  private MessageSource messageSource;
-
-  /**
-   * Validates that the score fields are populated correctly according to the WOD's score type.
-   *
-   * @param score The WOD score entity to validate.
-   * @param context The validator context.
-   * @return true if the score is valid, false otherwise.
-   */
   @Override
   public boolean isValid(WodScore score, ConstraintValidatorContext context) {
-    // If WOD or Score is null, let standard @NotNull annotations handle it
     if (score == null || score.getWod() == null) {
       return true;
     }
@@ -49,27 +32,14 @@ public class ScoreValidator implements ConstraintValidator<ValidScore, WodScore>
         };
 
     if (!isValid) {
-      String errorMessage =
-          messageSource.getMessage(
-              "wod.score.invalid.type",
-              new Object[] {scoreType.getDisplayName()},
-              "Invalid Score",
-              LocaleContextHolder.getLocale());
-
       context.disableDefaultConstraintViolation();
-      context.buildConstraintViolationWithTemplate(errorMessage).addConstraintViolation();
+      context
+          .unwrap(HibernateConstraintValidatorContext.class)
+          .addMessageParameter("type", scoreType.getDisplayName())
+          .buildConstraintViolationWithTemplate("{wod.score.invalid.type}")
+          .addConstraintViolation();
     }
 
     return isValid;
-  }
-
-  /**
-   * Sets the message source for internationalized error messages.
-   *
-   * @param messageSource The Spring MessageSource.
-   */
-  @Autowired
-  public void setMessageSource(MessageSource messageSource) {
-    this.messageSource = messageSource;
   }
 }

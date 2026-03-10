@@ -46,7 +46,7 @@ class WodControllerIT extends BaseIntegrationTest {
     movementRepository.deleteAll();
 
     // Seed Movement
-    pullUp = Movement.builder().id("GY-PU-001").name("Pull-up").category(Category.PULLING).build();
+    pullUp = Movement.builder().name("Pull-up").category(Category.PULLING).build();
     movementRepository.save(pullUp);
 
     // Seed Initial WOD (Created by Gym 101)
@@ -232,8 +232,20 @@ class WodControllerIT extends BaseIntegrationTest {
             "Chipper",
             List.of(
                 new WodMovementRequest(
-                    pullUp.getId(), 1, "100", 0.0, null, 0, null, 0.0, null, 0, null, null)));
-
+                    pullUp.getId(),
+                    1,
+                    "100",
+                    0.0,
+                    null,
+                    0,
+                    null,
+                    0.0,
+                    null,
+                    0,
+                    null,
+                    null,
+                    null,
+                    null)));
     mockMvc
         .perform(
             post("/aldebaran/wods")
@@ -270,8 +282,20 @@ class WodControllerIT extends BaseIntegrationTest {
             null,
             List.of(
                 new WodMovementRequest(
-                    pullUp.getId(), 1, "10", 0.0, null, 0, null, 0.0, null, 0, null, null)));
-
+                    pullUp.getId(),
+                    1,
+                    "10",
+                    0.0,
+                    null,
+                    0,
+                    null,
+                    0.0,
+                    null,
+                    0,
+                    null,
+                    null,
+                    null,
+                    null)));
     mockMvc
         .perform(
             post("/aldebaran/wods")
@@ -303,8 +327,20 @@ class WodControllerIT extends BaseIntegrationTest {
             null,
             List.of(
                 new WodMovementRequest(
-                    pullUp.getId(), 1, "50", 0.0, null, 0, null, 0.0, null, 0, null, null)));
-
+                    pullUp.getId(),
+                    1,
+                    "50",
+                    0.0,
+                    null,
+                    0,
+                    null,
+                    0.0,
+                    null,
+                    0,
+                    null,
+                    null,
+                    null,
+                    null)));
     mockMvc
         .perform(
             post("/aldebaran/wods")
@@ -337,8 +373,20 @@ class WodControllerIT extends BaseIntegrationTest {
             null,
             List.of(
                 new WodMovementRequest(
-                    pullUp.getId(), 1, "50", 0.0, null, 0, null, 0.0, null, 0, null, null)));
-
+                    pullUp.getId(),
+                    1,
+                    "50",
+                    0.0,
+                    null,
+                    0,
+                    null,
+                    0.0,
+                    null,
+                    0,
+                    null,
+                    null,
+                    null,
+                    null)));
     mockMvc
         .perform(
             post("/aldebaran/wods")
@@ -372,8 +420,20 @@ class WodControllerIT extends BaseIntegrationTest {
             null,
             List.of(
                 new WodMovementRequest(
-                    pullUp.getId(), 1, "50", 0.0, null, 0, null, 0.0, null, 0, null, null)));
-
+                    pullUp.getId(),
+                    1,
+                    "50",
+                    0.0,
+                    null,
+                    0,
+                    null,
+                    0.0,
+                    null,
+                    0,
+                    null,
+                    null,
+                    null,
+                    null)));
     mockMvc
         .perform(
             post("/aldebaran/wods")
@@ -440,8 +500,20 @@ class WodControllerIT extends BaseIntegrationTest {
             "21-15-9",
             List.of(
                 new WodMovementRequest(
-                    pullUp.getId(), 1, "21-15-9", 40.0, null, 0, null, 0.0, null, 0, null, null)));
-
+                    pullUp.getId(),
+                    1,
+                    "21-15-9",
+                    40.0,
+                    null,
+                    0,
+                    null,
+                    0.0,
+                    null,
+                    0,
+                    null,
+                    null,
+                    null,
+                    null)));
     mockMvc
         .perform(
             put("/aldebaran/wods/" + existing.getId())
@@ -482,8 +554,20 @@ class WodControllerIT extends BaseIntegrationTest {
             null,
             List.of(
                 new WodMovementRequest(
-                    pullUp.getId(), 1, "10", 0.0, null, 0, null, 0.0, null, 0, null, null)));
-
+                    pullUp.getId(),
+                    1,
+                    "10",
+                    0.0,
+                    null,
+                    0,
+                    null,
+                    0.0,
+                    null,
+                    0,
+                    null,
+                    null,
+                    null,
+                    null)));
     mockMvc
         .perform(
             put("/aldebaran/wods/" + existing.getId())
@@ -524,8 +608,20 @@ class WodControllerIT extends BaseIntegrationTest {
             null,
             List.of(
                 new WodMovementRequest(
-                    pullUp.getId(), 1, "10", 0.0, null, 0, null, 0.0, null, 0, null, null)));
-
+                    pullUp.getId(),
+                    1,
+                    "10",
+                    0.0,
+                    null,
+                    0,
+                    null,
+                    0.0,
+                    null,
+                    0,
+                    null,
+                    null,
+                    null,
+                    null)));
     mockMvc
         .perform(
             put("/aldebaran/wods/" + personalWod.getId())
@@ -566,8 +662,20 @@ class WodControllerIT extends BaseIntegrationTest {
             null,
             List.of(
                 new WodMovementRequest(
-                    pullUp.getId(), 1, "10", 0.0, null, 0, null, 0.0, null, 0, null, null)));
-
+                    pullUp.getId(),
+                    1,
+                    "10",
+                    0.0,
+                    null,
+                    0,
+                    null,
+                    0.0,
+                    null,
+                    0,
+                    null,
+                    null,
+                    null,
+                    null)));
     mockMvc
         .perform(
             put("/aldebaran/wods/" + personalWod.getId())
@@ -599,8 +707,20 @@ class WodControllerIT extends BaseIntegrationTest {
             null,
             List.of(
                 new WodMovementRequest(
-                    pullUp.getId(), 1, "10", 0.0, null, 0, null, 0.0, null, 0, null, null)));
-
+                    pullUp.getId(),
+                    1,
+                    "10",
+                    0.0,
+                    null,
+                    0,
+                    null,
+                    0.0,
+                    null,
+                    0,
+                    null,
+                    null,
+                    null,
+                    null)));
     mockMvc
         .perform(
             put("/aldebaran/wods/99999")
@@ -645,8 +765,20 @@ class WodControllerIT extends BaseIntegrationTest {
             null,
             List.of(
                 new WodMovementRequest(
-                    pullUp.getId(), 1, "21-15-9", 0.0, null, 0, null, 0.0, null, 0, null, null)));
-
+                    pullUp.getId(),
+                    1,
+                    "21-15-9",
+                    0.0,
+                    null,
+                    0,
+                    null,
+                    0.0,
+                    null,
+                    0,
+                    null,
+                    null,
+                    null,
+                    null)));
     mockMvc
         .perform(
             put("/aldebaran/wods/" + existing.getId())

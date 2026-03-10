@@ -1,12 +1,13 @@
 package apex.stellar.aldebaran.service;
 
+import static apex.stellar.aldebaran.config.RedisCacheConfig.CACHE_MOVEMENT;
 import static apex.stellar.aldebaran.config.RedisCacheConfig.CACHE_MOVEMENTS;
 
 import apex.stellar.aldebaran.dto.MovementMuscleRequest;
+import apex.stellar.aldebaran.dto.MovementReferenceData;
 import apex.stellar.aldebaran.dto.MovementRequest;
 import apex.stellar.aldebaran.dto.MovementResponse;
 import apex.stellar.aldebaran.dto.MovementSummaryResponse;
-import apex.stellar.aldebaran.dto.MuscleResponse;
 import apex.stellar.aldebaran.exception.DataConflictException;
 import apex.stellar.aldebaran.exception.ResourceNotFoundException;
 import apex.stellar.aldebaran.mapper.MovementMapper;
@@ -14,12 +15,16 @@ import apex.stellar.aldebaran.model.entities.Movement;
 import apex.stellar.aldebaran.model.entities.MovementMuscle;
 import apex.stellar.aldebaran.model.entities.Muscle;
 import apex.stellar.aldebaran.model.enums.Category;
+import apex.stellar.aldebaran.model.enums.Equipment;
+import apex.stellar.aldebaran.model.enums.Technique;
 import apex.stellar.aldebaran.repository.MovementRepository;
 import apex.stellar.aldebaran.repository.MuscleRepository;
 import apex.stellar.aldebaran.repository.projection.MovementSummary;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.UUID;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;
@@ -47,7 +52,6 @@ public class MovementService {
 
   private final MovementRepository movementRepository;
   private final MuscleRepository muscleRepository;
-  private final MuscleService muscleService;
   private final MovementMapper movementMapper;
 
   /**
@@ -85,28 +89,13 @@ public class MovementService {
    * @throws ResourceNotFoundException if the movement does not exist.
    */
   @Transactional(readOnly = true)
-  @Cacheable(value = CACHE_MOVEMENTS, key = "#id")
-  public MovementResponse getMovement(String id) {
+  @Cacheable(value = CACHE_MOVEMENT, key = "#id")
+  public MovementResponse getMovement(Long id) {
 
     return movementRepository
         .findById(id)
         .map(movementMapper::toResponse)
         .orElseThrow(() -> new ResourceNotFoundException("error.movement.not.found", id));
-  }
-
-  /**
-   * Retrieves movements filtered by category using lightweight projections.
-   *
-   * @param category The functional category to filter by.
-   * @return A list of movement summaries.
-   */
-  @Transactional(readOnly = true)
-  @Cacheable(value = CACHE_MOVEMENTS, key = "'cat-' + #category.name()")
-  public List<MovementSummaryResponse> getMovementsByCategory(Category category) {
-
-    return movementRepository.findProjectedByCategory(category).stream()
-        .map(movementMapper::toSummary)
-        .toList();
   }
 
   /**
@@ -126,7 +115,9 @@ public class MovementService {
    * @return The created movement with its generated ID.
    */
   @Transactional
-  @CacheEvict(value = CACHE_MOVEMENTS, allEntries = true)
+  @CacheEvict(
+      value = {CACHE_MOVEMENTS, CACHE_MOVEMENT},
+      allEntries = true)
   public MovementResponse createMovement(MovementRequest request) {
 
     if (movementRepository.existsByNameIgnoreCase(request.name())) {
@@ -135,13 +126,7 @@ public class MovementService {
 
     Movement movement = movementMapper.toEntity(request);
 
-    // 1. Generate Business ID
-    String businessId = generateBusinessId(movement);
-    movement.setId(businessId);
-
-    // 2. Link Muscles (Manual relationship management)
     if (request.muscles() != null) {
-      // Ensure the collection is initialized
       movement.setTargetedMuscles(new HashSet<>());
 
       for (MovementMuscleRequest mmRequest : request.muscles()) {
@@ -166,20 +151,22 @@ public class MovementService {
    * @throws ResourceNotFoundException if the movement ID is invalid.
    */
   @Transactional
-  @CacheEvict(value = CACHE_MOVEMENTS, allEntries = true)
-  public MovementResponse updateMovement(String id, MovementRequest request) {
+  @CacheEvict(
+      value = {CACHE_MOVEMENTS, CACHE_MOVEMENT},
+      allEntries = true)
+  public MovementResponse updateMovement(Long id, MovementRequest request) {
     Movement movement =
         movementRepository
             .findById(id)
             .orElseThrow(() -> new ResourceNotFoundException("error.movement.not.found", id));
 
-    if (movementRepository.existsByNameIgnoreCase(request.name())) {
+    if (!movement.getName().equalsIgnoreCase(request.name())
+        && movementRepository.existsByNameIgnoreCase(request.name())) {
       throw new DataConflictException("error.movement.duplicate");
     }
 
     movementMapper.updateEntity(request, movement);
 
-    // Re-process muscle links (Full Replacement)
     if (request.muscles() != null) {
       movement.getTargetedMuscles().clear();
       for (MovementMuscleRequest mmRequest : request.muscles()) {
@@ -190,6 +177,30 @@ public class MovementService {
     Movement saved = movementRepository.save(movement);
     log.info("Updated movement: {} ({})", saved.getName(), saved.getId());
     return movementMapper.toResponse(saved);
+  }
+
+  /**
+   * Retrieves the structured reference data for Movement forms. Maintains the declaration order of
+   * the Enums.
+   */
+  public MovementReferenceData getReferenceData() {
+
+    Map<String, List<String>> categoryGroups = new LinkedHashMap<>();
+    for (Category c : Category.values()) {
+      categoryGroups.computeIfAbsent(c.getModality().name(), k -> new ArrayList<>()).add(c.name());
+    }
+
+    Map<String, List<String>> equipmentGroups = new LinkedHashMap<>();
+    for (Equipment e : Equipment.values()) {
+      equipmentGroups.computeIfAbsent(e.getCategory().name(), k -> new ArrayList<>()).add(e.name());
+    }
+
+    Map<String, List<String>> techniqueGroups = new LinkedHashMap<>();
+    for (Technique t : Technique.values()) {
+      techniqueGroups.computeIfAbsent(t.getCategory().name(), k -> new ArrayList<>()).add(t.name());
+    }
+
+    return new MovementReferenceData(categoryGroups, equipmentGroups, techniqueGroups);
   }
 
   // -------------------------------------------------------------------------
@@ -204,29 +215,16 @@ public class MovementService {
    * @throws ResourceNotFoundException if the referenced muscle name does not exist.
    */
   private void linkMuscleToMovement(Movement movement, MovementMuscleRequest req) {
-    MuscleResponse muscleResponse = muscleService.getMuscle(req.medicalName());
-    Muscle muscle = muscleRepository.getReferenceById(muscleResponse.id());
+    Muscle muscle =
+        muscleRepository
+            .findById(req.muscleId())
+            .orElseThrow(
+                () -> new ResourceNotFoundException("error.muscle.not.found", req.muscleId()));
 
     MovementMuscle joinEntity = movementMapper.toMuscleEntity(req);
     joinEntity.setMovement(movement);
     joinEntity.setMuscle(muscle);
 
     movement.getTargetedMuscles().add(joinEntity);
-  }
-
-  /**
-   * Generates a unique semantic business ID for a movement.
-   *
-   * @param movement The movement for which to generate the ID.
-   * @return A string in the format {CATEGORY_PREFIX}-{SHORT_UUID} (e.g., "WL-SQ-A1B2").
-   */
-  private String generateBusinessId(Movement movement) {
-    String prefix = movement.getSemanticIdPrefix();
-    if (prefix == null) {
-      prefix = "GEN"; // Fallback
-    }
-    // Generate a short, somewhat unique suffix (4 chars)
-    String uniqueSuffix = UUID.randomUUID().toString().substring(0, 4).toUpperCase();
-    return String.format("%s-%s", prefix, uniqueSuffix);
   }
 }

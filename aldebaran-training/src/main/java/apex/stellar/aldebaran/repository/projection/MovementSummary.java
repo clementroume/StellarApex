@@ -10,7 +10,7 @@ public interface MovementSummary {
    *
    * @return the movement ID
    */
-  String getId();
+  Long getId();
 
   /**
    * Gets the full name of the movement.

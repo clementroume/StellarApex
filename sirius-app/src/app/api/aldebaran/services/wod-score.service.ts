@@ -3,8 +3,8 @@ import {HttpClient, HttpParams} from '@angular/common/http';
 import {Observable} from 'rxjs';
 import {environment} from '../../../../environments/environment';
 import {
-  ScalingLevel,
   ScoreComparisonResponse,
+  WodScoreReferenceData,
   WodScoreRequest,
   WodScoreResponse
 } from '../models/score.model';
@@ -45,7 +45,7 @@ export class WodScoreService {
 
   getLeaderboard(
     wodId: number,
-    scaling: ScalingLevel = 'RX',
+    scaling: string = 'RX',
     page: number = 0,
     size: number = 20
   ): Observable<Slice<WodScoreResponse>> {
@@ -55,6 +55,10 @@ export class WodScoreService {
     .set('size', size);
 
     return this.http.get<Slice<WodScoreResponse>>(this.buildUrl(`/scores/leaderboard/${wodId}`), {params});
+  }
+
+  getReferenceData(): Observable<WodScoreReferenceData> {
+    return this.http.get<WodScoreReferenceData>(this.buildUrl('/wod-scores/reference-data'));
   }
 
   private buildUrl(path: string): string {

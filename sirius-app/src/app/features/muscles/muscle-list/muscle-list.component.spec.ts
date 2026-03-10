@@ -6,39 +6,51 @@ import {of} from 'rxjs';
 import {signal} from '@angular/core';
 import {provideRouter} from '@angular/router';
 import {TranslateModule} from '@ngx-translate/core';
+import {DialogService} from '../../../core/services/dialog.service';
+import {APP_ICONS} from '../../../app.config';
+import {provideIcons} from '@ng-icons/core';
 
 describe('MuscleListComponent', () => {
   let component: MuscleListComponent;
   let fixture: ComponentFixture<MuscleListComponent>;
   let mockMuscleService: any;
   let mockAuthService: any;
+  let mockDialogService: any;
+
+  const mockMuscle = {
+    id: 1,
+    medicalName: 'Pectoralis',
+    commonNameFr: 'Pectoraux',
+    commonNameEn: 'Chest',
+    descriptionFr: 'Desc FR',
+    descriptionEn: 'Desc EN',
+    muscleGroup: 'CHEST'
+  };
 
   beforeEach(async () => {
     mockMuscleService = {
-      getMuscles: jasmine.createSpy('getMuscles').and.returnValue(of([
-        {
-          id: 1,
-          medicalName: 'Pectoralis',
-          commonNameFr: 'Pectoraux',
-          commonNameEn: 'Chest',
-          descriptionFr: 'Desc FR',
-          descriptionEn: 'Desc EN',
-          muscleGroup: 'CHEST'
-        }
-      ]))
+      getMuscles: jasmine.createSpy('getMuscles').and.returnValue(of([mockMuscle])),
+      getMuscle: jasmine.createSpy('getMuscle').and.returnValue(of(mockMuscle)),
+      getReferenceData: jasmine.createSpy('getReferenceData').and.returnValue(of({
+        muscleGroups: ['CHEST', 'BACK', 'LEGS'],
+        muscleRoles: ['AGONIST', 'SYNERGIST']
+      }))
     };
 
     mockAuthService = {
-      currentUser: signal({platformRole: 'USER'}) // User de base par défaut
+      currentUser: signal({platformRole: 'USER'})
     };
 
+    mockDialogService = jasmine.createSpyObj('DialogService', ['openMuscle']);
+
     await TestBed.configureTestingModule({
-      imports: [MuscleListComponent,
-        TranslateModule.forRoot()],
+      imports: [MuscleListComponent, TranslateModule.forRoot()],
       providers: [
         provideRouter([]),
+        provideIcons(APP_ICONS),
         {provide: MuscleService, useValue: mockMuscleService},
-        {provide: AuthService, useValue: mockAuthService}
+        {provide: AuthService, useValue: mockAuthService},
+        {provide: DialogService, useValue: mockDialogService}
       ]
     }).compileComponents();
 
@@ -47,36 +59,42 @@ describe('MuscleListComponent', () => {
     fixture.detectChanges();
   });
 
-  it('devrait créer le composant et charger les muscles', () => {
+  it('should create the component and load muscles', () => {
     expect(component).toBeTruthy();
     expect(mockMuscleService.getMuscles).toHaveBeenCalled();
-    expect(component.sortedMuscles().length).toBe(1);
+    expect(mockMuscleService.getReferenceData).toHaveBeenCalled();
+    expect(component.groupedMuscles().get('CHEST')?.length).toBe(1);
   });
 
-  it('devrait cacher les boutons d\'édition pour un utilisateur standard', () => {
+  it('should hide edit buttons for a standard user', () => {
     mockAuthService.currentUser.set({platformRole: 'USER'});
     fixture.detectChanges();
     expect(component.isAdmin()).toBeFalse();
   });
 
-  it('devrait afficher les boutons d\'édition pour un admin', () => {
+  it('should display edit buttons for an admin user', () => {
     mockAuthService.currentUser.set({platformRole: 'ADMIN'});
     fixture.detectChanges();
     expect(component.isAdmin()).toBeTrue();
   });
 
-  it('devrait trier les muscles correctement', () => {
-    component.sortBy('medicalName');
-    expect(component.sortColumn()).toBe('medicalName');
-    expect(component.sortDirection()).toBe('asc');
+  it('should cycle sorting correctly within a specific group (asc -> desc -> reset)', () => {
+    // 1st Click: Ascending
+    component.sortBy('CHEST', 'medicalName');
+    expect(component.sortStates()['CHEST'].column).toBe('medicalName');
+    expect(component.sortStates()['CHEST'].direction).toBe('asc');
 
-    // Clic inverse
-    component.sortBy('medicalName');
-    expect(component.sortDirection()).toBe('desc');
+    // 2nd Click: Descending
+    component.sortBy('CHEST', 'medicalName');
+    expect(component.sortStates()['CHEST'].direction).toBe('desc');
+
+    // 3rd Click: Reset (no sorting)
+    component.sortBy('CHEST', 'medicalName');
+    expect(component.sortStates()['CHEST']).toBeUndefined();
   });
 
-  it('devrait retourner le nom localisé correct', () => {
-    const muscle = component.sortedMuscles()[0];
+  it('should return the correct localized name and description', () => {
+    const muscle = component.groupedMuscles().get('CHEST')![0];
 
     component.activeLang.set('fr');
     expect(component.getLocalizedName(muscle)).toBe('Pectoraux');
@@ -87,9 +105,17 @@ describe('MuscleListComponent', () => {
     expect(component.getLocalizedDescription(muscle)).toBe('Desc EN');
   });
 
-  it('devrait trier correctement sur le nom dynamique', () => {
-    component.sortBy('commonName');
-    expect(component.sortColumn()).toBe('commonName');
-    expect(component.sortDirection()).toBe('asc');
+  it('should sort properly on the dynamic commonName within a specific group', () => {
+    // 1st Click: Ascending
+    component.sortBy('CHEST', 'commonName');
+    expect(component.sortStates()['CHEST'].column).toBe('commonName');
+    expect(component.sortStates()['CHEST'].direction).toBe('asc');
+  });
+
+  it('should fetch muscle details and open global modal on openDetails', () => {
+    component.openDetails(1);
+
+    expect(mockMuscleService.getMuscle).toHaveBeenCalledWith(1);
+    expect(mockDialogService.openMuscle).toHaveBeenCalledWith(mockMuscle);
   });
 });

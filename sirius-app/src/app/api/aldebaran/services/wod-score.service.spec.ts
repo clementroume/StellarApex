@@ -4,8 +4,8 @@ import {provideHttpClient} from '@angular/common/http';
 import {WodScoreService} from './wod-score.service';
 import {environment} from '../../../../environments/environment';
 import {
-  ScalingLevel,
   ScoreComparisonResponse,
+  WodScoreReferenceData,
   WodScoreRequest,
   WodScoreResponse
 } from '../models/score.model';
@@ -36,6 +36,10 @@ describe('WodScoreService', () => {
     number: 0,
     numberOfElements: 1,
     empty: false,
+  };
+
+  const mockReferenceData: WodScoreReferenceData = {
+    scalingLevels: ['RX', 'SCALED', 'ELITE', 'CUSTOM']
   };
 
   beforeEach(() => {
@@ -117,10 +121,20 @@ describe('WodScoreService', () => {
 
   it('getLeaderboard should GET from /scores/leaderboard/{id}', () => {
     const wodId = 1;
-    const scaling: ScalingLevel = 'RX';
+    const scaling: string = 'RX';
     service.getLeaderboard(wodId, scaling).subscribe();
     const req = httpMock.expectOne(`${base}/scores/leaderboard/${wodId}?scaling=${scaling}&page=0&size=20`);
     expect(req.request.method).toBe('GET');
     req.flush(mockSlice);
+  });
+
+  it('getReferenceData should GET from /wod-scores/reference-data', () => {
+    service.getReferenceData().subscribe(response => {
+      expect(response).toEqual(mockReferenceData);
+    });
+
+    const req = httpMock.expectOne(`${base}/wod-scores/reference-data`);
+    expect(req.request.method).toBe('GET');
+    req.flush(mockReferenceData);
   });
 });

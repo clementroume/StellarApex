@@ -4,16 +4,17 @@ import {provideRouter} from '@angular/router';
 import {TranslateModule} from '@ngx-translate/core';
 import {signal} from '@angular/core';
 
-// Ajuste ces chemins selon ton arborescence
 import {AuthService} from '../../../api/antares/services/auth.service';
 import {ThemeService} from '../../services/theme.service';
+import {provideIcons} from '@ng-icons/core';
+import {APP_ICONS} from '../../../app.config';
 
 describe('MainLayoutComponent', () => {
   let component: MainLayoutComponent;
   let fixture: ComponentFixture<MainLayoutComponent>;
 
   beforeEach(async () => {
-    // Mocks basiques pour satisfaire les dépendances de la Navbar
+    // Basic mocks to satisfy Navbar dependencies
     const authServiceSpy = jasmine.createSpyObj('AuthService', ['logout'], {
       currentUser: signal(null)
     });
@@ -24,10 +25,11 @@ describe('MainLayoutComponent', () => {
     await TestBed.configureTestingModule({
       imports: [
         MainLayoutComponent,
-        TranslateModule.forRoot() // Requis par la Navbar
+        TranslateModule.forRoot() // Required by Navbar
       ],
       providers: [
-        provideRouter([]), // Requis par les routerLink de la Navbar et le router-outlet
+        provideRouter([]), // Required by Navbar routerLink and router-outlet
+        provideIcons(APP_ICONS),
         {provide: AuthService, useValue: authServiceSpy},
         {provide: ThemeService, useValue: themeServiceSpy}
       ]
@@ -38,16 +40,16 @@ describe('MainLayoutComponent', () => {
     fixture.detectChanges();
   });
 
-  it('devrait créer le layout', () => {
+  it('should create the layout', () => {
     expect(component).toBeTruthy();
   });
 
-  it('devrait intégrer la balise <app-navbar>', () => {
+  it('should include the <app-navbar> tag', () => {
     const navbar = fixture.nativeElement.querySelector('app-navbar');
     expect(navbar).toBeTruthy();
   });
 
-  it('devrait intégrer la balise <router-outlet> pour afficher les pages enfants', () => {
+  it('should include the <router-outlet> tag to display child pages', () => {
     const routerOutlet = fixture.nativeElement.querySelector('router-outlet');
     expect(routerOutlet).toBeTruthy();
   });

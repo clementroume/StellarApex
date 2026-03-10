@@ -1,9 +1,11 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { AccountComponent } from './account.component';
-import { provideRouter } from '@angular/router';
-import { TranslateModule } from '@ngx-translate/core';
-import { provideHttpClient } from '@angular/common/http';
-import { provideHttpClientTesting } from '@angular/common/http/testing';
+import {ComponentFixture, TestBed} from '@angular/core/testing';
+import {AccountComponent} from './account.component';
+import {provideRouter} from '@angular/router';
+import {TranslateModule} from '@ngx-translate/core';
+import {provideHttpClient} from '@angular/common/http';
+import {provideHttpClientTesting} from '@angular/common/http/testing';
+import {provideIcons} from '@ng-icons/core';
+import {APP_ICONS} from '../../app.config';
 
 describe('AccountComponent', () => {
   let component: AccountComponent;
@@ -16,6 +18,7 @@ describe('AccountComponent', () => {
         provideRouter([]),
         provideHttpClient(),
         provideHttpClientTesting(),
+        provideIcons(APP_ICONS),
       ]
     })
       .compileComponents();

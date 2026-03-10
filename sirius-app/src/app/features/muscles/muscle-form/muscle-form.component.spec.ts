@@ -9,27 +9,40 @@ import {TranslateModule} from '@ngx-translate/core';
 describe('MuscleFormComponent', () => {
   let component: MuscleFormComponent;
   let fixture: ComponentFixture<MuscleFormComponent>;
-  let mockMuscleService: any;
-  let mockNotificationService: any;
+
+  // 1. Typage strict des Spys, comme dans Movement
+  let muscleServiceSpy: jasmine.SpyObj<MuscleService>;
+  let notificationServiceSpy: jasmine.SpyObj<NotificationService>;
+
   let mockActivatedRoute: any;
   let router: Router;
 
   beforeEach(async () => {
-    mockMuscleService = {
-      getMuscle: jasmine.createSpy('getMuscle').and.returnValue(of({
-        id: 1, medicalName: 'Test', muscleGroup: 'CHEST'
-      })),
-      createMuscle: jasmine.createSpy('createMuscle').and.returnValue(of({})),
-      updateMuscle: jasmine.createSpy('updateMuscle').and.returnValue(of({}))
-    };
+    // 2. Création du SpyObj pour MuscleService
+    muscleServiceSpy = jasmine.createSpyObj('MuscleService', [
+      'getMuscle',
+      'createMuscle',
+      'updateMuscle',
+      'getReferenceData'
+    ]);
 
-    mockNotificationService = {
-      showSuccess: jasmine.createSpy('showSuccess'),
-      showError: jasmine.createSpy('showError')
-    };
+    // 3. Définition des retours des Spys
+    muscleServiceSpy.getMuscle.and.returnValue(of({
+      id: 1, medicalName: 'Test', muscleGroup: 'CHEST'
+    } as any));
+
+    muscleServiceSpy.createMuscle.and.returnValue(of({} as any));
+    muscleServiceSpy.updateMuscle.and.returnValue(of({} as any));
+
+    muscleServiceSpy.getReferenceData.and.returnValue(of({
+      muscleGroups: ['CHEST', 'BACK', 'LEGS', 'ARMS', 'SHOULDERS', 'CORE']
+    } as any));
+
+    // 4. Création du SpyObj pour NotificationService
+    notificationServiceSpy = jasmine.createSpyObj('NotificationService', ['showSuccess', 'showError']);
 
     mockActivatedRoute = {
-      snapshot: {paramMap: {get: () => null}} // Par défaut : mode Création
+      snapshot: {paramMap: {get: () => null}} // Default: Create mode
     };
 
     await TestBed.configureTestingModule({
@@ -38,44 +51,41 @@ describe('MuscleFormComponent', () => {
         TranslateModule.forRoot()
       ],
       providers: [
-        // Utilisation du routeur de test fourni par Angular
         provideRouter([]),
-        {provide: MuscleService, useValue: mockMuscleService},
-        {provide: NotificationService, useValue: mockNotificationService},
+        {provide: MuscleService, useValue: muscleServiceSpy},
+        {provide: NotificationService, useValue: notificationServiceSpy},
         {provide: ActivatedRoute, useValue: mockActivatedRoute}
       ]
     }).compileComponents();
 
     fixture = TestBed.createComponent(MuscleFormComponent);
     component = fixture.componentInstance;
-    // On récupère la vraie instance du routeur de test
     router = TestBed.inject(Router);
   });
 
-  it('devrait initialiser en mode Création si pas d\'ID dans la route', () => {
+  it('should initialize in Create mode if no ID is present in the route', () => {
     fixture.detectChanges();
     expect(component.isEditMode()).toBeFalse();
     expect(component.muscleForm.get('medicalName')?.value).toBe('');
   });
 
-  it('devrait initialiser en mode Édition et charger les données si un ID est présent', () => {
-    mockActivatedRoute.snapshot.paramMap.get = () => 'TestMuscle';
+  it('should initialize in Edit mode and load data if an ID is present', () => {
+    mockActivatedRoute.snapshot.paramMap.get = () => '1';
     fixture.detectChanges();
 
     expect(component.isEditMode()).toBeTrue();
-    expect(mockMuscleService.getMuscle).toHaveBeenCalledWith('TestMuscle');
+    // Vérifie bien qu'on appelle l'espion renommé
+    expect(muscleServiceSpy.getMuscle).toHaveBeenCalledWith(1 as any);
     expect(component.muscleForm.get('medicalName')?.value).toBe('Test');
-    expect(component.muscleForm.controls.medicalName.disabled).toBeTrue();
   });
 
-  it('devrait empêcher la soumission si le formulaire est invalide', () => {
+  it('should prevent submission if the form is invalid', () => {
     fixture.detectChanges();
     component.onSubmit();
-    expect(mockMuscleService.createMuscle).not.toHaveBeenCalled();
+    expect(muscleServiceSpy.createMuscle).not.toHaveBeenCalled();
   });
 
-  it('devrait appeler createMuscle à la soumission valide en mode Création', () => {
-    // On pose un espion sur le vrai routeur
+  it('should call createMuscle upon valid submission in Create mode', () => {
     const navigateSpy = spyOn(router, 'navigate');
     fixture.detectChanges();
 
@@ -85,8 +95,8 @@ describe('MuscleFormComponent', () => {
     });
 
     component.onSubmit();
-    expect(mockMuscleService.createMuscle).toHaveBeenCalled();
-    expect(mockNotificationService.showSuccess).toHaveBeenCalled();
+    expect(muscleServiceSpy.createMuscle).toHaveBeenCalled();
+    expect(notificationServiceSpy.showSuccess).toHaveBeenCalled();
     expect(navigateSpy).toHaveBeenCalledWith(['/muscles']);
   });
 });

@@ -8,6 +8,8 @@ import {AuthService} from '../../../api/antares/services/auth.service';
 import {UserService} from '../../../api/antares/services/user.service';
 import {signal} from '@angular/core';
 import {UserResponse} from '../../../api/antares/models/user.model';
+import {provideIcons} from '@ng-icons/core';
+import {APP_ICONS} from '../../../app.config';
 
 describe('ProfileComponent', () => {
   let component: ProfileComponent;
@@ -31,6 +33,7 @@ describe('ProfileComponent', () => {
         provideHttpClient(),
         provideHttpClientTesting(),
         provideRouter([]),
+        provideIcons(APP_ICONS),
         {provide: AuthService, useValue: authServiceMock},
         {provide: UserService, useValue: userServiceSpy}
       ]

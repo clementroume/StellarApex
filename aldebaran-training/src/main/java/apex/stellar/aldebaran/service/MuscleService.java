@@ -3,14 +3,17 @@ package apex.stellar.aldebaran.service;
 import static apex.stellar.aldebaran.config.RedisCacheConfig.CACHE_MUSCLE;
 import static apex.stellar.aldebaran.config.RedisCacheConfig.CACHE_MUSCLES;
 
+import apex.stellar.aldebaran.dto.MuscleReferenceData;
 import apex.stellar.aldebaran.dto.MuscleRequest;
 import apex.stellar.aldebaran.dto.MuscleResponse;
 import apex.stellar.aldebaran.exception.DataConflictException;
 import apex.stellar.aldebaran.exception.ResourceNotFoundException;
 import apex.stellar.aldebaran.mapper.MuscleMapper;
+import apex.stellar.aldebaran.model.entities.MovementMuscle.MuscleRole;
 import apex.stellar.aldebaran.model.entities.Muscle;
 import apex.stellar.aldebaran.model.entities.Muscle.MuscleGroup;
 import apex.stellar.aldebaran.repository.MuscleRepository;
+import java.util.Arrays;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -74,18 +77,18 @@ public class MuscleService {
    *
    * <p>The result is cached individually using the name as the key.
    *
-   * @param medicalName The unique Latin/Medical name of the muscle.
+   * @param id The unique ID of the muscle.
    * @return The {@link MuscleResponse} details.
    * @throws ResourceNotFoundException if the muscle does not exist.
    */
   @Transactional(readOnly = true)
-  @Cacheable(value = CACHE_MUSCLE, key = "#medicalName")
-  public MuscleResponse getMuscle(String medicalName) {
+  @Cacheable(value = CACHE_MUSCLE, key = "#id")
+  public MuscleResponse getMuscle(Long id) {
 
     return muscleRepository
-        .findByMedicalName(medicalName)
+        .findById(id)
         .map(muscleMapper::toResponse)
-        .orElseThrow(() -> new ResourceNotFoundException("error.muscle.not.found", medicalName));
+        .orElseThrow(() -> new ResourceNotFoundException("error.muscle.not.found", id));
   }
 
   /**
@@ -148,5 +151,13 @@ public class MuscleService {
     log.info("Updated muscle: {} (ID: {})", savedMuscle.getMedicalName(), savedMuscle.getId());
 
     return muscleMapper.toResponse(savedMuscle);
+  }
+
+  /** Retrieves reference data for Muscle forms. */
+  public MuscleReferenceData getReferenceData() {
+    List<String> groups = Arrays.stream(MuscleGroup.values()).map(Enum::name).toList();
+    List<String> roles = Arrays.stream(MuscleRole.values()).map(Enum::name).toList();
+
+    return new MuscleReferenceData(groups, roles);
   }
 }

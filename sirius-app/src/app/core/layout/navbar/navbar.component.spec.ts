@@ -8,6 +8,8 @@ import {of} from 'rxjs';
 import {signal, WritableSignal} from '@angular/core';
 import {UserResponse} from '../../../api/antares/models/user.model';
 import {By} from '@angular/platform-browser';
+import {provideIcons} from '@ng-icons/core';
+import {APP_ICONS} from '../../../app.config';
 
 describe('NavbarComponent', () => {
   let component: NavbarComponent;
@@ -36,6 +38,7 @@ describe('NavbarComponent', () => {
       imports: [NavbarComponent, TranslateModule.forRoot()],
       providers: [
         provideRouter([]),
+        provideIcons(APP_ICONS),
         {provide: AuthService, useValue: authServiceSpy},
         {provide: ThemeService, useValue: themeServiceSpy},
       ]
@@ -65,15 +68,14 @@ describe('NavbarComponent', () => {
     expect(themeServiceSpy.toggleTheme).toHaveBeenCalledTimes(1);
   });
 
-
-  it('should display the dropdowns and correct links when user is logged in', () => {
+  it('should display the mobile dropdown and correct links when user is logged in', () => {
     // Arrange: Simulate a logged-in user
     mockCurrentUser.set(mockUser);
     fixture.detectChanges();
 
-    // On vérifie qu'on a bien les DEUX dropdowns (Catalogue + Utilisateur)
+    // Verify that the mobile dropdown is visible (il n'y en a plus qu'un seul dans ce HTML)
     const dropdowns = fixture.debugElement.queryAll(By.css('.dropdown'));
-    expect(dropdowns.length).withContext('Both dropdowns should be visible').toBe(2);
+    expect(dropdowns.length).withContext('Only the mobile dropdown should be visible').toBe(1);
 
     // Act: Find the link element
     const myAccountLink = fixture.debugElement.query(By.css('a[routerLink="/my-account"]'));

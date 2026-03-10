@@ -39,11 +39,4 @@ export class NavbarComponent {
   logout(): void {
     this.authService.logout().subscribe();
   }
-
-  closeDropdown(): void {
-    const activeElement = document.activeElement as HTMLElement;
-    if (activeElement) {
-      activeElement.blur();
-    }
-  }
 }

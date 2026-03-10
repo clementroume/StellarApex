@@ -108,7 +108,7 @@ class GlobalExceptionHandlerTest {
         .perform(get("/error/movement/not-found").locale(Locale.ENGLISH))
         .andExpect(status().isNotFound())
         .andExpect(jsonPath("$.title").value("Resource Not Found"))
-        .andExpect(jsonPath("$.detail").value("Movement not found with ID: SQ-01"));
+        .andExpect(jsonPath("$.detail").value("Movement not found with ID: 1"));
   }
 
   @Test
@@ -234,7 +234,7 @@ class GlobalExceptionHandlerTest {
         .perform(get("/error/movement/not-found").locale(Locale.FRENCH))
         .andExpect(status().isNotFound())
         .andExpect(jsonPath("$.title").value("Resource Not Found"))
-        .andExpect(jsonPath("$.detail").value("Mouvement introuvable avec l'ID : SQ-01"));
+        .andExpect(jsonPath("$.detail").value("Mouvement introuvable avec l'ID : 1"));
   }
 
   @Test
@@ -279,7 +279,7 @@ class GlobalExceptionHandlerTest {
         .andExpect(
             jsonPath("$.detail")
                 .value(
-                    "Le WOD 1 est verrouillé et ne peut pas être modifié car des scores sont enregistrés."));
+                    "Le WOD 1 est verrouillé et ne peut pas être modifié, car des scores sont enregistrés."));
   }
 
   @Test
@@ -313,7 +313,7 @@ class GlobalExceptionHandlerTest {
     // MOVEMENT
     @GetMapping("/error/movement/not-found")
     void movementNotFound() {
-      throw new ResourceNotFoundException("error.movement.not.found", "SQ-01");
+      throw new ResourceNotFoundException("error.movement.not.found", 1L);
     }
 
     @GetMapping("/error/movement/muscle-ref-missing")

@@ -1,88 +1,133 @@
-import {ChangeDetectionStrategy, Component, computed, inject, signal} from '@angular/core';
+import {ChangeDetectionStrategy, Component, computed, inject, OnInit, signal} from '@angular/core';
 import {RouterModule} from '@angular/router';
 import {toSignal} from '@angular/core/rxjs-interop';
 import {LangChangeEvent, TranslateModule, TranslateService} from '@ngx-translate/core';
 import {MuscleService} from '../../../api/aldebaran/services/muscle.service';
 import {MuscleResponse} from '../../../api/aldebaran/models/muscle.model';
 import {AuthService} from '../../../api/antares/services/auth.service';
+import {NgIcon} from '@ng-icons/core';
+import {DialogService} from '../../../core/services/dialog.service';
+
+type SortState = { column: keyof MuscleResponse | 'commonName' | '', direction: 'asc' | 'desc' };
 
 @Component({
   selector: 'app-muscle-list',
   standalone: true,
-  imports: [RouterModule, TranslateModule],
+  imports: [RouterModule, TranslateModule, NgIcon],
   templateUrl: './muscle-list.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class MuscleListComponent {
+export class MuscleListComponent implements OnInit {
   private readonly muscleService = inject(MuscleService);
   private readonly authService = inject(AuthService);
   private readonly translate = inject(TranslateService);
+  private readonly dialogService = inject(DialogService);
 
   isAdmin = computed(() => this.authService.currentUser()?.platformRole === 'ADMIN');
-  private readonly rawMuscles = toSignal(this.muscleService.getMuscles(), {initialValue: []});
+  readonly rawMuscles = toSignal(this.muscleService.getMuscles(), {initialValue: []});
 
-  // 1. Signal pour suivre la langue active de l'application
   activeLang = signal<string>(this.translate.getCurrentLang() || this.translate.getFallbackLang() || 'en');
 
-  // État du tri (modifié pour utiliser un champ abstrait 'commonName')
-  sortColumn = signal<keyof MuscleResponse | 'commonName' | ''>('');
-  sortDirection = signal<'asc' | 'desc'>('asc');
-  selectedMuscle = signal<MuscleResponse | null>(null);
+  sortStates = signal<Record<string, SortState>>({});
+  muscleGroupKeys = signal<string[]>([]);
 
   constructor() {
-    // 2. Mettre à jour le signal si l'utilisateur change de langue depuis la navbar
     this.translate.onLangChange.subscribe((event: LangChangeEvent) => {
       this.activeLang.set(event.lang);
     });
   }
 
-  // Helper : Récupère le nom en fonction de la langue
+  ngOnInit(): void {
+    this.muscleService.getReferenceData().subscribe(ref => {
+      this.muscleGroupKeys.set(ref.muscleGroups);
+    });
+  }
+
   getLocalizedName(muscle: MuscleResponse): string {
     const isFr = this.activeLang() === 'fr';
     const name = isFr ? muscle.commonNameFr : muscle.commonNameEn;
-    return name || muscle.medicalName; // Fallback sur le nom médical si la trad est vide
+    return name || muscle.medicalName;
   }
 
-  // Helper : Récupère la description en fonction de la langue
   getLocalizedDescription(muscle: MuscleResponse): string {
     return this.activeLang() === 'fr' ? (muscle.descriptionFr || '') : (muscle.descriptionEn || '');
   }
 
-  // 3. Mise à jour de la logique de tri pour gérer le nom dynamique
-  sortedMuscles = computed(() => {
+  // Grouping THEN sorting per table
+  groupedMuscles = computed(() => {
     const muscles = [...this.rawMuscles()];
-    const column = this.sortColumn();
-    const direction = this.sortDirection() === 'asc' ? 1 : -1;
+    const states = this.sortStates();
 
-    if (!column) return muscles;
+    // 1. Grouping by key
+    const grouped = new Map<string, MuscleResponse[]>();
+    this.muscleGroupKeys().forEach(g => grouped.set(g, []));
 
-    return muscles.sort((a, b) => {
-      let valA: any = '';
-      let valB: any = '';
-
-      if (column === 'commonName') {
-        valA = this.getLocalizedName(a).toLowerCase();
-        valB = this.getLocalizedName(b).toLowerCase();
-      } else {
-        valA = a[column as keyof MuscleResponse] || '';
-        valB = b[column as keyof MuscleResponse] || '';
+    muscles.forEach(m => {
+      if (!grouped.has(m.muscleGroup)) {
+        grouped.set(m.muscleGroup, []);
       }
-
-      return valA > valB ? direction : valA < valB ? -direction : 0;
+      grouped.get(m.muscleGroup)!.push(m);
     });
+
+    // 2. Independent sorting for each table
+    grouped.forEach((list, group) => {
+      const state = states[group];
+
+      if (state?.column) {
+        const direction = state.direction === 'asc' ? 1 : -1;
+
+        list.sort((a, b) => {
+          let valA: any;
+          let valB: any;
+
+          if (state.column === 'commonName') {
+            valA = this.getLocalizedName(a).toLowerCase();
+            valB = this.getLocalizedName(b).toLowerCase();
+          } else {
+            valA = a[state.column as keyof MuscleResponse] || '';
+            valB = b[state.column as keyof MuscleResponse] || '';
+          }
+
+          if (valA > valB) return direction;
+          if (valA < valB) return -direction;
+          return 0;
+        });
+      }
+    });
+
+    return grouped;
   });
 
-  sortBy(column: keyof MuscleResponse | 'commonName') {
-    if (this.sortColumn() === column) {
-      this.sortDirection.set(this.sortDirection() === 'asc' ? 'desc' : 'asc');
-    } else {
-      this.sortColumn.set(column);
-      this.sortDirection.set('asc');
-    }
+  // 3-state sorting logic (ASC -> DESC -> RESET)
+  sortBy(group: string, column: keyof MuscleResponse | 'commonName') {
+    this.sortStates.update(states => {
+      const current = states[group];
+
+      // 1st click (or new column) -> ASC
+      if (current?.column !== column) {
+        return {...states, [group]: {column, direction: 'asc'}};
+      }
+
+      // 2nd click -> DESC
+      if (current.direction === 'asc') {
+        return {...states, [group]: {column, direction: 'desc'}};
+      }
+
+      // 3rd click -> RESET (Remove sort state for this group)
+      const newStates = {...states};
+      delete newStates[group];
+      return newStates;
+    });
   }
 
-  openDetails(muscle: MuscleResponse) {
-    this.selectedMuscle.set(muscle);
-    (document.getElementById('muscle_detail_modal') as HTMLDialogElement).showModal();
+  openDetails(id: number): void {
+    this.muscleService.getMuscle(id).subscribe({
+      next: (muscle) => {
+        this.dialogService.openMuscle(muscle);
+      },
+      error: (err) => {
+        console.error('Erreur lors du chargement des détails du muscle', err);
+      }
+    });
   }
 }

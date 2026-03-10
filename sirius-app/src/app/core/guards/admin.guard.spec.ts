@@ -27,19 +27,19 @@ describe('adminGuard', () => {
     });
   });
 
-  it('devrait autoriser l\'accès si l\'utilisateur est ADMIN', () => {
+  it('should allow access if the user is an ADMIN', () => {
     mockAuthService.currentUser.set({platformRole: 'ADMIN'});
     expect(executeGuard({} as any, {} as any)).toBeTrue();
     expect(mockRouter.navigate).not.toHaveBeenCalled();
   });
 
-  it('devrait bloquer l\'accès et rediriger si l\'utilisateur est simple USER', () => {
+  it('should block access and redirect if the user is a standard USER', () => {
     mockAuthService.currentUser.set({platformRole: 'USER'});
     expect(executeGuard({} as any, {} as any)).toBeFalse();
     expect(mockRouter.navigate).toHaveBeenCalledWith(['/dashboard']);
   });
 
-  it('devrait bloquer l\'accès et rediriger si l\'utilisateur n\'est pas connecté', () => {
+  it('should block access and redirect if the user is not authenticated', () => {
     mockAuthService.currentUser.set(null);
     expect(executeGuard({} as any, {} as any)).toBeFalse();
     expect(mockRouter.navigate).toHaveBeenCalledWith(['/dashboard']);

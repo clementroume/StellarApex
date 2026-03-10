@@ -1,5 +1,6 @@
 package apex.stellar.aldebaran.controller;
 
+import apex.stellar.aldebaran.dto.MuscleReferenceData;
 import apex.stellar.aldebaran.dto.MuscleRequest;
 import apex.stellar.aldebaran.dto.MuscleResponse;
 import apex.stellar.aldebaran.model.entities.Muscle.MuscleGroup;
@@ -73,15 +74,15 @@ public class MuscleController {
   }
 
   /**
-   * Retrieves details of a specific muscle by its medical name.
+   * Retrieves details of a specific muscle by its ID
    *
    * <p>This uses the Business Key (Medical Name) as it is the primary identifier used in movement
    * prescriptions.
    *
-   * @param medicalName The Latin/Medical name of the muscle (e.g., "Pectoralis Major").
+   * @param id The ID of the muscle.
    * @return The detailed muscle response.
    */
-  @GetMapping("/{medicalName}")
+  @GetMapping("/{id}")
   @Operation(
       summary = "Get muscle details",
       description = "Retrieves a single muscle by its Medical Name (Business Key).")
@@ -97,9 +98,9 @@ public class MuscleController {
             description = "Unauthorized",
             content = @Content(schema = @Schema(hidden = true)))
       })
-  public ResponseEntity<MuscleResponse> getMuscle(@PathVariable String medicalName) {
+  public ResponseEntity<MuscleResponse> getMuscle(@PathVariable Long id) {
 
-    return ResponseEntity.ok(muscleService.getMuscle(medicalName));
+    return ResponseEntity.ok(muscleService.getMuscle(id));
   }
 
   /**
@@ -183,7 +184,16 @@ public class MuscleController {
       })
   public ResponseEntity<MuscleResponse> updateMuscle(
       @PathVariable Long id, @Valid @RequestBody MuscleRequest request) {
-    
+
     return ResponseEntity.ok(muscleService.updateMuscle(id, request));
+  }
+
+  /** Retrieves reference data (groups, roles) for UI forms. */
+  @GetMapping("/reference-data")
+  @Operation(
+      summary = "Get muscle reference data",
+      description = "Returns available muscle groups and roles.")
+  public ResponseEntity<MuscleReferenceData> getReferenceData() {
+    return ResponseEntity.ok(muscleService.getReferenceData());
   }
 }
