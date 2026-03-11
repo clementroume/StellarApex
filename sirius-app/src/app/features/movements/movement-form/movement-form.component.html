@@ -1,9 +1,9 @@
 <div class="container mx-auto max-w-5xl pb-12 mt-8">
   <div class="mb-6 flex items-center gap-4">
-    <a routerLink="/movements" class="btn btn-sm btn-ghost">
-      &larr; {{ 'GLOBAL.BACK' | translate }}
+    <a routerLink="/muscles" class="btn btn-ghost btn-circle">
+      <ng-icon name="hugeCircleArrowLeft02" size="1.75em"></ng-icon>
     </a>
-    <h1 class="text-3xl font-bold">
+    <h1 class="text-2xl font-bold">
       {{ (isEditMode() ? 'MOVEMENT.FORM.TITLE_EDIT' : 'MOVEMENT.FORM.TITLE_ADD') | translate }}
     </h1>
   </div>
@@ -42,22 +42,6 @@
               }
             </select>
           </label>
-        </div>
-
-        <div class="form-control mt-4 border border-base-300 rounded-box p-4 bg-base-200/50">
-          <label class="label cursor-pointer justify-start gap-4">
-            <input type="checkbox" formControlName="involvesBodyweight"
-                   class="checkbox checkbox-primary"/>
-            <span class="label-text font-bold">{{ 'MOVEMENT.FORM.INVOLVES_BW' | translate }}</span>
-          </label>
-          @if (movementForm.get('involvesBodyweight')?.value) {
-            <label class="form-control w-full max-w-xs mt-2">
-              <div class="label"><span
-                class="label-text">{{ 'MOVEMENT.FORM.BW_FACTOR' | translate }}</span></div>
-              <input type="number" step="0.1" formControlName="bodyweightFactor"
-                     class="input input-bordered w-full"/>
-            </label>
-          }
         </div>
       </div>
     </div>

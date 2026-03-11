@@ -6,12 +6,6 @@ import apex.stellar.aldebaran.dto.WodScoreRequest;
 import apex.stellar.aldebaran.dto.WodScoreResponse;
 import apex.stellar.aldebaran.model.entities.WodScore.ScalingLevel;
 import apex.stellar.aldebaran.service.WodScoreService;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.media.Content;
-import io.swagger.v3.oas.annotations.media.Schema;
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -52,21 +46,8 @@ public class WodScoreController {
    * @return A page of the user's scores.
    */
   @GetMapping("/me")
-  @Operation(
-      summary = "My history",
-      description = "Retrieves the score history of the current user. Can be filtered by WOD.")
-  @ApiResponses(
-      value = {
-        @ApiResponse(responseCode = "200", description = "History retrieved"),
-        @ApiResponse(
-            responseCode = "401",
-            description = "Unauthorized - User is not authenticated",
-            content = @Content(schema = @Schema(hidden = true)))
-      })
   public ResponseEntity<Slice<WodScoreResponse>> getMyScores(
-      @Parameter(description = "Filter by WOD ID") @RequestParam(required = false) Long wodId,
-      @Parameter(description = "Pagination (page, size)") @PageableDefault(size = 20)
-          Pageable pageable) {
+      @RequestParam(required = false) Long wodId, @PageableDefault(size = 20) Pageable pageable) {
 
     return ResponseEntity.ok(scoreService.getMyScores(wodId, pageable));
   }
@@ -87,23 +68,6 @@ public class WodScoreController {
    */
   @PostMapping
   @PreAuthorize("@wodScoreSecurity.canCreate(#request, principal)")
-  @Operation(summary = "Log score", description = "Logs a performance result.")
-  @ApiResponses(
-      value = {
-        @ApiResponse(responseCode = "201", description = "Score logged successfully"),
-        @ApiResponse(
-            responseCode = "403",
-            description = "Forbidden - Logging for others without permission",
-            content = @Content(schema = @Schema(hidden = true))),
-        @ApiResponse(
-            responseCode = "400",
-            description = "Validation error",
-            content = @Content(schema = @Schema(hidden = true))),
-        @ApiResponse(
-            responseCode = "401",
-            description = "Unauthorized",
-            content = @Content(schema = @Schema(hidden = true)))
-      })
   public ResponseEntity<WodScoreResponse> logScore(@Valid @RequestBody WodScoreRequest request) {
 
     return ResponseEntity.status(HttpStatus.CREATED).body(scoreService.logScore(request));
@@ -126,25 +90,6 @@ public class WodScoreController {
    */
   @PutMapping("/{id}")
   @PreAuthorize("@wodScoreSecurity.canModify(#id, principal)")
-  @Operation(
-      summary = "Update score",
-      description = "Updates an existing score (Owner, Admin, or Coach of the gym).")
-  @ApiResponses(
-      value = {
-        @ApiResponse(responseCode = "200", description = "Score updated successfully"),
-        @ApiResponse(
-            responseCode = "403",
-            description = "Forbidden - No write access to this score",
-            content = @Content(schema = @Schema(hidden = true))),
-        @ApiResponse(
-            responseCode = "404",
-            description = "Score not found",
-            content = @Content(schema = @Schema(hidden = true))),
-        @ApiResponse(
-            responseCode = "401",
-            description = "Unauthorized",
-            content = @Content(schema = @Schema(hidden = true)))
-      })
   public ResponseEntity<WodScoreResponse> updateScore(
       @PathVariable Long id, @Valid @RequestBody WodScoreRequest request) {
 
@@ -161,26 +106,9 @@ public class WodScoreController {
    */
   @DeleteMapping("/{id}")
   @PreAuthorize("@wodScoreSecurity.canModify(#id, principal)")
-  @Operation(summary = "Delete score", description = "Removes a performance log.")
-  @ApiResponses(
-      value = {
-        @ApiResponse(responseCode = "204", description = "Score deleted successfully"),
-        @ApiResponse(
-            responseCode = "403",
-            description = "Forbidden - No write access to this score",
-            content = @Content(schema = @Schema(hidden = true))),
-        @ApiResponse(
-            responseCode = "404",
-            description = "Score not found",
-            content = @Content(schema = @Schema(hidden = true))),
-        @ApiResponse(
-            responseCode = "401",
-            description = "Unauthorized",
-            content = @Content(schema = @Schema(hidden = true)))
-      })
   public ResponseEntity<Void> deleteScore(@PathVariable Long id) {
-    scoreService.deleteScore(id);
 
+    scoreService.deleteScore(id);
     return ResponseEntity.noContent().build();
   }
 
@@ -192,20 +120,8 @@ public class WodScoreController {
    */
   @GetMapping("/{id}/compare")
   @PreAuthorize("@wodScoreSecurity.canView(#id, principal)")
-  @Operation(summary = "Compare score", description = "Calculates rank and percentile.")
-  @ApiResponses(
-      value = {
-        @ApiResponse(responseCode = "200", description = "Comparison calculated"),
-        @ApiResponse(
-            responseCode = "404",
-            description = "Score not found",
-            content = @Content(schema = @Schema(hidden = true))),
-        @ApiResponse(
-            responseCode = "401",
-            description = "Unauthorized",
-            content = @Content(schema = @Schema(hidden = true)))
-      })
   public ResponseEntity<ScoreComparisonResponse> compareScore(@PathVariable Long id) {
+
     return ResponseEntity.ok(scoreService.compareScore(id));
   }
 
@@ -221,37 +137,18 @@ public class WodScoreController {
    */
   @GetMapping("/leaderboard/{id}")
   @PreAuthorize("@wodSecurity.canRead(#id, principal)")
-  @Operation(
-      summary = "Get Leaderboard",
-      description = "Retrieves top scores (PRs only) for a WOD.")
-  @ApiResponses(
-      value = {
-        @ApiResponse(responseCode = "200", description = "Leaderboard retrieved"),
-        @ApiResponse(
-            responseCode = "404",
-            description = "WOD not found",
-            content = @Content(schema = @Schema(hidden = true))),
-        @ApiResponse(
-            responseCode = "401",
-            description = "Unauthorized",
-            content = @Content(schema = @Schema(hidden = true)))
-      })
   public ResponseEntity<Slice<WodScoreResponse>> getLeaderboard(
       @PathVariable Long id,
-      @Parameter(description = "Scaling level (RX, SCALED...)") @RequestParam(defaultValue = "RX")
-          ScalingLevel scaling,
-      @Parameter(description = "Pagination (page, size)") @PageableDefault(size = 20)
-          Pageable pageable) {
+      @RequestParam(defaultValue = "RX") ScalingLevel scaling,
+      @PageableDefault(size = 20) Pageable pageable) {
 
     return ResponseEntity.ok(scoreService.getLeaderboard(id, scaling, pageable));
   }
 
   /** Retrieves reference data (scaling levels) for score submission forms. */
   @GetMapping("/reference-data")
-  @Operation(
-      summary = "Get WOD score reference data",
-      description = "Returns available scaling levels for logging a score.")
   public ResponseEntity<WodScoreReferenceData> getReferenceData() {
+
     return ResponseEntity.ok(scoreService.getReferenceData());
   }
 }

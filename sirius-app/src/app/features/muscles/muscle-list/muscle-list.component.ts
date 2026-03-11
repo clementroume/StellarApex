@@ -53,7 +53,6 @@ export class MuscleListComponent implements OnInit {
     return this.activeLang() === 'fr' ? (muscle.descriptionFr || '') : (muscle.descriptionEn || '');
   }
 
-  // Grouping THEN sorting per table
   groupedMuscles = computed(() => {
     const muscles = [...this.rawMuscles()];
     const states = this.sortStates();

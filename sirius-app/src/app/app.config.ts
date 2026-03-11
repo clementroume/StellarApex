@@ -28,9 +28,15 @@ import {
   heroSun,
   heroTrash,
   heroUser,
-  heroVideoCamera
+  heroVideoCamera,
 } from '@ng-icons/heroicons/outline';
-import {hugeBodyPartMuscle, hugeDashboardSpeed01, hugeKettlebell, hugeWorkoutStretching} from '@ng-icons/huge-icons';
+import {
+  hugeBodyPartMuscle,
+  hugeCircleArrowLeft02,
+  hugeDashboardSpeed01,
+  hugeKettlebell,
+  hugeWorkoutStretching
+} from '@ng-icons/huge-icons';
 
 export const APP_ICONS = {
   heroUser,
@@ -55,7 +61,8 @@ export const APP_ICONS = {
   heroPlay,
   heroBars3,
   heroArrowRightOnRectangle,
-  hugeDashboardSpeed01
+  hugeDashboardSpeed01,
+  hugeCircleArrowLeft02
 };
 /**
  * The main application configuration for this standalone Angular application.

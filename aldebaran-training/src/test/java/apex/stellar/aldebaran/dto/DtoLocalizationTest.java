@@ -56,9 +56,9 @@ class DtoLocalizationTest {
             null,
             null,
             null,
-            null,
-            null,
             false,
+            null,
+            null,
             null,
             null,
             null,
@@ -89,11 +89,11 @@ class DtoLocalizationTest {
             "A".repeat(101),
             WodType.FOR_TIME,
             ScoreType.TIME,
-            "A".repeat(4001),
-            "A".repeat(4001),
             null,
             null,
             false,
+            "A".repeat(4001),
+            "A".repeat(4001),
             -1,
             -1,
             null,
@@ -174,7 +174,7 @@ class DtoLocalizationTest {
   void testMuscleRequest_Size() {
     String longName = "A".repeat(101);
     MuscleRequest request =
-        new MuscleRequest(longName, longName, null, null, null, MuscleGroup.CHEST, null);
+        new MuscleRequest(longName, MuscleGroup.CHEST, longName, null, null, null, null);
 
     LocaleContextHolder.setLocale(Locale.ENGLISH);
     Set<ConstraintViolation<MuscleRequest>> violationsEn = validator.validate(request);
@@ -191,8 +191,7 @@ class DtoLocalizationTest {
   @DisplayName("MovementRequest: Required fields (EN & FR)")
   void testMovementRequest_Required() {
     MovementRequest request =
-        new MovementRequest(
-            "", null, null, null, null, null, false, null, null, null, null, null, null, null);
+        new MovementRequest("", null, null, null, null, null, null, null, null, null, null, null);
 
     LocaleContextHolder.setLocale(Locale.ENGLISH);
     Set<ConstraintViolation<MovementRequest>> violationsEn = validator.validate(request);
@@ -206,7 +205,7 @@ class DtoLocalizationTest {
   }
 
   @Test
-  @DisplayName("MovementRequest: Logic & Size constraints (EN & FR)")
+  @DisplayName("MovementRequest: Constraints (EN & FR)")
   void testMovementRequest_Constraints() {
     String longName = "A".repeat(51);
     String longUrl = "https://" + "a".repeat(510);
@@ -218,9 +217,7 @@ class DtoLocalizationTest {
             Category.SQUAT,
             Collections.singleton(Equipment.BARBELL),
             Collections.emptySet(),
-            Collections.emptyList(),
-            true,
-            1.5,
+            Collections.emptySet(),
             null,
             null,
             null,
@@ -230,31 +227,8 @@ class DtoLocalizationTest {
 
     LocaleContextHolder.setLocale(Locale.ENGLISH);
     Set<ConstraintViolation<MovementRequest>> violationsEn = validator.validate(request);
-
     assertViolation(violationsEn, "name", "Movement name cannot exceed 50 characters.");
-    assertViolation(violationsEn, "bodyweightFactor", "Bodyweight factor must be at most 1.0.");
     assertViolation(violationsEn, "videoUrl", "URL cannot exceed 512 characters.");
-
-    MovementRequest negativeFactor =
-        new MovementRequest(
-            "Name",
-            null,
-            Category.SQUAT,
-            null,
-            null,
-            null,
-            true,
-            -0.1,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null);
-    assertViolation(
-        validator.validate(negativeFactor),
-        "bodyweightFactor",
-        "Bodyweight factor must be at least 0.0.");
   }
 
   @Test

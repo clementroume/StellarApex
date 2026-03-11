@@ -47,22 +47,22 @@ class MuscleServiceTest {
     muscleRequest =
         new MuscleRequest(
             "Pectoralis Major",
+            MuscleGroup.CHEST,
             "Chest",
             "Pectoraux",
             "Desc EN",
             "Desc FR",
-            MuscleGroup.CHEST,
             null);
 
     muscleResponse =
         new MuscleResponse(
             1L,
             "Pectoralis Major",
+            MuscleGroup.CHEST,
             "Chest",
             "Pectoraux",
             "Desc EN",
             "Desc FR",
-            MuscleGroup.CHEST,
             null);
   }
 
@@ -81,22 +81,6 @@ class MuscleServiceTest {
     assertEquals(1, result.size());
     assertEquals("Pectoralis Major", result.getFirst().medicalName());
     verify(muscleRepository).findAll();
-  }
-
-  @Test
-  @DisplayName("getMusclesByGroup: should return filtered list")
-  void testGetMusclesByGroup() {
-    // Given
-    when(muscleRepository.findByMuscleGroup(MuscleGroup.CHEST)).thenReturn(List.of(muscleEntity));
-    when(muscleMapper.toResponse(muscleEntity)).thenReturn(muscleResponse);
-
-    // When
-    List<MuscleResponse> result = muscleService.getMusclesByGroup(MuscleGroup.CHEST);
-
-    // Then
-    assertNotNull(result);
-    assertEquals(1, result.size());
-    verify(muscleRepository).findByMuscleGroup(MuscleGroup.CHEST);
   }
 
   @Test
@@ -203,7 +187,7 @@ class MuscleServiceTest {
     Long id = 1L;
     Muscle existing = Muscle.builder().id(id).medicalName("Old Name").build();
     MuscleRequest renameRequest =
-        new MuscleRequest("New Name", "Common", "Commun", "Desc", "Desc", MuscleGroup.CHEST, null);
+        new MuscleRequest("New Name", MuscleGroup.CHEST, "Common", "Commun", "Desc", "Desc", null);
     when(muscleRepository.findById(id)).thenReturn(Optional.of(existing));
     when(muscleRepository.existsByMedicalNameIgnoreCase("New Name")).thenReturn(false);
 

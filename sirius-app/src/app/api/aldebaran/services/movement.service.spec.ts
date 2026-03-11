@@ -17,15 +17,12 @@ describe('MovementService', () => {
   };
 
   const mockMovementResponse: MovementResponse = {
-    bodyweightFactor: 0,
     id: 1,
     name: 'Back Squat',
     category: 'SQUAT',
     equipment: ['BARBELL'],
     techniques: [],
-    targetedMuscles: [],
-    involvesBodyweight: false,
-    loadBearing: true
+    targetedMuscles: []
   };
 
   beforeEach(() => {
@@ -65,7 +62,6 @@ describe('MovementService', () => {
       equipment: [], techniques: [],
       name: 'Front Squat',
       category: 'SQUAT',
-      involvesBodyweight: false
     };
     service.createMovement(payload).subscribe();
     const req = httpMock.expectOne(`${base}/movements`);
@@ -80,7 +76,6 @@ describe('MovementService', () => {
       equipment: [], techniques: [],
       name: 'High-Bar Back Squat',
       category: 'SQUAT',
-      involvesBodyweight: false
     };
     service.updateMovement(movementId, payload).subscribe();
     const req = httpMock.expectOne(`${base}/movements/${movementId}`);

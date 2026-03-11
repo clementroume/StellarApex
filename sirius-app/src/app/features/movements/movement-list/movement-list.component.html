@@ -47,7 +47,23 @@
             <tbody>
               @for (movement of groupedMovements().get(modality); track movement.id) {
                 <tr>
-                  <td class="font-medium">{{ movement.name }}</td>
+                  <td>
+                    <div class="flex items-center gap-3">
+                      <div class="avatar placeholder">
+                        <div class="mask mask-squircle w-10 h-10 bg-base-200 text-base-content/50">
+                          @if (movement.imageUrl) {
+                            <img [src]="movement.imageUrl" [alt]="movement.name" loading="lazy"/>
+                          } @else {
+                            <span class="text-lg font-bold">{{ movement.name.charAt(0) | uppercase }}</span>
+                          }
+                        </div>
+                      </div>
+
+                      <div class="font-medium">
+                        {{ movement.name }}
+                      </div>
+                    </div>
+                  </td>
                   <td>
                     @if (movement.nameAbbreviation) {
                       <div class="badge badge-ghost">{{ movement.nameAbbreviation }}</div>

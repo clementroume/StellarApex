@@ -17,78 +17,47 @@ import lombok.RequiredArgsConstructor;
 public enum Category {
 
   // --- Weightlifting (WL) ---
-  DEADLIFT("Deadlift", Modality.WEIGHTLIFTING, "DL"),
-  SQUAT("Squat", Modality.WEIGHTLIFTING, "SQ"),
-  PRESS_AND_JERK("Press & Jerk", Modality.WEIGHTLIFTING, "PJ"),
-  CLEAN("Clean", Modality.WEIGHTLIFTING, "CL"),
-  SNATCH("Snatch", Modality.WEIGHTLIFTING, "SN"),
-  COMPLEXES("Complexes", Modality.WEIGHTLIFTING, "CX"),
-  LUNGES("Lunges", Modality.WEIGHTLIFTING, "LG"),
-  SWING("Swing", Modality.WEIGHTLIFTING, "SW"),
-  OTHER_LIFTS("Other Lifts", Modality.WEIGHTLIFTING, "OL"),
+  DEADLIFT("Deadlift", Modality.WEIGHTLIFTING),
+  SQUAT("Squat", Modality.WEIGHTLIFTING),
+  PRESS_AND_JERK("Press & Jerk", Modality.WEIGHTLIFTING),
+  CLEAN("Clean", Modality.WEIGHTLIFTING),
+  SNATCH("Snatch", Modality.WEIGHTLIFTING),
+  COMPLEXES("Complexes", Modality.WEIGHTLIFTING),
+  LUNGES("Lunges", Modality.WEIGHTLIFTING),
+  SWING("Swing", Modality.WEIGHTLIFTING),
+  OTHER_LIFTS("Other Lifts", Modality.WEIGHTLIFTING),
 
   // --- Gymnastics (GY) ---
-  PULLING("Pulling (Gym)", Modality.GYMNASTICS, "PU"),
-  PUSHING("Pushing (Gym)", Modality.GYMNASTICS, "PS"),
-  INVERTED("Inverted", Modality.GYMNASTICS, "IV"),
-  CORE("Core", Modality.GYMNASTICS, "CO"),
-  LOCOMOTION_AND_BODY_CONTROL("Locomotion & Body Control", Modality.GYMNASTICS, "LB"),
+  PULLING("Pulling (Gym)", Modality.GYMNASTICS),
+  PUSHING("Pushing (Gym)", Modality.GYMNASTICS),
+  INVERTED("Inverted", Modality.GYMNASTICS),
+  CORE("Core", Modality.GYMNASTICS),
+  LOCOMOTION_AND_BODY_CONTROL("Locomotion & Body Control", Modality.GYMNASTICS),
 
   // --- Monostructural (Metabolic Conditioning) ---
-  CARDIO("Cardio (Run/Swim)", Modality.MONOSTRUCTURAL, "CA"),
-  CARDIO_MACHINES("Cardio Machines", Modality.MONOSTRUCTURAL, "CM"),
-  BURPEES("Burpees", Modality.MONOSTRUCTURAL, "BP"),
-  JUMPING("Jumping", Modality.MONOSTRUCTURAL, "JP"),
+  CARDIO("Cardio (Run/Swim)", Modality.MONOSTRUCTURAL),
+  CARDIO_MACHINES("Cardio Machines", Modality.MONOSTRUCTURAL),
+  BURPEES("Burpees", Modality.MONOSTRUCTURAL),
+  JUMPING("Jumping", Modality.MONOSTRUCTURAL),
 
   // --- Strongman (Odd Objects) ---
-  THROWS_AND_SLAMS("Throws & Slams", Modality.STRONGMAN, "TS"),
-  CARRY("Carry", Modality.STRONGMAN, "CY"),
-  STRONGMAN_LIFTS("Strongman Lifts", Modality.STRONGMAN, "SL"),
-  SLED("Sled", Modality.STRONGMAN, "SD");
+  THROWS_AND_SLAMS("Throws & Slams", Modality.STRONGMAN),
+  CARRY("Carry", Modality.STRONGMAN),
+  STRONGMAN_LIFTS("Strongman Lifts", Modality.STRONGMAN),
+  SLED("Sled", Modality.STRONGMAN);
 
-  /** A human-readable name suitable for UI display. */
   private final String displayName;
-
-  /** The overarching training modality this family belongs to. */
   private final Modality modality;
 
-  /** A short code used for generating semantic IDs (e.g., "SQ" in "WL-SQ-001"). */
-  private final String code;
-
-  /**
-   * Builds the semantic prefix used for movement business IDs. Example: "WL-SQ" for Weightlifting
-   * Squats.
-   */
-  public String semanticIdPrefix() {
-    return modality.getCode() + "-" + code;
-  }
-
-  // ==================================================================================
-  // INNER ENUM: MODALITY
-  // ==================================================================================
-
-  /** Represents the high-level training modality of a movement family. */
+  /** Modality Inner Enum. */
   @Getter
   @RequiredArgsConstructor
   public enum Modality {
-    /** Moving external loads (barbells, dumbbells) to generate force. */
-    WEIGHTLIFTING("Weightlifting", "WL"),
-
-    /** Moving body weight through space or on apparatus. */
-    GYMNASTICS("Gymnastics", "GY"),
-
-    /** Cyclical movements designed to tax energy systems (Cardio). */
-    MONOSTRUCTURAL("Monostructural", "MO"),
-
-    /** Functional movements often involving odd objects. */
-    STRONGMAN("Strongman", "SM");
+    WEIGHTLIFTING("Weightlifting"),
+    GYMNASTICS("Gymnastics"),
+    MONOSTRUCTURAL("Monostructural"),
+    STRONGMAN("Strongman");
 
     private final String displayName;
-    private final String code;
-
-    /** Checks if this modality typically involves tracking tonnage (Load * Reps). */
-    public boolean isLoadBearing() {
-      return this == WEIGHTLIFTING || this == STRONGMAN;
-    }
   }
 }

@@ -1,5 +1,8 @@
 package apex.stellar.aldebaran.exception;
 
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolationException;
@@ -41,6 +44,10 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
    * Handles {@link ResourceNotFoundException} when a requested resource cannot be found. Returns a
    * 404 Not Found status.
    */
+  @ApiResponse(
+      responseCode = "404",
+      description = "Resource or Entity Not Found",
+      content = @Content(schema = @Schema(implementation = ProblemDetail.class)))
   @ExceptionHandler(ResourceNotFoundException.class)
   public ResponseEntity<@NonNull ProblemDetail> handleNotFound(
       ResourceNotFoundException ex, HttpServletRequest request, Locale locale) {
@@ -51,9 +58,30 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
   }
 
   /**
+   * Handles {@link EntityNotFoundException} (JPA standard 404). Acts as a fallback for standard JPA
+   * errors.
+   */
+  @ApiResponse(
+      responseCode = "404",
+      description = "Entity Not Found (JPA Fallback)",
+      content = @Content(schema = @Schema(implementation = ProblemDetail.class)))
+  @ExceptionHandler(EntityNotFoundException.class)
+  public ResponseEntity<@NonNull ProblemDetail> handleEntityNotFound(
+      EntityNotFoundException ex, HttpServletRequest request) {
+
+    log.debug("Entity not found: {}", ex.getMessage());
+    return createProblemResponse(
+        HttpStatus.NOT_FOUND, "Entity Not Found", ex.getMessage(), request);
+  }
+
+  /**
    * Handles {@link DataConflictException} when a request conflicts with the current state of the
    * server. Returns a 409-Conflict status.
    */
+  @ApiResponse(
+      responseCode = "409",
+      description = "Data Conflict (e.g., unique constraint violation)",
+      content = @Content(schema = @Schema(implementation = ProblemDetail.class)))
   @ExceptionHandler(DataConflictException.class)
   public ResponseEntity<@NonNull ProblemDetail> handleConflict(
       DataConflictException ex, HttpServletRequest request, Locale locale) {
@@ -67,6 +95,10 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
    * Handles {@link WodLockedException} when modification is attempted on a locked WOD. Returns 409
    * Conflict.
    */
+  @ApiResponse(
+      responseCode = "409",
+      description = "Resource Locked (e.g., trying to modify a WOD with existing scores)",
+      content = @Content(schema = @Schema(implementation = ProblemDetail.class)))
   @ExceptionHandler(WodLockedException.class)
   public ResponseEntity<@NonNull ProblemDetail> handleWodLocked(
       WodLockedException ex, HttpServletRequest request, Locale locale) {
@@ -80,6 +112,10 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
    * Handles {@link ConstraintViolationException} triggered by JPA/Hibernate Validator
    * (e.g., @ValidScore). Returns 400 Bad Request with a structured array of validation errors.
    */
+  @ApiResponse(
+      responseCode = "400",
+      description = "Validation Error (Constraint Violation)",
+      content = @Content(schema = @Schema(implementation = ProblemDetail.class)))
   @ExceptionHandler(ConstraintViolationException.class)
   public ResponseEntity<@NonNull ProblemDetail> handleConstraintViolation(
       ConstraintViolationException ex, HttpServletRequest request, Locale locale) {
@@ -108,41 +144,13 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
   }
 
   /**
-   * Handles {@link EntityNotFoundException} (JPA standard 404). Acts as a fallback for standard JPA
-   * errors.
-   */
-  @ExceptionHandler(EntityNotFoundException.class)
-  public ResponseEntity<@NonNull ProblemDetail> handleEntityNotFound(
-      EntityNotFoundException ex, HttpServletRequest request) {
-
-    log.debug("Entity not found: {}", ex.getMessage());
-    return createProblemResponse(
-        HttpStatus.NOT_FOUND, "Entity Not Found", ex.getMessage(), request);
-  }
-
-  /**
-   * Handles {@link AccessDeniedException} when a user lacks the necessary permissions. Returns a
-   * 403 Forbidden status.
-   */
-  @ExceptionHandler(AccessDeniedException.class)
-  public ResponseEntity<@NonNull ProblemDetail> handleAccessDenied(
-      AccessDeniedException ex, HttpServletRequest request, Locale locale) {
-    log.warn("Access denied for {}: {}", request.getRequestURI(), ex.getMessage());
-
-    String defaultMessage = getLocalizedMessage("error.access.denied", null, locale);
-    String message = defaultMessage;
-
-    if (ex.getMessage() != null && ex.getMessage().startsWith("error.")) {
-      message = messageSource.getMessage(ex.getMessage(), null, defaultMessage, locale);
-    }
-
-    return createProblemResponse(HttpStatus.FORBIDDEN, "Access Denied", message, request);
-  }
-
-  /**
    * Overrides the standard Spring MVC validation handler to provide detailed field error logging
    * and a customized ProblemDetail response with a structured array of errors.
    */
+  @ApiResponse(
+      responseCode = "400",
+      description = "Validation Error (Method Argument Not Valid)",
+      content = @Content(schema = @Schema(implementation = ProblemDetail.class)))
   @Override
   protected ResponseEntity<@NonNull Object> handleMethodArgumentNotValid(
       @NonNull MethodArgumentNotValidException ex,
@@ -169,9 +177,36 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
   }
 
   /**
+   * Handles {@link AccessDeniedException} when a user lacks the necessary permissions. Returns a
+   * 403 Forbidden status.
+   */
+  @ApiResponse(
+      responseCode = "403",
+      description = "Access Denied",
+      content = @Content(schema = @Schema(implementation = ProblemDetail.class)))
+  @ExceptionHandler(AccessDeniedException.class)
+  public ResponseEntity<@NonNull ProblemDetail> handleAccessDenied(
+      AccessDeniedException ex, HttpServletRequest request, Locale locale) {
+    log.warn("Access denied for {}: {}", request.getRequestURI(), ex.getMessage());
+
+    String defaultMessage = getLocalizedMessage("error.access.denied", null, locale);
+    String message = defaultMessage;
+
+    if (ex.getMessage() != null && ex.getMessage().startsWith("error.")) {
+      message = messageSource.getMessage(ex.getMessage(), null, defaultMessage, locale);
+    }
+
+    return createProblemResponse(HttpStatus.FORBIDDEN, "Access Denied", message, request);
+  }
+
+  /**
    * Catch-all handler for any unexpected runtime exceptions. Logs the full stack trace and returns
    * a generic 500 Internal Server Error.
    */
+  @ApiResponse(
+      responseCode = "500",
+      description = "Unexpected Internal Server Error",
+      content = @Content(schema = @Schema(implementation = ProblemDetail.class)))
   @ExceptionHandler(Exception.class)
   public ResponseEntity<@NonNull ProblemDetail> handleGeneric(
       Exception ex, HttpServletRequest request, Locale locale) {

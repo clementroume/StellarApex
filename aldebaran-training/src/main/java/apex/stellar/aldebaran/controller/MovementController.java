@@ -5,12 +5,6 @@ import apex.stellar.aldebaran.dto.MovementRequest;
 import apex.stellar.aldebaran.dto.MovementResponse;
 import apex.stellar.aldebaran.dto.MovementSummaryResponse;
 import apex.stellar.aldebaran.service.MovementService;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.media.Content;
-import io.swagger.v3.oas.annotations.media.Schema;
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.List;
@@ -53,19 +47,8 @@ public class MovementController {
    * @return A list of matching movements.
    */
   @GetMapping
-  @Operation(
-      summary = "Search movements",
-      description = "Search exercises by name (autocomplete). Returns lightweight summaries.")
-  @ApiResponses(
-      value = {
-        @ApiResponse(responseCode = "200", description = "Search successful"),
-        @ApiResponse(
-            responseCode = "401",
-            description = "Unauthorized",
-            content = @Content(schema = @Schema(hidden = true)))
-      })
   public ResponseEntity<List<MovementSummaryResponse>> searchMovements(
-      @Parameter(description = "Search term") @RequestParam(defaultValue = "") String query) {
+      @RequestParam(defaultValue = "") String query) {
 
     return ResponseEntity.ok(movementService.searchMovements(query));
   }
@@ -80,21 +63,6 @@ public class MovementController {
    * @return The complete movement details.
    */
   @GetMapping("/{id}")
-  @Operation(
-      summary = "Get movement details",
-      description = "Retrieves full details including anatomy, descriptions, and media.")
-  @ApiResponses(
-      value = {
-        @ApiResponse(responseCode = "200", description = "Movement details retrieved"),
-        @ApiResponse(
-            responseCode = "404",
-            description = "Movement not found",
-            content = @Content(schema = @Schema(hidden = true))),
-        @ApiResponse(
-            responseCode = "401",
-            description = "Unauthorized",
-            content = @Content(schema = @Schema(hidden = true)))
-      })
   public ResponseEntity<MovementResponse> getMovement(@PathVariable Long id) {
 
     return ResponseEntity.ok(movementService.getMovement(id));
@@ -110,25 +78,6 @@ public class MovementController {
    */
   @PostMapping
   @PreAuthorize("hasRole('ADMIN')")
-  @Operation(
-      summary = "Create movement",
-      description = "Adds a new exercise to the catalog (Admin only).")
-  @ApiResponses(
-      value = {
-        @ApiResponse(responseCode = "201", description = "Movement created successfully"),
-        @ApiResponse(
-            responseCode = "400",
-            description = "Validation error",
-            content = @Content(schema = @Schema(hidden = true))),
-        @ApiResponse(
-            responseCode = "403",
-            description = "Forbidden - Admin access required",
-            content = @Content(schema = @Schema(hidden = true))),
-        @ApiResponse(
-            responseCode = "401",
-            description = "Unauthorized",
-            content = @Content(schema = @Schema(hidden = true)))
-      })
   public ResponseEntity<MovementResponse> createMovement(
       @Valid @RequestBody MovementRequest request) {
 
@@ -149,29 +98,6 @@ public class MovementController {
    */
   @PutMapping("/{id}")
   @PreAuthorize("hasRole('ADMIN')")
-  @Operation(
-      summary = "Update movement",
-      description = "Updates an existing exercise definition (Admin only).")
-  @ApiResponses(
-      value = {
-        @ApiResponse(responseCode = "200", description = "Movement updated successfully"),
-        @ApiResponse(
-            responseCode = "400",
-            description = "Validation error",
-            content = @Content(schema = @Schema(hidden = true))),
-        @ApiResponse(
-            responseCode = "404",
-            description = "Movement not found",
-            content = @Content(schema = @Schema(hidden = true))),
-        @ApiResponse(
-            responseCode = "403",
-            description = "Forbidden - Admin access required",
-            content = @Content(schema = @Schema(hidden = true))),
-        @ApiResponse(
-            responseCode = "401",
-            description = "Unauthorized",
-            content = @Content(schema = @Schema(hidden = true)))
-      })
   public ResponseEntity<MovementResponse> updateMovement(
       @PathVariable Long id, @Valid @RequestBody MovementRequest request) {
 
@@ -180,10 +106,8 @@ public class MovementController {
 
   /** Retrieves structured reference data (categories, equipments, techniques) for UI forms. */
   @GetMapping("/reference-data")
-  @Operation(
-      summary = "Get movement reference data",
-      description = "Returns grouped enums for building dynamic forms.")
   public ResponseEntity<MovementReferenceData> getReferenceData() {
+
     return ResponseEntity.ok(movementService.getReferenceData());
   }
 }

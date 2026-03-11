@@ -19,7 +19,7 @@ import apex.stellar.aldebaran.model.enums.Category;
 import apex.stellar.aldebaran.repository.MovementRepository;
 import apex.stellar.aldebaran.repository.MuscleRepository;
 import java.util.Collections;
-import java.util.List;
+import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -130,9 +130,7 @@ class MovementControllerIT extends BaseIntegrationTest {
             Category.SQUAT,
             Collections.emptySet(),
             Collections.emptySet(),
-            List.of(new MovementMuscleRequest(testMuscleId, MuscleRole.AGONIST, 1.0)),
-            true,
-            1.0,
+            Set.of(new MovementMuscleRequest(testMuscleId, MuscleRole.AGONIST, 1.0)),
             "English Desc",
             "French Desc",
             null,
@@ -166,8 +164,6 @@ class MovementControllerIT extends BaseIntegrationTest {
             null,
             null,
             null,
-            true,
-            1.0,
             null,
             null,
             null,
@@ -201,9 +197,7 @@ class MovementControllerIT extends BaseIntegrationTest {
             Category.SQUAT,
             Collections.emptySet(),
             Collections.emptySet(),
-            List.of(new MovementMuscleRequest(testMuscleId, MuscleRole.AGONIST, 1.0)),
-            true,
-            1.0,
+            Set.of(new MovementMuscleRequest(testMuscleId, MuscleRole.AGONIST, 1.0)),
             null,
             null,
             null,

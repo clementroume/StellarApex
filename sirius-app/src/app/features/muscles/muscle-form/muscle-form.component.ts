@@ -7,11 +7,12 @@ import {MuscleService} from '../../../api/aldebaran/services/muscle.service';
 import {NotificationService} from '../../../core/services/notification.service';
 import {MuscleRequest} from '../../../api/aldebaran/models/muscle.model';
 import {ProblemDetail} from '../../../core/models/problem-detail.model';
+import {NgIcon} from '@ng-icons/core';
 
 @Component({
   selector: 'app-muscle-form',
   standalone: true,
-  imports: [ReactiveFormsModule, RouterModule, TranslateModule],
+  imports: [ReactiveFormsModule, RouterModule, TranslateModule, NgIcon],
   templateUrl: './muscle-form.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -25,17 +26,21 @@ export class MuscleFormComponent implements OnInit {
 
   isEditMode = signal<boolean>(false);
   isLoading = signal<boolean>(false);
-  private readonly databaseId = signal<number | null>(null);
+  private readonly muscleId = signal<number | null>(null);
 
   muscleGroups = signal<string[]>([]);
 
   muscleForm = this.fb.nonNullable.group({
+    // --- Identification ---
     medicalName: ['', [Validators.required, Validators.maxLength(100)]],
+    // --- Characteristics ---
+    muscleGroup: ['', [Validators.required]],
+    // --- Internationalized Content ---
     commonNameEn: ['', [Validators.maxLength(100)]],
     commonNameFr: ['', [Validators.maxLength(100)]],
     descriptionEn: ['', [Validators.maxLength(2000)]],
     descriptionFr: ['', [Validators.maxLength(2000)]],
-    muscleGroup: ['', [Validators.required]],
+    // --- Media ---
     imageUrl: ['', [Validators.maxLength(512)]],
   });
 
@@ -55,14 +60,18 @@ export class MuscleFormComponent implements OnInit {
 
     this.muscleService.getMuscle(id).subscribe({
       next: (muscle) => {
-        this.databaseId.set(muscle.id);
+        this.muscleId.set(muscle.id);
         this.muscleForm.patchValue({
+          // --- Identification ---
           medicalName: muscle.medicalName,
+          // --- Characteristics ---
+          muscleGroup: muscle.muscleGroup,
+          // --- Internationalized Content ---
           commonNameEn: muscle.commonNameEn || '',
           commonNameFr: muscle.commonNameFr || '',
           descriptionEn: muscle.descriptionEn || '',
           descriptionFr: muscle.descriptionFr || '',
-          muscleGroup: muscle.muscleGroup,
+          // --- Media ---
           imageUrl: muscle.imageUrl || ''
         });
 
@@ -85,8 +94,8 @@ export class MuscleFormComponent implements OnInit {
     this.isLoading.set(true);
     const payload = this.muscleForm.getRawValue() as unknown as MuscleRequest;
 
-    const request$ = this.isEditMode() && this.databaseId()
-      ? this.muscleService.updateMuscle(this.databaseId()!, payload)
+    const request$ = this.isEditMode() && this.muscleId()
+      ? this.muscleService.updateMuscle(this.muscleId()!, payload)
       : this.muscleService.createMuscle(payload);
 
     request$.subscribe({
@@ -106,10 +115,7 @@ export class MuscleFormComponent implements OnInit {
 
   private handleError(err: HttpErrorResponse): void {
     const problem: ProblemDetail = err.error;
-
-    // On extrait le détail du backend, s'il n'y a rien on utilise la clé de traduction générique
     const message = problem?.detail || problem?.title || this.translate.instant('GLOBAL.ERROR_UNEXPECTED');
-
     this.notificationService.showError(message);
   }
 }

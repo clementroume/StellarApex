@@ -23,13 +23,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
 
-/**
- * Represents the weighted biomechanical relationship between a {@link Movement} and a {@link
- * Muscle}.
- *
- * <p>This join entity allows for a nuanced analysis of exercise impact by defining the specific
- * {@link MuscleRole} (Agonist/Synergist) and an activation coefficient.
- */
+/** Represents the weighted biomechanical relationship between a Movement and a Muscle. */
 @Getter
 @Setter
 @Builder
@@ -39,10 +33,12 @@ import lombok.ToString;
 @Table(name = "movement_muscles")
 public class MovementMuscle {
 
+  // --- Identification ---
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
 
+  // --- Relationships ---
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "movement_id", nullable = false)
   @NotNull
@@ -55,28 +51,18 @@ public class MovementMuscle {
   @NotNull
   private Muscle muscle;
 
-  /** The biomechanical function of the muscle in this specific movement context. */
   @Enumerated(EnumType.STRING)
   @Column(nullable = false, length = 50)
   @NotNull
   private MuscleRole role;
 
-  /**
-   * A coefficient (0.0 to 1.0) representing the degree of muscle activation. Used to weight the
-   * training volume attribution.
-   *
-   * <p>The default is 1.0 (Full activation).
-   */
   @Column(name = "impact_factor", nullable = false)
   @DecimalMin("0.0")
   @DecimalMax("1.0")
   @Builder.Default
   private Double impactFactor = 1.0;
 
-  // -------------------------------------------------------------------------
-  // Equality
-  // -------------------------------------------------------------------------
-
+  // --- Equality and Hashing ---
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -95,40 +81,14 @@ public class MovementMuscle {
     return getClass().hashCode();
   }
 
-  // ==================================================================================
-  // INNER ENUM: MUSCLE ROLE
-  // ==================================================================================
-
-  /**
-   * Defines the biomechanical role of a muscle during a specific movement.
-   *
-   * <p>In kinesiology, a muscle can act as a prime mover (Agonist), an assistant (Synergist), or a
-   * stabilizer depending on the exercise. This distinction is crucial for calculating accurate
-   * hypertrophy and fatigue metrics.
-   */
+  /** MuscleRole Inner Enum. */
   @Getter
   @RequiredArgsConstructor
   public enum MuscleRole {
-
-    /**
-     * The muscle that provides the primary force driving the movement. Also known as the "Prime
-     * Mover".
-     */
     AGONIST("Agonist"),
-
-    /**
-     * A muscle that assists the agonist in performing the movement. Often works at a mechanical
-     * disadvantage or helps refine the trajectory.
-     */
     SYNERGIST("Synergist"),
-
-    /**
-     * A muscle that contracts isometrically to stabilize a joint or body part. Allows the agonist
-     * to work effectively.
-     */
     STABILIZER("Stabilizer");
 
-    /** A human-readable name suitable for UI display. */
     private final String displayName;
   }
 }

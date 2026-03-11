@@ -1,5 +1,5 @@
 import {inject, Injectable} from '@angular/core';
-import {HttpClient, HttpParams} from '@angular/common/http';
+import {HttpClient} from '@angular/common/http';
 import {Observable} from 'rxjs';
 import {environment} from '../../../../environments/environment';
 import {MuscleReferenceData, MuscleRequest, MuscleResponse} from '../models/muscle.model';
@@ -8,12 +8,8 @@ import {MuscleReferenceData, MuscleRequest, MuscleResponse} from '../models/musc
 export class MuscleService {
   private readonly http = inject(HttpClient);
 
-  getMuscles(group?: string): Observable<MuscleResponse[]> {
-    let params = new HttpParams();
-    if (group) {
-      params = params.set('group', group);
-    }
-    return this.http.get<MuscleResponse[]>(this.buildUrl('/muscles'), {params});
+  getMuscles(): Observable<MuscleResponse[]> {
+    return this.http.get<MuscleResponse[]>(this.buildUrl('/muscles'));
   }
 
   getMuscle(id: number): Observable<MuscleResponse> {
@@ -25,7 +21,6 @@ export class MuscleService {
   }
 
   updateMuscle(id: number, request: MuscleRequest): Observable<MuscleResponse> {
-    // Note: Update uses the technical ID (Long), while Get uses the medical name (String)
     return this.http.put<MuscleResponse>(this.buildUrl(`/muscles/${id}`), request);
   }
 

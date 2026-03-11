@@ -16,15 +16,18 @@ CREATE EXTENSION IF NOT EXISTS pg_trgm;
 
 CREATE TABLE muscles
 (
+    -- Identification
     id             BIGSERIAL PRIMARY KEY,
     medical_name   VARCHAR(100) NOT NULL UNIQUE,
+    -- Characteristics
+    muscle_group   VARCHAR(50)  NOT NULL,
+    -- Internationalized Content
     common_name_en VARCHAR(100),
     common_name_fr VARCHAR(100),
     description_en TEXT,
     description_fr TEXT,
-    muscle_group   VARCHAR(50)  NOT NULL,
+    -- Media
     image_url      VARCHAR(512),
-
     -- Audit
     created_at     TIMESTAMP    NOT NULL DEFAULT NOW(),
     updated_at     TIMESTAMP    NOT NULL DEFAULT NOW()
@@ -32,40 +35,22 @@ CREATE TABLE muscles
 
 CREATE TABLE movements
 (
-    id                  BIGSERIAL PRIMARY KEY,
-
-    name                VARCHAR(50)      NOT NULL,
-    name_abbreviation   VARCHAR(20),
-
-    category            VARCHAR(30)      NOT NULL,
-
-    -- Load Logic
-    involves_bodyweight BOOLEAN          NOT NULL DEFAULT FALSE,
-    bodyweight_factor   DOUBLE PRECISION NOT NULL DEFAULT 0.0,
-
-    -- Content
-    description_en      TEXT,
-    description_fr      TEXT,
-    coaching_cues_en    TEXT,
-    coaching_cues_fr    TEXT,
-    video_url           VARCHAR(512),
-    image_url           VARCHAR(512),
-
+    -- Identification
+    id                BIGSERIAL PRIMARY KEY,
+    name              VARCHAR(50) NOT NULL,
+    name_abbreviation VARCHAR(20),
+    category          VARCHAR(30) NOT NULL,
+    -- Internationalized Content
+    description_en    TEXT,
+    description_fr    TEXT,
+    coaching_cues_en  TEXT,
+    coaching_cues_fr  TEXT,
+    -- Media
+    video_url         VARCHAR(512),
+    image_url         VARCHAR(512),
     -- Audit
-    created_at          TIMESTAMP        NOT NULL DEFAULT NOW(),
-    updated_at          TIMESTAMP        NOT NULL DEFAULT NOW()
-);
-
--- Weighted Join Table for Anatomy
-CREATE TABLE movement_muscles
-(
-    id            BIGSERIAL PRIMARY KEY,
-    movement_id   BIGINT           NOT NULL REFERENCES movements (id) ON DELETE CASCADE,
-    muscle_id     BIGINT           NOT NULL REFERENCES muscles (id) ON DELETE CASCADE,
-    role          VARCHAR(50)      NOT NULL,
-    impact_factor DOUBLE PRECISION NOT NULL DEFAULT 1.0,
-
-    CONSTRAINT check_impact_factor_range CHECK (impact_factor >= 0 AND impact_factor <= 1)
+    created_at        TIMESTAMP   NOT NULL DEFAULT NOW(),
+    updated_at        TIMESTAMP   NOT NULL DEFAULT NOW()
 );
 
 -- Collection Tables
@@ -81,13 +66,19 @@ CREATE TABLE movement_variations
     technique   VARCHAR(50) NOT NULL
 );
 
--- Constraint: Bodyweight consistency
-ALTER TABLE movements
-    ADD CONSTRAINT check_bodyweight_consistency
-        CHECK (
-            (involves_bodyweight = TRUE AND bodyweight_factor > 0) OR
-            (involves_bodyweight = FALSE AND bodyweight_factor = 0)
-            );
+-- Relationships Table
+CREATE TABLE movement_muscles
+(
+    -- Identification
+    id            BIGSERIAL PRIMARY KEY,
+    -- Relationships
+    movement_id   BIGINT           NOT NULL REFERENCES movements (id) ON DELETE CASCADE,
+    muscle_id     BIGINT           NOT NULL REFERENCES muscles (id) ON DELETE CASCADE,
+    role          VARCHAR(50)      NOT NULL,
+    impact_factor DOUBLE PRECISION NOT NULL DEFAULT 1.0,
+
+    CONSTRAINT check_impact_factor_range CHECK (impact_factor >= 0 AND impact_factor <= 1)
+);
 
 -- ----------------------------------------------------------------------------------
 -- 2. WORKOUT DEFINITIONS (WODs)
@@ -95,54 +86,54 @@ ALTER TABLE movements
 
 CREATE TABLE wods
 (
+    -- Identification
     id               BIGSERIAL PRIMARY KEY,
     version          BIGINT,
-
     title            VARCHAR(100) NOT NULL,
     wod_type         VARCHAR(50)  NOT NULL,
     score_type       VARCHAR(20)  NOT NULL,
+    -- Authorship and Visibility
     author_id        BIGINT,
     gym_id           BIGINT,
     is_public        BOOLEAN      NOT NULL DEFAULT FALSE,
-
+    -- Description and Notes
     description      TEXT,
     notes            TEXT,
-
+    -- Structure and Prescription
     time_cap_seconds INTEGER,
     emom_interval    INTEGER,
     emom_rounds      INTEGER,
     rep_scheme       VARCHAR(100),
-
+    -- Audit
     created_at       TIMESTAMP    NOT NULL DEFAULT NOW(),
     updated_at       TIMESTAMP    NOT NULL DEFAULT NOW()
 );
 
+-- Collection Tables
 CREATE TABLE wod_modalities
 (
     wod_id   BIGINT      NOT NULL REFERENCES wods (id) ON DELETE CASCADE,
     modality VARCHAR(50) NOT NULL
 );
 
+-- Relationships Table
 CREATE TABLE wod_movements
 (
+    -- Identification
     id                    BIGSERIAL PRIMARY KEY,
     wod_id                BIGINT  NOT NULL REFERENCES wods (id) ON DELETE CASCADE,
     movement_id           BIGINT  NOT NULL REFERENCES movements (id),
     order_index           INTEGER NOT NULL,
-
+    -- Prescription
     reps_scheme           VARCHAR(50),
-
     weight                DOUBLE PRECISION,
     weight_unit           VARCHAR(10) DEFAULT 'KG',
-
     duration_seconds      INTEGER,
     duration_display_unit VARCHAR(10) DEFAULT 'SECONDS',
-
     distance              DOUBLE PRECISION,
     distance_unit         VARCHAR(10) DEFAULT 'METERS',
-
     calories              INTEGER,
-
+    -- Instructions
     notes                 TEXT,
     scaling_options       TEXT,
 
@@ -252,7 +243,6 @@ CREATE INDEX idx_wod_scores_wod_scaling ON wod_scores (wod_id, scaling, time_sec
 -- ==================================================================================
 
 COMMENT ON TABLE movements IS 'Master catalog of exercises/movements';
-COMMENT ON COLUMN movements.bodyweight_factor IS 'Percentage of bodyweight involved (0.0 to 1.0)';
 
 COMMENT ON TABLE movement_muscles IS 'Weighted relationship between movements and muscles';
 COMMENT ON COLUMN movement_muscles.role IS 'AGONIST, SYNERGIST, or STABILIZER';

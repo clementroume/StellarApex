@@ -1,59 +1,5 @@
 import {MuscleResponse} from './muscle.model';
 
-export interface MovementReferenceData {
-  categoryGroups: Record<string, string[]>;
-  equipmentGroups: Record<string, string[]>;
-  techniqueGroups: Record<string, string[]>;
-}
-
-/**
- * DTO for creating or updating a Movement in the catalog.
- * Mirrors `MovementRequest`.
- */
-export interface MovementRequest {
-  name: string;
-  nameAbbreviation?: string;
-  category: string;
-  equipment: string[];
-  techniques: string[];
-  muscles?: MovementMuscleRequest[];
-  involvesBodyweight: boolean;
-  bodyweightFactor?: number;
-  descriptionEn?: string;
-  descriptionFr?: string;
-  coachingCuesEn?: string;
-  coachingCuesFr?: string;
-  videoUrl?: string;
-  imageUrl?: string;
-}
-
-/**
- * Full DTO for Movement display.
- * Mirrors `MovementResponse`.
- */
-export interface MovementResponse {
-  id: number;
-  name: string;
-  nameAbbreviation?: string;
-  category: string;
-  equipment: string[];
-  techniques: string[];
-  targetedMuscles: MovementMuscleResponse[];
-  involvesBodyweight: boolean;
-  bodyweightFactor: number;
-  loadBearing: boolean;
-  descriptionEn?: string;
-  descriptionFr?: string;
-  coachingCuesEn?: string;
-  coachingCuesFr?: string;
-  videoUrl?: string;
-  imageUrl?: string;
-}
-
-/**
- * Lightweight DTO for listing movements.
- * Mirrors `MovementSummaryResponse`.
- */
 export interface MovementSummaryResponse {
   id: number;
   name: string;
@@ -62,14 +8,62 @@ export interface MovementSummaryResponse {
   imageUrl?: string;
 }
 
+export interface MovementRequest {
+  // --- Identification ---
+  name: string;
+  nameAbbreviation?: string;
+  category: string;
+  // --- Characteristics ---
+  equipment?: string[];
+  techniques?: string[];
+  muscles?: MovementMuscleRequest[];
+  // --- Internationalized Content ---
+  descriptionEn?: string;
+  descriptionFr?: string;
+  coachingCuesEn?: string;
+  coachingCuesFr?: string;
+  // --- Media ---
+  videoUrl?: string;
+  imageUrl?: string;
+}
+
+export interface MovementResponse {
+  // --- Identification ---
+  id: number;
+  name: string;
+  nameAbbreviation?: string;
+  category: string;
+  // --- Characteristics ---
+  equipment: string[];
+  techniques: string[];
+  targetedMuscles: MovementMuscleResponse[];
+  // --- Internationalized Content ---
+  descriptionEn?: string;
+  descriptionFr?: string;
+  coachingCuesEn?: string;
+  coachingCuesFr?: string;
+  // --- Media ---
+  videoUrl?: string;
+  imageUrl?: string;
+}
+
 export interface MovementMuscleRequest {
+  // --- Relationships ---
   muscleId: number;
   role: string;
   impactFactor?: number;
 }
 
 export interface MovementMuscleResponse {
+  // --- Relationships ---
   muscle: MuscleResponse;
   role: string;
   impactFactor: number;
+}
+
+export interface MovementReferenceData {
+  // --- Movement Reference Date ---
+  categoryGroups: Record<string, string[]>;
+  equipmentGroups: Record<string, string[]>;
+  techniqueGroups: Record<string, string[]>;
 }

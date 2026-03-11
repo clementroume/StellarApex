@@ -3,14 +3,7 @@ package apex.stellar.aldebaran.controller;
 import apex.stellar.aldebaran.dto.MuscleReferenceData;
 import apex.stellar.aldebaran.dto.MuscleRequest;
 import apex.stellar.aldebaran.dto.MuscleResponse;
-import apex.stellar.aldebaran.model.entities.Muscle.MuscleGroup;
 import apex.stellar.aldebaran.service.MuscleService;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.media.Content;
-import io.swagger.v3.oas.annotations.media.Schema;
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.List;
@@ -24,80 +17,35 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-/**
- * REST Controller for managing the Anatomical Muscle Catalog.
- *
- * <p>Provides endpoints to retrieve reference data regarding human anatomy (muscles). While read
- * operations are open to authenticated users to support features like "Targeted Muscle" filtering,
- * write operations are strictly restricted to Administrators to maintain data integrity.
- */
+/** REST Controller for managing the Anatomical Muscle Catalog. */
 @RestController
 @RequestMapping("/aldebaran/muscles")
 @RequiredArgsConstructor
-@Tag(name = "Anatomy", description = "Muscle reference data management")
+@Tag(name = "Muscles", description = "Muscle reference data management")
 public class MuscleController {
 
   private final MuscleService muscleService;
 
   /**
-   * Retrieves the anatomical catalog, optionally filtered by muscle group.
+   * Retrieves the anatomical catalog.
    *
-   * <p>If the 'group' parameter is provided, returns only muscles belonging to that group.
-   * Otherwise, returns the full catalog.
-   *
-   * @param group (Optional) The anatomical group to filter by (e.g., "LEGS").
    * @return A list of {@link MuscleResponse} objects.
    */
   @GetMapping
-  @Operation(
-      summary = "List muscles",
-      description = "Retrieves the full anatomical catalog or filters by muscle group.")
-  @ApiResponses(
-      value = {
-        @ApiResponse(responseCode = "200", description = "Muscles retrieved"),
-        @ApiResponse(
-            responseCode = "401",
-            description = "Unauthorized",
-            content = @Content(schema = @Schema(hidden = true)))
-      })
-  public ResponseEntity<List<MuscleResponse>> getMuscles(
-      @Parameter(description = "Filter by anatomical group") @RequestParam(required = false)
-          MuscleGroup group) {
+  public ResponseEntity<List<MuscleResponse>> getMuscles() {
 
-    if (group != null) {
-      return ResponseEntity.ok(muscleService.getMusclesByGroup(group));
-    }
     return ResponseEntity.ok(muscleService.getAllMuscles());
   }
 
   /**
-   * Retrieves details of a specific muscle by its ID
-   *
-   * <p>This uses the Business Key (Medical Name) as it is the primary identifier used in movement
-   * prescriptions.
+   * Retrieves details of a specific muscle by its ID.
    *
    * @param id The ID of the muscle.
-   * @return The detailed muscle response.
+   * @return The corresponding {@link MuscleResponse}.
    */
   @GetMapping("/{id}")
-  @Operation(
-      summary = "Get muscle details",
-      description = "Retrieves a single muscle by its Medical Name (Business Key).")
-  @ApiResponses(
-      value = {
-        @ApiResponse(responseCode = "200", description = "Muscle details retrieved"),
-        @ApiResponse(
-            responseCode = "404",
-            description = "Muscle not found",
-            content = @Content(schema = @Schema(hidden = true))),
-        @ApiResponse(
-            responseCode = "401",
-            description = "Unauthorized",
-            content = @Content(schema = @Schema(hidden = true)))
-      })
   public ResponseEntity<MuscleResponse> getMuscle(@PathVariable Long id) {
 
     return ResponseEntity.ok(muscleService.getMuscle(id));
@@ -106,94 +54,41 @@ public class MuscleController {
   /**
    * Creates a new muscle entry in the catalog.
    *
-   * <p><b>Security:</b> Restricted to users with the {@code ADMIN} role.
-   *
-   * <p>Enforces unique constraints on the medical name to prevent duplicates.
-   *
-   * @param request The muscle creation payload.
-   * @return The created muscle resource with HTTP 201 Created.
+   * @param muscleRequest The muscle creation payload.
+   * @return A {@link MuscleResponse} of the created muscle with HTTP 201 Created.
    */
   @PostMapping
   @PreAuthorize("hasRole('ADMIN')")
-  @Operation(
-      summary = "Create muscle",
-      description = "Adds a new muscle to the catalog (Admin only).")
-  @ApiResponses(
-      value = {
-        @ApiResponse(responseCode = "201", description = "Muscle created successfully"),
-        @ApiResponse(
-            responseCode = "400",
-            description = "Validation error",
-            content = @Content(schema = @Schema(hidden = true))),
-        @ApiResponse(
-            responseCode = "409",
-            description = "Conflict - Name already exists",
-            content = @Content(schema = @Schema(hidden = true))),
-        @ApiResponse(
-            responseCode = "403",
-            description = "Forbidden - Admin access required",
-            content = @Content(schema = @Schema(hidden = true))),
-        @ApiResponse(
-            responseCode = "401",
-            description = "Unauthorized",
-            content = @Content(schema = @Schema(hidden = true)))
-      })
-  public ResponseEntity<MuscleResponse> createMuscle(@Valid @RequestBody MuscleRequest request) {
+  public ResponseEntity<MuscleResponse> createMuscle(
+      @Valid @RequestBody MuscleRequest muscleRequest) {
 
-    return ResponseEntity.status(HttpStatus.CREATED).body(muscleService.createMuscle(request));
+    return ResponseEntity.status(HttpStatus.CREATED)
+        .body(muscleService.createMuscle(muscleRequest));
   }
 
   /**
    * Updates an existing muscle definition.
    *
-   * <p><b>Security:</b> Restricted to users with the {@code ADMIN} role.
-   *
-   * <p>Uses the technical ID to target the resource, allowing updates to the Medical Name if
-   * necessary.
-   *
    * @param id The unique identifier of the muscle to update.
-   * @param request The updated data.
-   * @return The updated muscle resource.
+   * @param muscleRequest The updated data.
+   * @return A {@link MuscleResponse} of the updated muscle.
    */
   @PutMapping("/{id}")
   @PreAuthorize("hasRole('ADMIN')")
-  @Operation(summary = "Update muscle", description = "Updates an existing muscle (Admin only).")
-  @ApiResponses(
-      value = {
-        @ApiResponse(responseCode = "200", description = "Muscle updated successfully"),
-        @ApiResponse(
-            responseCode = "400",
-            description = "Validation error",
-            content = @Content(schema = @Schema(hidden = true))),
-        @ApiResponse(
-            responseCode = "404",
-            description = "Muscle not found",
-            content = @Content(schema = @Schema(hidden = true))),
-        @ApiResponse(
-            responseCode = "409",
-            description = "Conflict - Name already exists",
-            content = @Content(schema = @Schema(hidden = true))),
-        @ApiResponse(
-            responseCode = "403",
-            description = "Forbidden - Admin access required",
-            content = @Content(schema = @Schema(hidden = true))),
-        @ApiResponse(
-            responseCode = "401",
-            description = "Unauthorized",
-            content = @Content(schema = @Schema(hidden = true)))
-      })
   public ResponseEntity<MuscleResponse> updateMuscle(
-      @PathVariable Long id, @Valid @RequestBody MuscleRequest request) {
+      @PathVariable Long id, @Valid @RequestBody MuscleRequest muscleRequest) {
 
-    return ResponseEntity.ok(muscleService.updateMuscle(id, request));
+    return ResponseEntity.ok(muscleService.updateMuscle(id, muscleRequest));
   }
 
-  /** Retrieves reference data (groups, roles) for UI forms. */
+  /**
+   * Retrieves reference data (muscleGroups and muscleRoles) for UI forms.
+   *
+   * @return The {@link MuscleReferenceData}.
+   */
   @GetMapping("/reference-data")
-  @Operation(
-      summary = "Get muscle reference data",
-      description = "Returns available muscle groups and roles.")
   public ResponseEntity<MuscleReferenceData> getReferenceData() {
+
     return ResponseEntity.ok(muscleService.getReferenceData());
   }
 }

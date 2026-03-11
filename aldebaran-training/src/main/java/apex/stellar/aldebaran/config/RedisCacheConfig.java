@@ -21,7 +21,9 @@ import org.springframework.data.redis.serializer.JacksonJsonRedisSerializer;
 import org.springframework.data.redis.serializer.RedisSerializationContext;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
 import org.springframework.validation.annotation.Validated;
+import tools.jackson.databind.JavaType;
 import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.type.CollectionType;
 import tools.jackson.databind.type.TypeFactory;
 
 /**
@@ -64,21 +66,26 @@ public class RedisCacheConfig {
 
     TypeFactory tf = objectMapper.getTypeFactory();
 
-    var wodType = tf.constructType(WodResponse.class);
-    var wodSerializer = new JacksonJsonRedisSerializer<>(objectMapper, wodType);
+    JavaType wodType = tf.constructType(WodResponse.class);
+    JacksonJsonRedisSerializer<Object> wodSerializer =
+        new JacksonJsonRedisSerializer<>(objectMapper, wodType);
 
-    var movementsType = tf.constructCollectionType(List.class, MovementSummaryResponse.class);
-    var movementsSerializer = new JacksonJsonRedisSerializer<>(objectMapper, movementsType);
+    CollectionType movementsType =
+        tf.constructCollectionType(List.class, MovementSummaryResponse.class);
+    JacksonJsonRedisSerializer<Object> movementsSerializer =
+        new JacksonJsonRedisSerializer<>(objectMapper, movementsType);
 
-    var singleMovementType = tf.constructType(MovementResponse.class);
-    var singleMovementSerializer =
+    JavaType singleMovementType = tf.constructType(MovementResponse.class);
+    JacksonJsonRedisSerializer<Object> singleMovementSerializer =
         new JacksonJsonRedisSerializer<>(objectMapper, singleMovementType);
 
-    var musclesType = tf.constructCollectionType(List.class, MuscleResponse.class);
-    var musclesSerializer = new JacksonJsonRedisSerializer<>(objectMapper, musclesType);
+    CollectionType musclesType = tf.constructCollectionType(List.class, MuscleResponse.class);
+    JacksonJsonRedisSerializer<Object> musclesSerializer =
+        new JacksonJsonRedisSerializer<>(objectMapper, musclesType);
 
-    var singleMuscleType = tf.constructType(MuscleResponse.class);
-    var singleMuscleSerializer = new JacksonJsonRedisSerializer<>(objectMapper, singleMuscleType);
+    JavaType singleMuscleType = tf.constructType(MuscleResponse.class);
+    JacksonJsonRedisSerializer<Object> singleMuscleSerializer =
+        new JacksonJsonRedisSerializer<>(objectMapper, singleMuscleType);
 
     RedisCacheConfiguration baseConfig =
         RedisCacheConfiguration.defaultCacheConfig()

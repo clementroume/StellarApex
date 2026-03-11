@@ -38,12 +38,7 @@ import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
-/**
- * Represents the definition of a Workout of the Day (The "Recipe").
- *
- * <p>This entity holds the structure and prescription of a workout, independently of any athlete's
- * result. It acts as the template for Performances.
- */
+/** Represents the definition of a Workout of the Day (WOD). */
 @Getter
 @Setter
 @Builder
@@ -54,6 +49,7 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 @EntityListeners(AuditingEntityListener.class)
 public class Wod {
 
+  // --- Identification ---
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
@@ -62,91 +58,56 @@ public class Wod {
   @Column(name = "version")
   private Long version;
 
-  // -------------------------------------------------------------------------
-  // Identification & Metadata
-  // -------------------------------------------------------------------------
-
-  /** The title of the workout (e.g., "Murph", "WOD 240520"). */
   @Column(name = "title", nullable = false, length = 100)
   @NotBlank
   @Size(max = 100)
   private String title;
 
-  /**
-   * The structural or functional type of the workout. Acts as the discriminator for Benchmark
-   * status.
-   */
   @Enumerated(EnumType.STRING)
   @Column(name = "wod_type", nullable = false, length = 50)
   @NotNull
   private WodType wodType;
 
-  /** The scoring logic defined for this WOD. Ex: "Fran" is always scored by TIME. */
   @Enumerated(EnumType.STRING)
   @Column(name = "score_type", nullable = false, length = 20)
   @NotNull
   private ScoreType scoreType;
 
-  /** The specific user who authored this WOD (Creator/Author). */
+  // --- Authorship and Visibility ---
   @Column(name = "author_id")
   private Long authorId;
 
-  /** The Gym (Tenant) this WOD belongs to. Null for global/system WODs. */
   @Column(name = "gym_id")
   private Long gymId;
 
-  /** Visibility flag. If true, visible to the whole box/community. */
   @Column(name = "is_public", nullable = false)
   @Builder.Default
   private boolean isPublic = false;
 
-  // -------------------------------------------------------------------------
-  // Description & Content
-  // -------------------------------------------------------------------------
-
-  /** The full whiteboard description (e.g., "21-15-9 Thrusters..."). */
+  // --- Description and Notes ---
   @Column(name = "description", columnDefinition = "TEXT")
   private String description;
 
-  /** Coach's notes, stimulus explanation, or scaling guidelines. */
   @Column(name = "notes", columnDefinition = "TEXT")
   private String notes;
 
-  // -------------------------------------------------------------------------
-  // Structure & Prescription
-  // -------------------------------------------------------------------------
-
-  /** Maximum duration allowed for the workout in seconds. */
+  // --- Structure and Prescription ---
   @Column(name = "time_cap_seconds")
   @Min(0)
   private Integer timeCapSeconds;
 
-  /** Interval duration for EMOM type workouts (typically 60s). */
   @Column(name = "emom_interval")
   @Min(0)
   private Integer emomInterval;
 
-  /** Total number of rounds for EMOM type workouts. */
   @Column(name = "emom_rounds")
   @Min(0)
   private Integer emomRounds;
 
-  /**
-   * The repetition scheme string (e.g., "21-15-9", "5 rounds"). Useful for quick display/search
-   * without parsing the full movement list.
-   */
   @Column(name = "rep_scheme", length = 100)
   @Size(max = 100)
   private String repScheme;
 
-  // -------------------------------------------------------------------------
-  // Tags & Components
-  // -------------------------------------------------------------------------
-
-  /**
-   * Tags for quick analysis (e.g., GYMNASTICS, WEIGHTLIFTING). Derived from the contained
-   * movements.
-   */
   @ElementCollection(fetch = FetchType.LAZY)
   @CollectionTable(name = "wod_modalities", joinColumns = @JoinColumn(name = "wod_id"))
   @Enumerated(EnumType.STRING)
@@ -154,31 +115,22 @@ public class Wod {
   @Builder.Default
   private Set<Modality> modalities = new HashSet<>();
 
-  /** The ordered list of movements that make up this WOD. */
   @OneToMany(mappedBy = "wod", cascade = CascadeType.ALL, orphanRemoval = true)
   @OrderBy("orderIndex ASC")
   @Builder.Default
   @ToString.Exclude
   private List<WodMovement> movements = new ArrayList<>();
 
-  // -------------------------------------------------------------------------
-  // Business Logic (Transient)
-  // -------------------------------------------------------------------------
+  // --- Audit ---
   @CreatedDate
   @Column(name = "created_at", nullable = false, updatable = false)
   private LocalDateTime createdAt;
 
-  // -------------------------------------------------------------------------
-  // Audit
-  // -------------------------------------------------------------------------
   @LastModifiedDate
   @Column(name = "updated_at", nullable = false)
   private LocalDateTime updatedAt;
 
-  // -------------------------------------------------------------------------
-  // Equality
-  // -------------------------------------------------------------------------
-
+  // --- Equality and Hashing ---
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -196,11 +148,7 @@ public class Wod {
     return id != null ? id.hashCode() : 0;
   }
 
-  // ==================================================================================
-  // INNER ENUM: WOD TYPE
-  // ==================================================================================
-
-  /** Defines the structural format or category of a WOD. */
+  /** WodType Inner Enum. */
   @Getter
   @RequiredArgsConstructor
   public enum WodType {
@@ -229,7 +177,7 @@ public class Wod {
     private final String displayName;
   }
 
-  /** Defines the primary scoring metric for a performance. */
+  /** ScoreType Inner Enum. */
   @Getter
   @RequiredArgsConstructor
   public enum ScoreType {

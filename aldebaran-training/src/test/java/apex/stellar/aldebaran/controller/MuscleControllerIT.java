@@ -90,11 +90,11 @@ class MuscleControllerIT extends BaseIntegrationTest {
     MuscleRequest request =
         new MuscleRequest(
             "Latissimus Dorsi",
+            MuscleGroup.BACK,
             "Lats",
             "Dorsaux",
             "Back muscle",
             "Muscle du dos",
-            MuscleGroup.BACK,
             null);
 
     // When/Then
@@ -121,7 +121,7 @@ class MuscleControllerIT extends BaseIntegrationTest {
   @DisplayName("POST /muscles: should return 403 Forbidden when simple User")
   void testCreateMuscle_AsUser_Forbidden() throws Exception {
     MuscleRequest request =
-        new MuscleRequest("Biceps Brachii", "Biceps", "Biceps", null, null, MuscleGroup.ARMS, null);
+        new MuscleRequest("Biceps Brachii", MuscleGroup.ARMS, "Biceps", "Biceps", null, null, null);
 
     mockMvc
         .perform(
@@ -140,7 +140,7 @@ class MuscleControllerIT extends BaseIntegrationTest {
   void testCreateMuscle_Conflict() throws Exception {
     // Given: Request with the existing name "Pectoralis Major" (seeded in setUp)
     MuscleRequest request =
-        new MuscleRequest("Pectoralis Major", "Chest", "Pec", null, null, MuscleGroup.CHEST, null);
+        new MuscleRequest("Pectoralis Major", MuscleGroup.CHEST, "Chest", "Pec", null, null, null);
 
     // When/Then
     mockMvc
@@ -166,11 +166,11 @@ class MuscleControllerIT extends BaseIntegrationTest {
     MuscleRequest updateRequest =
         new MuscleRequest(
             "Pectoralis Major",
+            MuscleGroup.CHEST,
             "Upper Chest", // Changed value
             "Pectoraux",
             null,
             null,
-            MuscleGroup.CHEST,
             null);
 
     // When/Then
@@ -191,7 +191,7 @@ class MuscleControllerIT extends BaseIntegrationTest {
   @DisplayName("PUT /muscles/{id}: should return 404 if ID unknown")
   void testUpdateMuscle_NotFound() throws Exception {
     MuscleRequest request =
-        new MuscleRequest("Unknown", "U", "U", null, null, MuscleGroup.LEGS, null);
+        new MuscleRequest("Unknown", MuscleGroup.LEGS, "U", "U", null, null, null);
 
     mockMvc
         .perform(

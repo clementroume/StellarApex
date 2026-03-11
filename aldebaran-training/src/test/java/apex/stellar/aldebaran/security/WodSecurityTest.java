@@ -150,7 +150,7 @@ class WodSecurityTest {
         new AldebaranUserPrincipal(1L, null, "ADMIN", Collections.emptyList());
     WodRequest request =
         new WodRequest(
-            "Test", null, null, null, null, null, 100L, false, null, null, null, null, null);
+            "Test", null, null, null, 100L, false, null, null, null, null, null, null, null);
 
     when(securityService.isAdmin(admin)).thenReturn(true);
 
@@ -166,7 +166,7 @@ class WodSecurityTest {
         new AldebaranUserPrincipal(2L, 100L, "OWNER", Collections.emptyList());
     WodRequest request =
         new WodRequest(
-            "Gym WOD", null, null, null, null, null, 100L, false, null, null, null, null, null);
+            "Gym WOD", null, null, null, 100L, false, null, null, null, null, null, null, null);
 
     when(securityService.isAdmin(owner)).thenReturn(false);
     when(securityService.hasWodWriteAccess(owner)).thenReturn(true);
@@ -183,7 +183,7 @@ class WodSecurityTest {
         new AldebaranUserPrincipal(3L, 100L, "PROGRAMMER", Collections.emptyList());
     WodRequest request =
         new WodRequest(
-            "Prog WOD", null, null, null, null, null, 100L, false, null, null, null, null, null);
+            "Prog WOD", null, null, null, 100L, false, null, null, null, null, null, null, null);
 
     when(securityService.isAdmin(programmer)).thenReturn(false);
     when(securityService.hasWodWriteAccess(programmer)).thenReturn(true);
@@ -200,7 +200,7 @@ class WodSecurityTest {
         new AldebaranUserPrincipal(4L, 100L, "COACH", List.of("WOD_WRITE"));
     WodRequest request =
         new WodRequest(
-            "Coach WOD", null, null, null, null, null, 100L, false, null, null, null, null, null);
+            "Coach WOD", null, null, null, 100L, false, null, null, null, null, null, null, null);
 
     when(securityService.isAdmin(coach)).thenReturn(false);
     when(securityService.hasWodWriteAccess(coach)).thenReturn(true);
@@ -217,7 +217,7 @@ class WodSecurityTest {
         new AldebaranUserPrincipal(4L, 100L, "COACH", Collections.emptyList());
     WodRequest request =
         new WodRequest(
-            "Coach WOD", null, null, null, null, null, 100L, false, null, null, null, null, null);
+            "Coach WOD", null, null, null, 100L, false, null, null, null, null, null, null, null);
 
     when(securityService.isAdmin(coach)).thenReturn(false);
     when(securityService.hasWodWriteAccess(coach)).thenReturn(false);
@@ -234,7 +234,7 @@ class WodSecurityTest {
         new AldebaranUserPrincipal(5L, 100L, "ATHLETE", Collections.emptyList());
     WodRequest request =
         new WodRequest(
-            "User WOD", null, null, null, null, null, 100L, false, null, null, null, null, null);
+            "User WOD", null, null, null, 100L, false, null, null, null, null, null, null, null);
 
     when(securityService.isAdmin(user)).thenReturn(false);
     when(securityService.hasWodWriteAccess(user)).thenReturn(false);
@@ -251,7 +251,7 @@ class WodSecurityTest {
         new AldebaranUserPrincipal(2L, 200L, "OWNER", Collections.emptyList());
     WodRequest request =
         new WodRequest(
-            "Hack WOD", null, null, null, null, null, 100L, false, null, null, null, null, null);
+            "Hack WOD", null, null, null, 100L, false, null, null, null, null, null, null, null);
 
     when(securityService.isAdmin(owner)).thenReturn(false);
 
@@ -269,7 +269,7 @@ class WodSecurityTest {
         new AldebaranUserPrincipal(2L, 100L, "ATHLETE", Collections.emptyList());
     WodRequest request =
         new WodRequest(
-            "My WOD", null, null, null, null, 2L, null, false, null, null, null, null, null);
+            "My WOD", null, null, 2L, null, false, null, null, null, null, null, null, null);
 
     when(securityService.isAdmin(user)).thenReturn(false);
 
@@ -288,11 +288,11 @@ class WodSecurityTest {
             "Impersonation",
             null,
             null,
-            null,
-            null,
             99L,
             null,
             false,
+            null,
+            null,
             null,
             null,
             null,

@@ -4,10 +4,22 @@ import apex.stellar.aldebaran.model.enums.Category;
 import apex.stellar.aldebaran.model.enums.Category.Modality;
 import apex.stellar.aldebaran.model.enums.Equipment;
 import apex.stellar.aldebaran.model.enums.Technique;
-import apex.stellar.aldebaran.validation.ValidMovement;
-import jakarta.persistence.*;
-import jakarta.validation.constraints.DecimalMax;
-import jakarta.validation.constraints.DecimalMin;
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.CollectionTable;
+import jakarta.persistence.Column;
+import jakarta.persistence.ElementCollection;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EntityListeners;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -32,9 +44,9 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 @Entity
 @Table(name = "movements")
 @EntityListeners(AuditingEntityListener.class)
-@ValidMovement
 public class Movement {
 
+  // --- Identification ---
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
@@ -52,10 +64,7 @@ public class Movement {
   @NotNull
   private Category category;
 
-  // -------------------------------------------------------------------------
-  // Requirements & Tags
-  // -------------------------------------------------------------------------
-
+  // --- Characteristics ---
   @ElementCollection(fetch = FetchType.LAZY)
   @CollectionTable(name = "movement_equipment", joinColumns = @JoinColumn(name = "movement_id"))
   @Column(name = "equipment", nullable = false, length = 50)
@@ -70,10 +79,6 @@ public class Movement {
   @Builder.Default
   private Set<Technique> techniques = new HashSet<>();
 
-  // -------------------------------------------------------------------------
-  // Anatomy Engine
-  // -------------------------------------------------------------------------
-
   @OneToMany(
       mappedBy = "movement",
       cascade = CascadeType.ALL,
@@ -82,24 +87,7 @@ public class Movement {
   @Builder.Default
   private Set<MovementMuscle> targetedMuscles = new HashSet<>();
 
-  // -------------------------------------------------------------------------
-  // Load Calculation Logic
-  // -------------------------------------------------------------------------
-
-  @Column(name = "involves_bodyweight", nullable = false)
-  @Builder.Default
-  private Boolean involvesBodyweight = false;
-
-  @Column(name = "bodyweight_factor", nullable = false)
-  @DecimalMin("0.0")
-  @DecimalMax("1.0")
-  @Builder.Default
-  private Double bodyweightFactor = 0.0;
-
-  // -------------------------------------------------------------------------
-  // Content & Media
-  // -------------------------------------------------------------------------
-
+  // --- Internationalized Content ---
   @Column(name = "description_en", columnDefinition = "TEXT")
   private String descriptionEn;
 
@@ -112,6 +100,7 @@ public class Movement {
   @Column(name = "coaching_cues_fr", columnDefinition = "TEXT")
   private String coachingCuesFr;
 
+  // --- Media ---
   @Column(name = "video_url", length = 512)
   @Size(max = 512)
   private String videoUrl;
@@ -120,10 +109,7 @@ public class Movement {
   @Size(max = 512)
   private String imageUrl;
 
-  // -------------------------------------------------------------------------
-  // Audit
-  // -------------------------------------------------------------------------
-
+  // --- Audit ---
   @CreatedDate
   @Column(name = "created_at", nullable = false, updatable = false)
   private LocalDateTime createdAt;
@@ -132,31 +118,14 @@ public class Movement {
   @Column(name = "updated_at", nullable = false)
   private LocalDateTime updatedAt;
 
-  // -------------------------------------------------------------------------
-  // Helper Methods (Transient)
-  // -------------------------------------------------------------------------
-
+  // --- Helper Methods ---
   /** Retrieves the Modality from the Family. Not stored in DB to avoid redundancy. */
   @Transient
   public Modality getModality() {
     return category != null ? category.getModality() : null;
   }
 
-  /**
-   * Checks if this movement typically involves tracking tonnage (Load * Reps). Essential for UI
-   * logic (e.g., hiding the "Weight" field for Running).
-   */
-  @SuppressWarnings("unused")
-  @Transient
-  public boolean isLoadBearing() {
-    Modality mod = getModality();
-    return mod != null && mod.isLoadBearing();
-  }
-
-  // -------------------------------------------------------------------------
-  // Equality based on business key
-  // -------------------------------------------------------------------------
-
+  // --- Equality and Hashing ---
   @Override
   public boolean equals(Object o) {
     if (this == o) {

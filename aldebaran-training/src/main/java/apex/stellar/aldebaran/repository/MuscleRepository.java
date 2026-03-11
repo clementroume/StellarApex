@@ -1,8 +1,6 @@
 package apex.stellar.aldebaran.repository;
 
 import apex.stellar.aldebaran.model.entities.Muscle;
-import apex.stellar.aldebaran.model.entities.Muscle.MuscleGroup;
-import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -22,12 +20,4 @@ public interface MuscleRepository extends JpaRepository<Muscle, Long> {
    * @return {@code true} if a muscle with the given medical name exists, {@code false} otherwise.
    */
   boolean existsByMedicalNameIgnoreCase(String medicalName);
-
-  /**
-   * Retrieves all muscles belonging to a specific anatomical group.
-   *
-   * @param muscleGroup The target muscle group (e.g., CHEST, LEGS).
-   * @return A list of matching muscles.
-   */
-  List<Muscle> findByMuscleGroup(MuscleGroup muscleGroup);
 }

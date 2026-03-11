@@ -55,7 +55,6 @@ export class MovementModalComponent {
     this.dialogService.closeMovement();
   }
 
-  // Permet d'ouvrir la modale du muscle PAR DESSUS la modale du mouvement
   openMuscle(id: number, event: Event): void {
     event.preventDefault();
     event.stopPropagation();

@@ -42,20 +42,22 @@ export class MovementFormComponent implements OnInit {
   muscleRoles = signal<string[]>([]);
 
   movementForm = this.fb.nonNullable.group({
+    // --- Identification ---
     name: ['', [Validators.required, Validators.maxLength(100)]],
     nameAbbreviation: ['', [Validators.maxLength(20)]],
     category: ['', Validators.required],
+    // --- Characteristics ---
     equipment: [[] as string[]],
     techniques: [[] as string[]],
-    involvesBodyweight: [false],
-    bodyweightFactor: [1, [Validators.min(0)]],
+    muscles: this.fb.array([]),
+    // --- Internationalized Content ---
     descriptionEn: ['', [Validators.maxLength(2000)]],
     descriptionFr: ['', [Validators.maxLength(2000)]],
     coachingCuesEn: ['', [Validators.maxLength(2000)]],
     coachingCuesFr: ['', [Validators.maxLength(2000)]],
+    // --- Media ---
     videoUrl: ['', [Validators.maxLength(255)]],
-    imageUrl: ['', [Validators.maxLength(255)]],
-    muscles: this.fb.array([])
+    imageUrl: ['', [Validators.maxLength(255)]]
   });
 
   ngOnInit(): void {
@@ -91,7 +93,6 @@ export class MovementFormComponent implements OnInit {
     }
   }
 
-  // --- Méthodes du Formulaire (Identiques à avant) ---
   get musclesFormArray(): FormArray {
     return this.movementForm.get('muscles') as FormArray;
   }
@@ -132,17 +133,20 @@ export class MovementFormComponent implements OnInit {
     this.movementService.getMovement(id).subscribe({
       next: (movement) => {
         this.movementForm.patchValue({
+          // --- Identification ---
           name: movement.name,
           nameAbbreviation: movement.nameAbbreviation || '',
           category: movement.category,
+          // --- Characteristics ---
           equipment: movement.equipment,
           techniques: movement.techniques,
-          involvesBodyweight: movement.involvesBodyweight,
-          bodyweightFactor: movement.bodyweightFactor,
+          // --- Internationalized Content ---
           descriptionEn: movement.descriptionEn || '',
           descriptionFr: movement.descriptionFr || '',
           coachingCuesEn: movement.coachingCuesEn || '',
           coachingCuesFr: movement.coachingCuesFr || '',
+
+          // --- Media ---
           videoUrl: movement.videoUrl || '',
           imageUrl: movement.imageUrl || ''
         });
@@ -178,7 +182,6 @@ export class MovementFormComponent implements OnInit {
     const payload = {
       ...formValue,
       nameAbbreviation: formValue.nameAbbreviation?.trim() || null,
-      bodyweightFactor: formValue.involvesBodyweight ? formValue.bodyweightFactor : 0
     } as unknown as MovementRequest;
 
     const request$ = this.isEditMode() && this.movementId()

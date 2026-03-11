@@ -1,18 +1,18 @@
 import {MovementResponse} from './movement.model';
 
-/**
- * DTO for creating or updating a WOD.
- * Mirrors `WodRequest`.
- */
 export interface WodRequest {
+  // --- Identification ---
   title: string;
   wodType: string;
   scoreType: string;
-  description?: string;
-  notes?: string;
+  // --- Authorship and Visibility ---
   authorId?: number;
   gymId?: number;
   isPublic: boolean;
+  // --- Description and Notes ---
+  description?: string;
+  notes?: string;
+  // --- Structure and Prescription ---
   timeCapSeconds?: number;
   emomInterval?: number;
   emomRounds?: number;
@@ -20,34 +20,31 @@ export interface WodRequest {
   movements: WodMovementRequest[];
 }
 
-/**
- * DTO representing the full details of a WOD.
- * Mirrors `WodResponse`.
- */
 export interface WodResponse {
+  // --- Identification ---
   id: number;
   title: string;
   wodType: string;
   scoreType: string;
+  // --- Authorship and Visibility ---
   authorId?: number;
   gymId?: number;
   isPublic: boolean;
+  // --- Description and Notes ---
   description?: string;
   notes?: string;
+  // --- Structure and Prescription ---
   timeCapSeconds?: number;
   emomInterval?: number;
   emomRounds?: number;
   repScheme?: string;
   modalities: string[];
   movements: WodMovementResponse[];
+  // --- Audit ---
   createdAt: string;
   updatedAt: string;
 }
 
-/**
- * Lightweight DTO for listing WODs.
- * Mirrors `WodSummaryResponse`.
- */
 export interface WodSummaryResponse {
   id: number;
   title: string;
@@ -58,13 +55,11 @@ export interface WodSummaryResponse {
   createdAt: string;
 }
 
-/**
- * DTO for specifying a single movement within a WOD creation or update request.
- * Mirrors `WodMovementRequest`.
- */
 export interface WodMovementRequest {
+  // ---  Identification ---
   movementId: number;
   orderIndex: number;
+  // --- Prescription ---
   repsScheme?: string;
   weight?: number;
   weightUnit?: string;
@@ -73,19 +68,20 @@ export interface WodMovementRequest {
   distance?: number;
   distanceUnit?: string;
   calories?: number;
+  // --- Characteristics ---
   equipment?: string[];
   techniques?: string[];
+  // --- Instructions ---
   notes?: string;
   scalingOptions?: string;
 }
 
-/**
- * Nested DTO for WodResponse containing prescription details.
- * Mirrors `WodMovementResponse`.
- */
 export interface WodMovementResponse {
+  // --- Identification ---
   id: number;
+  movement: MovementResponse;
   orderIndex: number;
+  // --- Prescription ---
   repsScheme?: string;
   weight?: number;
   weightUnit?: string;
@@ -94,11 +90,13 @@ export interface WodMovementResponse {
   distance?: number;
   distanceUnit?: string;
   calories?: number;
+  // --- Characteristics ---
   equipment?: string[];
   techniques?: string[];
+  // --- Instructions ---
   notes?: string;
   scalingOptions?: string;
-  movement: MovementResponse;
+
 }
 
 export interface WodReferenceData {

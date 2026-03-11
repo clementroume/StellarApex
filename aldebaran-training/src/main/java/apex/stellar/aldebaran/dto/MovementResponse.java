@@ -3,8 +3,6 @@ package apex.stellar.aldebaran.dto;
 import apex.stellar.aldebaran.model.enums.Category;
 import apex.stellar.aldebaran.model.enums.Equipment;
 import apex.stellar.aldebaran.model.enums.Technique;
-import io.swagger.v3.oas.annotations.media.Schema;
-import java.util.List;
 import java.util.Set;
 
 /**
@@ -15,32 +13,22 @@ import java.util.Set;
  */
 public record MovementResponse(
     // --- Identification ---
-    @Schema(description = "Movement ID", example = "1") Long id,
-    @Schema(description = "Display name", example = "Back Squat") String name,
-    @Schema(description = "Short abbreviation", example = "BS") String nameAbbreviation,
-    @Schema(description = "Functional category") Category category,
+    Long id,
+    String name,
+    String nameAbbreviation,
+    Category category,
 
     // --- Characteristics ---
-    @Schema(description = "Required equipment") Set<Equipment> equipment,
-    @Schema(description = "Technique variations") Set<Technique> techniques,
-    @Schema(description = "Anatomical muscle analysis with activation roles")
-        List<MovementMuscleResponse> targetedMuscles,
-
-    // --- Load Logic ---
-    @Schema(description = "Whether body weight is factored into the load")
-        boolean involvesBodyweight,
-    @Schema(description = "Bodyweight factor coefficient (0.0 - 1.0)") Double bodyweightFactor,
-    @Schema(
-            description = "Indicates if this movement typically requires an external load (weight)",
-            example = "true")
-        boolean loadBearing,
+    Set<Equipment> equipment,
+    Set<Technique> techniques,
+    Set<MovementMuscleResponse> targetedMuscles,
 
     // --- Internationalized Content ---
-    @Schema(description = "Description in English") String descriptionEn,
-    @Schema(description = "Description en Français") String descriptionFr,
-    @Schema(description = "Coaching cues in English") String coachingCuesEn,
-    @Schema(description = "Conseils de coaching en Français") String coachingCuesFr,
+    String descriptionEn,
+    String descriptionFr,
+    String coachingCuesEn,
+    String coachingCuesFr,
 
     // --- Media ---
-    @Schema(description = "Demo video URL") String videoUrl,
-    @Schema(description = "Anatomical image URL") String imageUrl) {}
+    String videoUrl,
+    String imageUrl) {}

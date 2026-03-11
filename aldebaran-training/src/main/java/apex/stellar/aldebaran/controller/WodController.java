@@ -6,12 +6,6 @@ import apex.stellar.aldebaran.dto.WodResponse;
 import apex.stellar.aldebaran.dto.WodSummaryResponse;
 import apex.stellar.aldebaran.model.entities.Wod.WodType;
 import apex.stellar.aldebaran.service.WodService;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.media.Content;
-import io.swagger.v3.oas.annotations.media.Schema;
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -58,26 +52,11 @@ public class WodController {
    * @return A list of WOD summaries matching the criteria.
    */
   @GetMapping
-  @Operation(
-      summary = "List WODs",
-      description =
-          "Retrieves summaries of available workouts. Supports filtering by title, "
-              + "type, or specific movement.")
-  @ApiResponses(
-      value = {
-        @ApiResponse(responseCode = "200", description = "WODs retrieved"),
-        @ApiResponse(
-            responseCode = "401",
-            description = "Unauthorized - User is not authenticated",
-            content = @Content(schema = @Schema(hidden = true)))
-      })
   public ResponseEntity<Slice<WodSummaryResponse>> getWods(
-      @Parameter(description = "Search by title") @RequestParam(required = false) String search,
-      @Parameter(description = "Filter by WOD Type") @RequestParam(required = false) WodType type,
-      @Parameter(description = "Filter by Movement ID (e.g. '1')") @RequestParam(required = false)
-          Long movementId,
-      @Parameter(description = "Pagination (page, size)") @PageableDefault(size = 20)
-          Pageable pageable) {
+      @RequestParam(required = false) String search,
+      @RequestParam(required = false) WodType type,
+      @RequestParam(required = false) Long movementId,
+      @PageableDefault(size = 20) Pageable pageable) {
 
     return ResponseEntity.ok(wodService.getWods(search, type, movementId, pageable));
   }
@@ -93,19 +72,6 @@ public class WodController {
    */
   @GetMapping("/{id}")
   @PreAuthorize("@wodSecurity.canRead(#id, principal)")
-  @Operation(summary = "Get WOD details", description = "Retrieves the full recipe of a workout.")
-  @ApiResponses(
-      value = {
-        @ApiResponse(responseCode = "200", description = "WOD details retrieved"),
-        @ApiResponse(
-            responseCode = "404",
-            description = "WOD not found - The ID does not exist",
-            content = @Content(schema = @Schema(hidden = true))),
-        @ApiResponse(
-            responseCode = "401",
-            description = "Unauthorized - User is not authenticated",
-            content = @Content(schema = @Schema(hidden = true)))
-      })
   public ResponseEntity<WodResponse> getWod(@PathVariable Long id) {
 
     return ResponseEntity.ok(wodService.getWodDetail(id));
@@ -121,23 +87,6 @@ public class WodController {
    */
   @PostMapping
   @PreAuthorize("@wodSecurity.canCreate(#request, principal)")
-  @Operation(summary = "Create WOD", description = "Defines a new workout (Admin/Coach only).")
-  @ApiResponses(
-      value = {
-        @ApiResponse(responseCode = "201", description = "WOD created successfully"),
-        @ApiResponse(
-            responseCode = "400",
-            description = "Validation error - Invalid input data",
-            content = @Content(schema = @Schema(hidden = true))),
-        @ApiResponse(
-            responseCode = "403",
-            description = "Forbidden - Requires COACH or ADMIN role",
-            content = @Content(schema = @Schema(hidden = true))),
-        @ApiResponse(
-            responseCode = "401",
-            description = "Unauthorized - User is not authenticated",
-            content = @Content(schema = @Schema(hidden = true)))
-      })
   public ResponseEntity<WodResponse> createWod(@Valid @RequestBody WodRequest request) {
 
     return ResponseEntity.status(HttpStatus.CREATED).body(wodService.createWod(request));
@@ -154,29 +103,6 @@ public class WodController {
    */
   @PutMapping("/{id}")
   @PreAuthorize("@wodSecurity.canModify(#id, principal)")
-  @Operation(
-      summary = "Update WOD",
-      description = "Updates an existing workout (Admin/Coach only).")
-  @ApiResponses(
-      value = {
-        @ApiResponse(responseCode = "200", description = "WOD updated successfully"),
-        @ApiResponse(
-            responseCode = "400",
-            description = "Validation error - Invalid input data",
-            content = @Content(schema = @Schema(hidden = true))),
-        @ApiResponse(
-            responseCode = "404",
-            description = "WOD not found - The ID does not exist",
-            content = @Content(schema = @Schema(hidden = true))),
-        @ApiResponse(
-            responseCode = "403",
-            description = "Forbidden - Requires COACH or ADMIN role",
-            content = @Content(schema = @Schema(hidden = true))),
-        @ApiResponse(
-            responseCode = "401",
-            description = "Unauthorized - User is not authenticated",
-            content = @Content(schema = @Schema(hidden = true)))
-      })
   public ResponseEntity<WodResponse> updateWod(
       @PathVariable Long id, @Valid @RequestBody WodRequest request) {
 
@@ -191,25 +117,6 @@ public class WodController {
    */
   @DeleteMapping("/{id}")
   @PreAuthorize("@wodSecurity.canModify(#id, principal)")
-  @Operation(
-      summary = "Delete WOD",
-      description = "Removes a workout definition (Admin/Coach only).")
-  @ApiResponses(
-      value = {
-        @ApiResponse(responseCode = "204", description = "WOD deleted successfully"),
-        @ApiResponse(
-            responseCode = "404",
-            description = "WOD not found - The ID does not exist",
-            content = @Content(schema = @Schema(hidden = true))),
-        @ApiResponse(
-            responseCode = "403",
-            description = "Forbidden - Requires COACH or ADMIN role",
-            content = @Content(schema = @Schema(hidden = true))),
-        @ApiResponse(
-            responseCode = "401",
-            description = "Unauthorized - User is not authenticated",
-            content = @Content(schema = @Schema(hidden = true)))
-      })
   public ResponseEntity<Void> deleteWod(@PathVariable Long id) {
 
     wodService.deleteWod(id);
@@ -218,10 +125,8 @@ public class WodController {
 
   /** Retrieves reference data (types, units) for UI forms. */
   @GetMapping("/reference-data")
-  @Operation(
-      summary = "Get WOD reference data",
-      description = "Returns available WOD types, score types, and units.")
   public ResponseEntity<WodReferenceData> getReferenceData() {
+
     return ResponseEntity.ok(wodService.getReferenceData());
   }
 }

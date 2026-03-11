@@ -18,10 +18,7 @@ import apex.stellar.aldebaran.model.enums.Category;
 import apex.stellar.aldebaran.repository.MovementRepository;
 import apex.stellar.aldebaran.repository.MuscleRepository;
 import apex.stellar.aldebaran.repository.projection.MovementSummary;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -55,8 +52,8 @@ class MovementServiceTest {
 
     muscle = Muscle.builder().id(1L).medicalName("Quadriceps").build();
 
-    List<MovementMuscleRequest> muscleRequests =
-        List.of(new MovementMuscleRequest(1L, MovementMuscle.MuscleRole.AGONIST, 1.0));
+    Set<MovementMuscleRequest> muscleRequests =
+        Set.of(new MovementMuscleRequest(1L, MovementMuscle.MuscleRole.AGONIST, 1.0));
 
     request =
         new MovementRequest(
@@ -66,8 +63,6 @@ class MovementServiceTest {
             Collections.emptySet(),
             Collections.emptySet(),
             muscleRequests,
-            true,
-            1.0,
             null,
             null,
             null,

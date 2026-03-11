@@ -58,21 +58,6 @@ public class MuscleService {
   }
 
   /**
-   * Retrieves all muscles belonging to a specific anatomical group.
-   *
-   * @param group The anatomical group to filter by (e.g., LEGS, CHEST).
-   * @return A filtered list of {@link MuscleResponse} objects.
-   */
-  @Transactional(readOnly = true)
-  @Cacheable(value = CACHE_MUSCLES, key = "'group-' + #group.name()")
-  public List<MuscleResponse> getMusclesByGroup(MuscleGroup group) {
-
-    return muscleRepository.findByMuscleGroup(group).stream()
-        .map(muscleMapper::toResponse)
-        .toList();
-  }
-
-  /**
    * Retrieves a specific muscle by its unique medical name (Business Key).
    *
    * <p>The result is cached individually using the name as the key.

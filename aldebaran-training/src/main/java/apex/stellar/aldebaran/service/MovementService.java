@@ -77,7 +77,6 @@ public class MovementService {
       projections = movementRepository.findProjectedByNameContainingIgnoreCase(query);
     }
 
-    // Map projection interface to DTO
     return projections.stream().map(movementMapper::toSummary).toList();
   }
 
@@ -187,17 +186,23 @@ public class MovementService {
 
     Map<String, List<String>> categoryGroups = new LinkedHashMap<>();
     for (Category c : Category.values()) {
-      categoryGroups.computeIfAbsent(c.getModality().name(), k -> new ArrayList<>()).add(c.name());
+      categoryGroups
+          .computeIfAbsent(c.getModality().name(), ignored -> new ArrayList<>())
+          .add(c.name());
     }
 
     Map<String, List<String>> equipmentGroups = new LinkedHashMap<>();
     for (Equipment e : Equipment.values()) {
-      equipmentGroups.computeIfAbsent(e.getCategory().name(), k -> new ArrayList<>()).add(e.name());
+      equipmentGroups
+          .computeIfAbsent(e.getCategory().name(), ignored -> new ArrayList<>())
+          .add(e.name());
     }
 
     Map<String, List<String>> techniqueGroups = new LinkedHashMap<>();
     for (Technique t : Technique.values()) {
-      techniqueGroups.computeIfAbsent(t.getCategory().name(), k -> new ArrayList<>()).add(t.name());
+      techniqueGroups
+          .computeIfAbsent(t.getCategory().name(), ignored -> new ArrayList<>())
+          .add(t.name());
     }
 
     return new MovementReferenceData(categoryGroups, equipmentGroups, techniqueGroups);

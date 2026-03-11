@@ -22,13 +22,7 @@ import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
-/**
- * Represents a specific anatomical muscle in the human body.
- *
- * <p>This entity serves as the granular unit for biomechanical analysis. Muscles are categorized by
- * {@link MuscleGroup} to facilitate high-level reporting and visualization (e.g., "Upper Body" vs.
- * "Lower Body" volume).
- */
+/** Represents a specific anatomical muscle in the human body. */
 @Getter
 @Setter
 @Builder
@@ -39,15 +33,22 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 @EntityListeners(AuditingEntityListener.class)
 public class Muscle {
 
+  // --- Identification ---
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
 
-  /** The Latin/Medical name (e.g., "Pectoralis Major"). Acts as the business key. */
   @Column(name = "medical_name", unique = true, nullable = false, length = 100)
   @NotBlank
   private String medicalName;
 
+  // --- Characteristics ---
+  @Enumerated(EnumType.STRING)
+  @Column(name = "muscle_group", nullable = false, length = 50)
+  @NotNull
+  private MuscleGroup muscleGroup;
+
+  // --- Internationalized Content ---
   @Column(name = "common_name_en", length = 100)
   private String commonNameEn;
 
@@ -60,18 +61,11 @@ public class Muscle {
   @Column(name = "description_fr", columnDefinition = "TEXT")
   private String descriptionFr;
 
-  /** The major anatomical group this muscle belongs to. */
-  @Enumerated(EnumType.STRING)
-  @Column(name = "muscle_group", nullable = false, length = 50)
-  @NotNull
-  private MuscleGroup muscleGroup;
-
+  // --- Media ---
   @Column(name = "image_url")
   private String imageUrl;
 
-  // -------------------------------------------------------------------------
-  // Audit
-  // -------------------------------------------------------------------------
+  // --- Audit ---
   @CreatedDate
   @Column(name = "created_at", nullable = false, updatable = false)
   private LocalDateTime createdAt;
@@ -80,9 +74,7 @@ public class Muscle {
   @Column(name = "updated_at", nullable = false)
   private LocalDateTime updatedAt;
 
-  // -------------------------------------------------------------------------
-  // Equality based on business key (medicalName)
-  // -------------------------------------------------------------------------
+  // --- Equality & Hashing ---
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -91,23 +83,15 @@ public class Muscle {
     if (!(o instanceof Muscle other)) {
       return false;
     }
-    return getMedicalName() != null && getMedicalName().equals(other.getMedicalName());
+    return id != null && id.equals(other.getId());
   }
 
   @Override
   public int hashCode() {
-    return getMedicalName() != null ? getMedicalName().hashCode() : 0;
+    return getClass().hashCode();
   }
 
-  // -------------------------------------------------------------------------
-  // INNER ENUM
-  // -------------------------------------------------------------------------
-  /**
-   * High-level categorization of muscles into major anatomical groups.
-   *
-   * <p>This enumeration allows for a macroscopic analysis of training volume. It helps answer
-   * questions like "Is the athlete training their Upper Body enough compared to their Lower Body?"
-   */
+  /** MuscleGroup Inner Enum. */
   @Getter
   @RequiredArgsConstructor
   public enum MuscleGroup {
@@ -118,7 +102,6 @@ public class Muscle {
     ARMS("Arms"),
     CORE("Core");
 
-    /** A human-readable name suitable for UI display. */
     private final String displayName;
   }
 }

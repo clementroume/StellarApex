@@ -42,14 +42,6 @@ describe('MuscleService', () => {
     req.flush([mockMuscleResponse]);
   });
 
-  it('getMuscles should include group param if provided', () => {
-    const group: string = 'CHEST';
-    service.getMuscles(group).subscribe();
-    const req = httpMock.expectOne(`${base}/muscles?group=${group}`);
-    expect(req.request.method).toBe('GET');
-    req.flush([mockMuscleResponse]);
-  });
-
   it('getMuscle should GET from /muscles/{id}', () => {
     const id = 1;
     service.getMuscle(id).subscribe(response => {
