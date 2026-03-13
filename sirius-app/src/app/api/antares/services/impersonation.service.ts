@@ -10,10 +10,6 @@ export class ImpersonationService {
   private readonly http = inject(HttpClient);
   private readonly authService = inject(AuthService);
 
-  /**
-   * Allows an admin to impersonate another user.
-   * On success, the auth state is updated with the target user's identity.
-   */
   impersonate(userId: number): Observable<UserResponse> {
     return this.http.post<UserResponse>(this.buildUrl(`/auth/impersonate/${userId}`), {}).pipe(
       tap(user => this.authService.updateCurrentUser(user))

@@ -55,15 +55,12 @@ describe('LoginComponent', () => {
   });
 
   it('should call redirectToExternal when returnUrl starts with http', () => {
-    // Arrange
     component.loginForm.controls['email'].setValue('test@test.com');
     component.loginForm.controls['password'].setValue('password');
     (component as any).returnUrl = 'https://external-site.com';
 
-    // Act
     component.onSubmit();
 
-    // Assert
     expect(component.redirectToExternal).toHaveBeenCalledWith('https://external-site.com');
   });
 });

@@ -9,27 +9,31 @@
       <fieldset class="fieldset bg-base-200 border-base-300 rounded-box w-full border p-4">
         <legend class="fieldset-legend">{{ 'SETTINGS.PASSWORD_SUBTITLE' | translate }}</legend>
 
-        <label class="fieldset-label">{{ 'SETTINGS.CURRENT_PASSWORD' | translate }}</label>
-        <label class="input validator w-full">
+        <label class="fieldset-label" for="currentPassword">{{ 'SETTINGS.CURRENT_PASSWORD' | translate }}</label>
+        <div class="input validator w-full">
           <ng-icon name="heroKey" class="opacity-50"></ng-icon>
-          <input [placeholder]="'SETTINGS.CURRENT_PASSWORD' | translate" formControlName="currentPassword" required
+          <input id="currentPassword" [placeholder]="'SETTINGS.CURRENT_PASSWORD' | translate"
+                 formControlName="currentPassword" required
                  type="password"/>
-        </label>
+        </div>
 
-        <label class="fieldset-label mt-3">{{ 'SETTINGS.NEW_PASSWORD' | translate }}</label>
-        <label class="input validator w-full">
+        <label class="fieldset-label mt-3" for="newPassword">{{ 'SETTINGS.NEW_PASSWORD' | translate }}</label>
+        <div class="input validator w-full">
           <ng-icon name="heroKey" class="opacity-50"></ng-icon>
-          <input [placeholder]="'SETTINGS.NEW_PASSWORD' | translate" formControlName="newPassword" minlength="8"
+          <input id="newPassword" [placeholder]="'SETTINGS.NEW_PASSWORD' | translate" formControlName="newPassword"
+                 minlength="8"
                  pattern="(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{8,}" required type="password"/>
-        </label>
+        </div>
         <p class="validator-hint hidden text-xs">{{ 'GLOBAL.ERROR_PASSWORD_RULES' | translate }}</p>
 
-        <label class="fieldset-label mt-3">{{ 'GLOBAL.CONFIRM_PASSWORD' | translate }}</label>
-        <label class="input validator w-full">
+        <label class="fieldset-label mt-3"
+               for="confirmationPassword">{{ 'GLOBAL.CONFIRM_PASSWORD' | translate }}</label>
+        <div class="input validator w-full">
           <ng-icon name="heroKey" class="opacity-50"></ng-icon>
-          <input [placeholder]="'GLOBAL.CONFIRM_PASSWORD' | translate" formControlName="confirmationPassword" required
+          <input id="confirmationPassword" [placeholder]="'GLOBAL.CONFIRM_PASSWORD' | translate"
+                 formControlName="confirmationPassword" required
                  type="password"/>
-        </label>
+        </div>
         @if (passwordForm.errors?.['passwordsMismatch'] && passwordForm.get('confirmationPassword')?.touched) {
           <p class="validator-hint text-error text-xs mt-1">{{ 'GLOBAL.PASSWORDS_MISMATCH' | translate }}</p>
         }
@@ -42,16 +46,17 @@
       </fieldset>
     </form>
 
-    <fieldset class="fieldset bg-base-200 border-base-300 rounded-box w-full border p-4">
+    <fieldset class="fieldset bg-base-200 border-base-300 rounded-box w-full border p-4 mt-6">
       <legend class="fieldset-legend">{{ 'SETTINGS.LANGUAGE_TITLE' | translate }}</legend>
-      <label class="fieldset-label">{{ 'SETTINGS.LANGUAGE_LABEL' | translate }}</label>
+
+      <label class="fieldset-label" for="languageSelect">{{ 'SETTINGS.LANGUAGE_LABEL' | translate }}</label>
       <div class="join w-full">
         <div class="btn btn-square join-item bg-base-100 border-base-300 cursor-default">
           <ng-icon name="heroGlobeAlt" class="opacity-75" color="var(--color-accent)" size="2em"></ng-icon>
         </div>
-        <select (change)="changeLanguage($event)" class="select join-item w-full bg-base-100">
-          <option [selected]="translate.currentLang === 'en'" value="en">English</option>
-          <option [selected]="translate.currentLang === 'fr'" value="fr">Français</option>
+        <select id="languageSelect" (change)="changeLanguage($event)" class="select join-item w-full bg-base-100">
+          <option [selected]="translate.getCurrentLang() === 'en'" value="en">English</option>
+          <option [selected]="translate.getCurrentLang() === 'fr'" value="fr">Français</option>
         </select>
       </div>
     </fieldset>

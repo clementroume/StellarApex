@@ -138,6 +138,25 @@ public class MuscleService {
     return muscleMapper.toResponse(savedMuscle);
   }
 
+  /**
+   * Deletes a muscle record from the catalog based on its unique identifier.
+   *
+   * @param id The unique identifier of the muscle to be deleted. Must not be null or invalid.
+   * @throws ResourceNotFoundException if no muscle exists with the given ID.
+   */
+  @Transactional
+  @CacheEvict(
+      value = {CACHE_MUSCLES, CACHE_MUSCLE},
+      allEntries = true)
+  public void deleteMuscle(Long id) {
+
+    log.info("Deleting Muscle with ID: {}", id);
+    if (!muscleRepository.existsById(id)) {
+      throw new ResourceNotFoundException("Muscle not found with id: " + id);
+    }
+    muscleRepository.deleteById(id);
+  }
+
   /** Retrieves reference data for Muscle forms. */
   public MuscleReferenceData getReferenceData() {
     List<String> groups = Arrays.stream(MuscleGroup.values()).map(Enum::name).toList();

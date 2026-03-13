@@ -92,7 +92,16 @@ export class MuscleFormComponent implements OnInit {
     }
 
     this.isLoading.set(true);
-    const payload = this.muscleForm.getRawValue() as unknown as MuscleRequest;
+    const formValue = this.muscleForm.getRawValue();
+
+    const payload = {
+      ...formValue,
+      commonNameEn: formValue.commonNameEn?.trim() || null,
+      commonNameFr: formValue.commonNameFr?.trim() || null,
+      descriptionEn: formValue.descriptionEn?.trim() || null,
+      descriptionFr: formValue.descriptionFr?.trim() || null,
+      imageUrl: formValue.imageUrl?.trim() || null
+    } as unknown as MuscleRequest;
 
     const request$ = this.isEditMode() && this.muscleId()
       ? this.muscleService.updateMuscle(this.muscleId()!, payload)
@@ -100,10 +109,8 @@ export class MuscleFormComponent implements OnInit {
 
     request$.subscribe({
       next: () => {
-        const key = this.isEditMode() ? 'MUSCLE.FORM.SUCCESS_UPDATE' : 'MUSCLE.FORM.SUCCESS_CREATE';
-        this.translate.get(key).subscribe((message: string) => {
-          this.notificationService.showSuccess(message);
-        });
+        const key = this.isEditMode() ? 'MUSCLE.MESSAGES.SUCCESS_UPDATE' : 'MUSCLE.MESSAGES.SUCCESS_CREATE';
+        this.notificationService.showSuccess(this.translate.instant(key));
         void this.router.navigate(['/muscles']);
       },
       error: (err: HttpErrorResponse) => {

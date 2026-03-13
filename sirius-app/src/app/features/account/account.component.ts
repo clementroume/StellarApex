@@ -3,13 +3,6 @@ import {RouterModule} from '@angular/router';
 import {TranslateModule} from '@ngx-translate/core';
 import {NgIcon} from '@ng-icons/core';
 
-/**
- * The shell component for the user account section.
- *
- * This component provides the main layout for all account-related pages, including
- * the main navigation bar, a side menu for account navigation, and a router outlet
- * for displaying child components like `ProfileComponent` and `SettingsComponent`.
- */
 @Component({
   selector: 'app-account',
   standalone: true,
@@ -18,5 +11,4 @@ import {NgIcon} from '@ng-icons/core';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AccountComponent {
-  // This component is purely presentational and holds no business logic itself.
 }

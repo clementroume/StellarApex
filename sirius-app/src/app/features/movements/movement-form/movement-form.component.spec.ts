@@ -3,7 +3,6 @@ import {MovementFormComponent} from './movement-form.component';
 import {ActivatedRoute, provideRouter} from '@angular/router';
 import {TranslateModule} from '@ngx-translate/core';
 import {of} from 'rxjs';
-
 import {provideIcons} from '@ng-icons/core';
 import {MovementService} from '../../../api/aldebaran/services/movement.service';
 import {MuscleService} from '../../../api/aldebaran/services/muscle.service';
@@ -20,6 +19,7 @@ describe('MovementFormComponent', () => {
   beforeEach(async () => {
     movementServiceSpy = jasmine.createSpyObj('MovementService', ['getMovement', 'createMovement', 'updateMovement', 'getReferenceData']);
     movementServiceSpy.createMovement.and.returnValue(of({} as any));
+    movementServiceSpy.updateMovement.and.returnValue(of({} as any));
 
     movementServiceSpy.getReferenceData.and.returnValue(of({
       categoryGroups: {'WEIGHTLIFTING': ['DEADLIFT']},
@@ -27,18 +27,30 @@ describe('MovementFormComponent', () => {
       techniqueGroups: {'STYLE': ['STRICT']}
     } as any));
 
+    movementServiceSpy.getMovement.and.returnValue(of({
+      id: 1,
+      name: 'Loaded Squat',
+      category: 'SQUAT',
+      equipment: ['BARBELL'],
+      techniques: [],
+      targetedMuscles: [
+        {muscle: {id: 1, medicalName: 'Quads'}, role: 'AGONIST', impactFactor: 1.0}
+      ]
+    } as any));
+
     muscleServiceSpy = jasmine.createSpyObj('MuscleService', ['getMuscles', 'getReferenceData']);
     muscleServiceSpy.getMuscles.and.returnValue(of([
       {id: 1, medicalName: 'Pectoralis Major', muscleGroup: 'CHEST'}
     ]));
-
     muscleServiceSpy.getReferenceData.and.returnValue(of({
       muscleRoles: ['AGONIST', 'SYNERGIST', 'STABILIZER'],
       muscleGroups: ['CHEST', 'BACK']
     } as any));
 
     notificationServiceSpy = jasmine.createSpyObj('NotificationService', ['showSuccess', 'showError']);
+  });
 
+  const setupTestBed = async (routeParamId: string | null) => {
     await TestBed.configureTestingModule({
       imports: [MovementFormComponent, TranslateModule.forRoot()],
       providers: [
@@ -49,7 +61,7 @@ describe('MovementFormComponent', () => {
         {provide: NotificationService, useValue: notificationServiceSpy},
         {
           provide: ActivatedRoute,
-          useValue: {snapshot: {paramMap: {get: () => null}}} // Simulates default "Create" mode
+          useValue: {snapshot: {paramMap: {get: () => routeParamId}}}
         }
       ]
     }).compileComponents();
@@ -57,68 +69,98 @@ describe('MovementFormComponent', () => {
     fixture = TestBed.createComponent(MovementFormComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
-  });
+  };
 
-  it('should create the component in create mode', () => {
-    expect(component).toBeTruthy();
-    expect(component.isEditMode()).toBeFalse();
-  });
-
-  it('should initialize the muscles catalog', () => {
-    expect(muscleServiceSpy.getMuscles).toHaveBeenCalled();
-    expect(component.availableMuscles().length).toBe(1);
-  });
-
-  describe('Tags Management (Chips)', () => {
-    it('should add an equipment if it is not selected', () => {
-      component.toggleSelection('equipment', 'BARBELL');
-      const equipments = component.movementForm.get('equipment')?.value;
-      expect(equipments).toContain('BARBELL');
-      expect(component.isItemSelected('equipment', 'BARBELL')).toBeTrue();
+  describe('Create Mode', () => {
+    beforeEach(async () => {
+      await setupTestBed(null);
     });
 
-    it('should remove an equipment if it is already selected', () => {
-      component.movementForm.patchValue({equipment: ['BARBELL']});
-      component.toggleSelection('equipment', 'BARBELL');
-      const equipments = component.movementForm.get('equipment')?.value;
-      expect(equipments).not.toContain('BARBELL');
+    it('should create the component in create mode', () => {
+      expect(component).toBeTruthy();
+      expect(component.isEditMode()).toBeFalse();
+    });
+
+    it('should initialize the muscles catalog', () => {
+      expect(muscleServiceSpy.getMuscles).toHaveBeenCalled();
+      expect(component.availableMuscles().length).toBe(1);
+    });
+
+    describe('Tags Management (Chips)', () => {
+      it('should add an equipment if it is not selected', () => {
+        component.toggleSelection('equipment', 'BARBELL');
+        const equipments = component.movementForm.get('equipment')?.value;
+        expect(equipments).toContain('BARBELL');
+        expect(component.isItemSelected('equipment', 'BARBELL')).toBeTrue();
+      });
+
+      it('should remove an equipment if it is already selected', () => {
+        component.movementForm.patchValue({equipment: ['BARBELL']});
+        component.toggleSelection('equipment', 'BARBELL');
+        const equipments = component.movementForm.get('equipment')?.value;
+        expect(equipments).not.toContain('BARBELL');
+      });
+    });
+
+    describe('Muscles FormArray Management', () => {
+      it('should add an empty muscle line', () => {
+        expect(component.musclesFormArray.length).toBe(0);
+        component.addMuscle();
+        expect(component.musclesFormArray.length).toBe(1);
+        expect(component.musclesFormArray.at(0).get('role')?.value).toBe('AGONIST');
+      });
+
+      it('should delete a specific muscle line', () => {
+        component.addMuscle();
+        component.addMuscle();
+        expect(component.musclesFormArray.length).toBe(2);
+
+        component.removeMuscle(0);
+        expect(component.musclesFormArray.length).toBe(1);
+      });
+    });
+
+    describe('Form Submission', () => {
+      it('should not submit if the form is invalid', () => {
+        component.onSubmit();
+        expect(movementServiceSpy.createMovement).not.toHaveBeenCalled();
+      });
+
+      it('should call createMovement if valid', () => {
+        component.movementForm.patchValue({
+          name: 'Bench Press',
+          category: 'PUSHING'
+        });
+        component.onSubmit();
+
+        expect(movementServiceSpy.createMovement).toHaveBeenCalled();
+        expect(notificationServiceSpy.showSuccess).toHaveBeenCalled();
+      });
     });
   });
 
-  describe('Muscles FormArray Management', () => {
-    it('should add an empty muscle line', () => {
-      expect(component.musclesFormArray.length).toBe(0);
-      component.addMuscle();
+  describe('Edit Mode', () => {
+    beforeEach(async () => {
+      await setupTestBed('1'); // Simule une URL du type /movements/edit/1
+    });
+
+    it('should initialize in edit mode and load movement data', () => {
+      expect(component.isEditMode()).toBeTrue();
+      expect(movementServiceSpy.getMovement).toHaveBeenCalledWith(1);
+
+      // Vérification des données de base
+      expect(component.movementForm.get('name')?.value).toBe('Loaded Squat');
+      expect(component.movementForm.get('equipment')?.value).toContain('BARBELL');
+
+      // Vérification vitale : Le FormArray des muscles a bien été peuplé !
       expect(component.musclesFormArray.length).toBe(1);
+      expect(component.musclesFormArray.at(0).get('muscleId')?.value).toBe(1);
       expect(component.musclesFormArray.at(0).get('role')?.value).toBe('AGONIST');
     });
 
-    it('should delete a specific muscle line', () => {
-      component.addMuscle();
-      component.addMuscle();
-      expect(component.musclesFormArray.length).toBe(2);
-
-      component.removeMuscle(0);
-      expect(component.musclesFormArray.length).toBe(1);
-    });
-  });
-
-  describe('Form Submission', () => {
-    it('should not submit if the form is invalid', () => {
+    it('should call updateMovement on submit', () => {
       component.onSubmit();
-      expect(movementServiceSpy.createMovement).not.toHaveBeenCalled();
-    });
-
-    it('should call createMovement if valid', () => {
-      // Fill mandatory fields
-      component.movementForm.patchValue({
-        name: 'Bench Press',
-        category: 'PUSHING'
-      });
-
-      component.onSubmit();
-
-      expect(movementServiceSpy.createMovement).toHaveBeenCalled();
+      expect(movementServiceSpy.updateMovement).toHaveBeenCalled();
       expect(notificationServiceSpy.showSuccess).toHaveBeenCalled();
     });
   });

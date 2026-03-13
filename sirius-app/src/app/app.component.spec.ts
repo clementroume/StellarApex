@@ -9,11 +9,9 @@ describe('AppComponent', () => {
     await TestBed.configureTestingModule({
       imports: [
         AppComponent,
-        // Provide the necessary module for the TranslateService used in the component
         TranslateModule.forRoot()
       ],
       providers: [
-        // Provide HttpClient and its testing mock for the AuthService dependency
         provideHttpClient(),
         provideHttpClientTesting()
       ]

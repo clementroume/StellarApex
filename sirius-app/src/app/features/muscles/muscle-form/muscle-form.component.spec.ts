@@ -9,16 +9,12 @@ import {TranslateModule} from '@ngx-translate/core';
 describe('MuscleFormComponent', () => {
   let component: MuscleFormComponent;
   let fixture: ComponentFixture<MuscleFormComponent>;
-
-  // 1. Typage strict des Spys, comme dans Movement
   let muscleServiceSpy: jasmine.SpyObj<MuscleService>;
   let notificationServiceSpy: jasmine.SpyObj<NotificationService>;
-
   let mockActivatedRoute: any;
   let router: Router;
 
   beforeEach(async () => {
-    // 2. Création du SpyObj pour MuscleService
     muscleServiceSpy = jasmine.createSpyObj('MuscleService', [
       'getMuscle',
       'createMuscle',
@@ -26,7 +22,6 @@ describe('MuscleFormComponent', () => {
       'getReferenceData'
     ]);
 
-    // 3. Définition des retours des Spys
     muscleServiceSpy.getMuscle.and.returnValue(of({
       id: 1, medicalName: 'Test', muscleGroup: 'CHEST'
     } as any));
@@ -38,7 +33,6 @@ describe('MuscleFormComponent', () => {
       muscleGroups: ['CHEST', 'BACK', 'LEGS', 'ARMS', 'SHOULDERS', 'CORE']
     } as any));
 
-    // 4. Création du SpyObj pour NotificationService
     notificationServiceSpy = jasmine.createSpyObj('NotificationService', ['showSuccess', 'showError']);
 
     mockActivatedRoute = {
@@ -74,7 +68,6 @@ describe('MuscleFormComponent', () => {
     fixture.detectChanges();
 
     expect(component.isEditMode()).toBeTrue();
-    // Vérifie bien qu'on appelle l'espion renommé
     expect(muscleServiceSpy.getMuscle).toHaveBeenCalledWith(1 as any);
     expect(component.muscleForm.get('medicalName')?.value).toBe('Test');
   });
@@ -96,6 +89,23 @@ describe('MuscleFormComponent', () => {
 
     component.onSubmit();
     expect(muscleServiceSpy.createMuscle).toHaveBeenCalled();
+    expect(notificationServiceSpy.showSuccess).toHaveBeenCalled();
+    expect(navigateSpy).toHaveBeenCalledWith(['/muscles']);
+  });
+
+  it('should call updateMuscle upon valid submission in Edit mode', () => {
+    const navigateSpy = spyOn(router, 'navigate');
+    mockActivatedRoute.snapshot.paramMap.get = () => '1';
+    fixture.detectChanges();
+
+    component.muscleForm.patchValue({
+      medicalName: 'UpdatedMuscle'
+    });
+
+    component.onSubmit();
+
+    expect(muscleServiceSpy.updateMuscle).toHaveBeenCalled();
+    expect(muscleServiceSpy.createMuscle).not.toHaveBeenCalled();
     expect(notificationServiceSpy.showSuccess).toHaveBeenCalled();
     expect(navigateSpy).toHaveBeenCalledWith(['/muscles']);
   });

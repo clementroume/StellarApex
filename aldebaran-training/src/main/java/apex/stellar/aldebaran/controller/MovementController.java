@@ -12,14 +12,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 /**
  * REST Controller for the Movement Catalog.
@@ -87,11 +80,6 @@ public class MovementController {
   /**
    * Updates an existing movement definition.
    *
-   * <p><b>Security:</b> Restricted to users with the {@code ADMIN} role.
-   *
-   * <p>This operation performs a full update of the movement, including re-linking muscle
-   * relationships.
-   *
    * @param id The ID of the movement to update.
    * @param request The updated movement data.
    * @return The updated movement details.
@@ -102,6 +90,20 @@ public class MovementController {
       @PathVariable Long id, @Valid @RequestBody MovementRequest request) {
 
     return ResponseEntity.ok(movementService.updateMovement(id, request));
+  }
+
+  /**
+   * Updates an existing movement definition.
+   *
+   * @param id The ID of the movement to update.
+   * @return An HTTP 204 no content.
+   */
+  @DeleteMapping("/{id}")
+  @PreAuthorize("hasRole('ADMIN')")
+  public ResponseEntity<Void> deleteMovement(@PathVariable Long id) {
+
+    movementService.deleteMovement(id);
+    return ResponseEntity.noContent().build();
   }
 
   /** Retrieves structured reference data (categories, equipments, techniques) for UI forms. */

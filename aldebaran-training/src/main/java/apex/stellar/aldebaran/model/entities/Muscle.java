@@ -95,13 +95,11 @@ public class Muscle {
   @Getter
   @RequiredArgsConstructor
   public enum MuscleGroup {
-    LEGS("Legs"),
-    BACK("Back"),
-    CHEST("Chest"),
-    SHOULDERS("Shoulders"),
-    ARMS("Arms"),
-    CORE("Core");
-
-    private final String displayName;
+    LEGS,
+    BACK,
+    CHEST,
+    SHOULDERS,
+    ARMS,
+    CORE
   }
 }

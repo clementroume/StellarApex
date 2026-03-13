@@ -2,11 +2,7 @@ import {inject, Injectable} from '@angular/core';
 import {HttpClient, HttpParams} from '@angular/common/http';
 import {Observable} from 'rxjs';
 import {environment} from '../../../../environments/environment';
-import {
-  MembershipResponse,
-  MembershipStatus,
-  MembershipUpdateRequest
-} from '../models/membership.model';
+import {MembershipResponse, MembershipStatus, MembershipUpdateRequest} from '../models/membership.model';
 
 @Injectable({providedIn: 'root'})
 export class MembershipService {
@@ -17,18 +13,18 @@ export class MembershipService {
     if (status) {
       params = params.set('status', status);
     }
-    return this.http.get<MembershipResponse[]>(this.buildUrl('/memberships'), {params});
+    return this.http.get<MembershipResponse[]>(this.buildUrl(), {params});
   }
 
   updateMembership(id: number, payload: MembershipUpdateRequest): Observable<MembershipResponse> {
-    return this.http.put<MembershipResponse>(this.buildUrl(`/memberships/${id}`), payload);
+    return this.http.put<MembershipResponse>(this.buildUrl(`/${id}`), payload);
   }
 
   deleteMembership(id: number): Observable<void> {
-    return this.http.delete<void>(this.buildUrl(`/memberships/${id}`));
+    return this.http.delete<void>(this.buildUrl(`/${id}`));
   }
 
-  private buildUrl(path: string): string {
-    return `${environment.authUrl}${path}`;
+  private buildUrl(path: string = ''): string {
+    return `${environment.authUrl}/memberships${path}`;
   }
 }

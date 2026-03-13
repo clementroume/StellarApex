@@ -6,25 +6,30 @@
 
   <div class="card shrink-0 w-full max-w-sm shadow-2xl bg-base-100">
     <form (ngSubmit)="onSubmit()" [formGroup]="loginForm" class="card-body">
-      <label class="input validator w-full">
+
+      <div class="input validator w-full">
         <ng-icon name="heroEnvelope" class="opacity-50"></ng-icon>
-        <input formControlName="email" [placeholder]="'GLOBAL.EMAIL' | translate" required type="email"/>
-      </label>
+        <input formControlName="email"
+               [placeholder]="'GLOBAL.EMAIL' | translate"
+               required type="email"/>
+      </div>
       <div class="validator-hint hidden">{{ 'GLOBAL.ERROR_EMAIL' | translate }}</div>
 
-      <label class="input validator w-full mt-4">
+      <div class="input validator w-full mt-4">
         <ng-icon name="heroKey" class="opacity-50"></ng-icon>
-        <input formControlName="password" [placeholder]="'GLOBAL.PASSWORD' | translate" required type="password"/>
-      </label>
+        <input formControlName="password"
+               [placeholder]="'GLOBAL.PASSWORD' | translate"
+               required type="password"/>
+      </div>
 
       <div class="form-control mt-6">
         <button [disabled]="loginForm.invalid" class="btn btn-primary" type="submit">{{ 'LOGIN.SIGN_IN' | translate }}
         </button>
       </div>
 
-      <label class="label">
+      <div class="label">
         <a class="label-text-alt link link-hover" routerLink="/auth/register">{{ 'LOGIN.NO_ACCOUNT' | translate }}</a>
-      </label>
+      </div>
     </form>
   </div>
 </div>

@@ -5,7 +5,7 @@
       <ng-icon name="hugeCircleArrowLeft02" size="1.75em"></ng-icon>
     </a>
     <h1 class="text-2xl font-bold">
-      {{ (isEditMode() ? 'MUSCLE.FORM.TITLE_EDIT' : 'MUSCLE.FORM.TITLE_ADD') | translate }}
+      {{ (isEditMode() ? 'MUSCLE.TITLES.EDIT' : 'MUSCLE.TITLES.ADD') | translate }}
     </h1>
   </div>
 
@@ -14,23 +14,26 @@
 
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div class="form-control w-full">
-          <label class="label"><span
-            class="label-text font-semibold">{{ 'MUSCLE.FORM.MEDICAL_NAME' | translate }}</span></label>
-          <input type="text" formControlName="medicalName" class="input input-bordered w-full"
+          <label class="label" for="medicalName">
+            <span class="label-text font-semibold">{{ 'MUSCLE.FIELDS.MEDICAL_NAME' | translate }} *</span>
+          </label>
+          <input id="medicalName" type="text" formControlName="medicalName" class="input input-bordered w-full"
                  [class.input-error]="muscleForm.controls.medicalName.invalid && muscleForm.controls.medicalName.touched"
-                 [placeholder]="'MUSCLE.FORM.MEDICAL_NAME_PH' | translate"/>
+                 [placeholder]="'MUSCLE.PLACEHOLDERS.MEDICAL_NAME' | translate"/>
           @if (muscleForm.controls.medicalName.invalid && muscleForm.controls.medicalName.touched) {
-            <label class="label"><span
-              class="label-text-alt text-error">{{ 'MUSCLE.FORM.ERROR_MEDICAL_NAME' | translate }}</span></label>
+            <div class="label">
+              <span class="label-text-alt text-error">{{ 'MUSCLE.MESSAGES.ERROR_MEDICAL_NAME' | translate }}</span>
+            </div>
           }
         </div>
 
         <div class="form-control w-full">
-          <label class="label"><span
-            class="label-text font-semibold">{{ 'MUSCLE.FORM.GROUP' | translate }}</span></label>
-          <select formControlName="muscleGroup" class="select select-bordered w-full"
+          <label class="label" for="muscleGroup">
+            <span class="label-text font-semibold">{{ 'MUSCLE.FIELDS.GROUP' | translate }} *</span>
+          </label>
+          <select id="muscleGroup" formControlName="muscleGroup" class="select select-bordered w-full"
                   [class.select-error]="muscleForm.controls.muscleGroup.invalid && muscleForm.controls.muscleGroup.touched">
-            <option value="" disabled selected>{{ 'MUSCLE.FORM.GROUP_PH' | translate }}</option>
+            <option value="" disabled selected>{{ 'MUSCLE.ACTIONS.SELECT_GROUP' | translate }}</option>
             @for (group of muscleGroups(); track group) {
               <option [value]="group">{{ 'MUSCLE.GROUPS.' + group | translate }}</option>
             }
@@ -38,45 +41,53 @@
         </div>
       </div>
 
-      <div class="divider">{{ 'MUSCLE.FORM.COMMON_NAMES' | translate }}</div>
+      <div class="divider">{{ 'MUSCLE.SECTIONS.COMMON_NAMES' | translate }}</div>
 
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div class="form-control w-full">
-          <label class="label"><span
-            class="label-text font-semibold">{{ 'MUSCLE.FORM.NAME_FR' | translate }}</span></label>
-          <input type="text" formControlName="commonNameFr" class="input input-bordered w-full"
-                 [placeholder]="'MUSCLE.FORM.NAME_FR_PH' | translate"/>
+          <label class="label" for="commonNameFr">
+            <span class="label-text font-semibold">{{ 'MUSCLE.FIELDS.NAME_FR' | translate }}</span>
+          </label>
+          <input id="commonNameFr" type="text" formControlName="commonNameFr" class="input input-bordered w-full"
+                 [placeholder]="'MUSCLE.PLACEHOLDERS.NAME_FR' | translate"/>
         </div>
         <div class="form-control w-full">
-          <label class="label"><span
-            class="label-text font-semibold">{{ 'MUSCLE.FORM.NAME_EN' | translate }}</span></label>
-          <input type="text" formControlName="commonNameEn" class="input input-bordered w-full"
-                 [placeholder]="'MUSCLE.FORM.NAME_EN_PH' | translate"/>
+          <label class="label" for="commonNameEn">
+            <span class="label-text font-semibold">{{ 'MUSCLE.FIELDS.NAME_EN' | translate }}</span>
+          </label>
+          <input id="commonNameEn" type="text" formControlName="commonNameEn" class="input input-bordered w-full"
+                 [placeholder]="'MUSCLE.PLACEHOLDERS.NAME_EN' | translate"/>
         </div>
       </div>
 
-      <div class="divider">{{ 'MUSCLE.FORM.DESCRIPTIONS' | translate }}</div>
+      <div class="divider">{{ 'MUSCLE.SECTIONS.DESCRIPTIONS' | translate }}</div>
 
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div class="form-control w-full">
-          <label class="label"><span
-            class="label-text font-semibold">{{ 'MUSCLE.FORM.DESC_FR' | translate }}</span></label>
-          <textarea formControlName="descriptionFr" class="textarea textarea-bordered h-24"
-                    [placeholder]="'MUSCLE.FORM.DESC_FR_PH' | translate"></textarea>
+          <label class="label" for="descriptionFr">
+            <span class="label-text font-semibold">{{ 'MUSCLE.FIELDS.DESC_FR' | translate }}</span>
+          </label>
+          <textarea id="descriptionFr" formControlName="descriptionFr" class="textarea textarea-bordered h-24"
+                    [placeholder]="'MUSCLE.PLACEHOLDERS.DESC_FR' | translate"></textarea>
         </div>
         <div class="form-control w-full">
-          <label class="label"><span
-            class="label-text font-semibold">{{ 'MUSCLE.FORM.DESC_EN' | translate }}</span></label>
-          <textarea formControlName="descriptionEn" class="textarea textarea-bordered h-24"
-                    [placeholder]="'MUSCLE.FORM.DESC_EN_PH' | translate"></textarea>
+          <label class="label" for="descriptionEn">
+            <span class="label-text font-semibold">{{ 'MUSCLE.FIELDS.DESC_EN' | translate }}</span>
+          </label>
+          <textarea id="descriptionEn" formControlName="descriptionEn" class="textarea textarea-bordered h-24"
+                    [placeholder]="'MUSCLE.PLACEHOLDERS.DESC_EN' | translate"></textarea>
         </div>
       </div>
 
-      <label class="form-control w-full mt-4">
-        <div class="label"><span class="label-text">Image URL</span></div>
-        <input type="url" formControlName="imageUrl" class="input input-bordered w-full"
-               placeholder="https://..."/>
-      </label>
+      <div class="divider">{{ 'MUSCLE.SECTIONS.MEDIA' | translate }}</div>
+
+      <div class="form-control w-full mt-4">
+        <label class="label" for="imageUrl">
+          <span class="label-text font-semibold">{{ 'MUSCLE.FIELDS.IMAGE_URL' | translate }}</span>
+        </label>
+        <input id="imageUrl" type="url" formControlName="imageUrl" class="input input-bordered w-full"
+               [placeholder]="'MUSCLE.PLACEHOLDERS.IMAGE_URL' | translate"/>
+      </div>
 
       <div class="mt-8 flex justify-end gap-4">
         <a routerLink="/muscles" class="btn btn-ghost">{{ 'GLOBAL.CANCEL' | translate }}</a>

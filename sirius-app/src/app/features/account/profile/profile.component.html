@@ -39,27 +39,30 @@
           <fieldset class="fieldset bg-base-200/50 border-base-300 rounded-box w-full border p-4">
             <legend class="fieldset-legend">{{ 'ACCOUNT.MENU_INFO' | translate }}</legend>
 
-            <label class="fieldset-label">{{ 'GLOBAL.FIRST_NAME' | translate }}</label>
-            <label class="input validator w-full">
+            <label class="fieldset-label" for="firstName">{{ 'GLOBAL.FIRST_NAME' | translate }}</label>
+            <div class="input validator w-full">
               <ng-icon name="heroUser" class="text-xl"></ng-icon>
-              <input [placeholder]="'GLOBAL.FIRST_NAME_PH' | translate" formControlName="firstName" maxlength="50"
+              <input id="firstName" [placeholder]="'GLOBAL.FIRST_NAME_PH' | translate" formControlName="firstName"
+                     maxlength="50"
                      required type="text"/>
-            </label>
+            </div>
             <p class="validator-hint hidden">{{ 'GLOBAL.ERROR_MAX_50' | translate }}</p>
 
-            <label class="fieldset-label mt-3">{{ 'GLOBAL.LAST_NAME' | translate }}</label>
-            <label class="input validator w-full">
+            <label class="fieldset-label mt-3" for="lastName">{{ 'GLOBAL.LAST_NAME' | translate }}</label>
+            <div class="input validator w-full">
               <ng-icon name="heroUser" class="text-xl"></ng-icon>
-              <input [placeholder]="'GLOBAL.LAST_NAME_PH' | translate" formControlName="lastName" maxlength="50"
+              <input id="lastName" [placeholder]="'GLOBAL.LAST_NAME_PH' | translate" formControlName="lastName"
+                     maxlength="50"
                      required type="text"/>
-            </label>
+            </div>
             <p class="validator-hint hidden">{{ 'GLOBAL.ERROR_MAX_50' | translate }}</p>
 
-            <label class="fieldset-label mt-3">{{ 'GLOBAL.EMAIL' | translate }}</label>
-            <label class="input validator w-full">
+            <label class="fieldset-label mt-3" for="email">{{ 'GLOBAL.EMAIL' | translate }}</label>
+            <div class="input validator w-full">
               <ng-icon name="heroEnvelope" class="text-xl"></ng-icon>
-              <input formControlName="email" required type="email" [placeholder]="'GLOBAL.EMAIL' | translate"/>
-            </label>
+              <input id="email" formControlName="email" required type="email"
+                     [placeholder]="'GLOBAL.EMAIL' | translate"/>
+            </div>
             <div class="validator-hint hidden">{{ 'GLOBAL.ERROR_EMAIL' | translate }}</div>
 
             <div class="card-actions justify-end mt-6">

@@ -21,7 +21,11 @@
     "PASSWORDS_MISMATCH": "Les mots de passe ne correspondent pas.",
     "ERROR_EMAIL": "Adresse email invalide.",
     "ERROR_MAX_50": "Maximum 50 caractères.",
-    "ERROR_PASSWORD_RULES": "Min. 8 caractères (dont 1 chiffre, 1 majuscule, 1 minuscule)."
+    "ERROR_PASSWORD_RULES": "Min. 8 caractères (dont 1 chiffre, 1 majuscule, 1 minuscule).",
+    "DELETE": "Supprimer",
+    "CONFIRM_DELETE": "Es-tu sûr de vouloir supprimer \"{{name}}\" ?",
+    "DELETE_SUCCESS": "Élément supprimé avec succès.",
+    "DELETE_ERROR": "Une erreur est survenue lors de la suppression."
   },
   "NAVBAR": {
     "DASHBOARD": "Dashboard",
@@ -72,94 +76,117 @@
     "DELETE_MODAL_CONFIRM": "Oui, supprimer mon compte",
     "SUCCESS_DELETE": "Votre compte a été supprimé avec succès. Au revoir !"
   },
+  "EXPORT": {
+    "EXPORT_CSV": "Exporter CSV",
+    "CONFIRM_EXPORT": "Attention : Cela va écraser le fichier CSV local. Continuer ?",
+    "EXPORT_SUCCESS": "Export CSV réussi !",
+    "EXPORT_ERROR": "Erreur lors de l'export CSV."
+  },
   "MUSCLE": {
-    "LIST": {
-      "TITLE": "Catalogue Anatomique",
-      "ADD_BUTTON": "Ajouter un muscle",
-      "TABLE": {
-        "MEDICAL_NAME": "Nom Médical (Latin)",
-        "COMMON_NAME": "Nom Commun",
-        "GROUP": "Groupe Musculaire"
-      },
-      "EMPTY": "Aucun muscle trouvé.",
-      "MODAL": {
-        "MEDICAL_NAME": "Nom Médical (Latin)"
-      }
+    "TITLE": "Catalogue Anatomique",
+    "TITLES": {
+      "ADD": "Ajouter un muscle",
+      "EDIT": "Modifier le muscle"
     },
-    "FORM": {
-      "TITLE_EDIT": "Modifier le muscle",
-      "TITLE_ADD": "Ajouter un muscle",
-      "MEDICAL_NAME": "Nom Médical (Latin) *",
-      "MEDICAL_NAME_PH": "Ex: Pectoralis Major",
-      "ERROR_MEDICAL_NAME": "Ce champ est requis et doit être unique.",
-      "GROUP": "Groupe Musculaire *",
-      "GROUP_PH": "Sélectionnez un groupe",
+    "ACTIONS": {
+      "ADD": "Ajouter un muscle",
+      "SELECT_GROUP": "Sélectionner un groupe"
+    },
+    "SECTIONS": {
       "COMMON_NAMES": "Noms Communs",
-      "NAME_FR": "Nom en Français",
-      "NAME_FR_PH": "Ex: Pectoraux",
-      "NAME_EN": "Nom en Anglais",
-      "NAME_EN_PH": "Ex: Chest",
       "DESCRIPTIONS": "Descriptions",
+      "MEDIA": "Liens Médias"
+    },
+    "FIELDS": {
+      "MEDICAL_NAME": "Nom Médical (Latin)",
+      "COMMON_NAME": "Nom Commun",
+      "GROUP": "Muscle Group",
+      "NAME_FR": "Nom Français",
+      "NAME_EN": "Nom Anglais",
       "DESC_FR": "Description (FR)",
-      "DESC_FR_PH": "Description anatomique...",
       "DESC_EN": "Description (EN)",
-      "DESC_EN_PH": "Anatomical description...",
-      "SUBMIT_ADD": "Créer le muscle",
-      "SUCCESS_UPDATE": "Muscle mis à jour avec succès.",
+      "IMAGE_URL": "URL de l'image"
+    },
+    "PLACEHOLDERS": {
+      "MEDICAL_NAME": "Ex: Pectoralis Major",
+      "NAME_FR": "Ex: Pectoraux",
+      "NAME_EN": "Ex: Chest",
+      "DESC_FR": "Description anatomique (FR)...",
+      "DESC_EN": "Description anatomique (EN)...",
+      "IMAGE_URL": "https://..."
+    },
+    "MESSAGES": {
+      "EMPTY_LIST": "Aucun muscle trouvé.",
+      "ERROR_MEDICAL_NAME": "Ce champ est requis et doit être unique.",
       "SUCCESS_CREATE": "Nouveau muscle créé avec succès.",
-      "SECTION_DESCRIPTIONS": "Descriptions & Coaching",
-      "SECTION_MEDIA": "Liens Médias (Images & Vidéos)"
+      "SUCCESS_UPDATE": "Muscle mis à jour avec succès.",
+      "DELETE_CONFLICT": "Impossible de supprimer \"{{name}}\" car il est utilisé dans un ou plusieurs mouvements."
     },
     "GROUPS": {
-      "CHEST": "Torse",
-      "BACK": "Dos",
       "LEGS": "Jambes",
-      "ARMS": "Bras",
+      "BACK": "Dos",
+      "CHEST": "Torse",
       "SHOULDERS": "Épaules",
+      "ARMS": "Bras",
       "CORE": "Tronc / Abdos"
+    },
+    "ROLES": {
+      "AGONIST": "Agoniste (Principal)",
+      "SYNERGIST": "Synergiste (Assistant)",
+      "STABILIZER": "Stabilisateur"
     }
   },
   "MOVEMENT": {
-    "LIST": {
-      "TITLE": "Catalogue des Mouvements",
-      "SEARCH": "Rechercher un mouvement...",
-      "ADD_BUTTON": "Ajouter un mouvement",
-      "TABLE": {
-        "NAME": "Nom du mouvement",
-        "ABBREVIATION": "Abbréviation",
-        "CATEGORY": "Catégorie"
-      },
-      "EMPTY": "Aucun mouvement trouvé.",
-      "MODAL": {
-        "COACHING_CUES": "Instructions de coaching",
-        "NO_CUES": "Aucune instruction renseignée.",
-        "TARGETED_MUSCLES": "Muscles sollicités",
-        "NO_MUSCLES": "Aucun muscle renseigné."
-      }
+    "TITLE": "Catalogue des Mouvements",
+    "TITLES": {
+      "ADD": "Ajouter un mouvement",
+      "EDIT": "Modifier le mouvement"
     },
-    "FORM": {
-      "TITLE_ADD": "Ajouter un mouvement",
-      "TITLE_EDIT": "Modifier le mouvement",
-      "SECTION_BASIC": "Informations générales",
-      "NAME": "Nom complet",
-      "ABBREVIATION": "Abbréviation",
-      "CATEGORY": "Catégorie",
+    "ACTIONS": {
+      "ADD": "Ajouter un mouvement",
+      "SEARCH": "Rechercher un mouvement...",
       "SELECT_CATEGORY": "Sélectionnez une catégorie...",
-      "INVOLVES_BW": "Implique le poids du corps (Gymnastics)",
-      "BW_FACTOR": "Facteur (Ex: 1.0 pour strict, 0.5 pour kipping)",
-      "SECTION_TAGS": "Équipements & Techniques",
-      "EQUIPMENT": "Équipements requis (Cliquer pour sélectionner)",
+      "ADD_MUSCLE": "Ajouter un muscle"
+    },
+    "SECTIONS": {
+      "BASIC": "Informations Générales",
+      "TAGS": "Équipement & Techniques",
+      "MUSCLES": "Muscles Ciblés",
+      "DESCRIPTIONS": "Descriptions & Coaching",
+      "MEDIA": "Liens Médias (Images & Vidéos)"
+    },
+    "FIELDS": {
+      "NAME": "Nom du mouvement",
+      "ABBREVIATION": "Abréviation",
+      "CATEGORY": "Catégorie",
+      "EQUIPMENT": "Équipement Requis",
       "TECHNIQUES": "Techniques & Styles",
-      "SECTION_MUSCLES": "Muscles sollicités",
-      "ADD_MUSCLE": "Ajouter un muscle",
-      "NO_MUSCLES": "Aucun muscle associé. Cliquez sur Ajouter.",
+      "COACHING_CUES": "Conseils d'exécution (Cues)",
       "MUSCLE": "Muscle (Anatomie)",
       "ROLE": "Rôle dans le mouvement",
-      "SUBMIT_ADD": "Créer le mouvement",
+      "DESC_FR": "Description (FR)",
+      "DESC_EN": "Description (EN)",
+      "COACHING_CUES_FR": "Coaching Cues (FR)",
+      "COACHING_CUES_EN": "Coaching Cues (EN)",
+      "IMAGE_URL": "URL de l'image",
+      "VIDEO_URL": "URL de la vidéo (YouTube/Vimeo)"
+    },
+    "PLACEHOLDERS": {
+      "NAME": "Ex: Back Squat",
+      "ABBREVIATION": "Ex: BS",
+      "DESC_FR": "Ex: Flexion des jambes...",
+      "DESC_EN": "Ex: A squat is...",
+      "COACHING_CUES_FR": "Ex: Gardez le torse droit...",
+      "COACHING_CUES_EN": "Ex: Keep your chest up..."
+    },
+    "MESSAGES": {
+      "EMPTY_LIST": "Aucun mouvement trouvé.",
+      "NO_CUES": "Aucun conseil d'exécution renseigné.",
+      "NO_MUSCLES": "Aucun muscle spécifié.",
+      "NO_MUSCLES_FORM": "Aucun muscle associé. Cliquez sur Ajouter.",
       "SUCCESS_CREATE": "Mouvement créé avec succès !",
       "SUCCESS_UPDATE": "Mouvement mis à jour avec succès !",
-      "SECTION_DESCRIPTIONS": "Descriptions & Coaching",
-      "SECTION_MEDIA": "Liens Médias (Images & Vidéos)"
+      "DELETE_CONFLICT": "Impossible de supprimer \"{{name}}\" car il est déjà utilisé dans un WOD."
     },
     "MODALITIES": {
       "WEIGHTLIFTING": "Haltérophilie / Force",
@@ -191,31 +218,63 @@
       "STRONGMAN_LIFTS": "Lifts Strongman",
       "SLED": "Traîneau / Sled"
     },
+    "EQUIPMENT_CATEGORIES": {
+      "WEIGHTLIFTING_STRENGTH": "Force & Haltérophilie",
+      "GYMNASTICS_BODYWEIGHT": "Gymnastique & Poids de corps",
+      "MONOSTRUCTURAL_CARDIO_MACHINES": "Machines Cardio",
+      "STRONGMAN_ODD_OBJECT": "Objets Strongman"
+    },
     "EQUIPMENT": {
       "BARBELL": "Barre d'haltérophilie",
       "PLATES": "Disques / Poids",
       "DUMBBELL": "Haltères (DB)",
       "KETTLEBELL": "Kettlebell",
+      "TRAP_BAR": "Trap Bar",
+      "AXLE_BAR": "Axle Bar",
       "MEDICINE_BALL": "Medicine Ball",
+      "D_BALL": "D-Ball",
       "SANDBAG": "Sandbag",
       "SLAM_BALL": "Slam Ball",
+      "WEIGHT": "Lest / Poids additionnel",
+      "BENCH": "Banc",
       "PULL_UP_BAR": "Barre de traction",
       "RINGS": "Anneaux",
       "PARALLETTES": "Parallettes",
+      "PARALLEL_BARS": "Barres parallèles",
+      "MATADOR": "Matador (Dips)",
       "ROPE": "Corde",
       "ABMAT": "Abmat",
       "BOX": "Box",
+      "ELASTIC_BAND": "Bande élastique",
       "ROWER": "Rameur",
       "ASSAULT_BIKE": "Assault Bike",
       "ECHO_BIKE": "Echo Bike",
       "SKI_ERG": "SkiErg",
       "BIKE_ERG": "BikeErg",
+      "CURVED_TREADMILL": "Tapis de course incurvé",
+      "TREADMILL": "Tapis de course",
       "GHD": "GHD",
       "JUMP_ROPE": "Corde à sauter",
       "SLED": "Sled",
+      "SLED_AND_ROPE": "Sled & Corde",
+      "HARNESS": "Harnais",
       "YOKE": "Yoke",
       "BATTLE_ROPE": "Battle Rope",
-      "NONE": "Aucun (Poids du corps)"
+      "HANDLES": "Poignées de transport",
+      "TIRE": "Pneu",
+      "ATLAS_STONE": "Atlas Stone",
+      "KEG": "Fût (Keg)",
+      "LOG": "Log"
+    },
+    "TECHNIQUE_CATEGORIES": {
+      "STYLE": "Style d'exécution & Tempo",
+      "GRIP_STANCE": "Prise & Posture",
+      "STARTING_POSITION": "Position de départ",
+      "LOAD_POSITION": "Position de la charge",
+      "BODY_POSITION": "Position du corps",
+      "LATERALITY": "Latéralité",
+      "DIRECTION": "Direction",
+      "MODIFIER": "Modificateurs spécifiques"
     },
     "TECHNIQUES": {
       "STRICT": "Strict",
@@ -228,6 +287,7 @@
       "HAND_RELEASE": "Hand Release",
       "TOUCH_AND_GO": "Touch and Go",
       "EXPLOSIVE": "Explosif",
+      "JUMPING": "Sauté",
       "CLOSE_GRIP": "Prise serrée",
       "WIDE_GRIP": "Prise large",
       "SNATCH_GRIP": "Prise d'arraché",
@@ -263,54 +323,80 @@
       "DECLINED": "Décliné",
       "INVERTED": "Inversé",
       "L_SIT": "L-Sit",
-      "TUCK_HOLD": "Tuck Hold",
+      "TUCK": "Tuck",
       "PIKE": "Pique",
       "HOLLOW": "Hollow",
       "ARCH": "Arch",
       "KNEES": "Sur les genoux",
+      "HOLD": "Maintien statique (Hold)",
+      "ROCK": "Bascule (Rocking)",
       "BILATERAL": "Bilatéral",
       "UNILATERAL": "Unilatéral",
       "ALTERNATING": "Alterné",
-      "SINGLE_ARM": "Bras seul",
+      "ONE_ARM": "Un bras",
       "SINGLE_LEG": "Jambe seule",
+      "DOUBLE": "Double (2 objets)",
       "FORWARD": "En avant",
       "BACKWARD": "En arrière",
       "LATERAL": "Latéral",
       "FACING": "Face à",
       "WALK": "Marché",
-      "JUMPING": "Sauté",
-      "CROSSOVER": "Crossover",
-      "CRAWL_SWIM": "Crawl",
-      "BACKSTROKE_SWIM": "Dos crawlé",
-      "BREASTSTROKE_SWIM": "Brasse",
-      "BUTTERFLY_SWIM": "Papillon",
+      "CROSSOVER": "Croisé (Crossover)",
+      "CROSS_BODY": "Croisé (Cross Body)",
+      "CRAWL": "Crawl / Rampé",
+      "BACKSTROKE": "Dos crawlé",
+      "BREASTSTROKE": "Brasse",
       "LEGLESS": "Sans les jambes",
       "WEIGHTED": "Lesté",
       "BODYWEIGHT": "Poids du corps",
       "ASSISTED": "Assisté",
-      "CONTINENTAL_CLEAN": "Continental Clean"
+      "CONTINENTAL_CLEAN": "Continental Clean",
+      "RING": "Aux anneaux",
+      "PIROUETTE": "Pirouette",
+      "CLEAN_AND_PRESS": "Clean & Press",
+      "CLEAN_AND_JERK": "Clean & Jerk"
+    }
+  },
+  "WOD": {
+    "WOD_TYPES": {
+      "AMRAP": "AMRAP",
+      "EMOM": "EMOM",
+      "FOR_TIME": "For Time",
+      "TABATA": "Tabata",
+      "STRENGTH": "Force",
+      "SKILL": "Skill / Technique",
+      "ACCESSORY": "Renforcement (Accessory)",
+      "CHIPPER": "Chipper",
+      "GIRLS": "Girls (Benchmark)",
+      "HERO": "Hero WOD",
+      "CUSTOM_BENCHMARK": "Benchmark personnalisé",
+      "CUSTOM": "Personnalisé"
     },
-    "ROLES": {
-      "AGONIST": "Agoniste (Principal)",
-      "SYNERGIST": "Synergiste (Assistant)",
-      "STABILIZER": "Stabilisateur"
+    "SCORE_TYPES": {
+      "TIME": "Temps",
+      "ROUNDS_REPS": "Tours + Répétitions",
+      "REPS": "Répétitions",
+      "WEIGHT": "Poids maximum",
+      "LOAD": "Charge totale",
+      "CALORIES": "Calories",
+      "DISTANCE": "Distance",
+      "NONE": "Aucun score (Pour la qualité)"
     },
-    "EQUIPMENT_CATEGORIES": {
-      "WEIGHTLIFTING_STRENGTH": "Force & Haltérophilie",
-      "GYMNASTICS_BODYWEIGHT": "Gymnastique & Poids de corps",
-      "MONOSTRUCTURAL_CARDIO_MACHINES": "Machines Cardio",
-      "STRONGMAN_ODD_OBJECT": "Objets Strongman",
-      "NONE_BODYWEIGHT": "Aucun"
+    "UNIT_TYPES": {
+      "MASS": "Masse / Poids",
+      "TIME": "Temps",
+      "DISTANCE": "Distance"
     },
-    "TECHNIQUE_CATEGORIES": {
-      "STYLE": "Style d'exécution & Tempo",
-      "GRIP_STANCE": "Prise & Posture",
-      "STARTING_POSITION": "Position de départ",
-      "LOAD_POSITION": "Position de la charge",
-      "BODY_POSITION": "Position du corps",
-      "LATERALITY": "Latéralité",
-      "DIRECTION": "Direction",
-      "MODIFIER": "Modificateurs spécifiques"
+    "UNITS": {
+      "KG": "kg",
+      "LBS": "lbs",
+      "SECONDS": "s",
+      "MINUTES": "min",
+      "METERS": "m",
+      "KILOMETERS": "km",
+      "FEET": "ft",
+      "YARDS": "yd",
+      "MILES": "mi"
     }
   }
 }

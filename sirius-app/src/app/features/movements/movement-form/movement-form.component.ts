@@ -190,7 +190,7 @@ export class MovementFormComponent implements OnInit {
 
     request$.subscribe({
       next: () => {
-        const key = this.isEditMode() ? 'MOVEMENT.FORM.SUCCESS_UPDATE' : 'MOVEMENT.FORM.SUCCESS_CREATE';
+        const key = this.isEditMode() ? 'MOVEMENT.MESSAGES.SUCCESS_UPDATE' : 'MOVEMENT.MESSAGES.SUCCESS_CREATE';
         this.notificationService.showSuccess(this.translate.instant(key));
         void this.router.navigate(['/movements']);
       },

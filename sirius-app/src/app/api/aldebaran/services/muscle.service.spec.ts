@@ -70,4 +70,12 @@ describe('MuscleService', () => {
     expect(req.request.body).toEqual(payload);
     req.flush(mockMuscleResponse);
   });
+
+  it('deleteMuscle should DELETE to /muscles/{id}', () => {
+    const muscleId = 1;
+    service.deleteMuscle(muscleId).subscribe();
+    const req = httpMock.expectOne(`${base}/muscles/${muscleId}`);
+    expect(req.request.method).toBe('DELETE');
+    req.flush(null);
+  });
 });

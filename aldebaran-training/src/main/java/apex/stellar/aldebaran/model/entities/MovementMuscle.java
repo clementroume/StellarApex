@@ -85,10 +85,8 @@ public class MovementMuscle {
   @Getter
   @RequiredArgsConstructor
   public enum MuscleRole {
-    AGONIST("Agonist"),
-    SYNERGIST("Synergist"),
-    STABILIZER("Stabilizer");
-
-    private final String displayName;
+    AGONIST,
+    SYNERGIST,
+    STABILIZER;
   }
 }

@@ -9,10 +9,6 @@ import {HttpErrorResponse} from '@angular/common/http';
 import {ProblemDetail} from '../../../core/models/problem-detail.model';
 import {NgIcon} from '@ng-icons/core';
 
-/**
- * Handles the user login page.
- * It provides a reactive form for users to enter their credentials and manages the authentication process.
- */
 @Component({
   selector: 'app-login',
   standalone: true,
@@ -21,9 +17,7 @@ import {NgIcon} from '@ng-icons/core';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class LoginComponent implements OnInit {
-  /** The reactive form group that manages the login form's state and validation. */
   public readonly loginForm: FormGroup;
-
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
@@ -39,23 +33,14 @@ export class LoginComponent implements OnInit {
     });
   }
 
-  /**
-   * On component initialization, read the 'returnUrl' from query parameters
-   * to enable redirection after a successful login.
-   */
   ngOnInit(): void {
     this.returnUrl = this.route.snapshot.queryParams['returnUrl'] || '/dashboard';
   }
 
-  /**
-   * Handles the login form submission.
-   * On success, navigates to the returnUrl. On error, displays a notification.
-   */
   onSubmit(): void {
     if (this.loginForm.invalid) {
       return;
     }
-
 
     this.authService.login(this.loginForm.value).subscribe({
       next: () => {

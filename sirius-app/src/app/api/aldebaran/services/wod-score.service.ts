@@ -2,12 +2,7 @@ import {inject, Injectable} from '@angular/core';
 import {HttpClient, HttpParams} from '@angular/common/http';
 import {Observable} from 'rxjs';
 import {environment} from '../../../../environments/environment';
-import {
-  ScoreComparisonResponse,
-  WodScoreReferenceData,
-  WodScoreRequest,
-  WodScoreResponse
-} from '../models/score.model';
+import {ScoreComparisonResponse, WodScoreReferenceData, WodScoreRequest, WodScoreResponse} from '../models/score.model';
 import {Slice} from '../../../core/models/pagination.model';
 
 
@@ -17,30 +12,30 @@ export class WodScoreService {
 
   getMyScores(wodId?: number, page: number = 0, size: number = 20): Observable<Slice<WodScoreResponse>> {
     let params = new HttpParams()
-    .set('page', page)
-    .set('size', size);
+      .set('page', page)
+      .set('size', size);
 
     if (wodId) {
       params = params.set('wodId', wodId);
     }
 
-    return this.http.get<Slice<WodScoreResponse>>(this.buildUrl('/scores/me'), {params});
+    return this.http.get<Slice<WodScoreResponse>>(this.buildUrl('/me'), {params});
   }
 
   logScore(request: WodScoreRequest): Observable<WodScoreResponse> {
-    return this.http.post<WodScoreResponse>(this.buildUrl('/scores'), request);
+    return this.http.post<WodScoreResponse>(this.buildUrl(), request);
   }
 
   updateScore(id: number, request: WodScoreRequest): Observable<WodScoreResponse> {
-    return this.http.put<WodScoreResponse>(this.buildUrl(`/scores/${id}`), request);
+    return this.http.put<WodScoreResponse>(this.buildUrl(`/${id}`), request);
   }
 
   deleteScore(id: number): Observable<void> {
-    return this.http.delete<void>(this.buildUrl(`/scores/${id}`));
+    return this.http.delete<void>(this.buildUrl(`/${id}`));
   }
 
   compareScore(id: number): Observable<ScoreComparisonResponse> {
-    return this.http.get<ScoreComparisonResponse>(this.buildUrl(`/scores/${id}/compare`));
+    return this.http.get<ScoreComparisonResponse>(this.buildUrl(`/${id}/compare`));
   }
 
   getLeaderboard(
@@ -50,18 +45,18 @@ export class WodScoreService {
     size: number = 20
   ): Observable<Slice<WodScoreResponse>> {
     const params = new HttpParams()
-    .set('scaling', scaling)
-    .set('page', page)
-    .set('size', size);
+      .set('scaling', scaling)
+      .set('page', page)
+      .set('size', size);
 
-    return this.http.get<Slice<WodScoreResponse>>(this.buildUrl(`/scores/leaderboard/${wodId}`), {params});
+    return this.http.get<Slice<WodScoreResponse>>(this.buildUrl(`/leaderboard/${wodId}`), {params});
   }
 
   getReferenceData(): Observable<WodScoreReferenceData> {
-    return this.http.get<WodScoreReferenceData>(this.buildUrl('/wod-scores/reference-data'));
+    return this.http.get<WodScoreReferenceData>(this.buildUrl('/reference-data'));
   }
 
-  private buildUrl(path: string): string {
-    return `${environment.trainingUrl}${path}`;
+  private buildUrl(path: string = ''): string {
+    return `${environment.trainingUrl}/scores${path}`;
   }
 }

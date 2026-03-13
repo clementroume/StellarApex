@@ -25,10 +25,6 @@ export const passwordMatchValidator: ValidatorFn = (control: AbstractControl): V
     : null;
 };
 
-/**
- * Handles the user registration page.
- * It provides a reactive form for new users to create an account.
- */
 @Component({
   selector: 'app-register',
   standalone: true,
@@ -37,9 +33,7 @@ export const passwordMatchValidator: ValidatorFn = (control: AbstractControl): V
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class RegisterComponent {
-  /** The reactive form group that manages the registration form's state and validation. */
   public readonly registerForm: FormGroup;
-
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
   private readonly fb = inject(FormBuilder);
@@ -59,10 +53,6 @@ export class RegisterComponent {
     }, {validators: passwordMatchValidator});
   }
 
-  /**
-   * Handles the registration form submission.
-   * On success, navigates to the dashboard. On error, displays a notification.
-   */
   onSubmit(): void {
     if (this.registerForm.invalid) {
       return;

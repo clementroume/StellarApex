@@ -153,43 +153,35 @@ public class Wod {
   @RequiredArgsConstructor
   public enum WodType {
     // --- Time-based ---
-    AMRAP("AMRAP"),
-    EMOM("EMOM"),
-    FOR_TIME("For Time"),
-    TABATA("Tabata"),
-
+    AMRAP,
+    EMOM,
+    FOR_TIME,
+    TABATA,
     // --- Training Focus ---
-    STRENGTH("Strength / Heavy Day"),
-    SKILL("Skill / Technique"),
-    ACCESSORY("Accessory"),
-
+    STRENGTH,
+    SKILL,
+    ACCESSORY,
     // --- Special Formats ---
-    CHIPPER("Chipper"),
-
+    CHIPPER,
     // --- Benchmarks ---
-    GIRLS("The Girls"),
-    HERO("Hero WOD"),
-    CUSTOM_BENCHMARK("Custom Benchmark"),
-
+    GIRLS,
+    HERO,
+    CUSTOM_BENCHMARK,
     // --- Other ---
-    CUSTOM("Custom");
-
-    private final String displayName;
+    CUSTOM;
   }
 
   /** ScoreType Inner Enum. */
   @Getter
   @RequiredArgsConstructor
   public enum ScoreType {
-    TIME("Time"),
-    ROUNDS_REPS("Rounds + Reps"),
-    REPS("Total Reps"),
-    WEIGHT("Max Weight"),
-    LOAD("Total Load"),
-    CALORIES("Calories"),
-    DISTANCE("Distance"),
-    NONE("No Score");
-
-    private final String displayName;
+    TIME,
+    ROUNDS_REPS,
+    REPS,
+    WEIGHT,
+    LOAD,
+    CALORIES,
+    DISTANCE,
+    NONE;
   }
 }

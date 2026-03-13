@@ -276,4 +276,33 @@ class MovementServiceTest {
     assertEquals("error.movement.duplicate", ex.getMessageKey());
     verify(movementRepository, never()).save(any());
   }
+
+  @Test
+  @DisplayName("deleteMovement: should delete movement when ID exists")
+  void testDeleteMovement_Success() {
+    // Given
+    Long id = 1L;
+    when(movementRepository.existsById(id)).thenReturn(true);
+
+    // When
+    movementService.deleteMovement(id);
+
+    // Then
+    verify(movementRepository).deleteById(id);
+  }
+
+  @Test
+  @DisplayName("deleteMovement: should throw exception when movement ID does not exist")
+  void testDeleteMovement_NotFound() {
+    // Given
+    Long id = 999L; // Non-existent ID
+    when(movementRepository.existsById(id)).thenReturn(false);
+
+    // When & Then
+    ResourceNotFoundException exception =
+        assertThrows(ResourceNotFoundException.class, () -> movementService.deleteMovement(id));
+
+    assertEquals("Movement not found with id: " + id, exception.getMessage());
+    verify(movementRepository, never()).deleteById(any());
+  }
 }

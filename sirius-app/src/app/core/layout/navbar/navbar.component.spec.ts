@@ -69,19 +69,15 @@ describe('NavbarComponent', () => {
   });
 
   it('should display the mobile dropdown and correct links when user is logged in', () => {
-    // Arrange: Simulate a logged-in user
     mockCurrentUser.set(mockUser);
     fixture.detectChanges();
 
-    // Verify that the mobile dropdown is visible (il n'y en a plus qu'un seul dans ce HTML)
     const dropdowns = fixture.debugElement.queryAll(By.css('.dropdown'));
     expect(dropdowns.length).withContext('Only the mobile dropdown should be visible').toBe(1);
 
-    // Act: Find the link element
     const myAccountLink = fixture.debugElement.query(By.css('a[routerLink="/my-account"]'));
     expect(myAccountLink).withContext('"My Account" link should exist').not.toBeNull();
 
-    // Assert: Check the rendered href attribute
     const linkElement = myAccountLink.nativeElement as HTMLAnchorElement;
     expect(linkElement.getAttribute('href')).toBe('/my-account');
   });

@@ -1,9 +1,5 @@
 import {WodSummaryResponse} from './wod.model';
 
-/**
- * DTO for logging a new workout performance.
- * Mirrors `WodScoreRequest`.
- */
 export interface WodScoreRequest {
   userId?: number;
   wodId: number;
@@ -24,10 +20,6 @@ export interface WodScoreRequest {
   userComment?: string;
 }
 
-/**
- * DTO representing a logged score.
- * Mirrors `WodScoreResponse`.
- */
 export interface WodScoreResponse {
   id: number;
   userId: number;

@@ -9,13 +9,11 @@ describe('GlobalLoaderComponent', () => {
   let mockIsLoading: WritableSignal<boolean>;
 
   beforeEach(async () => {
-    // Create a writable signal to control in tests
     mockIsLoading = signal(false);
 
     await TestBed.configureTestingModule({
       imports: [GlobalLoaderComponent],
       providers: [
-        // Provide a mock LoadingService that uses our controllable signal
         {
           provide: LoadingService,
           useValue: {isLoading: mockIsLoading.asReadonly()}

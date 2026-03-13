@@ -4,17 +4,22 @@ import {RouterModule} from '@angular/router';
 import {DialogService} from '../../../core/services/dialog.service';
 import {MuscleResponse} from '../../../api/aldebaran/models/muscle.model';
 import {AuthService} from '../../../api/antares/services/auth.service';
+import {MuscleService} from '../../../api/aldebaran/services/muscle.service';
+import {NotificationService} from '../../../core/services/notification.service';
+import {NgOptimizedImage} from '@angular/common';
 
 @Component({
   selector: 'app-muscle-modal',
   standalone: true,
-  imports: [TranslateModule, RouterModule],
+  imports: [TranslateModule, RouterModule, NgOptimizedImage],
   templateUrl: './muscle-modal.component.html'
 })
 export class MuscleModalComponent {
   dialogService = inject(DialogService);
   private readonly translate = inject(TranslateService);
   private readonly authService = inject(AuthService);
+  private readonly muscleService = inject(MuscleService);
+  private readonly notificationService = inject(NotificationService);
 
   @ViewChild('muscleModal') modalRef!: ElementRef<HTMLDialogElement>;
 
@@ -45,5 +50,30 @@ export class MuscleModalComponent {
 
   onClose() {
     this.dialogService.closeMuscle();
+  }
+
+  onDelete(): void {
+    const muscle = this.dialogService.muscleToView();
+    if (!muscle) return;
+
+    const name = this.getLocalizedName(muscle);
+    const confirmMsg = this.translate.instant('GLOBAL.CONFIRM_DELETE', {name});
+
+    if (confirm(confirmMsg)) {
+      this.muscleService.deleteMuscle(muscle.id).subscribe({
+        next: () => {
+          this.notificationService.showSuccess(this.translate.instant('GLOBAL.DELETE_SUCCESS'));
+          this.muscleService.notifyRefresh();
+          this.onClose();
+        },
+        error: (err) => {
+          if (err.status === 409) {
+            this.notificationService.showError(this.translate.instant('MUSCLE.MESSAGES.DELETE_CONFLICT', {name}));
+          } else {
+            this.notificationService.showError(this.translate.instant('GLOBAL.DELETE_ERROR'));
+          }
+        }
+      });
+    }
   }
 }

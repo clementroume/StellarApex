@@ -6,36 +6,40 @@
 
   <div class="card shrink-0 w-full max-w-sm shadow-2xl bg-base-100">
     <form (ngSubmit)="onSubmit()" [formGroup]="registerForm" class="card-body">
-      <label class="input validator w-full">
-        <ng-icon name="heroUser" class="opacity-50"></ng-icon>
-        <input [placeholder]="'GLOBAL.FIRST_NAME_PH' | translate" formControlName="firstName" maxlength="50" required
-               type="text"/>
-      </label>
 
-      <label class="input validator w-full mt-4">
+      <div class="input validator w-full">
         <ng-icon name="heroUser" class="opacity-50"></ng-icon>
-        <input [placeholder]="'GLOBAL.LAST_NAME_PH' | translate" formControlName="lastName" maxlength="50" required
-               type="text"/>
-      </label>
+        <input [placeholder]="'GLOBAL.FIRST_NAME_PH' | translate"
+               formControlName="firstName" maxlength="50" required type="text"/>
+      </div>
 
-      <label class="input validator w-full mt-4">
+      <div class="input validator w-full mt-4">
+        <ng-icon name="heroUser" class="opacity-50"></ng-icon>
+        <input [placeholder]="'GLOBAL.LAST_NAME_PH' | translate"
+               formControlName="lastName" maxlength="50" required type="text"/>
+      </div>
+
+      <div class="input validator w-full mt-4">
         <ng-icon name="heroEnvelope" class="opacity-50"></ng-icon>
-        <input formControlName="email" [placeholder]="'GLOBAL.EMAIL' | translate" required type="email"/>
-      </label>
+        <input formControlName="email"
+               [placeholder]="'GLOBAL.EMAIL' | translate"
+               required type="email"/>
+      </div>
       <div class="validator-hint hidden">{{ 'GLOBAL.ERROR_EMAIL' | translate }}</div>
 
-      <label class="input validator w-full mt-4">
+      <div class="input validator w-full mt-4">
         <ng-icon name="heroKey" class="opacity-50"></ng-icon>
         <input formControlName="password" minlength="8" pattern="(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{8,}"
-               [placeholder]="'GLOBAL.PASSWORD' | translate" required type="password"/>
-      </label>
+               [placeholder]="'GLOBAL.PASSWORD' | translate"
+               required type="password"/>
+      </div>
       <p class="validator-hint hidden text-xs">{{ 'GLOBAL.ERROR_PASSWORD_RULES' | translate }}</p>
 
-      <label class="input validator w-full mt-4">
+      <div class="input validator w-full mt-4">
         <ng-icon name="heroKey" class="opacity-50"></ng-icon>
-        <input [placeholder]="'GLOBAL.CONFIRM_PASSWORD' | translate" formControlName="confirmationPassword" required
-               type="password"/>
-      </label>
+        <input [placeholder]="'GLOBAL.CONFIRM_PASSWORD' | translate"
+               formControlName="confirmationPassword" required type="password"/>
+      </div>
       @if (registerForm.errors?.['passwordsMismatch'] && registerForm.get('confirmationPassword')?.touched) {
         <p class="validator-hint text-error text-xs mt-1">{{ 'GLOBAL.PASSWORDS_MISMATCH' | translate }}</p>
       }
@@ -46,9 +50,9 @@
         </button>
       </div>
 
-      <label class="label">
+      <div class="label">
         <a class="label-text-alt link link-hover" routerLink="/auth/login">{{ 'REGISTER.HAVE_ACCOUNT' | translate }}</a>
-      </label>
+      </div>
     </form>
   </div>
 </div>

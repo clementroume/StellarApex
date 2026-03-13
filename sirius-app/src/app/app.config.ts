@@ -15,6 +15,7 @@ import {
   heroBars3,
   heroChevronDown,
   heroCog8Tooth,
+  heroDocumentArrowDown,
   heroEnvelope,
   heroExclamationTriangle,
   heroEye,
@@ -62,12 +63,10 @@ export const APP_ICONS = {
   heroBars3,
   heroArrowRightOnRectangle,
   hugeDashboardSpeed01,
-  hugeCircleArrowLeft02
+  hugeCircleArrowLeft02,
+  heroDocumentArrowDown
 };
-/**
- * The main application configuration for this standalone Angular application.
- * It sets up all the core providers for routing, HTTP client, and internationalization.
- */
+
 export const appConfig: ApplicationConfig = {
   providers: [
     // 1. ROUTING CONFIGURATION
@@ -88,7 +87,7 @@ export const appConfig: ApplicationConfig = {
       }),
       // Register functional interceptors
       withInterceptors([
-        authInterceptor,    // #1: Adds withCredentials and handles 401 session refresh.
+        authInterceptor,    // #1: Adds withCredentials and handles 401 code session refresh.
         loadingInterceptor, // #2: Manages global loading indicator during HTTP requests.
       ])
     ),

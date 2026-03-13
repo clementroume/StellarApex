@@ -216,4 +216,32 @@ class MuscleServiceTest {
     assertThrows(DataConflictException.class, () -> muscleService.updateMuscle(id, muscleRequest));
     verify(muscleRepository, never()).save(any());
   }
+
+  @Test
+  @DisplayName("deleteMuscle: should delete muscle when found")
+  void testDeleteMuscle_Success() {
+    // Given
+    Long id = 1L;
+    when(muscleRepository.existsById(id)).thenReturn(true);
+
+    // When
+    muscleService.deleteMuscle(id);
+
+    // Then
+    verify(muscleRepository).deleteById(id);
+  }
+
+  @Test
+  @DisplayName("deleteMuscle: should throw ResourceNotFoundException when muscle not found")
+  void testDeleteMuscle_NotFound() {
+    // Given
+    Long id = 99L;
+    when(muscleRepository.existsById(id)).thenReturn(false);
+
+    // When & Then
+    ResourceNotFoundException ex =
+        assertThrows(ResourceNotFoundException.class, () -> muscleService.deleteMuscle(id));
+    assertEquals("Muscle not found with id: " + id, ex.getMessage());
+    verify(muscleRepository, never()).deleteById(any());
+  }
 }

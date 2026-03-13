@@ -1,34 +1,43 @@
 import {inject, Injectable} from '@angular/core';
 import {HttpClient} from '@angular/common/http';
-import {Observable} from 'rxjs';
+import {Observable, Subject} from 'rxjs';
 import {environment} from '../../../../environments/environment';
 import {MuscleReferenceData, MuscleRequest, MuscleResponse} from '../models/muscle.model';
 
 @Injectable({providedIn: 'root'})
 export class MuscleService {
   private readonly http = inject(HttpClient);
+  public refreshNeeded$ = new Subject<void>();
 
   getMuscles(): Observable<MuscleResponse[]> {
-    return this.http.get<MuscleResponse[]>(this.buildUrl('/muscles'));
+    return this.http.get<MuscleResponse[]>(this.buildUrl());
   }
 
   getMuscle(id: number): Observable<MuscleResponse> {
-    return this.http.get<MuscleResponse>(this.buildUrl(`/muscles/${id}`));
+    return this.http.get<MuscleResponse>(this.buildUrl(`/${id}`));
   }
 
   createMuscle(request: MuscleRequest): Observable<MuscleResponse> {
-    return this.http.post<MuscleResponse>(this.buildUrl('/muscles'), request);
+    return this.http.post<MuscleResponse>(this.buildUrl(), request);
   }
 
   updateMuscle(id: number, request: MuscleRequest): Observable<MuscleResponse> {
-    return this.http.put<MuscleResponse>(this.buildUrl(`/muscles/${id}`), request);
+    return this.http.put<MuscleResponse>(this.buildUrl(`/${id}`), request);
+  }
+
+  deleteMuscle(id: number): Observable<void> {
+    return this.http.delete<void>(this.buildUrl(`/${id}`));
   }
 
   getReferenceData(): Observable<MuscleReferenceData> {
-    return this.http.get<MuscleReferenceData>(this.buildUrl(`/muscles/reference-data`));
+    return this.http.get<MuscleReferenceData>(this.buildUrl(`/reference-data`));
   }
 
-  private buildUrl(path: string): string {
-    return `${environment.trainingUrl}${path}`;
+  private buildUrl(path: string = ''): string {
+    return `${environment.trainingUrl}/muscles${path}`;
+  }
+
+  notifyRefresh() {
+    this.refreshNeeded$.next();
   }
 }

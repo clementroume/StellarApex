@@ -179,6 +179,26 @@ public class MovementService {
   }
 
   /**
+   * Deletes a movement record with the specified ID from the database. All associated cache entries
+   * for movements will be invalidated.
+   *
+   * @param id the unique identifier of the movement to be deleted
+   * @throws ResourceNotFoundException if no movement is found with the given ID
+   */
+  @Transactional
+  @CacheEvict(
+      value = {CACHE_MOVEMENTS, CACHE_MOVEMENT},
+      allEntries = true)
+  public void deleteMovement(Long id) {
+
+    log.info("Deleting Movement with ID: {}", id);
+    if (!movementRepository.existsById(id)) {
+      throw new ResourceNotFoundException("Movement not found with id: " + id);
+    }
+    movementRepository.deleteById(id);
+  }
+
+  /**
    * Retrieves the structured reference data for Movement forms. Maintains the declaration order of
    * the Enums.
    */

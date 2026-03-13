@@ -13,46 +13,28 @@ export class UserService {
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
 
-  /**
-   * Retrieves the profile of the currently authenticated user.
-   */
   getProfile(): Observable<UserResponse> {
-    return this.http.get<UserResponse>(this.buildUrl('/users/me'));
+    return this.http.get<UserResponse>(this.buildUrl('/me'));
   }
 
-  /**
-   * Updates the user's profile (Name, Email).
-   * On success, updates the global auth state.
-   */
   updateProfile(payload: ProfileUpdateRequest): Observable<UserResponse> {
-    return this.http.put<UserResponse>(this.buildUrl('/users/me/profile'), payload).pipe(
+    return this.http.put<UserResponse>(this.buildUrl('/me/profile'), payload).pipe(
       tap(user => this.authService.updateCurrentUser(user))
     );
   }
 
-  /**
-   * Updates the user's preferences (Locale, Theme).
-   * On success, updates the global auth state.
-   */
   updatePreferences(payload: PreferencesUpdateRequest): Observable<UserResponse> {
-    return this.http.patch<UserResponse>(this.buildUrl('/users/me/preferences'), payload).pipe(
+    return this.http.patch<UserResponse>(this.buildUrl('/me/preferences'), payload).pipe(
       tap(user => this.authService.updateCurrentUser(user))
     );
   }
 
-  /**
-   * Changes the current user's password.
-   */
   changePassword(payload: ChangePasswordRequest): Observable<void> {
-    return this.http.put<void>(this.buildUrl('/users/me/password'), payload);
+    return this.http.put<void>(this.buildUrl('/me/password'), payload);
   }
 
-  /**
-   * Deletes the account of the currently authenticated user.
-   * On success, clears the auth state and redirects to register.
-   */
   deleteAccount(): Observable<void> {
-    return this.http.delete<void>(this.buildUrl('/users/me')).pipe(
+    return this.http.delete<void>(this.buildUrl('/me')).pipe(
       tap(() => {
         this.authService.updateCurrentUser(null);
         void this.router.navigate(['/auth/register']);
@@ -61,6 +43,6 @@ export class UserService {
   }
 
   private buildUrl(path: string): string {
-    return `${environment.authUrl}${path}`;
+    return `${environment.authUrl}/users${path}`;
   }
 }

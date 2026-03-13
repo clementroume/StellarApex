@@ -1,7 +1,9 @@
 package apex.stellar.aldebaran.controller;
 
 import static org.hamcrest.Matchers.hasSize;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
@@ -19,6 +21,7 @@ import apex.stellar.aldebaran.model.enums.Category;
 import apex.stellar.aldebaran.repository.MovementRepository;
 import apex.stellar.aldebaran.repository.MuscleRepository;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -49,8 +52,8 @@ class MovementControllerIT extends BaseIntegrationTest {
     // Seed Reference Data (Muscle) required for linking
     Muscle quadriceps =
         Muscle.builder()
-            .medicalName("Quadriceps Femoris")
-            .commonNameEn("Quads")
+            .medicalName("Fake Muscle")
+            .commonNameEn("Fake")
             .muscleGroup(MuscleGroup.LEGS)
             .build();
     muscleRepository.save(quadriceps);
@@ -59,9 +62,9 @@ class MovementControllerIT extends BaseIntegrationTest {
     // Seed Initial Movement
     Movement backSquat =
         Movement.builder()
-            .name("Back Squat")
+            .name("Fake Squat")
             .category(Category.SQUAT)
-            .targetedMuscles(new java.util.HashSet<>())
+            .targetedMuscles(new HashSet<>())
             .build();
     movementRepository.save(backSquat);
     testMovementId = backSquat.getId();
@@ -84,7 +87,7 @@ class MovementControllerIT extends BaseIntegrationTest {
         .andExpect(status().isOk())
         .andExpect(jsonPath("$", hasSize(1)))
         .andExpect(jsonPath("$[0].id").value(testMovementId))
-        .andExpect(jsonPath("$[0].name").value("Back Squat"))
+        .andExpect(jsonPath("$[0].name").value("Fake Squat"))
         .andExpect(jsonPath("$[0].category").value("SQUAT"));
   }
 
@@ -99,7 +102,7 @@ class MovementControllerIT extends BaseIntegrationTest {
                 .header("X-Internal-Secret", "test-internal-secret"))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.id").value(testMovementId))
-        .andExpect(jsonPath("$.name").value("Back Squat"));
+        .andExpect(jsonPath("$.name").value("Fake Squat"));
   }
 
   @Test
@@ -216,5 +219,53 @@ class MovementControllerIT extends BaseIntegrationTest {
                 .content(objectMapper.writeValueAsString(updateRequest)))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.name").value("Back Squat (High Bar)"));
+  }
+
+  // -------------------------------------------------------------------------
+  // DELETE Operations
+  // -------------------------------------------------------------------------
+
+  @Test
+  @DisplayName("DELETE /movements/{id}: should delete movement when Admin")
+  void testDeleteMovement_Success() throws Exception {
+    mockMvc
+        .perform(
+            delete("/aldebaran/movements/" + testMovementId)
+                .with(csrf())
+                .header("X-Auth-User-Id", "1")
+                .header("X-Auth-User-Role", "ADMIN")
+                .header("X-Internal-Secret", "test-internal-secret"))
+        .andExpect(status().isNoContent());
+
+    // Verify persistence
+    boolean exists = movementRepository.existsById(testMovementId);
+    assertFalse(exists, "Movement should have been deleted from database");
+  }
+
+  @Test
+  @DisplayName("DELETE /movements/{id}: should return 403 Forbidden for non-admin")
+  void testDeleteMovement_Forbidden() throws Exception {
+    mockMvc
+        .perform(
+            delete("/aldebaran/movements/" + testMovementId)
+                .with(csrf())
+                .header("X-Auth-User-Id", "2")
+                .header("X-Auth-User-Role", "USER")
+                .header("X-Internal-Secret", "test-internal-secret"))
+        .andExpect(status().isForbidden());
+  }
+
+  @Test
+  @DisplayName("DELETE /movements/{id}: should return 404 for unknown ID")
+  void testDeleteMovement_NotFound() throws Exception {
+    mockMvc
+        .perform(
+            delete("/aldebaran/movements/99999")
+                .with(csrf())
+                .header("X-Auth-User-Id", "1")
+                .header("X-Auth-User-Role", "ADMIN")
+                .header("X-Internal-Secret", "test-internal-secret"))
+        .andExpect(status().isNotFound())
+        .andExpect(jsonPath("$.title").value("Resource Not Found"));
   }
 }

@@ -1,17 +1,27 @@
 <div class="container mx-auto px-4 py-8">
   <div class="flex justify-between items-center mb-6">
-    <h1 class="text-3xl font-bold">{{ 'MUSCLE.LIST.TITLE' | translate }}</h1>
+    <h1 class="text-3xl font-bold">{{ 'MUSCLE.TITLE' | translate }}</h1>
 
     @if (isAdmin()) {
-      <a routerLink="new" class="btn btn-secondary whitespace-nowrap">
-        + {{ 'MUSCLE.LIST.ADD_BUTTON' | translate }}
-      </a>
+      <div class="flex gap-2">
+        <button class="btn btn-outline btn-secondary whitespace-nowrap"
+                (click)="exportCsv()"
+                [disabled]="isExporting()">
+          <ng-icon name="heroDocumentArrowDown"></ng-icon>
+          {{ isExporting() ? '...' : ('EXPORT.EXPORT_CSV' | translate) }}
+        </button>
+
+        <a routerLink="/muscles/new" class="btn btn-secondary whitespace-nowrap">
+          <ng-icon name="heroPlus"></ng-icon>
+          {{ 'MUSCLE.ACTIONS.ADD' | translate }}
+        </a>
+      </div>
     }
   </div>
 
   @if (rawMuscles().length === 0) {
     <div class="text-center py-12 text-base-content/50 bg-base-100 rounded-box shadow mt-4">
-      {{ 'MUSCLE.LIST.EMPTY' | translate }}
+      {{ 'MUSCLE.MESSAGES.EMPTY_LIST' | translate }}
     </div>
   } @else {
     <div class="grid grid-cols-1 xl:grid-cols-2 gap-8">
@@ -33,24 +43,27 @@
                 <thead>
                 <tr>
                   <th class="cursor-pointer hover:bg-base-200 w-4/12"
-                      (click)="sortBy(group, 'medicalName')">
+                      tabindex="0"
+                      (click)="sortBy(group, 'medicalName')"
+                      (keydown.enter)="sortBy(group, 'medicalName')">
                     <div class="flex items-center justify-between">
-                      <span
-                        class="truncate">{{ 'MUSCLE.LIST.TABLE.MEDICAL_NAME' | translate }}</span>
+                      <span class="truncate">{{ 'MUSCLE.FIELDS.MEDICAL_NAME' | translate }}</span>
                       <span class="w-4 text-center opacity-50"
                             [class.invisible]="sortStates()[group]?.column !== 'medicalName'">
-                        {{ sortStates()[group]?.direction === 'desc' ? '↓' : '↑' }}
-                      </span>
+                              {{ sortStates()[group]?.direction === 'desc' ? '↓' : '↑' }}
+                     </span>
                     </div>
                   </th>
+
                   <th class="cursor-pointer hover:bg-base-200 w-4/12"
-                      (click)="sortBy(group, 'commonName')">
+                      tabindex="0"
+                      (click)="sortBy(group, 'commonName')"
+                      (keydown.enter)="sortBy(group, 'commonName')">
                     <div class="flex items-center justify-between">
-                      <span
-                        class="truncate">{{ 'MUSCLE.LIST.TABLE.COMMON_NAME' | translate }}</span>
+                      <span class="truncate">{{ 'MUSCLE.FIELDS.COMMON_NAME' | translate }}</span>
                       <span class="w-4 text-center opacity-50"
                             [class.invisible]="sortStates()[group]?.column !== 'commonName'">
-                        {{ sortStates()[group]?.direction === 'desc' ? '↓' : '↑' }}
+                              {{ sortStates()[group]?.direction === 'desc' ? '↓' : '↑' }}
                       </span>
                     </div>
                   </th>

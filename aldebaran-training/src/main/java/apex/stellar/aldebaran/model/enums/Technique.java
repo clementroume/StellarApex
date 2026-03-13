@@ -3,135 +3,116 @@ package apex.stellar.aldebaran.model.enums;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
-/**
- * Defines specific variations, styles, or modifications applied to a standard movement.
- *
- * <p>A "Technique" alters <em>how</em> a movement is performed without changing its fundamental
- * nature. Examples:
- *
- * <ul>
- *   <li>"Strict" vs. "Kipping" (Execution Style)
- *   <li>"Hang" vs. "From Blocks" (Starting Position)
- *   <li>"Single Arm" vs. "Bilateral" (Unilateralism)
- * </ul>
- *
- * <p>This allows for a compact exercise database (e.g., one "Snatch" entity with multiple technique
- * tags).
- */
+/** Defines specific variations, styles, or modifications applied to a standard movement. */
 @Getter
 @RequiredArgsConstructor
 public enum Technique {
 
   // --- Execution style & Tempo ---
-  STRICT("Strict", TechniqueCategory.STYLE),
-  KIPPING("Kipping", TechniqueCategory.STYLE),
-  BUTTERFLY("Butterfly", TechniqueCategory.STYLE),
-  TEMPO("Tempo", TechniqueCategory.STYLE),
-  PAUSED("Paused", TechniqueCategory.STYLE),
-  NEGATIVES("Negatives (Eccentric)", TechniqueCategory.STYLE),
-  DEAD_STOP("Dead Stop", TechniqueCategory.STYLE),
-  HAND_RELEASE("Hand Release", TechniqueCategory.STYLE),
-  TOUCH_AND_GO("Touch & Go", TechniqueCategory.STYLE),
-  EXPLOSIVE("Explosive", TechniqueCategory.STYLE),
+  STRICT(TechniqueCategory.STYLE),
+  KIPPING(TechniqueCategory.STYLE),
+  BUTTERFLY(TechniqueCategory.STYLE),
+  TEMPO(TechniqueCategory.STYLE),
+  PAUSED(TechniqueCategory.STYLE),
+  NEGATIVES(TechniqueCategory.STYLE),
+  DEAD_STOP(TechniqueCategory.STYLE),
+  HAND_RELEASE(TechniqueCategory.STYLE),
+  TOUCH_AND_GO(TechniqueCategory.STYLE),
+  EXPLOSIVE(TechniqueCategory.STYLE),
+  JUMPING(TechniqueCategory.STYLE),
 
   // --- Grip & Stance ---
-  CLOSE_GRIP("Close Grip", TechniqueCategory.GRIP_STANCE),
-  WIDE_GRIP("Wide Grip", TechniqueCategory.GRIP_STANCE),
-  SNATCH_GRIP("Snatch Grip", TechniqueCategory.GRIP_STANCE),
-  HAMMER("Hammer Grip", TechniqueCategory.GRIP_STANCE),
-  MIXED_GRIP("Mixed Grip", TechniqueCategory.GRIP_STANCE),
-  HOOK_GRIP("Hook Grip", TechniqueCategory.GRIP_STANCE),
-  CONVENTIONAL("Conventional", TechniqueCategory.GRIP_STANCE),
-  SUMO("Sumo", TechniqueCategory.GRIP_STANCE),
+  CLOSE_GRIP(TechniqueCategory.GRIP_STANCE),
+  WIDE_GRIP(TechniqueCategory.GRIP_STANCE),
+  SNATCH_GRIP(TechniqueCategory.GRIP_STANCE),
+  HAMMER(TechniqueCategory.GRIP_STANCE),
+  MIXED_GRIP(TechniqueCategory.GRIP_STANCE),
+  HOOK_GRIP(TechniqueCategory.GRIP_STANCE),
+  CONVENTIONAL(TechniqueCategory.GRIP_STANCE),
+  SUMO(TechniqueCategory.GRIP_STANCE),
 
   // --- Starting Position ---
-  HANG("Hang", TechniqueCategory.STARTING_POSITION),
-  HIGH_HANG("High Hang", TechniqueCategory.STARTING_POSITION),
-  LOW_HANG("Low Hang / Below Knee", TechniqueCategory.STARTING_POSITION),
-  FROM_BLOCKS("From Blocks", TechniqueCategory.STARTING_POSITION),
-  DEFICIT("Deficit", TechniqueCategory.STARTING_POSITION),
-  TO_PLATFORM("To Platform", TechniqueCategory.STARTING_POSITION),
-  FEET_ELEVATED("Feet Elevated", TechniqueCategory.STARTING_POSITION),
-  CHEST_TO_WALL("Chest to Wall", TechniqueCategory.STARTING_POSITION),
-  BOX("Box", TechniqueCategory.STARTING_POSITION),
+  HANG(TechniqueCategory.STARTING_POSITION),
+  HIGH_HANG(TechniqueCategory.STARTING_POSITION),
+  LOW_HANG(TechniqueCategory.STARTING_POSITION),
+  FROM_BLOCKS(TechniqueCategory.STARTING_POSITION),
+  DEFICIT(TechniqueCategory.STARTING_POSITION),
+  TO_PLATFORM(TechniqueCategory.STARTING_POSITION),
+  FEET_ELEVATED(TechniqueCategory.STARTING_POSITION),
+  CHEST_TO_WALL(TechniqueCategory.STARTING_POSITION),
+  BOX(TechniqueCategory.STARTING_POSITION),
 
   // --- Load position ---
-  FRONT_RACK("Front Rack", TechniqueCategory.LOAD_POSITION),
-  OVERHEAD("Overhead", TechniqueCategory.LOAD_POSITION),
-  BEHIND_THE_NECK("Behind the Neck", TechniqueCategory.LOAD_POSITION),
-  BACK_RACK("Back Rack", TechniqueCategory.LOAD_POSITION),
-  HIGH_BAR("High Bar", TechniqueCategory.LOAD_POSITION),
-  LOW_BAR("Low Bar", TechniqueCategory.LOAD_POSITION),
-  BEAR_HUG("Bear Hug", TechniqueCategory.LOAD_POSITION),
-  ZERCHER("Zercher", TechniqueCategory.LOAD_POSITION),
-  ON_SHOULDER("On Shoulder", TechniqueCategory.LOAD_POSITION),
-  OVER_SHOULDER("Over Shoulder", TechniqueCategory.LOAD_POSITION),
-  GOBLET("Goblet", TechniqueCategory.LOAD_POSITION),
-  FARMERS_CARRY("Farmer's Carry", TechniqueCategory.LOAD_POSITION),
+  FRONT_RACK(TechniqueCategory.LOAD_POSITION),
+  OVERHEAD(TechniqueCategory.LOAD_POSITION),
+  BEHIND_THE_NECK(TechniqueCategory.LOAD_POSITION),
+  BACK_RACK(TechniqueCategory.LOAD_POSITION),
+  HIGH_BAR(TechniqueCategory.LOAD_POSITION),
+  LOW_BAR(TechniqueCategory.LOAD_POSITION),
+  BEAR_HUG(TechniqueCategory.LOAD_POSITION),
+  ZERCHER(TechniqueCategory.LOAD_POSITION),
+  ON_SHOULDER(TechniqueCategory.LOAD_POSITION),
+  OVER_SHOULDER(TechniqueCategory.LOAD_POSITION),
+  GOBLET(TechniqueCategory.LOAD_POSITION),
+  FARMERS_CARRY(TechniqueCategory.LOAD_POSITION),
 
-  // ---  Body Position ---
-  SEATED("Seated", TechniqueCategory.BODY_POSITION),
-  STANDING("Standing", TechniqueCategory.BODY_POSITION),
-  INCLINED("Inclined", TechniqueCategory.BODY_POSITION),
-  DECLINED("Declined", TechniqueCategory.BODY_POSITION),
-  INVERTED("Inverted", TechniqueCategory.BODY_POSITION),
-  L_SIT("L-Sit", TechniqueCategory.BODY_POSITION),
-  TUCK_HOLD("Tuck", TechniqueCategory.BODY_POSITION),
-  PIKE("Pike", TechniqueCategory.BODY_POSITION),
-  HOLLOW("Hollow", TechniqueCategory.BODY_POSITION),
-  ARCH("Arch", TechniqueCategory.BODY_POSITION),
-  KNEES("Kneeling", TechniqueCategory.BODY_POSITION),
+  // --- Body Position ---
+  SEATED(TechniqueCategory.BODY_POSITION),
+  STANDING(TechniqueCategory.BODY_POSITION),
+  INCLINED(TechniqueCategory.BODY_POSITION),
+  DECLINED(TechniqueCategory.BODY_POSITION),
+  INVERTED(TechniqueCategory.BODY_POSITION),
+  L_SIT(TechniqueCategory.BODY_POSITION),
+  TUCK(TechniqueCategory.BODY_POSITION),
+  PIKE(TechniqueCategory.BODY_POSITION),
+  HOLLOW(TechniqueCategory.BODY_POSITION),
+  ARCH(TechniqueCategory.BODY_POSITION),
+  KNEES(TechniqueCategory.BODY_POSITION),
+  HOLD(TechniqueCategory.BODY_POSITION),
+  ROCK(TechniqueCategory.BODY_POSITION),
 
-  // ---  Laterality ---
-  BILATERAL("Bilateral", TechniqueCategory.LATERALITY),
-  UNILATERAL("Unilateral", TechniqueCategory.LATERALITY),
-  ALTERNATING("Alternating", TechniqueCategory.LATERALITY),
-  SINGLE_ARM("Single Arm", TechniqueCategory.LATERALITY),
-  SINGLE_LEG("Single Leg", TechniqueCategory.LATERALITY),
+  // --- Laterality ---
+  BILATERAL(TechniqueCategory.LATERALITY),
+  UNILATERAL(TechniqueCategory.LATERALITY),
+  ALTERNATING(TechniqueCategory.LATERALITY),
+  ONE_ARM(TechniqueCategory.LATERALITY),
+  SINGLE_LEG(TechniqueCategory.LATERALITY),
+  DOUBLE(TechniqueCategory.LATERALITY),
 
-  // ---  Movement pattern / Direction ---
-  FORWARD("Forward", TechniqueCategory.DIRECTION),
-  BACKWARD("Backward", TechniqueCategory.DIRECTION),
-  LATERAL("Lateral", TechniqueCategory.DIRECTION),
-  FACING("Facing", TechniqueCategory.DIRECTION),
-  WALK("Walk", TechniqueCategory.DIRECTION),
-  JUMPING("Jumping", TechniqueCategory.DIRECTION),
-  CROSSOVER("Crossover", TechniqueCategory.DIRECTION),
-  CRAWL_SWIM("Crawl Swim", TechniqueCategory.DIRECTION),
-  BACKSTROKE_SWIM("Backstroke Swim", TechniqueCategory.DIRECTION),
-  BREASTSTROKE_SWIM("Breaststroke Swim", TechniqueCategory.DIRECTION),
-  BUTTERFLY_SWIM("Butterfly Swim", TechniqueCategory.DIRECTION),
+  // --- Movement pattern / Direction ---
+  FORWARD(TechniqueCategory.DIRECTION),
+  BACKWARD(TechniqueCategory.DIRECTION),
+  LATERAL(TechniqueCategory.DIRECTION),
+  FACING(TechniqueCategory.DIRECTION),
+  WALK(TechniqueCategory.DIRECTION),
+  CROSSOVER(TechniqueCategory.DIRECTION),
+  CROSS_BODY(TechniqueCategory.DIRECTION),
+  CRAWL(TechniqueCategory.DIRECTION),
+  BACKSTROKE(TechniqueCategory.DIRECTION),
+  BREASTSTROKE(TechniqueCategory.DIRECTION),
 
-  // ---  Specific modifiers ---
-  LEGLESS("Legless", TechniqueCategory.MODIFIER),
-  WEIGHTED("Weighted", TechniqueCategory.MODIFIER),
-  BODYWEIGHT("Bodyweight", TechniqueCategory.MODIFIER),
-  ASSISTED("Assisted", TechniqueCategory.MODIFIER),
-  CONTINENTAL_CLEAN("Continental", TechniqueCategory.MODIFIER);
+  // --- Specific modifiers ---
+  LEGLESS(TechniqueCategory.MODIFIER),
+  WEIGHTED(TechniqueCategory.MODIFIER),
+  BODYWEIGHT(TechniqueCategory.MODIFIER),
+  ASSISTED(TechniqueCategory.MODIFIER),
+  CONTINENTAL_CLEAN(TechniqueCategory.MODIFIER),
+  RING(TechniqueCategory.MODIFIER),
+  PIROUETTE(TechniqueCategory.MODIFIER),
+  CLEAN_AND_PRESS(TechniqueCategory.MODIFIER),
+  CLEAN_AND_JERK(TechniqueCategory.MODIFIER);
 
-  /** A human-readable name suitable for UI display. */
-  private final String displayName;
-
-  /** The category of the technique variation. */
   private final TechniqueCategory category;
 
-  /** Categorizes techniques by their primary effect on the movement. */
+  /** Technique Category Inner Enum. */
   public enum TechniqueCategory {
-    /** Changes the tempo or dynamic quality of the movement (e.g., Strict vs. Kipping). */
     STYLE,
-    /** Changes how the implement is gripped or the foot stance. */
     GRIP_STANCE,
-    /** Changes the starting height or range of motion. */
     STARTING_POSITION,
-    /** Changes where the load is held on the body. */
     LOAD_POSITION,
-    /** Changes the athlete's body orientation. */
     BODY_POSITION,
-    /** Defines limb usage (One arm, Alternating). */
     LATERALITY,
-    /** Defines movement direction or locomotion type. */
     DIRECTION,
-    /** Specific constraints or equipment-driven variations. */
     MODIFIER
   }
 }

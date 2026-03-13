@@ -2,10 +2,12 @@
 
   <div class="navbar-start w-auto md:hidden">
     <div class="dropdown">
-      <div tabindex="0" role="button" class="btn btn-ghost btn-circle">
+
+      <button class="btn btn-ghost btn-circle" aria-label="Ouvrir le menu">
         <ng-icon name="heroBars3" size="1.5em"></ng-icon>
-      </div>
-      <ul tabindex="0" class="menu menu-sm dropdown-content mt-3 z-[1] p-2 shadow bg-base-100 rounded-box w-52">
+      </button>
+
+      <ul class="menu menu-sm dropdown-content mt-3 z-1 p-2 shadow bg-base-100 rounded-box w-52">
         <li>
           <a routerLink="/dashboard" routerLinkActive="active">
             <ng-icon name="hugeDashboardSpeed01" size="1.2em"></ng-icon>
@@ -31,9 +33,10 @@
           </a>
         </li>
       </ul>
+
     </div>
   </div>
-
+  
   <div class="navbar-start w-auto flex-1 md:flex-none ml-2 md:ml-0">
     <div class="btn btn-ghost text-xl hover:bg-transparent cursor-default">StellarApex</div>
   </div>

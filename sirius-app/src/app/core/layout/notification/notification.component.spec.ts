@@ -33,19 +33,18 @@ describe('NotificationComponent', () => {
   it('should not display an alert when notification is null', () => {
     mockNotification.set(null);
     fixture.detectChanges();
+
     const alertElement = fixture.nativeElement.querySelector('.alert');
+
     expect(alertElement).toBeNull();
   });
 
   it('should display a success alert for a success notification', () => {
-    // Arrange
     mockNotification.set({message: 'Success!', type: 'success'});
     fixture.detectChanges();
 
-    // Act
     const alertElement = fixture.nativeElement.querySelector('.alert');
 
-    // Assert
     expect(alertElement).not.toBeNull();
     expect(alertElement.classList).toContain('alert-success');
     expect(alertElement.textContent).toContain('Success!');
@@ -56,10 +55,8 @@ describe('NotificationComponent', () => {
     mockNotification.set({message: 'Error!', type: 'error'});
     fixture.detectChanges();
 
-    // Act
     const alertElement = fixture.nativeElement.querySelector('.alert');
 
-    // Assert
     expect(alertElement).not.toBeNull();
     expect(alertElement.classList).toContain('alert-error');
     expect(alertElement.textContent).toContain('Error!');

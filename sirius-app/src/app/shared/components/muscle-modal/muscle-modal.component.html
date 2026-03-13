@@ -11,8 +11,9 @@
       </div>
 
       @if (muscle.imageUrl) {
-        <img [src]="muscle.imageUrl" alt="Muscle Image"
-             class="w-full object-cover max-h-48 rounded-lg shadow-sm mb-6 border border-base-content/10"/>
+        <div class="relative w-full h-48 mb-6 rounded-lg shadow-sm border border-base-content/10 overflow-hidden">
+          <img [ngSrc]="muscle.imageUrl" [alt]="getLocalizedName(muscle)" fill class="object-cover"/>
+        </div>
       } @else {
         <div
           class="w-full h-48 bg-base-200 rounded-lg flex items-center justify-center mb-6 border border-dashed border-base-content/30">
@@ -22,7 +23,7 @@
 
       <div class="space-y-4">
         <div>
-          <span class="font-semibold text-sm opacity-70">{{ 'MUSCLE.LIST.MODAL.MEDICAL_NAME' | translate }}</span>
+          <span class="font-semibold text-sm opacity-70">{{ 'MUSCLE.FIELDS.MEDICAL_NAME' | translate }}</span>
           <p class="text-lg">{{ muscle.medicalName }}</p>
         </div>
 
@@ -39,6 +40,10 @@
           <button class="btn">{{ 'GLOBAL.CLOSE' | translate }}</button>
         </form>
         @if (isAdmin()) {
+          <button class="btn btn-error" (click)="onDelete()">
+            {{ 'GLOBAL.DELETE' | translate }}
+          </button>
+
           <a [routerLink]="['/muscles/edit', muscle.id]" (click)="onClose()" class="btn btn-secondary">
             {{ 'GLOBAL.EDIT' | translate }}
           </a>

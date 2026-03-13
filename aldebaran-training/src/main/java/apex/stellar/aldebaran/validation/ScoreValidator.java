@@ -35,7 +35,7 @@ public class ScoreValidator implements ConstraintValidator<ValidScore, WodScore>
       context.disableDefaultConstraintViolation();
       context
           .unwrap(HibernateConstraintValidatorContext.class)
-          .addMessageParameter("type", scoreType.getDisplayName())
+          .addMessageParameter("type", scoreType.name())
           .buildConstraintViolationWithTemplate("{wod.score.invalid.type}")
           .addConstraintViolation();
     }

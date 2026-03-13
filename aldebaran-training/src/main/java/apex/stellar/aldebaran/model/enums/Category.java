@@ -17,47 +17,44 @@ import lombok.RequiredArgsConstructor;
 public enum Category {
 
   // --- Weightlifting (WL) ---
-  DEADLIFT("Deadlift", Modality.WEIGHTLIFTING),
-  SQUAT("Squat", Modality.WEIGHTLIFTING),
-  PRESS_AND_JERK("Press & Jerk", Modality.WEIGHTLIFTING),
-  CLEAN("Clean", Modality.WEIGHTLIFTING),
-  SNATCH("Snatch", Modality.WEIGHTLIFTING),
-  COMPLEXES("Complexes", Modality.WEIGHTLIFTING),
-  LUNGES("Lunges", Modality.WEIGHTLIFTING),
-  SWING("Swing", Modality.WEIGHTLIFTING),
-  OTHER_LIFTS("Other Lifts", Modality.WEIGHTLIFTING),
+  DEADLIFT(Modality.WEIGHTLIFTING),
+  SQUAT(Modality.WEIGHTLIFTING),
+  PRESS_AND_JERK(Modality.WEIGHTLIFTING),
+  CLEAN(Modality.WEIGHTLIFTING),
+  SNATCH(Modality.WEIGHTLIFTING),
+  COMPLEXES(Modality.WEIGHTLIFTING),
+  LUNGES(Modality.WEIGHTLIFTING),
+  SWING(Modality.WEIGHTLIFTING),
+  OTHER_LIFTS(Modality.WEIGHTLIFTING),
 
   // --- Gymnastics (GY) ---
-  PULLING("Pulling (Gym)", Modality.GYMNASTICS),
-  PUSHING("Pushing (Gym)", Modality.GYMNASTICS),
-  INVERTED("Inverted", Modality.GYMNASTICS),
-  CORE("Core", Modality.GYMNASTICS),
-  LOCOMOTION_AND_BODY_CONTROL("Locomotion & Body Control", Modality.GYMNASTICS),
+  PULLING(Modality.GYMNASTICS),
+  PUSHING(Modality.GYMNASTICS),
+  INVERTED(Modality.GYMNASTICS),
+  CORE(Modality.GYMNASTICS),
+  LOCOMOTION_AND_BODY_CONTROL(Modality.GYMNASTICS),
 
   // --- Monostructural (Metabolic Conditioning) ---
-  CARDIO("Cardio (Run/Swim)", Modality.MONOSTRUCTURAL),
-  CARDIO_MACHINES("Cardio Machines", Modality.MONOSTRUCTURAL),
-  BURPEES("Burpees", Modality.MONOSTRUCTURAL),
-  JUMPING("Jumping", Modality.MONOSTRUCTURAL),
+  CARDIO(Modality.MONOSTRUCTURAL),
+  CARDIO_MACHINES(Modality.MONOSTRUCTURAL),
+  BURPEES(Modality.MONOSTRUCTURAL),
+  JUMPING(Modality.MONOSTRUCTURAL),
 
   // --- Strongman (Odd Objects) ---
-  THROWS_AND_SLAMS("Throws & Slams", Modality.STRONGMAN),
-  CARRY("Carry", Modality.STRONGMAN),
-  STRONGMAN_LIFTS("Strongman Lifts", Modality.STRONGMAN),
-  SLED("Sled", Modality.STRONGMAN);
+  THROWS_AND_SLAMS(Modality.STRONGMAN),
+  CARRY(Modality.STRONGMAN),
+  STRONGMAN_LIFTS(Modality.STRONGMAN),
+  SLED(Modality.STRONGMAN);
 
-  private final String displayName;
   private final Modality modality;
 
   /** Modality Inner Enum. */
   @Getter
   @RequiredArgsConstructor
   public enum Modality {
-    WEIGHTLIFTING("Weightlifting"),
-    GYMNASTICS("Gymnastics"),
-    MONOSTRUCTURAL("Monostructural"),
-    STRONGMAN("Strongman");
-
-    private final String displayName;
+    WEIGHTLIFTING,
+    GYMNASTICS,
+    MONOSTRUCTURAL,
+    STRONGMAN;
   }
 }

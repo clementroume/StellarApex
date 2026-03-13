@@ -235,7 +235,7 @@ class ScoreValidatorTest {
     LocaleContextHolder.setLocale(Locale.ENGLISH);
 
     WodScore score = createScore(ScoreType.TIME);
-    String expectedType = ScoreType.TIME.getDisplayName();
+    String expectedType = ScoreType.TIME.name();
 
     Set<ConstraintViolation<WodScore>> violations = validator.validate(score);
 
@@ -252,7 +252,7 @@ class ScoreValidatorTest {
     LocaleContextHolder.setLocale(Locale.FRENCH);
 
     WodScore score = createScore(ScoreType.TIME);
-    String expectedType = ScoreType.TIME.getDisplayName();
+    String expectedType = ScoreType.TIME.name();
 
     Set<ConstraintViolation<WodScore>> violations = validator.validate(score);
 

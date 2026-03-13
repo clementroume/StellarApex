@@ -1,11 +1,5 @@
 import {TestBed} from '@angular/core/testing';
-import {
-  ActivatedRouteSnapshot,
-  CanActivateFn,
-  provideRouter,
-  Router,
-  RouterStateSnapshot
-} from '@angular/router';
+import {ActivatedRouteSnapshot, CanActivateFn, provideRouter, Router, RouterStateSnapshot} from '@angular/router';
 import {authGuard} from './auth.guard';
 import {AuthService} from '../../api/antares/services/auth.service';
 import {of} from 'rxjs';
@@ -15,7 +9,6 @@ describe('authGuard', () => {
   let authServiceSpy: jasmine.SpyObj<AuthService>;
   let routerSpy: jasmine.SpyObj<Router>;
 
-  // Helper to execute the guard. It now matches the CanActivateFn signature.
   const executeGuard: CanActivateFn = (route, state) =>
     TestBed.runInInjectionContext(() => authGuard(route, state));
 

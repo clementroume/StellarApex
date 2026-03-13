@@ -3,12 +3,7 @@ import {HttpTestingController, provideHttpClientTesting} from '@angular/common/h
 import {provideHttpClient} from '@angular/common/http';
 import {WodScoreService} from './wod-score.service';
 import {environment} from '../../../../environments/environment';
-import {
-  ScoreComparisonResponse,
-  WodScoreReferenceData,
-  WodScoreRequest,
-  WodScoreResponse
-} from '../models/score.model';
+import {ScoreComparisonResponse, WodScoreReferenceData, WodScoreRequest, WodScoreResponse} from '../models/score.model';
 import {Slice} from '../../../core/models/pagination.model';
 
 
@@ -128,12 +123,12 @@ describe('WodScoreService', () => {
     req.flush(mockSlice);
   });
 
-  it('getReferenceData should GET from /wod-scores/reference-data', () => {
+  it('getReferenceData should GET from /scores/reference-data', () => {
     service.getReferenceData().subscribe(response => {
       expect(response).toEqual(mockReferenceData);
     });
 
-    const req = httpMock.expectOne(`${base}/wod-scores/reference-data`);
+    const req = httpMock.expectOne(`${base}/scores/reference-data`);
     expect(req.request.method).toBe('GET');
     req.flush(mockReferenceData);
   });

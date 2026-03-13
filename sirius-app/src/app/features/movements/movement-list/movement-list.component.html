@@ -1,18 +1,29 @@
 <div class="container mx-auto pb-12">
   <div class="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
-    <h1 class="text-3xl font-bold">{{ 'MOVEMENT.LIST.TITLE' | translate }}</h1>
+    <h1 class="text-3xl font-bold">{{ 'MOVEMENT.TITLE' | translate }}</h1>
 
     <div class="flex items-center gap-4 w-full sm:w-auto">
-      <label class="input input-bordered flex items-center gap-2 w-full sm:w-64">
-        <input type="text" class="grow" [placeholder]="'MOVEMENT.LIST.SEARCH' | translate"
+      <div class="input input-bordered flex items-center gap-2 w-full sm:w-64">
+        <input type="text" class="grow"
+               [placeholder]="'MOVEMENT.ACTIONS.SEARCH' | translate"
                (input)="onSearchChange($event)"/>
         <ng-icon name="heroMagnifyingGlass" class="opacity-70"></ng-icon>
-      </label>
+      </div>
 
       @if (isAdmin()) {
-        <a routerLink="/movements/new" class="btn btn-secondary whitespace-nowrap">
-          + {{ 'MOVEMENT.LIST.ADD_BUTTON' | translate }}
-        </a>
+        <div class="flex gap-2">
+          <button class="btn btn-outline btn-secondary whitespace-nowrap"
+                  (click)="exportCsv()"
+                  [disabled]="isExporting()">
+            <ng-icon name="heroDocumentArrowDown"></ng-icon>
+            {{ isExporting() ? '...' : ('EXPORT.EXPORT_CSV' | translate) }}
+          </button>
+
+          <a routerLink="/movements/new" class="btn btn-secondary whitespace-nowrap">
+            <ng-icon name="heroPlus"></ng-icon>
+            {{ 'MOVEMENT.ACTIONS.ADD' | translate }}
+          </a>
+        </div>
       }
     </div>
   </div>
@@ -23,7 +34,7 @@
     </div>
   } @else if (movements().length === 0) {
     <div class="text-center py-12 text-base-content/50 bg-base-100 rounded-box shadow">
-      {{ 'MOVEMENT.LIST.EMPTY' | translate }}
+      {{ 'MOVEMENT.MESSAGES.EMPTY_LIST' | translate }}
     </div>
   } @else {
     @for (modality of modalityKeys(); track modality) {
@@ -38,9 +49,9 @@
           <table class="table table-zebra w-full">
             <thead>
             <tr>
-              <th class="w-1/2">{{ 'MOVEMENT.LIST.TABLE.NAME' | translate }}</th>
-              <th>{{ 'MOVEMENT.LIST.TABLE.ABBREVIATION' | translate }}</th>
-              <th>{{ 'MOVEMENT.LIST.TABLE.CATEGORY' | translate }}</th>
+              <th class="w-1/2">{{ 'MOVEMENT.FIELDS.NAME' | translate }}</th>
+              <th>{{ 'MOVEMENT.FIELDS.ABBREVIATION' | translate }}</th>
+              <th>{{ 'MOVEMENT.FIELDS.CATEGORY' | translate }}</th>
               <th class="text-right">{{ 'GLOBAL.ACTIONS' | translate }}</th>
             </tr>
             </thead>
@@ -50,9 +61,10 @@
                   <td>
                     <div class="flex items-center gap-3">
                       <div class="avatar placeholder">
-                        <div class="mask mask-squircle w-10 h-10 bg-base-200 text-base-content/50">
+                        <div
+                          class="mask mask-squircle w-10 h-10 bg-base-200 text-base-content/50 flex items-center justify-center">
                           @if (movement.imageUrl) {
-                            <img [src]="movement.imageUrl" [alt]="movement.name" loading="lazy"/>
+                            <img [ngSrc]="movement.imageUrl" [alt]="movement.name" width="40" height="40"/>
                           } @else {
                             <span class="text-lg font-bold">{{ movement.name.charAt(0) | uppercase }}</span>
                           }

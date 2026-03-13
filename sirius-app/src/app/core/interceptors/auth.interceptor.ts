@@ -1,37 +1,13 @@
-import {
-  HttpErrorResponse,
-  HttpHandlerFn,
-  HttpInterceptorFn,
-  HttpRequest
-} from '@angular/common/http';
+import {HttpErrorResponse, HttpHandlerFn, HttpInterceptorFn, HttpRequest} from '@angular/common/http';
 import {inject} from '@angular/core';
 import {Router} from '@angular/router';
 import {catchError, switchMap, throwError} from 'rxjs';
 import {environment} from '../../../environments/environment';
 import {AuthService} from '../../api/antares/services/auth.service';
-import {TokenRefreshResponse} from '../../api/antares/models/auth.model';
 
-/**
- * Checks if a URL targets the backend API.
- * @param url The request URL.
- * @returns `true` if the URL starts with the configured API URL.
- */
 const isApiUrl = (url: string): boolean => url.startsWith(environment.authUrl) || url.startsWith(environment.trainingUrl);
-
-/**
- * Checks if a URL targets an authentication endpoint.
- * These endpoints should be ignored by the refresh-token logic to prevent infinite loops.
- * @param url The request URL.
- * @returns `true` if the URL is an authentication endpoint.
- */
 const isAuthUrl = (url: string): boolean => url.startsWith(`${environment.authUrl}/auth/`);
 
-/**
- * A functional interceptor that handles two core authentication responsibilities:
- * 1. Adds `withCredentials: true` to all outgoing requests to the API, ensuring cookies are sent.
- * 2. Catches `401 Unauthorized` errors, attempts to refresh the session using a refresh token,
- * and retries the original request upon success. If the refresh fails, it logs the user out.
- */
 export const authInterceptor: HttpInterceptorFn = (req: HttpRequest<unknown>, next: HttpHandlerFn) => {
   const authService = inject(AuthService);
   const router = inject(Router);
@@ -50,7 +26,7 @@ export const authInterceptor: HttpInterceptorFn = (req: HttpRequest<unknown>, ne
 
       // It's a 401 error on a protected API route, attempt to refresh the token.
       return authService.refreshToken().pipe(
-        switchMap((token: TokenRefreshResponse) => {
+        switchMap(() => {
           // If the refresh is successful, retry the original request.
           // The browser will now have the new cookies set by the refresh response.
           return next(authorizedReq);

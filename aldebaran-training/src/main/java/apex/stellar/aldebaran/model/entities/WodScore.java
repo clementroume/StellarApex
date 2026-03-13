@@ -162,19 +162,13 @@ public class WodScore {
   @Column(name = "logged_at", nullable = false, updatable = false)
   private LocalDateTime loggedAt;
 
-  // ==================================================================================
-  // INNER ENUM: SCALING
-  // ==================================================================================
-
-  /** Represents the difficulty level at which a workout was performed. */
+  /** Scaling level Inner Enum. */
   @Getter
   @RequiredArgsConstructor
   public enum ScalingLevel {
-    RX("Rx"),
-    SCALED("Scaled"),
-    ELITE("Elite / Rx+"),
-    CUSTOM("Custom / Modified");
-
-    private final String displayName;
+    RX,
+    SCALED,
+    ELITE,
+    CUSTOM;
   }
 }

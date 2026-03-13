@@ -7,6 +7,9 @@ import {MuscleResponse} from '../../../api/aldebaran/models/muscle.model';
 import {AuthService} from '../../../api/antares/services/auth.service';
 import {NgIcon} from '@ng-icons/core';
 import {DialogService} from '../../../core/services/dialog.service';
+import {startWith, switchMap} from 'rxjs';
+import {ExporterService} from '../../../api/aldebaran/services/exporter.service';
+import {NotificationService} from '../../../core/services/notification.service';
 
 type SortState = { column: keyof MuscleResponse | 'commonName' | '', direction: 'asc' | 'desc' };
 
@@ -22,14 +25,23 @@ export class MuscleListComponent implements OnInit {
   private readonly authService = inject(AuthService);
   private readonly translate = inject(TranslateService);
   private readonly dialogService = inject(DialogService);
+  private readonly exporterService = inject(ExporterService);
+  private readonly notificationService = inject(NotificationService);
 
   isAdmin = computed(() => this.authService.currentUser()?.platformRole === 'ADMIN');
-  readonly rawMuscles = toSignal(this.muscleService.getMuscles(), {initialValue: []});
+  readonly rawMuscles = toSignal(
+    this.muscleService.refreshNeeded$.pipe(
+      startWith(undefined),
+      switchMap(() => this.muscleService.getMuscles())
+    ),
+    {initialValue: []}
+  );
 
   activeLang = signal<string>(this.translate.getCurrentLang() || this.translate.getFallbackLang() || 'en');
 
   sortStates = signal<Record<string, SortState>>({});
   muscleGroupKeys = signal<string[]>([]);
+  isExporting = signal<boolean>(false);
 
   constructor() {
     this.translate.onLangChange.subscribe((event: LangChangeEvent) => {
@@ -126,6 +138,26 @@ export class MuscleListComponent implements OnInit {
       },
       error: (err) => {
         console.error('Erreur lors du chargement des détails du muscle', err);
+      }
+    });
+  }
+
+  exportCsv(): void {
+    if (!confirm(this.translate.instant('EXPORT.CONFIRM_EXPORT'))) {
+      return;
+    }
+
+    this.isExporting.set(true);
+    // noinspection DuplicatedCode
+    this.exporterService.exportMuscles().subscribe({
+      next: () => {
+        this.notificationService.showSuccess(this.translate.instant('EXPORT.EXPORT_SUCCESS'));
+        this.isExporting.set(false);
+      },
+      error: (err) => {
+        console.error(err);
+        this.notificationService.showError(this.translate.instant('EXPORT.EXPORT_ERROR'));
+        this.isExporting.set(false);
       }
     });
   }

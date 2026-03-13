@@ -1,5 +1,15 @@
 import {MovementResponse} from './movement.model';
 
+export interface WodSummaryResponse {
+  id: number;
+  title: string;
+  wodType: string;
+  scoreType: string;
+  repScheme?: string;
+  timeCapSeconds?: number;
+  createdAt: string;
+}
+
 export interface WodRequest {
   // --- Identification ---
   title: string;
@@ -45,16 +55,6 @@ export interface WodResponse {
   updatedAt: string;
 }
 
-export interface WodSummaryResponse {
-  id: number;
-  title: string;
-  wodType: string;
-  scoreType: string;
-  repScheme?: string;
-  timeCapSeconds?: number;
-  createdAt: string;
-}
-
 export interface WodMovementRequest {
   // ---  Identification ---
   movementId: number;
@@ -96,7 +96,6 @@ export interface WodMovementResponse {
   // --- Instructions ---
   notes?: string;
   scalingOptions?: string;
-
 }
 
 export interface WodReferenceData {

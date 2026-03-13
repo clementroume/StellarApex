@@ -1,7 +1,9 @@
 package apex.stellar.aldebaran.controller;
 
 import static org.hamcrest.Matchers.hasSize;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
@@ -202,6 +204,54 @@ class MuscleControllerIT extends BaseIntegrationTest {
                 .header("X-Internal-Secret", "test-internal-secret")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
+        .andExpect(status().isNotFound())
+        .andExpect(jsonPath("$.title").value("Resource Not Found"));
+  }
+
+  // -------------------------------------------------------------------------
+  // DELETE Operations (Delete)
+  // -------------------------------------------------------------------------
+
+  @Test
+  @DisplayName("DELETE /muscles/{id}: should delete muscle when Admin")
+  void testDeleteMuscle_AsAdmin_Success() throws Exception {
+    mockMvc
+        .perform(
+            delete("/aldebaran/muscles/" + testMuscleId)
+                .with(csrf())
+                .header("X-Auth-User-Id", "1")
+                .header("X-Auth-User-Role", "ADMIN")
+                .header("X-Internal-Secret", "test-internal-secret"))
+        .andExpect(status().isNoContent());
+
+    // Verify persistence
+    boolean exists = muscleRepository.existsById(testMuscleId);
+    assertFalse(exists, "Muscle should have been deleted from database");
+  }
+
+  @Test
+  @DisplayName("DELETE /muscles/{id}: should return 403 Forbidden when simple User")
+  void testDeleteMuscle_AsUser_Forbidden() throws Exception {
+    mockMvc
+        .perform(
+            delete("/aldebaran/muscles/" + testMuscleId)
+                .with(csrf())
+                .header("X-Auth-User-Id", "2")
+                .header("X-Auth-User-Role", "USER")
+                .header("X-Internal-Secret", "test-internal-secret"))
+        .andExpect(status().isForbidden());
+  }
+
+  @Test
+  @DisplayName("DELETE /muscles/{id}: should return 404 if ID unknown")
+  void testDeleteMuscle_NotFound() throws Exception {
+    mockMvc
+        .perform(
+            delete("/aldebaran/muscles/99999")
+                .with(csrf())
+                .header("X-Auth-User-Id", "1")
+                .header("X-Auth-User-Role", "ADMIN")
+                .header("X-Internal-Secret", "test-internal-secret"))
         .andExpect(status().isNotFound())
         .andExpect(jsonPath("$.title").value("Resource Not Found"));
   }

@@ -19,7 +19,7 @@
       <div
         class="w-full h-48 bg-base-200 rounded-lg flex items-center justify-center mb-6 overflow-hidden relative border border-base-content/10">
         @if (movement.imageUrl) {
-          <img [src]="movement.imageUrl" alt="Movement Image" class="w-full h-full object-cover"/>
+          <img [ngSrc]="movement.imageUrl" [alt]="movement.name" fill class="object-cover"/>
         } @else {
           <span class="text-base-content/50 italic">{{ 'GLOBAL.NO_IMAGE' | translate }}</span>
         }
@@ -44,27 +44,28 @@
         </div>
 
         <div>
-          <span class="font-semibold text-sm opacity-70">{{ 'MOVEMENT.LIST.MODAL.COACHING_CUES' | translate }}</span>
+          <span class="font-semibold text-sm opacity-70">{{ 'MOVEMENT.FIELDS.COACHING_CUES' | translate }}</span>
           <p [class.italic]="!getLocalizedCues(movement)"
              [class.opacity-80]="!getLocalizedCues(movement)">
-            {{ getLocalizedCues(movement) || ('MOVEMENT.LIST.MODAL.NO_CUES' | translate) }}
+            {{ getLocalizedCues(movement) || ('MOVEMENT.MESSAGES.NO_CUES' | translate) }}
           </p>
         </div>
 
         <div>
-          <span class="font-semibold text-sm opacity-70">{{ 'MOVEMENT.LIST.MODAL.TARGETED_MUSCLES' | translate }}</span>
+          <span class="font-semibold text-sm opacity-70">{{ 'MOVEMENT.SECTIONS.MUSCLES' | translate }}</span>
           @if (movement.targetedMuscles.length > 0) {
             <div class="flex flex-wrap gap-2 mt-2">
               @for (target of movement.targetedMuscles; track target.muscle.id) {
                 <div class="badge badge-outline cursor-pointer hover:bg-base-300 transition-colors"
-                     (click)="openMuscle(target.muscle.id, $event)">
+                     (click)="openMuscle(target.muscle.id, $event)"
+                     (keydown.enter)="openMuscle(target.muscle.id, $event)">
                   {{ getLocalizedMuscleName(target.muscle) }}
                   <span class="opacity-50 ml-1">({{ 'MUSCLE.ROLES.' + target.role | translate }})</span>
                 </div>
               }
             </div>
           } @else {
-            <p class="italic opacity-80">{{ 'MOVEMENT.LIST.MODAL.NO_MUSCLES' | translate }}</p>
+            <p class="italic opacity-80">{{ 'MOVEMENT.MESSAGES.NO_MUSCLES' | translate }}</p>
           }
         </div>
       </div>
@@ -74,6 +75,10 @@
           <button class="btn">{{ 'GLOBAL.CLOSE' | translate }}</button>
         </form>
         @if (isAdmin()) {
+          <button class="btn btn-error" (click)="onDelete()">
+            {{ 'GLOBAL.DELETE' | translate }}
+          </button>
+
           <a [routerLink]="['/movements/edit', movement.id]" (click)="onClose()" class="btn btn-secondary">
             {{ 'GLOBAL.EDIT' | translate }}
           </a>

@@ -18,18 +18,12 @@ import {PreferencesUpdateRequest} from '../../../api/antares/models/user.model';
 import {ProblemDetail} from '../../../core/models/problem-detail.model';
 import {NgIcon} from '@ng-icons/core';
 
-/**
- * Custom validator to check if the new password and confirmation password fields match.
- */
 export const passwordMatchValidator: ValidatorFn = (control: AbstractControl): ValidationErrors | null => {
   const newPassword = control.get('newPassword');
   const confirmationPassword = control.get('confirmationPassword');
   return newPassword && confirmationPassword && newPassword.value !== confirmationPassword.value ? {passwordsMismatch: true} : null;
 };
 
-/**
- * Component for managing user security (password change) and preferences (language).
- */
 @Component({
   selector: 'app-settings',
   standalone: true,
@@ -54,9 +48,6 @@ export class SettingsComponent {
     }, {validators: passwordMatchValidator});
   }
 
-  /**
-   * Handles the password change form submission.
-   */
   onSubmit(): void {
     if (this.passwordForm.invalid) {
       return;
@@ -77,9 +68,6 @@ export class SettingsComponent {
     });
   }
 
-  /**
-   * Handles language selection change and persists it to the backend.
-   */
   changeLanguage(event: Event): void {
     const lang = (event.target as HTMLSelectElement).value;
     this.translate.use(lang);
@@ -94,7 +82,6 @@ export class SettingsComponent {
       this.userService.updatePreferences(preferences).subscribe({
         error: (err) => {
           console.error('Failed to update language preference:', err);
-          // Revert to the previous language on failure.
           this.translate.use(currentUser.locale);
         }
       });

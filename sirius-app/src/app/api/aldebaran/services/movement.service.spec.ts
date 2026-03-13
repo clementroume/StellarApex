@@ -83,4 +83,12 @@ describe('MovementService', () => {
     expect(req.request.body).toEqual(payload);
     req.flush(mockMovementResponse);
   });
+
+  it('deleteMovement should DELETE to /movements/{id}', () => {
+    const movementId = 1;
+    service.deleteMovement(movementId).subscribe();
+    const req = httpMock.expectOne(`${base}/movements/${movementId}`);
+    expect(req.request.method).toBe('DELETE');
+    req.flush(null); // Un 204 No Content renvoie généralement un corps vide
+  });
 });

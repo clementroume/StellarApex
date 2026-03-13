@@ -9,10 +9,6 @@ import {HttpErrorResponse} from '@angular/common/http';
 import {ProblemDetail} from '../../../core/models/problem-detail.model';
 import {NgIcon} from '@ng-icons/core';
 
-/**
- * Component for displaying and editing the user's profile information.
- * It uses a reactive form to manage user data and editing state.
- */
 @Component({
   selector: 'app-profile',
   standalone: true,
@@ -38,9 +34,6 @@ export class ProfileComponent implements OnInit {
     });
   }
 
-  /**
-   * On component initialization, populate the form with the current user's data.
-   */
   ngOnInit(): void {
     const currentUser = this.authService.currentUser();
     if (currentUser) {
@@ -48,16 +41,10 @@ export class ProfileComponent implements OnInit {
     }
   }
 
-  /**
-   * Enters editing mode.
-   */
   enterEditMode(): void {
     this.isEditing = true;
   }
 
-  /**
-   * Cancels the editing mode and reverts any changes in the form.
-   */
   onCancel(): void {
     const currentUser = this.authService.currentUser();
     if (currentUser) {
@@ -66,9 +53,6 @@ export class ProfileComponent implements OnInit {
     this.isEditing = false;
   }
 
-  /**
-   * Handles the submission of the profile update form.
-   */
   onSubmit(): void {
     if (this.profileForm.invalid) {
       return;

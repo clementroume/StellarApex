@@ -17,14 +17,11 @@ describe('SettingsComponent', () => {
   let component: SettingsComponent;
   let fixture: ComponentFixture<SettingsComponent>;
   let translateService: TranslateService;
-
-  // Mocks
   let authServiceSpy: jasmine.SpyObj<AuthService>;
   let userServiceSpy: jasmine.SpyObj<UserService>;
   let notificationServiceSpy: jasmine.SpyObj<NotificationService>;
 
   beforeEach(async () => {
-    // Create mocks for business logic services
     authServiceSpy = jasmine.createSpyObj('AuthService', [], {
       currentUser: signal<UserResponse | null>({theme: 'light', locale: 'en'} as UserResponse)
     });
@@ -52,14 +49,11 @@ describe('SettingsComponent', () => {
     component = fixture.componentInstance;
     translateService = TestBed.inject(TranslateService);
 
-    translateService.setDefaultLang('en');
+    translateService.setFallbackLang('en');
     translateService.use('en');
 
-    // 1. Initialize the view first (Angular will bind the real DOM element to deleteModal)
     fixture.detectChanges();
 
-    // 2. Overwrite the real element with our Mock WITH Spies
-    // This allows us to verify if showModal() and close() are called
     component.deleteModal = {
       nativeElement: jasmine.createSpyObj('HTMLDialogElement', ['showModal', 'close'])
     };

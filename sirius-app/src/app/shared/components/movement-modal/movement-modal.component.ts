@@ -7,11 +7,14 @@ import {MuscleResponse} from '../../../api/aldebaran/models/muscle.model';
 import {AuthService} from '../../../api/antares/services/auth.service';
 import {NgIconComponent} from '@ng-icons/core';
 import {MuscleService} from '../../../api/aldebaran/services/muscle.service';
+import {NotificationService} from '../../../core/services/notification.service';
+import {MovementService} from '../../../api/aldebaran/services/movement.service';
+import {NgOptimizedImage} from '@angular/common';
 
 @Component({
   selector: 'app-movement-modal',
   standalone: true,
-  imports: [TranslateModule, RouterModule, NgIconComponent],
+  imports: [TranslateModule, RouterModule, NgIconComponent, NgOptimizedImage],
   templateUrl: './movement-modal.component.html'
 })
 export class MovementModalComponent {
@@ -19,6 +22,8 @@ export class MovementModalComponent {
   private readonly translate = inject(TranslateService);
   private readonly authService = inject(AuthService);
   private readonly muscleService = inject(MuscleService);
+  private readonly movementService = inject(MovementService);
+  private readonly notificationService = inject(NotificationService);
 
   @ViewChild('movementModal') modalRef!: ElementRef<HTMLDialogElement>;
 
@@ -53,6 +58,30 @@ export class MovementModalComponent {
 
   onClose() {
     this.dialogService.closeMovement();
+  }
+
+  onDelete(): void {
+    const movement = this.dialogService.movementToView();
+    if (!movement) return;
+
+    const confirmMsg = this.translate.instant('GLOBAL.CONFIRM_DELETE', {name: movement.name});
+
+    if (confirm(confirmMsg)) {
+      this.movementService.deleteMovement(movement.id).subscribe({
+        next: () => {
+          this.notificationService.showSuccess(this.translate.instant('GLOBAL.DELETE_SUCCESS'));
+          this.movementService.notifyRefresh();
+          this.onClose();
+        },
+        error: (err) => {
+          if (err.status === 409) {
+            this.notificationService.showError(this.translate.instant('MOVEMENT.MESSAGES.DELETE_CONFLICT', {name: movement.name}));
+          } else {
+            this.notificationService.showError(this.translate.instant('GLOBAL.DELETE_ERROR'));
+          }
+        }
+      });
+    }
   }
 
   openMuscle(id: number, event: Event): void {

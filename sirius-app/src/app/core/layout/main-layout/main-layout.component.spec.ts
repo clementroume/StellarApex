@@ -14,7 +14,6 @@ describe('MainLayoutComponent', () => {
   let fixture: ComponentFixture<MainLayoutComponent>;
 
   beforeEach(async () => {
-    // Basic mocks to satisfy Navbar dependencies
     const authServiceSpy = jasmine.createSpyObj('AuthService', ['logout'], {
       currentUser: signal(null)
     });
@@ -25,10 +24,10 @@ describe('MainLayoutComponent', () => {
     await TestBed.configureTestingModule({
       imports: [
         MainLayoutComponent,
-        TranslateModule.forRoot() // Required by Navbar
+        TranslateModule.forRoot()
       ],
       providers: [
-        provideRouter([]), // Required by Navbar routerLink and router-outlet
+        provideRouter([]),
         provideIcons(APP_ICONS),
         {provide: AuthService, useValue: authServiceSpy},
         {provide: ThemeService, useValue: themeServiceSpy}

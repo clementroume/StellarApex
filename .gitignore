@@ -106,3 +106,5 @@ test.http
 # Spring Boot DevTools
 .spring-boot-devtools.properties
 /checkstyle.xml
+/aldebaran-training/src/main/resources/movements.csv
+/aldebaran-training/src/main/resources/muscles.csv

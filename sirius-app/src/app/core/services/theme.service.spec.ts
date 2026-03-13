@@ -41,7 +41,6 @@ describe('ThemeService', () => {
     userServiceSpy = TestBed.inject(UserService) as jasmine.SpyObj<UserService>;
   };
 
-  // afterEach to clean up global state after every single test
   afterEach(() => {
     localStorage.clear();
     document.documentElement.removeAttribute('data-theme');

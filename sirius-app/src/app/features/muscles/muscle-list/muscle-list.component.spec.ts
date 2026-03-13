@@ -2,20 +2,27 @@ import {ComponentFixture, TestBed} from '@angular/core/testing';
 import {MuscleListComponent} from './muscle-list.component';
 import {MuscleService} from '../../../api/aldebaran/services/muscle.service';
 import {AuthService} from '../../../api/antares/services/auth.service';
-import {of} from 'rxjs';
-import {signal} from '@angular/core';
+import {of, Subject, throwError} from 'rxjs';
+import {signal, WritableSignal} from '@angular/core';
 import {provideRouter} from '@angular/router';
 import {TranslateModule} from '@ngx-translate/core';
 import {DialogService} from '../../../core/services/dialog.service';
 import {APP_ICONS} from '../../../app.config';
 import {provideIcons} from '@ng-icons/core';
+import {ExporterService} from '../../../api/aldebaran/services/exporter.service';
+import {NotificationService} from '../../../core/services/notification.service';
 
 describe('MuscleListComponent', () => {
   let component: MuscleListComponent;
   let fixture: ComponentFixture<MuscleListComponent>;
-  let mockMuscleService: any;
-  let mockAuthService: any;
-  let mockDialogService: any;
+
+  let mockMuscleService: jasmine.SpyObj<MuscleService> & { refreshNeeded$: Subject<void> };
+  let mockAuthService: jasmine.SpyObj<AuthService>;
+  let mockDialogService: jasmine.SpyObj<DialogService>;
+  let mockExporterService: jasmine.SpyObj<ExporterService>;
+  let mockNotificationService: jasmine.SpyObj<NotificationService>;
+
+  let mockCurrentUserSignal: WritableSignal<any>;
 
   const mockMuscle = {
     id: 1,
@@ -28,20 +35,24 @@ describe('MuscleListComponent', () => {
   };
 
   beforeEach(async () => {
-    mockMuscleService = {
-      getMuscles: jasmine.createSpy('getMuscles').and.returnValue(of([mockMuscle])),
-      getMuscle: jasmine.createSpy('getMuscle').and.returnValue(of(mockMuscle)),
-      getReferenceData: jasmine.createSpy('getReferenceData').and.returnValue(of({
-        muscleGroups: ['CHEST', 'BACK', 'LEGS'],
-        muscleRoles: ['AGONIST', 'SYNERGIST']
-      }))
-    };
+    mockMuscleService = jasmine.createSpyObj('MuscleService', ['getMuscles', 'getMuscle', 'getReferenceData']) as any;
+    mockMuscleService.refreshNeeded$ = new Subject<void>();
+    mockMuscleService.getMuscles.and.returnValue(of([mockMuscle as any]));
+    mockMuscleService.getMuscle.and.returnValue(of(mockMuscle as any));
+    mockMuscleService.getReferenceData.and.returnValue(of({
+      muscleGroups: ['CHEST', 'BACK', 'LEGS'],
+      muscleRoles: ['AGONIST', 'SYNERGIST']
+    } as any));
 
-    mockAuthService = {
-      currentUser: signal({platformRole: 'USER'})
-    };
+    mockCurrentUserSignal = signal({platformRole: 'USER'});
+
+    mockAuthService = jasmine.createSpyObj('AuthService', [], {
+      currentUser: mockCurrentUserSignal
+    });
 
     mockDialogService = jasmine.createSpyObj('DialogService', ['openMuscle']);
+    mockExporterService = jasmine.createSpyObj('ExporterService', ['exportMuscles']);
+    mockNotificationService = jasmine.createSpyObj('NotificationService', ['showSuccess', 'showError']);
 
     await TestBed.configureTestingModule({
       imports: [MuscleListComponent, TranslateModule.forRoot()],
@@ -50,7 +61,9 @@ describe('MuscleListComponent', () => {
         provideIcons(APP_ICONS),
         {provide: MuscleService, useValue: mockMuscleService},
         {provide: AuthService, useValue: mockAuthService},
-        {provide: DialogService, useValue: mockDialogService}
+        {provide: DialogService, useValue: mockDialogService},
+        {provide: ExporterService, useValue: mockExporterService},
+        {provide: NotificationService, useValue: mockNotificationService}
       ]
     }).compileComponents();
 
@@ -67,28 +80,25 @@ describe('MuscleListComponent', () => {
   });
 
   it('should hide edit buttons for a standard user', () => {
-    mockAuthService.currentUser.set({platformRole: 'USER'});
+    mockCurrentUserSignal.set({platformRole: 'USER'});
     fixture.detectChanges();
     expect(component.isAdmin()).toBeFalse();
   });
 
   it('should display edit buttons for an admin user', () => {
-    mockAuthService.currentUser.set({platformRole: 'ADMIN'});
+    mockCurrentUserSignal.set({platformRole: 'ADMIN'});
     fixture.detectChanges();
     expect(component.isAdmin()).toBeTrue();
   });
 
   it('should cycle sorting correctly within a specific group (asc -> desc -> reset)', () => {
-    // 1st Click: Ascending
     component.sortBy('CHEST', 'medicalName');
     expect(component.sortStates()['CHEST'].column).toBe('medicalName');
     expect(component.sortStates()['CHEST'].direction).toBe('asc');
 
-    // 2nd Click: Descending
     component.sortBy('CHEST', 'medicalName');
     expect(component.sortStates()['CHEST'].direction).toBe('desc');
 
-    // 3rd Click: Reset (no sorting)
     component.sortBy('CHEST', 'medicalName');
     expect(component.sortStates()['CHEST']).toBeUndefined();
   });
@@ -105,17 +115,43 @@ describe('MuscleListComponent', () => {
     expect(component.getLocalizedDescription(muscle)).toBe('Desc EN');
   });
 
-  it('should sort properly on the dynamic commonName within a specific group', () => {
-    // 1st Click: Ascending
-    component.sortBy('CHEST', 'commonName');
-    expect(component.sortStates()['CHEST'].column).toBe('commonName');
-    expect(component.sortStates()['CHEST'].direction).toBe('asc');
-  });
-
   it('should fetch muscle details and open global modal on openDetails', () => {
     component.openDetails(1);
-
     expect(mockMuscleService.getMuscle).toHaveBeenCalledWith(1);
-    expect(mockDialogService.openMuscle).toHaveBeenCalledWith(mockMuscle);
+    expect(mockDialogService.openMuscle).toHaveBeenCalledWith(mockMuscle as any);
+  });
+
+  describe('exportCsv', () => {
+    beforeEach(() => {
+      spyOn(window, 'confirm');
+    });
+
+    it('should abort export if user cancels confirm dialog', () => {
+      (window.confirm as jasmine.Spy).and.returnValue(false);
+      component.exportCsv();
+      expect(mockExporterService.exportMuscles).not.toHaveBeenCalled();
+    });
+
+    it('should call export service and show success notification if confirmed', () => {
+      (window.confirm as jasmine.Spy).and.returnValue(true);
+      mockExporterService.exportMuscles.and.returnValue(of('Export successful'));
+
+      component.exportCsv();
+
+      expect(mockExporterService.exportMuscles).toHaveBeenCalled();
+      expect(mockNotificationService.showSuccess).toHaveBeenCalled();
+      expect(component.isExporting()).toBeFalse();
+    });
+
+    it('should show error notification if export fails', () => {
+      (window.confirm as jasmine.Spy).and.returnValue(true);
+      mockExporterService.exportMuscles.and.returnValue(throwError(() => new Error('Export failed')));
+
+      component.exportCsv();
+
+      expect(mockExporterService.exportMuscles).toHaveBeenCalled();
+      expect(mockNotificationService.showError).toHaveBeenCalled();
+      expect(component.isExporting()).toBeFalse();
+    });
   });
 });
