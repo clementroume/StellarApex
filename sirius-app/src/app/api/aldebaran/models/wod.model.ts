@@ -99,8 +99,11 @@ export interface WodMovementResponse {
 }
 
 export interface WodReferenceData {
+  // --- Wod Types ---
   wodTypes: string[];
+  // --- Score Types ---
   scoreTypes: string[];
+  // --- Units ---
   unitGroups: Record<string, string[]>;
 }
 

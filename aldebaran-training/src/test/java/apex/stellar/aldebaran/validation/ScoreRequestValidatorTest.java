@@ -3,8 +3,8 @@ package apex.stellar.aldebaran.validation;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import apex.stellar.aldebaran.dto.WodScoreRequest;
-import apex.stellar.aldebaran.model.entities.WodScore.ScalingLevel;
+import apex.stellar.aldebaran.dto.ScoreRequest;
+import apex.stellar.aldebaran.model.entities.Score.ScalingLevel;
 import apex.stellar.aldebaran.model.enums.Unit;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validator;
@@ -43,7 +43,7 @@ class ScoreRequestValidatorTest {
     LocaleContextHolder.resetLocaleContext();
   }
 
-  private WodScoreRequest createRequest(
+  private ScoreRequest createRequest(
       Double maxWeight,
       Unit weightUnit,
       Double distance,
@@ -51,10 +51,10 @@ class ScoreRequestValidatorTest {
       Integer calories,
       Integer minutes,
       Integer seconds) {
-    return new WodScoreRequest(
+    return new ScoreRequest(
         null,
-        1L,
         LocalDate.now(),
+        1L,
         minutes,
         seconds,
         null,
@@ -72,8 +72,8 @@ class ScoreRequestValidatorTest {
   }
 
   /** Exécute la validation et retourne la liste des messages d'erreur. */
-  private List<String> validateAndGetMessages(WodScoreRequest request) {
-    Set<ConstraintViolation<WodScoreRequest>> violations = validator.validate(request);
+  private List<String> validateAndGetMessages(ScoreRequest request) {
+    Set<ConstraintViolation<ScoreRequest>> violations = validator.validate(request);
     return violations.stream().map(ConstraintViolation::getMessage).toList();
   }
 
@@ -86,7 +86,7 @@ class ScoreRequestValidatorTest {
   void testUnitRequired_Weight_EN() {
     LocaleContextHolder.setLocale(Locale.ENGLISH);
 
-    WodScoreRequest request = createRequest(100.0, null, null, null, null, null, null);
+    ScoreRequest request = createRequest(100.0, null, null, null, null, null, null);
     List<String> messages = validateAndGetMessages(request);
 
     assertFalse(messages.isEmpty(), "Should have validation errors");
@@ -98,7 +98,7 @@ class ScoreRequestValidatorTest {
   void testUnitRequired_Weight_FR() {
     LocaleContextHolder.setLocale(Locale.FRENCH);
 
-    WodScoreRequest request = createRequest(100.0, null, null, null, null, null, null);
+    ScoreRequest request = createRequest(100.0, null, null, null, null, null, null);
     List<String> messages = validateAndGetMessages(request);
 
     assertFalse(messages.isEmpty(), "Should have validation errors");
@@ -113,7 +113,7 @@ class ScoreRequestValidatorTest {
     LocaleContextHolder.setLocale(Locale.ENGLISH);
 
     // Distance set, Unit null
-    WodScoreRequest request = createRequest(null, null, 500.0, null, null, null, null);
+    ScoreRequest request = createRequest(null, null, 500.0, null, null, null, null);
     List<String> messages = validateAndGetMessages(request);
 
     assertFalse(messages.isEmpty(), "Should have validation errors");
@@ -129,7 +129,7 @@ class ScoreRequestValidatorTest {
   void testWeightMax_EN() {
     LocaleContextHolder.setLocale(Locale.ENGLISH);
 
-    WodScoreRequest request = createRequest(2000.0, Unit.KG, null, null, null, null, null);
+    ScoreRequest request = createRequest(2000.0, Unit.KG, null, null, null, null, null);
     List<String> messages = validateAndGetMessages(request);
 
     assertFalse(messages.isEmpty(), "Should have validation errors");
@@ -142,7 +142,7 @@ class ScoreRequestValidatorTest {
   void testWeightMax_FR() {
     LocaleContextHolder.setLocale(Locale.FRENCH);
 
-    WodScoreRequest request = createRequest(2000.0, Unit.KG, null, null, null, null, null);
+    ScoreRequest request = createRequest(2000.0, Unit.KG, null, null, null, null, null);
     List<String> messages = validateAndGetMessages(request);
 
     assertFalse(messages.isEmpty(), "Should have validation errors");
@@ -161,7 +161,7 @@ class ScoreRequestValidatorTest {
     LocaleContextHolder.setLocale(Locale.ENGLISH);
 
     // 250,000 > 200,000
-    WodScoreRequest request = createRequest(null, null, 250_000.0, Unit.METERS, null, null, null);
+    ScoreRequest request = createRequest(null, null, 250_000.0, Unit.METERS, null, null, null);
     List<String> messages = validateAndGetMessages(request);
 
     assertFalse(messages.isEmpty(), "Should have validation errors");
@@ -175,7 +175,7 @@ class ScoreRequestValidatorTest {
   void testDistanceMax_FR() {
     LocaleContextHolder.setLocale(Locale.FRENCH);
 
-    WodScoreRequest request = createRequest(null, null, 250_000.0, Unit.METERS, null, null, null);
+    ScoreRequest request = createRequest(null, null, 250_000.0, Unit.METERS, null, null, null);
     List<String> messages = validateAndGetMessages(request);
 
     assertFalse(messages.isEmpty(), "Should have validation errors");
@@ -194,7 +194,7 @@ class ScoreRequestValidatorTest {
     LocaleContextHolder.setLocale(Locale.ENGLISH);
 
     // 15000 > 10000
-    WodScoreRequest request = createRequest(null, null, null, null, 15000, null, null);
+    ScoreRequest request = createRequest(null, null, null, null, 15000, null, null);
     List<String> messages = validateAndGetMessages(request);
 
     assertFalse(messages.isEmpty(), "Should have validation errors");
@@ -207,7 +207,7 @@ class ScoreRequestValidatorTest {
   void testCaloriesMax_FR() {
     LocaleContextHolder.setLocale(Locale.FRENCH);
 
-    WodScoreRequest request = createRequest(null, null, null, null, 15000, null, null);
+    ScoreRequest request = createRequest(null, null, null, null, 15000, null, null);
     List<String> messages = validateAndGetMessages(request);
 
     assertFalse(messages.isEmpty(), "Should have validation errors");
@@ -226,7 +226,7 @@ class ScoreRequestValidatorTest {
     LocaleContextHolder.setLocale(Locale.ENGLISH);
 
     // 25h = 1500 minutes (> 1440 min / 24h)
-    WodScoreRequest request = createRequest(null, null, null, null, null, 1500, 0);
+    ScoreRequest request = createRequest(null, null, null, null, null, 1500, 0);
     List<String> messages = validateAndGetMessages(request);
 
     assertFalse(messages.isEmpty(), "Should have validation errors");
@@ -238,7 +238,7 @@ class ScoreRequestValidatorTest {
   void testTimeMax_FR() {
     LocaleContextHolder.setLocale(Locale.FRENCH);
 
-    WodScoreRequest request = createRequest(null, null, null, null, null, 1500, 0);
+    ScoreRequest request = createRequest(null, null, null, null, null, 1500, 0);
     List<String> messages = validateAndGetMessages(request);
 
     assertFalse(messages.isEmpty(), "Should have validation errors");

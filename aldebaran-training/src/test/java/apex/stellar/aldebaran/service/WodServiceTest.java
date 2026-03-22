@@ -20,8 +20,8 @@ import apex.stellar.aldebaran.model.entities.WodMovement;
 import apex.stellar.aldebaran.model.enums.Category;
 import apex.stellar.aldebaran.model.enums.Category.Modality;
 import apex.stellar.aldebaran.repository.MovementRepository;
+import apex.stellar.aldebaran.repository.ScoreRepository;
 import apex.stellar.aldebaran.repository.WodRepository;
-import apex.stellar.aldebaran.repository.WodScoreRepository;
 import apex.stellar.aldebaran.repository.projection.WodSummary;
 import apex.stellar.aldebaran.security.SecurityService;
 import java.util.HashSet;
@@ -44,7 +44,7 @@ class WodServiceTest {
   @Mock private WodRepository wodRepository;
   @Mock private MovementRepository movementRepository;
   @Mock private MovementService movementService;
-  @Mock private WodScoreRepository wodScoreRepository;
+  @Mock private ScoreRepository scoreRepository;
   @Mock private WodMapper wodMapper;
   @Mock private SecurityService securityService;
 
@@ -289,7 +289,7 @@ class WodServiceTest {
   @DisplayName("updateWod: should update when NO scores exist")
   void testUpdateWod_Success() {
     // 1. Check Locks
-    when(wodScoreRepository.existsByWodId(1L)).thenReturn(false);
+    when(scoreRepository.existsByWodId(1L)).thenReturn(false);
 
     // 2. Fetch Existing
     when(wodRepository.findByIdWithMovements(1L)).thenReturn(Optional.of(wod));
@@ -332,7 +332,7 @@ class WodServiceTest {
 
     wod.getMovements().add(existingMovement);
 
-    when(wodScoreRepository.existsByWodId(1L)).thenReturn(false);
+    when(scoreRepository.existsByWodId(1L)).thenReturn(false);
     when(wodRepository.findByIdWithMovements(1L)).thenReturn(Optional.of(wod));
 
     apex.stellar.aldebaran.dto.MovementResponse mockMovementDto =
@@ -377,7 +377,7 @@ class WodServiceTest {
   @Test
   @DisplayName("updateWod: should throw WodLockedException when scores exist")
   void testUpdateWod_Locked() {
-    when(wodScoreRepository.existsByWodId(1L)).thenReturn(true);
+    when(scoreRepository.existsByWodId(1L)).thenReturn(true);
 
     WodLockedException ex =
         assertThrows(WodLockedException.class, () -> wodService.updateWod(1L, wodRequest));
@@ -389,7 +389,7 @@ class WodServiceTest {
   @Test
   @DisplayName("updateWod: should throw ResourceNotFoundException when WOD not found")
   void testUpdateWod_NotFound() {
-    when(wodScoreRepository.existsByWodId(99L)).thenReturn(false);
+    when(scoreRepository.existsByWodId(99L)).thenReturn(false);
     when(wodRepository.findByIdWithMovements(99L)).thenReturn(Optional.empty());
 
     assertThrows(ResourceNotFoundException.class, () -> wodService.updateWod(99L, wodRequest));
@@ -405,7 +405,7 @@ class WodServiceTest {
     existingOrphan.setOrderIndex(1); // Mouvement qui va être supprimé
     wod.getMovements().add(existingOrphan);
 
-    when(wodScoreRepository.existsByWodId(1L)).thenReturn(false);
+    when(scoreRepository.existsByWodId(1L)).thenReturn(false);
     when(wodRepository.findByIdWithMovements(1L)).thenReturn(Optional.of(wod));
 
     // On simule l'ajout d'un nouveau mouvement Order 2.
@@ -455,7 +455,7 @@ class WodServiceTest {
   @DisplayName("updateWod: should handle update with empty movements gracefully")
   void testUpdateWod_EmptyMovements() {
     // Given
-    when(wodScoreRepository.existsByWodId(1L)).thenReturn(false);
+    when(scoreRepository.existsByWodId(1L)).thenReturn(false);
     when(wodRepository.findByIdWithMovements(1L)).thenReturn(Optional.of(wod));
     when(wodMapper.toResponse(wod)).thenReturn(mock(WodResponse.class));
     when(wodRepository.save(wod)).thenReturn(wod);
@@ -488,7 +488,7 @@ class WodServiceTest {
   @DisplayName("deleteWod: should delete entity when found and unlocked")
   void testDeleteWod_Success() {
     when(wodRepository.existsById(1L)).thenReturn(true);
-    when(wodScoreRepository.existsByWodId(1L)).thenReturn(false);
+    when(scoreRepository.existsByWodId(1L)).thenReturn(false);
 
     wodService.deleteWod(1L);
 
@@ -508,7 +508,7 @@ class WodServiceTest {
   @DisplayName("deleteWod: should throw WodLockedException when scores exist")
   void testDeleteWod_Locked() {
     when(wodRepository.existsById(1L)).thenReturn(true);
-    when(wodScoreRepository.existsByWodId(1L)).thenReturn(true);
+    when(scoreRepository.existsByWodId(1L)).thenReturn(true);
 
     WodLockedException ex = assertThrows(WodLockedException.class, () -> wodService.deleteWod(1L));
 

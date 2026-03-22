@@ -9,15 +9,15 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import apex.stellar.aldebaran.config.BaseIntegrationTest;
-import apex.stellar.aldebaran.dto.WodScoreRequest;
+import apex.stellar.aldebaran.dto.ScoreRequest;
+import apex.stellar.aldebaran.model.entities.Score;
+import apex.stellar.aldebaran.model.entities.Score.ScalingLevel;
 import apex.stellar.aldebaran.model.entities.Wod;
 import apex.stellar.aldebaran.model.entities.Wod.ScoreType;
 import apex.stellar.aldebaran.model.entities.Wod.WodType;
-import apex.stellar.aldebaran.model.entities.WodScore;
-import apex.stellar.aldebaran.model.entities.WodScore.ScalingLevel;
 import apex.stellar.aldebaran.model.enums.Unit;
+import apex.stellar.aldebaran.repository.ScoreRepository;
 import apex.stellar.aldebaran.repository.WodRepository;
-import apex.stellar.aldebaran.repository.WodScoreRepository;
 import java.time.LocalDate;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -28,15 +28,15 @@ import org.springframework.http.MediaType;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Integration tests for {@link WodScoreController}.
+ * Integration tests for {@link ScoreController}.
  *
  * <p>Verifies the full lifecycle of a score: Input (User Units) -> Storage (System Units) -> Output
  * (User Units).
  */
 @Transactional
-class WodScoreControllerIT extends BaseIntegrationTest {
+class ScoreControllerIT extends BaseIntegrationTest {
 
-  @Autowired private WodScoreRepository scoreRepository;
+  @Autowired private ScoreRepository scoreRepository;
   @Autowired private WodRepository wodRepository;
 
   private Wod fran;
@@ -75,11 +75,11 @@ class WodScoreControllerIT extends BaseIntegrationTest {
   @Test
   @DisplayName("POST /scores: should normalize Time Input (1 min 30 -> 90s)")
   void testLogScore_TimeNormalization() throws Exception {
-    WodScoreRequest request =
-        new WodScoreRequest(
-            null, // userId (defaults to current)
+    ScoreRequest request =
+        new ScoreRequest(
+            null,
+            LocalDate.now(), // userId (defaults to current)
             fran.getId(),
-            LocalDate.now(),
             1,
             30, // 1 min 30s
             null,
@@ -110,7 +110,7 @@ class WodScoreControllerIT extends BaseIntegrationTest {
         .andExpect(jsonPath("$.timeDisplayUnit").value("MINUTES"));
 
     // DB Verification: Canonical storage
-    List<WodScore> scores = scoreRepository.findAll();
+    List<Score> scores = scoreRepository.findAll();
     assert (scores.getFirst().getTimeSeconds() == 90);
   }
 
@@ -129,11 +129,11 @@ class WodScoreControllerIT extends BaseIntegrationTest {
                 .build());
 
     // 225 LBS ~ 102.058 KG
-    WodScoreRequest request =
-        new WodScoreRequest(
+    ScoreRequest request =
+        new ScoreRequest(
             null,
-            heavyWod.getId(),
             LocalDate.now(),
+            heavyWod.getId(),
             null,
             null,
             null,
@@ -163,7 +163,7 @@ class WodScoreControllerIT extends BaseIntegrationTest {
         .andExpect(jsonPath("$.weightUnit").value("LBS"));
 
     // DB Verification: Canonical storage
-    List<WodScore> scores = scoreRepository.findAll();
+    List<Score> scores = scoreRepository.findAll();
     double storedKg = scores.getFirst().getMaxWeightKg();
     assert (storedKg > 102.0 && storedKg < 103.0);
   }
@@ -183,11 +183,11 @@ class WodScoreControllerIT extends BaseIntegrationTest {
                 .build());
 
     // 10 MILES ~ 16093.4 METERS
-    WodScoreRequest request =
-        new WodScoreRequest(
+    ScoreRequest request =
+        new ScoreRequest(
             null,
-            runWod.getId(),
             LocalDate.now(),
+            runWod.getId(),
             null,
             null,
             null,
@@ -217,7 +217,7 @@ class WodScoreControllerIT extends BaseIntegrationTest {
         .andExpect(jsonPath("$.distanceUnit").value("MILES"));
 
     // DB Verification: Canonical storage
-    List<WodScore> scores = scoreRepository.findAll();
+    List<Score> scores = scoreRepository.findAll();
     double storedMeters = scores.getFirst().getTotalDistanceMeters();
     assert (storedMeters > 16093.0 && storedMeters < 16094.0);
   }
@@ -241,11 +241,11 @@ class WodScoreControllerIT extends BaseIntegrationTest {
                 .build());
 
     // 1. POST a complex score (Imperial units + Time split)
-    WodScoreRequest request =
-        new WodScoreRequest(
+    ScoreRequest request =
+        new ScoreRequest(
             null,
-            heavyWod.getId(),
             LocalDate.now(),
+            heavyWod.getId(),
             null,
             null,
             null,
@@ -300,11 +300,11 @@ class WodScoreControllerIT extends BaseIntegrationTest {
                 .build());
 
     // 2. POST a score in Imperial units (5.0 MILES)
-    WodScoreRequest request =
-        new WodScoreRequest(
+    ScoreRequest request =
+        new ScoreRequest(
             null,
-            runWod.getId(),
             LocalDate.now(),
+            runWod.getId(),
             null, // timeMinutes
             null, // timeSeconds
             null, // rounds
@@ -359,11 +359,11 @@ class WodScoreControllerIT extends BaseIntegrationTest {
                 .build());
 
     // 2. POST a score with split time (2 min 15 sec)
-    WodScoreRequest request =
-        new WodScoreRequest(
+    ScoreRequest request =
+        new ScoreRequest(
             null,
-            timeWod.getId(),
             LocalDate.now(),
+            timeWod.getId(),
             2, // timeMinutes
             15, // timeSeconds
             null, // rounds
@@ -472,13 +472,13 @@ class WodScoreControllerIT extends BaseIntegrationTest {
   @Test
   @DisplayName("PUT /{id}: User updates own score -> 200 OK")
   void testUpdateScore_Owner_Success() throws Exception {
-    WodScore score = createScore(100L, 100);
+    Score score = createScore(100L, 100);
 
-    WodScoreRequest updateRequest =
-        new WodScoreRequest(
+    ScoreRequest updateRequest =
+        new ScoreRequest(
             100L,
-            fran.getId(),
             LocalDate.now(),
+            fran.getId(),
             null,
             120,
             null,
@@ -509,13 +509,13 @@ class WodScoreControllerIT extends BaseIntegrationTest {
   @Test
   @DisplayName("PUT /{id}: User tries to update other's score -> 403 Forbidden")
   void testUpdateScore_OtherUser_Forbidden() throws Exception {
-    WodScore score = createScore(100L, 100); // Owner is 100
+    Score score = createScore(100L, 100); // Owner is 100
 
-    WodScoreRequest updateRequest =
-        new WodScoreRequest(
+    ScoreRequest updateRequest =
+        new ScoreRequest(
             100L,
-            fran.getId(),
             LocalDate.now(),
+            fran.getId(),
             null,
             120,
             null,
@@ -546,8 +546,8 @@ class WodScoreControllerIT extends BaseIntegrationTest {
   @DisplayName("PUT /{id}: Coach updates member score (Same Gym) -> 200 OK")
   void testUpdateScore_CoachSameGym_Success() throws Exception {
     // Score sur un WOD du Gym 101
-    WodScore score =
-        WodScore.builder()
+    Score score =
+        Score.builder()
             .wod(gymWod) // Gym 101
             .userId(100L)
             .date(LocalDate.now())
@@ -557,11 +557,11 @@ class WodScoreControllerIT extends BaseIntegrationTest {
             .build();
     score = scoreRepository.save(score);
 
-    WodScoreRequest updateRequest =
-        new WodScoreRequest(
+    ScoreRequest updateRequest =
+        new ScoreRequest(
             100L,
-            gymWod.getId(),
             LocalDate.now(),
+            gymWod.getId(),
             null,
             null,
             12,
@@ -594,11 +594,11 @@ class WodScoreControllerIT extends BaseIntegrationTest {
   @Test
   @DisplayName("POST /scores: Coach logs score for athlete (Same Gym) -> 201 Created")
   void testLogScore_CoachForAthlete_Success() throws Exception {
-    WodScoreRequest request =
-        new WodScoreRequest(
+    ScoreRequest request =
+        new ScoreRequest(
             100L, // Target Athlete
-            gymWod.getId(), // Gym 101 WOD
             LocalDate.now(),
+            gymWod.getId(), // Gym 101 WOD
             null,
             null,
             10,
@@ -631,11 +631,11 @@ class WodScoreControllerIT extends BaseIntegrationTest {
   @Test
   @DisplayName("POST /scores: Coach cannot log for athlete in different gym")
   void testLogScore_CoachDifferentGym_Forbidden() throws Exception {
-    WodScoreRequest request =
-        new WodScoreRequest(
+    ScoreRequest request =
+        new ScoreRequest(
             100L, // Target Athlete
-            gymWod.getId(), // Gym 101 WOD
             LocalDate.now(),
+            gymWod.getId(), // Gym 101 WOD
             10,
             0,
             null,
@@ -666,11 +666,11 @@ class WodScoreControllerIT extends BaseIntegrationTest {
   @Test
   @DisplayName("POST /scores: should return 400 for future date")
   void testLogScore_ValidationFailure() throws Exception {
-    WodScoreRequest request =
-        new WodScoreRequest(
+    ScoreRequest request =
+        new ScoreRequest(
             null,
-            fran.getId(),
             LocalDate.now().plusDays(1), // Future
+            fran.getId(),
             10,
             0,
             null,
@@ -701,7 +701,7 @@ class WodScoreControllerIT extends BaseIntegrationTest {
   @Test
   @DisplayName("DELETE /{id}: Admin deletes any score -> 204 No Content")
   void testDeleteScore_Admin_Success() throws Exception {
-    WodScore score = createScore(100L, 100);
+    Score score = createScore(100L, 100);
 
     mockMvc
         .perform(
@@ -717,8 +717,8 @@ class WodScoreControllerIT extends BaseIntegrationTest {
   @Test
   @DisplayName("DELETE /{id}: should delete own score")
   void testDeleteScore_Success() throws Exception {
-    WodScore score =
-        WodScore.builder()
+    Score score =
+        Score.builder()
             .wod(fran)
             .userId(100L)
             .date(LocalDate.now())
@@ -740,8 +740,8 @@ class WodScoreControllerIT extends BaseIntegrationTest {
   @Test
   @DisplayName("DELETE /{id}: should return 403 Forbidden when deleting others' score")
   void testDeleteScore_Others_Forbidden() throws Exception {
-    WodScore score =
-        WodScore.builder()
+    Score score =
+        Score.builder()
             .wod(fran)
             .userId(200L)
             .date(LocalDate.now())
@@ -773,7 +773,7 @@ class WodScoreControllerIT extends BaseIntegrationTest {
     // Score C: 300s
 
     createScore(101L, 100);
-    WodScore scoreB = createScore(102L, 200);
+    Score scoreB = createScore(102L, 200);
     createScore(103L, 300);
 
     // 2. Compare Score B (Should be Rank 2)
@@ -789,9 +789,9 @@ class WodScoreControllerIT extends BaseIntegrationTest {
         .andExpect(jsonPath("$.percentile").value(50.0)); // (3-2)/2 * 100 = 50%
   }
 
-  private WodScore createScore(Long userId, int seconds) {
-    WodScore s =
-        WodScore.builder()
+  private Score createScore(Long userId, int seconds) {
+    Score s =
+        Score.builder()
             .wod(fran)
             .userId(userId)
             .date(LocalDate.now())

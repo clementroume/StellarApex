@@ -12,6 +12,7 @@ import java.util.Set;
 
 /** DTO for creating or updating a Movement in the catalog. */
 public record MovementRequest(
+
     // --- Identification ---
     @NotBlank(message = "{validation.movement.name.required}")
         @Size(max = 50, message = "{validation.movement.name.size}")

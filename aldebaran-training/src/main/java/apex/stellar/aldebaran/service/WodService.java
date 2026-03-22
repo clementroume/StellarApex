@@ -19,8 +19,8 @@ import apex.stellar.aldebaran.model.entities.WodMovement;
 import apex.stellar.aldebaran.model.enums.Category.Modality;
 import apex.stellar.aldebaran.model.enums.Unit;
 import apex.stellar.aldebaran.repository.MovementRepository;
+import apex.stellar.aldebaran.repository.ScoreRepository;
 import apex.stellar.aldebaran.repository.WodRepository;
-import apex.stellar.aldebaran.repository.WodScoreRepository;
 import apex.stellar.aldebaran.repository.projection.WodSummary;
 import apex.stellar.aldebaran.security.SecurityService;
 import java.util.ArrayList;
@@ -64,7 +64,7 @@ public class WodService {
   private final WodRepository wodRepository;
   private final MovementRepository movementRepository;
   private final MovementService movementService;
-  private final WodScoreRepository wodScoreRepository;
+  private final ScoreRepository scoreRepository;
   private final WodMapper wodMapper;
   private final SecurityService securityService;
 
@@ -197,7 +197,7 @@ public class WodService {
   @CacheEvict(value = CACHE_WODS, key = "#id")
   public WodResponse updateWod(Long id, WodRequest request) {
     // 1. Integrity Check: Lock WOD if scores exist
-    if (wodScoreRepository.existsByWodId(id)) {
+    if (scoreRepository.existsByWodId(id)) {
       throw new WodLockedException("error.wod.locked", id);
     }
 
@@ -233,7 +233,7 @@ public class WodService {
       throw new ResourceNotFoundException("error.wod.not.found", id);
     }
 
-    if (wodScoreRepository.existsByWodId(id)) {
+    if (scoreRepository.existsByWodId(id)) {
       throw new WodLockedException("error.wod.locked", id);
     }
 

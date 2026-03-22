@@ -1,18 +1,18 @@
 import {TestBed} from '@angular/core/testing';
 import {HttpTestingController, provideHttpClientTesting} from '@angular/common/http/testing';
 import {provideHttpClient} from '@angular/common/http';
-import {WodScoreService} from './wod-score.service';
+import {ScoreService} from './score.service';
 import {environment} from '../../../../environments/environment';
-import {ScoreComparisonResponse, WodScoreReferenceData, WodScoreRequest, WodScoreResponse} from '../models/score.model';
+import {ScoreComparisonResponse, ScoreReferenceData, ScoreRequest, ScoreResponse} from '../models/score.model';
 import {Slice} from '../../../core/models/pagination.model';
 
 
-describe('WodScoreService', () => {
-  let service: WodScoreService;
+describe('ScoreService', () => {
+  let service: ScoreService;
   let httpMock: HttpTestingController;
   const base = environment.trainingUrl;
 
-  const mockScoreResponse: WodScoreResponse = {
+  const mockScoreResponse: ScoreResponse = {
     id: 1,
     userId: 1,
     date: new Date().toISOString().split('T')[0],
@@ -21,9 +21,10 @@ describe('WodScoreService', () => {
     scaling: 'RX',
     personalRecord: true,
     timeCapped: false,
+    loggedAt: ''
   };
 
-  const mockSlice: Slice<WodScoreResponse> = {
+  const mockSlice: Slice<ScoreResponse> = {
     content: [mockScoreResponse],
     last: true,
     first: true,
@@ -33,15 +34,15 @@ describe('WodScoreService', () => {
     empty: false,
   };
 
-  const mockReferenceData: WodScoreReferenceData = {
+  const mockReferenceData: ScoreReferenceData = {
     scalingLevels: ['RX', 'SCALED', 'ELITE', 'CUSTOM']
   };
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      providers: [WodScoreService, provideHttpClient(), provideHttpClientTesting()],
+      providers: [ScoreService, provideHttpClient(), provideHttpClientTesting()],
     });
-    service = TestBed.inject(WodScoreService);
+    service = TestBed.inject(ScoreService);
     httpMock = TestBed.inject(HttpTestingController);
   });
 
@@ -69,7 +70,7 @@ describe('WodScoreService', () => {
   });
 
   it('logScore should POST to /scores', () => {
-    const payload: WodScoreRequest = {
+    const payload: ScoreRequest = {
       wodId: 1,
       date: '2023-01-01',
       scaling: 'RX',
@@ -83,7 +84,7 @@ describe('WodScoreService', () => {
 
   it('updateScore should PUT to /scores/{id}', () => {
     const scoreId = 1;
-    const payload: WodScoreRequest = {
+    const payload: ScoreRequest = {
       wodId: 1,
       date: '2023-01-01',
       scaling: 'SCALED',

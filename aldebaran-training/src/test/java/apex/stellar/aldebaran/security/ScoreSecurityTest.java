@@ -7,11 +7,11 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import apex.stellar.aldebaran.dto.WodScoreRequest;
+import apex.stellar.aldebaran.dto.ScoreRequest;
+import apex.stellar.aldebaran.model.entities.Score;
 import apex.stellar.aldebaran.model.entities.Wod;
-import apex.stellar.aldebaran.model.entities.WodScore;
+import apex.stellar.aldebaran.repository.ScoreRepository;
 import apex.stellar.aldebaran.repository.WodRepository;
-import apex.stellar.aldebaran.repository.WodScoreRepository;
 import java.util.Collections;
 import java.util.Optional;
 import org.junit.jupiter.api.DisplayName;
@@ -22,12 +22,12 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class WodScoreSecurityTest {
+class ScoreSecurityTest {
 
-  @Mock private WodScoreRepository scoreRepository;
+  @Mock private ScoreRepository scoreRepository;
   @Mock private WodRepository wodRepository;
   @Mock private SecurityService securityService;
-  @InjectMocks private WodScoreSecurity scoreSecurity;
+  @InjectMocks private ScoreSecurity scoreSecurity;
 
   // --- canView Checks ---
 
@@ -62,7 +62,7 @@ class WodScoreSecurityTest {
   void canView_MyScore_ReturnsTrue() {
     AldebaranUserPrincipal user =
         new AldebaranUserPrincipal(2L, 100L, "USER", Collections.emptyList());
-    WodScore score = WodScore.builder().id(10L).userId(2L).build(); // Same ID
+    Score score = Score.builder().id(10L).userId(2L).build(); // Same ID
 
     when(securityService.isAdmin(user)).thenReturn(false);
     when(scoreRepository.findById(10L)).thenReturn(Optional.of(score));
@@ -78,7 +78,7 @@ class WodScoreSecurityTest {
     AldebaranUserPrincipal user =
         new AldebaranUserPrincipal(2L, 100L, "USER", Collections.emptyList());
     Wod publicWod = Wod.builder().isPublic(true).build();
-    WodScore score = WodScore.builder().id(10L).userId(99L).wod(publicWod).build();
+    Score score = Score.builder().id(10L).userId(99L).wod(publicWod).build();
 
     when(securityService.isAdmin(user)).thenReturn(false);
     when(scoreRepository.findById(10L)).thenReturn(Optional.of(score));
@@ -94,7 +94,7 @@ class WodScoreSecurityTest {
     AldebaranUserPrincipal user =
         new AldebaranUserPrincipal(2L, 100L, "USER", Collections.emptyList());
     Wod gymWod = Wod.builder().isPublic(false).gymId(100L).build();
-    WodScore score = WodScore.builder().id(10L).userId(99L).wod(gymWod).build();
+    Score score = Score.builder().id(10L).userId(99L).wod(gymWod).build();
 
     when(securityService.isAdmin(user)).thenReturn(false);
     when(scoreRepository.findById(10L)).thenReturn(Optional.of(score));
@@ -110,7 +110,7 @@ class WodScoreSecurityTest {
     AldebaranUserPrincipal user =
         new AldebaranUserPrincipal(2L, 100L, "USER", Collections.emptyList());
     Wod gymWod = Wod.builder().isPublic(false).gymId(200L).build(); // Diff Gym
-    WodScore score = WodScore.builder().id(10L).userId(99L).wod(gymWod).build();
+    Score score = Score.builder().id(10L).userId(99L).wod(gymWod).build();
 
     when(securityService.isAdmin(user)).thenReturn(false);
     when(scoreRepository.findById(10L)).thenReturn(Optional.of(score));
@@ -126,7 +126,7 @@ class WodScoreSecurityTest {
     AldebaranUserPrincipal user =
         new AldebaranUserPrincipal(2L, 100L, "USER", Collections.emptyList());
     Wod privateWod = Wod.builder().isPublic(false).gymId(null).authorId(99L).build();
-    WodScore score = WodScore.builder().id(10L).userId(99L).wod(privateWod).build();
+    Score score = Score.builder().id(10L).userId(99L).wod(privateWod).build();
 
     when(securityService.isAdmin(user)).thenReturn(false);
     when(scoreRepository.findById(10L)).thenReturn(Optional.of(score));
@@ -143,9 +143,9 @@ class WodScoreSecurityTest {
   void canCreate_Admin_ReturnsTrue() {
     AldebaranUserPrincipal admin =
         new AldebaranUserPrincipal(1L, null, "ADMIN", Collections.emptyList());
-    WodScoreRequest request =
-        new WodScoreRequest(
-            null, 1L, null, 0, 0, null, null, null, null, null, null, null, null, null, false, null,
+    ScoreRequest request =
+        new ScoreRequest(
+            null, null, 1L, 0, 0, null, null, null, null, null, null, null, null, null, false, null,
             null);
 
     when(securityService.isAdmin(admin)).thenReturn(true);
@@ -158,9 +158,9 @@ class WodScoreSecurityTest {
   void canCreate_Self_Public_ReturnsTrue() {
     AldebaranUserPrincipal user =
         new AldebaranUserPrincipal(2L, 100L, "USER", Collections.emptyList());
-    WodScoreRequest request =
-        new WodScoreRequest(
-            2L, 1L, null, 0, 0, null, null, null, null, null, null, null, null, null, false, null,
+    ScoreRequest request =
+        new ScoreRequest(
+            2L, null, 1L, 0, 0, null, null, null, null, null, null, null, null, null, false, null,
             null);
     Wod publicWod = Wod.builder().isPublic(true).build();
 
@@ -175,9 +175,9 @@ class WodScoreSecurityTest {
   void canCreate_Self_GymWod_SameGym_ReturnsTrue() {
     AldebaranUserPrincipal user =
         new AldebaranUserPrincipal(2L, 100L, "USER", Collections.emptyList());
-    WodScoreRequest request =
-        new WodScoreRequest(
-            null, 1L, null, 0, 0, null, null, null, null, null, null, null, null, null, false, null,
+    ScoreRequest request =
+        new ScoreRequest(
+            null, null, 1L, 0, 0, null, null, null, null, null, null, null, null, null, false, null,
             null); // Implied self
     Wod gymWod = Wod.builder().isPublic(false).gymId(100L).build();
 
@@ -192,9 +192,9 @@ class WodScoreSecurityTest {
   void canCreate_Self_GymWod_DiffGym_ReturnsFalse() {
     AldebaranUserPrincipal user =
         new AldebaranUserPrincipal(2L, 100L, "USER", Collections.emptyList());
-    WodScoreRequest request =
-        new WodScoreRequest(
-            2L, 1L, null, 0, 0, null, null, null, null, null, null, null, null, null, false, null,
+    ScoreRequest request =
+        new ScoreRequest(
+            2L, null, 1L, 0, 0, null, null, null, null, null, null, null, null, null, false, null,
             null);
     Wod gymWod = Wod.builder().isPublic(false).gymId(200L).build();
 
@@ -209,9 +209,9 @@ class WodScoreSecurityTest {
   void canCreate_Self_PrivateWod_Author_ReturnsTrue() {
     AldebaranUserPrincipal user =
         new AldebaranUserPrincipal(2L, 100L, "USER", Collections.emptyList());
-    WodScoreRequest request =
-        new WodScoreRequest(
-            2L, 1L, null, 0, 0, null, null, null, null, null, null, null, null, null, false, null,
+    ScoreRequest request =
+        new ScoreRequest(
+            2L, null, 1L, 0, 0, null, null, null, null, null, null, null, null, null, false, null,
             null);
     Wod privateWod = Wod.builder().isPublic(false).gymId(null).authorId(2L).build();
 
@@ -226,9 +226,9 @@ class WodScoreSecurityTest {
   void canCreate_Self_PrivateWod_NotAuthor_ReturnsFalse() {
     AldebaranUserPrincipal user =
         new AldebaranUserPrincipal(2L, 100L, "USER", Collections.emptyList());
-    WodScoreRequest request =
-        new WodScoreRequest(
-            2L, 1L, null, 0, 0, null, null, null, null, null, null, null, null, null, false, null,
+    ScoreRequest request =
+        new ScoreRequest(
+            2L, null, 1L, 0, 0, null, null, null, null, null, null, null, null, null, false, null,
             null);
     Wod privateWod = Wod.builder().isPublic(false).gymId(null).authorId(99L).build();
 
@@ -243,9 +243,9 @@ class WodScoreSecurityTest {
   void canCreate_Staff_LogForOther_ReturnsTrue() {
     AldebaranUserPrincipal coach =
         new AldebaranUserPrincipal(2L, 100L, "COACH", Collections.emptyList());
-    WodScoreRequest request =
-        new WodScoreRequest(
-            99L, 1L, null, 0, 0, null, null, null, null, null, null, null, null, null, false, null,
+    ScoreRequest request =
+        new ScoreRequest(
+            99L, null, 1L, 0, 0, null, null, null, null, null, null, null, null, null, false, null,
             null); // Target 99
     Wod gymWod = Wod.builder().gymId(100L).build();
 
@@ -261,9 +261,9 @@ class WodScoreSecurityTest {
   void canCreate_Staff_NoRights_ReturnsFalse() {
     AldebaranUserPrincipal user =
         new AldebaranUserPrincipal(2L, 100L, "USER", Collections.emptyList());
-    WodScoreRequest request =
-        new WodScoreRequest(
-            99L, 1L, null, 0, 0, null, null, null, null, null, null, null, null, null, false, null,
+    ScoreRequest request =
+        new ScoreRequest(
+            99L, null, 1L, 0, 0, null, null, null, null, null, null, null, null, null, false, null,
             null);
     Wod gymWod = Wod.builder().gymId(100L).build();
 
@@ -279,9 +279,9 @@ class WodScoreSecurityTest {
   void canCreate_Owner_DiffGym_ReturnsFalse() {
     AldebaranUserPrincipal owner =
         new AldebaranUserPrincipal(2L, 100L, "OWNER", Collections.emptyList());
-    WodScoreRequest request =
-        new WodScoreRequest(
-            99L, 1L, null, 0, 0, null, null, null, null, null, null, null, null, null, false, null,
+    ScoreRequest request =
+        new ScoreRequest(
+            99L, null, 1L, 0, 0, null, null, null, null, null, null, null, null, null, false, null,
             null);
     Wod gymWod = Wod.builder().gymId(200L).build(); // Different Gym
 
@@ -320,7 +320,7 @@ class WodScoreSecurityTest {
   void canModify_Self_ReturnsTrue() {
     AldebaranUserPrincipal user =
         new AldebaranUserPrincipal(2L, 100L, "USER", Collections.emptyList());
-    WodScore score = WodScore.builder().id(10L).userId(2L).build();
+    Score score = Score.builder().id(10L).userId(2L).build();
 
     when(securityService.isAdmin(user)).thenReturn(false);
     when(scoreRepository.findById(10L)).thenReturn(Optional.of(score));
@@ -334,7 +334,7 @@ class WodScoreSecurityTest {
     AldebaranUserPrincipal coach =
         new AldebaranUserPrincipal(2L, 100L, "COACH", Collections.emptyList());
     Wod gymWod = Wod.builder().gymId(100L).build();
-    WodScore score = WodScore.builder().id(10L).userId(99L).wod(gymWod).build();
+    Score score = Score.builder().id(10L).userId(99L).wod(gymWod).build();
 
     when(securityService.isAdmin(coach)).thenReturn(false);
     when(scoreRepository.findById(10L)).thenReturn(Optional.of(score));
@@ -349,7 +349,7 @@ class WodScoreSecurityTest {
     AldebaranUserPrincipal owner =
         new AldebaranUserPrincipal(2L, 100L, "OWNER", Collections.emptyList());
     Wod gymWod = Wod.builder().gymId(200L).build(); // Different Gym
-    WodScore score = WodScore.builder().id(10L).userId(99L).wod(gymWod).build();
+    Score score = Score.builder().id(10L).userId(99L).wod(gymWod).build();
 
     when(securityService.isAdmin(owner)).thenReturn(false);
     when(scoreRepository.findById(10L)).thenReturn(Optional.of(score));
@@ -363,7 +363,7 @@ class WodScoreSecurityTest {
     AldebaranUserPrincipal coach =
         new AldebaranUserPrincipal(2L, 100L, "COACH", Collections.emptyList());
     Wod publicWod = Wod.builder().gymId(null).isPublic(true).build();
-    WodScore score = WodScore.builder().id(10L).userId(99L).wod(publicWod).build();
+    Score score = Score.builder().id(10L).userId(99L).wod(publicWod).build();
 
     when(securityService.isAdmin(coach)).thenReturn(false);
     when(scoreRepository.findById(10L)).thenReturn(Optional.of(score));

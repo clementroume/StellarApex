@@ -13,15 +13,15 @@ import apex.stellar.aldebaran.config.BaseIntegrationTest;
 import apex.stellar.aldebaran.dto.WodMovementRequest;
 import apex.stellar.aldebaran.dto.WodRequest;
 import apex.stellar.aldebaran.model.entities.Movement;
+import apex.stellar.aldebaran.model.entities.Score;
+import apex.stellar.aldebaran.model.entities.Score.ScalingLevel;
 import apex.stellar.aldebaran.model.entities.Wod;
 import apex.stellar.aldebaran.model.entities.Wod.ScoreType;
 import apex.stellar.aldebaran.model.entities.Wod.WodType;
-import apex.stellar.aldebaran.model.entities.WodScore;
-import apex.stellar.aldebaran.model.entities.WodScore.ScalingLevel;
 import apex.stellar.aldebaran.model.enums.Category;
 import apex.stellar.aldebaran.repository.MovementRepository;
+import apex.stellar.aldebaran.repository.ScoreRepository;
 import apex.stellar.aldebaran.repository.WodRepository;
-import apex.stellar.aldebaran.repository.WodScoreRepository;
 import java.time.LocalDate;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -35,13 +35,13 @@ class WodControllerIT extends BaseIntegrationTest {
 
   @Autowired private WodRepository wodRepository;
   @Autowired private MovementRepository movementRepository;
-  @Autowired private WodScoreRepository wodScoreRepository;
+  @Autowired private ScoreRepository scoreRepository;
 
   private Movement pullUp;
 
   @BeforeEach
   void setUp() {
-    wodScoreRepository.deleteAll();
+    scoreRepository.deleteAll();
     wodRepository.deleteAll();
     movementRepository.deleteAll();
 
@@ -739,15 +739,15 @@ class WodControllerIT extends BaseIntegrationTest {
     Wod existing = wodRepository.findAll().getFirst();
 
     // Create a score to lock the WOD
-    WodScore score =
-        WodScore.builder()
+    Score score =
+        Score.builder()
             .wod(existing)
             .userId(100L)
             .date(LocalDate.now())
             .scaling(ScalingLevel.RX)
             .timeSeconds(300)
             .build();
-    wodScoreRepository.save(score);
+    scoreRepository.save(score);
 
     WodRequest updateRequest =
         new WodRequest(

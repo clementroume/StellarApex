@@ -193,7 +193,7 @@ public class MovementService {
 
     log.info("Deleting Movement with ID: {}", id);
     if (!movementRepository.existsById(id)) {
-      throw new ResourceNotFoundException("Movement not found with id: " + id);
+      throw new ResourceNotFoundException("error.movement.not.found", id);
     }
     movementRepository.deleteById(id);
   }

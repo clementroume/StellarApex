@@ -5,11 +5,7 @@ import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotNull;
 
-/**
- * Nested DTO for linking a muscle to a movement during creation/update.
- *
- * <p>This DTO captures the "how" of muscle activation for a specific exercise.
- */
+/** Nested DTO for linking a muscle to a movement during creation/update. */
 public record MovementMuscleRequest(
     // --- Relationships ---
     @NotNull(message = "{validation.muscle.id.required}") Long muscleId,

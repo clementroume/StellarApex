@@ -9,7 +9,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Validates that a WodScore's fields match the WOD's scoreType.
+ * Validates that a Score's fields match the WOD's scoreType.
  *
  * <p>Examples:
  *

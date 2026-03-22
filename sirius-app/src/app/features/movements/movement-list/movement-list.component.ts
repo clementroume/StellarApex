@@ -10,6 +10,8 @@ import {NgIcon} from '@ng-icons/core';
 import {DialogService} from '../../../core/services/dialog.service';
 import {NotificationService} from '../../../core/services/notification.service';
 import {ExporterService} from '../../../api/aldebaran/services/exporter.service';
+import {HttpContext} from '@angular/common/http';
+import {BYPASS_LOADER} from '../../../core/interceptors/loading.interceptor';
 
 @Component({
   selector: 'app-movement-list',
@@ -30,26 +32,26 @@ export class MovementListComponent implements OnInit {
 
   movements = signal<MovementSummaryResponse[]>([]);
   isLoading = signal<boolean>(false);
+  isExporting = signal<boolean>(false);
 
+  // Gestion des onglets et catégories
+  categoryGroups = signal<Record<string, string[]>>({});
   modalityKeys = signal<string[]>([]);
-  private readonly categoryToModality = new Map<string, string>();
+  activeTab = signal<string>('');
 
-  groupedMovements = computed(() => {
+  movementsByCategory = computed(() => {
     const grouped = new Map<string, MovementSummaryResponse[]>();
-
-    this.modalityKeys().forEach(mod => grouped.set(mod, []));
-
     this.movements().forEach(m => {
-      const mod = this.categoryToModality.get(m.category);
-      if (mod && grouped.has(mod)) {
-        grouped.get(mod)!.push(m);
+      if (!grouped.has(m.category)) {
+        grouped.set(m.category, []);
       }
+      grouped.get(m.category)!.push(m);
     });
-
+    grouped.forEach(list => {
+      list.sort((a, b) => a.name.localeCompare(b.name));
+    });
     return grouped;
   });
-
-  isExporting = signal<boolean>(false);
 
   ngOnInit(): void {
     this.movementService.refreshNeeded$.subscribe(() => {
@@ -57,13 +59,14 @@ export class MovementListComponent implements OnInit {
     });
 
     this.movementService.getReferenceData().subscribe(ref => {
-
+      this.categoryGroups.set(ref.categoryGroups);
       const keys = Object.keys(ref.categoryGroups);
       this.modalityKeys.set(keys);
 
-      Object.entries(ref.categoryGroups).forEach(([modality, categories]) => {
-        categories.forEach(cat => this.categoryToModality.set(cat, modality));
-      });
+      // Sélectionne le premier onglet par défaut
+      if (keys.length > 0) {
+        this.activeTab.set(keys[0]);
+      }
 
       this.loadMovements();
     });
@@ -71,7 +74,9 @@ export class MovementListComponent implements OnInit {
 
   loadMovements(query: string = ''): void {
     this.isLoading.set(true);
-    this.movementService.searchMovements(query).subscribe({
+    const context = new HttpContext().set(BYPASS_LOADER, true);
+
+    this.movementService.searchMovements(query, context).subscribe({
       next: (data) => {
         this.movements.set(data);
         this.isLoading.set(false);
@@ -86,6 +91,22 @@ export class MovementListComponent implements OnInit {
   onSearchChange(event: Event): void {
     const input = event.target as HTMLInputElement;
     this.loadMovements(input.value);
+  }
+
+  getModalityIcon(modality: string): string {
+    const normalized = modality.toUpperCase();
+    switch (normalized) {
+      case 'WEIGHTLIFTING':
+        return 'hugeDumbbell01';
+      case 'GYMNASTICS':
+        return 'hugeGymnastic';
+      case 'MONOSTRUCTURAL':
+        return 'hugeCardiogram02';
+      case 'STRONGMAN':
+        return 'hugeBodyPartSixPack';
+      default:
+        return '';
+    }
   }
 
   openDetails(id: number): void {

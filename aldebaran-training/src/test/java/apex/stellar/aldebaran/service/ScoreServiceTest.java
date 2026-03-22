@@ -5,17 +5,17 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 import apex.stellar.aldebaran.dto.ScoreComparisonResponse;
+import apex.stellar.aldebaran.dto.ScoreRequest;
+import apex.stellar.aldebaran.dto.ScoreResponse;
 import apex.stellar.aldebaran.dto.WodResponse;
-import apex.stellar.aldebaran.dto.WodScoreRequest;
-import apex.stellar.aldebaran.dto.WodScoreResponse;
 import apex.stellar.aldebaran.exception.ResourceNotFoundException;
-import apex.stellar.aldebaran.mapper.WodScoreMapper;
+import apex.stellar.aldebaran.mapper.ScoreMapper;
+import apex.stellar.aldebaran.model.entities.Score;
+import apex.stellar.aldebaran.model.entities.Score.ScalingLevel;
 import apex.stellar.aldebaran.model.entities.Wod;
 import apex.stellar.aldebaran.model.entities.Wod.ScoreType;
-import apex.stellar.aldebaran.model.entities.WodScore;
-import apex.stellar.aldebaran.model.entities.WodScore.ScalingLevel;
+import apex.stellar.aldebaran.repository.ScoreRepository;
 import apex.stellar.aldebaran.repository.WodRepository;
-import apex.stellar.aldebaran.repository.WodScoreRepository;
 import apex.stellar.aldebaran.security.SecurityService;
 import java.time.LocalDate;
 import java.util.List;
@@ -34,29 +34,29 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
 
 @ExtendWith(MockitoExtension.class)
-class WodScoreServiceTest {
+class ScoreServiceTest {
 
   private final Long userId = 123L;
-  @Mock private WodScoreRepository scoreRepository;
+  @Mock private ScoreRepository scoreRepository;
   @Mock private WodRepository wodRepository;
   @Mock private WodService wodService;
-  @Mock private WodScoreMapper scoreMapper;
+  @Mock private ScoreMapper scoreMapper;
   @Mock private SecurityService securityService;
-  @InjectMocks private WodScoreService scoreService;
+  @InjectMocks private ScoreService scoreService;
 
   private Wod wodProxy;
-  private WodScoreRequest requestTime;
-  private WodScore scoreEntityTime;
+  private ScoreRequest requestTime;
+  private Score scoreEntityTime;
 
   @BeforeEach
   void setUp() {
     wodProxy = Wod.builder().id(1L).build();
 
     requestTime =
-        new WodScoreRequest(
+        new ScoreRequest(
             null,
-            1L,
             LocalDate.now(),
+            1L,
             5,
             0,
             null,
@@ -73,7 +73,7 @@ class WodScoreServiceTest {
             null);
 
     scoreEntityTime =
-        WodScore.builder()
+        Score.builder()
             .id(50L)
             .wod(wodProxy)
             .userId(userId)
@@ -105,7 +105,7 @@ class WodScoreServiceTest {
     when(scoreRepository.findByUserIdAndWodId(eq(userId), eq(1L), any(Pageable.class)))
         .thenReturn(Page.empty());
 
-    Slice<WodScoreResponse> result = scoreService.getMyScores(1L, pageable);
+    Slice<ScoreResponse> result = scoreService.getMyScores(1L, pageable);
 
     assertNotNull(result);
     verify(scoreRepository).findByUserIdAndWodId(eq(userId), eq(1L), any(Pageable.class));
@@ -118,7 +118,7 @@ class WodScoreServiceTest {
     Pageable pageable = PageRequest.of(0, 20);
     when(scoreRepository.findByUserId(eq(userId), any(Pageable.class))).thenReturn(Page.empty());
 
-    Slice<WodScoreResponse> result = scoreService.getMyScores(null, pageable);
+    Slice<ScoreResponse> result = scoreService.getMyScores(null, pageable);
 
     assertNotNull(result);
     verify(scoreRepository).findByUserId(eq(userId), any(Pageable.class));
@@ -133,7 +133,7 @@ class WodScoreServiceTest {
             eq(1L), eq(ScalingLevel.RX), any(Pageable.class)))
         .thenReturn(Page.empty());
 
-    Slice<WodScoreResponse> result = scoreService.getLeaderboard(1L, ScalingLevel.RX, pageable);
+    Slice<ScoreResponse> result = scoreService.getLeaderboard(1L, ScalingLevel.RX, pageable);
 
     assertNotNull(result);
   }
@@ -153,7 +153,7 @@ class WodScoreServiceTest {
 
     // Simule qu'il n'y a que ce score en base pour la réévaluation
     when(scoreRepository.findByWodIdAndUserId(1L, userId)).thenReturn(List.of(scoreEntityTime));
-    when(scoreMapper.toResponse(scoreEntityTime)).thenReturn(mock(WodScoreResponse.class));
+    when(scoreMapper.toResponse(scoreEntityTime)).thenReturn(mock(ScoreResponse.class));
 
     scoreService.logScore(requestTime);
 
@@ -165,11 +165,11 @@ class WodScoreServiceTest {
   @DisplayName("logScore: should use explicit userId if provided")
   void testLogScore_ExplicitUser() {
     Long targetUser = 999L;
-    WodScoreRequest requestForOther =
-        new WodScoreRequest(
+    ScoreRequest requestForOther =
+        new ScoreRequest(
             targetUser,
-            1L,
             LocalDate.now(),
+            1L,
             5,
             0,
             null,
@@ -184,19 +184,19 @@ class WodScoreServiceTest {
             false,
             null,
             null);
-    WodScore scoreForOther =
-        WodScore.builder().id(60L).wod(wodProxy).userId(targetUser).timeSeconds(300).build();
+    Score scoreForOther =
+        Score.builder().id(60L).wod(wodProxy).userId(targetUser).timeSeconds(300).build();
 
     when(wodRepository.getReferenceById(1L)).thenReturn(wodProxy);
     when(scoreMapper.toEntity(requestForOther)).thenReturn(scoreForOther);
     when(scoreRepository.save(any())).thenReturn(scoreForOther);
     mockWodDetailHit(ScoreType.TIME);
     when(scoreRepository.findByWodIdAndUserId(1L, targetUser)).thenReturn(List.of(scoreForOther));
-    when(scoreMapper.toResponse(scoreForOther)).thenReturn(mock(WodScoreResponse.class));
+    when(scoreMapper.toResponse(scoreForOther)).thenReturn(mock(ScoreResponse.class));
 
     scoreService.logScore(requestForOther);
 
-    ArgumentCaptor<WodScore> captor = ArgumentCaptor.forClass(WodScore.class);
+    ArgumentCaptor<Score> captor = ArgumentCaptor.forClass(Score.class);
     verify(scoreRepository, atLeastOnce()).save(captor.capture());
     assertEquals(targetUser, captor.getValue().getUserId());
   }
@@ -208,7 +208,7 @@ class WodScoreServiceTest {
     when(scoreRepository.save(scoreEntityTime)).thenReturn(scoreEntityTime);
     mockWodDetailHit(ScoreType.TIME);
     when(scoreRepository.findByWodIdAndUserId(1L, userId)).thenReturn(List.of(scoreEntityTime));
-    when(scoreMapper.toResponse(scoreEntityTime)).thenReturn(mock(WodScoreResponse.class));
+    when(scoreMapper.toResponse(scoreEntityTime)).thenReturn(mock(ScoreResponse.class));
 
     scoreService.updateScore(50L, requestTime);
 
@@ -250,14 +250,13 @@ class WodScoreServiceTest {
   @Test
   @DisplayName("PR Calculation: Time (Lower is Better)")
   void testPrCalculation_Time() {
-    WodScore deletedScore = WodScore.builder().id(99L).wod(wodProxy).userId(userId).build();
+    Score deletedScore = Score.builder().id(99L).wod(wodProxy).userId(userId).build();
     when(scoreRepository.findById(99L)).thenReturn(Optional.of(deletedScore));
     mockWodDetailHit(ScoreType.TIME);
 
-    WodScore s1 = WodScore.builder().id(10L).timeSeconds(100).personalRecord(true).build();
-    WodScore s2 =
-        WodScore.builder().id(11L).timeSeconds(90).personalRecord(false).build(); // Better
-    WodScore s3 = WodScore.builder().id(12L).timeSeconds(110).personalRecord(false).build();
+    Score s1 = Score.builder().id(10L).timeSeconds(100).personalRecord(true).build();
+    Score s2 = Score.builder().id(11L).timeSeconds(90).personalRecord(false).build(); // Better
+    Score s3 = Score.builder().id(12L).timeSeconds(110).personalRecord(false).build();
 
     when(scoreRepository.findByWodIdAndUserId(1L, userId)).thenReturn(List.of(s1, s2, s3));
 
@@ -272,13 +271,13 @@ class WodScoreServiceTest {
   @Test
   @DisplayName("PR Calculation: Rounds+Reps (Higher is Better)")
   void testPrCalculation_RoundsReps() {
-    WodScore deletedScore = WodScore.builder().id(99L).wod(wodProxy).userId(userId).build();
+    Score deletedScore = Score.builder().id(99L).wod(wodProxy).userId(userId).build();
     when(scoreRepository.findById(99L)).thenReturn(Optional.of(deletedScore));
     mockWodDetailHit(ScoreType.ROUNDS_REPS);
 
-    WodScore s1 = WodScore.builder().id(10L).rounds(5).reps(10).build();
-    WodScore s2 = WodScore.builder().id(11L).rounds(5).reps(20).build(); // Better
-    WodScore s3 = WodScore.builder().id(12L).rounds(4).reps(50).build();
+    Score s1 = Score.builder().id(10L).rounds(5).reps(10).build();
+    Score s2 = Score.builder().id(11L).rounds(5).reps(20).build(); // Better
+    Score s3 = Score.builder().id(12L).rounds(4).reps(50).build();
 
     when(scoreRepository.findByWodIdAndUserId(1L, userId)).thenReturn(List.of(s1, s2, s3));
 
@@ -291,12 +290,12 @@ class WodScoreServiceTest {
   @Test
   @DisplayName("PR Calculation: Weight (Higher is Better)")
   void testPrCalculation_Weight() {
-    WodScore deletedScore = WodScore.builder().id(99L).wod(wodProxy).userId(userId).build();
+    Score deletedScore = Score.builder().id(99L).wod(wodProxy).userId(userId).build();
     when(scoreRepository.findById(99L)).thenReturn(Optional.of(deletedScore));
     mockWodDetailHit(ScoreType.WEIGHT);
 
-    WodScore s1 = WodScore.builder().id(10L).maxWeightKg(100.0).build();
-    WodScore s2 = WodScore.builder().id(11L).maxWeightKg(105.5).build(); // Better
+    Score s1 = Score.builder().id(10L).maxWeightKg(100.0).build();
+    Score s2 = Score.builder().id(11L).maxWeightKg(105.5).build(); // Better
 
     when(scoreRepository.findByWodIdAndUserId(1L, userId)).thenReturn(List.of(s1, s2));
 
@@ -309,7 +308,7 @@ class WodScoreServiceTest {
   @Test
   @DisplayName("PR Calculation: ScoreType NONE short-circuits")
   void testPrCalculation_ScoreTypeNone() {
-    WodScore deletedScore = WodScore.builder().id(99L).wod(wodProxy).userId(userId).build();
+    Score deletedScore = Score.builder().id(99L).wod(wodProxy).userId(userId).build();
     when(scoreRepository.findById(99L)).thenReturn(Optional.of(deletedScore));
     mockWodDetailHit(ScoreType.NONE);
 
@@ -321,7 +320,7 @@ class WodScoreServiceTest {
   @Test
   @DisplayName("PR Calculation: Empty list does nothing")
   void testPrCalculation_Empty() {
-    WodScore deletedScore = WodScore.builder().id(99L).wod(wodProxy).userId(userId).build();
+    Score deletedScore = Score.builder().id(99L).wod(wodProxy).userId(userId).build();
     when(scoreRepository.findById(99L)).thenReturn(Optional.of(deletedScore));
     mockWodDetailHit(ScoreType.TIME);
 
@@ -356,14 +355,8 @@ class WodScoreServiceTest {
   @Test
   @DisplayName("compareScore: ROUNDS_REPS should call countBetterRoundsReps")
   void testCompareScore_RoundsReps() {
-    WodScore score =
-        WodScore.builder()
-            .id(51L)
-            .wod(wodProxy)
-            .scaling(ScalingLevel.RX)
-            .rounds(5)
-            .reps(10)
-            .build();
+    Score score =
+        Score.builder().id(51L).wod(wodProxy).scaling(ScalingLevel.RX).rounds(5).reps(10).build();
 
     when(scoreRepository.findById(51L)).thenReturn(Optional.of(score));
     mockWodDetailHit(ScoreType.ROUNDS_REPS);
@@ -379,13 +372,8 @@ class WodScoreServiceTest {
   @Test
   @DisplayName("compareScore: WEIGHT should call countBetterWeight")
   void testCompareScore_Weight() {
-    WodScore score =
-        WodScore.builder()
-            .id(52L)
-            .wod(wodProxy)
-            .scaling(ScalingLevel.RX)
-            .maxWeightKg(100.0)
-            .build();
+    Score score =
+        Score.builder().id(52L).wod(wodProxy).scaling(ScalingLevel.RX).maxWeightKg(100.0).build();
 
     when(scoreRepository.findById(52L)).thenReturn(Optional.of(score));
     mockWodDetailHit(ScoreType.WEIGHT);
@@ -401,8 +389,8 @@ class WodScoreServiceTest {
   @Test
   @DisplayName("compareScore: DISTANCE should call countBetterDistance")
   void testCompareScore_Distance() {
-    WodScore score =
-        WodScore.builder()
+    Score score =
+        Score.builder()
             .id(53L)
             .wod(wodProxy)
             .scaling(ScalingLevel.RX)
@@ -422,7 +410,7 @@ class WodScoreServiceTest {
   @Test
   @DisplayName("compareScore: NONE should return rank 1 (0 better)")
   void testCompareScore_None() {
-    WodScore score = WodScore.builder().id(54L).wod(wodProxy).scaling(ScalingLevel.RX).build();
+    Score score = Score.builder().id(54L).wod(wodProxy).scaling(ScalingLevel.RX).build();
 
     when(scoreRepository.findById(54L)).thenReturn(Optional.of(score));
     mockWodDetailHit(ScoreType.NONE);

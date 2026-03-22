@@ -1,5 +1,5 @@
 <div class="container mx-auto pb-12">
-  <div class="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
+  <div class="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4 mt-8">
     <h1 class="text-3xl font-bold">{{ 'MOVEMENT.TITLE' | translate }}</h1>
 
     <div class="flex items-center gap-4 w-full sm:w-auto">
@@ -37,66 +37,81 @@
       {{ 'MOVEMENT.MESSAGES.EMPTY_LIST' | translate }}
     </div>
   } @else {
-    @for (modality of modalityKeys(); track modality) {
-      @if (groupedMovements().get(modality)!.length > 0) {
 
-        <h2 class="text-2xl font-bold mt-8 mb-4 flex items-center gap-2">
-          {{ 'MOVEMENT.MODALITIES.' + modality | translate }}
-          <div class="badge badge-neutral">{{ groupedMovements().get(modality)?.length }}</div>
-        </h2>
+    <div class="flex justify-center mb-10 w-full">
+      <div role="tablist"
+           class="tabs tabs-box flex-wrap justify-center gap-2">
+        @for (modality of modalityKeys(); track modality) {
+          <a role="tab"
+             class="tab h-10 px-4 gap-2 transition-all duration-300 rounded-lg whitespace-nowrap"
+             [class.tab-active]="activeTab() === modality"
+             [class.opacity-70]="activeTab() !== modality"
+             [class.hover:opacity-100]="activeTab() !== modality"
+             [class.text-accent]="activeTab() === modality"
+             (click)="activeTab.set(modality)">
 
-        <div class="overflow-x-auto bg-base-100 rounded-box shadow mb-8">
-          <table class="table table-zebra w-full">
-            <thead>
-            <tr>
-              <th class="w-1/2">{{ 'MOVEMENT.FIELDS.NAME' | translate }}</th>
-              <th>{{ 'MOVEMENT.FIELDS.ABBREVIATION' | translate }}</th>
-              <th>{{ 'MOVEMENT.FIELDS.CATEGORY' | translate }}</th>
-              <th class="text-right">{{ 'GLOBAL.ACTIONS' | translate }}</th>
-            </tr>
-            </thead>
-            <tbody>
-              @for (movement of groupedMovements().get(modality); track movement.id) {
-                <tr>
-                  <td>
-                    <div class="flex items-center gap-3">
-                      <div class="avatar placeholder">
-                        <div
-                          class="mask mask-squircle w-10 h-10 bg-base-200 text-base-content/50 flex items-center justify-center">
-                          @if (movement.imageUrl) {
-                            <img [ngSrc]="movement.imageUrl" [alt]="movement.name" width="40" height="40"/>
-                          } @else {
-                            <span class="text-lg font-bold">{{ movement.name.charAt(0) | uppercase }}</span>
-                          }
+            <ng-icon [name]="getModalityIcon(modality)" class="text-xl"></ng-icon>
+            {{ 'MOVEMENT.MODALITIES.' + modality | translate }}
+          </a>
+        }
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
+      @for (category of categoryGroups()[activeTab()]; track category) {
+        @if (movementsByCategory().get(category); as categoryMovements) {
+          <div class="collapse collapse-arrow bg-base-100 shadow-sm border border-base-200">
+            <input type="checkbox"/>
+
+            <div class="collapse-title text-xl font-medium flex items-center gap-3">
+              {{ 'MOVEMENT.CATEGORIES.' + category | translate }}
+              <div class="badge badge-soft badge-accent">{{ categoryMovements.length }}</div>
+            </div>
+
+            <div class="collapse-content p-0">
+              <ul class="divide-y divide-base-200">
+                @for (movement of categoryMovements; track movement.id) {
+                  <li>
+                    <button type="button"
+                            class="w-full text-left flex items-center justify-between p-4 hover:bg-base-200/50 cursor-pointer transition-colors group"
+                            (click)="openDetails(movement.id)">
+
+                      <div class="flex items-center gap-4">
+                        <div class="avatar placeholder">
+                          <div
+                            class="mask mask-squircle w-12 h-12 bg-base-200 text-base-content/50 flex items-center justify-center">
+                            @if (movement.imageUrl) {
+                              <img [ngSrc]="movement.imageUrl" [alt]="movement.name" width="48" height="48"
+                                   class="object-cover"/>
+                            } @else {
+                              <span class="text-xl font-bold">{{ movement.name.charAt(0) | uppercase }}</span>
+                            }
+                          </div>
+                        </div>
+
+                        <div>
+                          <div class="font-semibold text-lg flex items-center gap-2">
+                            {{ movement.name }}
+                            @if (movement.nameAbbreviation) {
+                              <span
+                                class="badge badge-ghost badge-sm font-normal">{{ movement.nameAbbreviation }}</span>
+                            }
+                          </div>
                         </div>
                       </div>
 
-                      <div class="font-medium">
-                        {{ movement.name }}
+                      <div class="text-base-content/30 group-hover:text-primary transition-colors pr-2">
+                        <ng-icon name="heroChevronRight" size="1.5rem"></ng-icon>
                       </div>
-                    </div>
-                  </td>
-                  <td>
-                    @if (movement.nameAbbreviation) {
-                      <div class="badge badge-ghost">{{ movement.nameAbbreviation }}</div>
-                    }
-                  </td>
-                  <td>
-                    <div class="badge badge-outline">
-                      {{ 'MOVEMENT.CATEGORIES.' + movement.category | translate }}
-                    </div>
-                  </td>
-                  <td class="text-right">
-                    <button class="btn btn-sm btn-neutral" (click)="openDetails(movement.id)">
-                      {{ 'GLOBAL.DETAILS' | translate }}
+
                     </button>
-                  </td>
-                </tr>
-              }
-            </tbody>
-          </table>
-        </div>
+                  </li>
+                }
+              </ul>
+            </div>
+          </div>
+        }
       }
-    }
+    </div>
   }
 </div>

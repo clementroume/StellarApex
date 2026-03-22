@@ -23,7 +23,6 @@ public enum Category {
   CLEAN(Modality.WEIGHTLIFTING),
   SNATCH(Modality.WEIGHTLIFTING),
   COMPLEXES(Modality.WEIGHTLIFTING),
-  LUNGES(Modality.WEIGHTLIFTING),
   SWING(Modality.WEIGHTLIFTING),
   OTHER_LIFTS(Modality.WEIGHTLIFTING),
 
@@ -32,6 +31,7 @@ public enum Category {
   PUSHING(Modality.GYMNASTICS),
   INVERTED(Modality.GYMNASTICS),
   CORE(Modality.GYMNASTICS),
+  LUNGES(Modality.GYMNASTICS),
   LOCOMOTION_AND_BODY_CONTROL(Modality.GYMNASTICS),
 
   // --- Monostructural (Metabolic Conditioning) ---
@@ -55,6 +55,6 @@ public enum Category {
     WEIGHTLIFTING,
     GYMNASTICS,
     MONOSTRUCTURAL,
-    STRONGMAN;
+    STRONGMAN
   }
 }

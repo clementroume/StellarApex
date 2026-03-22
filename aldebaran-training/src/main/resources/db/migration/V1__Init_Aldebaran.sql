@@ -11,7 +11,7 @@
 CREATE EXTENSION IF NOT EXISTS pg_trgm;
 
 -- ----------------------------------------------------------------------------------
--- 1. ANATOMY & MOVEMENT LIBRARY
+-- 1. MUSCLE & MOVEMENT LIBRARY
 -- ----------------------------------------------------------------------------------
 
 CREATE TABLE muscles
@@ -60,7 +60,7 @@ CREATE TABLE movement_equipment
     equipment   VARCHAR(50) NOT NULL
 );
 
-CREATE TABLE movement_variations
+CREATE TABLE movement_techniques
 (
     movement_id BIGINT      NOT NULL REFERENCES movements (id) ON DELETE CASCADE,
     technique   VARCHAR(50) NOT NULL
@@ -81,7 +81,7 @@ CREATE TABLE movement_muscles
 );
 
 -- ----------------------------------------------------------------------------------
--- 2. WORKOUT DEFINITIONS (WODs)
+-- 2. WOD
 -- ----------------------------------------------------------------------------------
 
 CREATE TABLE wods
@@ -155,41 +155,39 @@ CREATE TABLE wod_movement_techniques
 );
 
 -- ----------------------------------------------------------------------------------
--- 3. SCORES & LOGS (The Result)
+-- 3. SCORES
 -- ----------------------------------------------------------------------------------
 
-CREATE TABLE wod_scores
+CREATE TABLE scores
 (
+    -- Identification
     id                    BIGSERIAL PRIMARY KEY,
     user_id               BIGINT      NOT NULL,
     date                  DATE        NOT NULL,
     wod_id                BIGINT      NOT NULL REFERENCES wods (id) ON DELETE CASCADE,
-
-    -- Metrics (Canonical Storage)
+    -- Time Metrics
     time_seconds          INTEGER,
     time_display_unit     VARCHAR(10)          DEFAULT 'SECONDS',
-
+    -- Volume Metrics
     rounds                INTEGER,
     reps                  INTEGER,
-
-    -- Normalized Weight (KG)
+    -- Load Metrics
     max_weight_kg         DOUBLE PRECISION,
     total_load_kg         DOUBLE PRECISION,
-    weight_display_unit   VARCHAR(10)          DEFAULT 'KG',     -- User preference for display
-
-    -- Normalized Distance (Meters)
+    weight_display_unit   VARCHAR(10)          DEFAULT 'KG',
+    -- Distance Metrics
     total_distance_meters DOUBLE PRECISION,
-    distance_display_unit VARCHAR(10)          DEFAULT 'METERS', -- User preference for display
-
+    distance_display_unit VARCHAR(10)          DEFAULT 'METERS',
+    -- Calories
     total_calories        INTEGER,
-
-    -- Metadata
-    is_personal_record    BOOLEAN     NOT NULL DEFAULT FALSE,
-    time_capped           BOOLEAN     NOT NULL DEFAULT FALSE,
+    -- Performance Context
     scaling               VARCHAR(20) NOT NULL,
+    time_capped           BOOLEAN     NOT NULL DEFAULT FALSE,
+    is_personal_record    BOOLEAN     NOT NULL DEFAULT FALSE,
+    -- Comments and Scaling notes
     scaling_notes         TEXT,
     user_comment          TEXT,
-
+    -- Audit
     logged_at             TIMESTAMP   NOT NULL DEFAULT NOW(),
 
     -- Constraints
@@ -203,43 +201,42 @@ CREATE TABLE wod_scores
 -- ==================================================================================
 
 -- ----------------------------------------------------------------------------------
--- MOVEMENT_MUSCLES (Anatomical queries)
+-- MOVEMENT_MUSCLES
 -- ----------------------------------------------------------------------------------
 CREATE INDEX idx_movement_muscles_movement ON movement_muscles (movement_id);
 CREATE INDEX idx_movement_muscles_muscle ON movement_muscles (muscle_id);
 CREATE INDEX idx_movement_muscles_role ON movement_muscles (role, impact_factor);
 
 -- ----------------------------------------------------------------------------------
--- MOVEMENTS (Search & Filtering)
+-- MOVEMENTS
 -- ----------------------------------------------------------------------------------
 CREATE INDEX idx_movements_category ON movements (category);
 -- noinspection SqlResolve
 CREATE INDEX idx_movements_name_trgm ON movements USING gin (name gin_trgm_ops);
 
 -- ----------------------------------------------------------------------------------
--- WODS (Search)
+-- WODS
 -- ----------------------------------------------------------------------------------
-CREATE INDEX idx_wod_title ON wods (title);
-CREATE INDEX idx_wod_type ON wods (wod_type);
+CREATE INDEX idx_wods_title ON wods (title);
+CREATE INDEX idx_wods_wod_type ON wods (wod_type);
 CREATE INDEX idx_wods_gym_id ON wods (gym_id);
 CREATE INDEX idx_wods_author_id ON wods (author_id);
-
 -- ----------------------------------------------------------------------------------
--- WODS MOVEMENTS
+-- WODS_MOVEMENTS
 -- ----------------------------------------------------------------------------------
 CREATE INDEX idx_wod_movement_eq ON wod_movement_equipment (wod_movement_id);
 CREATE INDEX idx_wod_movement_tech ON wod_movement_techniques (wod_movement_id);
 
 -- ----------------------------------------------------------------------------------
--- WOD_SCORES (Leaderboards & History)
+-- SCORES
 -- ----------------------------------------------------------------------------------
-CREATE INDEX idx_user_date ON wod_scores (user_id, date DESC);
-CREATE INDEX idx_wod_user ON wod_scores (wod_id, user_id);
-CREATE INDEX idx_user_pr ON wod_scores (user_id) WHERE is_personal_record = TRUE;
-CREATE INDEX idx_wod_scores_wod_scaling ON wod_scores (wod_id, scaling, time_seconds);
+CREATE INDEX idx_user_date ON scores (user_id, date DESC);
+CREATE INDEX idx_wod_user ON scores (wod_id, user_id);
+CREATE INDEX idx_user_pr ON scores (user_id) WHERE is_personal_record = TRUE;
+CREATE INDEX idx_scores_wod_scaling ON scores (wod_id, scaling, time_seconds);
 
 -- ==================================================================================
--- COMMENTS (Documentation in database)
+-- COMMENTS
 -- ==================================================================================
 
 COMMENT ON TABLE movements IS 'Master catalog of exercises/movements';
@@ -251,8 +248,8 @@ COMMENT ON COLUMN movement_muscles.impact_factor IS 'Activation coefficient (0.0
 COMMENT ON TABLE wods IS 'Workout definitions (the recipe)';
 COMMENT ON COLUMN wods.author_id IS 'User ID who created and authored the content. Null means System.';
 
-COMMENT ON TABLE wod_scores IS 'Athlete performance results (the execution)';
-COMMENT ON COLUMN wod_scores.time_display_unit IS 'User preference for display';
-COMMENT ON COLUMN wod_scores.time_seconds IS 'Canonical storage in seconds';
-COMMENT ON COLUMN wod_scores.max_weight_kg IS 'Canonical storage in Kilograms';
-COMMENT ON COLUMN wod_scores.total_distance_meters IS 'Canonical storage in Meters';
+COMMENT ON TABLE scores IS 'Athlete performance results (the execution)';
+COMMENT ON COLUMN scores.time_display_unit IS 'User preference for display';
+COMMENT ON COLUMN scores.time_seconds IS 'Canonical storage in seconds';
+COMMENT ON COLUMN scores.max_weight_kg IS 'Canonical storage in Kilograms';
+COMMENT ON COLUMN scores.total_distance_meters IS 'Canonical storage in Meters';

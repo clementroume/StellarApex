@@ -28,6 +28,8 @@ export interface MuscleResponse {
 }
 
 export interface MuscleReferenceData {
+  // --- Muscle Group ---
   muscleGroups: string[];
+  // --- Muscle Role ---
   muscleRoles: string[];
 }

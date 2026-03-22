@@ -1,38 +1,48 @@
 package apex.stellar.aldebaran.dto;
 
-import apex.stellar.aldebaran.model.entities.WodScore.ScalingLevel;
+import apex.stellar.aldebaran.model.entities.Score.ScalingLevel;
 import apex.stellar.aldebaran.model.enums.Unit;
 import java.time.LocalDate;
 
-/**
- * DTO representing a logged score.
- *
- * <p>Includes pre-calculated display fields (like split minutes/seconds) to facilitate UI
- * formatting (e.g. "1:30" instead of "90s") and denormalized values based on user preference.
- */
-public record WodScoreResponse(
+/** DTO representing a logged score. */
+public record ScoreResponse(
+
+    // --- Identification ---
     Long id,
     Long userId,
     LocalDate date,
     WodSummaryResponse wodSummary,
 
-    // --- Metrics ---
+    // --- Time Metrics ---
     Integer timeSeconds,
     Integer timeMinutesPart,
     Integer timeSecondsPart,
     Unit timeDisplayUnit,
+
+    // --- Volume Metrics ---
     Integer rounds,
     Integer reps,
+
+    // --- Load Metrics ---
     Double maxWeight,
     Double totalLoad,
     Unit weightUnit,
+
+    // --- Distance Metrics ---
     Double totalDistance,
     Unit distanceUnit,
+
+    // --- Calories ---
     Integer totalCalories,
 
-    // --- Status ---
+    // --- Performance Context ---
     ScalingLevel scaling,
-    boolean personalRecord,
     boolean timeCapped,
+    boolean personalRecord,
+
+    // --- Comments and Scaling notes---
     String userComment,
-    String scalingNotes) {}
+    String scalingNotes,
+
+    // --- Audit ---
+    LocalDate loggedAt) {}

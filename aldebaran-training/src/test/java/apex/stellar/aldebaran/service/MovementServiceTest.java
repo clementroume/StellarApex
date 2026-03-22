@@ -302,7 +302,7 @@ class MovementServiceTest {
     ResourceNotFoundException exception =
         assertThrows(ResourceNotFoundException.class, () -> movementService.deleteMovement(id));
 
-    assertEquals("Movement not found with id: " + id, exception.getMessage());
+    assertEquals("error.movement.not.found", exception.getMessageKey());
     verify(movementRepository, never()).deleteById(any());
   }
 }

@@ -1,17 +1,14 @@
 package apex.stellar.aldebaran.service;
 
-import apex.stellar.aldebaran.dto.ScoreComparisonResponse;
-import apex.stellar.aldebaran.dto.WodResponse;
-import apex.stellar.aldebaran.dto.WodScoreReferenceData;
-import apex.stellar.aldebaran.dto.WodScoreRequest;
-import apex.stellar.aldebaran.dto.WodScoreResponse;
+import apex.stellar.aldebaran.dto.*;
+import apex.stellar.aldebaran.dto.ScoreResponse;
 import apex.stellar.aldebaran.exception.ResourceNotFoundException;
-import apex.stellar.aldebaran.mapper.WodScoreMapper;
+import apex.stellar.aldebaran.mapper.ScoreMapper;
+import apex.stellar.aldebaran.model.entities.Score;
+import apex.stellar.aldebaran.model.entities.Score.ScalingLevel;
 import apex.stellar.aldebaran.model.entities.Wod.ScoreType;
-import apex.stellar.aldebaran.model.entities.WodScore;
-import apex.stellar.aldebaran.model.entities.WodScore.ScalingLevel;
+import apex.stellar.aldebaran.repository.ScoreRepository;
 import apex.stellar.aldebaran.repository.WodRepository;
-import apex.stellar.aldebaran.repository.WodScoreRepository;
 import apex.stellar.aldebaran.security.SecurityService;
 import java.util.Arrays;
 import java.util.List;
@@ -29,13 +26,13 @@ import org.springframework.transaction.annotation.Transactional;
  */
 @Service
 @RequiredArgsConstructor
-public class WodScoreService {
+public class ScoreService {
 
   private static final String ERROR_SCORE_NOT_FOUND = "error.score.not.found";
 
-  private final WodScoreRepository scoreRepository;
+  private final ScoreRepository scoreRepository;
   private final WodRepository wodRepository;
-  private final WodScoreMapper scoreMapper;
+  private final ScoreMapper scoreMapper;
   private final SecurityService securityService;
   private final WodService wodService;
 
@@ -44,10 +41,10 @@ public class WodScoreService {
    *
    * @param wodId Optional WOD ID to filter scores.
    * @param pageable Pagination and sorting information.
-   * @return A slice of WodScoreResponse objects.
+   * @return A slice of ScoreResponse objects.
    */
   @Transactional(readOnly = true)
-  public Slice<WodScoreResponse> getMyScores(Long wodId, Pageable pageable) {
+  public Slice<ScoreResponse> getMyScores(Long wodId, Pageable pageable) {
     Long userId = securityService.getCurrentUserId();
 
     Pageable sortedPageable =
@@ -56,7 +53,7 @@ public class WodScoreService {
             : PageRequest.of(
                 pageable.getPageNumber(), pageable.getPageSize(), Sort.by("date").descending());
 
-    Slice<WodScore> scores =
+    Slice<Score> scores =
         (wodId != null)
             ? scoreRepository.findByUserIdAndWodId(userId, wodId, sortedPageable)
             : scoreRepository.findByUserId(userId, sortedPageable);
@@ -68,19 +65,19 @@ public class WodScoreService {
    * Logs a new score for a WOD.
    *
    * @param request The score details.
-   * @return The newly created WodScoreResponse.
+   * @return The newly created ScoreResponse.
    */
   @Transactional
-  public WodScoreResponse logScore(WodScoreRequest request) {
+  public ScoreResponse logScore(ScoreRequest request) {
     Long targetUserId =
         request.userId() != null ? request.userId() : securityService.getCurrentUserId();
 
-    WodScore newScore = scoreMapper.toEntity(request);
+    Score newScore = scoreMapper.toEntity(request);
     newScore.setWod(wodRepository.getReferenceById(request.wodId()));
     newScore.setUserId(targetUserId);
     newScore.setLoggedAt(java.time.LocalDateTime.now());
 
-    WodScore savedScore = scoreRepository.save(newScore);
+    Score savedScore = scoreRepository.save(newScore);
 
     recalculatePrsForUser(request.wodId(), targetUserId);
 
@@ -92,22 +89,18 @@ public class WodScoreService {
    *
    * @param id The ID of the score to update.
    * @param request The updated score details.
-   * @return The updated WodScoreResponse.
+   * @return The updated ScoreResponse.
    */
   @Transactional
-  public WodScoreResponse updateScore(Long id, WodScoreRequest request) {
-    WodScore existingScore =
+  public ScoreResponse updateScore(Long id, ScoreRequest request) {
+    Score existingScore =
         scoreRepository
             .findById(id)
             .orElseThrow(() -> new ResourceNotFoundException(ERROR_SCORE_NOT_FOUND, id));
 
     scoreMapper.updateEntity(request, existingScore);
 
-    if (!existingScore.getWod().getId().equals(request.wodId())) {
-      existingScore.setWod(wodRepository.getReferenceById(request.wodId()));
-    }
-
-    WodScore savedScore = scoreRepository.save(existingScore);
+    Score savedScore = scoreRepository.save(existingScore);
 
     recalculatePrsForUser(request.wodId(), savedScore.getUserId());
 
@@ -121,7 +114,7 @@ public class WodScoreService {
    */
   @Transactional
   public void deleteScore(Long scoreId) {
-    WodScore score =
+    Score score =
         scoreRepository
             .findById(scoreId)
             .orElseThrow(() -> new ResourceNotFoundException(ERROR_SCORE_NOT_FOUND, scoreId));
@@ -143,7 +136,7 @@ public class WodScoreService {
    */
   @Transactional(readOnly = true)
   public ScoreComparisonResponse compareScore(Long scoreId) {
-    WodScore score =
+    Score score =
         scoreRepository
             .findById(scoreId)
             .orElseThrow(() -> new ResourceNotFoundException(ERROR_SCORE_NOT_FOUND, scoreId));
@@ -186,11 +179,10 @@ public class WodScoreService {
    * @param wodId The ID of the WOD.
    * @param scaling The scaling level (e.g., RX, Scaled).
    * @param pageable Pagination information.
-   * @return A slice of WodScoreResponse objects representing the leaderboard.
+   * @return A slice of ScoreResponse objects representing the leaderboard.
    */
   @Transactional(readOnly = true)
-  public Slice<WodScoreResponse> getLeaderboard(
-      Long wodId, ScalingLevel scaling, Pageable pageable) {
+  public Slice<ScoreResponse> getLeaderboard(Long wodId, ScalingLevel scaling, Pageable pageable) {
     WodResponse wod = wodService.getWodDetail(wodId);
 
     Sort sort = getSortForScoreType(wod.scoreType());
@@ -203,9 +195,9 @@ public class WodScoreService {
   }
 
   /** Retrieves reference data for WOD Score forms. */
-  public WodScoreReferenceData getReferenceData() {
+  public ScoreReferenceData getReferenceData() {
     List<String> scalingLevels = Arrays.stream(ScalingLevel.values()).map(Enum::name).toList();
-    return new WodScoreReferenceData(scalingLevels);
+    return new ScoreReferenceData(scalingLevels);
   }
 
   /**
@@ -221,7 +213,7 @@ public class WodScoreService {
       return;
     }
 
-    List<WodScore> allScores = scoreRepository.findByWodIdAndUserId(wodId, userId);
+    List<Score> allScores = scoreRepository.findByWodIdAndUserId(wodId, userId);
     if (allScores.isEmpty()) {
       return;
     }
@@ -230,7 +222,7 @@ public class WodScoreService {
     allScores.forEach(s -> s.setPersonalRecord(false));
 
     // 2. Find the absolute best score
-    WodScore bestScore =
+    Score bestScore =
         allScores.stream()
             .reduce((s1, s2) -> isBetterScore(s1, s2, wodResponse.scoreType()) ? s1 : s2)
             .orElse(allScores.getFirst());
@@ -250,7 +242,7 @@ public class WodScoreService {
    * @param type The scoring type of the WOD.
    * @return true if the current score is better than the other score, false otherwise.
    */
-  private boolean isBetterScore(WodScore current, WodScore other, ScoreType type) {
+  private boolean isBetterScore(Score current, Score other, ScoreType type) {
     return switch (type) {
       case TIME -> compareTime(current, other);
       case ROUNDS_REPS -> compareRoundsReps(current, other);
@@ -271,7 +263,7 @@ public class WodScoreService {
    * @param other The other score.
    * @return true if the current time is faster (lower) than other time.
    */
-  private boolean compareTime(WodScore current, WodScore other) {
+  private boolean compareTime(Score current, Score other) {
     if (current.getTimeSeconds() == null) {
       return false;
     }
@@ -285,7 +277,7 @@ public class WodScoreService {
    * @param other The other score.
    * @return true if the current has more rounds, or same rounds and more reps.
    */
-  private boolean compareRoundsReps(WodScore current, WodScore other) {
+  private boolean compareRoundsReps(Score current, Score other) {
     int currentRounds = current.getRounds() != null ? current.getRounds() : 0;
     int otherRounds = other.getRounds() != null ? other.getRounds() : 0;
     if (currentRounds != otherRounds) {

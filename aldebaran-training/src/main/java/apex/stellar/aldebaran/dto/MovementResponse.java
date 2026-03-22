@@ -5,13 +5,9 @@ import apex.stellar.aldebaran.model.enums.Equipment;
 import apex.stellar.aldebaran.model.enums.Technique;
 import java.util.Set;
 
-/**
- * Full DTO for Movement display.
- *
- * <p>Aggregates all movement properties, including internationalized content, anatomical analysis,
- * and load calculation logic.
- */
+/** Full DTO for Movement display. */
 public record MovementResponse(
+
     // --- Identification ---
     Long id,
     String name,

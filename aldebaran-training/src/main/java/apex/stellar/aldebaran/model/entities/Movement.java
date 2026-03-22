@@ -73,7 +73,7 @@ public class Movement {
   private Set<Equipment> equipment = new HashSet<>();
 
   @ElementCollection(fetch = FetchType.LAZY)
-  @CollectionTable(name = "movement_variations", joinColumns = @JoinColumn(name = "movement_id"))
+  @CollectionTable(name = "movement_techniques", joinColumns = @JoinColumn(name = "movement_id"))
   @Column(name = "technique", nullable = false, length = 50)
   @Enumerated(EnumType.STRING)
   @Builder.Default

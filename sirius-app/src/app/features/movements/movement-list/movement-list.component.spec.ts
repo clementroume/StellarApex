@@ -12,6 +12,7 @@ import {MovementSummaryResponse} from '../../../api/aldebaran/models/movement.mo
 import {APP_ICONS} from '../../../app.config';
 import {ExporterService} from '../../../api/aldebaran/services/exporter.service';
 import {NotificationService} from '../../../core/services/notification.service';
+import {HttpContext} from '@angular/common/http';
 
 describe('MovementListComponent', () => {
   let component: MovementListComponent;
@@ -28,7 +29,6 @@ describe('MovementListComponent', () => {
   ];
 
   beforeEach(async () => {
-    // Ajout explicite du mock du Subject refreshNeeded$
     movementServiceSpy = jasmine.createSpyObj('MovementService', ['searchMovements', 'getMovement', 'getReferenceData']) as any;
     movementServiceSpy.refreshNeeded$ = new Subject<void>();
     movementServiceSpy.searchMovements.and.returnValue(of(mockMovements));
@@ -36,14 +36,13 @@ describe('MovementListComponent', () => {
       categoryGroups: {'WEIGHTLIFTING': ['SQUAT', 'PULLING']},
       equipmentGroups: {},
       techniqueGroups: {}
-    }));
+    } as any));
 
     authServiceSpy = jasmine.createSpyObj('AuthService', [], {
       currentUser: signal({platformRole: 'ADMIN'})
     });
 
     dialogServiceSpy = jasmine.createSpyObj('DialogService', ['openMovement']);
-
     exporterServiceSpy = jasmine.createSpyObj('ExporterService', ['exportMovements']);
     notificationServiceSpy = jasmine.createSpyObj('NotificationService', ['showSuccess', 'showError']);
 
@@ -72,7 +71,9 @@ describe('MovementListComponent', () => {
   it('should trigger search when input changes', () => {
     const event = {target: {value: 'Squat'}} as unknown as Event;
     component.onSearchChange(event);
-    expect(movementServiceSpy.searchMovements).toHaveBeenCalledWith('Squat');
+
+    // On accepte n'importe quel objet HttpContext comme deuxième paramètre !
+    expect(movementServiceSpy.searchMovements).toHaveBeenCalledWith('Squat', jasmine.any(HttpContext));
   });
 
   it('should clear the list in case of API error', () => {
@@ -84,7 +85,9 @@ describe('MovementListComponent', () => {
   it('should reload movements when refreshNeeded$ emits', () => {
     movementServiceSpy.searchMovements.calls.reset();
     movementServiceSpy.refreshNeeded$.next();
-    expect(movementServiceSpy.searchMovements).toHaveBeenCalledWith('');
+
+    // Ajout de jasmine.any(HttpContext) ici aussi
+    expect(movementServiceSpy.searchMovements).toHaveBeenCalledWith('', jasmine.any(HttpContext));
   });
 
   it('should fetch movement details and open global modal on openDetails', () => {
@@ -110,7 +113,7 @@ describe('MovementListComponent', () => {
 
     it('should call export service and show success notification if confirmed', () => {
       (window.confirm as jasmine.Spy).and.returnValue(true);
-      exporterServiceSpy.exportMovements.and.returnValue(of('Export successful'));
+      exporterServiceSpy.exportMovements.and.returnValue(of('Export successful' as any));
 
       component.exportCsv();
 
@@ -120,6 +123,7 @@ describe('MovementListComponent', () => {
     });
 
     it('should show error notification if export fails', () => {
+      spyOn(console, 'error'); // Rend silencieux le log d'erreur dans la console de test
       (window.confirm as jasmine.Spy).and.returnValue(true);
       exporterServiceSpy.exportMovements.and.returnValue(throwError(() => new Error('Export failed')));
 

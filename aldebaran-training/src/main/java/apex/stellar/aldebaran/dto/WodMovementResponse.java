@@ -3,12 +3,9 @@ package apex.stellar.aldebaran.dto;
 import apex.stellar.aldebaran.model.enums.Unit;
 import java.util.Set;
 
-/**
- * Nested DTO for WodResponse.
- *
- * <p>Contains the prescription details linked to the full Movement definition.
- */
+/** Nested DTO for WodResponse. */
 public record WodMovementResponse(
+
     // --- Identification ---
     Long id,
     MovementResponse movement,

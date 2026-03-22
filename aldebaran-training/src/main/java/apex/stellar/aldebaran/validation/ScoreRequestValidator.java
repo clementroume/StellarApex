@@ -1,6 +1,6 @@
 package apex.stellar.aldebaran.validation;
 
-import apex.stellar.aldebaran.dto.WodScoreRequest;
+import apex.stellar.aldebaran.dto.ScoreRequest;
 import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
 import org.hibernate.validator.constraintvalidation.HibernateConstraintValidatorContext;
@@ -11,8 +11,7 @@ import org.springframework.stereotype.Component;
  * enforces realistic physical bounds.
  */
 @Component
-public class ScoreRequestValidator
-    implements ConstraintValidator<ValidScoreRequest, WodScoreRequest> {
+public class ScoreRequestValidator implements ConstraintValidator<ValidScoreRequest, ScoreRequest> {
 
   private static final String MSG_UNIT_REQUIRED = "{validation.score.sanity.unit.required}";
   private static final String MSG_WEIGHT_MAX = "{validation.score.sanity.weight.max}";
@@ -27,7 +26,7 @@ public class ScoreRequestValidator
   private static final int MAX_REALISTIC_TIME_SECONDS = 86_400; // 24h
 
   @Override
-  public boolean isValid(WodScoreRequest request, ConstraintValidatorContext context) {
+  public boolean isValid(ScoreRequest request, ConstraintValidatorContext context) {
     if (request == null) {
       return true;
     }
@@ -41,7 +40,7 @@ public class ScoreRequestValidator
     return isValid;
   }
 
-  private boolean validateWeight(WodScoreRequest request, ConstraintValidatorContext context) {
+  private boolean validateWeight(ScoreRequest request, ConstraintValidatorContext context) {
     if (request.maxWeight() != null) {
       if (request.weightUnit() == null) {
         addViolation(context, "weightUnit", MSG_UNIT_REQUIRED, null, null);
@@ -56,7 +55,7 @@ public class ScoreRequestValidator
     return true;
   }
 
-  private boolean validateTotalLoad(WodScoreRequest request, ConstraintValidatorContext context) {
+  private boolean validateTotalLoad(ScoreRequest request, ConstraintValidatorContext context) {
     if (request.totalLoad() != null && request.weightUnit() == null) {
       addViolation(context, "weightUnit", MSG_UNIT_REQUIRED, null, null);
       return false;
@@ -64,7 +63,7 @@ public class ScoreRequestValidator
     return true;
   }
 
-  private boolean validateDistance(WodScoreRequest request, ConstraintValidatorContext context) {
+  private boolean validateDistance(ScoreRequest request, ConstraintValidatorContext context) {
     if (request.totalDistance() != null) {
       if (request.distanceUnit() == null) {
         addViolation(context, "distanceUnit", MSG_UNIT_REQUIRED, null, null);
@@ -80,7 +79,7 @@ public class ScoreRequestValidator
     return true;
   }
 
-  private boolean validateCalories(WodScoreRequest request, ConstraintValidatorContext context) {
+  private boolean validateCalories(ScoreRequest request, ConstraintValidatorContext context) {
     if (request.totalCalories() != null
         && (request.totalCalories() < 0 || request.totalCalories() > MAX_REALISTIC_CALORIES)) {
       addViolation(context, "totalCalories", MSG_CALORIES_MAX, "max", MAX_REALISTIC_CALORIES);
@@ -89,7 +88,7 @@ public class ScoreRequestValidator
     return true;
   }
 
-  private boolean validateTime(WodScoreRequest request, ConstraintValidatorContext context) {
+  private boolean validateTime(ScoreRequest request, ConstraintValidatorContext context) {
     long totalSeconds = 0;
     if (request.timeMinutes() != null) {
       totalSeconds += request.timeMinutes() * 60L;

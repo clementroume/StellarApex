@@ -22,4 +22,9 @@ export class DialogService {
   closeMovement() {
     this.movementToView.set(null);
   }
+
+  closeAll() {
+    this.muscleToView.set(null);
+    this.movementToView.set(null);
+  }
 }

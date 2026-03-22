@@ -1,7 +1,7 @@
 package apex.stellar.aldebaran.repository;
 
-import apex.stellar.aldebaran.model.entities.WodScore;
-import apex.stellar.aldebaran.model.entities.WodScore.ScalingLevel;
+import apex.stellar.aldebaran.model.entities.Score;
+import apex.stellar.aldebaran.model.entities.Score.ScalingLevel;
 import jakarta.persistence.LockModeType;
 import java.util.List;
 import org.springframework.data.domain.Pageable;
@@ -13,12 +13,12 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 /**
- * Repository interface for managing {@link WodScore} entities.
+ * Repository interface for managing {@link Score} entities.
  *
  * <p>Handles data access for athlete logs and workout results.
  */
 @Repository
-public interface WodScoreRepository extends JpaRepository<WodScore, Long> {
+public interface ScoreRepository extends JpaRepository<Score, Long> {
 
   /**
    * Retrieves the score history for a specific user, ordered by date (the newest first).
@@ -31,7 +31,7 @@ public interface WodScoreRepository extends JpaRepository<WodScore, Long> {
    * @return A list of the user's scores with WOD details loaded.
    */
   @EntityGraph(attributePaths = {"wod"})
-  Slice<WodScore> findByUserId(Long userId, Pageable pageable);
+  Slice<Score> findByUserId(Long userId, Pageable pageable);
 
   /**
    * Retrieves the score history for a specific user on a specific WOD.
@@ -42,7 +42,7 @@ public interface WodScoreRepository extends JpaRepository<WodScore, Long> {
    * @return A list of scores ordered by date.
    */
   @EntityGraph(attributePaths = {"wod"})
-  Slice<WodScore> findByUserIdAndWodId(Long userId, Long wodId, Pageable pageable);
+  Slice<Score> findByUserIdAndWodId(Long userId, Long wodId, Pageable pageable);
 
   /**
    * Retrieves all scores for a user on a WOD (unordered). Used for PR recalculation.
@@ -52,8 +52,8 @@ public interface WodScoreRepository extends JpaRepository<WodScore, Long> {
    * @return List of scores.
    */
   @Lock(LockModeType.PESSIMISTIC_WRITE)
-  @Query("SELECT s FROM WodScore s WHERE s.wod.id = :wodId AND s.userId = :userId")
-  List<WodScore> findByWodIdAndUserId(Long wodId, Long userId);
+  @Query("SELECT s FROM Score s WHERE s.wod.id = :wodId AND s.userId = :userId")
+  List<Score> findByWodIdAndUserId(Long wodId, Long userId);
 
   /**
    * Checks if any scores exist for a given WOD.
@@ -71,7 +71,7 @@ public interface WodScoreRepository extends JpaRepository<WodScore, Long> {
    * @param pageable Pagination and Sorting (Sort is handled by Service based on WOD type).
    * @return A page of Personal Record scores.
    */
-  Slice<WodScore> findByWodIdAndScalingAndPersonalRecordTrue(
+  Slice<Score> findByWodIdAndScalingAndPersonalRecordTrue(
       Long wodId, ScalingLevel scaling, Pageable pageable);
 
   // -------------------------------------------------------------------------
@@ -87,7 +87,7 @@ public interface WodScoreRepository extends JpaRepository<WodScore, Long> {
    */
   @Query(
       """
-      SELECT COUNT(s) FROM WodScore s
+      SELECT COUNT(s) FROM Score s
       WHERE s.wod.id = :wodId
       AND s.scaling = :scaling
       AND s.personalRecord = true
@@ -104,7 +104,7 @@ public interface WodScoreRepository extends JpaRepository<WodScore, Long> {
    */
   @Query(
       """
-      SELECT COUNT(s) FROM WodScore s
+      SELECT COUNT(s) FROM Score s
       WHERE s.wod.id = :wodId
       AND s.scaling = :scaling
       AND s.personalRecord = true
@@ -123,7 +123,7 @@ public interface WodScoreRepository extends JpaRepository<WodScore, Long> {
    */
   @Query(
       """
-      SELECT COUNT(s) FROM WodScore s
+      SELECT COUNT(s) FROM Score s
       WHERE s.wod.id = :wodId
       AND s.scaling = :scaling
       AND s.personalRecord = true
@@ -141,7 +141,7 @@ public interface WodScoreRepository extends JpaRepository<WodScore, Long> {
    */
   @Query(
       """
-      SELECT COUNT(s) FROM WodScore s
+      SELECT COUNT(s) FROM Score s
       WHERE s.wod.id = :wodId
       AND s.scaling = :scaling
       AND s.personalRecord = true
@@ -159,7 +159,7 @@ public interface WodScoreRepository extends JpaRepository<WodScore, Long> {
    */
   @Query(
       """
-      SELECT COUNT(s) FROM WodScore s
+      SELECT COUNT(s) FROM Score s
       WHERE s.wod.id = :wodId
       AND s.scaling = :scaling
       AND s.personalRecord = true
@@ -177,7 +177,7 @@ public interface WodScoreRepository extends JpaRepository<WodScore, Long> {
    */
   @Query(
       """
-      SELECT COUNT(s) FROM WodScore s
+      SELECT COUNT(s) FROM Score s
       WHERE s.wod.id = :wodId
       AND s.scaling = :scaling
       AND s.personalRecord = true
@@ -195,7 +195,7 @@ public interface WodScoreRepository extends JpaRepository<WodScore, Long> {
    */
   @Query(
       """
-      SELECT COUNT(s) FROM WodScore s
+      SELECT COUNT(s) FROM Score s
       WHERE s.wod.id = :wodId
       AND s.scaling = :scaling
       AND s.personalRecord = true
@@ -213,7 +213,7 @@ public interface WodScoreRepository extends JpaRepository<WodScore, Long> {
    */
   @Query(
       """
-      SELECT COUNT(s) FROM WodScore s
+      SELECT COUNT(s) FROM Score s
       WHERE s.wod.id = :wodId
       AND s.scaling = :scaling
       AND s.personalRecord = true

@@ -1,6 +1,5 @@
 import {Routes} from '@angular/router';
 import {DashboardComponent} from './features/dashboard/dashboard.component';
-import {AccountComponent} from './features/account/account.component';
 import {MainLayoutComponent} from './core/layout/main-layout/main-layout.component';
 import {authGuard} from './core/guards/auth.guard';
 
@@ -28,7 +27,6 @@ export const routes: Routes = [
       },
       {
         path: 'my-account',
-        component: AccountComponent,
         loadChildren: () => import('./features/account/account.routes').then(r => r.ACCOUNT_ROUTES)
       },
       {

@@ -12,6 +12,7 @@ import java.util.List;
 
 /** DTO for creating or updating a WOD (Workout of the Day). */
 public record WodRequest(
+
     // --- Identification ---
     @NotBlank(message = "{validation.wod.title.required}")
         @Size(max = 100, message = "{validation.wod.title.size}")

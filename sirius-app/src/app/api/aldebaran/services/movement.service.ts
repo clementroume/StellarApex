@@ -1,5 +1,5 @@
 import {inject, Injectable} from '@angular/core';
-import {HttpClient, HttpParams} from '@angular/common/http';
+import {HttpClient, HttpContext, HttpParams} from '@angular/common/http';
 import {Observable, Subject} from 'rxjs';
 import {environment} from '../../../../environments/environment';
 import {
@@ -14,9 +14,9 @@ export class MovementService {
   private readonly http = inject(HttpClient);
   public refreshNeeded$ = new Subject<void>();
 
-  searchMovements(query: string = ''): Observable<MovementSummaryResponse[]> {
+  searchMovements(query: string = '', context?: HttpContext): Observable<MovementSummaryResponse[]> {
     const params = new HttpParams().set('query', query);
-    return this.http.get<MovementSummaryResponse[]>(this.buildUrl(), {params});
+    return this.http.get<MovementSummaryResponse[]>(this.buildUrl(), {params, context});
   }
 
   getMovement(id: number): Observable<MovementResponse> {

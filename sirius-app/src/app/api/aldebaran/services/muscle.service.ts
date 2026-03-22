@@ -1,5 +1,5 @@
 import {inject, Injectable} from '@angular/core';
-import {HttpClient} from '@angular/common/http';
+import {HttpClient, HttpContext} from '@angular/common/http';
 import {Observable, Subject} from 'rxjs';
 import {environment} from '../../../../environments/environment';
 import {MuscleReferenceData, MuscleRequest, MuscleResponse} from '../models/muscle.model';
@@ -9,8 +9,8 @@ export class MuscleService {
   private readonly http = inject(HttpClient);
   public refreshNeeded$ = new Subject<void>();
 
-  getMuscles(): Observable<MuscleResponse[]> {
-    return this.http.get<MuscleResponse[]>(this.buildUrl());
+  getMuscles(context?: HttpContext): Observable<MuscleResponse[]> {
+    return this.http.get<MuscleResponse[]>(this.buildUrl(), {context});
   }
 
   getMuscle(id: number): Observable<MuscleResponse> {

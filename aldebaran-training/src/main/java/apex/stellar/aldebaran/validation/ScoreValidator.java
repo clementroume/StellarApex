@@ -1,18 +1,18 @@
 package apex.stellar.aldebaran.validation;
 
+import apex.stellar.aldebaran.model.entities.Score;
 import apex.stellar.aldebaran.model.entities.Wod.ScoreType;
-import apex.stellar.aldebaran.model.entities.WodScore;
 import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
 import org.hibernate.validator.constraintvalidation.HibernateConstraintValidatorContext;
 import org.springframework.stereotype.Component;
 
-/** Validates that the WodScore fields correspond to the WOD's scoring type. */
+/** Validates that the Score fields correspond to the WOD's scoring type. */
 @Component
-public class ScoreValidator implements ConstraintValidator<ValidScore, WodScore> {
+public class ScoreValidator implements ConstraintValidator<ValidScore, Score> {
 
   @Override
-  public boolean isValid(WodScore score, ConstraintValidatorContext context) {
+  public boolean isValid(Score score, ConstraintValidatorContext context) {
     if (score == null || score.getWod() == null) {
       return true;
     }

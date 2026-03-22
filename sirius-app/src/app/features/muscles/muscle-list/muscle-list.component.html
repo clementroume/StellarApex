@@ -1,9 +1,9 @@
-<div class="container mx-auto px-4 py-8">
-  <div class="flex justify-between items-center mb-6">
+<div class="container mx-auto pb-12">
+  <div class="flex flex-col sm:flex-row justify-between items-center mt-8 mb-6 gap-4">
     <h1 class="text-3xl font-bold">{{ 'MUSCLE.TITLE' | translate }}</h1>
 
     @if (isAdmin()) {
-      <div class="flex gap-2">
+      <div class="flex gap-2 w-full sm:w-auto">
         <button class="btn btn-outline btn-secondary whitespace-nowrap"
                 (click)="exportCsv()"
                 [disabled]="isExporting()">
@@ -19,76 +19,59 @@
     }
   </div>
 
-  @if (rawMuscles().length === 0) {
+  @if (isLoading() && rawMuscles().length === 0) {
+    <div class="flex justify-center p-12">
+      <span class="loading loading-spinner loading-lg text-primary"></span>
+    </div>
+  } @else if (rawMuscles().length === 0) {
     <div class="text-center py-12 text-base-content/50 bg-base-100 rounded-box shadow mt-4">
       {{ 'MUSCLE.MESSAGES.EMPTY_LIST' | translate }}
     </div>
   } @else {
-    <div class="grid grid-cols-1 xl:grid-cols-2 gap-8">
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
 
       @for (group of muscleGroupKeys(); track group) {
         @if (groupedMuscles().get(group) && groupedMuscles().get(group)!.length > 0) {
-          <div>
-            <h2 class="text-xl font-bold mb-4 flex items-center gap-2">
+
+          <div class="collapse collapse-arrow bg-base-100 shadow-sm border border-base-200">
+            <input type="checkbox"/>
+
+            <div class="collapse-title text-xl font-medium flex items-center gap-3">
               {{ 'MUSCLE.GROUPS.' + group | translate }}
-              <div class="badge badge-soft badge-accent">{{
-                  groupedMuscles().get(group)?.length
-                }}
-              </div>
-            </h2>
+              <div class="badge badge-soft badge-accent">{{ groupedMuscles().get(group)?.length }}</div>
+            </div>
 
-            <div
-              class="overflow-x-auto bg-base-100 rounded-box shadow border border-base-content/5">
-              <table class="table table-fixed w-full">
-                <thead>
-                <tr>
-                  <th class="cursor-pointer hover:bg-base-200 w-4/12"
-                      tabindex="0"
-                      (click)="sortBy(group, 'medicalName')"
-                      (keydown.enter)="sortBy(group, 'medicalName')">
-                    <div class="flex items-center justify-between">
-                      <span class="truncate">{{ 'MUSCLE.FIELDS.MEDICAL_NAME' | translate }}</span>
-                      <span class="w-4 text-center opacity-50"
-                            [class.invisible]="sortStates()[group]?.column !== 'medicalName'">
-                              {{ sortStates()[group]?.direction === 'desc' ? '↓' : '↑' }}
-                     </span>
-                    </div>
-                  </th>
+            <div class="collapse-content p-0">
+              <ul class="divide-y divide-base-200">
+                @for (muscle of groupedMuscles().get(group); track muscle.id) {
+                  <li>
+                    <button type="button"
+                            class="w-full text-left flex items-center justify-between p-4 hover:bg-base-200/50 cursor-pointer transition-colors group"
+                            (click)="openDetails(muscle.id)">
 
-                  <th class="cursor-pointer hover:bg-base-200 w-4/12"
-                      tabindex="0"
-                      (click)="sortBy(group, 'commonName')"
-                      (keydown.enter)="sortBy(group, 'commonName')">
-                    <div class="flex items-center justify-between">
-                      <span class="truncate">{{ 'MUSCLE.FIELDS.COMMON_NAME' | translate }}</span>
-                      <span class="w-4 text-center opacity-50"
-                            [class.invisible]="sortStates()[group]?.column !== 'commonName'">
-                              {{ sortStates()[group]?.direction === 'desc' ? '↓' : '↑' }}
-                      </span>
-                    </div>
-                  </th>
-                  <th class="w-2/12">
-                    <span class="sr-only">{{ 'GLOBAL.ACTIONS' | translate }}</span>
-                  </th>
-                </tr>
-                </thead>
-                <tbody>
-                  @for (muscle of groupedMuscles().get(group); track muscle.id) {
-                    <tr>
-                      <td class="font-semibold">{{ muscle.medicalName }}</td>
-                      <td>{{ getLocalizedName(muscle) }}</td>
-                      <td class="text-right">
-                        <button class="btn btn-sm btn-primary" (click)="openDetails(muscle.id)">
-                          <ng-icon name="heroEye" size="1.5em"></ng-icon>
-                          {{ 'GLOBAL.DETAILS' | translate }}
-                        </button>
-                      </td>
-                    </tr>
-                  }
-                </tbody>
-              </table>
+                      <div class="flex flex-col">
+                        @if (getLocalizedName(muscle)) {
+                          <span class="font-semibold text-lg">{{ getLocalizedName(muscle) }}</span>
+                          @if (getLocalizedName(muscle) !== muscle.medicalName) {
+                            <span class="text-sm opacity-60">{{ muscle.medicalName }}</span>
+                          }
+                        } @else {
+                          <span class="font-semibold text-lg">{{ muscle.medicalName }}</span>
+                        }
+                      </div>
+
+                      <div class="text-base-content/30 group-hover:text-primary transition-colors pr-2">
+                        <ng-icon name="heroChevronRight" size="1.5rem"></ng-icon>
+                      </div>
+
+                    </button>
+                  </li>
+                }
+              </ul>
             </div>
           </div>
+
         }
       }
 

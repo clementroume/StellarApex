@@ -152,7 +152,7 @@ public class MuscleService {
 
     log.info("Deleting Muscle with ID: {}", id);
     if (!muscleRepository.existsById(id)) {
-      throw new ResourceNotFoundException("Muscle not found with id: " + id);
+      throw new ResourceNotFoundException("error.muscle.not.found", id);
     }
     muscleRepository.deleteById(id);
   }

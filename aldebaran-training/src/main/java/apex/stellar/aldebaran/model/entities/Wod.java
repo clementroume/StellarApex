@@ -168,7 +168,7 @@ public class Wod {
     HERO,
     CUSTOM_BENCHMARK,
     // --- Other ---
-    CUSTOM;
+    CUSTOM
   }
 
   /** ScoreType Inner Enum. */
@@ -182,6 +182,6 @@ public class Wod {
     LOAD,
     CALORIES,
     DISTANCE,
-    NONE;
+    NONE
   }
 }

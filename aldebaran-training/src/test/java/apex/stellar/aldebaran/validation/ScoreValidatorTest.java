@@ -3,9 +3,9 @@ package apex.stellar.aldebaran.validation;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import apex.stellar.aldebaran.model.entities.Score;
 import apex.stellar.aldebaran.model.entities.Wod;
 import apex.stellar.aldebaran.model.entities.Wod.ScoreType;
-import apex.stellar.aldebaran.model.entities.WodScore;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validator;
 import java.util.List;
@@ -41,13 +41,13 @@ class ScoreValidatorTest {
     LocaleContextHolder.resetLocaleContext();
   }
 
-  private WodScore createScore(ScoreType type) {
-    return WodScore.builder().wod(Wod.builder().scoreType(type).build()).build();
+  private Score createScore(ScoreType type) {
+    return Score.builder().wod(Wod.builder().scoreType(type).build()).build();
   }
 
   /** Vérifie que l'erreur de type custom n'est PAS présente */
-  private void assertValidScoreType(WodScore score) {
-    Set<ConstraintViolation<WodScore>> violations = validator.validate(score);
+  private void assertValidScoreType(Score score) {
+    Set<ConstraintViolation<Score>> violations = validator.validate(score);
     boolean hasTypeError =
         violations.stream()
             .anyMatch(v -> "{wod.score.invalid.type}".equals(v.getMessageTemplate()));
@@ -56,8 +56,8 @@ class ScoreValidatorTest {
   }
 
   /** Vérifie que l'erreur de type custom EST bien présente */
-  private void assertInvalidScoreType(WodScore score) {
-    Set<ConstraintViolation<WodScore>> violations = validator.validate(score);
+  private void assertInvalidScoreType(Score score) {
+    Set<ConstraintViolation<Score>> violations = validator.validate(score);
     boolean hasTypeError =
         violations.stream()
             .anyMatch(v -> "{wod.score.invalid.type}".equals(v.getMessageTemplate()));
@@ -72,7 +72,7 @@ class ScoreValidatorTest {
   @Test
   @DisplayName("TIME: Valid if timeSeconds is present")
   void testTime_Valid() {
-    WodScore score = createScore(ScoreType.TIME);
+    Score score = createScore(ScoreType.TIME);
     score.setTimeSeconds(120);
     assertValidScoreType(score);
   }
@@ -80,7 +80,7 @@ class ScoreValidatorTest {
   @Test
   @DisplayName("TIME: Invalid if timeSeconds is null")
   void testTime_Invalid() {
-    WodScore score = createScore(ScoreType.TIME);
+    Score score = createScore(ScoreType.TIME);
     score.setTimeSeconds(null);
     assertInvalidScoreType(score);
   }
@@ -92,7 +92,7 @@ class ScoreValidatorTest {
   @Test
   @DisplayName("ROUNDS_REPS: Valid if Rounds is present")
   void testRoundsReps_ValidRounds() {
-    WodScore score = createScore(ScoreType.ROUNDS_REPS);
+    Score score = createScore(ScoreType.ROUNDS_REPS);
     score.setRounds(5);
     assertValidScoreType(score);
   }
@@ -100,7 +100,7 @@ class ScoreValidatorTest {
   @Test
   @DisplayName("ROUNDS_REPS: Valid if Reps is present")
   void testRoundsReps_ValidReps() {
-    WodScore score = createScore(ScoreType.ROUNDS_REPS);
+    Score score = createScore(ScoreType.ROUNDS_REPS);
     score.setReps(50);
     assertValidScoreType(score);
   }
@@ -108,7 +108,7 @@ class ScoreValidatorTest {
   @Test
   @DisplayName("ROUNDS_REPS: Invalid if both are null")
   void testRoundsReps_Invalid() {
-    WodScore score = createScore(ScoreType.ROUNDS_REPS);
+    Score score = createScore(ScoreType.ROUNDS_REPS);
     assertInvalidScoreType(score);
   }
 
@@ -119,7 +119,7 @@ class ScoreValidatorTest {
   @Test
   @DisplayName("REPS: Valid if Reps is present")
   void testReps_Valid() {
-    WodScore score = createScore(ScoreType.REPS);
+    Score score = createScore(ScoreType.REPS);
     score.setReps(100);
     assertValidScoreType(score);
   }
@@ -127,7 +127,7 @@ class ScoreValidatorTest {
   @Test
   @DisplayName("REPS: Invalid if Reps is null")
   void testReps_Invalid() {
-    WodScore score = createScore(ScoreType.REPS);
+    Score score = createScore(ScoreType.REPS);
     assertInvalidScoreType(score);
   }
 
@@ -138,7 +138,7 @@ class ScoreValidatorTest {
   @Test
   @DisplayName("WEIGHT: Valid if MaxWeightKg is present")
   void testWeight_Valid() {
-    WodScore score = createScore(ScoreType.WEIGHT);
+    Score score = createScore(ScoreType.WEIGHT);
     score.setMaxWeightKg(100.0);
     assertValidScoreType(score);
   }
@@ -146,7 +146,7 @@ class ScoreValidatorTest {
   @Test
   @DisplayName("WEIGHT: Invalid if MaxWeightKg is null")
   void testWeight_Invalid() {
-    WodScore score = createScore(ScoreType.WEIGHT);
+    Score score = createScore(ScoreType.WEIGHT);
     assertInvalidScoreType(score);
   }
 
@@ -157,7 +157,7 @@ class ScoreValidatorTest {
   @Test
   @DisplayName("LOAD: Valid if TotalLoadKg is present")
   void testLoad_Valid() {
-    WodScore score = createScore(ScoreType.LOAD);
+    Score score = createScore(ScoreType.LOAD);
     score.setTotalLoadKg(5000.0);
     assertValidScoreType(score);
   }
@@ -165,7 +165,7 @@ class ScoreValidatorTest {
   @Test
   @DisplayName("LOAD: Invalid if TotalLoadKg is null")
   void testLoad_Invalid() {
-    WodScore score = createScore(ScoreType.LOAD);
+    Score score = createScore(ScoreType.LOAD);
     assertInvalidScoreType(score);
   }
 
@@ -176,7 +176,7 @@ class ScoreValidatorTest {
   @Test
   @DisplayName("CALORIES: Valid if TotalCalories is present")
   void testCalories_Valid() {
-    WodScore score = createScore(ScoreType.CALORIES);
+    Score score = createScore(ScoreType.CALORIES);
     score.setTotalCalories(50);
     assertValidScoreType(score);
   }
@@ -184,7 +184,7 @@ class ScoreValidatorTest {
   @Test
   @DisplayName("CALORIES: Invalid if TotalCalories is null")
   void testCalories_Invalid() {
-    WodScore score = createScore(ScoreType.CALORIES);
+    Score score = createScore(ScoreType.CALORIES);
     assertInvalidScoreType(score);
   }
 
@@ -195,7 +195,7 @@ class ScoreValidatorTest {
   @Test
   @DisplayName("DISTANCE: Valid if TotalDistanceMeters is present")
   void testDistance_Valid() {
-    WodScore score = createScore(ScoreType.DISTANCE);
+    Score score = createScore(ScoreType.DISTANCE);
     score.setTotalDistanceMeters(2000.0);
     assertValidScoreType(score);
   }
@@ -203,7 +203,7 @@ class ScoreValidatorTest {
   @Test
   @DisplayName("DISTANCE: Invalid if TotalDistanceMeters is null")
   void testDistance_Invalid() {
-    WodScore score = createScore(ScoreType.DISTANCE);
+    Score score = createScore(ScoreType.DISTANCE);
     assertInvalidScoreType(score);
   }
 
@@ -214,14 +214,14 @@ class ScoreValidatorTest {
   @Test
   @DisplayName("NONE: Always valid")
   void testNone_Valid() {
-    WodScore score = createScore(ScoreType.NONE);
+    Score score = createScore(ScoreType.NONE);
     assertValidScoreType(score);
   }
 
   @Test
   @DisplayName("Null Handling: Valid if Wod is null (ignored)")
   void testNullSafety() {
-    WodScore score = new WodScore(); // Wod est null
+    Score score = new Score(); // Wod est null
     assertValidScoreType(score);
   }
 
@@ -234,10 +234,10 @@ class ScoreValidatorTest {
   void testMessage_EN() {
     LocaleContextHolder.setLocale(Locale.ENGLISH);
 
-    WodScore score = createScore(ScoreType.TIME);
+    Score score = createScore(ScoreType.TIME);
     String expectedType = ScoreType.TIME.name();
 
-    Set<ConstraintViolation<WodScore>> violations = validator.validate(score);
+    Set<ConstraintViolation<Score>> violations = validator.validate(score);
 
     List<String> messages = violations.stream().map(ConstraintViolation::getMessage).toList();
 
@@ -251,10 +251,10 @@ class ScoreValidatorTest {
   void testMessage_FR() {
     LocaleContextHolder.setLocale(Locale.FRENCH);
 
-    WodScore score = createScore(ScoreType.TIME);
+    Score score = createScore(ScoreType.TIME);
     String expectedType = ScoreType.TIME.name();
 
-    Set<ConstraintViolation<WodScore>> violations = validator.validate(score);
+    Set<ConstraintViolation<Score>> violations = validator.validate(score);
 
     List<String> messages = violations.stream().map(ConstraintViolation::getMessage).toList();
 

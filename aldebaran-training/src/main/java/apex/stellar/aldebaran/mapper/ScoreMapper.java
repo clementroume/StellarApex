@@ -1,8 +1,8 @@
 package apex.stellar.aldebaran.mapper;
 
-import apex.stellar.aldebaran.dto.WodScoreRequest;
-import apex.stellar.aldebaran.dto.WodScoreResponse;
-import apex.stellar.aldebaran.model.entities.WodScore;
+import apex.stellar.aldebaran.dto.ScoreRequest;
+import apex.stellar.aldebaran.dto.ScoreResponse;
+import apex.stellar.aldebaran.model.entities.Score;
 import apex.stellar.aldebaran.model.enums.Unit;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
@@ -11,7 +11,7 @@ import org.mapstruct.Named;
 import org.mapstruct.ReportingPolicy;
 
 /**
- * Mapper for converting between {@link WodScore} entities and DTOs.
+ * Mapper for converting between {@link Score} entities and DTOs.
  *
  * <p><b>Conversion Strategy:</b>
  *
@@ -28,18 +28,17 @@ import org.mapstruct.ReportingPolicy;
     componentModel = "spring",
     unmappedTargetPolicy = ReportingPolicy.IGNORE,
     uses = {WodMapper.class})
-public interface WodScoreMapper {
+public interface ScoreMapper {
 
   // -------------------------------------------------------------------------
   // Entity -> Response
   // -------------------------------------------------------------------------
 
   /**
-   * Maps a WodScore entity to a WodScoreResponse DTO by transforming and formatting various
-   * properties.
+   * Maps a Score entity to a ScoreResponse DTO by transforming and formatting various properties.
    *
    * @param score The WOD score entity to be transformed into a response object.
-   * @return A WodScoreResponse containing the transformed data from the WOD score entity.
+   * @return A ScoreResponse containing the transformed data from the WOD score entity.
    */
   @Mapping(target = "wodSummary", source = "wod")
   @Mapping(target = "userId", source = "userId")
@@ -50,17 +49,17 @@ public interface WodScoreMapper {
   @Mapping(target = "totalDistance", source = "score", qualifiedByName = "mapDistanceToDisplay")
   @Mapping(target = "weightUnit", source = "weightDisplayUnit")
   @Mapping(target = "distanceUnit", source = "distanceDisplayUnit")
-  WodScoreResponse toResponse(WodScore score);
+  ScoreResponse toResponse(Score score);
 
   // -------------------------------------------------------------------------
   // Request -> Entity
   // -------------------------------------------------------------------------
   /**
-   * Maps a WodScoreRequest to a WodScore entity while applying specific transformations and
-   * ignoring certain fields.
+   * Maps a ScoreRequest to a Score entity while applying specific transformations and ignoring
+   * certain fields.
    *
-   * @param request The WodScoreRequest containing the data to transform into a WodScore entity.
-   * @return A WodScore entity populated with the transformed data from the request.
+   * @param request The ScoreRequest containing the data to transform into a Score entity.
+   * @return A Score entity populated with the transformed data from the request.
    */
   @Mapping(target = "id", ignore = true)
   @Mapping(target = "wod", ignore = true)
@@ -77,14 +76,14 @@ public interface WodScoreMapper {
       qualifiedByName = "normalizeDistance")
   @Mapping(target = "weightDisplayUnit", source = "weightUnit")
   @Mapping(target = "distanceDisplayUnit", source = "distanceUnit")
-  WodScore toEntity(WodScoreRequest request);
+  Score toEntity(ScoreRequest request);
 
   /**
-   * Updates an existing WodScore entity with data from a WodScoreRequest while applying specific
+   * Updates an existing Score entity with data from a ScoreRequest while applying specific
    * transformations and ignoring certain fields.
    *
-   * @param request The WodScoreRequest containing the data to be used for updating the entity.
-   * @param entity The WodScore entity to be updated. This is the target object of the mapping.
+   * @param request The ScoreRequest containing the data to be used for updating the entity.
+   * @param entity The Score entity to be updated. This is the target object of the mapping.
    */
   @Mapping(target = "id", ignore = true)
   @Mapping(target = "wod", ignore = true)
@@ -101,7 +100,7 @@ public interface WodScoreMapper {
       qualifiedByName = "normalizeDistance")
   @Mapping(target = "weightDisplayUnit", source = "weightUnit")
   @Mapping(target = "distanceDisplayUnit", source = "distanceUnit")
-  void updateEntity(WodScoreRequest request, @MappingTarget WodScore entity);
+  void updateEntity(ScoreRequest request, @MappingTarget Score entity);
 
   // -------------------------------------------------------------------------
   // Time Logic Helpers
@@ -115,7 +114,7 @@ public interface WodScoreMapper {
    */
   @SuppressWarnings("unused")
   @Named("calculateTotalSeconds")
-  default Integer calculateTotalSeconds(WodScoreRequest req) {
+  default Integer calculateTotalSeconds(ScoreRequest req) {
     if (req.timeMinutes() == null && req.timeSeconds() == null) {
       return null;
     }
@@ -133,7 +132,7 @@ public interface WodScoreMapper {
    */
   @SuppressWarnings("unused")
   @Named("inferTimeDisplayUnit")
-  default Unit inferTimeDisplayUnit(WodScoreRequest req) {
+  default Unit inferTimeDisplayUnit(ScoreRequest req) {
     // If a user explicitly provided minutes, we assume they prefer the "Minutes" display
     if (req.timeMinutes() != null) {
       return Unit.MINUTES;
@@ -150,7 +149,7 @@ public interface WodScoreMapper {
    */
   @SuppressWarnings("unused")
   @Named("calculateMinutes")
-  default Integer calculateMinutes(WodScore s) {
+  default Integer calculateMinutes(Score s) {
     return s.getTimeSeconds() != null ? s.getTimeSeconds() / 60 : null;
   }
 
@@ -162,7 +161,7 @@ public interface WodScoreMapper {
    */
   @SuppressWarnings("unused")
   @Named("calculateSeconds")
-  default Integer calculateSeconds(WodScore s) {
+  default Integer calculateSeconds(Score s) {
     return s.getTimeSeconds() != null ? s.getTimeSeconds() % 60 : null;
   }
 
@@ -178,7 +177,7 @@ public interface WodScoreMapper {
    */
   @SuppressWarnings("unused")
   @Named("normalizeMaxWeight")
-  default Double normalizeMaxWeight(WodScoreRequest req) {
+  default Double normalizeMaxWeight(ScoreRequest req) {
     if (req.maxWeight() == null || req.weightUnit() == null) {
       return null;
     }
@@ -193,7 +192,7 @@ public interface WodScoreMapper {
    */
   @SuppressWarnings("unused")
   @Named("normalizeTotalLoad")
-  default Double normalizeTotalLoad(WodScoreRequest req) {
+  default Double normalizeTotalLoad(ScoreRequest req) {
     if (req.totalLoad() == null || req.weightUnit() == null) {
       return null;
     }
@@ -208,7 +207,7 @@ public interface WodScoreMapper {
    */
   @SuppressWarnings("unused")
   @Named("normalizeDistance")
-  default Double normalizeDistance(WodScoreRequest req) {
+  default Double normalizeDistance(ScoreRequest req) {
     if (req.totalDistance() == null || req.distanceUnit() == null) {
       return null;
     }
@@ -227,7 +226,7 @@ public interface WodScoreMapper {
    */
   @SuppressWarnings("unused")
   @Named("mapMaxWeightToDisplay")
-  default Double mapMaxWeightToDisplay(WodScore s) {
+  default Double mapMaxWeightToDisplay(Score s) {
     if (s.getMaxWeightKg() == null || s.getWeightDisplayUnit() == null) {
       return null;
     }
@@ -242,7 +241,7 @@ public interface WodScoreMapper {
    */
   @SuppressWarnings("unused")
   @Named("mapTotalLoadToDisplay")
-  default Double mapTotalLoadToDisplay(WodScore s) {
+  default Double mapTotalLoadToDisplay(Score s) {
     if (s.getTotalLoadKg() == null || s.getWeightDisplayUnit() == null) {
       return null;
     }
@@ -257,7 +256,7 @@ public interface WodScoreMapper {
    */
   @SuppressWarnings("unused")
   @Named("mapDistanceToDisplay")
-  default Double mapDistanceToDisplay(WodScore s) {
+  default Double mapDistanceToDisplay(Score s) {
     if (s.getTotalDistanceMeters() == null || s.getDistanceDisplayUnit() == null) {
       return null;
     }

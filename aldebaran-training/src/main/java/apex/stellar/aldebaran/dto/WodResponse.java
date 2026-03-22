@@ -9,6 +9,7 @@ import java.util.Set;
 
 /** DTO representing the full details of a WOD, including its ordered movements. */
 public record WodResponse(
+
     // --- Identification ---
     Long id,
     String title,

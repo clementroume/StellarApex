@@ -87,6 +87,6 @@ public class MovementMuscle {
   public enum MuscleRole {
     AGONIST,
     SYNERGIST,
-    STABILIZER;
+    STABILIZER
   }
 }

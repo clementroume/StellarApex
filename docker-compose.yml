@@ -104,6 +104,9 @@ services:
       antares-auth:
         condition: service_started
     restart: unless-stopped
+    volumes:
+      # For exporter TO BE REMOVED
+      - ./aldebaran-training/src:/app/src
     networks:
       - stellar-net
 

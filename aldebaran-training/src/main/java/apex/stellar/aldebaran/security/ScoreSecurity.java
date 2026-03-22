@@ -1,9 +1,9 @@
 package apex.stellar.aldebaran.security;
 
-import apex.stellar.aldebaran.dto.WodScoreRequest;
+import apex.stellar.aldebaran.dto.ScoreRequest;
 import apex.stellar.aldebaran.model.entities.Wod;
+import apex.stellar.aldebaran.repository.ScoreRepository;
 import apex.stellar.aldebaran.repository.WodRepository;
-import apex.stellar.aldebaran.repository.WodScoreRepository;
 import java.util.Objects;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -26,11 +26,11 @@ import org.springframework.transaction.annotation.Transactional;
  * ResourceNotFoundException} (HTTP 404), rather than triggering a generic {@code
  * AccessDeniedException} (HTTP 403).
  */
-@Component("wodScoreSecurity")
+@Component("scoreSecurity")
 @RequiredArgsConstructor
-public class WodScoreSecurity {
+public class ScoreSecurity {
 
-  private final WodScoreRepository scoreRepository;
+  private final ScoreRepository scoreRepository;
   private final WodRepository wodRepository;
   private final SecurityService securityService;
 
@@ -83,7 +83,7 @@ public class WodScoreSecurity {
    * @param principal The authenticated user context.
    * @return {@code true} if authorized or if the WOD is not found (deferring to 404).
    */
-  public boolean canCreate(WodScoreRequest request, AldebaranUserPrincipal principal) {
+  public boolean canCreate(ScoreRequest request, AldebaranUserPrincipal principal) {
 
     if (securityService.isAdmin(principal)) {
       return true;

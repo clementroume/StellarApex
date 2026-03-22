@@ -9,7 +9,9 @@ import java.util.Map;
  * <p>Encapsulates mappings for categorizing related elements into groups.
  */
 public record MovementReferenceData(
-    // --- Movement Reference Date ---
+    // --- Modalities and Catégories ---
     Map<String, List<String>> categoryGroups,
+    // --- Equipment
     Map<String, List<String>> equipmentGroups,
+    // --- Techniques ---
     Map<String, List<String>> techniqueGroups) {}

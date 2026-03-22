@@ -62,8 +62,10 @@ export interface MovementMuscleResponse {
 }
 
 export interface MovementReferenceData {
-  // --- Movement Reference Date ---
+  // --- Modalities and Categories ---
   categoryGroups: Record<string, string[]>;
+  // -- Equipment ---
   equipmentGroups: Record<string, string[]>;
+  // -- Techniques ---
   techniqueGroups: Record<string, string[]>;
 }

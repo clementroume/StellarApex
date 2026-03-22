@@ -11,6 +11,8 @@ import {APP_ICONS} from '../../../app.config';
 import {provideIcons} from '@ng-icons/core';
 import {ExporterService} from '../../../api/aldebaran/services/exporter.service';
 import {NotificationService} from '../../../core/services/notification.service';
+import {HttpContext} from '@angular/common/http';
+import {BYPASS_LOADER} from '../../../core/interceptors/loading.interceptor';
 
 describe('MuscleListComponent', () => {
   let component: MuscleListComponent;
@@ -24,21 +26,33 @@ describe('MuscleListComponent', () => {
 
   let mockCurrentUserSignal: WritableSignal<any>;
 
-  const mockMuscle = {
-    id: 1,
-    medicalName: 'Pectoralis',
-    commonNameFr: 'Pectoraux',
-    commonNameEn: 'Chest',
-    descriptionFr: 'Desc FR',
-    descriptionEn: 'Desc EN',
-    muscleGroup: 'CHEST'
-  };
+  const mockMuscles = [
+    {
+      id: 2,
+      medicalName: 'Zygomaticus', // Un nom qui commence par Z (devrait être en 2ème après tri)
+      commonNameFr: 'Zygomatique',
+      commonNameEn: 'Zygomaticus',
+      descriptionFr: 'Desc FR Z',
+      descriptionEn: 'Desc EN Z',
+      muscleGroup: 'CHEST'
+    },
+    {
+      id: 1,
+      medicalName: 'Pectoralis', // Un nom qui commence par P (devrait être en 1er après tri)
+      commonNameFr: 'Pectoraux',
+      commonNameEn: 'Chest',
+      descriptionFr: 'Desc FR',
+      descriptionEn: 'Desc EN',
+      muscleGroup: 'CHEST'
+    }
+  ];
 
   beforeEach(async () => {
     mockMuscleService = jasmine.createSpyObj('MuscleService', ['getMuscles', 'getMuscle', 'getReferenceData']) as any;
     mockMuscleService.refreshNeeded$ = new Subject<void>();
-    mockMuscleService.getMuscles.and.returnValue(of([mockMuscle as any]));
-    mockMuscleService.getMuscle.and.returnValue(of(mockMuscle as any));
+    // On simule le retour de l'API avec nos deux muscles
+    mockMuscleService.getMuscles.and.returnValue(of(mockMuscles as any));
+    mockMuscleService.getMuscle.and.returnValue(of(mockMuscles[1] as any)); // Retourne le Pectoralis par défaut pour les détails
     mockMuscleService.getReferenceData.and.returnValue(of({
       muscleGroups: ['CHEST', 'BACK', 'LEGS'],
       muscleRoles: ['AGONIST', 'SYNERGIST']
@@ -72,11 +86,26 @@ describe('MuscleListComponent', () => {
     fixture.detectChanges();
   });
 
-  it('should create the component and load muscles', () => {
+  it('should create the component and load muscles with bypass loader context', () => {
     expect(component).toBeTruthy();
-    expect(mockMuscleService.getMuscles).toHaveBeenCalled();
+
+    // Vérifie que getMuscles a bien été appelé avec le HttpContext pour by-passer le loader global
+    const callArgs = mockMuscleService.getMuscles.calls.mostRecent().args;
+    expect(callArgs[0]).toBeInstanceOf(HttpContext);
+    expect(callArgs[0]?.get(BYPASS_LOADER)).toBeTrue();
+
     expect(mockMuscleService.getReferenceData).toHaveBeenCalled();
-    expect(component.groupedMuscles().get('CHEST')?.length).toBe(1);
+    expect(component.groupedMuscles().get('CHEST')?.length).toBe(2);
+  });
+
+  it('should automatically sort muscles alphabetically by medicalName within their group', () => {
+    const chestGroup = component.groupedMuscles().get('CHEST');
+    expect(chestGroup).toBeDefined();
+
+    // Le mock renvoyait [Zygomaticus, Pectoralis]
+    // Après le calcul du composant, l'ordre devrait être [Pectoralis, Zygomaticus]
+    expect(chestGroup![0].medicalName).toBe('Pectoralis');
+    expect(chestGroup![1].medicalName).toBe('Zygomaticus');
   });
 
   it('should hide edit buttons for a standard user', () => {
@@ -91,19 +120,8 @@ describe('MuscleListComponent', () => {
     expect(component.isAdmin()).toBeTrue();
   });
 
-  it('should cycle sorting correctly within a specific group (asc -> desc -> reset)', () => {
-    component.sortBy('CHEST', 'medicalName');
-    expect(component.sortStates()['CHEST'].column).toBe('medicalName');
-    expect(component.sortStates()['CHEST'].direction).toBe('asc');
-
-    component.sortBy('CHEST', 'medicalName');
-    expect(component.sortStates()['CHEST'].direction).toBe('desc');
-
-    component.sortBy('CHEST', 'medicalName');
-    expect(component.sortStates()['CHEST']).toBeUndefined();
-  });
-
   it('should return the correct localized name and description', () => {
+    // On récupère le Pectoralis (le 1er de la liste triée)
     const muscle = component.groupedMuscles().get('CHEST')![0];
 
     component.activeLang.set('fr');
@@ -118,7 +136,7 @@ describe('MuscleListComponent', () => {
   it('should fetch muscle details and open global modal on openDetails', () => {
     component.openDetails(1);
     expect(mockMuscleService.getMuscle).toHaveBeenCalledWith(1);
-    expect(mockDialogService.openMuscle).toHaveBeenCalledWith(mockMuscle as any);
+    expect(mockDialogService.openMuscle).toHaveBeenCalledWith(mockMuscles[1] as any);
   });
 
   describe('exportCsv', () => {

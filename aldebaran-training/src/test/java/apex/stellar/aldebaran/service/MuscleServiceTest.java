@@ -241,7 +241,7 @@ class MuscleServiceTest {
     // When & Then
     ResourceNotFoundException ex =
         assertThrows(ResourceNotFoundException.class, () -> muscleService.deleteMuscle(id));
-    assertEquals("Muscle not found with id: " + id, ex.getMessage());
+    assertEquals("error.muscle.not.found", ex.getMessageKey());
     verify(muscleRepository, never()).deleteById(any());
   }
 }

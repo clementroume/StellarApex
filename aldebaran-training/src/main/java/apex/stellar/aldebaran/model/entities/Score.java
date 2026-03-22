@@ -29,31 +29,19 @@ import lombok.ToString;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
-/**
- * Represents the result/score of a workout performed by an athlete.
- *
- * <p><b>Storage Philosophy:</b> All metrics are stored in their canonical system units (SI) to
- * ensure comparability (Leaderboards, PRs) regardless of user input preferences.
- *
- * <ul>
- *   <li>Time: Seconds
- *   <li>Mass: Kilograms
- *   <li>Distance: Meters
- * </ul>
- *
- * <p>The {@code *DisplayUnit} fields store the user's preferred unit for rendering the value back.
- */
+/** Represents the result/score of a workout performed by an athlete. */
 @Getter
 @Setter
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Table(name = "wod_scores")
+@Table(name = "scores")
 @EntityListeners(AuditingEntityListener.class)
 @ValidScore
-public class WodScore {
+public class Score {
 
+  // --- Identification ---
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
@@ -66,32 +54,23 @@ public class WodScore {
   @NotNull
   private LocalDate date;
 
-  /** The WOD definition that was performed. */
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "wod_id", nullable = false)
   @ToString.Exclude
   @NotNull
   private Wod wod;
 
-  // -------------------------------------------------------------------------
-  // METRICS (Normalized Storage)
-  // -------------------------------------------------------------------------
-
-  // --- Time (Ref: Seconds) ---
-
-  /** Total time in seconds (Canonical storage). */
+  // --- Time Metrics ---
   @Column(name = "time_seconds")
   @Min(0)
   private Integer timeSeconds;
 
-  /** Preferred display format (Minutes vs. Seconds). */
   @Enumerated(EnumType.STRING)
   @Column(name = "time_display_unit", length = 10)
   @Builder.Default
   private Unit timeDisplayUnit = Unit.SECONDS;
 
-  // --- Rounds & Reps ---
-
+  // --- Volume Metrics ---
   @Column(name = "rounds")
   @Min(0)
   private Integer rounds;
@@ -100,75 +79,86 @@ public class WodScore {
   @Min(0)
   private Integer reps;
 
-  // --- Load (Ref: KG) ---
-
-  /** Heaviest weight lifted (Stored in KG). */
+  // --- Load Metrics ---
   @Column(name = "max_weight_kg")
   @DecimalMin("0.0")
   private Double maxWeightKg;
 
-  /** Total tonnage (Stored in KG). */
   @Column(name = "total_load_kg")
   @DecimalMin("0.0")
   private Double totalLoadKg;
 
-  /** The unit preferred by the user for display (e.g., LBS). */
   @Enumerated(EnumType.STRING)
   @Column(name = "weight_display_unit", length = 10)
   @Builder.Default
   private Unit weightDisplayUnit = Unit.KG;
 
-  // --- Distance (Ref: Meters) ---
-
-  /** Total distance covered (Stored in Meters). */
+  // --- Distance Metrics ---
   @Column(name = "total_distance_meters")
   @DecimalMin("0.0")
   private Double totalDistanceMeters;
 
-  /** The unit preferred by the user for display (e.g., MILES). */
   @Enumerated(EnumType.STRING)
   @Column(name = "distance_display_unit", length = 10)
   @Builder.Default
   private Unit distanceDisplayUnit = Unit.METERS;
 
+  // --- Calories ---
   @Column(name = "total_calories")
   @Min(0)
   private Integer totalCalories;
 
-  // -------------------------------------------------------------------------
-  // STATUS & METADATA
-  // -------------------------------------------------------------------------
-
-  @Column(name = "is_personal_record", nullable = false)
-  @Builder.Default
-  private boolean personalRecord = false;
-
-  @Column(name = "time_capped", nullable = false)
-  @Builder.Default
-  private Boolean timeCapped = false;
-
+  // --- Performance Context ---
   @Enumerated(EnumType.STRING)
   @Column(nullable = false, length = 20)
   @NotNull
   private ScalingLevel scaling;
 
-  @Column(name = "scaling_notes", columnDefinition = "TEXT")
-  private String scalingNotes;
+  @Column(name = "time_capped", nullable = false)
+  @Builder.Default
+  private Boolean timeCapped = false;
 
+  @Column(name = "is_personal_record", nullable = false)
+  @Builder.Default
+  private boolean personalRecord = false;
+
+  // --- Comments and Scaling notes---
   @Column(name = "user_comment", columnDefinition = "TEXT")
   private String userComment;
 
+  @Column(name = "scaling_notes", columnDefinition = "TEXT")
+  private String scalingNotes;
+
+  // --- Audit ---
   @CreatedDate
   @Column(name = "logged_at", nullable = false, updatable = false)
   private LocalDateTime loggedAt;
 
-  /** Scaling level Inner Enum. */
+  // --- Equality and Hashing ---
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    Score score = (Score) o;
+    return id != null && id.equals(score.id);
+  }
+
+  @Override
+  public int hashCode() {
+    return id != null ? id.hashCode() : 0;
+  }
+
+  /** ScalingLevel Inner Enum. */
   @Getter
   @RequiredArgsConstructor
   public enum ScalingLevel {
     RX,
     SCALED,
     ELITE,
-    CUSTOM;
+    CUSTOM
   }
 }

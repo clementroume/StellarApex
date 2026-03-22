@@ -1,5 +1,6 @@
 package apex.stellar.aldebaran.validation;
 
+import apex.stellar.aldebaran.dto.ScoreRequest;
 import jakarta.validation.Constraint;
 import jakarta.validation.Payload;
 import java.lang.annotation.Documented;
@@ -9,7 +10,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Validation annotation for {@link apex.stellar.aldebaran.dto.WodScoreRequest}.
+ * Validation annotation for {@link ScoreRequest}.
  *
  * <p>Validates unit consistency and value plausibility (Sanity Check).
  */

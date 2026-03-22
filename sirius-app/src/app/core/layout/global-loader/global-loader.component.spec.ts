@@ -33,14 +33,14 @@ describe('GlobalLoaderComponent', () => {
   it('should not display the loader when isLoading is false', () => {
     mockIsLoading.set(false);
     fixture.detectChanges();
-    const loaderElement = fixture.nativeElement.querySelector('.loading-spinner');
+    const loaderElement = fixture.nativeElement.querySelector('.progress');
     expect(loaderElement).toBeNull();
   });
 
   it('should display the loader when isLoading is true', () => {
     mockIsLoading.set(true);
     fixture.detectChanges();
-    const loaderElement = fixture.nativeElement.querySelector('.loading-spinner');
+    const loaderElement = fixture.nativeElement.querySelector('.progress');
     expect(loaderElement).not.toBeNull();
   });
 });

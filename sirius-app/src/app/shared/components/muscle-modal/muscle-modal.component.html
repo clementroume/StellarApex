@@ -44,7 +44,7 @@
             {{ 'GLOBAL.DELETE' | translate }}
           </button>
 
-          <a [routerLink]="['/muscles/edit', muscle.id]" (click)="onClose()" class="btn btn-secondary">
+          <a [routerLink]="['/muscles/edit', muscle.id]" (click)="dialogService.closeAll()" class="btn btn-secondary">
             {{ 'GLOBAL.EDIT' | translate }}
           </a>
         }

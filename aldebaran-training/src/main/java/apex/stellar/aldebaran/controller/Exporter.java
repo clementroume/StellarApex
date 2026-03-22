@@ -7,12 +7,16 @@ import apex.stellar.aldebaran.repository.MovementRepository;
 import apex.stellar.aldebaran.repository.MuscleRepository;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVPrinter;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -51,9 +55,13 @@ public class Exporter {
     private final MuscleRepository muscleRepository;
     private final MovementRepository movementRepository;
 
+    private final String projectRoot = System.getProperty("user.dir");
+
     @Transactional(readOnly = true)
     public void exportMuscles() {
-      List<Muscle> muscles = muscleRepository.findAll();
+      List<Muscle> muscles =
+          muscleRepository.findAll(
+              Sort.by(Sort.Direction.ASC, "muscle_group").and(Sort.by(Sort.Direction.ASC, "name")));
       String[] headers = {
         "medical_name",
         "muscle_group",
@@ -64,85 +72,89 @@ public class Exporter {
         "image_url"
       };
 
-      String musclesCsvPath = "src/main/resources/muscles.csv";
-      try (FileWriter out = new FileWriter(musclesCsvPath);
-          CSVPrinter printer =
-              new CSVPrinter(out, CSVFormat.DEFAULT.builder().setHeader(headers).get())) {
+      Path musclesCsvPath = Paths.get(projectRoot, "src", "main", "resources", "muscles.csv");
 
-        for (Muscle m : muscles) {
-          printer.printRecord(
-              m.getMedicalName(),
-              m.getMuscleGroup().name(),
-              m.getCommonNameEn(),
-              m.getCommonNameFr(),
-              m.getDescriptionEn(),
-              m.getDescriptionFr(),
-              m.getImageUrl());
+      try {
+        Files.createDirectories(musclesCsvPath.getParent());
+
+        try (FileWriter out = new FileWriter(musclesCsvPath.toFile());
+            CSVPrinter printer =
+                new CSVPrinter(out, CSVFormat.DEFAULT.builder().setHeader(headers).get())) {
+
+          for (Muscle m : muscles) {
+            printer.printRecord(
+                m.getMedicalName(),
+                m.getMuscleGroup().name(),
+                m.getCommonNameEn(),
+                m.getCommonNameFr(),
+                m.getDescriptionEn(),
+                m.getDescriptionFr(),
+                m.getImageUrl());
+          }
+          log.info(
+              "Successfully exported {} muscles to {}",
+              muscles.size(),
+              musclesCsvPath.toAbsolutePath());
         }
-        log.info("Successfully exported {} muscles to {}", muscles.size(), musclesCsvPath);
-
       } catch (IOException e) {
-        log.error("Failed to export muscles to CSV", e);
+        log.error("Failed to export muscles to CSV at {}", musclesCsvPath.toAbsolutePath(), e);
         throw new RuntimeException("Erreur lors de l'export des muscles", e);
       }
     }
 
     @Transactional(readOnly = true)
     public void exportMovements() {
-      List<Movement> movements = movementRepository.findAll();
+      List<Movement> movements =
+          movementRepository.findAll(
+              Sort.by(Sort.Direction.ASC, "category").and(Sort.by(Sort.Direction.ASC, "name")));
       String[] headers = {
-        "name",
-        "name_abbreviation",
-        "category",
-        "equipment",
-        "techniques",
-        "agonists",
-        "synergists",
-        "stabilizers",
-        "description_en",
-        "description_fr",
-        "coaching_cues_en",
-        "coaching_cues_fr",
-        "video_url",
-        "image_url"
+        "name", "name_abbreviation", "category", "equipment", "techniques",
+        "agonists", "synergists", "stabilizers", "description_en", "description_fr",
+        "coaching_cues_en", "coaching_cues_fr", "video_url", "image_url"
       };
 
-      String movementsCsvPath = "src/main/resources/movements.csv";
-      try (FileWriter out = new FileWriter(movementsCsvPath);
-          CSVPrinter printer =
-              new CSVPrinter(out, CSVFormat.DEFAULT.builder().setHeader(headers).get())) {
+      Path movementsCsvPath = Paths.get(projectRoot, "src", "main", "resources", "movements.csv");
 
-        for (Movement m : movements) {
-          String equipment =
-              m.getEquipment().stream().map(Enum::name).collect(Collectors.joining(", "));
+      try {
+        Files.createDirectories(movementsCsvPath.getParent());
 
-          String techniques =
-              m.getTechniques().stream().map(Enum::name).collect(Collectors.joining(", "));
+        try (FileWriter out = new FileWriter(movementsCsvPath.toFile());
+            CSVPrinter printer =
+                new CSVPrinter(out, CSVFormat.DEFAULT.builder().setHeader(headers).get())) {
 
-          String agonists = filterMusclesByRole(m, MovementMuscle.MuscleRole.AGONIST);
-          String synergists = filterMusclesByRole(m, MovementMuscle.MuscleRole.SYNERGIST);
-          String stabilizers = filterMusclesByRole(m, MovementMuscle.MuscleRole.STABILIZER);
+          for (Movement m : movements) {
+            String equipment =
+                m.getEquipment().stream().map(Enum::name).collect(Collectors.joining(", "));
+            String techniques =
+                m.getTechniques().stream().map(Enum::name).collect(Collectors.joining(", "));
 
-          printer.printRecord(
-              m.getName(),
-              m.getNameAbbreviation(),
-              m.getCategory(),
-              equipment,
-              techniques,
-              agonists,
-              synergists,
-              stabilizers,
-              m.getDescriptionEn(),
-              m.getDescriptionFr(),
-              m.getCoachingCuesEn(),
-              m.getCoachingCuesFr(),
-              m.getVideoUrl(),
-              m.getImageUrl());
+            String agonists = filterMusclesByRole(m, MovementMuscle.MuscleRole.AGONIST);
+            String synergists = filterMusclesByRole(m, MovementMuscle.MuscleRole.SYNERGIST);
+            String stabilizers = filterMusclesByRole(m, MovementMuscle.MuscleRole.STABILIZER);
+
+            printer.printRecord(
+                m.getName(),
+                m.getNameAbbreviation(),
+                m.getCategory(),
+                equipment,
+                techniques,
+                agonists,
+                synergists,
+                stabilizers,
+                m.getDescriptionEn(),
+                m.getDescriptionFr(),
+                m.getCoachingCuesEn(),
+                m.getCoachingCuesFr(),
+                m.getVideoUrl(),
+                m.getImageUrl());
+          }
+          log.info(
+              "Successfully exported {} movements to {}",
+              movements.size(),
+              movementsCsvPath.toAbsolutePath());
         }
-        log.info("Successfully exported {} movements to {}", movements.size(), movementsCsvPath);
-
       } catch (IOException e) {
-        log.error("Failed to export movements to CSV", e);
+        log.error("Failed to export movements to CSV at {}", movementsCsvPath.toAbsolutePath(), e);
         throw new RuntimeException("Erreur lors de l'export des mouvements", e);
       }
     }

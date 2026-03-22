@@ -14,6 +14,7 @@ import {
   heroArrowRightOnRectangle,
   heroBars3,
   heroChevronDown,
+  heroChevronRight,
   heroCog8Tooth,
   heroDocumentArrowDown,
   heroEnvelope,
@@ -33,8 +34,12 @@ import {
 } from '@ng-icons/heroicons/outline';
 import {
   hugeBodyPartMuscle,
+  hugeBodyPartSixPack,
+  hugeCardiogram02,
   hugeCircleArrowLeft02,
   hugeDashboardSpeed01,
+  hugeDumbbell01,
+  hugeGymnastic,
   hugeKettlebell,
   hugeWorkoutStretching
 } from '@ng-icons/huge-icons';
@@ -50,6 +55,7 @@ export const APP_ICONS = {
   heroSun,
   heroMoon,
   heroChevronDown,
+  heroChevronRight,
   heroMagnifyingGlass,
   heroArrowLeft,
   heroPlus,
@@ -64,7 +70,11 @@ export const APP_ICONS = {
   heroArrowRightOnRectangle,
   hugeDashboardSpeed01,
   hugeCircleArrowLeft02,
-  heroDocumentArrowDown
+  heroDocumentArrowDown,
+  hugeGymnastic,
+  hugeCardiogram02,
+  hugeDumbbell01,
+  hugeBodyPartSixPack
 };
 
 export const appConfig: ApplicationConfig = {

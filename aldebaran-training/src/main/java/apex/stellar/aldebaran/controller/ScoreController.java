@@ -1,11 +1,12 @@
 package apex.stellar.aldebaran.controller;
 
 import apex.stellar.aldebaran.dto.ScoreComparisonResponse;
-import apex.stellar.aldebaran.dto.WodScoreReferenceData;
-import apex.stellar.aldebaran.dto.WodScoreRequest;
-import apex.stellar.aldebaran.dto.WodScoreResponse;
-import apex.stellar.aldebaran.model.entities.WodScore.ScalingLevel;
-import apex.stellar.aldebaran.service.WodScoreService;
+import apex.stellar.aldebaran.dto.ScoreReferenceData;
+import apex.stellar.aldebaran.dto.ScoreRequest;
+import apex.stellar.aldebaran.dto.ScoreResponse;
+import apex.stellar.aldebaran.model.entities.Score.ScalingLevel;
+import apex.stellar.aldebaran.security.ScoreSecurity;
+import apex.stellar.aldebaran.service.ScoreService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -28,15 +29,15 @@ import org.springframework.web.bind.annotation.RestController;
 /**
  * REST Controller for managing Athlete Performance (Scores).
  *
- * <p>Secured by {@link apex.stellar.aldebaran.security.WodScoreSecurity}.
+ * <p>Secured by {@link ScoreSecurity}.
  */
 @RestController
 @RequestMapping("/aldebaran/scores")
 @RequiredArgsConstructor
 @Tag(name = "Performance", description = "Athlete score logging and history")
-public class WodScoreController {
+public class ScoreController {
 
-  private final WodScoreService scoreService;
+  private final ScoreService scoreService;
 
   /**
    * Retrieves the score history for the currently authenticated user.
@@ -46,7 +47,7 @@ public class WodScoreController {
    * @return A page of the user's scores.
    */
   @GetMapping("/me")
-  public ResponseEntity<Slice<WodScoreResponse>> getMyScores(
+  public ResponseEntity<Slice<ScoreResponse>> getMyScores(
       @RequestParam(required = false) Long wodId, @PageableDefault(size = 20) Pageable pageable) {
 
     return ResponseEntity.ok(scoreService.getMyScores(wodId, pageable));
@@ -67,8 +68,8 @@ public class WodScoreController {
    * @return The created score.
    */
   @PostMapping
-  @PreAuthorize("@wodScoreSecurity.canCreate(#request, principal)")
-  public ResponseEntity<WodScoreResponse> logScore(@Valid @RequestBody WodScoreRequest request) {
+  @PreAuthorize("@scoreSecurity.canCreate(#request, principal)")
+  public ResponseEntity<ScoreResponse> logScore(@Valid @RequestBody ScoreRequest request) {
 
     return ResponseEntity.status(HttpStatus.CREATED).body(scoreService.logScore(request));
   }
@@ -89,9 +90,9 @@ public class WodScoreController {
    * @return The updated score.
    */
   @PutMapping("/{id}")
-  @PreAuthorize("@wodScoreSecurity.canModify(#id, principal)")
-  public ResponseEntity<WodScoreResponse> updateScore(
-      @PathVariable Long id, @Valid @RequestBody WodScoreRequest request) {
+  @PreAuthorize("@scoreSecurity.canModify(#id, principal)")
+  public ResponseEntity<ScoreResponse> updateScore(
+      @PathVariable Long id, @Valid @RequestBody ScoreRequest request) {
 
     return ResponseEntity.ok(scoreService.updateScore(id, request));
   }
@@ -105,7 +106,7 @@ public class WodScoreController {
    * @return HTTP 204 No Content.
    */
   @DeleteMapping("/{id}")
-  @PreAuthorize("@wodScoreSecurity.canModify(#id, principal)")
+  @PreAuthorize("@scoreSecurity.canModify(#id, principal)")
   public ResponseEntity<Void> deleteScore(@PathVariable Long id) {
 
     scoreService.deleteScore(id);
@@ -119,7 +120,7 @@ public class WodScoreController {
    * @return The comparison metrics.
    */
   @GetMapping("/{id}/compare")
-  @PreAuthorize("@wodScoreSecurity.canView(#id, principal)")
+  @PreAuthorize("@scoreSecurity.canView(#id, principal)")
   public ResponseEntity<ScoreComparisonResponse> compareScore(@PathVariable Long id) {
 
     return ResponseEntity.ok(scoreService.compareScore(id));
@@ -137,7 +138,7 @@ public class WodScoreController {
    */
   @GetMapping("/leaderboard/{id}")
   @PreAuthorize("@wodSecurity.canRead(#id, principal)")
-  public ResponseEntity<Slice<WodScoreResponse>> getLeaderboard(
+  public ResponseEntity<Slice<ScoreResponse>> getLeaderboard(
       @PathVariable Long id,
       @RequestParam(defaultValue = "RX") ScalingLevel scaling,
       @PageableDefault(size = 20) Pageable pageable) {
@@ -147,7 +148,7 @@ public class WodScoreController {
 
   /** Retrieves reference data (scaling levels) for score submission forms. */
   @GetMapping("/reference-data")
-  public ResponseEntity<WodScoreReferenceData> getReferenceData() {
+  public ResponseEntity<ScoreReferenceData> getReferenceData() {
 
     return ResponseEntity.ok(scoreService.getReferenceData());
   }

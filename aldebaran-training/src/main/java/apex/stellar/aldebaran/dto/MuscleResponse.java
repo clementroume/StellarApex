@@ -2,12 +2,7 @@ package apex.stellar.aldebaran.dto;
 
 import apex.stellar.aldebaran.model.entities.Muscle.MuscleGroup;
 
-/**
- * DTO representing anatomical muscle reference data.
- *
- * <p>This object is used to expose the static anatomy catalog to clients, featuring localized names
- * and descriptions.
- */
+/** DTO representing anatomical muscle reference data. */
 public record MuscleResponse(
 
     // --- Identification ---
