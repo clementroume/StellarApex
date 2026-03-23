@@ -1,129 +1,129 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xmlns="http://maven.apache.org/POM/4.0.0"
-  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
-  <artifactId>bellatrix</artifactId>
-  <build>
-    <plugins>
-      <plugin>
-        <artifactId>maven-compiler-plugin</artifactId>
-        <configuration>
-          <annotationProcessorPaths>
-            <path>
-              <artifactId>lombok</artifactId>
-              <groupId>org.projectlombok</groupId>
-              <version>${lombok.version}</version>
-            </path>
-          </annotationProcessorPaths>
-        </configuration>
-        <groupId>org.apache.maven.plugins</groupId>
-      </plugin>
+         xmlns="http://maven.apache.org/POM/4.0.0"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <artifactId>bellatrix</artifactId>
+    <build>
+        <plugins>
+            <plugin>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <annotationProcessorPaths>
+                        <path>
+                            <artifactId>lombok</artifactId>
+                            <groupId>org.projectlombok</groupId>
+                            <version>${lombok.version}</version>
+                        </path>
+                    </annotationProcessorPaths>
+                </configuration>
+                <groupId>org.apache.maven.plugins</groupId>
+            </plugin>
 
-      <plugin>
-        <artifactId>spring-boot-maven-plugin</artifactId>
-        <configuration>
-          <excludes>
-            <exclude>
-              <artifactId>lombok</artifactId>
-              <groupId>org.projectlombok</groupId>
-            </exclude>
-          </excludes>
-          <layers>
-            <enabled>true</enabled>
-          </layers>
-        </configuration>
+            <plugin>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+                <configuration>
+                    <excludes>
+                        <exclude>
+                            <artifactId>lombok</artifactId>
+                            <groupId>org.projectlombok</groupId>
+                        </exclude>
+                    </excludes>
+                    <layers>
+                        <enabled>true</enabled>
+                    </layers>
+                </configuration>
+                <groupId>org.springframework.boot</groupId>
+            </plugin>
+
+            <plugin>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>properties</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <groupId>org.apache.maven.plugins</groupId>
+            </plugin>
+
+            <plugin>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <!--suppress UnresolvedMavenProperty -->
+                    <argLine>-javaagent:${org.mockito:mockito-core:jar} -Xshare:off</argLine>
+                </configuration>
+                <groupId>org.apache.maven.plugins</groupId>
+            </plugin>
+        </plugins>
+    </build>
+
+    <dependencies>
+        <dependency>
+            <artifactId>spring-boot-starter-webmvc</artifactId>
+            <groupId>org.springframework.boot</groupId>
+        </dependency>
+        <dependency>
+            <artifactId>spring-boot-starter-security</artifactId>
+            <groupId>org.springframework.boot</groupId>
+        </dependency>
+        <dependency>
+            <artifactId>spring-boot-starter-actuator</artifactId>
+            <groupId>org.springframework.boot</groupId>
+        </dependency>
+        <dependency>
+            <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+            <groupId>org.springdoc</groupId>
+            <version>${springdoc.version}</version>
+        </dependency>
+
+        <dependency>
+            <artifactId>lombok</artifactId>
+            <groupId>org.projectlombok</groupId>
+            <optional>true</optional>
+        </dependency>
+
+        <dependency>
+            <artifactId>spring-boot-starter-opentelemetry</artifactId>
+            <groupId>org.springframework.boot</groupId>
+        </dependency>
+        <dependency>
+            <artifactId>opentelemetry-logback-appender-1.0</artifactId>
+            <groupId>io.opentelemetry.instrumentation</groupId>
+            <version>2.25.0-alpha</version>
+        </dependency>
+
+        <dependency>
+            <artifactId>spring-boot-starter-webmvc-test</artifactId>
+            <groupId>org.springframework.boot</groupId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <artifactId>wiremock-standalone</artifactId>
+            <groupId>org.wiremock</groupId>
+            <scope>test</scope>
+            <version>3.13.2</version>
+        </dependency>
+    </dependencies>
+
+    <description>Bellatrix Swagger Service</description>
+    <groupId>apex.stellar</groupId>
+    <modelVersion>4.0.0</modelVersion>
+
+    <name>bellatrix-swagger</name>
+
+    <parent>
+        <artifactId>spring-boot-starter-parent</artifactId>
         <groupId>org.springframework.boot</groupId>
-      </plugin>
+        <relativePath/>
+        <version>4.0.4</version>
+    </parent>
 
-      <plugin>
-        <artifactId>maven-dependency-plugin</artifactId>
-        <executions>
-          <execution>
-            <goals>
-              <goal>properties</goal>
-            </goals>
-          </execution>
-        </executions>
-        <groupId>org.apache.maven.plugins</groupId>
-      </plugin>
+    <properties>
+        <java.version>25</java.version>
+        <springdoc.version>3.0.2</springdoc.version>
+    </properties>
 
-      <plugin>
-        <artifactId>maven-surefire-plugin</artifactId>
-        <configuration>
-          <!--suppress UnresolvedMavenProperty -->
-          <argLine>-javaagent:${org.mockito:mockito-core:jar} -Xshare:off</argLine>
-        </configuration>
-        <groupId>org.apache.maven.plugins</groupId>
-      </plugin>
-    </plugins>
-  </build>
-
-  <dependencies>
-    <dependency>
-      <artifactId>spring-boot-starter-webmvc</artifactId>
-      <groupId>org.springframework.boot</groupId>
-    </dependency>
-    <dependency>
-      <artifactId>spring-boot-starter-security</artifactId>
-      <groupId>org.springframework.boot</groupId>
-    </dependency>
-    <dependency>
-      <artifactId>spring-boot-starter-actuator</artifactId>
-      <groupId>org.springframework.boot</groupId>
-    </dependency>
-    <dependency>
-      <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
-      <groupId>org.springdoc</groupId>
-      <version>${springdoc.version}</version>
-    </dependency>
-
-    <dependency>
-      <artifactId>lombok</artifactId>
-      <groupId>org.projectlombok</groupId>
-      <optional>true</optional>
-    </dependency>
-
-    <dependency>
-      <artifactId>spring-boot-starter-opentelemetry</artifactId>
-      <groupId>org.springframework.boot</groupId>
-    </dependency>
-    <dependency>
-      <artifactId>opentelemetry-logback-appender-1.0</artifactId>
-      <groupId>io.opentelemetry.instrumentation</groupId>
-      <version>2.26.0-alpha</version>
-    </dependency>
-
-    <dependency>
-      <artifactId>spring-boot-starter-webmvc-test</artifactId>
-      <groupId>org.springframework.boot</groupId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <artifactId>wiremock-standalone</artifactId>
-      <groupId>org.wiremock</groupId>
-      <scope>test</scope>
-      <version>3.13.2</version>
-    </dependency>
-  </dependencies>
-
-  <description>Bellatrix Swagger Service</description>
-  <groupId>apex.stellar</groupId>
-  <modelVersion>4.0.0</modelVersion>
-
-  <name>bellatrix-swagger</name>
-
-  <parent>
-    <artifactId>spring-boot-starter-parent</artifactId>
-    <groupId>org.springframework.boot</groupId>
-    <relativePath/>
-    <version>4.0.4</version>
-  </parent>
-
-  <properties>
-    <java.version>25</java.version>
-    <springdoc.version>3.0.2</springdoc.version>
-  </properties>
-
-  <version>1.0.0</version>
+    <version>1.0.0</version>
 
 </project>
