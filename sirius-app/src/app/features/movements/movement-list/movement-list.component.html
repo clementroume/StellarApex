@@ -1,117 +1,86 @@
 <div class="container mx-auto pb-12">
-  <div class="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4 mt-8">
+  <div class="mt-8 mb-6 text-center md:text-left">
     <h1 class="text-3xl font-bold">{{ 'MOVEMENT.TITLE' | translate }}</h1>
-
-    <div class="flex items-center gap-4 w-full sm:w-auto">
-      <div class="input input-bordered flex items-center gap-2 w-full sm:w-64">
-        <input type="text" class="grow"
-               [placeholder]="'MOVEMENT.ACTIONS.SEARCH' | translate"
-               (input)="onSearchChange($event)"/>
-        <ng-icon name="heroMagnifyingGlass" class="opacity-70"></ng-icon>
-      </div>
-
-      @if (isAdmin()) {
-        <div class="flex gap-2">
-          <button class="btn btn-outline btn-secondary whitespace-nowrap"
-                  (click)="exportCsv()"
-                  [disabled]="isExporting()">
-            <ng-icon name="heroDocumentArrowDown"></ng-icon>
-            {{ isExporting() ? '...' : ('EXPORT.EXPORT_CSV' | translate) }}
-          </button>
-
-          <a routerLink="/movements/new" class="btn btn-secondary whitespace-nowrap">
-            <ng-icon name="heroPlus"></ng-icon>
-            {{ 'MOVEMENT.ACTIONS.ADD' | translate }}
-          </a>
-        </div>
-      }
-    </div>
   </div>
 
-  @if (isLoading() && movements().length === 0) {
-    <div class="flex justify-center p-12">
-      <span class="loading loading-spinner loading-lg text-primary"></span>
-    </div>
-  } @else if (movements().length === 0) {
-    <div class="text-center py-12 text-base-content/50 bg-base-100 rounded-box shadow">
-      {{ 'MOVEMENT.MESSAGES.EMPTY_LIST' | translate }}
-    </div>
-  } @else {
+  <app-search-input
+    [placeholder]="'MOVEMENT.ACTIONS.SEARCH' | translate"
+    [value]="searchQuery()"
+    (valueChange)="onSearchChange($event)">
+  </app-search-input>
 
-    <div class="flex justify-center mb-10 w-full">
-      <div role="tablist"
-           class="tabs tabs-box flex-wrap justify-center gap-2">
+  <app-list-state
+    [isLoading]="isLoading()"
+    [isRawEmpty]="rawMovements().length === 0"
+    [isFilteredEmpty]="filteredMovements().length === 0"
+    [emptyMessage]="'MOVEMENT.MESSAGES.EMPTY_LIST' | translate"
+    [emptySearchMessage]="'MOVEMENT.MESSAGES.EMPTY_LIST_SEARCH' | translate: {name: searchQuery()}">
+
+    <div class="flex justify-center mb-10 w-full px-2 sm:px-0">
+      <div role="tablist" class="tabs tabs-box grid grid-cols-2 md:grid-cols-4 gap-2 w-full max-w-4xl p-1">
         @for (modality of modalityKeys(); track modality) {
           <a role="tab"
-             class="tab h-10 px-4 gap-2 transition-all duration-300 rounded-lg whitespace-nowrap"
+             class="tab h-10 flex items-center justify-center gap-1 sm:gap-2 rounded w-full border border-neutral bg-base-100 "
              [class.tab-active]="activeTab() === modality"
-             [class.opacity-70]="activeTab() !== modality"
-             [class.hover:opacity-100]="activeTab() !== modality"
-             [class.text-accent]="activeTab() === modality"
+             [class.text-white]="activeTab() != modality"
+             [class.text-secondary]="activeTab() === modality"
+             [class.border-secondary]="activeTab() === modality"
              (click)="activeTab.set(modality)">
 
-            <ng-icon [name]="getModalityIcon(modality)" class="text-xl"></ng-icon>
-            {{ 'MOVEMENT.MODALITIES.' + modality | translate }}
+            <ng-icon [name]="getModalityIcon(modality)" size="1.5rem" color="var(--color-neutral)"></ng-icon>
+
+            <span class="truncate text-sm">{{ 'MOVEMENT.MODALITIES.' + modality | translate }}</span>
           </a>
         }
       </div>
     </div>
 
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
-      @for (category of categoryGroups()[activeTab()]; track category) {
-        @if (movementsByCategory().get(category); as categoryMovements) {
-          <div class="collapse collapse-arrow bg-base-100 shadow-sm border border-base-200">
-            <input type="checkbox"/>
+    <app-list-grid [items]="populatedCategories()">
 
-            <div class="collapse-title text-xl font-medium flex items-center gap-3">
-              {{ 'MOVEMENT.CATEGORIES.' + category | translate }}
-              <div class="badge badge-soft badge-accent">{{ categoryMovements.length }}</div>
-            </div>
+      <ng-template let-category>
+        <div class="collapse collapse-arrow bg-base-100 border border-neutral">
 
-            <div class="collapse-content p-0">
-              <ul class="divide-y divide-base-200">
-                @for (movement of categoryMovements; track movement.id) {
-                  <li>
-                    <button type="button"
-                            class="w-full text-left flex items-center justify-between p-4 hover:bg-base-200/50 cursor-pointer transition-colors group"
-                            (click)="openDetails(movement.id)">
+          <input type="checkbox"
+                 [checked]="expandedCategories().has(category)"
+                 (change)="onCategoryToggle(category, $event)"/>
 
-                      <div class="flex items-center gap-4">
-                        <div class="avatar placeholder">
-                          <div
-                            class="mask mask-squircle w-12 h-12 bg-base-200 text-base-content/50 flex items-center justify-center">
-                            @if (movement.imageUrl) {
-                              <img [ngSrc]="movement.imageUrl" [alt]="movement.name" width="48" height="48"
-                                   class="object-cover"/>
-                            } @else {
-                              <span class="text-xl font-bold">{{ movement.name.charAt(0) | uppercase }}</span>
-                            }
-                          </div>
-                        </div>
-
-                        <div>
-                          <div class="font-semibold text-lg flex items-center gap-2">
-                            {{ movement.name }}
-                            @if (movement.nameAbbreviation) {
-                              <span
-                                class="badge badge-ghost badge-sm font-normal">{{ movement.nameAbbreviation }}</span>
-                            }
-                          </div>
-                        </div>
-                      </div>
-
-                      <div class="text-base-content/30 group-hover:text-primary transition-colors pr-2">
-                        <ng-icon name="heroChevronRight" size="1.5rem"></ng-icon>
-                      </div>
-
-                    </button>
-                  </li>
-                }
-              </ul>
-            </div>
+          <div class="collapse-title text-xl font-medium flex items-center gap-3">
+            {{ 'MOVEMENT.CATEGORIES.' + category | translate }}
+            <div class="badge badge-soft badge-accent">{{ movementsByCategory().get(category)?.length }}</div>
           </div>
-        }
-      }
+
+          <div class="collapse-content p-0">
+            <ul class="divide-y divide-base-200">
+              @for (movement of movementsByCategory().get(category); track movement.id) {
+                <app-list-item
+                  [title]="movement.name"
+                  [badge]="movement.nameAbbreviation"
+                  [imageUrl]="movement.imageUrl"
+                  [link]="['/movements', movement.id]">
+                </app-list-item>
+              }
+            </ul>
+          </div>
+
+        </div>
+      </ng-template>
+
+    </app-list-grid>
+  </app-list-state>
+
+  @if (isAdmin()) {
+    <div class="pt-8 flex flex-col md:flex-row justify-end gap-4">
+      <button class="btn btn-outline btn-secondary min-w-36"
+              (click)="exportCsv()"
+              [disabled]="isExporting()">
+        <ng-icon name="heroDocumentArrowDown" size="1.5rem"></ng-icon>
+        {{ isExporting() ? '...' : ('EXPORT.EXPORT_CSV' | translate) }}
+      </button>
+
+      <a routerLink="/movements/new" class="btn btn-secondary min-w-36">
+        <ng-icon name="heroPlus" size="1.5rem"></ng-icon>
+        {{ 'MOVEMENT.ACTIONS.ADD' | translate }}
+      </a>
     </div>
   }
 </div>

@@ -25,7 +25,9 @@
     "DELETE": "Delete",
     "CONFIRM_DELETE": "Are you absolutely sure you want to delete \"{{name}}\" ?",
     "DELETE_SUCCESS": "Element deleted successfully.",
-    "DELETE_ERROR": "An error occurred while deleting."
+    "DELETE_ERROR": "An error occurred while deleting.",
+    "VIDEO": "Video",
+    "NO_VIDEO": "No video"
   },
   "NAVBAR": {
     "DASHBOARD": "Dashboard",
@@ -90,7 +92,8 @@
     },
     "ACTIONS": {
       "ADD": "Add a muscle",
-      "SELECT_GROUP": "Select a group"
+      "SELECT_GROUP": "Select a group",
+      "SEARCH": "Search muscles..."
     },
     "SECTIONS": {
       "COMMON_NAMES": "Common Names",
@@ -116,7 +119,9 @@
       "IMAGE_URL": "https://..."
     },
     "MESSAGES": {
+      "NOT_FOUND": "Muscle not found.",
       "EMPTY_LIST": "No muscle found.",
+      "EMPTY_LIST_SEARCH": "No muscle found for \"{{name}}\".",
       "ERROR_MEDICAL_NAME": "This field is required and must be unique.",
       "SUCCESS_CREATE": "New muscle created successfully.",
       "SUCCESS_UPDATE": "Muscle updated successfully.",
@@ -180,13 +185,17 @@
       "COACHING_CUES_EN": "Ex: Keep your chest up..."
     },
     "MESSAGES": {
+      "NOT_FOUND": "Movement not found.",
       "EMPTY_LIST": "No movements found.",
+      "EMPTY_LIST_SEARCH": "No movement found for \"{{name}}\".",
       "NO_CUES": "No coaching cues provided.",
       "NO_MUSCLES": "No muscles specified.",
       "NO_MUSCLES_FORM": "No muscles associated. Click Add.",
       "SUCCESS_CREATE": "Movement created successfully!",
       "SUCCESS_UPDATE": "Movement updated successfully!",
-      "DELETE_CONFLICT": "Impossible to delete \"{{name}}\" because it is already used in a WOD."
+      "DELETE_CONFLICT": "Impossible to delete \"{{name}}\" because it is already used in a WOD.",
+      "NO_EQUIPMENT": "No equipment specified.",
+      "NO_TECHNIQUES": "No techniques specified."
     },
     "MODALITIES": {
       "WEIGHTLIFTING": "Weightlifting",

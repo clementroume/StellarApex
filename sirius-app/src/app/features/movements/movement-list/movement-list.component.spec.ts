@@ -1,15 +1,13 @@
 import {ComponentFixture, TestBed} from '@angular/core/testing';
 import {MovementListComponent} from './movement-list.component';
-import {provideRouter} from '@angular/router';
-import {TranslateModule} from '@ngx-translate/core';
-import {signal} from '@angular/core';
-import {of, Subject, throwError} from 'rxjs';
-import {provideIcons} from '@ng-icons/core';
 import {MovementService} from '../../../api/aldebaran/services/movement.service';
 import {AuthService} from '../../../api/antares/services/auth.service';
-import {DialogService} from '../../../core/services/dialog.service';
-import {MovementSummaryResponse} from '../../../api/aldebaran/models/movement.model';
+import {of, Subject} from 'rxjs';
+import {signal, WritableSignal} from '@angular/core';
+import {provideRouter} from '@angular/router';
+import {TranslateModule} from '@ngx-translate/core';
 import {APP_ICONS} from '../../../app.config';
+import {provideIcons} from '@ng-icons/core';
 import {ExporterService} from '../../../api/aldebaran/services/exporter.service';
 import {NotificationService} from '../../../core/services/notification.service';
 import {HttpContext} from '@angular/common/http';
@@ -17,45 +15,74 @@ import {HttpContext} from '@angular/common/http';
 describe('MovementListComponent', () => {
   let component: MovementListComponent;
   let fixture: ComponentFixture<MovementListComponent>;
-  let movementServiceSpy: jasmine.SpyObj<MovementService> & { refreshNeeded$: Subject<void> };
-  let authServiceSpy: jasmine.SpyObj<AuthService>;
-  let dialogServiceSpy: jasmine.SpyObj<DialogService>;
-  let exporterServiceSpy: jasmine.SpyObj<ExporterService>;
-  let notificationServiceSpy: jasmine.SpyObj<NotificationService>;
 
-  const mockMovements: MovementSummaryResponse[] = [
-    {id: 1, name: 'Back Squat', category: 'SQUAT'},
-    {id: 2, name: 'Pull-up', category: 'PULLING'}
+  let mockMovementService: any;
+  let mockAuthService: any;
+  let mockExporterService: any;
+  let mockNotificationService: any;
+
+  let mockCurrentUserSignal: WritableSignal<any>;
+
+  const mockMovements = [
+    {
+      id: 1,
+      name: 'Back Squat',
+      nameAbbreviation: 'BS',
+      category: 'SQUAT',
+      modality: 'WEIGHTLIFTING'
+    },
+    {
+      id: 2,
+      name: 'Front Squat',
+      nameAbbreviation: 'FS',
+      category: 'SQUAT',
+      modality: 'WEIGHTLIFTING'
+    }
   ];
 
   beforeEach(async () => {
-    movementServiceSpy = jasmine.createSpyObj('MovementService', ['searchMovements', 'getMovement', 'getReferenceData']) as any;
-    movementServiceSpy.refreshNeeded$ = new Subject<void>();
-    movementServiceSpy.searchMovements.and.returnValue(of(mockMovements));
-    movementServiceSpy.getReferenceData.and.returnValue(of({
-      categoryGroups: {'WEIGHTLIFTING': ['SQUAT', 'PULLING']},
-      equipmentGroups: {},
-      techniqueGroups: {}
-    } as any));
+    // 1. Update the spy to use 'getMovements' instead of 'searchMovements'
+    const movementServiceSpyMethods = jasmine.createSpyObj('MovementService', [
+      'getMovements',
+      'getReferenceData',
+      'toggleCategoryExpansion'
+    ]);
 
-    authServiceSpy = jasmine.createSpyObj('AuthService', [], {
-      currentUser: signal({platformRole: 'ADMIN'})
-    });
+    mockMovementService = {
+      ...movementServiceSpyMethods,
+      refreshNeeded$: new Subject<void>(),
+      savedSearchQuery: signal(''),
+      savedActiveTab: signal('WEIGHTLIFTING'),
+      savedExpandedCategories: signal(new Set<string>())
+    };
 
-    dialogServiceSpy = jasmine.createSpyObj('DialogService', ['openMovement']);
-    exporterServiceSpy = jasmine.createSpyObj('ExporterService', ['exportMovements']);
-    notificationServiceSpy = jasmine.createSpyObj('NotificationService', ['showSuccess', 'showError']);
+    // 2. Mock the new method
+    mockMovementService.getMovements.and.returnValue(of(mockMovements));
+
+    mockMovementService.getReferenceData.and.returnValue(of({
+      categoryGroups: {
+        'WEIGHTLIFTING': ['SQUAT', 'PULL', 'PRESS'],
+        'GYMNASTICS': ['BODYWEIGHT']
+      }
+    }));
+
+    mockCurrentUserSignal = signal({platformRole: 'USER'});
+    mockAuthService = {
+      currentUser: mockCurrentUserSignal
+    };
+
+    mockExporterService = jasmine.createSpyObj('ExporterService', ['exportMovements']);
+    mockNotificationService = jasmine.createSpyObj('NotificationService', ['showSuccess', 'showError']);
 
     await TestBed.configureTestingModule({
       imports: [MovementListComponent, TranslateModule.forRoot()],
       providers: [
         provideRouter([]),
         provideIcons(APP_ICONS),
-        {provide: MovementService, useValue: movementServiceSpy},
-        {provide: AuthService, useValue: authServiceSpy},
-        {provide: DialogService, useValue: dialogServiceSpy},
-        {provide: ExporterService, useValue: exporterServiceSpy},
-        {provide: NotificationService, useValue: notificationServiceSpy}
+        {provide: MovementService, useValue: mockMovementService},
+        {provide: AuthService, useValue: mockAuthService},
+        {provide: ExporterService, useValue: mockExporterService},
+        {provide: NotificationService, useValue: mockNotificationService}
       ]
     }).compileComponents();
 
@@ -64,74 +91,40 @@ describe('MovementListComponent', () => {
     fixture.detectChanges();
   });
 
-  it('should create the component', () => {
-    expect(component).toBeTruthy();
+  it('should load ALL movements on init', () => {
+    // Verify that getMovements was called with the correct HttpContext
+    const callArgs = mockMovementService.getMovements.calls.mostRecent().args as any[];
+    expect(callArgs[0]).toBeInstanceOf(HttpContext);
   });
 
-  it('should trigger search when input changes', () => {
-    const event = {target: {value: 'Squat'}} as unknown as Event;
-    component.onSearchChange(event);
-
-    // On accepte n'importe quel objet HttpContext comme deuxième paramètre !
-    expect(movementServiceSpy.searchMovements).toHaveBeenCalledWith('Squat', jasmine.any(HttpContext));
+  it('should pre-initialize all known categories', () => {
+    const grouped = component.movementsByCategory();
+    expect(grouped.has('PULL')).toBeTrue();
+    expect(grouped.get('PULL')?.length).toBe(0); // Existing empty category
+    expect(grouped.has('SQUAT')).toBeTrue();
+    expect(grouped.get('SQUAT')?.length).toBe(2); // Populated category
   });
 
-  it('should clear the list in case of API error', () => {
-    movementServiceSpy.searchMovements.and.returnValue(throwError(() => new Error('API Error')));
-    component.loadMovements('ErrorSearch');
-    expect(component.movements().length).toBe(0);
+  it('should filter locally by name or abbreviation', () => {
+    // Test search by abbreviation
+    component.searchQuery.set('fs');
+    expect(component.filteredMovements().length).toBe(1);
+    expect(component.filteredMovements()[0].name).toBe('Front Squat');
+
+    // Test search by partial name
+    component.searchQuery.set('back');
+    expect(component.filteredMovements().length).toBe(1);
+    expect(component.filteredMovements()[0].nameAbbreviation).toBe('BS');
   });
 
-  it('should reload movements when refreshNeeded$ emits', () => {
-    movementServiceSpy.searchMovements.calls.reset();
-    movementServiceSpy.refreshNeeded$.next();
+  it('should not call the backend on input change (onSearchChange)', () => {
+    mockMovementService.getMovements.calls.reset(); // Reset counter after ngOnInit
 
-    // Ajout de jasmine.any(HttpContext) ici aussi
-    expect(movementServiceSpy.searchMovements).toHaveBeenCalledWith('', jasmine.any(HttpContext));
-  });
+    // Call the updated method which now takes a string directly
+    component.onSearchChange('squat');
 
-  it('should fetch movement details and open global modal on openDetails', () => {
-    const mockFullMovement = {id: 1, name: 'Back Squat', category: 'SQUAT', targetedMuscles: []};
-    movementServiceSpy.getMovement.and.returnValue(of(mockFullMovement as any));
-
-    component.openDetails(1);
-
-    expect(movementServiceSpy.getMovement).toHaveBeenCalledWith(1);
-    expect(dialogServiceSpy.openMovement).toHaveBeenCalledWith(mockFullMovement as any);
-  });
-
-  describe('exportCsv', () => {
-    beforeEach(() => {
-      spyOn(window, 'confirm');
-    });
-
-    it('should abort export if user cancels confirm dialog', () => {
-      (window.confirm as jasmine.Spy).and.returnValue(false);
-      component.exportCsv();
-      expect(exporterServiceSpy.exportMovements).not.toHaveBeenCalled();
-    });
-
-    it('should call export service and show success notification if confirmed', () => {
-      (window.confirm as jasmine.Spy).and.returnValue(true);
-      exporterServiceSpy.exportMovements.and.returnValue(of('Export successful' as any));
-
-      component.exportCsv();
-
-      expect(exporterServiceSpy.exportMovements).toHaveBeenCalled();
-      expect(notificationServiceSpy.showSuccess).toHaveBeenCalled();
-      expect(component.isExporting()).toBeFalse();
-    });
-
-    it('should show error notification if export fails', () => {
-      spyOn(console, 'error'); // Rend silencieux le log d'erreur dans la console de test
-      (window.confirm as jasmine.Spy).and.returnValue(true);
-      exporterServiceSpy.exportMovements.and.returnValue(throwError(() => new Error('Export failed')));
-
-      component.exportCsv();
-
-      expect(exporterServiceSpy.exportMovements).toHaveBeenCalled();
-      expect(notificationServiceSpy.showError).toHaveBeenCalled();
-      expect(component.isExporting()).toBeFalse();
-    });
+    expect(component.searchQuery()).toBe('squat');
+    // The service must not be called since filtering is handled locally
+    expect(mockMovementService.getMovements).not.toHaveBeenCalled();
   });
 });

@@ -19,7 +19,6 @@ import apex.stellar.aldebaran.model.enums.Equipment;
 import apex.stellar.aldebaran.model.enums.Technique;
 import apex.stellar.aldebaran.repository.MovementRepository;
 import apex.stellar.aldebaran.repository.MuscleRepository;
-import apex.stellar.aldebaran.repository.projection.MovementSummary;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -55,29 +54,18 @@ public class MovementService {
   private final MovementMapper movementMapper;
 
   /**
-   * Retrieves a lightweight list of movements, optionally filtered by a search query.
+   * Retrieves a lightweight list of movements.
    *
    * <p>This method uses Database Projections to fetch only the necessary fields, significantly
    * reducing memory footprint and latency compared to fetching full entities.
    *
-   * @param query The search term (case-insensitive). If empty, returns all movements.
    * @return A list of summarized movement data.
    */
   @Transactional(readOnly = true)
-  @Cacheable(
-      value = CACHE_MOVEMENTS,
-      key = "'all'",
-      condition = "#query == null || #query.isBlank()")
-  public List<MovementSummaryResponse> searchMovements(String query) {
-    List<MovementSummary> projections;
+  @Cacheable(value = CACHE_MOVEMENTS, key = "'all'")
+  public List<MovementSummaryResponse> getAllMovements() {
 
-    if (query == null || query.isBlank()) {
-      projections = movementRepository.findAllProjectedBy();
-    } else {
-      projections = movementRepository.findProjectedByNameContainingIgnoreCase(query);
-    }
-
-    return projections.stream().map(movementMapper::toSummary).toList();
+    return movementRepository.findAllProjectedBy().stream().map(movementMapper::toSummary).toList();
   }
 
   /**

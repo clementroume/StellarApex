@@ -1,6 +1,6 @@
-import { bootstrapApplication } from '@angular/platform-browser';
-import { appConfig } from './app/app.config';
-import { AppComponent } from './app/app.component';
+import {bootstrapApplication} from '@angular/platform-browser';
+import {appConfig} from './app/app.config';
+import {AppComponent} from './app/app.component';
 
 /**
  * The main entry point for the Angular application.
@@ -12,4 +12,4 @@ import { AppComponent } from './app/app.component';
  * in the `src` directory, serving as the primary entry point.
  */
 bootstrapApplication(AppComponent, appConfig)
-  .catch((err) => console.error(err));
+  .catch(() => console.error());

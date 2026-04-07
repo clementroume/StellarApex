@@ -27,13 +27,4 @@ public interface MovementRepository extends JpaRepository<Movement, Long> {
    * @return a list of movement summaries
    */
   List<MovementSummary> findAllProjectedBy();
-
-  /**
-   * Finds movements whose names contain the specified string, ignoring case, returning them as
-   * {@link MovementSummary} projections.
-   *
-   * @param name the string to search for within movement names
-   * @return a list of matching movement summaries
-   */
-  List<MovementSummary> findProjectedByNameContainingIgnoreCase(String name);
 }

@@ -75,12 +75,11 @@ class MovementControllerIT extends BaseIntegrationTest {
   // -------------------------------------------------------------------------
 
   @Test
-  @DisplayName("GET /movements: should return summaries matching query")
+  @DisplayName("GET /movements: should return summaries")
   void testSearchMovements_Success() throws Exception {
     mockMvc
         .perform(
             get("/aldebaran/movements")
-                .param("query", "Squat")
                 .header("X-Auth-User-Id", "1")
                 .header("X-Auth-User-Role", "USER")
                 .header("X-Internal-Secret", "test-internal-secret"))

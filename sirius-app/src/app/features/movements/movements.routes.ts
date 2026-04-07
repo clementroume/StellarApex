@@ -2,6 +2,7 @@ import {Routes} from '@angular/router';
 import {MovementListComponent} from './movement-list/movement-list.component';
 import {adminGuard} from '../../core/guards/admin.guard';
 import {MovementFormComponent} from './movement-form/movement-form.component';
+import {MovementDetailComponent} from './movement-detail/movement-detail.component';
 
 export const MOVEMENT_ROUTES: Routes = [
   {
@@ -17,5 +18,9 @@ export const MOVEMENT_ROUTES: Routes = [
     path: 'edit/:id',
     component: MovementFormComponent,
     canActivate: [adminGuard]
+  },
+  {
+    path: ':id',
+    component: MovementDetailComponent
   }
 ];

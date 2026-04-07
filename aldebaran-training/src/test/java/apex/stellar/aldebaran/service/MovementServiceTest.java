@@ -31,7 +31,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class MovementServiceTest {
 
   @Mock private MuscleRepository muscleRepository;
-  @Mock private MuscleService muscleService;
   @Mock private MovementRepository movementRepository;
   @Mock private MovementMapper movementMapper;
   @InjectMocks private MovementService movementService;
@@ -72,39 +71,14 @@ class MovementServiceTest {
   }
 
   @Test
-  @DisplayName("searchMovements: should return mapped summaries from projection")
-  void testSearchMovements() {
-    // Given
-    MovementSummary projection = mock(MovementSummary.class);
-
-    MovementSummaryResponse expectedResponse =
-        new MovementSummaryResponse(1L, "Back Squat", "BS", Category.SQUAT, null);
-
-    when(movementMapper.toSummary(projection)).thenReturn(expectedResponse);
-
-    when(movementRepository.findProjectedByNameContainingIgnoreCase("Squat"))
-        .thenReturn(List.of(projection));
-
-    // When
-    List<MovementSummaryResponse> results = movementService.searchMovements("Squat");
-
-    // Then
-    assertEquals(1, results.size());
-    assertEquals(1L, results.getFirst().id());
-
-    verify(movementRepository).findProjectedByNameContainingIgnoreCase("Squat");
-    verify(movementMapper).toSummary(projection);
-  }
-
-  @Test
-  @DisplayName("searchMovements: should return all when query is empty")
-  void testSearchMovements_EmptyQuery() {
+  @DisplayName("getAllMovements: should return all movements")
+  void testGetAllMovements_EmptyQuery() {
     // Given
     MovementSummary projection = mock(MovementSummary.class);
     when(movementRepository.findAllProjectedBy()).thenReturn(List.of(projection));
 
     // When
-    List<MovementSummaryResponse> results = movementService.searchMovements("");
+    List<MovementSummaryResponse> results = movementService.getAllMovements();
 
     // Then
     assertEquals(1, results.size());

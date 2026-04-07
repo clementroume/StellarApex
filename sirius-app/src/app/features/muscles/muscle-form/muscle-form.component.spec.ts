@@ -5,6 +5,9 @@ import {NotificationService} from '../../../core/services/notification.service';
 import {ActivatedRoute, provideRouter, Router} from '@angular/router';
 import {of} from 'rxjs';
 import {TranslateModule} from '@ngx-translate/core';
+import {APP_ICONS} from '../../../app.config';
+import {provideIcons} from '@ng-icons/core';
+
 
 describe('MuscleFormComponent', () => {
   let component: MuscleFormComponent;
@@ -46,6 +49,7 @@ describe('MuscleFormComponent', () => {
       ],
       providers: [
         provideRouter([]),
+        provideIcons(APP_ICONS),
         {provide: MuscleService, useValue: muscleServiceSpy},
         {provide: NotificationService, useValue: notificationServiceSpy},
         {provide: ActivatedRoute, useValue: mockActivatedRoute}

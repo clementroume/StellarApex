@@ -1,79 +1,81 @@
 import {ComponentFixture, TestBed} from '@angular/core/testing';
-import {MovementModalComponent} from './movement-modal.component';
-import {DialogService} from '../../../core/services/dialog.service';
+import {MovementDetailComponent} from './movement-detail.component';
 import {AuthService} from '../../../api/antares/services/auth.service';
-import {MuscleService} from '../../../api/aldebaran/services/muscle.service';
 import {MovementService} from '../../../api/aldebaran/services/movement.service';
 import {NotificationService} from '../../../core/services/notification.service';
 import {TranslateModule} from '@ngx-translate/core';
 import {signal} from '@angular/core';
-import {provideRouter} from '@angular/router';
+import {provideRouter, Router} from '@angular/router';
 import {of, throwError} from 'rxjs';
-import {APP_ICONS} from '../../../app.config';
+import {Location} from '@angular/common';
 import {provideIcons} from '@ng-icons/core';
+import {APP_ICONS} from '../../../app.config';
 
-describe('MovementModalComponent', () => {
-  let component: MovementModalComponent;
-  let fixture: ComponentFixture<MovementModalComponent>;
+describe('MovementDetailComponent', () => {
+  let component: MovementDetailComponent;
+  let fixture: ComponentFixture<MovementDetailComponent>;
 
-  let mockDialogService: any;
   let mockAuthService: any;
-  let mockMuscleService: jasmine.SpyObj<MuscleService>;
   let mockMovementService: jasmine.SpyObj<MovementService>;
   let mockNotificationService: jasmine.SpyObj<NotificationService>;
+  let mockLocation: jasmine.SpyObj<Location>;
+  let router: Router;
+
+  const mockMovement: any = {
+    id: 1,
+    name: 'Squat',
+    category: 'WEIGHTLIFTING',
+    descriptionFr: 'Desc FR',
+    descriptionEn: 'Desc EN',
+    coachingCuesFr: 'Cues FR',
+    coachingCuesEn: 'Cues EN',
+    targetedMuscles: []
+  };
 
   beforeEach(async () => {
-    mockDialogService = {
-      movementToView: signal({
-        id: 1,
-        name: 'Squat',
-        category: 'WEIGHTLIFTING',
-        targetedMuscles: []
-      }),
-      closeMovement: jasmine.createSpy('closeMovement'),
-      openMuscle: jasmine.createSpy('openMuscle')
-    };
-
     mockAuthService = {
       currentUser: signal({platformRole: 'ADMIN'})
     };
 
-    mockMuscleService = jasmine.createSpyObj('MuscleService', ['getMuscle']);
-    mockMuscleService.getMuscle.and.returnValue(of({id: 1, medicalName: 'Pectoralis'} as any));
+    mockMovementService = jasmine.createSpyObj('MovementService', ['getMovement', 'deleteMovement', 'notifyRefresh']);
+    mockMovementService.getMovement.and.returnValue(of(mockMovement));
 
-    mockMovementService = jasmine.createSpyObj('MovementService', ['deleteMovement', 'notifyRefresh']);
     mockNotificationService = jasmine.createSpyObj('NotificationService', ['showSuccess', 'showError']);
+    mockLocation = jasmine.createSpyObj('Location', ['back']);
 
     await TestBed.configureTestingModule({
-      imports: [MovementModalComponent, TranslateModule.forRoot()],
+      imports: [MovementDetailComponent, TranslateModule.forRoot()],
       providers: [
         provideRouter([]),
         provideIcons(APP_ICONS),
-        {provide: DialogService, useValue: mockDialogService},
         {provide: AuthService, useValue: mockAuthService},
-        {provide: MuscleService, useValue: mockMuscleService},
         {provide: MovementService, useValue: mockMovementService},
-        {provide: NotificationService, useValue: mockNotificationService}
+        {provide: NotificationService, useValue: mockNotificationService},
+        {provide: Location, useValue: mockLocation}
       ]
     }).compileComponents();
 
-    fixture = TestBed.createComponent(MovementModalComponent);
+    fixture = TestBed.createComponent(MovementDetailComponent);
     component = fixture.componentInstance;
+
+    // Injecte l'ID via le signal input()
+    fixture.componentRef.setInput('id', '1');
+    router = TestBed.inject(Router);
     fixture.detectChanges();
   });
 
-  it('should create', () => {
+  it('should create and load movement data', () => {
     expect(component).toBeTruthy();
+    expect(mockMovementService.getMovement).toHaveBeenCalledWith(1);
+    expect(component.movement()).toEqual(mockMovement);
+  });
+
+  it('should go back when goBack is called', () => {
+    component.goBack();
+    expect(mockLocation.back).toHaveBeenCalled();
   });
 
   it('should format localized description and cues properly', () => {
-    const mockMovement: any = {
-      descriptionFr: 'Desc FR',
-      descriptionEn: 'Desc EN',
-      coachingCuesFr: 'Cues FR',
-      coachingCuesEn: 'Cues EN'
-    };
-
     component.activeLang.set('fr');
     expect(component.getLocalizedDescription(mockMovement)).toBe('Desc FR');
     expect(component.getLocalizedCues(mockMovement)).toBe('Cues FR');
@@ -83,23 +85,18 @@ describe('MovementModalComponent', () => {
     expect(component.getLocalizedCues(mockMovement)).toBe('Cues EN');
   });
 
-  it('should call dialogService.closeMovement on onClose', () => {
-    component.onClose();
-    expect(mockDialogService.closeMovement).toHaveBeenCalled();
-  });
+  it('should format muscle name properly depending on language', () => {
+    const mockMuscle: any = {
+      medicalName: 'Pectoralis',
+      commonNameFr: 'Pectoraux',
+      commonNameEn: 'Chest'
+    };
 
-  it('should fetch muscle and call dialogService.openMuscle on openMuscle', () => {
-    const mockEvent = {
-      preventDefault: jasmine.createSpy('preventDefault'),
-      stopPropagation: jasmine.createSpy('stopPropagation')
-    } as unknown as Event;
+    component.activeLang.set('fr');
+    expect(component.getLocalizedMuscleName(mockMuscle)).toBe('Pectoraux');
 
-    component.openMuscle(1, mockEvent);
-
-    expect(mockEvent.preventDefault).toHaveBeenCalled();
-    expect(mockEvent.stopPropagation).toHaveBeenCalled();
-    expect(mockMuscleService.getMuscle).toHaveBeenCalledWith(1);
-    expect(mockDialogService.openMuscle).toHaveBeenCalledWith({id: 1, medicalName: 'Pectoralis'} as any);
+    component.activeLang.set('en');
+    expect(component.getLocalizedMuscleName(mockMuscle)).toBe('Chest');
   });
 
   describe('onDelete', () => {
@@ -109,27 +106,28 @@ describe('MovementModalComponent', () => {
 
     it('should do nothing if confirm is cancelled', () => {
       (window.confirm as jasmine.Spy).and.returnValue(false);
-      component.onDelete();
+      component.onDelete(mockMovement);
       expect(mockMovementService.deleteMovement).not.toHaveBeenCalled();
     });
 
-    it('should delete movement and close modal on success', () => {
+    it('should delete movement and navigate away on success', () => {
+      const navigateSpy = spyOn(router, 'navigate');
       (window.confirm as jasmine.Spy).and.returnValue(true);
       mockMovementService.deleteMovement.and.returnValue(of(undefined));
 
-      component.onDelete();
+      component.onDelete(mockMovement);
 
       expect(mockMovementService.deleteMovement).toHaveBeenCalledWith(1);
       expect(mockNotificationService.showSuccess).toHaveBeenCalled();
       expect(mockMovementService.notifyRefresh).toHaveBeenCalled();
-      expect(mockDialogService.closeMovement).toHaveBeenCalled();
+      expect(navigateSpy).toHaveBeenCalledWith(['/movements']);
     });
 
     it('should display conflict error on 409 status', () => {
       (window.confirm as jasmine.Spy).and.returnValue(true);
       mockMovementService.deleteMovement.and.returnValue(throwError(() => ({status: 409})));
 
-      component.onDelete();
+      component.onDelete(mockMovement);
 
       expect(mockMovementService.deleteMovement).toHaveBeenCalledWith(1);
       expect(mockNotificationService.showError).toHaveBeenCalled();

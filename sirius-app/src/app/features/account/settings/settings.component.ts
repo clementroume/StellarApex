@@ -80,8 +80,8 @@ export class SettingsComponent {
       };
 
       this.userService.updatePreferences(preferences).subscribe({
-        error: (err) => {
-          console.error('Failed to update language preference:', err);
+        error: () => {
+          console.error();
           this.translate.use(currentUser.locale);
         }
       });

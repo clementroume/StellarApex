@@ -1,4 +1,4 @@
-import {inject, Injectable} from '@angular/core';
+import {inject, Injectable, signal} from '@angular/core';
 import {HttpClient, HttpContext} from '@angular/common/http';
 import {Observable, Subject} from 'rxjs';
 import {environment} from '../../../../environments/environment';
@@ -39,5 +39,19 @@ export class MuscleService {
 
   notifyRefresh() {
     this.refreshNeeded$.next();
+  }
+
+  // --- UI STATE ---
+  public readonly savedSearchQuery = signal<string>('');
+  public readonly savedExpandedGroups = signal<Set<string>>(new Set());
+
+  toggleGroupExpansion(group: string, isExpanded: boolean): void {
+    const currentSet = new Set(this.savedExpandedGroups());
+    if (isExpanded) {
+      currentSet.add(group);
+    } else {
+      currentSet.delete(group);
+    }
+    this.savedExpandedGroups.set(currentSet);
   }
 }

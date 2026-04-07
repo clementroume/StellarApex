@@ -25,7 +25,9 @@
     "DELETE": "Supprimer",
     "CONFIRM_DELETE": "Es-tu sûr de vouloir supprimer \"{{name}}\" ?",
     "DELETE_SUCCESS": "Élément supprimé avec succès.",
-    "DELETE_ERROR": "Une erreur est survenue lors de la suppression."
+    "DELETE_ERROR": "Une erreur est survenue lors de la suppression.",
+    "VIDEO": "Vidéo",
+    "NO_VIDEO": "Aucune vidéo"
   },
   "NAVBAR": {
     "DASHBOARD": "Dashboard",
@@ -90,7 +92,8 @@
     },
     "ACTIONS": {
       "ADD": "Ajouter un muscle",
-      "SELECT_GROUP": "Sélectionner un groupe"
+      "SELECT_GROUP": "Sélectionner un groupe",
+      "SEARCH": "Rechercher un muscle..."
     },
     "SECTIONS": {
       "COMMON_NAMES": "Noms Communs",
@@ -116,7 +119,9 @@
       "IMAGE_URL": "https://..."
     },
     "MESSAGES": {
+      "NOT_FOUND": "Muscle introuvable.",
       "EMPTY_LIST": "Aucun muscle trouvé.",
+      "EMPTY_LIST_SEARCH": "Aucun muscle trouvé pour \"{{name}}\".",
       "ERROR_MEDICAL_NAME": "Ce champ est requis et doit être unique.",
       "SUCCESS_CREATE": "Nouveau muscle créé avec succès.",
       "SUCCESS_UPDATE": "Muscle mis à jour avec succès.",
@@ -180,18 +185,22 @@
       "COACHING_CUES_EN": "Ex: Keep your chest up..."
     },
     "MESSAGES": {
+      "NOT_FOUND": "Mouvement introuvable.",
       "EMPTY_LIST": "Aucun mouvement trouvé.",
+      "EMPTY_LIST_SEARCH": "Aucun mouvement trouvé pour \"{{name}}\".",
       "NO_CUES": "Aucun conseil d'exécution renseigné.",
       "NO_MUSCLES": "Aucun muscle spécifié.",
       "NO_MUSCLES_FORM": "Aucun muscle associé. Cliquez sur Ajouter.",
       "SUCCESS_CREATE": "Mouvement créé avec succès !",
       "SUCCESS_UPDATE": "Mouvement mis à jour avec succès !",
-      "DELETE_CONFLICT": "Impossible de supprimer \"{{name}}\" car il est déjà utilisé dans un WOD."
+      "DELETE_CONFLICT": "Impossible de supprimer \"{{name}}\" car il est déjà utilisé dans un WOD.",
+      "NO_EQUIPMENT": "Aucun équipement spécifié.",
+      "NO_TECHNIQUES": "Aucune technique spécifiée."
     },
     "MODALITIES": {
-      "WEIGHTLIFTING": "Haltérophilie / Force",
+      "WEIGHTLIFTING": "Haltérophilie",
       "GYMNASTICS": "Gymnastique",
-      "MONOSTRUCTURAL": "Cardio / Mono",
+      "MONOSTRUCTURAL": "Cardio",
       "STRONGMAN": "Strongman"
     },
     "CATEGORIES": {

@@ -1,80 +1,67 @@
 <div class="container mx-auto pb-12">
-  <div class="flex flex-col sm:flex-row justify-between items-center mt-8 mb-6 gap-4">
+  <div class="mt-8 mb-6 text-center md:text-left">
     <h1 class="text-3xl font-bold">{{ 'MUSCLE.TITLE' | translate }}</h1>
-
-    @if (isAdmin()) {
-      <div class="flex gap-2 w-full sm:w-auto">
-        <button class="btn btn-outline btn-secondary whitespace-nowrap"
-                (click)="exportCsv()"
-                [disabled]="isExporting()">
-          <ng-icon name="heroDocumentArrowDown"></ng-icon>
-          {{ isExporting() ? '...' : ('EXPORT.EXPORT_CSV' | translate) }}
-        </button>
-
-        <a routerLink="/muscles/new" class="btn btn-secondary whitespace-nowrap">
-          <ng-icon name="heroPlus"></ng-icon>
-          {{ 'MUSCLE.ACTIONS.ADD' | translate }}
-        </a>
-      </div>
-    }
   </div>
 
-  @if (isLoading() && rawMuscles().length === 0) {
-    <div class="flex justify-center p-12">
-      <span class="loading loading-spinner loading-lg text-primary"></span>
-    </div>
-  } @else if (rawMuscles().length === 0) {
-    <div class="text-center py-12 text-base-content/50 bg-base-100 rounded-box shadow mt-4">
-      {{ 'MUSCLE.MESSAGES.EMPTY_LIST' | translate }}
-    </div>
-  } @else {
+  <app-search-input
+    [placeholder]="'MUSCLE.ACTIONS.SEARCH' | translate"
+    [value]="searchQuery()"
+    (valueChange)="onSearchChange($event)">
+  </app-search-input>
 
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
+  <app-list-state
+    [isLoading]="isLoading()"
+    [isRawEmpty]="rawMuscles().length === 0"
+    [isFilteredEmpty]="filteredMuscles().length === 0"
+    [emptyMessage]="'MUSCLE.MESSAGES.EMPTY_LIST' | translate"
+    [emptySearchMessage]="'MUSCLE.MESSAGES.EMPTY_LIST_SEARCH' | translate: {name: searchQuery()}">
 
-      @for (group of muscleGroupKeys(); track group) {
-        @if (groupedMuscles().get(group) && groupedMuscles().get(group)!.length > 0) {
+    <app-list-grid [items]="populatedGroups()">
 
-          <div class="collapse collapse-arrow bg-base-100 shadow-sm border border-base-200">
-            <input type="checkbox"/>
+      <ng-template let-group>
+        <div class="collapse collapse-arrow bg-base-100 border border-neutral">
 
-            <div class="collapse-title text-xl font-medium flex items-center gap-3">
-              {{ 'MUSCLE.GROUPS.' + group | translate }}
-              <div class="badge badge-soft badge-accent">{{ groupedMuscles().get(group)?.length }}</div>
-            </div>
+          <input type="checkbox"
+                 [checked]="expandedGroups().has(group)"
+                 (change)="onGroupToggle(group, $event)"/>
 
-            <div class="collapse-content p-0">
-              <ul class="divide-y divide-base-200">
-                @for (muscle of groupedMuscles().get(group); track muscle.id) {
-                  <li>
-                    <button type="button"
-                            class="w-full text-left flex items-center justify-between p-4 hover:bg-base-200/50 cursor-pointer transition-colors group"
-                            (click)="openDetails(muscle.id)">
-
-                      <div class="flex flex-col">
-                        @if (getLocalizedName(muscle)) {
-                          <span class="font-semibold text-lg">{{ getLocalizedName(muscle) }}</span>
-                          @if (getLocalizedName(muscle) !== muscle.medicalName) {
-                            <span class="text-sm opacity-60">{{ muscle.medicalName }}</span>
-                          }
-                        } @else {
-                          <span class="font-semibold text-lg">{{ muscle.medicalName }}</span>
-                        }
-                      </div>
-
-                      <div class="text-base-content/30 group-hover:text-primary transition-colors pr-2">
-                        <ng-icon name="heroChevronRight" size="1.5rem"></ng-icon>
-                      </div>
-
-                    </button>
-                  </li>
-                }
-              </ul>
-            </div>
+          <div class="collapse-title text-xl font-medium flex items-center gap-3">
+            {{ 'MUSCLE.GROUPS.' + group | translate }}
+            <div class="badge badge-soft badge-accent">{{ groupedMuscles().get(group)?.length }}</div>
           </div>
 
-        }
-      }
+          <div class="collapse-content p-0">
+            <ul class="divide-y divide-base-200">
+              @for (muscle of groupedMuscles().get(group); track muscle.id) {
+                <app-list-item
+                  [title]="getLocalizedName(muscle) || muscle.medicalName"
+                  [subtitle]="getLocalizedName(muscle) !== muscle.medicalName ? muscle.medicalName : undefined"
+                  [imageUrl]="muscle.imageUrl"
+                  [link]="['/muscles', muscle.id]">
+                </app-list-item>
+              }
+            </ul>
+          </div>
 
+        </div>
+      </ng-template>
+
+    </app-list-grid>
+  </app-list-state>
+
+  @if (isAdmin()) {
+    <div class="pt-8 flex flex-col md:flex-row justify-end gap-4">
+      <button class="btn btn-outline btn-secondary min-w-36"
+              (click)="exportCsv()"
+              [disabled]="isExporting()">
+        <ng-icon name="heroDocumentArrowDown"></ng-icon>
+        {{ isExporting() ? '...' : ('EXPORT.EXPORT_CSV' | translate) }}
+      </button>
+
+      <a routerLink="/muscles/new" class="btn btn-secondary min-w-36">
+        <ng-icon name="heroPlus"></ng-icon>
+        {{ 'MUSCLE.ACTIONS.ADD' | translate }}
+      </a>
     </div>
   }
 </div>

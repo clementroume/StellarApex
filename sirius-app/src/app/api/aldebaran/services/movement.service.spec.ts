@@ -41,10 +41,9 @@ describe('MovementService', () => {
     expect(service).toBeTruthy();
   });
 
-  it('searchMovements should GET from /movements with a query', () => {
-    const query = 'squat';
-    service.searchMovements(query).subscribe();
-    const req = httpMock.expectOne(`${base}/movements?query=${query}`);
+  it('getMovements should GET from /movements', () => {
+    service.getMovements().subscribe();
+    const req = httpMock.expectOne(`${base}/movements`);
     expect(req.request.method).toBe('GET');
     req.flush([mockMovementSummary]);
   });

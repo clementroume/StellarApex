@@ -12,7 +12,14 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 /**
  * REST Controller for the Movement Catalog.
@@ -30,30 +37,21 @@ public class MovementController {
   private final MovementService movementService;
 
   /**
-   * Searches for movements by name.
+   * Retrieves the movement catalog.
    *
-   * <p>This endpoint returns a list of lightweight {@link MovementSummaryResponse} objects,
-   * optimized for autocomplete dropdowns and search results. It does not load heavy relationships
-   * like anatomical details.
-   *
-   * @param query The search string (case-insensitive). Defaults to empty (returns all).
-   * @return A list of matching movements.
+   * @return A list of lightweigth {@link MovementSummaryResponse} objects.
    */
   @GetMapping
-  public ResponseEntity<List<MovementSummaryResponse>> searchMovements(
-      @RequestParam(defaultValue = "") String query) {
+  public ResponseEntity<List<MovementSummaryResponse>> getMovements() {
 
-    return ResponseEntity.ok(movementService.searchMovements(query));
+    return ResponseEntity.ok(movementService.getAllMovements());
   }
 
   /**
-   * Retrieves detailed information about a specific movement.
+   * Retrieves detailed information about a specific movement by its ID.
    *
-   * <p>Returns the full {@link MovementResponse}, including internationalized descriptions,
-   * anatomical breakdowns (muscles involved), and media links.
-   *
-   * @param id The unique business ID of the movement (e.g., "WL-SQ-001").
-   * @return The complete movement details.
+   * @param id The ID of the movement
+   * @return The corresponding {@link MovementResponse}
    */
   @GetMapping("/{id}")
   public ResponseEntity<MovementResponse> getMovement(@PathVariable Long id) {

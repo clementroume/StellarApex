@@ -42,15 +42,15 @@ export class ThemeService {
       };
 
       this.userService.updatePreferences(preferences).subscribe({
-        error: (err) => {
-          console.error('Failed to update theme preference:', err);
+        error: () => {
+          console.error();
           // Revert to the original theme on failure to maintain consistency.
           this._currentTheme.set(currentUser.theme);
         }
       });
     }
   }
-  
+
   private getInitialTheme(): Theme {
     return (localStorage.getItem('theme') as Theme) ?? 'dark';
   }
