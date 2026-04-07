@@ -8,8 +8,8 @@ name: stellar-apex-core
 # ==============================================================================
 
 # Include the observability stack automatically (requires Docker Compose v2.20+)
-include:
-  - path: ./docker-compose.observability.yml
+#include:
+#  - path: ./docker-compose.observability.yml
 
 services:
   # --- 1. ALTAIR - REVERSE PROXY (TRAEFIK) ---
