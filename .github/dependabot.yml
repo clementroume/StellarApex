@@ -67,8 +67,8 @@ updates:
         patterns:
           - "@angular/*"
           - "@angular-devkit/*"
-          - "typescript"
           - "rxjs"
+          - "zone.js"
 
   # ==============================================================================
   # 4. DOCKER IMAGES (BASE IMAGES)
