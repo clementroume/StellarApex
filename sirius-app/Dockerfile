@@ -1,6 +1,6 @@
 # --- STAGE 1: Build Angular ---
 # Use a lightweight Node.js 'alpine' image for the build environment
-FROM node:24-alpine AS builder
+FROM node:26-alpine AS builder
 
 # Set the working directory inside the container
 WORKDIR /app
