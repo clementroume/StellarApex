@@ -15,7 +15,7 @@ services:
   # --- 1. ALTAIR - REVERSE PROXY (TRAEFIK) ---
   # Handles routing, SSL termination, and load balancing.
   altair-proxy:
-    image: traefik:v3.6
+    image: traefik:v3.7
     container_name: altair-proxy
     security_opt:
       - no-new-privileges:true # Prevent privilege escalation.
