@@ -1,7 +1,7 @@
 import {ChangeDetectionStrategy, Component, computed, effect, inject, input, signal} from '@angular/core';
 import {TranslateModule, TranslateService} from '@ngx-translate/core';
 import {Router, RouterModule} from '@angular/router';
-import {Location, NgOptimizedImage} from '@angular/common';
+import {Location, NgOptimizedImage, NgTemplateOutlet} from '@angular/common';
 import {NgIconComponent} from '@ng-icons/core';
 import {MovementResponse} from '../../../api/aldebaran/models/movement.model';
 import {MuscleResponse} from '../../../api/aldebaran/models/muscle.model';
@@ -9,11 +9,17 @@ import {AuthService} from '../../../api/antares/services/auth.service';
 import {MovementService} from '../../../api/aldebaran/services/movement.service';
 import {NotificationService} from '../../../core/services/notification.service';
 import {HttpErrorResponse} from '@angular/common/http';
+import {
+  DetailAdminActionsComponent
+} from '../../../shared/component/detail/detail-admin-actions/detail-admin-actions.component';
+import {DetailCardComponent} from '../../../shared/component/detail/detail-card/detail-card.component';
+import {DetailHeaderComponent} from '../../../shared/component/detail/detail-header/detail-header.component';
+import {DetailStateComponent} from '../../../shared/component/detail/detail-state/detail-state.component';
 
 @Component({
   selector: 'app-movement-detail',
   standalone: true,
-  imports: [TranslateModule, RouterModule, NgIconComponent, NgOptimizedImage],
+  imports: [TranslateModule, RouterModule, NgIconComponent, NgOptimizedImage, NgTemplateOutlet, DetailAdminActionsComponent, DetailCardComponent, DetailHeaderComponent, DetailStateComponent],
   templateUrl: './movement-detail.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush
 })

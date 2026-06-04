@@ -8,11 +8,17 @@ import {AuthService} from '../../../api/antares/services/auth.service';
 import {MuscleService} from '../../../api/aldebaran/services/muscle.service';
 import {NotificationService} from '../../../core/services/notification.service';
 import {HttpErrorResponse} from '@angular/common/http';
+import {
+  DetailAdminActionsComponent
+} from '../../../shared/component/detail/detail-admin-actions/detail-admin-actions.component';
+import {DetailCardComponent} from '../../../shared/component/detail/detail-card/detail-card.component';
+import {DetailHeaderComponent} from '../../../shared/component/detail/detail-header/detail-header.component';
+import {DetailStateComponent} from '../../../shared/component/detail/detail-state/detail-state.component';
 
 @Component({
   selector: 'app-muscle-detail',
   standalone: true,
-  imports: [TranslateModule, RouterModule, NgIconComponent, NgOptimizedImage],
+  imports: [TranslateModule, RouterModule, NgIconComponent, NgOptimizedImage, DetailAdminActionsComponent, DetailCardComponent, DetailHeaderComponent, DetailStateComponent],
   templateUrl: './muscle-detail.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
