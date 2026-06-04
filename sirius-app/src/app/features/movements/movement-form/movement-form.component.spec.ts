@@ -1,3 +1,5 @@
+import type {MockedObject} from "vitest";
+import {vi} from 'vitest';
 import {ComponentFixture, TestBed} from '@angular/core/testing';
 import {MovementFormComponent} from './movement-form.component';
 import {ActivatedRoute, provideRouter} from '@angular/router';
@@ -12,22 +14,27 @@ import {APP_ICONS} from '../../../app.config';
 describe('MovementFormComponent', () => {
   let component: MovementFormComponent;
   let fixture: ComponentFixture<MovementFormComponent>;
-  let movementServiceSpy: jasmine.SpyObj<MovementService>;
-  let muscleServiceSpy: jasmine.SpyObj<MuscleService>;
-  let notificationServiceSpy: jasmine.SpyObj<NotificationService>;
+  let movementServiceSpy: MockedObject<MovementService>;
+  let muscleServiceSpy: MockedObject<MuscleService>;
+  let notificationServiceSpy: MockedObject<NotificationService>;
 
   beforeEach(async () => {
-    movementServiceSpy = jasmine.createSpyObj('MovementService', ['getMovement', 'createMovement', 'updateMovement', 'getReferenceData']);
-    movementServiceSpy.createMovement.and.returnValue(of({} as any));
-    movementServiceSpy.updateMovement.and.returnValue(of({} as any));
+    movementServiceSpy = {
+      getMovement: vi.fn().mockName("MovementService.getMovement"),
+      createMovement: vi.fn().mockName("MovementService.createMovement"),
+      updateMovement: vi.fn().mockName("MovementService.updateMovement"),
+      getReferenceData: vi.fn().mockName("MovementService.getReferenceData")
+    } as any;
+    movementServiceSpy.createMovement.mockReturnValue(of({} as any));
+    movementServiceSpy.updateMovement.mockReturnValue(of({} as any));
 
-    movementServiceSpy.getReferenceData.and.returnValue(of({
+    movementServiceSpy.getReferenceData.mockReturnValue(of({
       categoryGroups: {'WEIGHTLIFTING': ['DEADLIFT']},
       equipmentGroups: {'NONE': ['BODYWEIGHT']},
       techniqueGroups: {'STYLE': ['STRICT']}
     } as any));
 
-    movementServiceSpy.getMovement.and.returnValue(of({
+    movementServiceSpy.getMovement.mockReturnValue(of({
       id: 1,
       name: 'Loaded Squat',
       category: 'SQUAT',
@@ -38,16 +45,22 @@ describe('MovementFormComponent', () => {
       ]
     } as any));
 
-    muscleServiceSpy = jasmine.createSpyObj('MuscleService', ['getMuscles', 'getReferenceData']);
-    muscleServiceSpy.getMuscles.and.returnValue(of([
+    muscleServiceSpy = {
+      getMuscles: vi.fn().mockName("MuscleService.getMuscles"),
+      getReferenceData: vi.fn().mockName("MuscleService.getReferenceData")
+    } as any;
+    muscleServiceSpy.getMuscles.mockReturnValue(of([
       {id: 1, medicalName: 'Pectoralis Major', muscleGroup: 'CHEST'}
     ]));
-    muscleServiceSpy.getReferenceData.and.returnValue(of({
+    muscleServiceSpy.getReferenceData.mockReturnValue(of({
       muscleRoles: ['AGONIST', 'SYNERGIST', 'STABILIZER'],
       muscleGroups: ['CHEST', 'BACK']
     } as any));
 
-    notificationServiceSpy = jasmine.createSpyObj('NotificationService', ['showSuccess', 'showError']);
+    notificationServiceSpy = {
+      showSuccess: vi.fn().mockName("NotificationService.showSuccess"),
+      showError: vi.fn().mockName("NotificationService.showError")
+    } as any;
   });
 
   const setupTestBed = async (routeParamId: string | null) => {
@@ -78,7 +91,7 @@ describe('MovementFormComponent', () => {
 
     it('should create the component in create mode', () => {
       expect(component).toBeTruthy();
-      expect(component.isEditMode()).toBeFalse();
+      expect(component.isEditMode()).toBe(false);
     });
 
     it('should initialize the muscles catalog', () => {
@@ -91,7 +104,7 @@ describe('MovementFormComponent', () => {
         component.toggleSelection('equipment', 'BARBELL');
         const equipments = component.movementForm.get('equipment')?.value;
         expect(equipments).toContain('BARBELL');
-        expect(component.isItemSelected('equipment', 'BARBELL')).toBeTrue();
+        expect(component.isItemSelected('equipment', 'BARBELL')).toBe(true);
       });
 
       it('should remove an equipment if it is already selected', () => {
@@ -145,7 +158,7 @@ describe('MovementFormComponent', () => {
     });
 
     it('should initialize in edit mode and load movement data', () => {
-      expect(component.isEditMode()).toBeTrue();
+      expect(component.isEditMode()).toBe(true);
       expect(movementServiceSpy.getMovement).toHaveBeenCalledWith(1);
 
       // Vérification des données de base

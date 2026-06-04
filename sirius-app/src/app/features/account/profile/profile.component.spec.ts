@@ -10,6 +10,7 @@ import {signal} from '@angular/core';
 import {UserResponse} from '../../../api/antares/models/user.model';
 import {provideIcons} from '@ng-icons/core';
 import {APP_ICONS} from '../../../app.config';
+import {vi} from 'vitest';
 
 describe('ProfileComponent', () => {
   let component: ProfileComponent;
@@ -25,7 +26,9 @@ describe('ProfileComponent', () => {
     const authServiceMock = {
       currentUser: signal(mockUser),
     };
-    const userServiceSpy = jasmine.createSpyObj('UserService', ['updateProfile']);
+    const userServiceSpy = {
+      updateProfile: vi.fn().mockName("UserService.updateProfile")
+    };
 
     await TestBed.configureTestingModule({
       imports: [ProfileComponent, TranslateModule.forRoot()],
@@ -57,9 +60,9 @@ describe('ProfileComponent', () => {
   });
 
   it('should switch to edit mode', () => {
-    expect(component.isEditing).toBeFalse();
+    expect(component.isEditing).toBe(false);
     component.enterEditMode();
-    expect(component.isEditing).toBeTrue();
+    expect(component.isEditing).toBe(true);
   });
 
   it('should cancel edit mode and revert form values', () => {
@@ -67,7 +70,7 @@ describe('ProfileComponent', () => {
     component.profileForm.controls['firstName'].setValue('Jane');
     component.onCancel();
 
-    expect(component.isEditing).toBeFalse();
+    expect(component.isEditing).toBe(false);
     expect(component.profileForm.controls['firstName'].value).toBe('John');
   });
 });

@@ -1,3 +1,5 @@
+import type {Mock, MockedObject} from "vitest";
+import {vi} from 'vitest';
 import {ComponentFixture, TestBed} from '@angular/core/testing';
 import {MovementDetailComponent} from './movement-detail.component';
 import {AuthService} from '../../../api/antares/services/auth.service';
@@ -16,9 +18,9 @@ describe('MovementDetailComponent', () => {
   let fixture: ComponentFixture<MovementDetailComponent>;
 
   let mockAuthService: any;
-  let mockMovementService: jasmine.SpyObj<MovementService>;
-  let mockNotificationService: jasmine.SpyObj<NotificationService>;
-  let mockLocation: jasmine.SpyObj<Location>;
+  let mockMovementService: MockedObject<MovementService>;
+  let mockNotificationService: MockedObject<NotificationService>;
+  let mockLocation: MockedObject<Location>;
   let router: Router;
 
   const mockMovement: any = {
@@ -37,11 +39,20 @@ describe('MovementDetailComponent', () => {
       currentUser: signal({platformRole: 'ADMIN'})
     };
 
-    mockMovementService = jasmine.createSpyObj('MovementService', ['getMovement', 'deleteMovement', 'notifyRefresh']);
-    mockMovementService.getMovement.and.returnValue(of(mockMovement));
+    mockMovementService = {
+      getMovement: vi.fn().mockName("MovementService.getMovement"),
+      deleteMovement: vi.fn().mockName("MovementService.deleteMovement"),
+      notifyRefresh: vi.fn().mockName("MovementService.notifyRefresh")
+    } as any;
+    mockMovementService.getMovement.mockReturnValue(of(mockMovement));
 
-    mockNotificationService = jasmine.createSpyObj('NotificationService', ['showSuccess', 'showError']);
-    mockLocation = jasmine.createSpyObj('Location', ['back']);
+    mockNotificationService = {
+      showSuccess: vi.fn().mockName("NotificationService.showSuccess"),
+      showError: vi.fn().mockName("NotificationService.showError")
+    } as any;
+    mockLocation = {
+      back: vi.fn().mockName("Location.back")
+    } as any;
 
     await TestBed.configureTestingModule({
       imports: [MovementDetailComponent, TranslateModule.forRoot()],
@@ -101,19 +112,19 @@ describe('MovementDetailComponent', () => {
 
   describe('onDelete', () => {
     beforeEach(() => {
-      spyOn(window, 'confirm');
+      vi.spyOn(window, 'confirm');
     });
 
     it('should do nothing if confirm is cancelled', () => {
-      (window.confirm as jasmine.Spy).and.returnValue(false);
+      (window.confirm as Mock).mockReturnValue(false);
       component.onDelete(mockMovement);
       expect(mockMovementService.deleteMovement).not.toHaveBeenCalled();
     });
 
     it('should delete movement and navigate away on success', () => {
-      const navigateSpy = spyOn(router, 'navigate');
-      (window.confirm as jasmine.Spy).and.returnValue(true);
-      mockMovementService.deleteMovement.and.returnValue(of(undefined));
+      const navigateSpy = vi.spyOn(router, 'navigate');
+      (window.confirm as Mock).mockReturnValue(true);
+      mockMovementService.deleteMovement.mockReturnValue(of(undefined));
 
       component.onDelete(mockMovement);
 
@@ -124,8 +135,8 @@ describe('MovementDetailComponent', () => {
     });
 
     it('should display conflict error on 409 status', () => {
-      (window.confirm as jasmine.Spy).and.returnValue(true);
-      mockMovementService.deleteMovement.and.returnValue(throwError(() => ({status: 409})));
+      (window.confirm as Mock).mockReturnValue(true);
+      mockMovementService.deleteMovement.mockReturnValue(throwError(() => ({status: 409})));
 
       component.onDelete(mockMovement);
 

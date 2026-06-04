@@ -1,3 +1,5 @@
+import type {MockedObject} from "vitest";
+import {vi} from 'vitest';
 import {ComponentFixture, TestBed} from '@angular/core/testing';
 import {RegisterComponent} from './register.component';
 import {provideHttpClient} from '@angular/common/http';
@@ -12,11 +14,13 @@ import {APP_ICONS} from '../../../app.config';
 describe('RegisterComponent', () => {
   let component: RegisterComponent;
   let fixture: ComponentFixture<RegisterComponent>;
-  let authServiceSpy: jasmine.SpyObj<AuthService>;
+  let authServiceSpy: MockedObject<AuthService>;
 
   beforeEach(async () => {
-    authServiceSpy = jasmine.createSpyObj('AuthService', ['register']);
-    authServiceSpy.register.and.returnValue(of({} as any));
+    authServiceSpy = {
+      register: vi.fn().mockName("AuthService.register")
+    } as any;
+    authServiceSpy.register.mockReturnValue(of({} as any));
 
     await TestBed.configureTestingModule({
       imports: [RegisterComponent, TranslateModule.forRoot()],
@@ -41,7 +45,7 @@ describe('RegisterComponent', () => {
   it('should initialize the register form with confirmation password', () => {
     expect(component.registerForm.controls['password']).toBeDefined();
     expect(component.registerForm.controls['confirmationPassword']).toBeDefined();
-    expect(component.registerForm.valid).toBeFalse();
+    expect(component.registerForm.valid).toBe(false);
   });
 
   it('should be invalid if passwords do not match', () => {
@@ -52,8 +56,8 @@ describe('RegisterComponent', () => {
     form.controls['password'].setValue('Password123');
     form.controls['confirmationPassword'].setValue('Mismatch123');
 
-    expect(form.hasError('passwordsMismatch')).toBeTrue();
-    expect(form.valid).toBeFalse();
+    expect(form.hasError('passwordsMismatch')).toBe(true);
+    expect(form.valid).toBe(false);
   });
 
   it('should be valid and call register (without confirm password) when fields are correct', () => {
@@ -64,7 +68,7 @@ describe('RegisterComponent', () => {
     form.controls['password'].setValue('Password123');
     form.controls['confirmationPassword'].setValue('Password123');
 
-    expect(form.valid).toBeTrue();
+    expect(form.valid).toBe(true);
 
     component.onSubmit();
 

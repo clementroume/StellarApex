@@ -1,11 +1,8 @@
+import type {MockedObject} from "vitest";
+import {vi} from 'vitest';
 import {TestBed} from '@angular/core/testing';
 import {HttpTestingController, provideHttpClientTesting} from '@angular/common/http/testing';
-import {
-  HttpClient,
-  HttpErrorResponse,
-  provideHttpClient,
-  withInterceptors
-} from '@angular/common/http';
+import {HttpClient, HttpErrorResponse, provideHttpClient, withInterceptors} from '@angular/common/http';
 import {authInterceptor} from './auth.interceptor';
 import {AuthService} from '../../api/antares/services/auth.service';
 import {Router} from '@angular/router';
@@ -15,13 +12,18 @@ import {environment} from '../../../environments/environment';
 describe('authInterceptor', () => {
   let httpMock: HttpTestingController;
   let httpClient: HttpClient;
-  let authServiceSpy: jasmine.SpyObj<AuthService>;
-  let routerSpy: jasmine.SpyObj<Router>;
+  let authServiceSpy: MockedObject<AuthService>;
+  let routerSpy: MockedObject<Router>;
   const baseApiUrl = `${environment.authUrl}`;
 
   beforeEach(() => {
-    authServiceSpy = jasmine.createSpyObj('AuthService', ['refreshToken', 'logout']);
-    routerSpy = jasmine.createSpyObj('Router', ['navigate']);
+    authServiceSpy = {
+      refreshToken: vi.fn().mockName("AuthService.refreshToken"),
+      logout: vi.fn().mockName("AuthService.logout")
+    } as any;
+    routerSpy = {
+      navigate: vi.fn().mockName("Router.navigate")
+    } as any;
 
     TestBed.configureTestingModule({
       providers: [
@@ -67,7 +69,7 @@ describe('authInterceptor', () => {
   });
 
   it('should retry the original request after a successful token refresh', () => {
-    authServiceSpy.refreshToken.and.returnValue(of({accessToken: 'new-token'}));
+    authServiceSpy.refreshToken.mockReturnValue(of({accessToken: 'new-token'}));
 
     httpClient.get(`${baseApiUrl}/users/me`).subscribe();
 
@@ -84,8 +86,8 @@ describe('authInterceptor', () => {
   });
 
   it('should logout and redirect if token refresh fails', () => {
-    authServiceSpy.refreshToken.and.returnValue(throwError(() => new HttpErrorResponse({status: 401})));
-    authServiceSpy.logout.and.returnValue(of(undefined));
+    authServiceSpy.refreshToken.mockReturnValue(throwError(() => new HttpErrorResponse({status: 401})));
+    authServiceSpy.logout.mockReturnValue(of(undefined));
 
     httpClient.get(`${baseApiUrl}/users/me`).subscribe({
       error: (err) => {

@@ -4,6 +4,7 @@ import {TranslateModule} from '@ngx-translate/core';
 import {provideRouter} from '@angular/router';
 import {provideIcons} from '@ng-icons/core';
 import {heroPencilSquare, heroTrash} from '@ng-icons/heroicons/outline';
+import {vi} from 'vitest';
 
 describe('DetailAdminActionsComponent', () => {
   let component: DetailAdminActionsComponent;
@@ -33,7 +34,7 @@ describe('DetailAdminActionsComponent', () => {
   });
 
   it('should emit delete event on button click', () => {
-    spyOn(component.delete, 'emit');
+    vi.spyOn(component.delete, 'emit');
     const deleteBtn = fixture.nativeElement.querySelector('button.btn-error');
     deleteBtn.click();
     expect(component.delete.emit).toHaveBeenCalled();

@@ -1,3 +1,5 @@
+import type {MockedObject} from "vitest";
+import {vi} from 'vitest';
 import {TestBed} from '@angular/core/testing';
 import {ThemeService} from './theme.service';
 import {AuthService} from '../../api/antares/services/auth.service';
@@ -8,10 +10,24 @@ import {UserResponse} from '../../api/antares/models/user.model';
 import {provideHttpClient} from '@angular/common/http';
 import {provideHttpClientTesting} from '@angular/common/http/testing';
 
+const fakeLocalStorage = (() => {
+  let store: Record<string, string> = {};
+  return {
+    getItem: vi.fn((key: string) => store[key] || null),
+    setItem: vi.fn((key: string, value: string) => {
+      store[key] = value.toString();
+    }),
+    clear: vi.fn(() => {
+      store = {};
+    })
+  };
+})();
+vi.stubGlobal('localStorage', fakeLocalStorage);
+
 describe('ThemeService', () => {
   let service: ThemeService;
-  let authServiceSpy: jasmine.SpyObj<AuthService>;
-  let userServiceSpy: jasmine.SpyObj<UserService>;
+  let authServiceSpy: MockedObject<AuthService>;
+  let userServiceSpy: MockedObject<UserService>;
 
   const mockUser: UserResponse = {
     id: 1, email: 'test@test.com', firstName: 'Test', lastName: 'User',
@@ -21,10 +37,12 @@ describe('ThemeService', () => {
 
   // Helper function to create the test bed
   const configureTestBed = () => {
-    const authSpy = jasmine.createSpyObj('AuthService', [], {
+    const authSpy = {
       currentUser: signal<UserResponse | null>(null)
-    });
-    const userSpy = jasmine.createSpyObj('UserService', ['updatePreferences']);
+    };
+    const userSpy = {
+      updatePreferences: vi.fn().mockName("UserService.updatePreferences")
+    };
 
     TestBed.configureTestingModule({
       providers: [
@@ -37,8 +55,8 @@ describe('ThemeService', () => {
     });
 
     service = TestBed.inject(ThemeService);
-    authServiceSpy = TestBed.inject(AuthService) as jasmine.SpyObj<AuthService>;
-    userServiceSpy = TestBed.inject(UserService) as jasmine.SpyObj<UserService>;
+    authServiceSpy = TestBed.inject(AuthService) as MockedObject<AuthService>;
+    userServiceSpy = TestBed.inject(UserService) as MockedObject<UserService>;
   };
 
   afterEach(() => {
@@ -66,7 +84,7 @@ describe('ThemeService', () => {
 
     it('should call updatePreferences when a user is logged in', () => {
       (authServiceSpy.currentUser as any).set(mockUser);
-      userServiceSpy.updatePreferences.and.returnValue(of({} as UserResponse));
+      userServiceSpy.updatePreferences.mockReturnValue(of({} as UserResponse));
 
       service.toggleTheme(); // Toggles from 'light' to 'dark'
 

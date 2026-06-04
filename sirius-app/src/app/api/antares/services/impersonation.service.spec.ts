@@ -1,3 +1,5 @@
+import type {MockedObject} from "vitest";
+import {vi} from 'vitest';
 import {TestBed} from '@angular/core/testing';
 import {HttpTestingController, provideHttpClientTesting} from '@angular/common/http/testing';
 import {provideHttpClient} from '@angular/common/http';
@@ -9,7 +11,7 @@ import {UserResponse} from '../models/user.model';
 describe('ImpersonationService', () => {
   let service: ImpersonationService;
   let httpMock: HttpTestingController;
-  let authServiceSpy: jasmine.SpyObj<AuthService>;
+  let authServiceSpy: MockedObject<AuthService>;
   const base = environment.authUrl;
 
   const mockUser: UserResponse = {
@@ -19,7 +21,9 @@ describe('ImpersonationService', () => {
   };
 
   beforeEach(() => {
-    const authSpy = jasmine.createSpyObj('AuthService', ['updateCurrentUser']);
+    const authSpy = {
+      updateCurrentUser: vi.fn().mockName("AuthService.updateCurrentUser")
+    };
 
     TestBed.configureTestingModule({
       providers: [
@@ -31,7 +35,7 @@ describe('ImpersonationService', () => {
     });
     service = TestBed.inject(ImpersonationService);
     httpMock = TestBed.inject(HttpTestingController);
-    authServiceSpy = TestBed.inject(AuthService) as jasmine.SpyObj<AuthService>;
+    authServiceSpy = TestBed.inject(AuthService) as MockedObject<AuthService>;
   });
 
   afterEach(() => {

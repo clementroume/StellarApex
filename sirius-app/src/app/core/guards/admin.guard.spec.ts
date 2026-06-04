@@ -3,10 +3,10 @@ import {CanActivateFn, Router} from '@angular/router';
 import {adminGuard} from './admin.guard';
 import {AuthService} from '../../api/antares/services/auth.service';
 import {signal} from '@angular/core';
+import {vi} from 'vitest';
 
 describe('adminGuard', () => {
-  const executeGuard: CanActivateFn = (...guardParameters) =>
-    TestBed.runInInjectionContext(() => adminGuard(...guardParameters));
+  const executeGuard: CanActivateFn = (...guardParameters) => TestBed.runInInjectionContext(() => adminGuard(...guardParameters));
 
   let mockAuthService: any;
   let mockRouter: any;
@@ -16,7 +16,7 @@ describe('adminGuard', () => {
       currentUser: signal(null)
     };
     mockRouter = {
-      navigate: jasmine.createSpy('navigate')
+      navigate: vi.fn()
     };
 
     TestBed.configureTestingModule({
@@ -29,19 +29,19 @@ describe('adminGuard', () => {
 
   it('should allow access if the user is an ADMIN', () => {
     mockAuthService.currentUser.set({platformRole: 'ADMIN'});
-    expect(executeGuard({} as any, {} as any)).toBeTrue();
+    expect(executeGuard({} as any, {} as any)).toBe(true);
     expect(mockRouter.navigate).not.toHaveBeenCalled();
   });
 
   it('should block access and redirect if the user is a standard USER', () => {
     mockAuthService.currentUser.set({platformRole: 'USER'});
-    expect(executeGuard({} as any, {} as any)).toBeFalse();
+    expect(executeGuard({} as any, {} as any)).toBe(false);
     expect(mockRouter.navigate).toHaveBeenCalledWith(['/dashboard']);
   });
 
   it('should block access and redirect if the user is not authenticated', () => {
     mockAuthService.currentUser.set(null);
-    expect(executeGuard({} as any, {} as any)).toBeFalse();
+    expect(executeGuard({} as any, {} as any)).toBe(false);
     expect(mockRouter.navigate).toHaveBeenCalledWith(['/dashboard']);
   });
 });

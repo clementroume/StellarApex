@@ -3,6 +3,7 @@ import {HttpTestingController, provideHttpClientTesting} from '@angular/common/h
 import {HttpClient, provideHttpClient, withInterceptors} from '@angular/common/http';
 import {loadingInterceptor} from './loading.interceptor';
 import {LoadingService} from '../services/loading.service';
+import {vi} from 'vitest';
 
 describe('loadingInterceptor', () => {
   let httpMock: HttpTestingController;
@@ -28,8 +29,8 @@ describe('loadingInterceptor', () => {
   });
 
   it('should call show() and hide() on a successful request', () => {
-    const showSpy = spyOn(loadingService, 'show').and.callThrough();
-    const hideSpy = spyOn(loadingService, 'hide').and.callThrough();
+    const showSpy = vi.spyOn(loadingService, 'show');
+    const hideSpy = vi.spyOn(loadingService, 'hide');
 
     httpClient.get('/api/test').subscribe();
 
@@ -42,8 +43,8 @@ describe('loadingInterceptor', () => {
   });
 
   it('should call show() and hide() on a failed request', () => {
-    const showSpy = spyOn(loadingService, 'show').and.callThrough();
-    const hideSpy = spyOn(loadingService, 'hide').and.callThrough();
+    const showSpy = vi.spyOn(loadingService, 'show');
+    const hideSpy = vi.spyOn(loadingService, 'hide');
 
     httpClient.get('/api/test').subscribe({
       error: () => {

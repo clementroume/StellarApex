@@ -12,6 +12,7 @@ import {ExporterService} from '../../../api/aldebaran/services/exporter.service'
 import {NotificationService} from '../../../core/services/notification.service';
 import {HttpContext} from '@angular/common/http';
 import {BYPASS_LOADER} from '../../../core/interceptors/loading.interceptor';
+import {vi} from 'vitest';
 
 describe('MuscleListComponent', () => {
   let component: MuscleListComponent;
@@ -47,11 +48,11 @@ describe('MuscleListComponent', () => {
 
   beforeEach(async () => {
     // 1. Mocking the MuscleService
-    const muscleServiceSpyMethods = jasmine.createSpyObj('MuscleService', [
-      'getMuscles',
-      'getReferenceData',
-      'toggleGroupExpansion'
-    ]);
+    const muscleServiceSpyMethods = {
+      getMuscles: vi.fn().mockName("MuscleService.getMuscles"),
+      getReferenceData: vi.fn().mockName("MuscleService.getReferenceData"),
+      toggleGroupExpansion: vi.fn().mockName("MuscleService.toggleGroupExpansion")
+    };
 
     mockMuscleService = {
       ...muscleServiceSpyMethods,
@@ -60,8 +61,8 @@ describe('MuscleListComponent', () => {
       savedSearchQuery: signal('')
     };
 
-    mockMuscleService.getMuscles.and.returnValue(of(mockMuscles));
-    mockMuscleService.getReferenceData.and.returnValue(of({
+    mockMuscleService.getMuscles.mockReturnValue(of(mockMuscles));
+    mockMuscleService.getReferenceData.mockReturnValue(of({
       muscleGroups: ['CHEST', 'BACK', 'LEGS'],
       muscleRoles: ['AGONIST', 'SYNERGIST']
     }));
@@ -73,8 +74,13 @@ describe('MuscleListComponent', () => {
     };
 
     // 3. Other mocks
-    mockExporterService = jasmine.createSpyObj('ExporterService', ['exportMuscles']);
-    mockNotificationService = jasmine.createSpyObj('NotificationService', ['showSuccess', 'showError']);
+    mockExporterService = {
+      exportMuscles: vi.fn().mockName("ExporterService.exportMuscles")
+    };
+    mockNotificationService = {
+      showSuccess: vi.fn().mockName("NotificationService.showSuccess"),
+      showError: vi.fn().mockName("NotificationService.showError")
+    };
 
     await TestBed.configureTestingModule({
       imports: [MuscleListComponent, TranslateModule.forRoot()],
@@ -95,17 +101,17 @@ describe('MuscleListComponent', () => {
 
   it('should create the component and load muscles bypassing the global loader', () => {
     expect(component).toBeTruthy();
-    const callArgs = mockMuscleService.getMuscles.calls.mostRecent().args as any[];
+    const callArgs = vi.mocked(mockMuscleService.getMuscles).mock.lastCall as any[];
     expect(callArgs[0]).toBeInstanceOf(HttpContext);
-    expect(callArgs[0]?.get(BYPASS_LOADER)).toBeTrue();
+    expect(callArgs[0]?.get(BYPASS_LOADER)).toBe(true);
   });
 
   it('should pre-initialize all groups even if they are empty', () => {
     const grouped = component.groupedMuscles();
     // LEGS and BACK were returned by getReferenceData but have no muscles in the mock data
-    expect(grouped.has('LEGS')).toBeTrue();
+    expect(grouped.has('LEGS')).toBe(true);
     expect(grouped.get('LEGS')?.length).toBe(0);
-    expect(grouped.has('BACK')).toBeTrue();
+    expect(grouped.has('BACK')).toBe(true);
   });
 
   it('should filter muscles locally based on the search query (case-insensitive)', () => {
@@ -129,6 +135,6 @@ describe('MuscleListComponent', () => {
   it('should hide edit buttons for a standard user', () => {
     mockCurrentUserSignal.set({platformRole: 'USER'});
     fixture.detectChanges();
-    expect(component.isAdmin()).toBeFalse();
+    expect(component.isAdmin()).toBe(false);
   });
 });

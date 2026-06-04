@@ -1,3 +1,5 @@
+import type {Mock, MockedObject} from "vitest";
+import {vi} from 'vitest';
 import {ComponentFixture, TestBed} from '@angular/core/testing';
 import {MuscleDetailComponent} from './muscle-detail.component';
 import {AuthService} from '../../../api/antares/services/auth.service';
@@ -16,9 +18,9 @@ describe('MuscleDetailComponent', () => {
   let fixture: ComponentFixture<MuscleDetailComponent>;
 
   let mockAuthService: any;
-  let mockMuscleService: jasmine.SpyObj<MuscleService>;
-  let mockNotificationService: jasmine.SpyObj<NotificationService>;
-  let mockLocation: jasmine.SpyObj<Location>;
+  let mockMuscleService: MockedObject<MuscleService>;
+  let mockNotificationService: MockedObject<NotificationService>;
+  let mockLocation: MockedObject<Location>;
   let router: Router;
 
   const mockMuscle: any = {
@@ -36,11 +38,20 @@ describe('MuscleDetailComponent', () => {
       currentUser: signal({platformRole: 'ADMIN'})
     };
 
-    mockMuscleService = jasmine.createSpyObj('MuscleService', ['getMuscle', 'deleteMuscle', 'notifyRefresh']);
-    mockMuscleService.getMuscle.and.returnValue(of(mockMuscle));
+    mockMuscleService = {
+      getMuscle: vi.fn().mockName("MuscleService.getMuscle"),
+      deleteMuscle: vi.fn().mockName("MuscleService.deleteMuscle"),
+      notifyRefresh: vi.fn().mockName("MuscleService.notifyRefresh")
+    } as any;
+    mockMuscleService.getMuscle.mockReturnValue(of(mockMuscle));
 
-    mockNotificationService = jasmine.createSpyObj('NotificationService', ['showSuccess', 'showError']);
-    mockLocation = jasmine.createSpyObj('Location', ['back']);
+    mockNotificationService = {
+      showSuccess: vi.fn().mockName("NotificationService.showSuccess"),
+      showError: vi.fn().mockName("NotificationService.showError")
+    } as any;
+    mockLocation = {
+      back: vi.fn().mockName("Location.back")
+    } as any;
 
     await TestBed.configureTestingModule({
       imports: [MuscleDetailComponent, TranslateModule.forRoot()],
@@ -86,19 +97,19 @@ describe('MuscleDetailComponent', () => {
 
   describe('onDelete', () => {
     beforeEach(() => {
-      spyOn(window, 'confirm');
+      vi.spyOn(window, 'confirm');
     });
 
     it('should do nothing if confirm is cancelled', () => {
-      (window.confirm as jasmine.Spy).and.returnValue(false);
+      (window.confirm as Mock).mockReturnValue(false);
       component.onDelete(mockMuscle);
       expect(mockMuscleService.deleteMuscle).not.toHaveBeenCalled();
     });
 
     it('should delete muscle and navigate back on success', () => {
-      const navigateSpy = spyOn(router, 'navigate');
-      (window.confirm as jasmine.Spy).and.returnValue(true);
-      mockMuscleService.deleteMuscle.and.returnValue(of(undefined));
+      const navigateSpy = vi.spyOn(router, 'navigate');
+      (window.confirm as Mock).mockReturnValue(true);
+      mockMuscleService.deleteMuscle.mockReturnValue(of(undefined));
 
       component.onDelete(mockMuscle);
 
@@ -109,8 +120,8 @@ describe('MuscleDetailComponent', () => {
     });
 
     it('should display conflict error on 409 status', () => {
-      (window.confirm as jasmine.Spy).and.returnValue(true);
-      mockMuscleService.deleteMuscle.and.returnValue(throwError(() => ({status: 409})));
+      (window.confirm as Mock).mockReturnValue(true);
+      mockMuscleService.deleteMuscle.mockReturnValue(throwError(() => ({status: 409})));
 
       component.onDelete(mockMuscle);
 

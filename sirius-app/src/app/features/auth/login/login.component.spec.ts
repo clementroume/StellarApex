@@ -1,3 +1,5 @@
+import type {MockedObject} from "vitest";
+import {vi} from 'vitest';
 import {ComponentFixture, TestBed} from '@angular/core/testing';
 import {LoginComponent} from './login.component';
 import {provideHttpClient} from '@angular/common/http';
@@ -12,11 +14,13 @@ import {APP_ICONS} from '../../../app.config';
 describe('LoginComponent', () => {
   let component: LoginComponent;
   let fixture: ComponentFixture<LoginComponent>;
-  let authServiceSpy: jasmine.SpyObj<AuthService>;
+  let authServiceSpy: MockedObject<AuthService>;
 
   beforeEach(async () => {
-    authServiceSpy = jasmine.createSpyObj('AuthService', ['login']);
-    authServiceSpy.login.and.returnValue(of({} as any));
+    authServiceSpy = {
+      login: vi.fn().mockName("AuthService.login")
+    } as any;
+    authServiceSpy.login.mockReturnValue(of({} as any));
     await TestBed.configureTestingModule({
       imports: [LoginComponent, TranslateModule.forRoot()],
       providers: [
@@ -30,7 +34,8 @@ describe('LoginComponent', () => {
 
     fixture = TestBed.createComponent(LoginComponent);
     component = fixture.componentInstance;
-    spyOn(component, 'redirectToExternal');
+    vi.spyOn(component, 'redirectToExternal').mockImplementation(() => {
+    });
     fixture.detectChanges();
   });
 
@@ -45,13 +50,13 @@ describe('LoginComponent', () => {
   });
 
   it('should make the form invalid when fields are empty', () => {
-    expect(component.loginForm.valid).toBeFalse();
+    expect(component.loginForm.valid).toBe(false);
   });
 
   it('should make the form valid when fields are filled correctly', () => {
     component.loginForm.controls['email'].setValue('test@example.com');
     component.loginForm.controls['password'].setValue('password123');
-    expect(component.loginForm.valid).toBeTrue();
+    expect(component.loginForm.valid).toBe(true);
   });
 
   it('should call redirectToExternal when returnUrl starts with http', () => {

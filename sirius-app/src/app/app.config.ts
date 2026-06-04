@@ -31,6 +31,7 @@ import {
   heroTrash,
   heroUser,
   heroVideoCamera,
+  heroVideoCameraSlash,
 } from '@ng-icons/heroicons/outline';
 import {
   hugeBodyPartMuscle,
@@ -74,7 +75,8 @@ export const APP_ICONS = {
   hugeGymnastic,
   hugeCardiogram02,
   hugeDumbbell01,
-  hugeBodyPartSixPack
+  hugeBodyPartSixPack,
+  heroVideoCameraSlash
 };
 
 export const appConfig: ApplicationConfig = {

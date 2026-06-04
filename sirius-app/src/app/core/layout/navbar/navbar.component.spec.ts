@@ -1,3 +1,5 @@
+import type {MockedObject} from "vitest";
+import {vi} from 'vitest';
 import {ComponentFixture, TestBed} from '@angular/core/testing';
 import {NavbarComponent} from './navbar.component';
 import {provideRouter} from '@angular/router';
@@ -14,8 +16,8 @@ import {APP_ICONS} from '../../../app.config';
 describe('NavbarComponent', () => {
   let component: NavbarComponent;
   let fixture: ComponentFixture<NavbarComponent>;
-  let authServiceSpy: jasmine.SpyObj<AuthService>;
-  let themeServiceSpy: jasmine.SpyObj<ThemeService>;
+  let authServiceSpy: MockedObject<AuthService>;
+  let themeServiceSpy: MockedObject<ThemeService>;
   let mockCurrentUser: WritableSignal<UserResponse | null>;
 
   const mockUser: UserResponse = {
@@ -27,12 +29,14 @@ describe('NavbarComponent', () => {
   beforeEach(async () => {
     mockCurrentUser = signal(null);
 
-    authServiceSpy = jasmine.createSpyObj('AuthService', ['logout'], {
-      currentUser: mockCurrentUser.asReadonly()
-    });
-    themeServiceSpy = jasmine.createSpyObj('ThemeService', ['toggleTheme'], {
-      currentTheme: signal('light')
-    });
+    authServiceSpy = {
+      logout: vi.fn().mockName("AuthService.logout"),
+      currentUser: mockCurrentUser.asReadonly() as any
+    } as any;
+    themeServiceSpy = {
+      toggleTheme: vi.fn().mockName("ThemeService.toggleTheme"),
+      currentTheme: signal('light') as any
+    } as any;
 
     await TestBed.configureTestingModule({
       imports: [NavbarComponent, TranslateModule.forRoot()],
@@ -54,14 +58,14 @@ describe('NavbarComponent', () => {
   });
 
   it('should call authService.logout when logout() is called', () => {
-    authServiceSpy.logout.and.returnValue(of(undefined));
+    authServiceSpy.logout.mockReturnValue(of(undefined));
     component.logout();
     expect(authServiceSpy.logout).toHaveBeenCalledTimes(1);
   });
 
   it('should call themeService.toggleTheme when the theme toggle is changed', () => {
     const themeToggleInput = fixture.nativeElement.querySelector('#theme-toggle');
-    expect(themeToggleInput).withContext('Theme toggle input should exist').toBeTruthy();
+    expect(themeToggleInput).toBeTruthy();
 
     themeToggleInput.dispatchEvent(new Event('change'));
 
@@ -73,10 +77,10 @@ describe('NavbarComponent', () => {
     fixture.detectChanges();
 
     const dropdowns = fixture.debugElement.queryAll(By.css('.dropdown'));
-    expect(dropdowns.length).withContext('Only the mobile dropdown should be visible').toBe(1);
+    expect(dropdowns.length).toBe(1);
 
     const myAccountLink = fixture.debugElement.query(By.css('a[routerLink="/my-account"]'));
-    expect(myAccountLink).withContext('"My Account" link should exist').not.toBeNull();
+    expect(myAccountLink).not.toBeNull();
 
     const linkElement = myAccountLink.nativeElement as HTMLAnchorElement;
     expect(linkElement.getAttribute('href')).toBe('/my-account');

@@ -1,4 +1,5 @@
-import {fakeAsync, TestBed, tick} from '@angular/core/testing';
+import {TestBed} from '@angular/core/testing';
+import {vi} from 'vitest';
 import {NotificationService} from './notification.service';
 
 describe('NotificationService', () => {
@@ -37,10 +38,12 @@ describe('NotificationService', () => {
     expect(notification?.type).toBe('error');
   });
 
-  it('should clear the notification automatically after 5 seconds', fakeAsync(() => {
+  it('should clear the notification automatically after 5 seconds', () => {
+    vi.useFakeTimers();
     service.showSuccess('A temporary message');
     expect(service.notification()).not.toBeNull();
-    tick(5000);
+    vi.advanceTimersByTime(5000);
     expect(service.notification()).toBeNull();
-  }));
+    vi.useRealTimers();
+  });
 });

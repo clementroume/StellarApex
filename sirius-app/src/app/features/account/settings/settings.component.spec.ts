@@ -1,3 +1,5 @@
+import type {MockedObject} from "vitest";
+import {vi} from 'vitest';
 import {ComponentFixture, TestBed} from '@angular/core/testing';
 import {SettingsComponent} from './settings.component';
 import {HttpErrorResponse, provideHttpClient} from '@angular/common/http';
@@ -17,17 +19,27 @@ describe('SettingsComponent', () => {
   let component: SettingsComponent;
   let fixture: ComponentFixture<SettingsComponent>;
   let translateService: TranslateService;
-  let authServiceSpy: jasmine.SpyObj<AuthService>;
-  let userServiceSpy: jasmine.SpyObj<UserService>;
-  let notificationServiceSpy: jasmine.SpyObj<NotificationService>;
+  let authServiceSpy: MockedObject<AuthService>;
+  let userServiceSpy: MockedObject<UserService>;
+  let notificationServiceSpy: MockedObject<NotificationService>;
 
   beforeEach(async () => {
-    authServiceSpy = jasmine.createSpyObj('AuthService', [], {
-      currentUser: signal<UserResponse | null>({theme: 'light', locale: 'en'} as UserResponse)
-    });
-    userServiceSpy = jasmine.createSpyObj('UserService', ['changePassword', 'updatePreferences', 'deleteAccount']);
+    TestBed.resetTestingModule();
 
-    notificationServiceSpy = jasmine.createSpyObj('NotificationService', ['showSuccess', 'showError']);
+    authServiceSpy = {
+      currentUser: signal<UserResponse | null>({theme: 'light', locale: 'en'} as UserResponse)
+    } as any;
+
+    userServiceSpy = {
+      changePassword: vi.fn().mockName("UserService.changePassword"),
+      updatePreferences: vi.fn().mockName("UserService.updatePreferences"),
+      deleteAccount: vi.fn().mockName("UserService.deleteAccount")
+    } as any;
+
+    notificationServiceSpy = {
+      showSuccess: vi.fn().mockName("NotificationService.showSuccess"),
+      showError: vi.fn().mockName("NotificationService.showError")
+    } as any;
 
     await TestBed.configureTestingModule({
       imports: [
@@ -55,7 +67,10 @@ describe('SettingsComponent', () => {
     fixture.detectChanges();
 
     component.deleteModal = {
-      nativeElement: jasmine.createSpyObj('HTMLDialogElement', ['showModal', 'close'])
+      nativeElement: {
+        showModal: vi.fn().mockName("HTMLDialogElement.showModal"),
+        close: vi.fn().mockName("HTMLDialogElement.close")
+      } as any
     };
   });
 
@@ -66,7 +81,7 @@ describe('SettingsComponent', () => {
   describe('Password Form', () => {
     it('should initialize the password form', () => {
       expect(component.passwordForm).toBeDefined();
-      expect(component.passwordForm.valid).toBeFalse();
+      expect(component.passwordForm.valid).toBe(false);
     });
 
     it('should have a password mismatch error if passwords do not match', () => {
@@ -74,7 +89,7 @@ describe('SettingsComponent', () => {
       form.controls['currentPassword'].setValue('12345678');
       form.controls['newPassword'].setValue('newPassword123');
       form.controls['confirmationPassword'].setValue('wrongPassword123');
-      expect(form.hasError('passwordsMismatch')).toBeTrue();
+      expect(form.hasError('passwordsMismatch')).toBe(true);
     });
 
     it('should be valid if all password fields are correct', () => {
@@ -82,7 +97,7 @@ describe('SettingsComponent', () => {
       form.controls['currentPassword'].setValue('12345678');
       form.controls['newPassword'].setValue('newPassword123');
       form.controls['confirmationPassword'].setValue('newPassword123');
-      expect(form.valid).toBeTrue();
+      expect(form.valid).toBe(true);
     });
 
     it('should call authService.changePassword on submit', () => {
@@ -91,13 +106,13 @@ describe('SettingsComponent', () => {
       form.controls['newPassword'].setValue('newPassword123A');
       form.controls['confirmationPassword'].setValue('newPassword123A');
 
-      userServiceSpy.changePassword.and.returnValue(of(void 0));
+      userServiceSpy.changePassword.mockReturnValue(of(void 0));
 
       component.onSubmit();
 
       expect(userServiceSpy.changePassword).toHaveBeenCalled();
       expect(notificationServiceSpy.showSuccess).toHaveBeenCalled();
-      expect(form.pristine).toBeTrue();
+      expect(form.pristine).toBe(true);
     });
   });
 
@@ -108,7 +123,7 @@ describe('SettingsComponent', () => {
     });
 
     it('should call deleteAccount service on confirmation and close modal on success', () => {
-      userServiceSpy.deleteAccount.and.returnValue(of(void 0));
+      userServiceSpy.deleteAccount.mockReturnValue(of(void 0));
 
       component.confirmDeleteAccount();
 
@@ -122,7 +137,7 @@ describe('SettingsComponent', () => {
         error: {detail: 'Deletion failed'},
         status: 500
       });
-      userServiceSpy.deleteAccount.and.returnValue(throwError(() => errorResponse));
+      userServiceSpy.deleteAccount.mockReturnValue(throwError(() => errorResponse));
 
       component.confirmDeleteAccount();
 

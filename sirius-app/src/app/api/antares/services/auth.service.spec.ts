@@ -1,3 +1,5 @@
+import type {Mock} from "vitest";
+import {vi} from 'vitest';
 import {TestBed} from '@angular/core/testing';
 import {provideHttpClient} from '@angular/common/http';
 import {HttpTestingController, provideHttpClientTesting} from '@angular/common/http/testing';
@@ -11,7 +13,7 @@ describe('AuthService', () => {
   let service: AuthService;
   let httpMock: HttpTestingController;
   let router: Router;
-  let navigateSpy: jasmine.Spy;
+  let navigateSpy: Mock;
 
   const base = `${environment.authUrl}`;
 
@@ -39,7 +41,7 @@ describe('AuthService', () => {
     service = TestBed.inject(AuthService);
     httpMock = TestBed.inject(HttpTestingController);
     router = TestBed.inject(Router);
-    navigateSpy = spyOn(router, 'navigate').and.resolveTo(true);
+    navigateSpy = vi.spyOn(router, 'navigate').mockResolvedValue(true);
   });
 
   afterEach(() => {
@@ -49,7 +51,7 @@ describe('AuthService', () => {
   it('should be created with initial state', () => {
     expect(service).toBeTruthy();
     expect(service.currentUser()).toBeUndefined();
-    expect(service.isAuthenticated()).toBeFalse();
+    expect(service.isAuthenticated()).toBe(false);
   });
 
   describe('initCurrentUser', () => {
@@ -58,7 +60,7 @@ describe('AuthService', () => {
       const req = httpMock.expectOne(`${base}/users/me`);
       req.flush(dummyUser);
       expect(service.currentUser()).toEqual(dummyUser);
-      expect(service.isAuthenticated()).toBeTrue();
+      expect(service.isAuthenticated()).toBe(true);
     });
 
     it('should set user to null on error', () => {
@@ -66,7 +68,7 @@ describe('AuthService', () => {
       const req = httpMock.expectOne(`${base}/users/me`);
       req.flush({}, {status: 401, statusText: 'Unauthorized'});
       expect(service.currentUser()).toBeNull();
-      expect(service.isAuthenticated()).toBeFalse();
+      expect(service.isAuthenticated()).toBe(false);
     });
   });
 

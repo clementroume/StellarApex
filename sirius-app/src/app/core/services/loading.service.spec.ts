@@ -1,5 +1,5 @@
-import { TestBed, fakeAsync, flush } from '@angular/core/testing';
-import { LoadingService } from './loading.service';
+import {TestBed} from '@angular/core/testing';
+import {LoadingService} from './loading.service';
 
 describe('LoadingService', () => {
   let service: LoadingService;
@@ -16,44 +16,39 @@ describe('LoadingService', () => {
   });
 
   it('isLoading should be false initially', () => {
-    expect(service.isLoading()).toBeFalse();
+    expect(service.isLoading()).toBe(false);
   });
 
-  it('should set isLoading to true after one show() call', fakeAsync(() => {
+  it('should set isLoading to true after one show() call', () => {
     service.show();
-    flush(); // Flush the signal update
-    expect(service.isLoading()).toBeTrue();
-  }));
+    expect(service.isLoading()).toBe(true);
+  });
 
-  it('should set isLoading to false after one show() and one hide() call', fakeAsync(() => {
+  it('should set isLoading to false after one show() and one hide() call', () => {
     service.show();
     service.hide();
-    flush(); // Flush the signal updates
-    expect(service.isLoading()).toBeFalse();
-  }));
+    expect(service.isLoading()).toBe(false);
+  });
 
-  it('should remain loading if hide() is called fewer times than show()', fakeAsync(() => {
+  it('should remain loading if hide() is called fewer times than show()', () => {
     service.show();
     service.show();
     service.hide();
-    flush(); // Flush the signal updates
-    expect(service.isLoading()).toBeTrue();
-  }));
+    expect(service.isLoading()).toBe(true);
+  });
 
-  it('should stop loading only when all requests are hidden', fakeAsync(() => {
+  it('should stop loading only when all requests are hidden', () => {
     service.show();
     service.show();
     service.hide();
     service.hide();
-    flush(); // Flush the signal updates
-    expect(service.isLoading()).toBeFalse();
-  }));
+    expect(service.isLoading()).toBe(false);
+  });
 
-  it('should not go below zero', fakeAsync(() => {
+  it('should not go below zero', () => {
     service.hide();
     service.hide();
-    flush(); // Flush the signal updates
     expect((service as any)._activeRequests()).toBe(0);
-    expect(service.isLoading()).toBeFalse();
-  }));
+    expect(service.isLoading()).toBe(false);
+  });
 });

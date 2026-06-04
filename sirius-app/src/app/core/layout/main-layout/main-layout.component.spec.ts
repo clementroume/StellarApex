@@ -3,23 +3,25 @@ import {MainLayoutComponent} from './main-layout.component';
 import {provideRouter} from '@angular/router';
 import {TranslateModule} from '@ngx-translate/core';
 import {signal} from '@angular/core';
-
 import {AuthService} from '../../../api/antares/services/auth.service';
 import {ThemeService} from '../../services/theme.service';
 import {provideIcons} from '@ng-icons/core';
 import {APP_ICONS} from '../../../app.config';
+import {vi} from 'vitest';
 
 describe('MainLayoutComponent', () => {
   let component: MainLayoutComponent;
   let fixture: ComponentFixture<MainLayoutComponent>;
 
   beforeEach(async () => {
-    const authServiceSpy = jasmine.createSpyObj('AuthService', ['logout'], {
+    const authServiceSpy = {
+      logout: vi.fn().mockName("AuthService.logout"),
       currentUser: signal(null)
-    });
-    const themeServiceSpy = jasmine.createSpyObj('ThemeService', ['toggleTheme'], {
+    };
+    const themeServiceSpy = {
+      toggleTheme: vi.fn().mockName("ThemeService.toggleTheme"),
       currentTheme: signal('light')
-    });
+    };
 
     await TestBed.configureTestingModule({
       imports: [

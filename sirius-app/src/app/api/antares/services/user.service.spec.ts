@@ -1,3 +1,5 @@
+import type {MockedObject} from "vitest";
+import {vi} from 'vitest';
 import {TestBed} from '@angular/core/testing';
 import {UserService} from './user.service';
 import {HttpTestingController, provideHttpClientTesting} from '@angular/common/http/testing';
@@ -11,7 +13,7 @@ import {provideRouter, Router} from '@angular/router';
 describe('UserService', () => {
   let service: UserService;
   let httpMock: HttpTestingController;
-  let authServiceSpy: jasmine.SpyObj<AuthService>;
+  let authServiceSpy: MockedObject<AuthService>;
   let router: Router;
 
   const base = environment.authUrl;
@@ -22,7 +24,9 @@ describe('UserService', () => {
   };
 
   beforeEach(() => {
-    const authSpy = jasmine.createSpyObj('AuthService', ['updateCurrentUser']);
+    const authSpy = {
+      updateCurrentUser: vi.fn().mockName("AuthService.updateCurrentUser")
+    };
 
     TestBed.configureTestingModule({
       providers: [
@@ -35,7 +39,7 @@ describe('UserService', () => {
     });
     service = TestBed.inject(UserService);
     httpMock = TestBed.inject(HttpTestingController);
-    authServiceSpy = TestBed.inject(AuthService) as jasmine.SpyObj<AuthService>;
+    authServiceSpy = TestBed.inject(AuthService) as MockedObject<AuthService>;
     router = TestBed.inject(Router);
   });
 
@@ -91,7 +95,7 @@ describe('UserService', () => {
   });
 
   it('deleteAccount should DELETE, clear auth state, and redirect', () => {
-    const navigateSpy = spyOn(router, 'navigate');
+    const navigateSpy = vi.spyOn(router, 'navigate');
 
     service.deleteAccount().subscribe();
 

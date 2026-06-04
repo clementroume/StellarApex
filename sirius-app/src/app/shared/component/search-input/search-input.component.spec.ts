@@ -2,6 +2,7 @@ import {ComponentFixture, TestBed} from '@angular/core/testing';
 import {SearchInputComponent} from './search-input.component';
 import {provideIcons} from '@ng-icons/core';
 import {APP_ICONS} from '../../../app.config';
+import {vi} from 'vitest';
 
 describe('SearchInputComponent', () => {
   let component: SearchInputComponent;
@@ -34,7 +35,7 @@ describe('SearchInputComponent', () => {
   });
 
   it('should emit the new value when the user types in the input', () => {
-    spyOn(component.valueChange, 'emit');
+    vi.spyOn(component.valueChange, 'emit');
 
     const inputElement: HTMLInputElement = fixture.nativeElement.querySelector('input');
 

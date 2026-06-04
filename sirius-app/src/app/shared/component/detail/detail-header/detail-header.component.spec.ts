@@ -2,6 +2,7 @@ import {ComponentFixture, TestBed} from '@angular/core/testing';
 import {DetailHeaderComponent} from './detail-header.component';
 import {provideIcons} from '@ng-icons/core';
 import {heroArrowLeft} from '@ng-icons/heroicons/outline';
+import {vi} from 'vitest';
 
 describe('DetailHeaderComponent', () => {
   let component: DetailHeaderComponent;
@@ -36,7 +37,7 @@ describe('DetailHeaderComponent', () => {
   });
 
   it('should emit back event on button click', () => {
-    spyOn(component.back, 'emit');
+    vi.spyOn(component.back, 'emit');
     const button = fixture.nativeElement.querySelector('button');
     button.click();
     expect(component.back.emit).toHaveBeenCalled();
