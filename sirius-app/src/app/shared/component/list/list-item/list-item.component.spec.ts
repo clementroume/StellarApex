@@ -22,8 +22,8 @@ describe('ListItemComponent', () => {
     component = fixture.componentInstance;
 
     // On fournit les inputs obligatoires par défaut pour éviter les erreurs d'initialisation
-    component.title = 'Test Title';
-    component.link = ['/test', 1];
+    fixture.componentRef.setInput('title', 'Test Title');
+    fixture.componentRef.setInput('link', ['/test', 1]);
   });
 
   it('should create the component', () => {
@@ -32,7 +32,7 @@ describe('ListItemComponent', () => {
   });
 
   it('should display the title and the first letter as avatar when no image is provided', () => {
-    component.title = 'Biceps';
+    fixture.componentRef.setInput('title', 'Biceps');
     fixture.detectChanges();
 
     const textContent = fixture.nativeElement.textContent;
@@ -47,7 +47,7 @@ describe('ListItemComponent', () => {
   });
 
   it('should display an image when imageUrl is provided', () => {
-    component.imageUrl = 'https://fake-image.url/muscle.png';
+    fixture.componentRef.setInput('imageUrl', 'https://fake-image.url/muscle.png');
     fixture.detectChanges();
 
     const imgElement = fixture.debugElement.query(By.css('img'));
@@ -57,8 +57,8 @@ describe('ListItemComponent', () => {
   });
 
   it('should display the badge when provided', () => {
-    component.title = 'Back Squat';
-    component.badge = 'BS';
+    fixture.componentRef.setInput('title', 'Back Squat');
+    fixture.componentRef.setInput('badge', 'BS');
     fixture.detectChanges();
 
     const badgeElement = fixture.debugElement.query(By.css('.badge'));
@@ -67,7 +67,7 @@ describe('ListItemComponent', () => {
   });
 
   it('should not display the badge if not provided', () => {
-    component.badge = undefined;
+    fixture.componentRef.setInput('badge', undefined);
     fixture.detectChanges();
 
     const badgeElement = fixture.debugElement.query(By.css('.badge'));
@@ -75,8 +75,8 @@ describe('ListItemComponent', () => {
   });
 
   it('should display the subtitle when provided', () => {
-    component.title = 'Pectoraux';
-    component.subtitle = 'Pectoralis major';
+    fixture.componentRef.setInput('title', 'Pectoraux');
+    fixture.componentRef.setInput('subtitle', 'Pectoralis major');
     fixture.detectChanges();
 
     // On cherche l'élément avec la classe opacité-60 que l'on a mise pour le sous-titre
@@ -86,7 +86,7 @@ describe('ListItemComponent', () => {
   });
 
   it('should not display the subtitle if not provided', () => {
-    component.subtitle = undefined;
+    fixture.componentRef.setInput('subtitle', undefined);
     fixture.detectChanges();
 
     const subtitleElement = fixture.debugElement.query(By.css('.opacity-60'));
@@ -94,7 +94,7 @@ describe('ListItemComponent', () => {
   });
 
   it('should bind the correct routerLink', () => {
-    component.link = ['/movements', 42];
+    fixture.componentRef.setInput('link', ['/movements', 42]);
     fixture.detectChanges();
 
     const linkElement = fixture.debugElement.query(By.css('a'));

@@ -24,12 +24,11 @@ describe('SearchInputComponent', () => {
   });
 
   it('should display the correct placeholder and value', () => {
-    component.placeholder = 'Rechercher un muscle...';
-    component.value = 'Biceps';
+    fixture.componentRef.setInput('placeholder', 'Rechercher un muscle...');
+    fixture.componentRef.setInput('value', 'Biceps');
     fixture.detectChanges();
 
     const inputElement: HTMLInputElement = fixture.nativeElement.querySelector('input');
-
     expect(inputElement.placeholder).toBe('Rechercher un muscle...');
     expect(inputElement.value).toBe('Biceps');
   });

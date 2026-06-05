@@ -1,14 +1,14 @@
 import {ComponentFixture, TestBed} from '@angular/core/testing';
 import {ListStateComponent} from './list-state.component';
-import {Component, ChangeDetectionStrategy} from '@angular/core';
+import {Component, signal} from '@angular/core';
 import {By} from '@angular/platform-browser';
 
 @Component({
   template: `
     <app-list-state
-      [isLoading]="isLoading"
-      [isRawEmpty]="isRawEmpty"
-      [isFilteredEmpty]="isFilteredEmpty"
+      [isLoading]="isLoading()"
+      [isRawEmpty]="isRawEmpty()"
+      [isFilteredEmpty]="isFilteredEmpty()"
       [emptyMessage]="'Le catalogue est vide'"
       [emptySearchMessage]="'Aucun résultat pour cette recherche'">
 
@@ -17,13 +17,12 @@ import {By} from '@angular/platform-browser';
     </app-list-state>
   `,
   standalone: true,
-  changeDetection: ChangeDetectionStrategy.Eager,
   imports: [ListStateComponent]
 })
 class TestHostComponent {
-  isLoading = false;
-  isRawEmpty = false;
-  isFilteredEmpty = false;
+  isLoading = signal(false);
+  isRawEmpty = signal(false);
+  isFilteredEmpty = signal(false);
 }
 
 describe('ListStateComponent', () => {
@@ -41,8 +40,8 @@ describe('ListStateComponent', () => {
   });
 
   it('should show the loading spinner when loading and raw list is empty', () => {
-    hostComponent.isLoading = true;
-    hostComponent.isRawEmpty = true;
+    hostComponent.isLoading.set(true);
+    hostComponent.isRawEmpty.set(true);
     fixture.detectChanges();
 
     const spinner = fixture.debugElement.query(By.css('.loading-spinner'));
@@ -53,7 +52,7 @@ describe('ListStateComponent', () => {
   });
 
   it('should show the empty message when there is no data at all', () => {
-    hostComponent.isRawEmpty = true;
+    hostComponent.isRawEmpty.set(true);
     fixture.detectChanges();
 
     const textContent = fixture.nativeElement.textContent;
@@ -61,7 +60,7 @@ describe('ListStateComponent', () => {
   });
 
   it('should show the empty search message when filtered list is empty', () => {
-    hostComponent.isFilteredEmpty = true;
+    hostComponent.isFilteredEmpty.set(true);
     fixture.detectChanges();
 
     const textContent = fixture.nativeElement.textContent;

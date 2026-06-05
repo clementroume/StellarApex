@@ -2,7 +2,7 @@ import type {MockedObject} from "vitest";
 import {vi} from 'vitest';
 import {ComponentFixture, TestBed} from '@angular/core/testing';
 import {MovementFormComponent} from './movement-form.component';
-import {ActivatedRoute, provideRouter} from '@angular/router';
+import {ActivatedRoute, provideRouter, Router} from '@angular/router';
 import {TranslateModule} from '@ngx-translate/core';
 import {of} from 'rxjs';
 import {provideIcons} from '@ng-icons/core';
@@ -82,6 +82,8 @@ describe('MovementFormComponent', () => {
     fixture = TestBed.createComponent(MovementFormComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
+    const router = TestBed.inject(Router);
+    vi.spyOn(router, 'navigate').mockResolvedValue(true);
   };
 
   describe('Create Mode', () => {

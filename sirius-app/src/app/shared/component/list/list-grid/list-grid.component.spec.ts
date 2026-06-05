@@ -1,12 +1,12 @@
 import {ComponentFixture, TestBed} from '@angular/core/testing';
-import {Component, ChangeDetectionStrategy} from '@angular/core';
+import {Component, signal} from '@angular/core';
 import {By} from '@angular/platform-browser';
 import {ListGridComponent} from './list-grid.component';
 
 // 1. Faux composant parent pour tester la projection du template
 @Component({
   template: `
-    <app-list-grid [items]="items">
+    <app-list-grid [items]="items()">
 
       <!-- Le template qu'on projette, avec let-item pour récupérer l'élément -->
       <ng-template let-item>
@@ -16,12 +16,11 @@ import {ListGridComponent} from './list-grid.component';
     </app-list-grid>
   `,
   standalone: true,
-  changeDetection: ChangeDetectionStrategy.Eager,
   imports: [ListGridComponent]
 })
 class TestHostComponent {
   // On lui donne une liste de 4 éléments pour tester nos index pairs/impairs
-  items = ['Item 0', 'Item 1', 'Item 2', 'Item 3'];
+  items = signal(['Item 0', 'Item 1', 'Item 2', 'Item 3']);
 }
 
 describe('ListGridComponent', () => {
@@ -79,7 +78,7 @@ describe('ListGridComponent', () => {
 
   it('should update the grid when input items change', () => {
     // On simule un filtrage qui ne laisserait qu'un seul élément
-    hostComponent.items = ['Single Item'];
+    hostComponent.items.set(['Single Item']);
     fixture.detectChanges();
 
     const desktopContainer = fixture.debugElement.query(By.css('.hidden.md\\:flex'));

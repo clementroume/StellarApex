@@ -1,11 +1,11 @@
-import {Component, Input, ChangeDetectionStrategy} from '@angular/core';
+import {ChangeDetectionStrategy, Component, input} from '@angular/core';
 
 @Component({
   selector: 'app-detail-state',
   standalone: true,
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    @if (isLoading) {
+    @if (isLoading()) {
       <ng-content select="[skeleton]"></ng-content>
     } @else {
       <ng-content></ng-content>
@@ -13,5 +13,5 @@ import {Component, Input, ChangeDetectionStrategy} from '@angular/core';
   `
 })
 export class DetailStateComponent {
-  @Input({required: true}) isLoading!: boolean;
+  isLoading = input.required<boolean>();
 }

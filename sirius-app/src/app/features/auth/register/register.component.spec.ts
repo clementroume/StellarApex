@@ -4,7 +4,7 @@ import {ComponentFixture, TestBed} from '@angular/core/testing';
 import {RegisterComponent} from './register.component';
 import {provideHttpClient, withXhr} from '@angular/common/http';
 import {provideHttpClientTesting} from '@angular/common/http/testing';
-import {provideRouter} from '@angular/router';
+import {provideRouter, Router} from '@angular/router';
 import {TranslateModule} from '@ngx-translate/core';
 import {AuthService} from '../../../api/antares/services/auth.service';
 import {of} from 'rxjs';
@@ -36,6 +36,8 @@ describe('RegisterComponent', () => {
     fixture = TestBed.createComponent(RegisterComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
+    const router = TestBed.inject(Router);
+    vi.spyOn(router, 'navigate').mockResolvedValue(true);
   });
 
   it('should create', () => {

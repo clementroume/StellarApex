@@ -21,15 +21,15 @@ describe('DetailHeaderComponent', () => {
   });
 
   it('should display the main title', () => {
-    component.title = 'Main Title';
+    fixture.componentRef.setInput('title', 'Main Title');
     fixture.detectChanges();
     const h1 = fixture.nativeElement.querySelector('h1');
     expect(h1.textContent).toContain('Main Title');
   });
 
   it('should display the subtitle if provided', () => {
-    component.title = 'Title';
-    component.subtitle = 'Subtitle';
+    fixture.componentRef.setInput('title', 'Title');
+    fixture.componentRef.setInput('subtitle', 'Subtitle');
     fixture.detectChanges();
     const subtitleSpan = fixture.nativeElement.querySelector('h1 span');
     expect(subtitleSpan).toBeTruthy();

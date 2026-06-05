@@ -3,8 +3,8 @@ import {DetailAdminActionsComponent} from './detail-admin-actions.component';
 import {TranslateModule} from '@ngx-translate/core';
 import {provideRouter} from '@angular/router';
 import {provideIcons} from '@ng-icons/core';
-import {heroPencilSquare, heroTrash} from '@ng-icons/heroicons/outline';
 import {vi} from 'vitest';
+import {APP_ICONS} from '../../../../app.config';
 
 describe('DetailAdminActionsComponent', () => {
   let component: DetailAdminActionsComponent;
@@ -18,13 +18,13 @@ describe('DetailAdminActionsComponent', () => {
       ],
       providers: [
         provideRouter([]),
-        provideIcons({heroTrash, heroPencilSquare})
+        provideIcons(APP_ICONS)
       ]
     }).compileComponents();
 
     fixture = TestBed.createComponent(DetailAdminActionsComponent);
     component = fixture.componentInstance;
-    component.editLink = ['/edit', '123'];
+    fixture.componentRef.setInput('editLink', ['/edit', '123']);
     fixture.detectChanges();
   });
 
