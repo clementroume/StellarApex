@@ -2,7 +2,7 @@ import type {MockedObject} from "vitest";
 import {vi} from 'vitest';
 import {ComponentFixture, TestBed} from '@angular/core/testing';
 import {SettingsComponent} from './settings.component';
-import {HttpErrorResponse, provideHttpClient} from '@angular/common/http';
+import {HttpErrorResponse, provideHttpClient, withXhr} from '@angular/common/http';
 import {provideHttpClientTesting} from '@angular/common/http/testing';
 import {provideRouter} from '@angular/router';
 import {TranslateModule, TranslateService} from '@ngx-translate/core';
@@ -47,7 +47,7 @@ describe('SettingsComponent', () => {
         TranslateModule.forRoot()
       ],
       providers: [
-        provideHttpClient(),
+        provideHttpClient(withXhr()),
         provideHttpClientTesting(),
         provideRouter([]),
         provideIcons(APP_ICONS),

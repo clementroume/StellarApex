@@ -1,6 +1,6 @@
 import {TestBed} from '@angular/core/testing';
 import {HttpTestingController, provideHttpClientTesting} from '@angular/common/http/testing';
-import {provideHttpClient} from '@angular/common/http';
+import {provideHttpClient, withXhr} from '@angular/common/http';
 import {ScoreService} from './score.service';
 import {environment} from '../../../../environments/environment';
 import {ScoreComparisonResponse, ScoreReferenceData, ScoreRequest, ScoreResponse} from '../models/score.model';
@@ -40,7 +40,7 @@ describe('ScoreService', () => {
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      providers: [ScoreService, provideHttpClient(), provideHttpClientTesting()],
+      providers: [ScoreService, provideHttpClient(withXhr()), provideHttpClientTesting()],
     });
     service = TestBed.inject(ScoreService);
     httpMock = TestBed.inject(HttpTestingController);

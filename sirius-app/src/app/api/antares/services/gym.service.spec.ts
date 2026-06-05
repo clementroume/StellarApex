@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 import { GymService } from './gym.service';
 import { environment } from '../../../../environments/environment';
 import { GymRequest, GymResponse, GymSettingsRequest, GymStatus, JoinGymRequest } from '../models/gym.model';
@@ -25,7 +25,7 @@ describe('GymService', () => {
         TestBed.configureTestingModule({
             providers: [
                 GymService,
-                provideHttpClient(),
+                provideHttpClient(withXhr()),
                 provideHttpClientTesting(),
             ],
         });

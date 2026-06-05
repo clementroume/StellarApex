@@ -1,6 +1,6 @@
 import {TestBed} from '@angular/core/testing';
 import {HttpTestingController, provideHttpClientTesting} from '@angular/common/http/testing';
-import {provideHttpClient} from '@angular/common/http';
+import {provideHttpClient, withXhr} from '@angular/common/http';
 import {MembershipService} from './membership.service';
 import {environment} from '../../../../environments/environment';
 import {
@@ -32,7 +32,7 @@ describe('MembershipService', () => {
     TestBed.configureTestingModule({
       providers: [
         MembershipService,
-        provideHttpClient(),
+        provideHttpClient(withXhr()),
         provideHttpClientTesting(),
       ],
     });

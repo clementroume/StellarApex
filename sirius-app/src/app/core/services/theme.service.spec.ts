@@ -7,7 +7,7 @@ import {UserService} from '../../api/antares/services/user.service';
 import {signal} from '@angular/core';
 import {of} from 'rxjs';
 import {UserResponse} from '../../api/antares/models/user.model';
-import {provideHttpClient} from '@angular/common/http';
+import {provideHttpClient, withXhr} from '@angular/common/http';
 import {provideHttpClientTesting} from '@angular/common/http/testing';
 
 const fakeLocalStorage = (() => {
@@ -47,7 +47,7 @@ describe('ThemeService', () => {
     TestBed.configureTestingModule({
       providers: [
         ThemeService,
-        provideHttpClient(),
+        provideHttpClient(withXhr()),
         provideHttpClientTesting(),
         {provide: AuthService, useValue: authSpy},
         {provide: UserService, useValue: userSpy}

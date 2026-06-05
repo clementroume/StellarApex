@@ -1,10 +1,11 @@
-import {Component, EventEmitter, Input, Output} from '@angular/core';
+import {Component, EventEmitter, Input, Output, ChangeDetectionStrategy} from '@angular/core';
 import {NgIconComponent} from '@ng-icons/core';
 
 @Component({
   selector: 'app-search-input',
   standalone: true,
   imports: [NgIconComponent],
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <div class="flex justify-center mb-8 w-full">
       <div class="flex items-center w-full max-w-md">

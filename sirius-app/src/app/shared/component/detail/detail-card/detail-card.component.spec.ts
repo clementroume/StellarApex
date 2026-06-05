@@ -1,10 +1,11 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { DetailCardComponent } from './detail-card.component';
-import { Component } from '@angular/core';
+import { Component, ChangeDetectionStrategy } from '@angular/core';
 
 @Component({
     standalone: true,
     imports: [DetailCardComponent],
+    changeDetection: ChangeDetectionStrategy.Eager,
     template: `
     <app-detail-card title="Test Title" paddingClass="p-4" gapClass="gap-2">
       <p class="projected-content">Projected content</p>

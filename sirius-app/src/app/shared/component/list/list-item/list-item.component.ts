@@ -1,4 +1,4 @@
-import {Component, Input} from '@angular/core';
+import {Component, Input, ChangeDetectionStrategy} from '@angular/core';
 import {RouterLink} from '@angular/router';
 import {NgIconComponent} from '@ng-icons/core';
 import {NgOptimizedImage, UpperCasePipe} from '@angular/common';
@@ -7,6 +7,7 @@ import {NgOptimizedImage, UpperCasePipe} from '@angular/common';
   selector: 'app-list-item',
   standalone: true,
   imports: [RouterLink, NgIconComponent, UpperCasePipe, NgOptimizedImage],
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <li>
       <a [routerLink]="link"

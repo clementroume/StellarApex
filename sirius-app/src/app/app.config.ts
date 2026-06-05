@@ -1,6 +1,6 @@
 import {ApplicationConfig} from '@angular/core';
 import {provideRouter, withComponentInputBinding, withViewTransitions} from '@angular/router';
-import {provideHttpClient, withInterceptors, withXsrfConfiguration} from '@angular/common/http';
+import {provideHttpClient, withInterceptors, withXsrfConfiguration, withXhr} from '@angular/common/http';
 
 import {provideTranslateService} from '@ngx-translate/core';
 import {provideTranslateHttpLoader} from '@ngx-translate/http-loader';
@@ -91,7 +91,7 @@ export const appConfig: ApplicationConfig = {
 
     // 2. HTTP CLIENT CONFIGURATION
     // Configures the HttpClient with a chain of functional interceptors.
-    provideHttpClient(
+    provideHttpClient(withXhr(), 
       // Activate XSRF protection
       withXsrfConfiguration({
         cookieName: 'XSRF-TOKEN',

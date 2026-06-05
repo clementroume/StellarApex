@@ -1,6 +1,6 @@
 import {TestBed} from '@angular/core/testing';
 import {HttpTestingController, provideHttpClientTesting} from '@angular/common/http/testing';
-import {provideHttpClient} from '@angular/common/http';
+import {provideHttpClient, withXhr} from '@angular/common/http';
 import {MuscleService} from './muscle.service';
 import {environment} from '../../../../environments/environment';
 import {MuscleRequest, MuscleResponse} from '../models/muscle.model';
@@ -19,7 +19,7 @@ describe('MuscleService', () => {
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      providers: [MuscleService, provideHttpClient(), provideHttpClientTesting()],
+      providers: [MuscleService, provideHttpClient(withXhr()), provideHttpClientTesting()],
     });
     service = TestBed.inject(MuscleService);
     httpMock = TestBed.inject(HttpTestingController);

@@ -3,7 +3,7 @@ import {vi} from 'vitest';
 import {TestBed} from '@angular/core/testing';
 import {UserService} from './user.service';
 import {HttpTestingController, provideHttpClientTesting} from '@angular/common/http/testing';
-import {provideHttpClient} from '@angular/common/http';
+import {provideHttpClient, withXhr} from '@angular/common/http';
 import {AuthService} from './auth.service';
 import {environment} from '../../../../environments/environment';
 import {UserResponse} from '../models/user.model';
@@ -31,7 +31,7 @@ describe('UserService', () => {
     TestBed.configureTestingModule({
       providers: [
         UserService,
-        provideHttpClient(),
+        provideHttpClient(withXhr()),
         provideHttpClientTesting(),
         provideRouter([]),
         {provide: AuthService, useValue: authSpy}

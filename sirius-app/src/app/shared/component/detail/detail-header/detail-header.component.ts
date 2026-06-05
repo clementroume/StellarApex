@@ -1,10 +1,11 @@
-import {Component, EventEmitter, Input, Output} from '@angular/core';
+import {Component, EventEmitter, Input, Output, ChangeDetectionStrategy} from '@angular/core';
 import {NgIcon} from '@ng-icons/core';
 
 @Component({
   selector: 'app-detail-header',
   standalone: true,
   imports: [NgIcon],
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <div class="mb-8 flex flex-col md:flex-row items-center justify-between gap-4">
       <div class="flex items-center gap-4">

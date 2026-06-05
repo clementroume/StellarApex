@@ -1,10 +1,11 @@
-import {Component, Input} from '@angular/core';
+import {Component, Input, ChangeDetectionStrategy} from '@angular/core';
 import {NgClass} from '@angular/common';
 
 @Component({
   selector: 'app-detail-card',
   standalone: true,
   imports: [NgClass],
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <div class="bg-base-100 rounded-box border border-neutral flex flex-col w-full h-full"
          [ngClass]="[paddingClass, gapClass]">

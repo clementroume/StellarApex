@@ -2,7 +2,7 @@ import type {MockedObject} from "vitest";
 import {vi} from 'vitest';
 import {TestBed} from '@angular/core/testing';
 import {HttpTestingController, provideHttpClientTesting} from '@angular/common/http/testing';
-import {provideHttpClient} from '@angular/common/http';
+import {provideHttpClient, withXhr} from '@angular/common/http';
 import {ImpersonationService} from './impersonation.service';
 import {AuthService} from './auth.service';
 import {environment} from '../../../../environments/environment';
@@ -28,7 +28,7 @@ describe('ImpersonationService', () => {
     TestBed.configureTestingModule({
       providers: [
         ImpersonationService,
-        provideHttpClient(),
+        provideHttpClient(withXhr()),
         provideHttpClientTesting(),
         {provide: AuthService, useValue: authSpy}
       ]

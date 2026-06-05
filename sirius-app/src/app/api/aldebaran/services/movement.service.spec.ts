@@ -1,6 +1,6 @@
 import {TestBed} from '@angular/core/testing';
 import {HttpTestingController, provideHttpClientTesting} from '@angular/common/http/testing';
-import {provideHttpClient} from '@angular/common/http';
+import {provideHttpClient, withXhr} from '@angular/common/http';
 import {MovementService} from './movement.service';
 import {environment} from '../../../../environments/environment';
 import {MovementRequest, MovementResponse, MovementSummaryResponse} from '../models/movement.model';
@@ -27,7 +27,7 @@ describe('MovementService', () => {
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      providers: [MovementService, provideHttpClient(), provideHttpClientTesting()],
+      providers: [MovementService, provideHttpClient(withXhr()), provideHttpClientTesting()],
     });
     service = TestBed.inject(MovementService);
     httpMock = TestBed.inject(HttpTestingController);

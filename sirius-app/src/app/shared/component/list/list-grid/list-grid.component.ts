@@ -1,10 +1,11 @@
-import {Component, ContentChild, Input, TemplateRef} from '@angular/core';
+import {Component, ContentChild, Input, TemplateRef, ChangeDetectionStrategy} from '@angular/core';
 import {NgTemplateOutlet} from '@angular/common';
 
 @Component({
   selector: 'app-list-grid',
   standalone: true,
   imports: [NgTemplateOutlet],
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <div class="w-full">
 

@@ -2,7 +2,7 @@ import type {MockedObject} from "vitest";
 import {vi} from 'vitest';
 import {ComponentFixture, TestBed} from '@angular/core/testing';
 import {RegisterComponent} from './register.component';
-import {provideHttpClient} from '@angular/common/http';
+import {provideHttpClient, withXhr} from '@angular/common/http';
 import {provideHttpClientTesting} from '@angular/common/http/testing';
 import {provideRouter} from '@angular/router';
 import {TranslateModule} from '@ngx-translate/core';
@@ -25,7 +25,7 @@ describe('RegisterComponent', () => {
     await TestBed.configureTestingModule({
       imports: [RegisterComponent, TranslateModule.forRoot()],
       providers: [
-        provideHttpClient(),
+        provideHttpClient(withXhr()),
         provideHttpClientTesting(),
         provideRouter([]),
         provideIcons(APP_ICONS),

@@ -1,4 +1,4 @@
-import {Component, EventEmitter, Input, Output} from '@angular/core';
+import {Component, EventEmitter, Input, Output, ChangeDetectionStrategy} from '@angular/core';
 import {RouterModule} from '@angular/router';
 import {TranslateModule} from '@ngx-translate/core';
 import {NgIcon} from '@ng-icons/core';
@@ -7,6 +7,7 @@ import {NgIcon} from '@ng-icons/core';
   selector: 'app-detail-admin-actions',
   standalone: true,
   imports: [RouterModule, TranslateModule, NgIcon],
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <div class="pt-8 flex flex-col md:flex-row justify-end gap-4">
       <button class="btn btn-outline btn-error min-w-36" (click)="delete.emit()">

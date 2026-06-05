@@ -1,5 +1,5 @@
 import {ComponentFixture, TestBed} from '@angular/core/testing';
-import {Component} from '@angular/core';
+import {Component, ChangeDetectionStrategy} from '@angular/core';
 import {By} from '@angular/platform-browser';
 import {ListGridComponent} from './list-grid.component';
 
@@ -16,6 +16,7 @@ import {ListGridComponent} from './list-grid.component';
     </app-list-grid>
   `,
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.Eager,
   imports: [ListGridComponent]
 })
 class TestHostComponent {

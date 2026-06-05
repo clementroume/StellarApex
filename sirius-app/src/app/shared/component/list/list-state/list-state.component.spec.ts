@@ -1,6 +1,6 @@
 import {ComponentFixture, TestBed} from '@angular/core/testing';
 import {ListStateComponent} from './list-state.component';
-import {Component} from '@angular/core';
+import {Component, ChangeDetectionStrategy} from '@angular/core';
 import {By} from '@angular/platform-browser';
 
 @Component({
@@ -17,6 +17,7 @@ import {By} from '@angular/platform-browser';
     </app-list-state>
   `,
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.Eager,
   imports: [ListStateComponent]
 })
 class TestHostComponent {

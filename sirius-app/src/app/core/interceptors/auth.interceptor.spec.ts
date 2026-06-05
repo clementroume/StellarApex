@@ -2,7 +2,7 @@ import type {MockedObject} from "vitest";
 import {vi} from 'vitest';
 import {TestBed} from '@angular/core/testing';
 import {HttpTestingController, provideHttpClientTesting} from '@angular/common/http/testing';
-import {HttpClient, HttpErrorResponse, provideHttpClient, withInterceptors} from '@angular/common/http';
+import {HttpClient, HttpErrorResponse, provideHttpClient, withInterceptors, withXhr} from '@angular/common/http';
 import {authInterceptor} from './auth.interceptor';
 import {AuthService} from '../../api/antares/services/auth.service';
 import {Router} from '@angular/router';
@@ -27,7 +27,7 @@ describe('authInterceptor', () => {
 
     TestBed.configureTestingModule({
       providers: [
-        provideHttpClient(withInterceptors([authInterceptor])),
+        provideHttpClient(withXhr(), withInterceptors([authInterceptor])),
         provideHttpClientTesting(),
         {provide: AuthService, useValue: authServiceSpy},
         {provide: Router, useValue: routerSpy},

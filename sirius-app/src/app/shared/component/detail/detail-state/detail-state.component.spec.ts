@@ -1,10 +1,11 @@
 import {ComponentFixture, TestBed} from '@angular/core/testing';
 import {DetailStateComponent} from './detail-state.component';
-import {Component} from '@angular/core';
+import {Component, ChangeDetectionStrategy} from '@angular/core';
 
 @Component({
   standalone: true,
   imports: [DetailStateComponent],
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <app-detail-state [isLoading]="loading">
       <div skeleton class="my-skeleton">Loading...</div>
