@@ -3,7 +3,7 @@ import {CommonModule} from '@angular/common';
 import {FormArray, FormBuilder, ReactiveFormsModule, Validators} from '@angular/forms';
 import {ActivatedRoute, Router, RouterModule} from '@angular/router';
 import {HttpErrorResponse} from '@angular/common/http';
-import {TranslateModule, TranslateService} from '@ngx-translate/core';
+import {TranslatePipe, TranslateService} from '@ngx-translate/core';
 import {NgIconComponent} from '@ng-icons/core';
 import {MovementService} from '../../../api/aldebaran/services/movement.service';
 import {MuscleService} from '../../../api/aldebaran/services/muscle.service';
@@ -16,7 +16,7 @@ import {forkJoin} from 'rxjs';
 @Component({
   selector: 'app-movement-form',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterModule, TranslateModule, NgIconComponent],
+  imports: [CommonModule, ReactiveFormsModule, RouterModule, TranslatePipe, NgIconComponent],
   templateUrl: './movement-form.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

@@ -1,12 +1,12 @@
 import {ChangeDetectionStrategy, Component} from '@angular/core';
 import {RouterModule} from '@angular/router';
-import {TranslateModule} from '@ngx-translate/core';
+import {TranslatePipe} from '@ngx-translate/core';
 import {NgIcon} from '@ng-icons/core';
 
 @Component({
   selector: 'app-account',
   standalone: true,
-  imports: [RouterModule, TranslateModule, NgIcon],
+  imports: [RouterModule, TranslatePipe, NgIcon],
   templateUrl: './account.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

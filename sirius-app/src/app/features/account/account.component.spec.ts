@@ -1,7 +1,7 @@
 import {ComponentFixture, TestBed} from '@angular/core/testing';
 import {AccountComponent} from './account.component';
 import {provideRouter} from '@angular/router';
-import {TranslateModule} from '@ngx-translate/core';
+import {provideTranslateService} from '@ngx-translate/core';
 import {provideHttpClient, withXhr} from '@angular/common/http';
 import {provideHttpClientTesting} from '@angular/common/http/testing';
 import {provideIcons} from '@ng-icons/core';
@@ -13,12 +13,13 @@ describe('AccountComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [AccountComponent, TranslateModule.forRoot()],
+      imports: [AccountComponent],
       providers: [
         provideRouter([]),
         provideHttpClient(withXhr()),
         provideHttpClientTesting(),
         provideIcons(APP_ICONS),
+        provideTranslateService()
       ]
     })
       .compileComponents();

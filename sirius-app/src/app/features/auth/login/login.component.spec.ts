@@ -5,7 +5,7 @@ import {LoginComponent} from './login.component';
 import {provideHttpClient, withXhr} from '@angular/common/http';
 import {provideHttpClientTesting} from '@angular/common/http/testing';
 import {provideRouter} from '@angular/router';
-import {TranslateModule} from '@ngx-translate/core';
+import {provideTranslateService} from '@ngx-translate/core';
 import {AuthService} from '../../../api/antares/services/auth.service';
 import {of} from 'rxjs';
 import {provideIcons} from '@ng-icons/core';
@@ -22,12 +22,13 @@ describe('LoginComponent', () => {
     } as any;
     authServiceSpy.login.mockReturnValue(of({} as any));
     await TestBed.configureTestingModule({
-      imports: [LoginComponent, TranslateModule.forRoot()],
+      imports: [LoginComponent],
       providers: [
         provideHttpClient(withXhr()),
         provideHttpClientTesting(),
         provideRouter([]),
         provideIcons(APP_ICONS),
+        provideTranslateService(),
         {provide: AuthService, useValue: authServiceSpy}
       ]
     }).compileComponents();

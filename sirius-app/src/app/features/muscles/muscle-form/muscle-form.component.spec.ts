@@ -6,7 +6,7 @@ import {MuscleService} from '../../../api/aldebaran/services/muscle.service';
 import {NotificationService} from '../../../core/services/notification.service';
 import {ActivatedRoute, provideRouter, Router} from '@angular/router';
 import {of} from 'rxjs';
-import {TranslateModule} from '@ngx-translate/core';
+import {provideTranslateService} from '@ngx-translate/core';
 import {APP_ICONS} from '../../../app.config';
 import {provideIcons} from '@ng-icons/core';
 
@@ -49,12 +49,12 @@ describe('MuscleFormComponent', () => {
 
     await TestBed.configureTestingModule({
       imports: [
-        MuscleFormComponent,
-        TranslateModule.forRoot()
+        MuscleFormComponent
       ],
       providers: [
         provideRouter([]),
         provideIcons(APP_ICONS),
+        provideTranslateService(),
         {provide: MuscleService, useValue: muscleServiceSpy},
         {provide: NotificationService, useValue: notificationServiceSpy},
         {provide: ActivatedRoute, useValue: mockActivatedRoute}

@@ -5,7 +5,7 @@ import {AuthService} from '../../../api/antares/services/auth.service';
 import {of, Subject} from 'rxjs';
 import {signal, WritableSignal} from '@angular/core';
 import {provideRouter} from '@angular/router';
-import {TranslateModule} from '@ngx-translate/core';
+import {provideTranslateService, TranslateService} from '@ngx-translate/core';
 import {APP_ICONS} from '../../../app.config';
 import {provideIcons} from '@ng-icons/core';
 import {ExporterService} from '../../../api/aldebaran/services/exporter.service';
@@ -17,6 +17,7 @@ import {vi} from 'vitest';
 describe('MuscleListComponent', () => {
   let component: MuscleListComponent;
   let fixture: ComponentFixture<MuscleListComponent>;
+  let translateService: TranslateService;
 
   let mockMuscleService: any;
   let mockAuthService: any;
@@ -83,10 +84,11 @@ describe('MuscleListComponent', () => {
     };
 
     await TestBed.configureTestingModule({
-      imports: [MuscleListComponent, TranslateModule.forRoot()],
+      imports: [MuscleListComponent],
       providers: [
         provideRouter([]),
         provideIcons(APP_ICONS),
+        provideTranslateService(),
         {provide: MuscleService, useValue: mockMuscleService},
         {provide: AuthService, useValue: mockAuthService},
         {provide: ExporterService, useValue: mockExporterService},
@@ -96,6 +98,8 @@ describe('MuscleListComponent', () => {
 
     fixture = TestBed.createComponent(MuscleListComponent);
     component = fixture.componentInstance;
+    translateService = TestBed.inject(TranslateService);
+
     fixture.detectChanges(); // Triggers ngOnInit
   });
 
@@ -121,7 +125,8 @@ describe('MuscleListComponent', () => {
     expect(component.filteredMuscles()[0].medicalName).toBe('Zygomaticus');
 
     // Test search by translated name (FR as default or fallback language)
-    component.activeLang.set('fr');
+    translateService.use('fr');
+    fixture.detectChanges();
     component.searchQuery.set('pectoraux');
     expect(component.filteredMuscles().length).toBe(1);
     expect(component.filteredMuscles()[0].medicalName).toBe('Pectoralis');

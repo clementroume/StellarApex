@@ -1,12 +1,12 @@
 import {ChangeDetectionStrategy, Component, input, output} from '@angular/core';
 import {RouterModule} from '@angular/router';
-import {TranslateModule} from '@ngx-translate/core';
+import {TranslatePipe} from '@ngx-translate/core';
 import {NgIcon} from '@ng-icons/core';
 
 @Component({
   selector: 'app-detail-admin-actions',
   standalone: true,
-  imports: [RouterModule, TranslateModule, NgIcon],
+  imports: [RouterModule, TranslatePipe, NgIcon],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="pt-8 flex flex-col md:flex-row justify-end gap-4">

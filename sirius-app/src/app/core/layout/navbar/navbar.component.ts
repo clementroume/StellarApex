@@ -3,13 +3,13 @@ import {CommonModule} from '@angular/common';
 import {RouterModule} from '@angular/router';
 import {AuthService} from '../../../api/antares/services/auth.service';
 import {ThemeService} from '../../services/theme.service';
-import {TranslateModule} from '@ngx-translate/core';
+import {TranslatePipe} from '@ngx-translate/core';
 import {NgIcon} from '@ng-icons/core';
 
 @Component({
   selector: 'app-navbar',
   standalone: true,
-  imports: [CommonModule, RouterModule, TranslateModule, NgIcon],
+  imports: [CommonModule, RouterModule, TranslatePipe, NgIcon],
   templateUrl: './navbar.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

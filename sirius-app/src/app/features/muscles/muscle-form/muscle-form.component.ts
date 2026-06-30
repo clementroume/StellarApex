@@ -2,7 +2,7 @@ import {ChangeDetectionStrategy, Component, inject, OnInit, signal} from '@angul
 import {FormBuilder, ReactiveFormsModule, Validators} from '@angular/forms';
 import {ActivatedRoute, Router, RouterModule} from '@angular/router';
 import {HttpErrorResponse} from '@angular/common/http';
-import {TranslateModule, TranslateService} from '@ngx-translate/core';
+import {TranslatePipe, TranslateService} from '@ngx-translate/core';
 import {MuscleService} from '../../../api/aldebaran/services/muscle.service';
 import {NotificationService} from '../../../core/services/notification.service';
 import {MuscleRequest} from '../../../api/aldebaran/models/muscle.model';
@@ -12,7 +12,7 @@ import {NgIcon} from '@ng-icons/core';
 @Component({
   selector: 'app-muscle-form',
   standalone: true,
-  imports: [ReactiveFormsModule, RouterModule, TranslateModule, NgIcon],
+  imports: [ReactiveFormsModule, RouterModule, TranslatePipe, NgIcon],
   templateUrl: './muscle-form.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

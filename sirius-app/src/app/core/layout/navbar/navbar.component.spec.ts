@@ -3,7 +3,7 @@ import {vi} from 'vitest';
 import {ComponentFixture, TestBed} from '@angular/core/testing';
 import {NavbarComponent} from './navbar.component';
 import {provideRouter} from '@angular/router';
-import {TranslateModule} from '@ngx-translate/core';
+import {provideTranslateService} from '@ngx-translate/core';
 import {AuthService} from '../../../api/antares/services/auth.service';
 import {ThemeService} from '../../services/theme.service';
 import {of} from 'rxjs';
@@ -39,10 +39,11 @@ describe('NavbarComponent', () => {
     } as any;
 
     await TestBed.configureTestingModule({
-      imports: [NavbarComponent, TranslateModule.forRoot()],
+      imports: [NavbarComponent],
       providers: [
         provideRouter([]),
         provideIcons(APP_ICONS),
+        provideTranslateService(),
         {provide: AuthService, useValue: authServiceSpy},
         {provide: ThemeService, useValue: themeServiceSpy},
       ]

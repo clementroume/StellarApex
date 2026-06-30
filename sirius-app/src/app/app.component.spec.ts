@@ -2,18 +2,18 @@ import {TestBed} from '@angular/core/testing';
 import {AppComponent} from './app.component';
 import {provideHttpClient, withXhr} from '@angular/common/http';
 import {provideHttpClientTesting} from '@angular/common/http/testing';
-import {TranslateModule} from '@ngx-translate/core';
+import {provideTranslateService} from '@ngx-translate/core';
 
 describe('AppComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [
-        AppComponent,
-        TranslateModule.forRoot()
+        AppComponent
       ],
       providers: [
         provideHttpClient(withXhr()),
-        provideHttpClientTesting()
+        provideHttpClientTesting(),
+        provideTranslateService()
       ]
     }).compileComponents();
   });

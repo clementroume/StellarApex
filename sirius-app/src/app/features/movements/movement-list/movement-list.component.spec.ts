@@ -5,7 +5,7 @@ import {AuthService} from '../../../api/antares/services/auth.service';
 import {of, Subject} from 'rxjs';
 import {signal, WritableSignal} from '@angular/core';
 import {provideRouter} from '@angular/router';
-import {TranslateModule} from '@ngx-translate/core';
+import {provideTranslateService} from '@ngx-translate/core';
 import {APP_ICONS} from '../../../app.config';
 import {provideIcons} from '@ng-icons/core';
 import {ExporterService} from '../../../api/aldebaran/services/exporter.service';
@@ -81,10 +81,11 @@ describe('MovementListComponent', () => {
     };
 
     await TestBed.configureTestingModule({
-      imports: [MovementListComponent, TranslateModule.forRoot()],
+      imports: [MovementListComponent],
       providers: [
         provideRouter([]),
         provideIcons(APP_ICONS),
+        provideTranslateService(),
         {provide: MovementService, useValue: mockMovementService},
         {provide: AuthService, useValue: mockAuthService},
         {provide: ExporterService, useValue: mockExporterService},

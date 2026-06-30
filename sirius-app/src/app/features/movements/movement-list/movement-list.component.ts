@@ -1,7 +1,7 @@
 import {ChangeDetectionStrategy, Component, computed, inject, OnInit, signal} from '@angular/core';
 import {CommonModule} from '@angular/common';
 import {RouterModule} from '@angular/router';
-import {TranslateModule} from '@ngx-translate/core';
+import {TranslatePipe} from '@ngx-translate/core';
 import {FormsModule} from '@angular/forms';
 import {MovementService} from '../../../api/aldebaran/services/movement.service';
 import {AuthService} from '../../../api/antares/services/auth.service';
@@ -18,7 +18,7 @@ import {ListGridComponent} from '../../../shared/component/list/list-grid/list-g
 @Component({
   selector: 'app-movement-list',
   standalone: true,
-  imports: [CommonModule, RouterModule, TranslateModule, FormsModule, NgIcon, SearchInputComponent, ListStateComponent, ListItemComponent, ListGridComponent],
+  imports: [CommonModule, RouterModule, TranslatePipe, FormsModule, NgIcon, SearchInputComponent, ListStateComponent, ListItemComponent, ListGridComponent],
   templateUrl: './movement-list.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

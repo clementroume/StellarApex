@@ -5,7 +5,7 @@ import {RegisterComponent} from './register.component';
 import {provideHttpClient, withXhr} from '@angular/common/http';
 import {provideHttpClientTesting} from '@angular/common/http/testing';
 import {provideRouter, Router} from '@angular/router';
-import {TranslateModule} from '@ngx-translate/core';
+import {provideTranslateService} from '@ngx-translate/core';
 import {AuthService} from '../../../api/antares/services/auth.service';
 import {of} from 'rxjs';
 import {provideIcons} from '@ng-icons/core';
@@ -23,12 +23,13 @@ describe('RegisterComponent', () => {
     authServiceSpy.register.mockReturnValue(of({} as any));
 
     await TestBed.configureTestingModule({
-      imports: [RegisterComponent, TranslateModule.forRoot()],
+      imports: [RegisterComponent],
       providers: [
         provideHttpClient(withXhr()),
         provideHttpClientTesting(),
         provideRouter([]),
         provideIcons(APP_ICONS),
+        provideTranslateService(),
         {provide: AuthService, useValue: authServiceSpy}
       ]
     }).compileComponents();

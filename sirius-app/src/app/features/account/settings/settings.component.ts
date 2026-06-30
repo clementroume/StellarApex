@@ -11,7 +11,7 @@ import {
 } from '@angular/forms';
 import {AuthService} from '../../../api/antares/services/auth.service';
 import {UserService} from '../../../api/antares/services/user.service';
-import {TranslateModule, TranslateService} from '@ngx-translate/core';
+import {TranslatePipe, TranslateService} from '@ngx-translate/core';
 import {NotificationService} from '../../../core/services/notification.service';
 import {HttpErrorResponse} from '@angular/common/http';
 import {PreferencesUpdateRequest} from '../../../api/antares/models/user.model';
@@ -27,7 +27,7 @@ export const passwordMatchValidator: ValidatorFn = (control: AbstractControl): V
 @Component({
   selector: 'app-settings',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, TranslateModule, NgIcon],
+  imports: [CommonModule, ReactiveFormsModule, TranslatePipe, NgIcon],
   templateUrl: './settings.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -75,7 +75,7 @@ export class SettingsComponent {
     const currentUser = this.authService.currentUser();
     if (currentUser) {
       const preferences: PreferencesUpdateRequest = {
-        locale: lang as 'en' | 'fr',
+        locale: lang,
         theme: currentUser.theme
       };
 

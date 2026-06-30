@@ -1,7 +1,7 @@
 import {ComponentFixture, TestBed} from '@angular/core/testing';
 import {MainLayoutComponent} from './main-layout.component';
 import {provideRouter} from '@angular/router';
-import {TranslateModule} from '@ngx-translate/core';
+import {provideTranslateService} from '@ngx-translate/core';
 import {signal} from '@angular/core';
 import {AuthService} from '../../../api/antares/services/auth.service';
 import {ThemeService} from '../../services/theme.service';
@@ -26,11 +26,11 @@ describe('MainLayoutComponent', () => {
     await TestBed.configureTestingModule({
       imports: [
         MainLayoutComponent,
-        TranslateModule.forRoot()
       ],
       providers: [
         provideRouter([]),
         provideIcons(APP_ICONS),
+        provideTranslateService(),
         {provide: AuthService, useValue: authServiceSpy},
         {provide: ThemeService, useValue: themeServiceSpy}
       ]

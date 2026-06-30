@@ -1,6 +1,6 @@
 import {ChangeDetectionStrategy, Component, computed, inject, OnInit, signal} from '@angular/core';
 import {RouterModule} from '@angular/router';
-import {LangChangeEvent, TranslateModule, TranslateService} from '@ngx-translate/core';
+import {TranslatePipe, TranslateService} from '@ngx-translate/core';
 import {MuscleService} from '../../../api/aldebaran/services/muscle.service';
 import {MuscleResponse} from '../../../api/aldebaran/models/muscle.model';
 import {AuthService} from '../../../api/antares/services/auth.service';
@@ -16,7 +16,7 @@ import {ListGridComponent} from '../../../shared/component/list/list-grid/list-g
 @Component({
   selector: 'app-muscle-list',
   standalone: true,
-  imports: [RouterModule, TranslateModule, NgIcon, SearchInputComponent, ListStateComponent, ListItemComponent, ListGridComponent],
+  imports: [RouterModule, TranslatePipe, NgIcon, SearchInputComponent, ListStateComponent, ListItemComponent, ListGridComponent],
   templateUrl: './muscle-list.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -30,7 +30,7 @@ export class MuscleListComponent implements OnInit {
   // --- STATE (SIGNALS & VARIABLES) ---
   isLoading = signal<boolean>(false);
   isExporting = signal<boolean>(false);
-  activeLang = signal<string>(this.translate.getCurrentLang() || this.translate.getFallbackLang() || 'en');
+  activeLang = computed(() => this.translate.currentLang() ?? this.translate.fallbackLang() ?? 'en');
 
   rawMuscles = signal<MuscleResponse[]>([]);
   muscleGroupKeys = signal<string[]>([]);
@@ -75,12 +75,6 @@ export class MuscleListComponent implements OnInit {
   });
 
   // --- LIFECYCLE ---
-  constructor() {
-    this.translate.onLangChange.subscribe((event: LangChangeEvent) => {
-      this.activeLang.set(event.lang);
-    });
-  }
-
   ngOnInit(): void {
     this.muscleService.refreshNeeded$.subscribe(() => {
       this.loadMuscles();

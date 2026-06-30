@@ -5,7 +5,7 @@ import {MovementDetailComponent} from './movement-detail.component';
 import {AuthService} from '../../../api/antares/services/auth.service';
 import {MovementService} from '../../../api/aldebaran/services/movement.service';
 import {NotificationService} from '../../../core/services/notification.service';
-import {TranslateModule} from '@ngx-translate/core';
+import {provideTranslateService, TranslateService} from '@ngx-translate/core';
 import {signal} from '@angular/core';
 import {provideRouter, Router} from '@angular/router';
 import {of, throwError} from 'rxjs';
@@ -16,6 +16,7 @@ import {APP_ICONS} from '../../../app.config';
 describe('MovementDetailComponent', () => {
   let component: MovementDetailComponent;
   let fixture: ComponentFixture<MovementDetailComponent>;
+  let translateService: TranslateService;
 
   let mockAuthService: any;
   let mockMovementService: MockedObject<MovementService>;
@@ -55,10 +56,11 @@ describe('MovementDetailComponent', () => {
     } as any;
 
     await TestBed.configureTestingModule({
-      imports: [MovementDetailComponent, TranslateModule.forRoot()],
+      imports: [MovementDetailComponent],
       providers: [
         provideRouter([]),
         provideIcons(APP_ICONS),
+        provideTranslateService(),
         {provide: AuthService, useValue: mockAuthService},
         {provide: MovementService, useValue: mockMovementService},
         {provide: NotificationService, useValue: mockNotificationService},
@@ -68,6 +70,8 @@ describe('MovementDetailComponent', () => {
 
     fixture = TestBed.createComponent(MovementDetailComponent);
     component = fixture.componentInstance;
+
+    translateService = TestBed.inject(TranslateService);
 
     // Injecte l'ID via le signal input()
     fixture.componentRef.setInput('id', '1');
@@ -87,11 +91,13 @@ describe('MovementDetailComponent', () => {
   });
 
   it('should format localized description and cues properly', () => {
-    component.activeLang.set('fr');
+    translateService.use('fr');
+    fixture.detectChanges();
     expect(component.getLocalizedDescription(mockMovement)).toBe('Desc FR');
     expect(component.getLocalizedCues(mockMovement)).toBe('Cues FR');
 
-    component.activeLang.set('en');
+    translateService.use('en');
+    fixture.detectChanges();
     expect(component.getLocalizedDescription(mockMovement)).toBe('Desc EN');
     expect(component.getLocalizedCues(mockMovement)).toBe('Cues EN');
   });
@@ -103,10 +109,12 @@ describe('MovementDetailComponent', () => {
       commonNameEn: 'Chest'
     };
 
-    component.activeLang.set('fr');
+    translateService.use('fr');
+    fixture.detectChanges();
     expect(component.getLocalizedMuscleName(mockMuscle)).toBe('Pectoraux');
 
-    component.activeLang.set('en');
+    translateService.use('en');
+    fixture.detectChanges();
     expect(component.getLocalizedMuscleName(mockMuscle)).toBe('Chest');
   });
 

@@ -1,10 +1,10 @@
 import {ComponentFixture, TestBed} from '@angular/core/testing';
 import {DetailAdminActionsComponent} from './detail-admin-actions.component';
-import {TranslateModule} from '@ngx-translate/core';
 import {provideRouter} from '@angular/router';
 import {provideIcons} from '@ng-icons/core';
 import {vi} from 'vitest';
 import {APP_ICONS} from '../../../../app.config';
+import {provideTranslateService} from '@ngx-translate/core';
 
 describe('DetailAdminActionsComponent', () => {
   let component: DetailAdminActionsComponent;
@@ -13,12 +13,12 @@ describe('DetailAdminActionsComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [
-        DetailAdminActionsComponent,
-        TranslateModule.forRoot()
+        DetailAdminActionsComponent
       ],
       providers: [
         provideRouter([]),
-        provideIcons(APP_ICONS)
+        provideIcons(APP_ICONS),
+        provideTranslateService()
       ]
     }).compileComponents();
 

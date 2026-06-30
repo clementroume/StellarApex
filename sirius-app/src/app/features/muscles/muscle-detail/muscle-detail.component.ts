@@ -1,5 +1,5 @@
 import {ChangeDetectionStrategy, Component, computed, effect, inject, input, signal} from '@angular/core';
-import {TranslateModule, TranslateService} from '@ngx-translate/core';
+import {TranslatePipe, TranslateService} from '@ngx-translate/core';
 import {Router, RouterModule} from '@angular/router';
 import {Location, NgOptimizedImage} from '@angular/common';
 import {NgIconComponent} from '@ng-icons/core';
@@ -18,7 +18,7 @@ import {DetailStateComponent} from '../../../shared/component/detail/detail-stat
 @Component({
   selector: 'app-muscle-detail',
   standalone: true,
-  imports: [TranslateModule, RouterModule, NgIconComponent, NgOptimizedImage, DetailAdminActionsComponent, DetailCardComponent, DetailHeaderComponent, DetailStateComponent],
+  imports: [TranslatePipe, RouterModule, NgIconComponent, NgOptimizedImage, DetailAdminActionsComponent, DetailCardComponent, DetailHeaderComponent, DetailStateComponent],
   templateUrl: './muscle-detail.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
@@ -33,15 +33,13 @@ export class MuscleDetailComponent {
   private readonly location = inject(Location);
 
   // --- STATE (SIGNALS) ---
-  activeLang = signal<string>(this.translate.getCurrentLang() || this.translate.getFallbackLang() || 'en');
+  activeLang = computed(() => this.translate.currentLang() ?? this.translate.fallbackLang() ?? 'en');
   isAdmin = computed(() => this.authService.currentUser()?.platformRole === 'ADMIN');
 
   muscle = signal<MuscleResponse | null>(null);
   isLoading = signal<boolean>(true); // Nouvel état explicite
 
   constructor() {
-    this.translate.onLangChange.subscribe(event => this.activeLang.set(event.lang));
-
     effect(() => {
       const currentId = Number(this.id());
       if (currentId && !Number.isNaN(currentId)) {

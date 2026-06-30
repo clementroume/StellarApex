@@ -11,7 +11,7 @@ import {
 } from '@angular/forms';
 import {Router, RouterModule} from '@angular/router';
 import {AuthService} from '../../../api/antares/services/auth.service';
-import {TranslateModule} from '@ngx-translate/core';
+import {TranslatePipe} from '@ngx-translate/core';
 import {NotificationService} from '../../../core/services/notification.service';
 import {HttpErrorResponse} from '@angular/common/http';
 import {ProblemDetail} from '../../../core/models/problem-detail.model';
@@ -28,7 +28,7 @@ export const passwordMatchValidator: ValidatorFn = (control: AbstractControl): V
 @Component({
   selector: 'app-register',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterModule, TranslateModule, NgIcon],
+  imports: [CommonModule, ReactiveFormsModule, RouterModule, TranslatePipe, NgIcon],
   templateUrl: './register.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

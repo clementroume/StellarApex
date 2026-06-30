@@ -3,13 +3,13 @@ import {vi} from 'vitest';
 import {ComponentFixture, TestBed} from '@angular/core/testing';
 import {MovementFormComponent} from './movement-form.component';
 import {ActivatedRoute, provideRouter, Router} from '@angular/router';
-import {TranslateModule} from '@ngx-translate/core';
 import {of} from 'rxjs';
 import {provideIcons} from '@ng-icons/core';
 import {MovementService} from '../../../api/aldebaran/services/movement.service';
 import {MuscleService} from '../../../api/aldebaran/services/muscle.service';
 import {NotificationService} from '../../../core/services/notification.service';
 import {APP_ICONS} from '../../../app.config';
+import {provideTranslateService} from '@ngx-translate/core';
 
 describe('MovementFormComponent', () => {
   let component: MovementFormComponent;
@@ -65,10 +65,11 @@ describe('MovementFormComponent', () => {
 
   const setupTestBed = async (routeParamId: string | null) => {
     await TestBed.configureTestingModule({
-      imports: [MovementFormComponent, TranslateModule.forRoot()],
+      imports: [MovementFormComponent],
       providers: [
         provideRouter([]),
         provideIcons(APP_ICONS),
+        provideTranslateService(),
         {provide: MovementService, useValue: movementServiceSpy},
         {provide: MuscleService, useValue: muscleServiceSpy},
         {provide: NotificationService, useValue: notificationServiceSpy},

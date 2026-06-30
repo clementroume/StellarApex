@@ -3,7 +3,7 @@ import {ProfileComponent} from './profile.component';
 import {provideHttpClient, withXhr} from '@angular/common/http';
 import {provideHttpClientTesting} from '@angular/common/http/testing';
 import {provideRouter} from '@angular/router';
-import {TranslateModule} from '@ngx-translate/core';
+import {provideTranslateService} from '@ngx-translate/core';
 import {AuthService} from '../../../api/antares/services/auth.service';
 import {UserService} from '../../../api/antares/services/user.service';
 import {signal} from '@angular/core';
@@ -31,12 +31,13 @@ describe('ProfileComponent', () => {
     };
 
     await TestBed.configureTestingModule({
-      imports: [ProfileComponent, TranslateModule.forRoot()],
+      imports: [ProfileComponent],
       providers: [
         provideHttpClient(withXhr()),
         provideHttpClientTesting(),
         provideRouter([]),
         provideIcons(APP_ICONS),
+        provideTranslateService(),
         {provide: AuthService, useValue: authServiceMock},
         {provide: UserService, useValue: userServiceSpy}
       ]

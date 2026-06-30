@@ -5,7 +5,7 @@ import {SettingsComponent} from './settings.component';
 import {HttpErrorResponse, provideHttpClient, withXhr} from '@angular/common/http';
 import {provideHttpClientTesting} from '@angular/common/http/testing';
 import {provideRouter} from '@angular/router';
-import {TranslateModule, TranslateService} from '@ngx-translate/core';
+import {provideTranslateService, TranslateService} from '@ngx-translate/core';
 import {AuthService} from '../../../api/antares/services/auth.service';
 import {UserService} from '../../../api/antares/services/user.service';
 import {NotificationService} from '../../../core/services/notification.service';
@@ -43,14 +43,14 @@ describe('SettingsComponent', () => {
 
     await TestBed.configureTestingModule({
       imports: [
-        SettingsComponent,
-        TranslateModule.forRoot()
+        SettingsComponent
       ],
       providers: [
         provideHttpClient(withXhr()),
         provideHttpClientTesting(),
         provideRouter([]),
         provideIcons(APP_ICONS),
+        provideTranslateService(),
         {provide: AuthService, useValue: authServiceSpy},
         {provide: UserService, useValue: userServiceSpy},
         {provide: NotificationService, useValue: notificationServiceSpy}

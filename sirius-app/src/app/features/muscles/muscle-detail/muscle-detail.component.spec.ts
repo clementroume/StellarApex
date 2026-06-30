@@ -3,7 +3,7 @@ import {vi} from 'vitest';
 import {ComponentFixture, TestBed} from '@angular/core/testing';
 import {MuscleDetailComponent} from './muscle-detail.component';
 import {AuthService} from '../../../api/antares/services/auth.service';
-import {TranslateModule} from '@ngx-translate/core';
+import {provideTranslateService, TranslateService} from '@ngx-translate/core';
 import {signal} from '@angular/core';
 import {provideRouter, Router} from '@angular/router';
 import {MuscleService} from '../../../api/aldebaran/services/muscle.service';
@@ -16,6 +16,7 @@ import {APP_ICONS} from '../../../app.config';
 describe('MuscleDetailComponent', () => {
   let component: MuscleDetailComponent;
   let fixture: ComponentFixture<MuscleDetailComponent>;
+  let translateService: TranslateService;
 
   let mockAuthService: any;
   let mockMuscleService: MockedObject<MuscleService>;
@@ -54,10 +55,11 @@ describe('MuscleDetailComponent', () => {
     } as any;
 
     await TestBed.configureTestingModule({
-      imports: [MuscleDetailComponent, TranslateModule.forRoot()],
+      imports: [MuscleDetailComponent],
       providers: [
         provideRouter([]),
         provideIcons(APP_ICONS),
+        provideTranslateService(),
         {provide: AuthService, useValue: mockAuthService},
         {provide: MuscleService, useValue: mockMuscleService},
         {provide: NotificationService, useValue: mockNotificationService},
@@ -67,6 +69,7 @@ describe('MuscleDetailComponent', () => {
 
     fixture = TestBed.createComponent(MuscleDetailComponent);
     component = fixture.componentInstance;
+    translateService = TestBed.inject(TranslateService);
 
     // Injecte l'ID comme si ça venait de l'URL
     fixture.componentRef.setInput('id', '1');
@@ -86,11 +89,13 @@ describe('MuscleDetailComponent', () => {
   });
 
   it('should format localized name and description properly', () => {
-    component.activeLang.set('fr');
+    translateService.use('fr');
+    fixture.detectChanges();
     expect(component.getLocalizedName(mockMuscle)).toBe('Pectoraux');
     expect(component.getLocalizedDescription(mockMuscle)).toBe('Desc FR');
 
-    component.activeLang.set('en');
+    translateService.use('en');
+    fixture.detectChanges();
     expect(component.getLocalizedName(mockMuscle)).toBe('Chest');
     expect(component.getLocalizedDescription(mockMuscle)).toBe('Desc EN');
   });
