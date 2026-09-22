@@ -36,7 +36,7 @@ WORKDIR /app
 COPY --from=builder /app/target/*.jar app.jar
 
 # Extract the layers (dependencies, spring-boot-loader, etc.) into the 'extracted' directory.
-RUN java -Djarmode=layertools -jar app.jar extract --destination extracted
+RUN java -Djarmode=tools -jar app.jar extract --layers --launcher --destination extracted
 
 # ==============================================================================
 # STAGE 3: Runtime (Distroless Base)
