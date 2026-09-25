@@ -96,7 +96,7 @@ services:
 
   # A. Container Metrics (cAdvisor)
   vega-cadvisor:
-    image: ghcr.io/google/cadvisor:v0.60.5
+    image: ghcr.io/google/cadvisor:v0.60.6
     container_name: vega-cadvisor
     volumes:
       - /:/rootfs:ro
