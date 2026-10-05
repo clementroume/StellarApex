@@ -72,6 +72,9 @@ updates:
           - "@angular-devkit/*"
           - "rxjs"
           - "zone.js"
+      ng-icon:
+        patterns:
+          - "@ng-icons/*"
 
   # ==============================================================================
   # 4. DOCKER IMAGES (BASE IMAGES)
