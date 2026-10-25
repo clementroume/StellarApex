@@ -1,0 +1,102 @@
+# StellarApex
+
+Web app for CrossFit athletes and gyms (WODs, movements, muscles, scores, gym memberships).
+Monorepo: one folder per service, each with its own build. Service-specific guidance lives in the
+`CLAUDE.md` of each service folder.
+
+| Folder               | Name      | Role                                                          | Stack                                  |
+|----------------------|-----------|---------------------------------------------------------------|----------------------------------------|
+| `antares-auth`       | Antares   | Auth (JWT in HttpOnly cookies), users, gyms, memberships; Traefik forward-auth | Java 25, Spring Boot 4.1, PostgreSQL, Redis |
+| `aldebaran-training` | Aldebaran | Sport domain: muscles, movements, WODs, scores               | Java 25, Spring Boot 4.1, PostgreSQL   |
+| `bellatrix-swagger`  | Bellatrix | Swagger/OpenAPI aggregator                                    | Spring Boot                            |
+| `sirius-app`         | Sirius    | Frontend                                                      | Angular 22, Tailwind 4, DaisyUI 5, Vitest |
+| `dynamic/`           | Altair    | Traefik dynamic config (routers, middlewares, forward-auth)   | Traefik 3                              |
+
+Infra: `docker-compose.yml` (Traefik `altair-proxy`, `castor-db` PostgreSQL 18, `pollux-cache` Redis 8),
+`docker-compose.observability.yml` (Grafana/Prometheus/Loki/Alloy). Public host: `https://stellar.apex`
+(`/antares`, `/aldebaran`), docs on `docs.stellar.apex`. Human docs: one `README.md` per service plus
+the root one; keep them in sync with code changes.
+
+## Commands
+
+```bash
+cd sirius-app && npm test          # Vitest via ng test (non-watch)
+cd sirius-app && npm run build     # production build (CI runs this)
+cd sirius-app && npm start         # dev server on :4200, proxies /antares and /aldebaran to https://stellar.apex
+cd antares-auth && ./mvnw verify   # unit tests + *IT (Failsafe, Testcontainers: Docker must run)
+cd aldebaran-training && ./mvnw verify
+```
+
+CI (`.github/workflows/ci.yml`) runs `npm test` + production build for Sirius and `./mvnw -B verify`
+per backend, filtered by changed paths. Always run the relevant suite before calling work done.
+
+## Rights model (most important cross-service contract)
+
+Rules are enforced by the backends; Sirius only adapts the UI to what the backend sends. Never
+re-implement a backend rule in the frontend when the backend can expose it.
+
+Request flow: browser → Traefik → `forward-auth-api` middleware calls Antares
+`GET /antares/auth/verify/api` (`AuthenticationController.verifyApi` → `GatewayIdentityService`) →
+Antares returns identity headers → Traefik copies them onto the request to Aldebaran.
+
+Headers Antares → Aldebaran (all listed in `dynamic/routes.yml` `authResponseHeaders`, which also makes
+Traefik strip client-forged values; any new header MUST be added there):
+
+- `X-Auth-User-Id`, `X-Auth-User-Locale`, `X-Internal-Secret`
+- `X-Auth-User-Role`: platform role only (`ADMIN` | `USER`), never a gym role
+- `X-Auth-Memberships`: every usable membership, `gymId:ROLE:PERM+PERM` joined by `,`
+  (e.g. `12:COACH:WOD_WRITE+SCORE_VERIFY,15:ATHLETE:`). Usable = membership ACTIVE and
+  (gym ACTIVE or role OWNER/PROGRAMMER)
+- `X-Auth-Actor-Id`: admin id, only during a support session (the other headers then describe the
+  target user)
+
+Effective permissions (single rule, `Membership.effectivePermissions` in Antares): OWNER/PROGRAMMER =
+all, COACH = granted ones, ATHLETE = none.
+
+Gym roles by type: physical gym = exactly 1 OWNER + COACH* + ATHLETE*; virtual gym (`isProgramming`)
+= exactly 1 PROGRAMMER + ATHLETE*. OWNER/PROGRAMMER change only through
+`POST /antares/gyms/{gymId}/transfer-ownership`.
+Permissions: `WOD_WRITE`, `SCORE_VERIFY`, `MANAGE_MEMBERSHIPS`, `MANAGE_SETTINGS`.
+
+Rights are evaluated on the gym of the resource (a user can belong to several gyms, e.g. a physical box
+and a virtual programming); there is no "active gym" in requests.
+
+- WOD read: public, or WOD gym in the user's gyms, or author. WOD create/update/delete in a gym:
+  `WOD_WRITE` on that gym; personal WOD (`gymId = null`): author only. Admin: everything.
+- WOD with logged scores is locked (409 on update/delete). Ownership (`gymId`, `authorId`) is ignored
+  on update (`WodMapper.updateEntity`); `isPublic` stays editable.
+- Score rights for others: `SCORE_VERIFY` on the WOD's gym. Movements/muscles CRUD and CSV export:
+  `hasRole('ADMIN')`.
+- Gym settings/deletion: `MANAGE_SETTINGS`; memberships: `MANAGE_MEMBERSHIPS` (Antares `@security`).
+- Aldebaran returns `WodResponse.capabilities {canModify, locked}` (computed per request, outside the
+  WOD cache) so Sirius shows edit/delete only when allowed. Prefer this per-resource pattern for new
+  features (e.g. scores) over replicating rules client-side.
+
+Admin support session: a platform admin acts as a real (non-admin) user from Sirius `/admin/support`
+(`POST /antares/admin/support-sessions {userId, reason}`). Antares sets a separate 30-min, non
+refreshable `support_token` cookie (admin cookies untouched), records it in `support_sessions`, and
+resolves requests as the target; writes are allowed and audited (`X-Auth-Actor-Id`). Expiry → 401
+ProblemDetail `code=SUPPORT_SESSION_EXPIRED`, never a silent fallback to admin; password change,
+account deletion and preference (language/theme) updates → 403 `SUPPORT_SESSION_FORBIDDEN`; Sirius
+keeps the admin's language/theme on screen. `/users/me` carries `supportSession` while active.
+
+Temporary dev data (`dev` Spring profile, set in `docker-compose.yml`, to be removed like the CSV
+export): test gyms "Spartacus CrossFit" (physical), "Zeus Programming" (virtual), "Pending Box" and
+their accounts (Antares), gym WODs for them (Aldebaran).
+
+## Conventions
+
+- Backend code, comments, Javadoc and commit messages in English. User-facing text is translated
+  (FR + EN) on both sides: `messages*.properties` in backends, `sirius-app/src/assets/i18n/{fr,en}.json`.
+- Schema changes go through new Flyway migrations (`src/main/resources/db/migration`, schemas
+  `antares` / `aldebaran`, `ddl-auto=validate`); never edit an applied migration.
+- Default branch `main`; dependabot opens most PRs. Branch before committing; commit only when asked.
+- Frontend DTOs in `sirius-app/src/app/api/**/models` mirror backend DTOs: change both together.
+
+## Gotchas
+
+- `.env` (secrets) is git-ignored: never print or commit it.
+- Muscle/movement/public-WOD CSVs (`aldebaran-training/src/main/resources/*.csv`) are a temporary,
+  git-ignored local backup: the catalog is edited in Sirius, exported with `POST /aldebaran/export/*`,
+  and reloaded by Aldebaran's `DataSeeder` after a database reset. Not a product feature; never commit
+  them.

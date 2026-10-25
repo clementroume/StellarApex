@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "sirius",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["--prefix", "sirius-app", "start"],
+      "port": 4200
+    }
+  ]
+}
