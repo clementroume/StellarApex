@@ -44,6 +44,7 @@ class AuthenticationServiceTest {
   @Mock private RefreshTokenService refreshTokenService;
   @Mock private CookieService cookieService;
   @Mock private LoginAttemptService loginAttemptService;
+  @Mock private SupportSessionService supportSessionService;
   @Mock private HttpServletResponse httpServletResponse;
   @InjectMocks private AuthenticationService authenticationService;
 
@@ -219,7 +220,7 @@ class AuthenticationServiceTest {
   }
 
   @Test
-  @DisplayName("logout: should revoke refresh token and clear cookies")
+  @DisplayName("logout: should revoke refresh token, end support sessions and clear cookies")
   void testLogout_shouldRevokeTokenAndClearCookies() {
     // Given
     User currentUser = new User();
@@ -229,41 +230,8 @@ class AuthenticationServiceTest {
 
     // Then
     verify(refreshTokenService).deleteTokenForUser(currentUser);
+    verify(supportSessionService).endActiveSessions(currentUser, httpServletResponse);
     verify(cookieService).clearCookie(accessToken, httpServletResponse);
     verify(cookieService).clearCookie(refreshToken, httpServletResponse);
-  }
-
-  @Test
-  @DisplayName("impersonate: should issue tokens for target user")
-  void testImpersonate_Success() {
-    // Given
-    Long targetId = 99L;
-    User targetUser = new User();
-    targetUser.setId(targetId);
-
-    when(userRepository.findById(targetId)).thenReturn(Optional.of(targetUser));
-    when(jwtService.generateToken(targetUser)).thenReturn("admin-impersonation-token");
-    when(refreshTokenService.createRefreshToken(targetUser)).thenReturn("admin-refresh-token");
-    when(userMapper.toUserResponse(targetUser)).thenReturn(mock(UserResponse.class));
-
-    // When
-    authenticationService.impersonate(targetId, httpServletResponse);
-
-    // Then
-    verify(cookieService)
-        .addCookie(
-            eq(accessToken), eq("admin-impersonation-token"), anyLong(), eq(httpServletResponse));
-  }
-
-  @Test
-  @DisplayName("impersonate: should throw NotFound if user ID does not exist")
-  void testImpersonate_UserNotFound_ShouldThrowException() {
-    // Given
-    when(userRepository.findById(999L)).thenReturn(Optional.empty());
-
-    // When / Then
-    assertThrows(
-        ResourceNotFoundException.class,
-        () -> authenticationService.impersonate(999L, httpServletResponse));
   }
 }

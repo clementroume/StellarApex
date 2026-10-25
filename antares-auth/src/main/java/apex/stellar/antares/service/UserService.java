@@ -4,14 +4,29 @@ import apex.stellar.antares.dto.ChangePasswordRequest;
 import apex.stellar.antares.dto.PreferencesUpdateRequest;
 import apex.stellar.antares.dto.ProfileUpdateRequest;
 import apex.stellar.antares.dto.UserResponse;
+import apex.stellar.antares.dto.UserSummary;
 import apex.stellar.antares.exception.DataConflictException;
 import apex.stellar.antares.exception.InvalidPasswordException;
 import apex.stellar.antares.exception.ResourceNotFoundException;
 import apex.stellar.antares.mapper.UserMapper;
-import apex.stellar.antares.model.User; 
+import apex.stellar.antares.model.GymRole;
+import apex.stellar.antares.model.Membership.MembershipStatus;
+import apex.stellar.antares.model.User;
 import apex.stellar.antares.repository.jpa.UserRepository;
+import java.util.Collection;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Objects;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
+import org.springframework.data.domain.SliceImpl;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,6 +40,9 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 public class UserService {
+
+  /** Maximum page size of {@link #searchUsers}. */
+  public static final int SEARCH_MAX_PAGE_SIZE = 50;
 
   private final UserRepository userRepository;
   private final PasswordEncoder passwordEncoder;
@@ -45,6 +63,73 @@ public class UserService {
             .orElseThrow(
                 () -> new ResourceNotFoundException("error.user.not.found", currentUser.getId()));
     return userMapper.toUserResponse(user);
+  }
+
+  /**
+   * Searches users for platform admins (e.g. to start a support session).
+   *
+   * @param search text matched against first name, last name and email (case-insensitive); blank
+   *     matches everyone.
+   * @param gymId optional gym the user must belong to.
+   * @param role optional role of that membership.
+   * @param status optional status of that membership.
+   * @param pageable the requested page (size capped at {@value #SEARCH_MAX_PAGE_SIZE}).
+   * @return a slice of users with their memberships, ordered by last name.
+   */
+  @Transactional(readOnly = true)
+  public Slice<UserResponse> searchUsers(
+      String search, Long gymId, GymRole role, MembershipStatus status, Pageable pageable) {
+    String text = search == null ? "" : search.trim().toLowerCase(Locale.ROOT);
+    String escaped = text.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_");
+    Pageable page =
+        PageRequest.of(
+            pageable.getPageNumber(), Math.min(pageable.getPageSize(), SEARCH_MAX_PAGE_SIZE));
+    boolean anyMembership = gymId == null && role == null && status == null;
+
+    Slice<Long> ids =
+        userRepository.searchIds("%" + escaped + "%", anyMembership, gymId, role, status, page);
+    List<UserResponse> users = loadWithMemberships(ids.getContent());
+    return new SliceImpl<>(users, page, ids.hasNext());
+  }
+
+  /**
+   * Loads users with their memberships, keeping the order of the given ids.
+   *
+   * @param ids the user ids, in display order.
+   * @return the users, in the same order (unknown ids are skipped).
+   */
+  @Transactional(readOnly = true)
+  public List<UserResponse> loadWithMemberships(List<Long> ids) {
+    if (ids.isEmpty()) {
+      return List.of();
+    }
+    Map<Long, User> byId =
+        userRepository.findWithMembershipsByIdIn(ids).stream()
+            .collect(Collectors.toMap(User::getId, Function.identity()));
+    return ids.stream()
+        .map(byId::get)
+        .filter(Objects::nonNull)
+        .map(userMapper::toUserResponse)
+        .toList();
+  }
+
+  /**
+   * Resolves user ids into lightweight summaries (e.g. WOD authors shown to platform admins).
+   *
+   * @param ids the user ids.
+   * @return the summaries of the existing users, ordered by last name.
+   */
+  @Transactional(readOnly = true)
+  public List<UserSummary> lookup(Collection<Long> ids) {
+    if (ids.isEmpty()) {
+      return List.of();
+    }
+    return userRepository.findAllById(ids).stream()
+        .sorted(
+            Comparator.comparing(User::getLastName, String.CASE_INSENSITIVE_ORDER)
+                .thenComparing(User::getFirstName, String.CASE_INSENSITIVE_ORDER))
+        .map(userMapper::toSummary)
+        .toList();
   }
 
   /**

@@ -17,6 +17,7 @@ import java.util.List;
  * @param locale User's preferred locale.
  * @param theme User's preferred theme.
  * @param createdAt Account creation timestamp.
+ * @param supportSession The active support session when an admin acts as this user, else null.
  */
 public record UserResponse(
     @Schema(description = "User ID", example = "1") Long id,
@@ -28,4 +29,19 @@ public record UserResponse(
     @Schema(description = "Preferred language", example = "en") String locale,
     @Schema(description = "UI Theme preference", example = "dark") String theme,
     @Schema(description = "Account creation date", example = "2023-01-01T12:00:00")
-        LocalDateTime createdAt) {}
+        LocalDateTime createdAt,
+    @Schema(description = "Active support session, null outside a support session", nullable = true)
+        SupportSessionInfo supportSession) {
+
+  /**
+   * Returns a copy of this response describing the given support session.
+   *
+   * @param session the active support session.
+   * @return the copy.
+   */
+  public UserResponse withSupportSession(SupportSessionInfo session) {
+    return new UserResponse(
+        id, firstName, lastName, email, platformRole, memberships, locale, theme, createdAt,
+        session);
+  }
+}

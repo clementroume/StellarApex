@@ -130,11 +130,11 @@ class AuthenticationControllerIT extends BaseIntegrationTest {
   }
 
   @Test
-  @DisplayName("Access Protected: should return 403 Forbidden without auth cookie")
-  void testAccessProtectedResource_withoutCookie_shouldReturnForbidden() throws Exception {
+  @DisplayName("Access Protected: should return 401 Unauthorized without auth cookie")
+  void testAccessProtectedResource_withoutCookie_shouldReturnUnauthorized() throws Exception {
     // Given: No authentication cookies
     // When/Then: Accessing protected resource fails
-    mockMvc.perform(get("/antares/users/me")).andExpect(status().isForbidden());
+    mockMvc.perform(get("/antares/users/me")).andExpect(status().isUnauthorized());
   }
 
   @Test

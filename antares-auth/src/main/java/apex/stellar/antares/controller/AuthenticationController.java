@@ -4,21 +4,16 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.text.Normalizer.Form.NFD;
 import static java.text.Normalizer.normalize;
 
+import apex.stellar.antares.config.SupportSessionAuthentication;
 import apex.stellar.antares.dto.AuthenticationRequest;
 import apex.stellar.antares.dto.RegisterRequest;
 import apex.stellar.antares.dto.TokenRefreshResponse;
 import apex.stellar.antares.dto.UserResponse;
 import apex.stellar.antares.exception.ResourceNotFoundException;
-import apex.stellar.antares.model.Gym;
-import apex.stellar.antares.model.Gym.GymStatus;
-import apex.stellar.antares.model.GymRole;
-import apex.stellar.antares.model.Membership;
-import apex.stellar.antares.model.Membership.MembershipStatus;
-import apex.stellar.antares.model.Permission;
 import apex.stellar.antares.model.PlatformRole;
 import apex.stellar.antares.model.User;
-import apex.stellar.antares.repository.jpa.UserRepository;
 import apex.stellar.antares.service.AuthenticationService;
+import apex.stellar.antares.service.GatewayIdentityService;
 import apex.stellar.antares.service.JwtService;
 import io.swagger.v3.oas.annotations.Hidden;
 import io.swagger.v3.oas.annotations.Operation;
@@ -32,7 +27,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import java.net.URLEncoder;
-import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -42,7 +36,6 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -60,29 +53,20 @@ import org.springframework.web.bind.annotation.RestController;
 @Slf4j
 public class AuthenticationController {
 
-  private static final String HEADER_AUTH_USER_ID = "X-Auth-User-Id";
   private static final String HEADER_AUTH_USER_LOGIN = "X-Auth-User-Login";
   private static final String HEADER_AUTH_USER_NAME = "X-Auth-User-Name";
   private static final String HEADER_AUTH_USER_EMAIL = "X-Auth-User-Email";
   private static final String HEADER_AUTH_USER_ROLE = "X-Auth-User-Role";
-  private static final String HEADER_AUTH_USER_LOCALE = "X-Auth-User-Locale";
-  private static final String HEADER_AUTH_GYM_ID = "X-Auth-Gym-Id";
-  private static final String HEADER_AUTH_USER_PERMISSIONS = "X-Auth-User-Permissions";
-  private static final String HEADER_CONTEXT_GYM_ID = "X-Context-Gym-Id";
   private static final String HEADER_FORWARDED_PROTO = "X-Forwarded-Proto";
   private static final String HEADER_FORWARDED_HOST = "X-Forwarded-Host";
   private static final String HEADER_FORWARDED_URI = "X-Forwarded-Uri";
-  private static final String HEADER_INTERNAL_SECRET = "X-Internal-Secret";
 
   private final AuthenticationService authenticationService;
   private final JwtService jwtService;
-  private final UserRepository userRepository;
+  private final GatewayIdentityService gatewayIdentityService;
 
   @Value("${application.frontend.login.url}")
   private String loginBaseUrl;
-
-  @Value("${application.security.internal-secret}")
-  private String internalSecret;
 
   /**
    * Handles POST requests to register a new user.
@@ -157,7 +141,9 @@ public class AuthenticationController {
    * @return A ResponseEntity with status 200 (OK).
    */
   @PostMapping("/logout")
-  @Operation(summary = "Logout user", description = "Invalidates the session and clears cookies.")
+  @Operation(
+      summary = "Logout user",
+      description = "Invalidates the session, ends any active support session and clears cookies.")
   @ApiResponses(
       value = {
         @ApiResponse(responseCode = "200", description = "Logged out successfully"),
@@ -224,80 +210,31 @@ public class AuthenticationController {
   }
 
   /**
-   * Verifies the authenticated user's API access and responds with appropriate headers containing
-   * user details if the authentication is valid and the user is authenticated.
+   * Forward Auth endpoint for the API (Aldebaran), called by Traefik before each API request.
+   *
+   * <p>The header contract (platform role, usable memberships with effective permissions, support
+   * session actor) is documented and implemented in {@link GatewayIdentityService}. During a
+   * support session the identity is the target user's, plus {@code X-Auth-Actor-Id}; an unusable
+   * support session is rejected upstream by the JWT filter (401 {@code SUPPORT_SESSION_EXPIRED}).
    *
    * @param authentication the authentication object containing the user's authentication details
-   * @param request the HTTP request containing headers
-   * @return a ResponseEntity with an HTTP 200 status and user headers if authenticated, or an HTTP
-   *     401 status if the user is not authenticated or the authentication is null
+   * @return a ResponseEntity with an HTTP 200 status and identity headers, or 401 when
+   *     unauthenticated
    */
-  // In AuthenticationController.java
-
   @GetMapping("/verify/api")
   @Hidden
-  @Transactional(readOnly = true)
-  public ResponseEntity<Void> verifyApi(Authentication authentication, HttpServletRequest request) {
+  public ResponseEntity<Void> verifyApi(Authentication authentication) {
 
     if (authentication == null || !authentication.isAuthenticated()) {
       return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
     }
 
     if (authentication.getPrincipal() instanceof User principal) {
-      User user = userRepository.findById(principal.getId()).orElse(principal);
-      String gymIdHeader = request.getHeader(HEADER_CONTEXT_GYM_ID);
-
-      // Case 1: Independent Athlete (No Gym Context)
-      if (gymIdHeader == null) {
-        return ResponseEntity.ok()
-            .header(HEADER_AUTH_USER_ID, String.valueOf(user.getId()))
-            .header(HEADER_AUTH_USER_ROLE, user.getPlatformRole().name())
-            .header(HEADER_AUTH_USER_LOCALE, user.getLocale())
-            .header(HEADER_INTERNAL_SECRET, internalSecret)
-            .build();
-      }
-
-      // Case 2: Gym Context
-      try {
-        Long gymId = Long.parseLong(gymIdHeader);
-        Membership membership =
-            user.getMemberships().stream()
-                .filter(m -> m.getGym().getId().equals(gymId))
-                .findFirst()
-                .orElse(null);
-
-        // Check Membership Existence & Status
-        if (membership == null || membership.getStatus() != MembershipStatus.ACTIVE) {
-          return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
-        }
-
-        // Check Gym Status (Allow Owner/Programmer to access pending gyms)
-        Gym gym = membership.getGym();
-        boolean isStaff =
-            membership.getGymRole() == GymRole.OWNER
-                || membership.getGymRole() == GymRole.PROGRAMMER;
-        if (gym.getStatus() != GymStatus.ACTIVE && !isStaff) {
-          return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
-        }
-
-        String permissions =
-            membership.getPermissions().stream()
-                .map(Permission::name)
-                .collect(Collectors.joining(","));
-
-        return ResponseEntity.ok()
-            .header(HEADER_AUTH_USER_ID, String.valueOf(user.getId()))
-            .header(HEADER_AUTH_USER_LOCALE, user.getLocale())
-            .header(HEADER_AUTH_GYM_ID, String.valueOf(gymId))
-            .header(HEADER_AUTH_USER_ROLE, membership.getGymRole().name())
-            .header(HEADER_AUTH_USER_PERMISSIONS, permissions)
-            .header(HEADER_INTERNAL_SECRET, internalSecret)
-            .build();
-
-      } catch (NumberFormatException e) {
-        log.warn("Invalid Gym ID format: {}", gymIdHeader, e);
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
-      }
+      Long actorId =
+          authentication instanceof SupportSessionAuthentication support
+              ? support.getActor().getId()
+              : null;
+      return gatewayIdentityService.verify(principal, actorId);
     }
     return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
   }

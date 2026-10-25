@@ -127,57 +127,39 @@ class AuthenticationControllerVerifyIT extends BaseIntegrationTest {
   }
 
   @Test
-  @DisplayName("Verify API: Authenticated ATHLETE with Gym Context should return Gym headers")
-  void testVerifyApi_withGymContext_shouldReturnGymHeaders() throws Exception {
+  @DisplayName("Verify API: Member should receive its memberships (no Gym context needed)")
+  void testVerifyApi_withMembership_shouldReturnMemberships() throws Exception {
     // Given: User with Membership
     Cookie[] cookies = registerLoginAndJoin("gymuser@test.com", testGym);
 
-    // When: Perform verification with Gym Context Header (Dynamic ID)
-    mockMvc
-        .perform(
-            get("/antares/auth/verify/api")
-                .cookie(cookies)
-                .header("X-Context-Gym-Id", testGym.getId().toString()))
-        .andExpect(status().isOk())
-        .andExpect(header().string("X-Auth-Gym-Id", testGym.getId().toString()))
-        .andExpect(header().string("X-Auth-User-Role", "ATHLETE"))
-        .andExpect(header().exists("X-Auth-User-Permissions"));
-  }
-
-  @Test
-  @DisplayName(
-      "Verify API: Authenticated ATHLETE with Invalid Gym Context should return Forbidden (403)")
-  void testVerifyApi_withInvalidGymContext_shouldReturnForbidden() throws Exception {
-    // Given
-    Cookie[] cookies = registerLoginAndJoin("gymuser2@test.com", testGym);
-
     // When / Then
-    mockMvc
-        .perform(
-            get("/antares/auth/verify/api")
-                .cookie(cookies)
-                .header("X-Context-Gym-Id", "999999")) // Non-existent ID or not a member
-        .andExpect(status().isForbidden());
-  }
-
-  @Test
-  @DisplayName(
-      "Verify API: Authenticated USER without Context should return Independent User info (No Gym ID)")
-  void testVerifyApi_noContext_shouldReturnUserContextOnly() throws Exception {
-    // Given: User with Membership (linked to testGym created in setUp)
-    Cookie[] cookies = registerLoginAndJoin("gymuser3@test.com", testGym);
-
-    // When: Perform verification WITHOUT the X-Context-Gym-Id header
     mockMvc
         .perform(get("/antares/auth/verify/api").cookie(cookies))
         .andExpect(status().isOk())
         .andExpect(header().exists("X-Auth-User-Id"))
-        .andExpect(header().doesNotExist("X-Auth-Gym-Id"));
+        .andExpect(header().string("X-Auth-User-Role", "USER"))
+        .andExpect(header().string("X-Auth-Memberships", testGym.getId() + ":ATHLETE:"))
+        .andExpect(header().doesNotExist("X-Auth-Gym-Id"))
+        .andExpect(header().doesNotExist("X-Auth-User-Permissions"))
+        .andExpect(header().doesNotExist("X-Auth-Actor-Id"));
   }
 
   @Test
-  @DisplayName("Verify API: Authenticated with PENDING Membership should return Forbidden (403)")
-  void testVerifyApi_withPendingMembership_shouldReturnForbidden() throws Exception {
+  @DisplayName("Verify API: User without membership should receive empty memberships")
+  void testVerifyApi_noMembership_shouldReturnEmptyMemberships() throws Exception {
+    // Given
+    Cookie[] cookies = registerAndLogin("independent@test.com", "password123");
+
+    // When / Then
+    mockMvc
+        .perform(get("/antares/auth/verify/api").cookie(cookies))
+        .andExpect(status().isOk())
+        .andExpect(header().string("X-Auth-Memberships", ""));
+  }
+
+  @Test
+  @DisplayName("Verify API: PENDING Membership should be excluded from memberships")
+  void testVerifyApi_withPendingMembership_shouldBeExcluded() throws Exception {
     // Given
     // 1. Join via API (results in ACTIVE because testGym is: auto-sub=true)
     Cookie[] cookies = registerLoginAndJoin("pending@test.com", testGym);
@@ -194,16 +176,14 @@ class AuthenticationControllerVerifyIT extends BaseIntegrationTest {
 
     // When / Then
     mockMvc
-        .perform(
-            get("/antares/auth/verify/api")
-                .cookie(cookies)
-                .header("X-Context-Gym-Id", testGym.getId().toString()))
-        .andExpect(status().isForbidden());
+        .perform(get("/antares/auth/verify/api").cookie(cookies))
+        .andExpect(status().isOk())
+        .andExpect(header().string("X-Auth-Memberships", ""));
   }
 
   @Test
-  @DisplayName("Verify API: Athlete accessing PENDING Gym should return Forbidden (403)")
-  void testVerifyApi_PendingGym_Athlete_shouldReturnForbidden() throws Exception {
+  @DisplayName("Verify API: Athlete of a PENDING Gym should be excluded from memberships")
+  void testVerifyApi_PendingGym_Athlete_shouldBeExcluded() throws Exception {
     // Given
     // 1. Create a Pending Gym via Repo (Infrastructure setup)
     Gym pendingGym =
@@ -216,21 +196,20 @@ class AuthenticationControllerVerifyIT extends BaseIntegrationTest {
                     true) // Ensure joining gives ACTIVE membership to isolate Gym Status check
                 .build());
 
-    // 2. User joins via API
+    // 2. User joins the pending gym and the active one
     Cookie[] cookies = registerLoginAndJoin("athlete_p@test.com", pendingGym);
+    join(cookies, testGym);
 
     // When / Then
     mockMvc
-        .perform(
-            get("/antares/auth/verify/api")
-                .cookie(cookies)
-                .header("X-Context-Gym-Id", pendingGym.getId().toString()))
-        .andExpect(status().isForbidden());
+        .perform(get("/antares/auth/verify/api").cookie(cookies))
+        .andExpect(status().isOk())
+        .andExpect(header().string("X-Auth-Memberships", testGym.getId() + ":ATHLETE:"));
   }
 
   @Test
-  @DisplayName("Verify API: Owner accessing PENDING Gym should return OK (200)")
-  void testVerifyApi_PendingGym_Owner_shouldReturnOk() throws Exception {
+  @DisplayName("Verify API: Owner of a PENDING Gym should get it with every permission")
+  void testVerifyApi_PendingGym_Owner_shouldBeIncluded() throws Exception {
     // Given
     // 1. Register & Login
     Cookie[] cookies = registerAndLogin("owner_p@test.com", "password123");
@@ -253,32 +232,41 @@ class AuthenticationControllerVerifyIT extends BaseIntegrationTest {
 
     // When / Then
     mockMvc
-        .perform(
-            get("/antares/auth/verify/api")
-                .cookie(cookies)
-                .header("X-Context-Gym-Id", gymResponse.id().toString()))
+        .perform(get("/antares/auth/verify/api").cookie(cookies))
         .andExpect(status().isOk())
-        .andExpect(header().string("X-Auth-User-Role", "OWNER"));
+        .andExpect(header().string("X-Auth-User-Role", "USER"))
+        .andExpect(
+            header()
+                .string(
+                    "X-Auth-Memberships",
+                    gymResponse.id()
+                        + ":OWNER:WOD_WRITE+SCORE_VERIFY+MANAGE_MEMBERSHIPS+MANAGE_SETTINGS"));
   }
 
   @Test
-  @DisplayName("Verify API: Invalid Gym ID format should return Bad Request (400)")
-  void testVerifyApi_InvalidGymIdFormat_shouldReturnBadRequest() throws Exception {
-    // Given: Just a logged-in user
-    Cookie[] cookies = registerAndLogin("badrequest@test.com", "password123");
+  @DisplayName("Verify API: ADMIN member should keep ADMIN platform role")
+  void testVerifyApi_AdminMember_shouldKeepAdminRole() throws Exception {
+    // Given
+    createAdmin("admin.member@test.com", "adminPass123");
+    Cookie[] cookies = login("admin.member@test.com", "adminPass123");
+    join(cookies, testGym);
 
     // When / Then
     mockMvc
-        .perform(
-            get("/antares/auth/verify/api")
-                .cookie(cookies)
-                .header("X-Context-Gym-Id", "invalid-id")) // <--- String instead of Long
-        .andExpect(status().isBadRequest());
+        .perform(get("/antares/auth/verify/api").cookie(cookies))
+        .andExpect(status().isOk())
+        .andExpect(header().string("X-Auth-User-Role", "ADMIN"))
+        .andExpect(header().string("X-Auth-Memberships", testGym.getId() + ":ATHLETE:"));
   }
 
   // --- Helpers ---
   private Cookie[] registerLoginAndJoin(String email, Gym gym) throws Exception {
     Cookie[] cookies = registerAndLogin(email, "password123");
+    join(cookies, gym);
+    return cookies;
+  }
+
+  private void join(Cookie[] cookies, Gym gym) throws Exception {
     String csrf = getXsrfToken(cookies);
 
     JoinGymRequest joinRequest = new JoinGymRequest(gym.getId(), gym.getEnrollmentCode());
@@ -290,7 +278,5 @@ class AuthenticationControllerVerifyIT extends BaseIntegrationTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(jsonMapper.writeValueAsString(joinRequest)))
         .andExpect(status().isOk());
-
-    return cookies;
   }
 }
