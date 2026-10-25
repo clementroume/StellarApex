@@ -1,12 +1,17 @@
 package apex.stellar.aldebaran.controller;
 
+import apex.stellar.aldebaran.config.WodCsvCodec;
 import apex.stellar.aldebaran.model.entities.Movement;
 import apex.stellar.aldebaran.model.entities.MovementMuscle;
 import apex.stellar.aldebaran.model.entities.Muscle;
+import apex.stellar.aldebaran.model.entities.Wod;
 import apex.stellar.aldebaran.repository.MovementRepository;
 import apex.stellar.aldebaran.repository.MuscleRepository;
+import apex.stellar.aldebaran.repository.WodRepository;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.Writer;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -18,15 +23,22 @@ import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVPrinter;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+/**
+ * Temporary development tool: writes the muscle and movement catalog and the public benchmark WODs
+ * to the git-ignored seed CSV files (through the source volume mounted in docker-compose), so the catalog survives a database
+ * reset. Restricted to platform administrators.
+ */
 @RestController
 @RequestMapping("/aldebaran/export")
 @RequiredArgsConstructor
+@PreAuthorize("hasRole('ADMIN')")
 public class Exporter {
 
   private final CsvExportService exportService;
@@ -45,6 +57,18 @@ public class Exporter {
     return ResponseEntity.ok("Export complet Mouvements réussi et fichiers écrasés !");
   }
 
+  /**
+   * Rewrites {@code wods.csv} and {@code wod_movements.csv} from the public WODs in the database.
+   *
+   * @return A confirmation message.
+   */
+  @PostMapping("/wods")
+  public ResponseEntity<String> exportWods() {
+
+    exportService.exportWods();
+    return ResponseEntity.ok("Export complet WODs publics réussi et fichiers écrasés !");
+  }
+
   // --- Inner Service Class ---
 
   @Service
@@ -54,14 +78,27 @@ public class Exporter {
 
     private final MuscleRepository muscleRepository;
     private final MovementRepository movementRepository;
+    private final WodRepository wodRepository;
 
     private final String projectRoot = System.getProperty("user.dir");
 
     @Transactional(readOnly = true)
     public void exportMuscles() {
+      exportMuscles(resourcesDirectory());
+    }
+
+    /**
+     * Writes the muscle catalog into {@code muscles.csv}.
+     *
+     * @param directory The target directory (the resources folder, or a temporary one in tests).
+     */
+    @Transactional(readOnly = true)
+    public void exportMuscles(Path directory) {
+      // JPA property names (not column names): Spring Data validates them against the entity
       List<Muscle> muscles =
           muscleRepository.findAll(
-              Sort.by(Sort.Direction.ASC, "muscle_group").and(Sort.by(Sort.Direction.ASC, "name")));
+              Sort.by(Sort.Direction.ASC, "muscleGroup")
+                  .and(Sort.by(Sort.Direction.ASC, "medicalName")));
       String[] headers = {
         "medical_name",
         "muscle_group",
@@ -72,7 +109,7 @@ public class Exporter {
         "image_url"
       };
 
-      Path musclesCsvPath = Paths.get(projectRoot, "src", "main", "resources", "muscles.csv");
+      Path musclesCsvPath = directory.resolve("muscles.csv");
 
       try {
         Files.createDirectories(musclesCsvPath.getParent());
@@ -104,6 +141,16 @@ public class Exporter {
 
     @Transactional(readOnly = true)
     public void exportMovements() {
+      exportMovements(resourcesDirectory());
+    }
+
+    /**
+     * Writes the movement catalog into {@code movements.csv}.
+     *
+     * @param directory The target directory (the resources folder, or a temporary one in tests).
+     */
+    @Transactional(readOnly = true)
+    public void exportMovements(Path directory) {
       List<Movement> movements =
           movementRepository.findAll(
               Sort.by(Sort.Direction.ASC, "category").and(Sort.by(Sort.Direction.ASC, "name")));
@@ -113,7 +160,7 @@ public class Exporter {
         "coaching_cues_en", "coaching_cues_fr", "video_url", "image_url"
       };
 
-      Path movementsCsvPath = Paths.get(projectRoot, "src", "main", "resources", "movements.csv");
+      Path movementsCsvPath = directory.resolve("movements.csv");
 
       try {
         Files.createDirectories(movementsCsvPath.getParent());
@@ -157,6 +204,41 @@ public class Exporter {
         log.error("Failed to export movements to CSV at {}", movementsCsvPath.toAbsolutePath(), e);
         throw new RuntimeException("Erreur lors de l'export des mouvements", e);
       }
+    }
+
+    @Transactional(readOnly = true)
+    public void exportWods() {
+      exportWods(resourcesDirectory());
+    }
+
+    /**
+     * Writes the public WODs into {@code wods.csv} and {@code wod_movements.csv}.
+     *
+     * @param directory The target directory (the resources folder, or a temporary one in tests).
+     */
+    @Transactional(readOnly = true)
+    public void exportWods(Path directory) {
+      List<Wod> wods = wodRepository.findAllPublicWithMovements();
+      Path wodsCsvPath = directory.resolve(WodCsvCodec.WODS_FILE);
+      Path wodMovementsCsvPath = directory.resolve(WodCsvCodec.WOD_MOVEMENTS_FILE);
+
+      try {
+        Files.createDirectories(directory);
+        try (Writer wodsOut = Files.newBufferedWriter(wodsCsvPath, StandardCharsets.UTF_8);
+            Writer movementsOut =
+                Files.newBufferedWriter(wodMovementsCsvPath, StandardCharsets.UTF_8)) {
+          WodCsvCodec.write(wods, wodsOut, movementsOut);
+        }
+        log.info("Successfully exported {} public WODs to {}", wods.size(), directory);
+      } catch (IOException e) {
+        log.error("Failed to export WODs to CSV in {}", directory.toAbsolutePath(), e);
+        throw new RuntimeException("Erreur lors de l'export des WODs", e);
+      }
+    }
+
+    /** The seed CSV folder of the source tree (mounted as a volume in docker-compose). */
+    private Path resourcesDirectory() {
+      return Paths.get(projectRoot, "src", "main", "resources");
     }
 
     private String filterMusclesByRole(Movement m, MovementMuscle.MuscleRole role) {
