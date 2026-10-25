@@ -5,7 +5,7 @@ import {Location, NgOptimizedImage, NgTemplateOutlet} from '@angular/common';
 import {NgIconComponent} from '@ng-icons/core';
 import {MovementResponse} from '../../../api/aldebaran/models/movement.model';
 import {MuscleResponse} from '../../../api/aldebaran/models/muscle.model';
-import {AuthService} from '../../../api/antares/services/auth.service';
+import {AccessService} from '../../../core/services/access.service';
 import {MovementService} from '../../../api/aldebaran/services/movement.service';
 import {NotificationService} from '../../../core/services/notification.service';
 import {HttpErrorResponse} from '@angular/common/http';
@@ -27,7 +27,7 @@ export class MovementDetailComponent {
   // --- INJECTIONS ---
   id = input.required<string>();
   private readonly translate = inject(TranslateService);
-  private readonly authService = inject(AuthService);
+  private readonly accessService = inject(AccessService);
   private readonly movementService = inject(MovementService);
   private readonly notificationService = inject(NotificationService);
   private readonly router = inject(Router);
@@ -35,7 +35,7 @@ export class MovementDetailComponent {
 
   // --- STATE (SIGNALS) ---
   activeLang = computed(() => this.translate.currentLang() ?? this.translate.fallbackLang() ?? 'en');
-  isAdmin = computed(() => this.authService.currentUser()?.platformRole === 'ADMIN');
+  isAdmin = this.accessService.isAdmin;
 
   movement = signal<MovementResponse | null>(null);
   isLoading = signal<boolean>(true); // Nouvel état explicite

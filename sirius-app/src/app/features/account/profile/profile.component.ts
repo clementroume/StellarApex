@@ -8,11 +8,12 @@ import {NotificationService} from '../../../core/services/notification.service';
 import {HttpErrorResponse} from '@angular/common/http';
 import {ProblemDetail} from '../../../core/models/problem-detail.model';
 import {NgIcon} from '@ng-icons/core';
+import {MembershipsComponent} from '../memberships/memberships.component';
 
 @Component({
   selector: 'app-profile',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, TranslatePipe, NgIcon],
+  imports: [CommonModule, ReactiveFormsModule, TranslatePipe, NgIcon, MembershipsComponent],
   templateUrl: './profile.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

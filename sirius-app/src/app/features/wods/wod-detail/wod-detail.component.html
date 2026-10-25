@@ -1,0 +1,202 @@
+<div class="container mx-auto px-4 py-8 max-w-5xl">
+
+  <app-detail-state [isLoading]="isLoading()">
+
+    <div skeleton class="animate-pulse">
+      <div class="flex items-center gap-4 mb-8">
+        <div class="w-12 h-12 rounded-full bg-base-300 shrink-0"></div>
+        <div class="h-10 bg-base-300 rounded w-1/3"></div>
+      </div>
+      <div class="flex flex-col md:flex-row gap-8 mb-6">
+        <div class="flex-1 w-full flex flex-col gap-8">
+          <div class="w-full h-48 bg-base-300 rounded-box"></div>
+          <div class="w-full h-48 bg-base-300 rounded-box"></div>
+        </div>
+        <div class="flex-1 w-full">
+          <div class="w-full h-104 bg-base-300 rounded-box"></div>
+        </div>
+      </div>
+    </div>
+
+
+    @if (wod(); as w) {
+
+      <app-detail-header
+        [title]="w.title"
+        [subtitle]="'WOD.SCORE_TYPES.' + w.scoreType | translate"
+        [badgeText]="'WOD.WOD_TYPES.' + w.wodType | translate"
+        (back)="goBack()">
+      </app-detail-header>
+
+      <ng-template #structureBox>
+        <app-detail-card [title]="'WOD.SECTIONS.STRUCTURE' | translate">
+          <div class="flex flex-wrap gap-2 justify-center">
+            @switch (visibility()) {
+              @case ('PUBLIC') {
+                <div class="badge badge-success badge-soft badge-lg gap-1">
+                  <ng-icon name="heroGlobeAlt"></ng-icon>
+                  {{ 'WOD.VISIBILITY.PUBLIC' | translate }}
+                </div>
+              }
+              @case ('GYM') {
+                <div class="badge badge-info badge-soft badge-lg gap-1">
+                  <ng-icon name="heroBuildingOffice"></ng-icon>
+                  {{ gymName() ?? ('WOD.VISIBILITY.GYM' | translate) }}
+                </div>
+              }
+              @case ('PRIVATE') {
+                <div class="badge badge-neutral badge-soft badge-lg gap-1">
+                  <ng-icon name="heroLockClosed"></ng-icon>
+                  {{ 'WOD.VISIBILITY.PRIVATE' | translate }}
+                </div>
+              }
+            }
+            @if (isLocked()) {
+              <div class="badge badge-warning badge-soft badge-lg gap-1" [title]="'WOD.MESSAGES.LOCKED' | translate">
+                <ng-icon name="heroExclamationTriangle"></ng-icon>
+                {{ 'WOD.MESSAGES.LOCKED_BADGE' | translate }}
+              </div>
+            }
+            @for (modality of w.modalities; track modality) {
+              <div class="badge badge-primary badge-soft badge-lg">{{ 'MOVEMENT.MODALITIES.' + modality | translate }}</div>
+            }
+          </div>
+
+          <dl class="grid grid-cols-2 gap-4 text-sm md:text-base">
+            <div>
+              <dt class="font-semibold text-base-content/70">{{ 'WOD.FIELDS.SCORE_TYPE' | translate }}</dt>
+              <dd>{{ 'WOD.SCORE_TYPES.' + w.scoreType | translate }}</dd>
+            </div>
+            @if (w.repScheme) {
+              <div>
+                <dt class="font-semibold text-base-content/70">{{ 'WOD.FIELDS.REP_SCHEME' | translate }}</dt>
+                <dd>{{ w.repScheme }}</dd>
+              </div>
+            }
+            @if (w.timeCapSeconds) {
+              <div>
+                <dt class="font-semibold text-base-content/70">{{ 'WOD.FIELDS.TIME_CAP' | translate }}</dt>
+                <dd class="flex items-center gap-1">
+                  <ng-icon name="heroClock"></ng-icon>
+                  {{ formatDuration(w.timeCapSeconds) }}
+                </dd>
+              </div>
+            }
+            @if (w.emomInterval) {
+              <div>
+                <dt class="font-semibold text-base-content/70">{{ 'WOD.FIELDS.EMOM_INTERVAL' | translate }}</dt>
+                <dd>{{ formatDuration(w.emomInterval) }}</dd>
+              </div>
+            }
+            @if (w.emomRounds) {
+              <div>
+                <dt class="font-semibold text-base-content/70">{{ 'WOD.FIELDS.EMOM_ROUNDS' | translate }}</dt>
+                <dd>{{ w.emomRounds }}</dd>
+              </div>
+            }
+          </dl>
+        </app-detail-card>
+      </ng-template>
+
+      <ng-template #descriptionBox>
+        <app-detail-card [title]="'WOD.SECTIONS.DESCRIPTION' | translate">
+          <div>
+            <h4 class="text-sm font-semibold text-base-content/70 mb-2">{{ 'GLOBAL.DESCRIPTION' | translate }}</h4>
+            <p [class.italic]="!w.description" [class.opacity-80]="!w.description"
+               class="leading-relaxed text-sm md:text-base whitespace-pre-line">
+              {{ w.description || ('GLOBAL.NO_DESCRIPTION' | translate) }}
+            </p>
+          </div>
+          @if (w.notes) {
+            <div>
+              <h4 class="text-sm font-semibold text-base-content/70 mb-2">{{ 'WOD.FIELDS.NOTES' | translate }}</h4>
+              <p class="leading-relaxed text-sm md:text-base whitespace-pre-line">{{ w.notes }}</p>
+            </div>
+          }
+        </app-detail-card>
+      </ng-template>
+
+      <ng-template #movementsBox>
+        <app-detail-card [title]="'WOD.SECTIONS.MOVEMENTS' | translate" gapClass="gap-4">
+          @if (sortedMovements().length > 0) {
+            <ol class="flex flex-col gap-4">
+              @for (wm of sortedMovements(); track wm.id) {
+                <li class="bg-base-200 rounded-box p-4 flex flex-col gap-2">
+                  <div class="flex items-center gap-3">
+                    <span class="badge badge-secondary">{{ wm.orderIndex }}</span>
+                    <a [routerLink]="['/movements', wm.movement.id]"
+                       class="font-semibold hover:text-primary transition-colors flex items-center gap-1">
+                      {{ wm.movement.name }}
+                      <ng-icon name="heroChevronRight" size="1em" class="opacity-50"></ng-icon>
+                    </a>
+                  </div>
+
+                  <div class="flex flex-wrap gap-2 text-sm">
+                    @if (wm.repsScheme) {
+                      <span class="badge badge-outline">{{ 'WOD.FIELDS.REPS' | translate }} : {{ wm.repsScheme }}</span>
+                    }
+                    @if (wm.weight) {
+                      <span class="badge badge-outline">{{ wm.weight }} {{ wm.weightUnit ? ('WOD.UNITS.' + wm.weightUnit | translate) : '' }}</span>
+                    }
+                    @if (wm.distance) {
+                      <span class="badge badge-outline">{{ wm.distance }} {{ wm.distanceUnit ? ('WOD.UNITS.' + wm.distanceUnit | translate) : '' }}</span>
+                    }
+                    @if (wm.durationSeconds) {
+                      <span class="badge badge-outline gap-1"><ng-icon name="heroClock"></ng-icon>{{ formatDuration(wm.durationSeconds) }}</span>
+                    }
+                    @if (wm.calories) {
+                      <span class="badge badge-outline">{{ wm.calories }} cal</span>
+                    }
+                    @for (eq of wm.equipment ?? []; track eq) {
+                      <span class="badge badge-primary badge-soft">{{ 'MOVEMENT.EQUIPMENT.' + eq | translate }}</span>
+                    }
+                    @for (tech of wm.techniques ?? []; track tech) {
+                      <span class="badge badge-secondary badge-soft">{{ 'MOVEMENT.TECHNIQUES.' + tech | translate }}</span>
+                    }
+                  </div>
+
+                  @if (wm.notes) {
+                    <p class="text-sm whitespace-pre-line">{{ wm.notes }}</p>
+                  }
+                  @if (wm.scalingOptions) {
+                    <p class="text-sm opacity-80 whitespace-pre-line">
+                      <span class="font-semibold">{{ 'WOD.FIELDS.SCALING' | translate }} :</span> {{ wm.scalingOptions }}
+                    </p>
+                  }
+                </li>
+              }
+            </ol>
+          } @else {
+            <p class="italic opacity-80">{{ 'WOD.MESSAGES.NO_MOVEMENTS' | translate }}</p>
+          }
+        </app-detail-card>
+      </ng-template>
+
+
+      <div class="flex flex-col gap-8 w-full md:hidden mb-8">
+        <ng-container *ngTemplateOutlet="structureBox"></ng-container>
+        <ng-container *ngTemplateOutlet="movementsBox"></ng-container>
+        <ng-container *ngTemplateOutlet="descriptionBox"></ng-container>
+      </div>
+
+      <div class="hidden md:flex flex-row gap-8 items-start w-full mb-8">
+        <div class="flex-1 flex flex-col gap-8 w-full">
+          <ng-container *ngTemplateOutlet="structureBox"></ng-container>
+          <ng-container *ngTemplateOutlet="descriptionBox"></ng-container>
+        </div>
+        <div class="flex-1 flex flex-col gap-8 w-full">
+          <ng-container *ngTemplateOutlet="movementsBox"></ng-container>
+        </div>
+      </div>
+
+      @if (canModify()) {
+        <app-detail-admin-actions
+          [editLink]="['/wods/edit', w.id]"
+          (delete)="onDelete(w)">
+        </app-detail-admin-actions>
+      }
+
+    }
+  </app-detail-state>
+
+</div>

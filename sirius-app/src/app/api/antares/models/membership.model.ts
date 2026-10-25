@@ -11,6 +11,8 @@ export interface MembershipSummary {
   gymStatus: GymStatus;
   gymRole: GymRole;
   status: MembershipStatus;
+  // Effective permissions (OWNER/PROGRAMMER: all, COACH: granted ones, ATHLETE: none)
+  permissions: Permission[];
 }
 
 export interface MembershipUpdateRequest {

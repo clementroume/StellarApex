@@ -1,6 +1,6 @@
 import {TestBed} from '@angular/core/testing';
 import {HttpTestingController, provideHttpClientTesting} from '@angular/common/http/testing';
-import {provideHttpClient, withXhr} from '@angular/common/http';
+import {HttpContext, HttpContextToken, provideHttpClient, withXhr} from '@angular/common/http';
 import {WodService} from './wod.service';
 import {environment} from '../../../../environments/environment';
 import {WodReferenceData, WodRequest, WodResponse, WodSummaryResponse} from '../models/wod.model';
@@ -16,6 +16,7 @@ describe('WodService', () => {
     title: 'Fran',
     wodType: 'FOR_TIME',
     scoreType: 'TIME',
+    isPublic: true,
     createdAt: new Date().toISOString(),
   };
 
@@ -78,8 +79,8 @@ describe('WodService', () => {
   it('getWods should include optional filters', () => {
     const search = 'Fran';
     const type: string = 'FOR_TIME';
-    const movementId = 'WL-SQ-001';
-    service.getWods(search, type, movementId).subscribe();
+    const movementId = 42;
+    service.getWods({search, type, movementId}).subscribe();
 
     const req = httpMock.expectOne(`${base}/wods?page=0&size=20&search=${search}&type=${type}&movementId=${movementId}`);
     expect(req.request.method).toBe('GET');
@@ -142,5 +143,44 @@ describe('WodService', () => {
     const req = httpMock.expectOne(`${base}/wods/reference-data`);
     expect(req.request.method).toBe('GET');
     req.flush(mockReferenceData);
+  });
+
+  it('getWods should include the scope and gym filters', () => {
+    service.getWods({scope: 'GYM', gymId: 5}).subscribe();
+
+    const req = httpMock.expectOne(`${base}/wods?page=0&size=20&scope=GYM&gymId=5`);
+    expect(req.request.method).toBe('GET');
+    req.flush(mockSlice);
+  });
+
+  it('getWods should include the author filter', () => {
+    service.getWods({authorId: 7}).subscribe();
+    httpMock.expectOne(`${base}/wods?page=0&size=20&authorId=7`).flush(mockSlice);
+  });
+
+  it('getFacets should GET /wods/facets with the filters', () => {
+    service.getFacets({search: 'fran', scope: 'GYM', gymId: 5}).subscribe(facets => {
+      expect(facets.wodTypes).toEqual(['FOR_TIME']);
+    });
+    const req = httpMock.expectOne(`${base}/wods/facets?search=fran&scope=GYM&gymId=5`);
+    expect(req.request.method).toBe('GET');
+    req.flush({wodTypes: ['FOR_TIME'], gymIds: [5], authorIds: []});
+  });
+
+  it('getWods should forward the provided HttpContext', () => {
+    const token = new HttpContextToken<boolean>(() => false);
+    const context = new HttpContext().set(token, true);
+    service.getWods({}, 2, 10, context).subscribe();
+
+    const req = httpMock.expectOne(`${base}/wods?page=2&size=10`);
+    expect(req.request.context.get(token)).toBe(true);
+    req.flush(mockSlice);
+  });
+
+  it('notifyRefresh should emit on refreshNeeded$', () => {
+    let emitted = 0;
+    service.refreshNeeded$.subscribe(() => emitted++);
+    service.notifyRefresh();
+    expect(emitted).toBe(1);
   });
 });
