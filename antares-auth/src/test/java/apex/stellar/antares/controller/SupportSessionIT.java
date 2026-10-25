@@ -11,6 +11,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import apex.stellar.antares.config.BaseIntegrationTest;
+import apex.stellar.antares.config.JwtProperties;
 import apex.stellar.antares.dto.ChangePasswordRequest;
 import apex.stellar.antares.dto.SupportSessionRequest;
 import apex.stellar.antares.model.Gym;
@@ -52,6 +53,7 @@ class SupportSessionIT extends BaseIntegrationTest {
   @Autowired private MembershipRepository membershipRepository;
   @Autowired private SupportSessionRepository supportSessionRepository;
   @Autowired private JdbcTemplate jdbcTemplate;
+  @Autowired private JwtProperties jwtProperties;
 
   private User admin;
   private User target;
@@ -115,7 +117,13 @@ class SupportSessionIT extends BaseIntegrationTest {
             .filter(c -> c.startsWith(SUPPORT_COOKIE + "="))
             .findFirst()
             .orElseThrow();
-    assertThat(setCookie).contains("HttpOnly", "SameSite=Strict", "Max-Age=1800", "Secure");
+    assertThat(setCookie).contains("HttpOnly", "SameSite=Strict", "Max-Age=1800");
+    // Secure follows the cookie configuration like the session cookies (the CI turns it off)
+    if (jwtProperties.cookie().secure()) {
+      assertThat(setCookie).contains("Secure");
+    } else {
+      assertThat(setCookie).doesNotContain("Secure");
+    }
     // The admin's own session cookies are untouched
     assertThat(result.getResponse().getHeaders(HttpHeaders.SET_COOKIE))
         .noneMatch(c -> c.startsWith("stellar_access_token") || c.startsWith("stellar_refresh"));
