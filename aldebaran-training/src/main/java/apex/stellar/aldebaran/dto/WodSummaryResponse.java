@@ -12,4 +12,7 @@ public record WodSummaryResponse(
     ScoreType scoreType,
     String repScheme,
     Integer timeCapSeconds,
-    LocalDateTime createdAt) {}
+    LocalDateTime createdAt,
+    Long authorId,
+    Long gymId,
+    boolean isPublic) {}

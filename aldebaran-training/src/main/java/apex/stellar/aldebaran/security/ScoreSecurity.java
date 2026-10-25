@@ -1,5 +1,7 @@
 package apex.stellar.aldebaran.security;
 
+import static apex.stellar.aldebaran.security.SecurityService.SCORE_VERIFY;
+
 import apex.stellar.aldebaran.dto.ScoreRequest;
 import apex.stellar.aldebaran.model.entities.Wod;
 import apex.stellar.aldebaran.repository.ScoreRepository;
@@ -15,10 +17,10 @@ import org.springframework.transaction.annotation.Transactional;
  * <p>This component enforces authorization rules for logging and managing scores:
  *
  * <ul>
- *   <li><b>Participation (Self):</b> Athletes can log scores for Public WODs, their Gym's WODs, or
- *       their Private WODs.
- *   <li><b>Moderation (Staff):</b> Coaches/Owners can log or correct scores for other athletes
- *       <i>within their Gym context</i>.
+ *   <li><b>Participation (Self):</b> Athletes can log scores for Public WODs, the WODs of any of
+ *       their member Gyms, or their Private WODs.
+ *   <li><b>Moderation (Staff):</b> users holding SCORE_VERIFY in the WOD's gym can log or correct
+ *       scores for other athletes.
  * </ul>
  *
  * <p><b>Strategy regarding "Not Found":</b> Methods return {@code true} if the resource ID is not
@@ -66,7 +68,7 @@ public class ScoreSecurity {
 
               // 3. Gym WOD -> Visible to all members of that gym (Gym Leaderboard)
               if (wod.getGymId() != null) {
-                return Objects.equals(wod.getGymId(), principal.getGymId());
+                return principal.isMemberOf(wod.getGymId());
               }
 
               // 4. Private WOD -> Visible only to the owner (already covered by step 1)
@@ -103,19 +105,17 @@ public class ScoreSecurity {
                 if (wod.isPublic()) {
                   return true;
                 }
-                // 2. Gym: Must be a member
+                // 2. Gym: Must be a member of that gym
                 if (wod.getGymId() != null) {
-                  return Objects.equals(wod.getGymId(), principal.getGymId());
+                  return principal.isMemberOf(wod.getGymId());
                 }
                 // 3. Private: Author only
                 return Objects.equals(wod.getAuthorId(), principal.getId());
               }
 
               // CASE B: Staff Moderation (Logging for someone else)
-              // Requires: Gym WOD + Same Gym Context + Verification Rights
-              return wod.getGymId() != null
-                  && Objects.equals(wod.getGymId(), principal.getGymId())
-                  && securityService.hasScoreVerificationRights(principal);
+              // Requires: Gym WOD + SCORE_VERIFY in that gym
+              return securityService.hasGymPermission(principal, wod.getGymId(), SCORE_VERIFY);
             })
         .orElse(true); // Allow service to handle 404
   }
@@ -143,11 +143,9 @@ public class ScoreSecurity {
                 return true;
               }
 
-              // 2. Staff Moderation: Must be Gym WOD + Same Gym + Rights
+              // 2. Staff Moderation: Gym WOD + SCORE_VERIFY in that gym
               Wod wod = score.getWod();
-              return wod.getGymId() != null
-                  && Objects.equals(wod.getGymId(), principal.getGymId())
-                  && securityService.hasScoreVerificationRights(principal);
+              return securityService.hasGymPermission(principal, wod.getGymId(), SCORE_VERIFY);
             })
         .orElse(true); // Allow service to handle 404
   }

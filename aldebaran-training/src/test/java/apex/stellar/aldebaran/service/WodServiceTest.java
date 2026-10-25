@@ -2,11 +2,13 @@ package apex.stellar.aldebaran.service;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.Mockito.*;
 
 import apex.stellar.aldebaran.dto.MovementResponse;
 import apex.stellar.aldebaran.dto.WodMovementRequest;
 import apex.stellar.aldebaran.dto.WodRequest;
+import apex.stellar.aldebaran.dto.WodFacetsResponse;
 import apex.stellar.aldebaran.dto.WodResponse;
 import apex.stellar.aldebaran.dto.WodSummaryResponse;
 import apex.stellar.aldebaran.exception.ResourceNotFoundException;
@@ -19,6 +21,7 @@ import apex.stellar.aldebaran.model.entities.Wod.WodType;
 import apex.stellar.aldebaran.model.entities.WodMovement;
 import apex.stellar.aldebaran.model.enums.Category;
 import apex.stellar.aldebaran.model.enums.Category.Modality;
+import apex.stellar.aldebaran.model.enums.WodScope;
 import apex.stellar.aldebaran.repository.MovementRepository;
 import apex.stellar.aldebaran.repository.ScoreRepository;
 import apex.stellar.aldebaran.repository.WodRepository;
@@ -27,6 +30,7 @@ import apex.stellar.aldebaran.security.SecurityService;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -88,71 +92,74 @@ class WodServiceTest {
   }
 
   // =========================================================================
-  // TEST: getWods (Routing to Secure Queries)
+  // TEST: getWods (Single Secure Query with combinable filters)
   // =========================================================================
 
   @Test
-  @DisplayName("getWods: No filters should route to findAllSecure")
+  @DisplayName("getWods: No filters should query scope ALL with the security context")
   void testGetWods_NoFilters() {
     // Given
     Pageable pageable = Pageable.unpaged();
     Slice<WodSummary> slice = new SliceImpl<>(List.of(mock(WodSummary.class)));
-    when(wodRepository.findAllSecure(pageable)).thenReturn(slice);
+    when(securityService.getCurrentUserId()).thenReturn(5L);
+    when(securityService.getCurrentUserMemberGymIds()).thenReturn(Set.of(101L));
+    when(securityService.isCurrentUserAdmin()).thenReturn(false);
+    when(wodRepository.findSecure(
+            null, null, null, "ALL", null, null, 5L, Set.of(101L), false, pageable))
+        .thenReturn(slice);
 
     // When
-    Slice<WodSummaryResponse> results = wodService.getWods(null, null, null, pageable);
+    Slice<WodSummaryResponse> results =
+        wodService.getWods(null, null, null, null, null, null, pageable);
 
     // Then
     assertNotNull(results);
-    verify(wodRepository).findAllSecure(pageable);
+    assertEquals(1, results.getContent().size());
   }
 
   @Test
-  @DisplayName("getWods: Search filter should route to findByTitleSecure")
-  void testGetWods_Search() {
+  @DisplayName("getWods: Search, type, movement, scope and gym filters are combined")
+  void testGetWods_CombinedFilters() {
     // Given
     Pageable pageable = Pageable.unpaged();
-    Slice<WodSummary> emptySlice = new SliceImpl<>(List.of());
-
-    when(wodRepository.findByTitleSecure("Fran", pageable)).thenReturn(emptySlice);
+    when(securityService.getCurrentUserId()).thenReturn(5L);
+    when(securityService.getCurrentUserMemberGymIds()).thenReturn(Set.of(101L, 202L));
+    when(securityService.isCurrentUserAdmin()).thenReturn(false);
+    when(wodRepository.findSecure(
+            any(), any(), any(), any(), any(), any(), any(), any(), anyBoolean(), any()))
+        .thenReturn(new SliceImpl<>(List.of()));
 
     // When
-    wodService.getWods("Fran", null, null, pageable);
+    wodService.getWods(" FrAn ", WodType.AMRAP, 1L, WodScope.GYM, 202L, 9L, pageable);
 
-    // Then
-    verify(wodRepository).findByTitleSecure("Fran", pageable);
+    // Then: search is trimmed and lower-cased into a LIKE pattern
+    verify(wodRepository)
+        .findSecure(
+            "%fran%", WodType.AMRAP, 1L, "GYM", 202L, 9L, 5L, Set.of(101L, 202L), false, pageable);
   }
 
   @Test
-  @DisplayName("getWods: Type filter should route to findByTypeSecure")
-  void testGetWods_Type() {
-    // Given
-    Pageable pageable = Pageable.unpaged();
-    Slice<WodSummary> emptySlice = new SliceImpl<>(List.of());
+  @DisplayName("getFacets: types follow the filters, gyms and authors ignore scope, gym and author")
+  void testGetFacets() {
+    when(securityService.getCurrentUserId()).thenReturn(5L);
+    when(securityService.getCurrentUserMemberGymIds()).thenReturn(Set.of(101L));
+    when(securityService.isCurrentUserAdmin()).thenReturn(true);
+    when(wodRepository.findSecureWodTypes(
+            "%fran%", null, null, "GYM", 101L, null, 5L, Set.of(101L), true))
+        .thenReturn(List.of(WodType.HERO, WodType.AMRAP));
+    when(wodRepository.findSecureGymIds(
+            "%fran%", null, null, "ALL", null, null, 5L, Set.of(101L), true))
+        .thenReturn(List.of(3L, 1L));
+    when(wodRepository.findSecureAuthorIds(
+            "%fran%", null, null, "ALL", null, null, 5L, Set.of(101L), true))
+        .thenReturn(List.of(9L, 4L));
 
-    when(wodRepository.findByTypeSecure(WodType.AMRAP, pageable)).thenReturn(emptySlice);
+    WodFacetsResponse facets = wodService.getFacets("Fran", WodScope.GYM, 101L, null);
 
-    // When
-    wodService.getWods(null, WodType.AMRAP, null, pageable);
-
-    // Then
-    verify(wodRepository).findByTypeSecure(WodType.AMRAP, pageable);
-  }
-
-  @Test
-  @DisplayName("getWods: Movement filter should route to findByMovementSecure")
-  void testGetWods_Movement() {
-    // Given
-    Pageable pageable = Pageable.unpaged();
-    Slice<WodSummary> emptySlice = new SliceImpl<>(List.of());
-
-    when(wodRepository.findByMovementSecure(1L, pageable)).thenReturn(emptySlice);
-
-    // When
-    wodService.getWods(null, null, 1L, pageable);
-
-    // Then
-    verify(wodRepository).findByMovementSecure(1L, pageable);
+    // Types are returned in enum order, ids sorted
+    assertEquals(List.of(WodType.AMRAP, WodType.HERO), facets.wodTypes());
+    assertEquals(List.of(1L, 3L), facets.gymIds());
+    assertEquals(List.of(4L, 9L), facets.authorIds());
   }
 
   // =========================================================================

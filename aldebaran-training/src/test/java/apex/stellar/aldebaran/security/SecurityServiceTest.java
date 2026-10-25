@@ -4,6 +4,8 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -19,16 +21,33 @@ class SecurityServiceTest {
 
   @InjectMocks private SecurityService securityService;
 
-  @Test
-  @DisplayName("getCurrentUserId: should return ID from Principal")
-  void testGetCurrentUserId_Success() {
-    AldebaranUserPrincipal principal = new AldebaranUserPrincipal(123L, 1L, "USER", List.of());
+  private static AldebaranUserPrincipal principal(
+      String platformRole, Long gymId, String gymRole, List<String> permissions) {
+    return AldebaranUserPrincipal.builder()
+        .id(1L)
+        .platformRole(platformRole)
+        .memberships(
+            gymId != null
+                ? Map.of(gymId, new GymAccess(gymRole, Set.copyOf(permissions)))
+                : Map.of())
+        .build();
+  }
+
+  private static SecurityContext contextWith(AldebaranUserPrincipal principal) {
     Authentication auth = mock(Authentication.class);
     SecurityContext context = mock(SecurityContext.class);
-
     when(auth.isAuthenticated()).thenReturn(true);
     when(auth.getPrincipal()).thenReturn(principal);
     when(context.getAuthentication()).thenReturn(auth);
+    return context;
+  }
+
+  @Test
+  @DisplayName("getCurrentUserId: should return ID from Principal")
+  void testGetCurrentUserId_Success() {
+    AldebaranUserPrincipal principal =
+        AldebaranUserPrincipal.builder().id(123L).platformRole("USER").build();
+    SecurityContext context = contextWith(principal);
 
     try (MockedStatic<SecurityContextHolder> mockedHolder =
         mockStatic(SecurityContextHolder.class)) {
@@ -54,46 +73,117 @@ class SecurityServiceTest {
   }
 
   @Test
-  @DisplayName("isAdmin: should return true for ADMIN role")
+  @DisplayName("isAdmin: should return true for ADMIN platform role")
   void testIsAdmin_True() {
-    AldebaranUserPrincipal principal = new AldebaranUserPrincipal(1L, null, "ADMIN", List.of());
-    assertTrue(securityService.isAdmin(principal));
+    assertTrue(securityService.isAdmin(principal("ADMIN", null, null, List.of())));
   }
 
   @Test
-  @DisplayName("isAdmin: should return false for other roles")
+  @DisplayName("isAdmin: admin who is also a gym member stays admin")
+  void testIsAdmin_InGymContext_StaysAdmin() {
+    AldebaranUserPrincipal admin = principal("ADMIN", 101L, "ATHLETE", List.of());
+
+    assertTrue(securityService.isAdmin(admin));
+    assertTrue(
+        admin.getAuthorities().stream().anyMatch(a -> "ROLE_ADMIN".equals(a.getAuthority())));
+  }
+
+  @Test
+  @DisplayName("isAdmin: should return false for USER platform role, whatever the gym role")
   void testIsAdmin_False() {
-    AldebaranUserPrincipal principal = new AldebaranUserPrincipal(1L, null, "USER", List.of());
-    assertFalse(securityService.isAdmin(principal));
+    assertFalse(securityService.isAdmin(principal("USER", null, null, List.of())));
+    assertFalse(securityService.isAdmin(principal("USER", 101L, "OWNER", List.of())));
   }
 
   @Test
-  @DisplayName("hasWodWriteAccess: should return true for OWNER")
-  void testHasWodWriteAccess_Owner() {
-    AldebaranUserPrincipal principal = new AldebaranUserPrincipal(1L, 101L, "OWNER", List.of());
-    assertTrue(securityService.hasWodWriteAccess(principal));
+  @DisplayName("isCurrentUserAdmin: reads the platform role of the current principal")
+  void testIsCurrentUserAdmin() {
+    SecurityContext context = contextWith(principal("ADMIN", 101L, "COACH", List.of()));
+
+    try (MockedStatic<SecurityContextHolder> mockedHolder =
+        mockStatic(SecurityContextHolder.class)) {
+      mockedHolder.when(SecurityContextHolder::getContext).thenReturn(context);
+
+      assertTrue(securityService.isCurrentUserAdmin());
+    }
   }
 
   @Test
-  @DisplayName("hasWodWriteAccess: should return true for COACH with WOD_WRITE")
-  void testHasWodWriteAccess_CoachWithPerm() {
+  @DisplayName("getCurrentUserMemberGymIds: returns member gyms of the principal")
+  void testGetCurrentUserMemberGymIds() {
     AldebaranUserPrincipal principal =
-        new AldebaranUserPrincipal(1L, 101L, "COACH", List.of("WOD_WRITE"));
-    assertTrue(securityService.hasWodWriteAccess(principal));
+        AldebaranUserPrincipal.builder()
+            .id(1L)
+            .platformRole("USER")
+            .memberships(
+                Map.of(
+                    101L, new GymAccess("ATHLETE", Set.of()),
+                    202L, new GymAccess("COACH", Set.of("WOD_WRITE"))))
+            .build();
+    SecurityContext context = contextWith(principal);
+
+    try (MockedStatic<SecurityContextHolder> mockedHolder =
+        mockStatic(SecurityContextHolder.class)) {
+      mockedHolder.when(SecurityContextHolder::getContext).thenReturn(context);
+
+      assertEquals(Set.of(101L, 202L), securityService.getCurrentUserMemberGymIds());
+    }
   }
 
   @Test
-  @DisplayName("hasWodWriteAccess: should return false for COACH without WOD_WRITE")
-  void testHasWodWriteAccess_CoachNoPerm() {
-    AldebaranUserPrincipal principal = new AldebaranUserPrincipal(1L, 101L, "COACH", List.of());
-    assertFalse(securityService.hasWodWriteAccess(principal));
+  @DisplayName("getCurrentUserMemberGymIds: returns {-1} sentinel when there are none")
+  void testGetCurrentUserMemberGymIds_Empty() {
+    SecurityContext context = contextWith(principal("USER", null, null, List.of()));
+
+    try (MockedStatic<SecurityContextHolder> mockedHolder =
+        mockStatic(SecurityContextHolder.class)) {
+      mockedHolder.when(SecurityContextHolder::getContext).thenReturn(context);
+
+      assertEquals(Set.of(-1L), securityService.getCurrentUserMemberGymIds());
+    }
   }
 
   @Test
-  @DisplayName("hasScoreVerificationRights: should return true for COACH with SCORE_VERIFY")
-  void testHasScoreVerificationRights_CoachWithPerm() {
-    AldebaranUserPrincipal principal =
-        new AldebaranUserPrincipal(1L, 101L, "COACH", List.of("SCORE_VERIFY"));
-    assertTrue(securityService.hasScoreVerificationRights(principal));
+  @DisplayName("hasGymPermission: OWNER (all permissions) has WOD_WRITE in their gym")
+  void testHasGymPermission_Owner() {
+    AldebaranUserPrincipal owner =
+        principal("USER", 101L, "OWNER", List.of("WOD_WRITE", "SCORE_VERIFY"));
+    assertTrue(securityService.hasGymPermission(owner, 101L, "WOD_WRITE"));
+    assertTrue(securityService.hasGymPermission(owner, 101L, "SCORE_VERIFY"));
+  }
+
+  @Test
+  @DisplayName("hasGymPermission: COACH with WOD_WRITE in gym A but not in gym B")
+  void testHasGymPermission_CoachPerGym() {
+    AldebaranUserPrincipal coach =
+        AldebaranUserPrincipal.builder()
+            .id(1L)
+            .platformRole("USER")
+            .memberships(
+                Map.of(
+                    101L, new GymAccess("COACH", Set.of("WOD_WRITE")),
+                    202L, new GymAccess("COACH", Set.of("SCORE_VERIFY"))))
+            .build();
+
+    assertTrue(securityService.hasGymPermission(coach, 101L, "WOD_WRITE"));
+    assertFalse(securityService.hasGymPermission(coach, 202L, "WOD_WRITE"));
+    assertTrue(securityService.hasGymPermission(coach, 202L, "SCORE_VERIFY"));
+  }
+
+  @Test
+  @DisplayName("hasGymPermission: COACH without WOD_WRITE is denied")
+  void testHasGymPermission_CoachNoPerm() {
+    assertFalse(
+        securityService.hasGymPermission(
+            principal("USER", 101L, "COACH", List.of("SCORE_VERIFY")), 101L, "WOD_WRITE"));
+  }
+
+  @Test
+  @DisplayName("hasGymPermission: outsider, null gym or null principal are denied")
+  void testHasGymPermission_Outsider() {
+    AldebaranUserPrincipal coach = principal("USER", 101L, "COACH", List.of("WOD_WRITE"));
+    assertFalse(securityService.hasGymPermission(coach, 999L, "WOD_WRITE"));
+    assertFalse(securityService.hasGymPermission(coach, null, "WOD_WRITE"));
+    assertFalse(securityService.hasGymPermission(null, 101L, "WOD_WRITE"));
   }
 }

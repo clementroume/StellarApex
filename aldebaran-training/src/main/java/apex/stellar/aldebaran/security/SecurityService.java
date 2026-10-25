@@ -1,6 +1,7 @@
 package apex.stellar.aldebaran.security;
 
 import java.util.Optional;
+import java.util.Set;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -15,12 +16,13 @@ import org.springframework.stereotype.Service;
 @Service
 public class SecurityService {
 
+  /** Permission to create, update and delete the WODs of a gym. */
+  public static final String WOD_WRITE = "WOD_WRITE";
+
+  /** Permission to log and correct scores of other athletes in a gym. */
+  public static final String SCORE_VERIFY = "SCORE_VERIFY";
+
   private static final String ADMIN = "ADMIN";
-  private static final String OWNER = "OWNER";
-  private static final String PROGRAMMER = "PROGRAMMER";
-  private static final String COACH = "COACH";
-  private static final String SCORE_VERIFY = "SCORE_VERIFY";
-  private static final String WOD_WRITE = "WOD_WRITE";
 
   /**
    * Retrieves the ID of the currently authenticated user.
@@ -35,20 +37,12 @@ public class SecurityService {
             () -> new IllegalStateException("Current user ID not found in security context"));
   }
 
-  /** Checks if the current user is a Platform Administrator. */
-  public boolean isAdmin(AldebaranUserPrincipal principal) {
-    return principal != null && ADMIN.equals(principal.getRole());
-  }
-
   /**
-   * Retrieves the Gym ID associated with the currently authenticated user.
-   *
-   * @return The unique identifier (ID) of the gym associated with the authenticated user, or {@code
-   *     null} if no gym ID is available in the security context.
+   * Checks if the user is a Platform Administrator. Relies on the platform role only, so an admin
+   * operating inside a gym context stays admin.
    */
-  @SuppressWarnings("unused")
-  public Long getCurrentUserGymId() {
-    return getPrincipal().map(AldebaranUserPrincipal::getGymId).orElse(null);
+  public boolean isAdmin(AldebaranUserPrincipal principal) {
+    return principal != null && ADMIN.equals(principal.getPlatformRole());
   }
 
   /**
@@ -56,43 +50,37 @@ public class SecurityService {
    */
   @SuppressWarnings("unused")
   public boolean isCurrentUserAdmin() {
-    return getPrincipal().map(p -> ADMIN.equals(p.getRole())).orElse(false);
+    return getPrincipal().map(this::isAdmin).orElse(false);
   }
 
   /**
-   * Checks if the user has write access to WODs within their Gym. Valid for: Owners, Programmers,
-   * and Coaches with specific permission.
+   * Retrieves every gym the current user can read from.
+   *
+   * @return The member gym IDs, or {@code {-1}} when there are none so that a JPQL {@code IN}
+   *     clause stays valid.
    */
-  public boolean hasWodWriteAccess(AldebaranUserPrincipal principal) {
-    if (principal.getGymId() == null) {
-      return false;
-    }
-    return isOwnerOrProgrammer(principal)
-        || (isCoach(principal) && principal.hasPermission(WOD_WRITE));
+  public Set<Long> getCurrentUserMemberGymIds() {
+    return getPrincipal()
+        .map(AldebaranUserPrincipal::getMemberGymIds)
+        .filter(ids -> !ids.isEmpty())
+        .orElse(Set.of(-1L));
   }
 
   /**
-   * Checks if the user has authority to verify/modify scores of other athletes. Valid for: Owners,
-   * Programmers, and Coaches with specific permission.
+   * Checks if the user holds a permission in the given gym (the gym owning the resource). Relies
+   * on the effective permissions sent by Antares (Owners/Programmers hold them all, Coaches their
+   * assigned set, Athletes none).
+   *
+   * @param principal The authenticated user.
+   * @param gymId The gym owning the resource.
+   * @param permission The permission to check (e.g., WOD_WRITE, SCORE_VERIFY).
+   * @return true if the user's membership in that gym grants the permission.
    */
-  public boolean hasScoreVerificationRights(AldebaranUserPrincipal principal) {
-    if (principal.getGymId() == null) {
-      return false;
-    }
-    return isOwnerOrProgrammer(principal)
-        || (isCoach(principal) && principal.hasPermission(SCORE_VERIFY));
+  public boolean hasGymPermission(AldebaranUserPrincipal principal, Long gymId, String permission) {
+    return principal != null && principal.hasGymPermission(gymId, permission);
   }
 
-  // --- Internal Role Helpers ---
-
-  private boolean isOwnerOrProgrammer(AldebaranUserPrincipal principal) {
-    String role = principal.getRole();
-    return OWNER.equals(role) || PROGRAMMER.equals(role);
-  }
-
-  private boolean isCoach(AldebaranUserPrincipal principal) {
-    return COACH.equals(principal.getRole());
-  }
+  // --- Internal Helpers ---
 
   private Optional<AldebaranUserPrincipal> getPrincipal() {
     return Optional.of(SecurityContextHolder.getContext())

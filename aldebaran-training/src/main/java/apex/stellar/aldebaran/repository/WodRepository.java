@@ -3,6 +3,8 @@ package apex.stellar.aldebaran.repository;
 import apex.stellar.aldebaran.model.entities.Wod;
 import apex.stellar.aldebaran.model.entities.Wod.WodType;
 import apex.stellar.aldebaran.repository.projection.WodSummary;
+import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
@@ -52,76 +54,153 @@ public interface WodRepository extends JpaRepository<Wod, Long> {
   @Query("SELECT w FROM Wod w WHERE w.id = :id")
   Optional<Wod> findByIdWithMovements(@Param("id") Long id);
 
+  /**
+   * Retrieves every public WOD with its movements, ordered by title (temporary CSV export).
+   *
+   * @return The public WODs.
+   */
+  @EntityGraph(attributePaths = {"movements", "movements.movement"})
+  @Query("SELECT w FROM Wod w WHERE w.isPublic = true ORDER BY w.title, w.id")
+  List<Wod> findAllPublicWithMovements();
+
+  /**
+   * Checks whether at least one public WOD exists (seeding guard).
+   *
+   * @return true if a public WOD exists.
+   */
+  @Query("SELECT COUNT(w) > 0 FROM Wod w WHERE w.isPublic = true")
+  boolean existsPublic();
+
+  /**
+   * Checks whether a gym already owns WODs (dev seeding guard).
+   *
+   * @param gymId The gym ID.
+   * @return true if the gym has at least one WOD.
+   */
+  boolean existsByGymId(Long gymId);
+
   // -------------------------------------------------------------------------
   // SECURE PROJECTION QUERIES
   // -------------------------------------------------------------------------
 
   /**
-   * Retrieves all authorized WODs as lightweight projections.
+   * Shared filters of the secure list and facet queries.
    *
-   * @param pageable Pagination information.
-   * @return A pageable list of WOD summaries matching the security context.
+   * <p><b>Security clause:</b> admin OR public OR authored by the user OR owned by one of the
+   * user's member gyms.
+   *
+   * <p><b>Scopes:</b>
+   *
+   * <ul>
+   *   <li>{@code ALL}: everything readable;
+   *   <li>{@code MINE}: personal WODs authored by the user (no gym);
+   *   <li>{@code GYM}: WODs of the member gyms (admins: any gym), narrowed to {@code gymId} if
+   *       given;
+   *   <li>{@code PUBLIC}: public WODs.
+   * </ul>
+   *
+   * <p>{@code authorId} narrows to the personal WODs (no gym) of that author. Optional parameters
+   * are never wrapped in SQL functions so PostgreSQL can always infer their type when bound as
+   * {@code null}; the search pattern is lower-cased by the caller.
    */
-  @Query(
+  String SECURE_FILTERS =
       """
-      SELECT w FROM Wod w
-      WHERE (?#{@securityService.isCurrentUserAdmin()} = true
+      (:isAdmin = true
          OR w.isPublic = true
-         OR w.authorId = ?#{@securityService.getCurrentUserId()}
-         OR (w.gymId IS NOT NULL AND w.gymId = ?#{@securityService.getCurrentUserGymId()}))
-      """)
-  Slice<WodSummary> findAllSecure(Pageable pageable);
+         OR w.authorId = :userId
+         OR w.gymId IN :memberGymIds)
+      AND (:searchPattern IS NULL OR LOWER(w.title) LIKE :searchPattern)
+      AND (:wodType IS NULL OR w.wodType = :wodType)
+      AND (:movementId IS NULL OR EXISTS (
+            SELECT 1 FROM WodMovement wm WHERE wm.wod = w AND wm.movement.id = :movementId))
+      AND (:scope = 'ALL'
+         OR (:scope = 'MINE' AND w.authorId = :userId AND w.gymId IS NULL)
+         OR (:scope = 'GYM'
+             AND (w.gymId IN :memberGymIds OR (:isAdmin = true AND w.gymId IS NOT NULL))
+             AND (:gymId IS NULL OR w.gymId = :gymId))
+         OR (:scope = 'PUBLIC' AND w.isPublic = true))
+      AND (:authorId IS NULL OR (w.authorId = :authorId AND w.gymId IS NULL))
+      """;
 
   /**
-   * Searches for authorized WODs by title.
+   * Retrieves authorized WODs as lightweight projections, with optional combinable filters (see
+   * {@link #SECURE_FILTERS}).
    *
-   * @param title The title fragment to search for (case-insensitive).
-   * @return A list of matching WOD summaries.
+   * @param searchPattern Lower-cased {@code LIKE} pattern on the title, or {@code null}.
+   * @param wodType WOD type filter, or {@code null}.
+   * @param movementId Movement contained in the WOD, or {@code null}.
+   * @param scope Scope name (see {@code WodScope}).
+   * @param gymId Gym filter for the {@code GYM} scope, or {@code null}.
+   * @param authorId Author of personal WODs, or {@code null}.
+   * @param userId Current user ID.
+   * @param memberGymIds Gyms readable by the user (never empty, use {@code {-1}} as a sentinel).
+   * @param isAdmin Whether the user is a platform admin.
+   * @param pageable Pagination information.
+   * @return A slice of WOD summaries matching the filters and the security context.
    */
-  @Query(
-      """
-      SELECT w FROM Wod w
-      WHERE LOWER(w.title) LIKE LOWER(CONCAT('%', :title, '%'))
-      AND (?#{@securityService.isCurrentUserAdmin()} = true
-         OR w.isPublic = true
-         OR w.authorId = ?#{@securityService.getCurrentUserId()}
-         OR (w.gymId IS NOT NULL AND w.gymId = ?#{@securityService.getCurrentUserGymId()}))
-      """)
-  Slice<WodSummary> findByTitleSecure(@Param("title") String title, Pageable pageable);
+  @Query("SELECT w FROM Wod w WHERE " + SECURE_FILTERS)
+  Slice<WodSummary> findSecure(
+      @Param("searchPattern") String searchPattern,
+      @Param("wodType") WodType wodType,
+      @Param("movementId") Long movementId,
+      @Param("scope") String scope,
+      @Param("gymId") Long gymId,
+      @Param("authorId") Long authorId,
+      @Param("userId") Long userId,
+      @Param("memberGymIds") Collection<Long> memberGymIds,
+      @Param("isAdmin") boolean isAdmin,
+      Pageable pageable);
 
   /**
-   * Retrieves authorized WODs filtered by their structural type.
+   * Distinct WOD types among the readable WODs matching the filters (dynamic type filter).
    *
-   * @param wodType The type of WOD (e.g., AMRAP, FOR TIME).
-   * @param pageable Pagination information.
-   * @return A pageable list of matching WOD summaries.
+   * @return The WOD types present (unordered).
    */
-  @Query(
-      """
-      SELECT w FROM Wod w
-      WHERE w.wodType = :wodType
-      AND (?#{@securityService.isCurrentUserAdmin()} = true
-         OR w.isPublic = true
-         OR w.authorId = ?#{@securityService.getCurrentUserId()}
-         OR (w.gymId IS NOT NULL AND w.gymId = ?#{@securityService.getCurrentUserGymId()}))
-      """)
-  Slice<WodSummary> findByTypeSecure(@Param("wodType") WodType wodType, Pageable pageable);
+  @Query("SELECT DISTINCT w.wodType FROM Wod w WHERE " + SECURE_FILTERS)
+  List<WodType> findSecureWodTypes(
+      @Param("searchPattern") String searchPattern,
+      @Param("wodType") WodType wodType,
+      @Param("movementId") Long movementId,
+      @Param("scope") String scope,
+      @Param("gymId") Long gymId,
+      @Param("authorId") Long authorId,
+      @Param("userId") Long userId,
+      @Param("memberGymIds") Collection<Long> memberGymIds,
+      @Param("isAdmin") boolean isAdmin);
 
   /**
-   * Retrieves authorized WODs containing a specific movement.
+   * Distinct gyms owning readable WODs matching the filters (admin gym selector).
    *
-   * @param movementId The ID of the movement (e.g., "1").
-   * @param pageable Pagination information.
-   * @return A pageable list of matching WOD summaries.
+   * @return The gym IDs (unordered).
+   */
+  @Query("SELECT DISTINCT w.gymId FROM Wod w WHERE w.gymId IS NOT NULL AND " + SECURE_FILTERS)
+  List<Long> findSecureGymIds(
+      @Param("searchPattern") String searchPattern,
+      @Param("wodType") WodType wodType,
+      @Param("movementId") Long movementId,
+      @Param("scope") String scope,
+      @Param("gymId") Long gymId,
+      @Param("authorId") Long authorId,
+      @Param("userId") Long userId,
+      @Param("memberGymIds") Collection<Long> memberGymIds,
+      @Param("isAdmin") boolean isAdmin);
+
+  /**
+   * Distinct authors of readable personal WODs matching the filters (admin athlete selector).
+   *
+   * @return The author IDs (unordered).
    */
   @Query(
-      """
-      SELECT w FROM Wod w JOIN w.movements wm
-      WHERE wm.movement.id = :movementId
-      AND (?#{@securityService.isCurrentUserAdmin()} = true
-         OR w.isPublic = true
-         OR w.authorId = ?#{@securityService.getCurrentUserId()}
-         OR (w.gymId IS NOT NULL AND w.gymId = ?#{@securityService.getCurrentUserGymId()}))
-      """)
-  Slice<WodSummary> findByMovementSecure(@Param("movementId") Long movementId, Pageable pageable);
+      "SELECT DISTINCT w.authorId FROM Wod w WHERE w.authorId IS NOT NULL AND w.gymId IS NULL AND "
+          + SECURE_FILTERS)
+  List<Long> findSecureAuthorIds(
+      @Param("searchPattern") String searchPattern,
+      @Param("wodType") WodType wodType,
+      @Param("movementId") Long movementId,
+      @Param("scope") String scope,
+      @Param("gymId") Long gymId,
+      @Param("authorId") Long authorId,
+      @Param("userId") Long userId,
+      @Param("memberGymIds") Collection<Long> memberGymIds,
+      @Param("isAdmin") boolean isAdmin);
 }

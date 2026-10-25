@@ -64,6 +64,47 @@ class WodControllerIT extends BaseIntegrationTest {
   }
 
   @Test
+  @DisplayName("GET /wods/facets: should return the types, gyms and authors of readable WODs")
+  void testGetFacets_Success() throws Exception {
+    mockMvc
+        .perform(
+            get("/aldebaran/wods/facets")
+                .param("scope", "PUBLIC")
+                .header("X-Auth-User-Id", "1")
+                .header("X-Auth-User-Role", "USER")
+                .header("X-Internal-Secret", "test-internal-secret"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.wodTypes", hasSize(1)))
+        .andExpect(jsonPath("$.wodTypes[0]").value("FOR_TIME"))
+        .andExpect(jsonPath("$.gymIds[0]").value(101))
+        .andExpect(jsonPath("$.authorIds", hasSize(0)));
+  }
+
+  @Test
+  @DisplayName("GET /wods?authorId: should return only that author's personal WODs")
+  void testGetWods_ByAuthor() throws Exception {
+    wodRepository.save(
+        Wod.builder()
+            .title("Personal")
+            .wodType(WodType.AMRAP)
+            .scoreType(ScoreType.REPS)
+            .isPublic(true)
+            .authorId(50L)
+            .build());
+
+    mockMvc
+        .perform(
+            get("/aldebaran/wods")
+                .param("authorId", "50")
+                .header("X-Auth-User-Id", "1")
+                .header("X-Auth-User-Role", "ADMIN")
+                .header("X-Internal-Secret", "test-internal-secret"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.content", hasSize(1)))
+        .andExpect(jsonPath("$.content[0].title").value("Personal"));
+  }
+
+  @Test
   @DisplayName("GET /wods: should return list of summaries")
   void testGetAllWods_Success() throws Exception {
     // Public access allows reading
@@ -197,8 +238,8 @@ class WodControllerIT extends BaseIntegrationTest {
         .perform(
             get("/aldebaran/wods/" + gymWod.getId())
                 .header("X-Auth-User-Id", "50")
-                .header("X-Auth-Gym-Id", "101")
-                .header("X-Auth-User-Role", "ATHLETE")
+                .header("X-Auth-User-Role", "USER")
+                .header("X-Auth-Memberships", "101:ATHLETE:")
                 .header("X-Internal-Secret", "test-internal-secret"))
         .andExpect(status().isOk());
 
@@ -207,8 +248,8 @@ class WodControllerIT extends BaseIntegrationTest {
         .perform(
             get("/aldebaran/wods/" + gymWod.getId())
                 .header("X-Auth-User-Id", "60")
-                .header("X-Auth-Gym-Id", "102")
-                .header("X-Auth-User-Role", "ATHLETE")
+                .header("X-Auth-User-Role", "USER")
+                .header("X-Auth-Memberships", "102:ATHLETE:")
                 .header("X-Internal-Secret", "test-internal-secret"))
         .andExpect(status().isForbidden());
   }
@@ -252,15 +293,16 @@ class WodControllerIT extends BaseIntegrationTest {
                 .with(csrf())
                 // Simulation des headers Traefik pour un Coach autorisé
                 .header("X-Auth-User-Id", "20")
-                .header("X-Auth-Gym-Id", "101")
-                .header("X-Auth-User-Role", "COACH")
-                .header("X-Auth-User-Permissions", "WOD_WRITE")
+                .header("X-Auth-User-Role", "USER")
+                .header("X-Auth-Memberships", "101:COACH:WOD_WRITE")
                 .header("X-Internal-Secret", "test-internal-secret") // Permission requise
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
         .andExpect(status().isCreated())
         .andExpect(jsonPath("$.title").value("Murph"))
-        .andExpect(jsonPath("$.movements", hasSize(1)));
+        .andExpect(jsonPath("$.movements", hasSize(1)))
+        .andExpect(jsonPath("$.capabilities.canModify").value(true))
+        .andExpect(jsonPath("$.capabilities.locked").value(false));
   }
 
   @Test
@@ -346,8 +388,8 @@ class WodControllerIT extends BaseIntegrationTest {
             post("/aldebaran/wods")
                 .with(csrf())
                 .header("X-Auth-User-Id", "10")
-                .header("X-Auth-Gym-Id", "101")
-                .header("X-Auth-User-Role", "OWNER")
+                .header("X-Auth-User-Role", "USER")
+                .header("X-Auth-Memberships", "101:OWNER:WOD_WRITE+SCORE_VERIFY")
                 .header("X-Internal-Secret", "test-internal-secret") // Owner
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
@@ -392,8 +434,8 @@ class WodControllerIT extends BaseIntegrationTest {
             post("/aldebaran/wods")
                 .with(csrf())
                 .header("X-Auth-User-Id", "20")
-                .header("X-Auth-Gym-Id", "101")
-                .header("X-Auth-User-Role", "COACH")
+                .header("X-Auth-User-Role", "USER")
+                .header("X-Auth-Memberships", "101:COACH:")
                 .header("X-Internal-Secret", "test-internal-secret")
                 // No Permissions header
                 .contentType(MediaType.APPLICATION_JSON)
@@ -439,8 +481,8 @@ class WodControllerIT extends BaseIntegrationTest {
             post("/aldebaran/wods")
                 .with(csrf())
                 .header("X-Auth-User-Id", "10")
-                .header("X-Auth-Gym-Id", "102") // User is in Gym 102
-                .header("X-Auth-User-Role", "OWNER")
+                .header("X-Auth-User-Role", "USER")
+                .header("X-Auth-Memberships", "102:OWNER:WOD_WRITE+SCORE_VERIFY")
                 .header("X-Internal-Secret", "test-internal-secret")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
@@ -520,14 +562,14 @@ class WodControllerIT extends BaseIntegrationTest {
                 .with(csrf())
                 // Coach du gym 101
                 .header("X-Auth-User-Id", "20")
-                .header("X-Auth-Gym-Id", "101")
-                .header("X-Auth-User-Role", "COACH")
-                .header("X-Auth-User-Permissions", "WOD_WRITE")
+                .header("X-Auth-User-Role", "USER")
+                .header("X-Auth-Memberships", "101:COACH:WOD_WRITE")
                 .header("X-Internal-Secret", "test-internal-secret")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(updateRequest)))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.title").value("Fran Modified"));
+        .andExpect(jsonPath("$.title").value("Fran Modified"))
+        .andExpect(jsonPath("$.capabilities.canModify").value(true));
 
     Wod updated = wodRepository.findByIdWithMovements(existing.getId()).orElseThrow();
     assert (updated.getTitle().equals("Fran Modified"));
@@ -828,5 +870,210 @@ class WodControllerIT extends BaseIntegrationTest {
         .andExpect(status().isForbidden());
 
     assert (wodRepository.findById(existing.getId()).isPresent());
+  }
+
+  // -------------------------------------------------------------------------
+  // Capabilities, multi-gym, scope and support session
+  // -------------------------------------------------------------------------
+
+  @Test
+  @DisplayName("GET /wods/{id}: Owner of the gym gets canModify=true")
+  void testGetWod_Capabilities_Owner() throws Exception {
+    Wod fran = wodRepository.findAll().getFirst(); // Gym 101
+
+    mockMvc
+        .perform(
+            get("/aldebaran/wods/" + fran.getId())
+                .header("X-Auth-User-Id", "10")
+                .header("X-Auth-User-Role", "USER")
+                .header("X-Auth-Memberships", "101:OWNER:WOD_WRITE+SCORE_VERIFY")
+                .header("X-Internal-Secret", "test-internal-secret"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.capabilities.canModify").value(true))
+        .andExpect(jsonPath("$.capabilities.locked").value(false));
+  }
+
+  @Test
+  @DisplayName("GET /wods/{id}: Coach without WOD_WRITE gets canModify=false")
+  void testGetWod_Capabilities_CoachWithoutPermission() throws Exception {
+    Wod fran = wodRepository.findAll().getFirst(); // Gym 101
+
+    mockMvc
+        .perform(
+            get("/aldebaran/wods/" + fran.getId())
+                .header("X-Auth-User-Id", "20")
+                .header("X-Auth-User-Role", "USER")
+                .header("X-Auth-Memberships", "101:COACH:SCORE_VERIFY")
+                .header("X-Internal-Secret", "test-internal-secret"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.capabilities.canModify").value(false));
+  }
+
+  @Test
+  @DisplayName("GET /wods/{id}: WOD with scores is reported as locked")
+  void testGetWod_Capabilities_Locked() throws Exception {
+    Wod fran = wodRepository.findAll().getFirst();
+    scoreRepository.save(
+        Score.builder()
+            .wod(fran)
+            .userId(100L)
+            .date(LocalDate.now())
+            .scaling(ScalingLevel.RX)
+            .timeSeconds(300)
+            .build());
+
+    mockMvc
+        .perform(
+            get("/aldebaran/wods/" + fran.getId())
+                .header("X-Auth-User-Id", "1")
+                .header("X-Auth-User-Role", "ADMIN")
+                .header("X-Internal-Secret", "test-internal-secret"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.capabilities.canModify").value(true))
+        .andExpect(jsonPath("$.capabilities.locked").value(true));
+  }
+
+  @Test
+  @DisplayName("GET /wods/{id}: Rights evaluated on the WOD's gym (read, canModify, outsider)")
+  void testGetWod_MultiGymRead() throws Exception {
+    Wod virtualWod =
+        wodRepository.save(
+            Wod.builder()
+                .title("Virtual Programming")
+                .wodType(WodType.AMRAP)
+                .scoreType(ScoreType.ROUNDS_REPS)
+                .isPublic(false)
+                .gymId(300L)
+                .authorId(77L)
+                .build());
+
+    // Coach in 101, athlete in 300: read allowed, no write on gym 300
+    mockMvc
+        .perform(
+            get("/aldebaran/wods/" + virtualWod.getId())
+                .header("X-Auth-User-Id", "20")
+                .header("X-Auth-User-Role", "USER")
+                .header("X-Auth-Memberships", "101:COACH:WOD_WRITE,300:ATHLETE:")
+                .header("X-Internal-Secret", "test-internal-secret"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.capabilities.canModify").value(false));
+
+    // WOD_WRITE in gym 300 itself: canModify computed on the WOD's gym
+    mockMvc
+        .perform(
+            get("/aldebaran/wods/" + virtualWod.getId())
+                .header("X-Auth-User-Id", "20")
+                .header("X-Auth-User-Role", "USER")
+                .header("X-Auth-Memberships", "101:ATHLETE:,300:PROGRAMMER:WOD_WRITE+SCORE_VERIFY")
+                .header("X-Internal-Secret", "test-internal-secret"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.capabilities.canModify").value(true));
+
+    // Not a member of gym 300 (outsider): denied
+    mockMvc
+        .perform(
+            get("/aldebaran/wods/" + virtualWod.getId())
+                .header("X-Auth-User-Id", "20")
+                .header("X-Auth-User-Role", "USER")
+                .header("X-Auth-Memberships", "101:COACH:")
+                .header("X-Internal-Secret", "test-internal-secret"))
+        .andExpect(status().isForbidden());
+  }
+
+  @Test
+  @DisplayName("DELETE /wods/{id}: Admin who is an athlete of another gym stays admin")
+  void testDeleteWod_AdminWithMembership() throws Exception {
+    Wod fran = wodRepository.findAll().getFirst(); // Gym 101
+
+    mockMvc
+        .perform(
+            delete("/aldebaran/wods/" + fran.getId())
+                .with(csrf())
+                .header("X-Auth-User-Id", "1")
+                .header("X-Auth-User-Role", "ADMIN")
+                .header("X-Auth-Memberships", "999:ATHLETE:")
+                .header("X-Internal-Secret", "test-internal-secret"))
+        .andExpect(status().isNoContent());
+  }
+
+  @Test
+  @DisplayName("GET /wods?scope=GYM: lists only the member gyms' WODs, narrowed by gymId")
+  void testGetWods_ScopeGym() throws Exception {
+    wodRepository.save(
+        Wod.builder()
+            .title("Virtual")
+            .wodType(WodType.AMRAP)
+            .scoreType(ScoreType.ROUNDS_REPS)
+            .gymId(300L)
+            .authorId(77L)
+            .build());
+    wodRepository.save(
+        Wod.builder()
+            .title("Someone's public WOD")
+            .wodType(WodType.AMRAP)
+            .scoreType(ScoreType.ROUNDS_REPS)
+            .isPublic(true)
+            .authorId(88L)
+            .build());
+
+    mockMvc
+        .perform(
+            get("/aldebaran/wods")
+                .param("scope", "GYM")
+                .param("sort", "title")
+                .header("X-Auth-User-Id", "20")
+                .header("X-Auth-User-Role", "USER")
+                .header("X-Auth-Memberships", "101:ATHLETE:,300:ATHLETE:")
+                .header("X-Internal-Secret", "test-internal-secret"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.content", hasSize(2)))
+        .andExpect(jsonPath("$.content[0].title").value("Fran"))
+        .andExpect(jsonPath("$.content[0].gymId").value(101))
+        .andExpect(jsonPath("$.content[0].authorId").value(50))
+        .andExpect(jsonPath("$.content[0].isPublic").value(true))
+        .andExpect(jsonPath("$.content[1].title").value("Virtual"));
+
+    mockMvc
+        .perform(
+            get("/aldebaran/wods")
+                .param("scope", "GYM")
+                .param("gymId", "300")
+                .header("X-Auth-User-Id", "20")
+                .header("X-Auth-User-Role", "USER")
+                .header("X-Auth-Memberships", "101:ATHLETE:,300:ATHLETE:")
+                .header("X-Internal-Secret", "test-internal-secret"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.content", hasSize(1)))
+        .andExpect(jsonPath("$.content[0].title").value("Virtual"));
+  }
+
+  @Test
+  @DisplayName("Support session: rights are those of the target user, not of the admin actor")
+  void testSupportSession_UsesTargetRights() throws Exception {
+    Wod fran = wodRepository.findAll().getFirst();
+
+    // Admin (id 1) acting as an athlete of gym 101: no WOD_WRITE, so the delete is refused
+    mockMvc
+        .perform(
+            delete("/aldebaran/wods/" + fran.getId())
+                .with(csrf())
+                .header("X-Auth-User-Id", "20")
+                .header("X-Auth-User-Role", "USER")
+                .header("X-Auth-Memberships", "101:ATHLETE:")
+                .header("X-Auth-Actor-Id", "1")
+                .header("X-Internal-Secret", "test-internal-secret"))
+        .andExpect(status().isForbidden());
+
+    // Admin acting as the gym owner: capabilities follow the owner's rights
+    mockMvc
+        .perform(
+            get("/aldebaran/wods/" + fran.getId())
+                .header("X-Auth-User-Id", "50")
+                .header("X-Auth-User-Role", "USER")
+                .header("X-Auth-Memberships", "101:OWNER:WOD_WRITE+SCORE_VERIFY")
+                .header("X-Auth-Actor-Id", "1")
+                .header("X-Internal-Secret", "test-internal-secret"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.capabilities.canModify").value(true));
   }
 }

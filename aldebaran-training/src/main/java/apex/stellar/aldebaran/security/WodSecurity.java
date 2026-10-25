@@ -1,5 +1,7 @@
 package apex.stellar.aldebaran.security;
 
+import static apex.stellar.aldebaran.security.SecurityService.WOD_WRITE;
+
 import apex.stellar.aldebaran.dto.WodRequest;
 import apex.stellar.aldebaran.dto.WodResponse;
 import apex.stellar.aldebaran.service.WodService;
@@ -55,12 +57,12 @@ public class WodSecurity {
       return true;
     }
 
-    // 2. Gym WOD: Must be in the same gym context
-    if (wod.gymId() != null) {
-      return Objects.equals(wod.gymId(), principal.getGymId());
+    // 2. Gym WOD: Must be a member of that gym
+    if (principal.isMemberOf(wod.gymId())) {
+      return true;
     }
 
-    // 3. Private WOD: Must be the author
+    // 3. Author: always reads their own WODs
     return Objects.equals(wod.authorId(), principal.getId());
   }
 
@@ -77,11 +79,9 @@ public class WodSecurity {
       return true;
     }
 
-    // Gym WOD Creation
+    // Gym WOD Creation: WOD_WRITE in the target gym
     if (request.gymId() != null) {
-      // Must be in the target gym + Have Staff Write Rights
-      return Objects.equals(principal.getGymId(), request.gymId())
-          && securityService.hasWodWriteAccess(principal);
+      return securityService.hasGymPermission(principal, request.gymId(), WOD_WRITE);
     }
 
     // Personal WOD Creation (Self-service)
@@ -102,12 +102,26 @@ public class WodSecurity {
       return true;
     }
 
-    WodResponse wod = wodService.getWodDetail(wodId);
+    return canModify(wodService.getWodDetail(wodId), principal);
+  }
 
-    // Gym WOD: Same Gym + Staff Rights
+  /**
+   * Evaluates if the authenticated user is authorized to update OR delete an already loaded WOD.
+   * For a gym WOD, the user needs WOD_WRITE in the gym owning the WOD.
+   *
+   * @param wod The WOD to evaluate.
+   * @param principal The authenticated user context.
+   * @return {@code true} if authorized.
+   */
+  public boolean canModify(WodResponse wod, AldebaranUserPrincipal principal) {
+
+    if (securityService.isAdmin(principal)) {
+      return true;
+    }
+
+    // Gym WOD: WOD_WRITE in the WOD's gym
     if (wod.gymId() != null) {
-      return Objects.equals(principal.getGymId(), wod.gymId())
-          && securityService.hasWodWriteAccess(principal);
+      return securityService.hasGymPermission(principal, wod.gymId(), WOD_WRITE);
     }
 
     // Personal WOD: Author only

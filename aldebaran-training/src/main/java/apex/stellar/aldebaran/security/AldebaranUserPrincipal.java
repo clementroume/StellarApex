@@ -3,6 +3,8 @@ package apex.stellar.aldebaran.security;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -20,7 +22,8 @@ import org.springframework.security.core.userdetails.UserDetails;
  * Antares Identity Provider (via Traefik) into a Spring Security compatible principal.
  *
  * <p>It bridges the gap between the infrastructure authentication (Gateway) and the microservice
- * authorization logic, holding tenant-specific context (Gym ID) and RBAC permissions.
+ * authorization logic. The platform role (ADMIN/USER) is kept apart from the per-gym memberships
+ * (role and effective permissions in each gym the user belongs to).
  */
 @Data
 @Builder
@@ -31,23 +34,53 @@ public class AldebaranUserPrincipal implements UserDetails {
   /** The unique identifier of the user (Subject). */
   private Long id;
 
-  /** The ID of the gym context the user is currently operating in (Tenant). */
-  private Long gymId;
-
-  /** The user's role within the current gym context (e.g., ROLE_COACH). */
-  private String role;
-
-  /** Granular permissions assigned to the user (e.g., WOD_WRITE). */
-  private List<String> permissions;
+  /** The user's platform-wide role (ADMIN or USER), independent of any gym. */
+  private String platformRole;
 
   /**
-   * Checks if the user holds a specific granular permission in the current context.
-   *
-   * @param permission The permission string to verify (e.g., "WOD_WRITE").
-   * @return true if the permission is present in the principal's authority set.
+   * Usable memberships, keyed by gym ID. Rights are evaluated on the gym owning each resource, not
+   * on a single "current" gym.
    */
-  public boolean hasPermission(String permission) {
-    return permissions != null && permissions.contains(permission);
+  @Builder.Default private Map<Long, GymAccess> memberships = Map.of();
+
+  /**
+   * The platform admin acting as this user through an audited support session ({@code
+   * X-Auth-Actor-Id}), or {@code null} for a normal request. Rights stay those of the user.
+   */
+  @Nullable private Long actorId;
+
+  /**
+   * Returns every gym the user can read from.
+   *
+   * @return The member gym IDs (never null).
+   */
+  public Set<Long> getMemberGymIds() {
+    return memberships == null ? Set.of() : memberships.keySet();
+  }
+
+  /**
+   * Checks if the user is a member of the given gym.
+   *
+   * @param gymId The gym owning the resource.
+   * @return true if the user holds a usable membership in that gym.
+   */
+  public boolean isMemberOf(Long gymId) {
+    return gymId != null && memberships != null && memberships.containsKey(gymId);
+  }
+
+  /**
+   * Checks if the user holds a permission in the given gym.
+   *
+   * @param gymId The gym owning the resource.
+   * @param permission The permission to verify (e.g., "WOD_WRITE").
+   * @return true if the user's membership in that gym grants the permission.
+   */
+  public boolean hasGymPermission(Long gymId, String permission) {
+    if (gymId == null || memberships == null) {
+      return false;
+    }
+    GymAccess access = memberships.get(gymId);
+    return access != null && access.hasPermission(permission);
   }
 
   // -------------------------------------------------------------------------
@@ -55,17 +88,18 @@ public class AldebaranUserPrincipal implements UserDetails {
   // -------------------------------------------------------------------------
 
   /**
-   * Returns the authorities granted to the user. Adds the 'ROLE_' prefix to the raw role string to
-   * comply with Spring Security defaults.
+   * Returns the authorities granted to the user, derived from the platform role only (so that
+   * {@code hasRole('ADMIN')} never depends on the gym context). Adds the 'ROLE_' prefix to comply
+   * with Spring Security defaults.
    */
   @Override
   @NonNull
   public Collection<? extends GrantedAuthority> getAuthorities() {
-    if (role == null) {
+    if (platformRole == null) {
       return Collections.emptyList();
     }
     // Defensive check: avoid double prefixing if upstream changes
-    String authority = role.startsWith("ROLE_") ? role : "ROLE_" + role;
+    String authority = platformRole.startsWith("ROLE_") ? platformRole : "ROLE_" + platformRole;
     return List.of(new SimpleGrantedAuthority(authority));
   }
 
