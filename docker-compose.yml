@@ -79,6 +79,9 @@ services:
     image: antares-auth:latest
     container_name: antares-auth
     env_file: ./.env
+    environment:
+      # Dev test accounts (DevDataSeeder): temporary, TO BE REMOVED
+      SPRING_PROFILES_ACTIVE: dev
     depends_on:
       castor-db:
         condition: service_healthy
@@ -96,6 +99,9 @@ services:
     image: aldebaran-training:latest
     container_name: aldebaran-training
     env_file: ./.env
+    environment:
+      # Dev test data (dev profile seeder): temporary, TO BE REMOVED
+      SPRING_PROFILES_ACTIVE: dev
     depends_on:
       castor-db:
         condition: service_healthy
