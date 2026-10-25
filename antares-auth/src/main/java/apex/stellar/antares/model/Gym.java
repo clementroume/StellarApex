@@ -97,6 +97,40 @@ public class Gym implements Serializable {
   @Column(name = "updated_at", nullable = false)
   private LocalDateTime updatedAt;
 
+  // --- Role Rules ---
+
+  /**
+   * The single holder role of this gym type: OWNER (physical) or PROGRAMMER (virtual).
+   *
+   * @return the holder role.
+   */
+  public GymRole holderRole() {
+    return isProgramming ? GymRole.PROGRAMMER : GymRole.OWNER;
+  }
+
+  /**
+   * The role a former holder gets after an ownership transfer: COACH (physical) or ATHLETE
+   * (virtual).
+   *
+   * @return the role of the former holder.
+   */
+  public GymRole formerHolderRole() {
+    return isProgramming ? GymRole.ATHLETE : GymRole.COACH;
+  }
+
+  /**
+   * Indicates whether a role exists in this gym type: physical = OWNER, COACH, ATHLETE; virtual =
+   * PROGRAMMER, ATHLETE.
+   *
+   * @param role the role to check.
+   * @return {@code true} if allowed.
+   */
+  public boolean allowsRole(GymRole role) {
+    return role == holderRole()
+        || role == GymRole.ATHLETE
+        || (!isProgramming && role == GymRole.COACH);
+  }
+
   // --- Effective Java: Equals & HashCode based on Business Key (Name) ---
 
   @Override
