@@ -1,10 +1,10 @@
 package apex.stellar.antares.service;
 
-import apex.stellar.antares.model.GymRole;
 import apex.stellar.antares.model.Membership;
+import apex.stellar.antares.model.Membership.MembershipStatus;
 import apex.stellar.antares.model.Permission;
 import apex.stellar.antares.model.PlatformRole;
-import apex.stellar.antares.model.User; 
+import apex.stellar.antares.model.User;
 import apex.stellar.antares.repository.jpa.MembershipRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -39,7 +39,8 @@ public class AntaresSecurityService {
    *   <li>Global Admins always return {@code true}.
    *   <li><b>Gym Owners and Programmers</b> always return {@code true} (Implicit super-admin of the
    *       gym).
-   *   <li>Other roles (e.g., Coaches) must have the explicit permission in their list.
+   *   <li>Coaches must have the explicit permission in their list.
+   *   <li>Athletes never hold any permission, even if one is stored.
    * </ul>
    *
    * @param gymId The ID of the gym context.
@@ -96,19 +97,32 @@ public class AntaresSecurityService {
         .orElse(false);
   }
 
+  /**
+   * Checks if the current user holds a gym (its OWNER or PROGRAMMER, with an ACTIVE membership).
+   *
+   * @param gymId The ID of the gym.
+   * @return {@code true} for the gym holder or a Global Admin.
+   */
+  public boolean isGymHolder(Long gymId) {
+    User user = getCurrentUser();
+    if (user == null) {
+      return false;
+    }
+    if (user.getPlatformRole() == PlatformRole.ADMIN) {
+      return true;
+    }
+    return membershipRepository
+        .findByUserIdAndGymId(user.getId(), gymId)
+        .map(m -> m.getStatus() == MembershipStatus.ACTIVE && m.getGymRole().isHolder())
+        .orElse(false);
+  }
+
   // --- Core Logic ---
 
   /** Evaluates if a membership grants the required permission. */
   private boolean hasAccess(Membership membership, Permission requiredPermission) {
-    GymRole role = membership.getGymRole();
-
-    // Implicit "VIP" Pass for Tenant Administrators (Owner AND Programmer)
-    if (role == GymRole.OWNER || role == GymRole.PROGRAMMER) {
-      return true;
-    }
-
-    // Granular check for delegated roles (e.g., Coach)
-    return membership.getPermissions().contains(requiredPermission);
+    // Single rule shared with the gateway headers and the DTOs (see Membership)
+    return membership.effectivePermissions().contains(requiredPermission);
   }
 
   /** Safely retrieves the authenticated User from the SecurityContext. */

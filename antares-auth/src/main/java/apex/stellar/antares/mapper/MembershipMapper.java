@@ -3,6 +3,7 @@ package apex.stellar.antares.mapper;
 import apex.stellar.antares.dto.MembershipResponse;
 import apex.stellar.antares.dto.MembershipSummary;
 import apex.stellar.antares.model.Membership;
+import java.util.List;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.ReportingPolicy;
@@ -13,8 +14,8 @@ import org.mapstruct.ReportingPolicy;
  */
 @Mapper(
     componentModel = "spring",
-    unmappedTargetPolicy = ReportingPolicy.IGNORE,
-    uses = {UserMapper.class})
+    imports = List.class,
+    unmappedTargetPolicy = ReportingPolicy.IGNORE)
 public interface MembershipMapper {
 
   /**
@@ -28,7 +29,8 @@ public interface MembershipMapper {
   MembershipResponse toResponse(Membership membership);
 
   /**
-   * Converts a Membership entity to a MembershipSummary DTO, including flattened gym details.
+   * Converts a Membership entity to a MembershipSummary DTO, including flattened gym details and
+   * the effective permissions (see {@link Membership#effectivePermissions()}).
    *
    * @param membership the Membership entity to convert
    * @return the converted MembershipSummary DTO
@@ -38,5 +40,8 @@ public interface MembershipMapper {
   @Mapping(target = "gymStatus", source = "gym.status")
   @Mapping(target = "gymRole", source = "gymRole")
   @Mapping(target = "status", source = "status")
+  @Mapping(
+      target = "permissions",
+      expression = "java(List.copyOf(membership.effectivePermissions()))")
   MembershipSummary toSummary(Membership membership);
 }

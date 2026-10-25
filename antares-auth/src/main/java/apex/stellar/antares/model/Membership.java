@@ -18,6 +18,8 @@ import jakarta.persistence.UniqueConstraint;
 import java.io.Serial;
 import java.io.Serializable;
 import java.time.LocalDateTime;
+import java.util.Collection;
+import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
@@ -104,6 +106,62 @@ public class Membership implements Serializable {
 
   public Long getUserId() {
     return user != null ? user.getId() : null;
+  }
+
+  // --- Authorization Rules ---
+
+  /**
+   * Returns the permissions this membership actually grants, applying {@link
+   * #effectivePermissions(GymRole, Collection)} to the stored role and permissions.
+   *
+   * @return the effective permissions, in {@link Permission} declaration order.
+   */
+  public Set<Permission> effectivePermissions() {
+    return effectivePermissions(gymRole, permissions);
+  }
+
+  /**
+   * Indicates whether this membership can be used as a gym context: the membership is ACTIVE and
+   * either the gym is ACTIVE or the member is gym staff (OWNER/PROGRAMMER may work on a gym that is
+   * still pending approval).
+   *
+   * @return {@code true} if the membership opens access to its gym.
+   */
+  public boolean isUsable() {
+    if (status != MembershipStatus.ACTIVE || gym == null) {
+      return false;
+    }
+    return gym.getStatus() == Gym.GymStatus.ACTIVE
+        || gymRole == GymRole.OWNER
+        || gymRole == GymRole.PROGRAMMER;
+  }
+
+  /**
+   * The single rule turning a gym role and its assigned permissions into effective permissions.
+   *
+   * <ul>
+   *   <li>OWNER / PROGRAMMER: every {@link Permission} (implicit administrators of the gym).
+   *   <li>COACH: exactly the assigned permissions.
+   *   <li>ATHLETE (or no role): none, whatever is stored.
+   * </ul>
+   *
+   * @param role the gym role (may be {@code null}).
+   * @param assigned the explicitly assigned permissions (may be {@code null}).
+   * @return the effective permissions, in {@link Permission} declaration order.
+   */
+  public static Set<Permission> effectivePermissions(
+      GymRole role, Collection<Permission> assigned) {
+    if (role == null) {
+      return EnumSet.noneOf(Permission.class);
+    }
+    return switch (role) {
+      case OWNER, PROGRAMMER -> EnumSet.allOf(Permission.class);
+      case COACH ->
+          assigned == null || assigned.isEmpty()
+              ? EnumSet.noneOf(Permission.class)
+              : EnumSet.copyOf(assigned);
+      case ATHLETE -> EnumSet.noneOf(Permission.class);
+    };
   }
 
   // --- Effective Java: Equals & HashCode based on Business Key (User + Gym) ---
