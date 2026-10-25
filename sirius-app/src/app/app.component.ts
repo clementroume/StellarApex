@@ -23,7 +23,8 @@ export class AppComponent {
 
     effect(() => {
       const user = this.authService.currentUser();
-      if (user?.locale) {
+      // During a support session the screen keeps the admin's language, not the target's
+      if (user?.locale && !user.supportSession) {
         this.translate.use(user.locale);
       }
     });

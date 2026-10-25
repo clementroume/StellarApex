@@ -5,6 +5,12 @@
       {{ 'SETTINGS.TITLE' | translate }}
     </h2>
 
+    @if (isSupportSession()) {
+      <div class="alert alert-warning alert-soft">
+        <ng-icon name="heroExclamationTriangle" size="1.5rem"></ng-icon>
+        <span>{{ 'ADMIN.SUPPORT.ACCOUNT_LOCKED' | translate }}</span>
+      </div>
+    } @else {
     <form (ngSubmit)="onSubmit()" [formGroup]="passwordForm">
       <fieldset class="fieldset bg-base-200 border-base-300 rounded-box w-full border p-4">
         <legend class="fieldset-legend">{{ 'SETTINGS.PASSWORD_SUBTITLE' | translate }}</legend>
@@ -45,6 +51,7 @@
         </div>
       </fieldset>
     </form>
+    }
 
     <fieldset class="fieldset bg-base-200 border-base-300 rounded-box w-full border p-4 mt-6">
       <legend class="fieldset-legend">{{ 'SETTINGS.LANGUAGE_TITLE' | translate }}</legend>
@@ -61,6 +68,7 @@
       </div>
     </fieldset>
 
+    @if (!isSupportSession()) {
     <fieldset class="fieldset bg-error/5 border-error/20 rounded-box w-full border p-4">
       <legend class="fieldset-legend text-error font-bold flex gap-2 items-center">
         <ng-icon name="heroExclamationTriangle" class="text-2xl"></ng-icon>
@@ -73,6 +81,7 @@
         </button>
       </div>
     </fieldset>
+    }
   </div>
 </div>
 

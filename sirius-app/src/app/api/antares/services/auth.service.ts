@@ -25,7 +25,17 @@ export class AuthService {
     );
   }
 
+  /**
+   * Replaces the current user with a server response (e.g. after a profile update). A response
+   * that does not carry `supportSession` keeps the current one: losing it would make the UI think
+   * an admin support session ended while the server still runs it.
+   */
   updateCurrentUser(user: UserResponse | null | undefined): void {
+    const current = this._currentUser();
+    if (user && user.supportSession === undefined && current?.id === user.id && current.supportSession) {
+      this._currentUser.set({...user, supportSession: current.supportSession});
+      return;
+    }
     this._currentUser.set(user);
   }
 

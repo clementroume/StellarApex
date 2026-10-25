@@ -101,4 +101,33 @@ describe('AuthService', () => {
       expect(navigateSpy).toHaveBeenCalledWith(['/auth/login']);
     });
   });
+
+  describe('updateCurrentUser', () => {
+    const session = {id: 3, actor: {id: 9, firstName: 'Ad', lastName: 'Min'}, reason: 'Bug', expiresAt: '2026-10-25T12:00:00Z'};
+
+    it('should keep the support session when the response does not carry it', () => {
+      service.updateCurrentUser({...dummyUser, supportSession: session});
+
+      service.updateCurrentUser({...dummyUser, locale: 'fr'});
+
+      expect(service.currentUser()?.locale).toBe('fr');
+      expect(service.currentUser()?.supportSession).toEqual(session);
+    });
+
+    it('should apply an explicit end of session', () => {
+      service.updateCurrentUser({...dummyUser, supportSession: session});
+
+      service.updateCurrentUser({...dummyUser, supportSession: null});
+
+      expect(service.currentUser()?.supportSession).toBeNull();
+    });
+
+    it('should never carry a session over to another user', () => {
+      service.updateCurrentUser({...dummyUser, supportSession: session});
+
+      service.updateCurrentUser({...dummyUser, id: 2});
+
+      expect(service.currentUser()?.supportSession).toBeUndefined();
+    });
+  });
 });

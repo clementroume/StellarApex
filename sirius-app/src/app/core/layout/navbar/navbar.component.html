@@ -17,7 +17,7 @@
         <li>
           <a routerLink="/wods" routerLinkActive="active">
             <ng-icon name="hugeKettlebell" size="1.2em"></ng-icon>
-            WOD
+            {{ 'NAVBAR.WODS' | translate }}
           </a>
         </li>
         <li>
@@ -32,6 +32,14 @@
             {{ 'NAVBAR.MUSCLES' | translate }}
           </a>
         </li>
+        @if (accessService.isAdmin()) {
+          <li>
+            <a routerLink="/admin/support" routerLinkActive="active">
+              <ng-icon name="heroLifebuoy" size="1.2em"></ng-icon>
+              {{ 'NAVBAR.SUPPORT' | translate }}
+            </a>
+          </li>
+        }
       </ul>
 
     </div>
@@ -52,7 +60,7 @@
       <li>
         <a routerLink="/wods" routerLinkActive="active">
           <ng-icon name="hugeKettlebell" size="1.2em"></ng-icon>
-          WOD
+          {{ 'NAVBAR.WODS' | translate }}
         </a>
       </li>
       <li>
@@ -67,6 +75,14 @@
           {{ 'NAVBAR.MUSCLES' | translate }}
         </a>
       </li>
+      @if (accessService.isAdmin()) {
+        <li>
+          <a routerLink="/admin/support" routerLinkActive="active">
+            <ng-icon name="heroLifebuoy" size="1.2em"></ng-icon>
+            {{ 'NAVBAR.SUPPORT' | translate }}
+          </a>
+        </li>
+      }
     </ul>
   </div>
 
