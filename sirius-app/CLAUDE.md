@@ -48,6 +48,8 @@ Vitest (jsdom) through `ng test`. Commands: `npm test`, `npm run build`, `npm st
 - Errors: show `ProblemDetail.detail` from the backend when present (already localized), else a
   translated fallback; 409 = conflict/locked, 403 = forbidden.
 - Wrap every `localStorage` / `sessionStorage` access in try/catch.
+- Loads, distances and heights are shown through `core/services/unit.service.ts` (`formatLoad`,
+  `formatDistance`: user's metric/imperial choice, men/women pairs "43/29 kg"); never print a stored unit.
 
 ## Tests
 

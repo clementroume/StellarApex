@@ -115,8 +115,10 @@ Rules live in `security/WodSecurity` and `security/ScoreSecurity`, used from `@P
   Fran is a `FOR_TIME` WOD of the `GIRLS` category.
 * **WOD texts and loads**: description and notes, and each WOD movement's notes and scaling options,
   exist in English and French (`*En` / `*Fr`, either may be empty; clients fall back on the other
-  language). A WOD movement holds the men's load (`weight`) and the women's load (`weightFemale`) in
-  the same unit; clients convert for display only.
+  language). A WOD movement holds men's / women's pairs: load (`weight` / `weightFemale`, one
+  `weightUnit`), calories (`calories` / `caloriesFemale`) and box or target height (`height` /
+  `heightFemale`, one `heightUnit`: `CENTIMETERS`, `INCHES`, `METERS`, `FEET`). Values stay in the
+  prescribed unit; clients convert for display only.
 
 ## API Endpoints
 
@@ -172,7 +174,7 @@ starts empty. This mechanism (export endpoints, source volume, CSV seeding) is t
   lists separated by `, `.
 * `wods.csv`: `title,wod_type,category,score_type,rep_scheme,time_cap_seconds,emom_interval,emom_rounds,description_en,description_fr,notes_en,notes_fr`
 * `wod_movements.csv`: `wod_title,order_index,movement_name,reps_scheme,weight,weight_unit,distance,distance_unit,duration_seconds,calories,notes_en,scaling_options_en`,
-  plus optional `duration_display_unit,equipment,techniques,weight_female,notes_fr,scaling_options_fr`
+  plus optional `duration_display_unit,equipment,techniques,weight_female,notes_fr,scaling_options_fr,calories_female,height,height_female,height_unit`
   (lists separated by `|`). Files with the former `description`, `notes` and `scaling_options`
   columns still load (read as English).
   `movement_name` is the exact movement name; an unknown one is logged and the row skipped.
