@@ -3,7 +3,7 @@ import {RouterModule} from '@angular/router';
 import {TranslatePipe, TranslateService} from '@ngx-translate/core';
 import {MuscleService} from '../../../api/aldebaran/services/muscle.service';
 import {MuscleResponse} from '../../../api/aldebaran/models/muscle.model';
-import {AuthService} from '../../../api/antares/services/auth.service';
+import {AccessService} from '../../../core/services/access.service';
 import {NgIcon} from '@ng-icons/core';
 import {ExporterService} from '../../../api/aldebaran/services/exporter.service';
 import {HttpContext} from '@angular/common/http';
@@ -23,7 +23,7 @@ import {ListGridComponent} from '../../../shared/component/list/list-grid/list-g
 export class MuscleListComponent implements OnInit {
   // --- INJECTIONS ---
   private readonly muscleService = inject(MuscleService);
-  private readonly authService = inject(AuthService);
+  private readonly accessService = inject(AccessService);
   private readonly translate = inject(TranslateService);
   private readonly exporterService = inject(ExporterService);
 
@@ -41,7 +41,7 @@ export class MuscleListComponent implements OnInit {
   private preSearchState: Set<string> | null = null;
 
   // --- COMPUTED STATE ---
-  isAdmin = computed(() => this.authService.currentUser()?.platformRole === 'ADMIN');
+  isAdmin = this.accessService.isAdmin;
 
   filteredMuscles = computed(() => {
     const query = this.searchQuery().toLowerCase().trim();

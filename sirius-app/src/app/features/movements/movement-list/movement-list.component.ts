@@ -4,7 +4,7 @@ import {RouterModule} from '@angular/router';
 import {TranslatePipe} from '@ngx-translate/core';
 import {FormsModule} from '@angular/forms';
 import {MovementService} from '../../../api/aldebaran/services/movement.service';
-import {AuthService} from '../../../api/antares/services/auth.service';
+import {AccessService} from '../../../core/services/access.service';
 import {MovementSummaryResponse} from '../../../api/aldebaran/models/movement.model';
 import {NgIcon} from '@ng-icons/core';
 import {ExporterService} from '../../../api/aldebaran/services/exporter.service';
@@ -25,7 +25,7 @@ import {ListGridComponent} from '../../../shared/component/list/list-grid/list-g
 export class MovementListComponent implements OnInit {
   // --- INJECTIONS ---
   private readonly movementService = inject(MovementService);
-  private readonly authService = inject(AuthService);
+  private readonly accessService = inject(AccessService);
   private readonly exporterService = inject(ExporterService);
 
   // --- STATE (SIGNALS & VARIABLES) ---
@@ -43,7 +43,7 @@ export class MovementListComponent implements OnInit {
   private preSearchState: Set<string> | null = null;
 
   // --- COMPUTED STATE ---
-  isAdmin = computed(() => this.authService.currentUser()?.platformRole === 'ADMIN');
+  isAdmin = this.accessService.isAdmin;
 
   filteredMovements = computed(() => {
     const query = this.searchQuery().toLowerCase().trim();

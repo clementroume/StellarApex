@@ -82,4 +82,17 @@ public interface MembershipRepository extends JpaRepository<Membership, Long> {
    */
   @Query("SELECT count(m) > 0 FROM Membership m WHERE m.user.id = :userId AND m.gym.id = :gymId")
   boolean existsByUserIdAndGymId(Long userId, Long gymId);
+
+  /**
+   * Retrieves the holder membership(s) of a gym (OWNER or PROGRAMMER; at most one, enforced by a
+   * unique index).
+   *
+   * @param gymId the unique identifier of the gym.
+   * @return the holder memberships.
+   */
+  @Query(
+      "SELECT m FROM Membership m WHERE m.gym.id = :gymId"
+          + " AND m.gymRole IN (apex.stellar.antares.model.GymRole.OWNER,"
+          + " apex.stellar.antares.model.GymRole.PROGRAMMER)")
+  List<Membership> findHoldersByGymId(Long gymId);
 }

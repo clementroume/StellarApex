@@ -94,6 +94,34 @@ describe('ThemeService', () => {
       });
     });
 
+    it('should keep the theme local during a support session', () => {
+      (authServiceSpy.currentUser as any).set({
+        ...mockUser, theme: 'light',
+        supportSession: {id: 1, actor: {id: 9, firstName: 'Ad', lastName: 'Min'}, reason: 'Bug', expiresAt: ''}
+      });
+      TestBed.tick();
+      const before = service.currentTheme();
+
+      service.toggleTheme();
+
+      expect(service.currentTheme()).not.toBe(before);
+      expect(userServiceSpy.updatePreferences).not.toHaveBeenCalled();
+    });
+
+    it("should not apply the impersonated user's theme", () => {
+      (authServiceSpy.currentUser as any).set({...mockUser, theme: 'dark'});
+      TestBed.tick();
+      expect(service.currentTheme()).toBe('dark');
+
+      (authServiceSpy.currentUser as any).set({
+        ...mockUser, theme: 'light',
+        supportSession: {id: 1, actor: {id: 9, firstName: 'Ad', lastName: 'Min'}, reason: 'Bug', expiresAt: ''}
+      });
+      TestBed.tick();
+
+      expect(service.currentTheme()).toBe('dark');
+    });
+
     it('should NOT call updatePreferences when no user is logged in', () => {
       (authServiceSpy.currentUser as any).set(null);
       service.toggleTheme();

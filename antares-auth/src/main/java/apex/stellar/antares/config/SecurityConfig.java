@@ -32,6 +32,7 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 public class SecurityConfig {
 
   private final JwtAuthenticationFilter jwtAuthenticationFilter;
+  private final ProblemDetailAuthenticationEntryPoint authenticationEntryPoint;
 
   @Value("${cors.allowed-origins}")
   private String allowedOrigins;
@@ -65,6 +66,9 @@ public class SecurityConfig {
                     // Require authentication for all other endpoints
                     .anyRequest()
                     .authenticated())
+        // Missing/expired access token: 401 (lets Sirius refresh), never the default 403
+        .exceptionHandling(
+            exceptions -> exceptions.authenticationEntryPoint(authenticationEntryPoint))
         .sessionManagement(
             session ->
                 session

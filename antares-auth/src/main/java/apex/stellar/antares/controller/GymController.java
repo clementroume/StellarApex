@@ -5,6 +5,7 @@ import apex.stellar.antares.dto.GymResponse;
 import apex.stellar.antares.dto.GymSettingsRequest;
 import apex.stellar.antares.dto.JoinGymRequest;
 import apex.stellar.antares.dto.MembershipResponse;
+import apex.stellar.antares.dto.TransferOwnershipRequest;
 import apex.stellar.antares.model.Gym.GymStatus;
 import apex.stellar.antares.model.User;
 import apex.stellar.antares.service.GymService;
@@ -256,6 +257,47 @@ public class GymController {
       @PathVariable Long gymId, @Valid @RequestBody GymSettingsRequest request) {
     gymService.updateSettings(gymId, request);
     return ResponseEntity.ok().build();
+  }
+
+  /**
+   * Transfers the gym holder role to another active member.
+   *
+   * <p>The target becomes OWNER (physical gym) or PROGRAMMER (virtual gym); the former holder
+   * becomes COACH (physical) or ATHLETE (virtual), without explicit permissions. This is the only
+   * way to change who holds a gym.
+   *
+   * @param gymId The ID of the gym.
+   * @param request The membership of the new holder.
+   * @return The updated memberships of both members.
+   */
+  @PostMapping("/{gymId}/transfer-ownership")
+  @PreAuthorize("@security.isGymHolder(#gymId)")
+  @Operation(
+      summary = "Transfer Gym Ownership",
+      description = "Current OWNER/PROGRAMMER of the gym or Platform Admin only.")
+  @ApiResponses(
+      value = {
+        @ApiResponse(responseCode = "200", description = "Ownership transferred"),
+        @ApiResponse(
+            responseCode = "400",
+            description = "Target is not an active member of this gym, or already holds it",
+            content = @Content(schema = @Schema(hidden = true))),
+        @ApiResponse(
+            responseCode = "403",
+            description = "Forbidden - Not the gym holder",
+            content = @Content(schema = @Schema(hidden = true))),
+        @ApiResponse(
+            responseCode = "404",
+            description = "Gym or membership not found",
+            content = @Content(schema = @Schema(hidden = true))),
+        @ApiResponse(
+            responseCode = "401",
+            description = "Unauthorized",
+            content = @Content(schema = @Schema(hidden = true)))
+      })
+  public ResponseEntity<List<MembershipResponse>> transferOwnership(
+      @PathVariable Long gymId, @Valid @RequestBody TransferOwnershipRequest request) {
+    return ResponseEntity.ok(membershipService.transferOwnership(gymId, request.membershipId()));
   }
 
   /**

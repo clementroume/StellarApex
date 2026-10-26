@@ -16,7 +16,7 @@ describe('ScoreService', () => {
     id: 1,
     userId: 1,
     date: new Date().toISOString().split('T')[0],
-    wodSummary: {id: 1, title: 'Fran', wodType: 'FOR_TIME', scoreType: 'TIME', createdAt: ''},
+    wodSummary: {id: 1, title: 'Fran', wodType: 'FOR_TIME', scoreType: 'TIME', isPublic: true, createdAt: ''},
     timeSeconds: 180,
     scaling: 'RX',
     personalRecord: true,

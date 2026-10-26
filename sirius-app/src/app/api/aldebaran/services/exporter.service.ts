@@ -44,6 +44,10 @@ export class ExporterService {
     return this.http.post((this.buildUrl(`/movements`)), {}, {responseType: 'text' as const});
   }
 
+  exportWods(): Observable<string> {
+    return this.http.post((this.buildUrl(`/wods`)), {}, {responseType: 'text' as const});
+  }
+
   private buildUrl(path: string): string {
     return `${environment.trainingUrl}/export${path}`;
   }

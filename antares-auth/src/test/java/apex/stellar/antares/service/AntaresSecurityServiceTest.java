@@ -100,6 +100,21 @@ class AntaresSecurityServiceTest {
   }
 
   @Test
+  @DisplayName("hasGymPermission: Athlete holding a stored permission should return false")
+  void hasGymPermission_Athlete_WithStoredPermission_ShouldReturnFalse() {
+    // Given
+    mockUser();
+    Membership m = new Membership();
+    m.setGymRole(GymRole.ATHLETE);
+    m.setPermissions(Set.of(Permission.WOD_WRITE)); // Ignored by the effective rule
+
+    when(membershipRepository.findByUserIdAndGymId(1L, 100L)).thenReturn(Optional.of(m));
+
+    // When / Then
+    assertFalse(securityService.hasGymPermission(100L, "WOD_WRITE"));
+  }
+
+  @Test
   @DisplayName("hasGymPermission: Coach without permission should return false")
   void hasGymPermission_Coach_WithoutPermission_ShouldReturnFalse() {
     // Given

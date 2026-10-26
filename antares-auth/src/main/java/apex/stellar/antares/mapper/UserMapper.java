@@ -3,6 +3,7 @@ package apex.stellar.antares.mapper;
 import apex.stellar.antares.dto.PreferencesUpdateRequest;
 import apex.stellar.antares.dto.ProfileUpdateRequest;
 import apex.stellar.antares.dto.UserResponse;
+import apex.stellar.antares.dto.UserSummary;
 import apex.stellar.antares.model.User;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
@@ -16,9 +17,13 @@ import org.mapstruct.ReportingPolicy;
  * componentModel = "spring"} attribute makes the generated mapper a Spring Bean, allowing it to be
  * injected into services. {@code unmappedTargetPolicy = ReportingPolicy.IGNORE} Prevents
  * compilation errors if not all source fields are mapped to the target (e.g., during partial
- * updates).
+ * updates). Memberships are mapped by {@link MembershipMapper#toSummary} (gym details and effective
+ * permissions).
  */
-@Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.IGNORE)
+@Mapper(
+    componentModel = "spring",
+    unmappedTargetPolicy = ReportingPolicy.IGNORE,
+    uses = MembershipMapper.class)
 public interface UserMapper {
 
   /**
@@ -29,7 +34,16 @@ public interface UserMapper {
    */
   @Mapping(target = "memberships", source = "memberships")
   @Mapping(target = "platformRole", source = "platformRole")
+  @Mapping(target = "supportSession", ignore = true)
   UserResponse toUserResponse(User user);
+
+  /**
+   * Converts a User entity to its lightweight identity summary.
+   *
+   * @param user The User entity to convert.
+   * @return The corresponding UserSummary DTO.
+   */
+  UserSummary toSummary(User user);
 
   /**
    * Updates an existing User entity from a ProfileUpdateRequest DTO.

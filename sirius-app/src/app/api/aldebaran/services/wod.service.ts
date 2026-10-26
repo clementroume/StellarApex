@@ -1,30 +1,56 @@
-import {inject, Injectable} from '@angular/core';
-import {HttpClient, HttpParams} from '@angular/common/http';
-import {Observable} from 'rxjs';
+import {inject, Injectable, signal} from '@angular/core';
+import {HttpClient, HttpContext, HttpParams} from '@angular/common/http';
+import {Observable, Subject} from 'rxjs';
 import {environment} from '../../../../environments/environment';
-import {WodReferenceData, WodRequest, WodResponse, WodSummaryResponse,} from '../models/wod.model';
+import {WodFacets, WodReferenceData, WodRequest, WodResponse, WodScope, WodSummaryResponse,} from '../models/wod.model';
 import {Slice} from '../../../core/models/pagination.model';
+
+export interface WodListFilters {
+  search?: string;
+  type?: string;
+  movementId?: number;
+  scope?: WodScope;
+  // Only meaningful with the GYM scope
+  gymId?: number;
+  // Personal WODs of this author
+  authorId?: number;
+}
+
+export type WodFacetFilters = Pick<WodListFilters, 'search' | 'scope' | 'gymId' | 'authorId'>;
 
 @Injectable({providedIn: 'root'})
 export class WodService {
   private readonly http = inject(HttpClient);
+  public refreshNeeded$ = new Subject<void>();
 
   getWods(
-    search?: string,
-    type?: string,
-    movementId?: string,
+    filters: WodListFilters = {},
     page: number = 0,
-    size: number = 20
+    size: number = 20,
+    context?: HttpContext
   ): Observable<Slice<WodSummaryResponse>> {
     let params = new HttpParams()
       .set('page', page)
       .set('size', size);
 
-    if (search) params = params.set('search', search);
-    if (type) params = params.set('type', type);
-    if (movementId) params = params.set('movementId', movementId);
+    if (filters.search) params = params.set('search', filters.search);
+    if (filters.type) params = params.set('type', filters.type);
+    if (filters.movementId) params = params.set('movementId', filters.movementId);
+    if (filters.scope) params = params.set('scope', filters.scope);
+    if (filters.gymId) params = params.set('gymId', filters.gymId);
+    if (filters.authorId) params = params.set('authorId', filters.authorId);
 
-    return this.http.get<Slice<WodSummaryResponse>>(this.buildUrl(), {params});
+    return this.http.get<Slice<WodSummaryResponse>>(this.buildUrl(), {params, context});
+  }
+
+  getFacets(filters: WodFacetFilters = {}, context?: HttpContext): Observable<WodFacets> {
+    let params = new HttpParams();
+    if (filters.search) params = params.set('search', filters.search);
+    if (filters.scope) params = params.set('scope', filters.scope);
+    if (filters.gymId) params = params.set('gymId', filters.gymId);
+    if (filters.authorId) params = params.set('authorId', filters.authorId);
+
+    return this.http.get<WodFacets>(this.buildUrl('/facets'), {params, context});
   }
 
   getWod(id: number): Observable<WodResponse> {
@@ -50,4 +76,17 @@ export class WodService {
   private buildUrl(path: string = ''): string {
     return `${environment.trainingUrl}/wods${path}`;
   }
+
+  notifyRefresh() {
+    this.refreshNeeded$.next();
+  }
+
+  // --- UI STATE ---
+  public readonly savedSearchQuery = signal<string>('');
+  public readonly savedTypeFilter = signal<string>('');
+  // Scope tab key ('ALL', 'MINE', 'PUBLIC' or 'GYM:<id>'), empty until the user picks one
+  public readonly savedScopeTab = signal<string>('');
+  // Admin selectors of the "All" tab (mutually exclusive)
+  public readonly savedAdminGymId = signal<number | null>(null);
+  public readonly savedAdminAuthorId = signal<number | null>(null);
 }

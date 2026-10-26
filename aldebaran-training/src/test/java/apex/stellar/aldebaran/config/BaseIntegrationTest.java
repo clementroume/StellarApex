@@ -67,6 +67,8 @@ public abstract class BaseIntegrationTest {
     registry.add("application.security.jwt.expiration", () -> 3600000); // 1 hour
     registry.add("application.security.jwt.refresh-token.expiration", () -> 86400000); // 1 day
     registry.add("application.security.internal-secret", () -> "test-internal-secret");
+    // Never seed from the developer's local (git-ignored) catalog CSV files
+    registry.add("aldebaran.seed.enabled", () -> "false");
 
     registry.add("management.tracing.sampling.probability", () -> "0");
     registry.add("management.otlp.metrics.export.enabled", () -> "false");

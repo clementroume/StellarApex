@@ -5,6 +5,7 @@ import static apex.stellar.aldebaran.config.RedisCacheConfig.CACHE_WODS;
 import apex.stellar.aldebaran.dto.MovementResponse;
 import apex.stellar.aldebaran.dto.WodMovementRequest;
 import apex.stellar.aldebaran.dto.WodReferenceData;
+import apex.stellar.aldebaran.dto.WodFacetsResponse;
 import apex.stellar.aldebaran.dto.WodRequest;
 import apex.stellar.aldebaran.dto.WodResponse;
 import apex.stellar.aldebaran.dto.WodSummaryResponse;
@@ -18,6 +19,7 @@ import apex.stellar.aldebaran.model.entities.Wod.WodType;
 import apex.stellar.aldebaran.model.entities.WodMovement;
 import apex.stellar.aldebaran.model.enums.Category.Modality;
 import apex.stellar.aldebaran.model.enums.Unit;
+import apex.stellar.aldebaran.model.enums.WodScope;
 import apex.stellar.aldebaran.repository.MovementRepository;
 import apex.stellar.aldebaran.repository.ScoreRepository;
 import apex.stellar.aldebaran.repository.WodRepository;
@@ -28,6 +30,7 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
@@ -74,29 +77,92 @@ public class WodService {
    * <p><b>Optimization:</b> Uses {@link WodSummary} projections to fetch only essential data,
    * avoiding the cost of loading full entities and their relationships.
    *
+   * <p>All filters combine. The security clause (admin, public, author, member gyms) is always
+   * applied on top of the requested {@link WodScope}.
+   *
    * @param search Optional title search term.
    * @param type Optional WOD type filter.
    * @param movementId Optional movement ID filter.
+   * @param scope List scope (ALL, MINE, GYM, PUBLIC); defaults to ALL when null.
+   * @param gymId Optional gym filter, only used by the GYM scope.
    * @param pageable Pagination settings.
    * @return A list of lightweight WOD summaries.
    */
   @Transactional(readOnly = true)
   public Slice<WodSummaryResponse> getWods(
-      String search, WodType type, Long movementId, Pageable pageable) {
+      String search,
+      WodType type,
+      Long movementId,
+      WodScope scope,
+      Long gymId,
+      Long authorId,
+      Pageable pageable) {
 
-    Slice<WodSummary> projections;
+    WodScope effectiveScope = scope != null ? scope : WodScope.ALL;
 
-    if (StringUtils.hasText(search)) {
-      projections = wodRepository.findByTitleSecure(search, pageable);
-    } else if (movementId != null) {
-      projections = wodRepository.findByMovementSecure(movementId, pageable);
-    } else if (type != null) {
-      projections = wodRepository.findByTypeSecure(type, pageable);
-    } else {
-      projections = wodRepository.findAllSecure(pageable);
-    }
+    Slice<WodSummary> projections =
+        wodRepository.findSecure(
+            toSearchPattern(search),
+            type,
+            movementId,
+            effectiveScope.name(),
+            gymId,
+            authorId,
+            securityService.getCurrentUserId(),
+            securityService.getCurrentUserMemberGymIds(),
+            securityService.isCurrentUserAdmin(),
+            pageable);
 
     return projections.map(wodMapper::toSummary);
+  }
+
+  /**
+   * Computes the values available to filter the WOD list.
+   *
+   * <p>WOD types follow every current filter except the type itself, so the UI only offers types
+   * that return results. Gyms and authors ignore the scope, gym and author filters: they feed the
+   * admin selectors, which must keep offering the other choices.
+   *
+   * @param search Optional title search.
+   * @param scope List scope (defaults to ALL).
+   * @param gymId Optional gym filter.
+   * @param authorId Optional author filter (personal WODs).
+   * @return The available WOD types, gym IDs and author IDs.
+   */
+  @Transactional(readOnly = true)
+  public WodFacetsResponse getFacets(String search, WodScope scope, Long gymId, Long authorId) {
+    String pattern = toSearchPattern(search);
+    String effectiveScope = (scope != null ? scope : WodScope.ALL).name();
+    Long userId = securityService.getCurrentUserId();
+    var memberGymIds = securityService.getCurrentUserMemberGymIds();
+    boolean isAdmin = securityService.isCurrentUserAdmin();
+
+    List<WodType> types =
+        wodRepository
+            .findSecureWodTypes(
+                pattern, null, null, effectiveScope, gymId, authorId, userId, memberGymIds, isAdmin)
+            .stream()
+            .sorted()
+            .toList();
+    List<Long> gymIds =
+        wodRepository
+            .findSecureGymIds(pattern, null, null, "ALL", null, null, userId, memberGymIds, isAdmin)
+            .stream()
+            .sorted()
+            .toList();
+    List<Long> authorIds =
+        wodRepository
+            .findSecureAuthorIds(
+                pattern, null, null, "ALL", null, null, userId, memberGymIds, isAdmin)
+            .stream()
+            .sorted()
+            .toList();
+
+    return new WodFacetsResponse(types, gymIds, authorIds);
+  }
+
+  private static String toSearchPattern(String search) {
+    return StringUtils.hasText(search) ? "%" + search.trim().toLowerCase(Locale.ROOT) + "%" : null;
   }
 
   /**

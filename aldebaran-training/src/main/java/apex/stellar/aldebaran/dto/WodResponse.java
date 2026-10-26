@@ -35,4 +35,36 @@ public record WodResponse(
 
     // --- Audit ---
     LocalDateTime createdAt,
-    LocalDateTime updatedAt) {}
+    LocalDateTime updatedAt,
+
+    // --- Per-user rights (computed per request, never cached) ---
+    WodCapabilities capabilities) {
+
+  /**
+   * Returns a copy of this response carrying the given capabilities.
+   *
+   * @param capabilities The rights of the current user on this WOD.
+   * @return A new response with the capabilities set.
+   */
+  public WodResponse withCapabilities(WodCapabilities capabilities) {
+    return new WodResponse(
+        id,
+        title,
+        wodType,
+        scoreType,
+        authorId,
+        gymId,
+        isPublic,
+        description,
+        notes,
+        timeCapSeconds,
+        emomInterval,
+        emomRounds,
+        repScheme,
+        modalities,
+        movements,
+        createdAt,
+        updatedAt,
+        capabilities);
+  }
+}

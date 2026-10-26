@@ -108,3 +108,5 @@ test.http
 /checkstyle.xml
 /aldebaran-training/src/main/resources/movements.csv
 /aldebaran-training/src/main/resources/muscles.csv
+/aldebaran-training/src/main/resources/wods.csv
+/aldebaran-training/src/main/resources/wod_movements.csv

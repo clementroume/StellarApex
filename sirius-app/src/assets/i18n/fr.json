@@ -31,7 +31,9 @@
   },
   "NAVBAR": {
     "DASHBOARD": "Dashboard",
+    "WODS": "WODs",
     "MUSCLES": "Muscles",
+    "SUPPORT": "Support",
     "MOVEMENTS": "Mouvements",
     "MY_ACCOUNT": "Mon Compte",
     "LOG_OUT": "Se déconnecter",
@@ -60,7 +62,12 @@
   },
   "PROFILE": {
     "TITLE": "Mes informations",
-    "SUCCESS_UPDATE": "Votre profil a été mis à jour avec succès !"
+    "SUCCESS_UPDATE": "Votre profil a été mis à jour avec succès !",
+    "GYMS": {
+      "TITLE": "Mes salles",
+      "NO_PERMISSION": "Aucune permission particulière dans cette salle.",
+      "NONE": "Tu n'es membre d'aucune salle."
+    }
   },
   "SETTINGS": {
     "TITLE": "Sécurité",
@@ -367,6 +374,87 @@
     }
   },
   "WOD": {
+    "TITLE": "Catalogue des WODs",
+    "TITLES": {
+      "ADD": "Créer un WOD",
+      "EDIT": "Modifier le WOD"
+    },
+    "ACTIONS": {
+      "ADD": "Créer un WOD",
+      "SEARCH": "Rechercher un WOD...",
+      "ALL_TYPES": "Tous",
+      "LOAD_MORE": "Charger plus",
+      "SELECT_TYPE": "Sélectionnez un type...",
+      "SELECT_SCORE_TYPE": "Sélectionnez un type de score...",
+      "ADD_MOVEMENT": "Ajouter un mouvement",
+      "MOVE_UP": "Monter",
+      "MOVE_DOWN": "Descendre",
+      "ADD_FOR_GYM": "Créer un WOD pour {{gym}}",
+      "ADD_PERSONAL": "Créer un WOD personnel"
+    },
+    "SCOPES": {
+      "ALL": "Tous",
+      "MINE": "Mes WODs",
+      "PUBLIC": "Publics"
+    },
+    "ADMIN_FILTERS": {
+      "GYM": "Salle",
+      "ALL_GYMS": "Toutes les salles",
+      "ATHLETE": "Athlète",
+      "ALL_ATHLETES": "Tous les athlètes (WODs perso)"
+    },
+    "SECTIONS": {
+      "BASIC": "Informations générales",
+      "VISIBILITY": "Visibilité",
+      "STRUCTURE": "Structure",
+      "DESCRIPTION": "Description & notes",
+      "MOVEMENTS": "Mouvements"
+    },
+    "FIELDS": {
+      "TITLE": "Titre",
+      "WOD_TYPE": "Type de WOD",
+      "SCORE_TYPE": "Type de score",
+      "REP_SCHEME": "Schéma de répétitions",
+      "TIME_CAP": "Time cap",
+      "MINUTES": "Minutes",
+      "SECONDS": "Secondes",
+      "EMOM_INTERVAL": "Intervalle EMOM",
+      "EMOM_ROUNDS": "Nombre de tours",
+      "NOTES": "Notes",
+      "MOVEMENT": "Mouvement",
+      "REPS": "Répétitions",
+      "WEIGHT": "Charge",
+      "DISTANCE": "Distance",
+      "DURATION": "Durée",
+      "CALORIES": "Calories",
+      "SCALING": "Scaling",
+      "GYM": "Salle"
+    },
+    "PLACEHOLDERS": {
+      "TITLE": "Ex : Fran",
+      "REP_SCHEME": "Ex : 21-15-9",
+      "DESCRIPTION": "Déroulé du WOD...",
+      "NOTES": "Consignes pour le coach ou l'athlète...",
+      "REPS": "Ex : 21-15-9"
+    },
+    "VISIBILITY": {
+      "PUBLIC": "Public",
+      "GYM": "Ma salle",
+      "PRIVATE": "Personnel"
+    },
+    "MESSAGES": {
+      "EMPTY_LIST": "Aucun WOD disponible pour le moment.",
+      "EMPTY_LIST_SEARCH": "Aucun WOD ne correspond à ta recherche.",
+      "NOT_FOUND": "WOD introuvable.",
+      "SUCCESS_CREATE": "WOD créé avec succès.",
+      "SUCCESS_UPDATE": "WOD mis à jour avec succès.",
+      "LOCKED": "Ce WOD a déjà des scores enregistrés : il ne peut plus être modifié ni supprimé.",
+      "FORBIDDEN": "Tu n'as pas les droits pour effectuer cette action sur ce WOD.",
+      "MOVEMENTS_REQUIRED": "Ajoute au moins un mouvement.",
+      "NO_MOVEMENTS": "Aucun mouvement prescrit.",
+      "LOCKED_BADGE": "Verrouillé (scores enregistrés)",
+      "OWNERSHIP_LOCKED": "Le propriétaire (personnel ou salle) d'un WOD ne peut pas être changé après sa création."
+    },
     "WOD_TYPES": {
       "AMRAP": "AMRAP",
       "EMOM": "EMOM",
@@ -406,6 +494,73 @@
       "FEET": "ft",
       "YARDS": "yd",
       "MILES": "mi"
+    }
+  },
+  "ADMIN": {
+    "SUPPORT": {
+      "TITLE": "Support utilisateur",
+      "INTRO": "Prends la main sur le compte d'un utilisateur pour reproduire un problème ou intervenir pour lui. La session dure 30 minutes, ta session admin est conservée et chaque action est tracée.",
+      "SEARCH": "Rechercher par nom ou email...",
+      "NO_RESULT": "Aucun utilisateur trouvé.",
+      "ADMIN_TARGET": "Admin (non éligible)",
+      "NO_MEMBERSHIP": "Sans salle",
+      "ACT_AS": "Agir en tant que {{name}}",
+      "REASON": "Raison de l'intervention",
+      "REASON_PH": "Ex : bug signalé par la salle sur l'affichage des WODs",
+      "WARNING": "Tes actions seront enregistrées au nom de cet utilisateur, avec ton identité admin dans le journal d'audit.",
+      "START": "Démarrer la session",
+      "STARTED": "Session de support démarrée : tu agis en tant que {{name}}.",
+      "BANNER": "Session de support : tu agis en tant que {{name}} (admin : {{actor}})",
+      "REMAINING": "Temps restant : {{time}}",
+      "END": "Terminer",
+      "EXPIRED": "La session de support a expiré : tu es revenu sur ton compte admin.",
+      "ACCOUNT_LOCKED": "Pendant une session de support, le mot de passe et la suppression du compte ne sont pas modifiables, et la langue comme le thème ne s'appliquent qu'à ton écran : ils ne sont pas enregistrés sur le compte de l'utilisateur.",
+      "RECENT": "Récemment incarnés",
+      "SEARCH_MIN": "Saisis au moins 2 caractères pour lancer la recherche.",
+      "FILTER_GYM": "Filtrer par salle",
+      "ALL_GYMS": "Toutes les salles",
+      "FILTER_ROLE": "Rôle",
+      "FILTER_STATUS": "Statut",
+      "ALL": "Tous",
+      "LOAD_MORE": "Charger plus"
+    }
+  },
+  "GYM": {
+    "ROLES": {
+      "OWNER": "Propriétaire",
+      "PROGRAMMER": "Programmeur",
+      "COACH": "Coach",
+      "ATHLETE": "Athlète"
+    },
+    "STATUS": {
+      "ACTIVE": "Actif",
+      "PENDING": "En attente",
+      "INACTIVE": "Inactif",
+      "BANNED": "Banni"
+    },
+    "GYM_STATUS": {
+      "ACTIVE": "Salle active",
+      "PENDING_APPROVAL": "Salle en attente de validation",
+      "REJECTED": "Salle refusée",
+      "SUSPENDED": "Salle suspendue"
+    },
+    "PERMISSIONS": {
+      "WOD_WRITE": {
+        "LABEL": "Programmation",
+        "DESCRIPTION": "Peut créer, modifier et supprimer les WODs de la salle."
+      },
+      "SCORE_VERIFY": {
+        "LABEL": "Validation des scores",
+        "DESCRIPTION": "Peut saisir, corriger et valider les scores des athlètes de la salle."
+      },
+      "MANAGE_MEMBERSHIPS": {
+        "LABEL": "Gestion des membres",
+        "DESCRIPTION": "Peut valider les inscriptions et gérer le statut des athlètes."
+      },
+      "MANAGE_SETTINGS": {
+        "LABEL": "Réglages de la salle",
+        "DESCRIPTION": "Peut modifier les réglages de la salle (code d'inscription, inscriptions automatiques)."
+      }
     }
   }
 }

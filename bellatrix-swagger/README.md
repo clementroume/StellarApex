@@ -75,8 +75,11 @@ springdoc.swagger-ui.urls[1].url=/aldebaran-docs
 
 ```bash
 ./mvnw clean package
-docker build -t bellatrix-swagger:latest .
+# From the project root
+docker compose build bellatrix-swagger
 ```
+
+The multi-stage `Dockerfile` produces a non-root, distroless JRE image.
 
 ## Run
 
@@ -88,7 +91,7 @@ docker compose up bellatrix-swagger
 
 ## Technical Stack
 
-- **Framework**: Spring Boot 4.0
+- **Framework**: Spring Boot 4.1
 - **Java**: 25
-- **Springdoc**: 3.0.1
+- **Springdoc**: 3.1.1
 - **Security**: Spring Security (permit-all mode, delegated to Traefik)

@@ -1,46 +1,35 @@
 import {TestBed} from '@angular/core/testing';
 import {CanActivateFn, Router} from '@angular/router';
-import {adminGuard} from './admin.guard';
-import {AuthService} from '../../api/antares/services/auth.service';
-import {signal} from '@angular/core';
+import {signal, WritableSignal} from '@angular/core';
 import {vi} from 'vitest';
+import {adminGuard} from './admin.guard';
+import {AccessService} from '../services/access.service';
 
 describe('adminGuard', () => {
   const executeGuard: CanActivateFn = (...guardParameters) => TestBed.runInInjectionContext(() => adminGuard(...guardParameters));
 
-  let mockAuthService: any;
+  let isAdmin: WritableSignal<boolean>;
   let mockRouter: any;
 
   beforeEach(() => {
-    mockAuthService = {
-      currentUser: signal(null)
-    };
-    mockRouter = {
-      navigate: vi.fn()
-    };
+    isAdmin = signal(false);
+    mockRouter = {navigate: vi.fn()};
 
     TestBed.configureTestingModule({
       providers: [
-        {provide: AuthService, useValue: mockAuthService},
+        {provide: AccessService, useValue: {isAdmin}},
         {provide: Router, useValue: mockRouter}
       ]
     });
   });
 
-  it('should allow access if the user is an ADMIN', () => {
-    mockAuthService.currentUser.set({platformRole: 'ADMIN'});
+  it('should allow access to an admin', () => {
+    isAdmin.set(true);
     expect(executeGuard({} as any, {} as any)).toBe(true);
     expect(mockRouter.navigate).not.toHaveBeenCalled();
   });
 
-  it('should block access and redirect if the user is a standard USER', () => {
-    mockAuthService.currentUser.set({platformRole: 'USER'});
-    expect(executeGuard({} as any, {} as any)).toBe(false);
-    expect(mockRouter.navigate).toHaveBeenCalledWith(['/dashboard']);
-  });
-
-  it('should block access and redirect if the user is not authenticated', () => {
-    mockAuthService.currentUser.set(null);
+  it('should block a regular user (or an admin acting as one) and redirect', () => {
     expect(executeGuard({} as any, {} as any)).toBe(false);
     expect(mockRouter.navigate).toHaveBeenCalledWith(['/dashboard']);
   });

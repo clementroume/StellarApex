@@ -5,14 +5,19 @@ import apex.stellar.aldebaran.model.entities.MovementMuscle;
 import apex.stellar.aldebaran.model.entities.MovementMuscle.MuscleRole;
 import apex.stellar.aldebaran.model.entities.Muscle;
 import apex.stellar.aldebaran.model.entities.Muscle.MuscleGroup;
+import apex.stellar.aldebaran.model.entities.Wod;
 import apex.stellar.aldebaran.model.enums.Category;
 import apex.stellar.aldebaran.model.enums.Equipment;
 import apex.stellar.aldebaran.model.enums.Technique;
 import apex.stellar.aldebaran.repository.MovementRepository;
 import apex.stellar.aldebaran.repository.MuscleRepository;
+import apex.stellar.aldebaran.repository.WodRepository;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -22,18 +27,26 @@ import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVRecord;
 import org.jspecify.annotations.NonNull;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
-/** Automatically seeds the database with foundational catalog data if tables are empty. */
+/**
+ * Automatically seeds the database with foundational catalog data if tables are empty: muscles,
+ * movements, then public benchmark WODs (temporary git-ignored CSV backups, see {@link
+ * WodCsvCodec}). Disabled with {@code aldebaran.seed.enabled=false} (integration tests, so they never
+ * depend on the developer's local CSV files).
+ */
 @Component
+@ConditionalOnProperty(name = "aldebaran.seed.enabled", havingValue = "true", matchIfMissing = true)
 @RequiredArgsConstructor
 @Slf4j
 public class DataSeeder implements CommandLineRunner {
 
   private final MuscleRepository muscleRepository;
   private final MovementRepository movementRepository;
+  private final WodRepository wodRepository;
 
   @Override
   @Transactional
@@ -46,6 +59,11 @@ public class DataSeeder implements CommandLineRunner {
     if (movementRepository.count() == 0) {
       log.info("Database empty: Seeding Movements...");
       seedMovements();
+    }
+
+    if (!wodRepository.existsPublic()) {
+      log.info("No public WOD: Seeding benchmark WODs...");
+      seedWods();
     }
   }
 
@@ -127,6 +145,42 @@ public class DataSeeder implements CommandLineRunner {
     } catch (Exception e) {
       log.error("Failed to seed movements", e);
     }
+  }
+
+  private void seedWods() {
+    ClassPathResource wodsResource = new ClassPathResource(WodCsvCodec.WODS_FILE);
+    ClassPathResource movementsResource = new ClassPathResource(WodCsvCodec.WOD_MOVEMENTS_FILE);
+
+    if (!wodsResource.exists() || !movementsResource.exists()) {
+      log.warn(
+          "{} or {} doesn't exist, seeding aborted",
+          WodCsvCodec.WODS_FILE,
+          WodCsvCodec.WOD_MOVEMENTS_FILE);
+      return;
+    }
+
+    try (Reader wods =
+            new InputStreamReader(wodsResource.getInputStream(), StandardCharsets.UTF_8);
+        Reader wodMovements =
+            new InputStreamReader(movementsResource.getInputStream(), StandardCharsets.UTF_8)) {
+      seedWods(wods, wodMovements);
+    } catch (Exception e) {
+      log.error("Failed to seed WODs", e);
+    }
+  }
+
+  /**
+   * Parses both WOD CSV contents and saves the public WODs.
+   *
+   * @param wods Content of {@code wods.csv}.
+   * @param wodMovements Content of {@code wod_movements.csv}.
+   * @throws IOException If a content cannot be read.
+   */
+  void seedWods(Reader wods, Reader wodMovements) throws IOException {
+    List<Wod> parsed =
+        WodCsvCodec.read(wods, wodMovements, WodCsvCodec.byName(movementRepository.findAll()));
+    wodRepository.saveAll(parsed);
+    log.info("Successfully seeded {} public WODs.", parsed.size());
   }
 
   // --- Helper Methods ---

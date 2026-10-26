@@ -1,4 +1,4 @@
-import {ChangeDetectionStrategy, Component, ElementRef, inject, ViewChild} from '@angular/core';
+import {ChangeDetectionStrategy, Component, computed, ElementRef, inject, ViewChild} from '@angular/core';
 import {CommonModule} from '@angular/common';
 import {
   AbstractControl,
@@ -40,6 +40,9 @@ export class SettingsComponent {
   private readonly fb = inject(FormBuilder);
   private readonly notificationService = inject(NotificationService);
 
+  /** Antares refuses password changes and account deletion during an admin support session. */
+  readonly isSupportSession = computed(() => !!this.authService.currentUser()?.supportSession);
+
   constructor() {
     this.passwordForm = this.fb.group({
       currentPassword: ['', [Validators.required]],
@@ -73,7 +76,8 @@ export class SettingsComponent {
     this.translate.use(lang);
 
     const currentUser = this.authService.currentUser();
-    if (currentUser) {
+    // During a support session the change stays on the admin's screen (Antares refuses to save it)
+    if (currentUser && !currentUser.supportSession) {
       const preferences: PreferencesUpdateRequest = {
         locale: lang,
         theme: currentUser.theme

@@ -4,6 +4,7 @@ import apex.stellar.antares.dto.JoinGymRequest;
 import apex.stellar.antares.dto.MembershipResponse;
 import apex.stellar.antares.dto.MembershipSummary;
 import apex.stellar.antares.dto.MembershipUpdateRequest;
+import apex.stellar.antares.exception.BusinessRuleException;
 import apex.stellar.antares.exception.DataConflictException;
 import apex.stellar.antares.exception.ResourceNotFoundException;
 import apex.stellar.antares.mapper.MembershipMapper;
@@ -16,8 +17,11 @@ import apex.stellar.antares.model.PlatformRole;
 import apex.stellar.antares.model.User;
 import apex.stellar.antares.repository.jpa.GymRepository;
 import apex.stellar.antares.repository.jpa.MembershipRepository;
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -34,6 +38,7 @@ import org.springframework.transaction.annotation.Transactional;
  *   <li>Removing members from a Gym.
  * </ul>
  */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class MembershipService {
@@ -69,6 +74,26 @@ public class MembershipService {
       }
     }
     return isGlobalAdmin;
+  }
+
+  /**
+   * Applies the gym-type role rules to a role change requested through {@link #updateMembership}.
+   */
+  private void validateRoleChange(Membership target, GymRole requestedRole) {
+    GymRole currentRole = target.getGymRole();
+    if (requestedRole == currentRole) {
+      return;
+    }
+    if (currentRole != null && currentRole.isHolder()) {
+      throw new BusinessRuleException("error.membership.role.holder.change");
+    }
+    Gym gym = target.getGym();
+    if (gym != null && !gym.allowsRole(requestedRole)) {
+      throw new BusinessRuleException("error.membership.role.not.allowed", requestedRole);
+    }
+    if (requestedRole.isHolder()) {
+      throw new BusinessRuleException("error.membership.role.holder.assign");
+    }
   }
 
   /**
@@ -168,6 +193,9 @@ public class MembershipService {
    *   <li><b>Coach:</b> Can only validate members (PENDING -> ACTIVE). Cannot change Roles or
    *       Permissions.
    *   <li><b>Owner/Programmer:</b> Can manage all aspects except assigning the Global ADMIN role.
+   *   <li><b>Gym type:</b> the new role must exist in the gym type (physical: COACH/ATHLETE,
+   *       virtual: ATHLETE); OWNER/PROGRAMMER is never assigned here and the current holder's role
+   *       never changes here (see {@link #transferOwnership}).
    * </ul>
    *
    * @param targetMembershipId The ID of the membership to be updated.
@@ -179,6 +207,7 @@ public class MembershipService {
    * @throws ResourceNotFoundException If the target membership does not exist.
    * @throws AccessDeniedException If the requester lacks the necessary permissions or violates
    *     hierarchy rules.
+   * @throws BusinessRuleException If the role change breaks the gym-type role rules.
    */
   @Transactional
   public MembershipResponse updateMembership(
@@ -224,13 +253,69 @@ public class MembershipService {
       }
     }
 
-    // --- 4. Apply Updates ---
+    // --- 4. Role Rules by Gym Type (holder only changes through transferOwnership) ---
+    validateRoleChange(target, request.gymRole());
+
+    // --- 5. Apply Updates ---
     // Owners/Programmers fall through here with full access (except the Admin checks above)
     target.setStatus(request.status());
     target.setGymRole(request.gymRole());
     target.setPermissions(request.permissions());
 
     return membershipMapper.toResponse(membershipRepository.save(target));
+  }
+
+  /**
+   * Transfers the holder role of a gym to another active member.
+   *
+   * <p>The target becomes OWNER (physical gym) or PROGRAMMER (virtual gym); the former holder, if
+   * any, becomes COACH (physical) or ATHLETE (virtual). Both lose their explicit permissions.
+   *
+   * @param gymId The gym whose holder changes.
+   * @param membershipId The membership of the new holder.
+   * @return The updated memberships (former holder first, when there is one; then the new holder).
+   * @throws ResourceNotFoundException If the gym or the membership does not exist.
+   * @throws BusinessRuleException If the target is not an active member of this gym, or already
+   *     holds it.
+   */
+  @Transactional
+  public List<MembershipResponse> transferOwnership(Long gymId, Long membershipId) {
+    Gym gym =
+        gymRepository
+            .findById(gymId)
+            .orElseThrow(() -> new ResourceNotFoundException("error.gym.not.found", gymId));
+    Membership target =
+        membershipRepository
+            .findById(membershipId)
+            .orElseThrow(
+                () -> new ResourceNotFoundException("error.membership.not.found", membershipId));
+
+    if (!gymId.equals(target.getGymId()) || target.getStatus() != MembershipStatus.ACTIVE) {
+      throw new BusinessRuleException("error.membership.transfer.target.invalid");
+    }
+    if (target.getGymRole().isHolder()) {
+      throw new BusinessRuleException("error.membership.transfer.target.holder");
+    }
+
+    List<Membership> updated = new ArrayList<>();
+    for (Membership former : membershipRepository.findHoldersByGymId(gymId)) {
+      former.setGymRole(gym.formerHolderRole());
+      former.setPermissions(new HashSet<>());
+      // Flush before promoting: the unique holder index allows one holder per gym at any time
+      updated.add(membershipRepository.saveAndFlush(former));
+    }
+
+    target.setGymRole(gym.holderRole());
+    target.setPermissions(new HashSet<>());
+    updated.add(membershipRepository.saveAndFlush(target));
+
+    log.info(
+        "Gym {} ownership transferred to membership {} (userId={})",
+        gymId,
+        membershipId,
+        target.getUserId());
+
+    return updated.stream().map(membershipMapper::toResponse).toList();
   }
 
   /**

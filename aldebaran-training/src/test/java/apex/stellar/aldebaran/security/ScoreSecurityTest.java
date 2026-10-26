@@ -13,12 +13,16 @@ import apex.stellar.aldebaran.model.entities.Wod;
 import apex.stellar.aldebaran.repository.ScoreRepository;
 import apex.stellar.aldebaran.repository.WodRepository;
 import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -26,7 +30,7 @@ class ScoreSecurityTest {
 
   @Mock private ScoreRepository scoreRepository;
   @Mock private WodRepository wodRepository;
-  @Mock private SecurityService securityService;
+  @Spy private SecurityService securityService;
   @InjectMocks private ScoreSecurity scoreSecurity;
 
   // --- canView Checks ---
@@ -35,7 +39,7 @@ class ScoreSecurityTest {
   @DisplayName("canView: Admin is always allowed")
   void canView_Admin_ReturnsTrue() {
     AldebaranUserPrincipal admin =
-        new AldebaranUserPrincipal(1L, null, "ADMIN", Collections.emptyList());
+        TestPrincipals.of(1L, null, "ADMIN", Collections.emptyList());
     when(securityService.isAdmin(admin)).thenReturn(true);
 
     boolean result = scoreSecurity.canView(10L, admin);
@@ -48,7 +52,7 @@ class ScoreSecurityTest {
   @DisplayName("canView: Returns true if Score not found (delegates 404 to service)")
   void canView_NotFound_ReturnsTrue() {
     AldebaranUserPrincipal user =
-        new AldebaranUserPrincipal(2L, 100L, "USER", Collections.emptyList());
+        TestPrincipals.of(2L, 100L, "USER", Collections.emptyList());
     when(securityService.isAdmin(user)).thenReturn(false);
     when(scoreRepository.findById(10L)).thenReturn(Optional.empty());
 
@@ -61,7 +65,7 @@ class ScoreSecurityTest {
   @DisplayName("canView: User can view their own score")
   void canView_MyScore_ReturnsTrue() {
     AldebaranUserPrincipal user =
-        new AldebaranUserPrincipal(2L, 100L, "USER", Collections.emptyList());
+        TestPrincipals.of(2L, 100L, "USER", Collections.emptyList());
     Score score = Score.builder().id(10L).userId(2L).build(); // Same ID
 
     when(securityService.isAdmin(user)).thenReturn(false);
@@ -76,7 +80,7 @@ class ScoreSecurityTest {
   @DisplayName("canView: User can view other's score on Public WOD")
   void canView_PublicWod_OtherScore_ReturnsTrue() {
     AldebaranUserPrincipal user =
-        new AldebaranUserPrincipal(2L, 100L, "USER", Collections.emptyList());
+        TestPrincipals.of(2L, 100L, "USER", Collections.emptyList());
     Wod publicWod = Wod.builder().isPublic(true).build();
     Score score = Score.builder().id(10L).userId(99L).wod(publicWod).build();
 
@@ -92,7 +96,7 @@ class ScoreSecurityTest {
   @DisplayName("canView: User can view other's score on same Gym WOD")
   void canView_GymWod_SameGym_ReturnsTrue() {
     AldebaranUserPrincipal user =
-        new AldebaranUserPrincipal(2L, 100L, "USER", Collections.emptyList());
+        TestPrincipals.of(2L, 100L, "USER", Collections.emptyList());
     Wod gymWod = Wod.builder().isPublic(false).gymId(100L).build();
     Score score = Score.builder().id(10L).userId(99L).wod(gymWod).build();
 
@@ -108,7 +112,7 @@ class ScoreSecurityTest {
   @DisplayName("canView: User denied viewing score from different Gym")
   void canView_GymWod_DiffGym_ReturnsFalse() {
     AldebaranUserPrincipal user =
-        new AldebaranUserPrincipal(2L, 100L, "USER", Collections.emptyList());
+        TestPrincipals.of(2L, 100L, "USER", Collections.emptyList());
     Wod gymWod = Wod.builder().isPublic(false).gymId(200L).build(); // Diff Gym
     Score score = Score.builder().id(10L).userId(99L).wod(gymWod).build();
 
@@ -124,7 +128,7 @@ class ScoreSecurityTest {
   @DisplayName("canView: User denied viewing other's score on Private WOD")
   void canView_PrivateWod_OtherScore_ReturnsFalse() {
     AldebaranUserPrincipal user =
-        new AldebaranUserPrincipal(2L, 100L, "USER", Collections.emptyList());
+        TestPrincipals.of(2L, 100L, "USER", Collections.emptyList());
     Wod privateWod = Wod.builder().isPublic(false).gymId(null).authorId(99L).build();
     Score score = Score.builder().id(10L).userId(99L).wod(privateWod).build();
 
@@ -142,7 +146,7 @@ class ScoreSecurityTest {
   @DisplayName("canCreate: Admin is always allowed")
   void canCreate_Admin_ReturnsTrue() {
     AldebaranUserPrincipal admin =
-        new AldebaranUserPrincipal(1L, null, "ADMIN", Collections.emptyList());
+        TestPrincipals.of(1L, null, "ADMIN", Collections.emptyList());
     ScoreRequest request =
         new ScoreRequest(
             null, null, 1L, 0, 0, null, null, null, null, null, null, null, null, null, false, null,
@@ -157,7 +161,7 @@ class ScoreSecurityTest {
   @DisplayName("canCreate: Self-Log allowed on Public WOD")
   void canCreate_Self_Public_ReturnsTrue() {
     AldebaranUserPrincipal user =
-        new AldebaranUserPrincipal(2L, 100L, "USER", Collections.emptyList());
+        TestPrincipals.of(2L, 100L, "USER", Collections.emptyList());
     ScoreRequest request =
         new ScoreRequest(
             2L, null, 1L, 0, 0, null, null, null, null, null, null, null, null, null, false, null,
@@ -174,7 +178,7 @@ class ScoreSecurityTest {
   @DisplayName("canCreate: Self-Log allowed on Gym WOD (Same Gym)")
   void canCreate_Self_GymWod_SameGym_ReturnsTrue() {
     AldebaranUserPrincipal user =
-        new AldebaranUserPrincipal(2L, 100L, "USER", Collections.emptyList());
+        TestPrincipals.of(2L, 100L, "USER", Collections.emptyList());
     ScoreRequest request =
         new ScoreRequest(
             null, null, 1L, 0, 0, null, null, null, null, null, null, null, null, null, false, null,
@@ -191,7 +195,7 @@ class ScoreSecurityTest {
   @DisplayName("canCreate: Self-Log denied on Gym WOD (Diff Gym)")
   void canCreate_Self_GymWod_DiffGym_ReturnsFalse() {
     AldebaranUserPrincipal user =
-        new AldebaranUserPrincipal(2L, 100L, "USER", Collections.emptyList());
+        TestPrincipals.of(2L, 100L, "USER", Collections.emptyList());
     ScoreRequest request =
         new ScoreRequest(
             2L, null, 1L, 0, 0, null, null, null, null, null, null, null, null, null, false, null,
@@ -208,7 +212,7 @@ class ScoreSecurityTest {
   @DisplayName("canCreate: Self-Log allowed on Private WOD (Author)")
   void canCreate_Self_PrivateWod_Author_ReturnsTrue() {
     AldebaranUserPrincipal user =
-        new AldebaranUserPrincipal(2L, 100L, "USER", Collections.emptyList());
+        TestPrincipals.of(2L, 100L, "USER", Collections.emptyList());
     ScoreRequest request =
         new ScoreRequest(
             2L, null, 1L, 0, 0, null, null, null, null, null, null, null, null, null, false, null,
@@ -225,7 +229,7 @@ class ScoreSecurityTest {
   @DisplayName("canCreate: Self-Log denied on Private WOD (Not Author)")
   void canCreate_Self_PrivateWod_NotAuthor_ReturnsFalse() {
     AldebaranUserPrincipal user =
-        new AldebaranUserPrincipal(2L, 100L, "USER", Collections.emptyList());
+        TestPrincipals.of(2L, 100L, "USER", Collections.emptyList());
     ScoreRequest request =
         new ScoreRequest(
             2L, null, 1L, 0, 0, null, null, null, null, null, null, null, null, null, false, null,
@@ -242,7 +246,7 @@ class ScoreSecurityTest {
   @DisplayName("canCreate: Staff allowed to log for others in Same Gym")
   void canCreate_Staff_LogForOther_ReturnsTrue() {
     AldebaranUserPrincipal coach =
-        new AldebaranUserPrincipal(2L, 100L, "COACH", Collections.emptyList());
+        TestPrincipals.of(2L, 100L, "COACH", List.of("SCORE_VERIFY"));
     ScoreRequest request =
         new ScoreRequest(
             99L, null, 1L, 0, 0, null, null, null, null, null, null, null, null, null, false, null,
@@ -251,7 +255,6 @@ class ScoreSecurityTest {
 
     when(securityService.isAdmin(coach)).thenReturn(false);
     when(wodRepository.findById(1L)).thenReturn(Optional.of(gymWod));
-    when(securityService.hasScoreVerificationRights(coach)).thenReturn(true);
 
     assertTrue(scoreSecurity.canCreate(request, coach));
   }
@@ -260,7 +263,7 @@ class ScoreSecurityTest {
   @DisplayName("canCreate: Staff denied logging for others if no verification rights")
   void canCreate_Staff_NoRights_ReturnsFalse() {
     AldebaranUserPrincipal user =
-        new AldebaranUserPrincipal(2L, 100L, "USER", Collections.emptyList());
+        TestPrincipals.of(2L, 100L, "USER", Collections.emptyList());
     ScoreRequest request =
         new ScoreRequest(
             99L, null, 1L, 0, 0, null, null, null, null, null, null, null, null, null, false, null,
@@ -269,7 +272,6 @@ class ScoreSecurityTest {
 
     when(securityService.isAdmin(user)).thenReturn(false);
     when(wodRepository.findById(1L)).thenReturn(Optional.of(gymWod));
-    when(securityService.hasScoreVerificationRights(user)).thenReturn(false);
 
     assertFalse(scoreSecurity.canCreate(request, user));
   }
@@ -278,7 +280,7 @@ class ScoreSecurityTest {
   @DisplayName("canCreate: Owner denied logging for others in Different Gym")
   void canCreate_Owner_DiffGym_ReturnsFalse() {
     AldebaranUserPrincipal owner =
-        new AldebaranUserPrincipal(2L, 100L, "OWNER", Collections.emptyList());
+        TestPrincipals.of(2L, 100L, "OWNER", Collections.emptyList());
     ScoreRequest request =
         new ScoreRequest(
             99L, null, 1L, 0, 0, null, null, null, null, null, null, null, null, null, false, null,
@@ -298,7 +300,7 @@ class ScoreSecurityTest {
   @DisplayName("canModify: Admin is always allowed")
   void canModify_Admin_ReturnsTrue() {
     AldebaranUserPrincipal admin =
-        new AldebaranUserPrincipal(1L, null, "ADMIN", Collections.emptyList());
+        TestPrincipals.of(1L, null, "ADMIN", Collections.emptyList());
     when(securityService.isAdmin(admin)).thenReturn(true);
 
     assertTrue(scoreSecurity.canModify(10L, admin));
@@ -308,7 +310,7 @@ class ScoreSecurityTest {
   @DisplayName("canModify: Returns true if Score not found (delegates 404)")
   void canModify_NotFound_ReturnsTrue() {
     AldebaranUserPrincipal user =
-        new AldebaranUserPrincipal(2L, 100L, "USER", Collections.emptyList());
+        TestPrincipals.of(2L, 100L, "USER", Collections.emptyList());
     when(securityService.isAdmin(user)).thenReturn(false);
     when(scoreRepository.findById(10L)).thenReturn(Optional.empty());
 
@@ -319,7 +321,7 @@ class ScoreSecurityTest {
   @DisplayName("canModify: User allowed to modify their own score")
   void canModify_Self_ReturnsTrue() {
     AldebaranUserPrincipal user =
-        new AldebaranUserPrincipal(2L, 100L, "USER", Collections.emptyList());
+        TestPrincipals.of(2L, 100L, "USER", Collections.emptyList());
     Score score = Score.builder().id(10L).userId(2L).build();
 
     when(securityService.isAdmin(user)).thenReturn(false);
@@ -332,13 +334,12 @@ class ScoreSecurityTest {
   @DisplayName("canModify: Staff allowed to modify other's score in Same Gym")
   void canModify_Staff_SameGym_ReturnsTrue() {
     AldebaranUserPrincipal coach =
-        new AldebaranUserPrincipal(2L, 100L, "COACH", Collections.emptyList());
+        TestPrincipals.of(2L, 100L, "COACH", List.of("SCORE_VERIFY"));
     Wod gymWod = Wod.builder().gymId(100L).build();
     Score score = Score.builder().id(10L).userId(99L).wod(gymWod).build();
 
     when(securityService.isAdmin(coach)).thenReturn(false);
     when(scoreRepository.findById(10L)).thenReturn(Optional.of(score));
-    when(securityService.hasScoreVerificationRights(coach)).thenReturn(true);
 
     assertTrue(scoreSecurity.canModify(10L, coach));
   }
@@ -347,7 +348,7 @@ class ScoreSecurityTest {
   @DisplayName("canModify: Staff denied modifying score in Different Gym")
   void canModify_Staff_DiffGym_ReturnsFalse() {
     AldebaranUserPrincipal owner =
-        new AldebaranUserPrincipal(2L, 100L, "OWNER", Collections.emptyList());
+        TestPrincipals.of(2L, 100L, "OWNER", Collections.emptyList());
     Wod gymWod = Wod.builder().gymId(200L).build(); // Different Gym
     Score score = Score.builder().id(10L).userId(99L).wod(gymWod).build();
 
@@ -361,7 +362,7 @@ class ScoreSecurityTest {
   @DisplayName("canModify: Staff denied modifying score if no gym context (Private/Public WOD)")
   void canModify_Staff_NoGymContext_ReturnsFalse() {
     AldebaranUserPrincipal coach =
-        new AldebaranUserPrincipal(2L, 100L, "COACH", Collections.emptyList());
+        TestPrincipals.of(2L, 100L, "COACH", Collections.emptyList());
     Wod publicWod = Wod.builder().gymId(null).isPublic(true).build();
     Score score = Score.builder().id(10L).userId(99L).wod(publicWod).build();
 
@@ -369,5 +370,72 @@ class ScoreSecurityTest {
     when(scoreRepository.findById(10L)).thenReturn(Optional.of(score));
 
     assertFalse(scoreSecurity.canModify(10L, coach));
+  }
+
+  // --- Per-gym rights (multi-gym) ---
+
+  /** Coach with SCORE_VERIFY in gym 100, athlete in gym 300. */
+  private static AldebaranUserPrincipal coachInAAthleteInB() {
+    return TestPrincipals.withMemberships(
+        2L,
+        Map.of(
+            100L, new GymAccess("COACH", Set.of("SCORE_VERIFY")),
+            300L, new GymAccess("ATHLETE", Set.of())));
+  }
+
+  private static ScoreRequest requestFor(Long userId) {
+    return new ScoreRequest(
+        userId, null, 1L, 0, 0, null, null, null, null, null, null, null, null, null, false, null,
+        null);
+  }
+
+  @Test
+  @DisplayName("canView: Scores of WODs in both member gyms are visible, outsider gym hidden")
+  void canView_MultiGym() {
+    AldebaranUserPrincipal user = coachInAAthleteInB();
+    for (long gymId : new long[] {100L, 300L, 999L}) {
+      Wod wod = Wod.builder().isPublic(false).gymId(gymId).build();
+      when(scoreRepository.findById(gymId))
+          .thenReturn(Optional.of(Score.builder().id(gymId).userId(99L).wod(wod).build()));
+    }
+
+    assertTrue(scoreSecurity.canView(100L, user));
+    assertTrue(scoreSecurity.canView(300L, user));
+    assertFalse(scoreSecurity.canView(999L, user));
+  }
+
+  @Test
+  @DisplayName("canCreate: Self-logging allowed in any member gym, refused for outsiders")
+  void canCreate_Self_MultiGym() {
+    AldebaranUserPrincipal user = coachInAAthleteInB();
+    when(wodRepository.findById(1L))
+        .thenReturn(Optional.of(Wod.builder().isPublic(false).gymId(300L).build()));
+
+    assertTrue(scoreSecurity.canCreate(requestFor(null), user));
+
+    when(wodRepository.findById(1L))
+        .thenReturn(Optional.of(Wod.builder().isPublic(false).gymId(999L).build()));
+
+    assertFalse(scoreSecurity.canCreate(requestFor(null), user));
+  }
+
+  @Test
+  @DisplayName("canCreate/canModify: Staff rights checked on the WOD's gym (SCORE_VERIFY)")
+  void staffRights_PerGym() {
+    AldebaranUserPrincipal coach = coachInAAthleteInB();
+    Wod wodA = Wod.builder().gymId(100L).build();
+    Wod wodB = Wod.builder().gymId(300L).build();
+
+    when(wodRepository.findById(1L)).thenReturn(Optional.of(wodA));
+    assertTrue(scoreSecurity.canCreate(requestFor(99L), coach));
+    when(wodRepository.findById(1L)).thenReturn(Optional.of(wodB));
+    assertFalse(scoreSecurity.canCreate(requestFor(99L), coach));
+
+    when(scoreRepository.findById(10L))
+        .thenReturn(Optional.of(Score.builder().id(10L).userId(99L).wod(wodA).build()));
+    when(scoreRepository.findById(11L))
+        .thenReturn(Optional.of(Score.builder().id(11L).userId(99L).wod(wodB).build()));
+    assertTrue(scoreSecurity.canModify(10L, coach));
+    assertFalse(scoreSecurity.canModify(11L, coach));
   }
 }

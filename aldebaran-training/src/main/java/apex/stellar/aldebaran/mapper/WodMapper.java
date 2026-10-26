@@ -47,6 +47,7 @@ public interface WodMapper {
    * @return The complete WOD definition.
    */
   @Mapping(target = "isPublic", source = "public")
+  @Mapping(target = "capabilities", ignore = true) // User-dependent, computed per request
   WodResponse toResponse(Wod wod);
 
   /**
@@ -55,6 +56,7 @@ public interface WodMapper {
    * @param projection The WodSummary projection containing the source data.
    * @return A WodSummaryResponse DTO with mapped fields for lightweight WOD representation.
    */
+  @Mapping(target = "isPublic", source = "public")
   WodSummaryResponse toSummary(WodSummary projection);
 
   /**

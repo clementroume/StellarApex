@@ -31,7 +31,9 @@
   },
   "NAVBAR": {
     "DASHBOARD": "Dashboard",
+    "WODS": "WODs",
     "MUSCLES": "Muscles",
+    "SUPPORT": "Support",
     "MOVEMENTS": "Movement",
     "MY_ACCOUNT": "My Account",
     "LOG_OUT": "Log out",
@@ -60,7 +62,12 @@
   },
   "PROFILE": {
     "TITLE": "My information",
-    "SUCCESS_UPDATE": "Your profile has been updated successfully!"
+    "SUCCESS_UPDATE": "Your profile has been updated successfully!",
+    "GYMS": {
+      "TITLE": "My gyms",
+      "NO_PERMISSION": "No specific permission in this gym.",
+      "NONE": "You are not a member of any gym."
+    }
   },
   "SETTINGS": {
     "TITLE": "Security",
@@ -367,6 +374,87 @@
     }
   },
   "WOD": {
+    "TITLE": "WOD Catalog",
+    "TITLES": {
+      "ADD": "Create a WOD",
+      "EDIT": "Edit WOD"
+    },
+    "ACTIONS": {
+      "ADD": "Create a WOD",
+      "SEARCH": "Search a WOD...",
+      "ALL_TYPES": "All",
+      "LOAD_MORE": "Load more",
+      "SELECT_TYPE": "Select a type...",
+      "SELECT_SCORE_TYPE": "Select a score type...",
+      "ADD_MOVEMENT": "Add a movement",
+      "MOVE_UP": "Move up",
+      "MOVE_DOWN": "Move down",
+      "ADD_FOR_GYM": "Create a WOD for {{gym}}",
+      "ADD_PERSONAL": "Create a personal WOD"
+    },
+    "SCOPES": {
+      "ALL": "All",
+      "MINE": "My WODs",
+      "PUBLIC": "Public"
+    },
+    "ADMIN_FILTERS": {
+      "GYM": "Gym",
+      "ALL_GYMS": "All gyms",
+      "ATHLETE": "Athlete",
+      "ALL_ATHLETES": "All athletes (personal WODs)"
+    },
+    "SECTIONS": {
+      "BASIC": "General information",
+      "VISIBILITY": "Visibility",
+      "STRUCTURE": "Structure",
+      "DESCRIPTION": "Description & notes",
+      "MOVEMENTS": "Movements"
+    },
+    "FIELDS": {
+      "TITLE": "Title",
+      "WOD_TYPE": "WOD type",
+      "SCORE_TYPE": "Score type",
+      "REP_SCHEME": "Rep scheme",
+      "TIME_CAP": "Time cap",
+      "MINUTES": "Minutes",
+      "SECONDS": "Seconds",
+      "EMOM_INTERVAL": "EMOM interval",
+      "EMOM_ROUNDS": "Rounds",
+      "NOTES": "Notes",
+      "MOVEMENT": "Movement",
+      "REPS": "Reps",
+      "WEIGHT": "Load",
+      "DISTANCE": "Distance",
+      "DURATION": "Duration",
+      "CALORIES": "Calories",
+      "SCALING": "Scaling",
+      "GYM": "Gym"
+    },
+    "PLACEHOLDERS": {
+      "TITLE": "E.g. Fran",
+      "REP_SCHEME": "E.g. 21-15-9",
+      "DESCRIPTION": "WOD flow...",
+      "NOTES": "Instructions for the coach or athlete...",
+      "REPS": "E.g. 21-15-9"
+    },
+    "VISIBILITY": {
+      "PUBLIC": "Public",
+      "GYM": "My gym",
+      "PRIVATE": "Personal"
+    },
+    "MESSAGES": {
+      "EMPTY_LIST": "No WOD available yet.",
+      "EMPTY_LIST_SEARCH": "No WOD matches your search.",
+      "NOT_FOUND": "WOD not found.",
+      "SUCCESS_CREATE": "WOD created successfully.",
+      "SUCCESS_UPDATE": "WOD updated successfully.",
+      "LOCKED": "This WOD already has logged scores: it can no longer be edited or deleted.",
+      "FORBIDDEN": "You are not allowed to perform this action on this WOD.",
+      "MOVEMENTS_REQUIRED": "Add at least one movement.",
+      "NO_MOVEMENTS": "No prescribed movement.",
+      "LOCKED_BADGE": "Locked (scores logged)",
+      "OWNERSHIP_LOCKED": "The owner (personal or gym) of a WOD cannot be changed after creation."
+    },
     "WOD_TYPES": {
       "AMRAP": "AMRAP",
       "EMOM": "EMOM",
@@ -406,6 +494,73 @@
       "FEET": "ft",
       "YARDS": "yd",
       "MILES": "mi"
+    }
+  },
+  "ADMIN": {
+    "SUPPORT": {
+      "TITLE": "User support",
+      "INTRO": "Take over a user's account to reproduce a problem or act on their behalf. The session lasts 30 minutes, your admin session is kept and every action is audited.",
+      "SEARCH": "Search by name or email...",
+      "NO_RESULT": "No user found.",
+      "ADMIN_TARGET": "Admin (not eligible)",
+      "NO_MEMBERSHIP": "No gym",
+      "ACT_AS": "Act as {{name}}",
+      "REASON": "Reason for the intervention",
+      "REASON_PH": "E.g. bug reported by the gym on the WOD display",
+      "WARNING": "Your actions will be recorded as this user, with your admin identity in the audit log.",
+      "START": "Start session",
+      "STARTED": "Support session started: you are acting as {{name}}.",
+      "BANNER": "Support session: you are acting as {{name}} (admin: {{actor}})",
+      "REMAINING": "Time left: {{time}}",
+      "END": "End",
+      "EXPIRED": "The support session expired: you are back on your admin account.",
+      "ACCOUNT_LOCKED": "During a support session, the password and account deletion cannot be changed, and language and theme only apply to your screen: they are not saved to the user's account.",
+      "RECENT": "Recently acted as",
+      "SEARCH_MIN": "Type at least 2 characters to search.",
+      "FILTER_GYM": "Filter by gym",
+      "ALL_GYMS": "All gyms",
+      "FILTER_ROLE": "Role",
+      "FILTER_STATUS": "Status",
+      "ALL": "All",
+      "LOAD_MORE": "Load more"
+    }
+  },
+  "GYM": {
+    "ROLES": {
+      "OWNER": "Owner",
+      "PROGRAMMER": "Programmer",
+      "COACH": "Coach",
+      "ATHLETE": "Athlete"
+    },
+    "STATUS": {
+      "ACTIVE": "Active",
+      "PENDING": "Pending",
+      "INACTIVE": "Inactive",
+      "BANNED": "Banned"
+    },
+    "GYM_STATUS": {
+      "ACTIVE": "Active gym",
+      "PENDING_APPROVAL": "Gym awaiting approval",
+      "REJECTED": "Gym rejected",
+      "SUSPENDED": "Gym suspended"
+    },
+    "PERMISSIONS": {
+      "WOD_WRITE": {
+        "LABEL": "Programming",
+        "DESCRIPTION": "Can create, edit and delete the gym's WODs."
+      },
+      "SCORE_VERIFY": {
+        "LABEL": "Score verification",
+        "DESCRIPTION": "Can enter, correct and verify the scores of the gym's athletes."
+      },
+      "MANAGE_MEMBERSHIPS": {
+        "LABEL": "Member management",
+        "DESCRIPTION": "Can approve registrations and manage athletes' status."
+      },
+      "MANAGE_SETTINGS": {
+        "LABEL": "Gym settings",
+        "DESCRIPTION": "Can change the gym settings (enrollment code, automatic registration)."
+      }
     }
   }
 }

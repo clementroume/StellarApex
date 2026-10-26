@@ -4,6 +4,7 @@ import apex.stellar.antares.model.PlatformRole;
 import apex.stellar.antares.model.User;
 import apex.stellar.antares.repository.jpa.UserRepository;
 import apex.stellar.antares.service.AuthenticationService;
+import java.time.Clock;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.NonNull;
@@ -145,6 +146,16 @@ public class ApplicationConfig {
         log.info("Default admin user created with email: {}", adminEmail);
       }
     };
+  }
+
+  /**
+   * System UTC clock, injectable so time-based rules (support sessions) can be tested.
+   *
+   * @return The clock.
+   */
+  @Bean
+  public Clock clock() {
+    return Clock.systemUTC();
   }
 
   /**

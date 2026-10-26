@@ -10,11 +10,15 @@ import {authInterceptor} from './core/interceptors/auth.interceptor';
 import {loadingInterceptor} from './core/interceptors/loading.interceptor';
 import {provideIcons} from '@ng-icons/core';
 import {
+  heroArrowDown,
   heroArrowLeft,
   heroArrowRightOnRectangle,
+  heroArrowUp,
   heroBars3,
+  heroBuildingOffice,
   heroChevronDown,
   heroChevronRight,
+  heroClock,
   heroCog8Tooth,
   heroDocumentArrowDown,
   heroEnvelope,
@@ -22,6 +26,8 @@ import {
   heroEye,
   heroGlobeAlt,
   heroKey,
+  heroLifebuoy,
+  heroLockClosed,
   heroMagnifyingGlass,
   heroMoon,
   heroPencilSquare,
@@ -32,6 +38,7 @@ import {
   heroUser,
   heroVideoCamera,
   heroVideoCameraSlash,
+  heroXMark,
 } from '@ng-icons/heroicons/outline';
 import {
   hugeBodyPartMuscle,
@@ -76,7 +83,14 @@ export const APP_ICONS = {
   hugeCardiogram02,
   hugeDumbbell01,
   hugeBodyPartSixPack,
-  heroVideoCameraSlash
+  heroVideoCameraSlash,
+  heroArrowUp,
+  heroArrowDown,
+  heroClock,
+  heroBuildingOffice,
+  heroLockClosed,
+  heroLifebuoy,
+  heroXMark
 };
 
 export const appConfig: ApplicationConfig = {

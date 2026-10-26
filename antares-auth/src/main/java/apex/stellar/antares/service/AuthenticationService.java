@@ -33,6 +33,7 @@ public class AuthenticationService {
   private final RefreshTokenService refreshTokenService;
   private final CookieService cookieService;
   private final LoginAttemptService loginAttemptService;
+  private final SupportSessionService supportSessionService;
 
   /**
    * Registers a new user and issues JWT tokens.
@@ -127,7 +128,8 @@ public class AuthenticationService {
   }
 
   /**
-   * Logs out the user by deleting their refresh token from Redis and clearing cookies.
+   * Logs out the user by deleting their refresh token from Redis, ending any active support session
+   * they started, and clearing cookies.
    *
    * @param currentUser The currently authenticated user.
    * @param response The HTTP response to clear cookies.
@@ -135,6 +137,7 @@ public class AuthenticationService {
   public void logout(User currentUser, HttpServletResponse response) {
 
     refreshTokenService.deleteTokenForUser(currentUser);
+    supportSessionService.endActiveSessions(currentUser, response);
     cookieService.clearCookie(jwtService.getAccessTokenCookieName(), response);
     cookieService.clearCookie(jwtService.getRefreshTokenCookieName(), response);
   }
@@ -163,24 +166,5 @@ public class AuthenticationService {
         response);
 
     return accessToken;
-  }
-
-  /**
-   * Impersonates a user by issuing tokens for the specified user ID.
-   *
-   * @param userId The ID of the user to impersonate.
-   * @param response The HTTP response to set cookies.
-   * @return UserResponse containing the impersonated user's details.
-   * @throws ResourceNotFoundException if the user ID does not exist.
-   */
-  @Transactional
-  public UserResponse impersonate(Long userId, HttpServletResponse response) {
-    User user =
-        repository
-            .findById(userId)
-            .orElseThrow(() -> new ResourceNotFoundException("error.user.not.found", userId));
-
-    issueTokensAndSetCookies(user, response);
-    return userMapper.toUserResponse(user);
   }
 }

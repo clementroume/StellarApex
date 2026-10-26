@@ -1,17 +1,13 @@
 import {inject} from '@angular/core';
 import {CanActivateFn, Router} from '@angular/router';
-import {AuthService} from '../../api/antares/services/auth.service';
+import {AccessService} from '../services/access.service';
 
 export const adminGuard: CanActivateFn = () => {
-  const authService = inject(AuthService);
-  const router = inject(Router);
-  const user = authService.currentUser();
-
-  if (user?.platformRole === 'ADMIN') {
+  if (inject(AccessService).isAdmin()) {
     return true;
   }
 
   // Redirection silencieuse si un utilisateur malin tape l'URL à la main
-  void router.navigate(['/dashboard']);
+  void inject(Router).navigate(['/dashboard']);
   return false;
 };

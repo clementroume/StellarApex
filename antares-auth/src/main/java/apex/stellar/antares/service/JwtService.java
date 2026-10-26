@@ -32,6 +32,18 @@ import org.springframework.web.util.WebUtils;
 @RequiredArgsConstructor
 public class JwtService {
 
+  /** Claim holding the acting admin id in a support token. */
+  public static final String CLAIM_ACTOR = "act";
+
+  /** Claim holding the support session id in a support token. */
+  public static final String CLAIM_SESSION_ID = "sid";
+
+  /** Claim holding the token type. */
+  public static final String CLAIM_TYPE = "typ";
+
+  /** Value of {@link #CLAIM_TYPE} for support tokens. */
+  public static final String SUPPORT_TOKEN_TYPE = "support";
+
   private final JwtProperties jwtProperties;
   private final JwtEncoder jwtEncoder;
 
@@ -100,6 +112,41 @@ public class JwtService {
             .subject(userDetails.getUsername())
             .id(UUID.randomUUID().toString())
             .claim("scope", scope)
+            .build();
+
+    JwtEncoderParameters parameters =
+        JwtEncoderParameters.from(JwsHeader.with(MacAlgorithm.HS256).build(), claims);
+
+    return jwtEncoder.encode(parameters).getTokenValue();
+  }
+
+  /**
+   * Generates the signed, never-refreshable token of a support session.
+   *
+   * <p>Claims: {@code sub} = target user id, {@code act} = admin id, {@code sid} = session id,
+   * {@code typ} = {@value #SUPPORT_TOKEN_TYPE}. Access tokens never carry that type, so neither
+   * token can be used in place of the other.
+   *
+   * @param targetUserId The user the admin acts as.
+   * @param adminId The acting admin.
+   * @param sessionId The persisted support session id.
+   * @param issuedAt Start of the session.
+   * @param expiresAt End of the session.
+   * @return The signed JWT string.
+   */
+  public String generateSupportToken(
+      Long targetUserId, Long adminId, Long sessionId, Instant issuedAt, Instant expiresAt) {
+    JwtClaimsSet claims =
+        JwtClaimsSet.builder()
+            .issuer(jwtProperties.issuer())
+            .audience(Collections.singletonList(jwtProperties.audience()))
+            .issuedAt(issuedAt)
+            .expiresAt(expiresAt)
+            .subject(String.valueOf(targetUserId))
+            .id(UUID.randomUUID().toString())
+            .claim(CLAIM_ACTOR, adminId)
+            .claim(CLAIM_SESSION_ID, sessionId)
+            .claim(CLAIM_TYPE, SUPPORT_TOKEN_TYPE)
             .build();
 
     JwtEncoderParameters parameters =

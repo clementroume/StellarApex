@@ -1,5 +1,7 @@
 import {MovementResponse} from './movement.model';
 
+export type WodScope = 'ALL' | 'MINE' | 'GYM' | 'PUBLIC';
+
 export interface WodSummaryResponse {
   id: number;
   title: string;
@@ -7,7 +9,26 @@ export interface WodSummaryResponse {
   scoreType: string;
   repScheme?: string;
   timeCapSeconds?: number;
+  authorId?: number;
+  gymId?: number;
+  isPublic: boolean;
   createdAt: string;
+}
+
+/** Values available to filter the WOD list, computed by Aldebaran with the list's security. */
+export interface WodFacets {
+  // WOD types present for the current filters (the type filter itself is ignored)
+  wodTypes: string[];
+  // Gyms owning readable WODs and authors of readable personal WODs (admin selectors)
+  gymIds: number[];
+  authorIds: number[];
+}
+
+/** Rights of the current user on a WOD, computed by Aldebaran (WodSecurity). */
+export interface WodCapabilities {
+  canModify: boolean;
+  // The WOD has logged scores: edition and deletion are refused
+  locked: boolean;
 }
 
 export interface WodRequest {
@@ -50,6 +71,8 @@ export interface WodResponse {
   repScheme?: string;
   modalities: string[];
   movements: WodMovementResponse[];
+  // --- Rights ---
+  capabilities?: WodCapabilities;
   // --- Audit ---
   createdAt: string;
   updatedAt: string;

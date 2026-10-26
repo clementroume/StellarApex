@@ -8,6 +8,7 @@ import apex.stellar.antares.dto.JoinGymRequest;
 import apex.stellar.antares.dto.MembershipResponse;
 import apex.stellar.antares.dto.MembershipSummary;
 import apex.stellar.antares.dto.MembershipUpdateRequest;
+import apex.stellar.antares.exception.BusinessRuleException;
 import apex.stellar.antares.exception.DataConflictException;
 import apex.stellar.antares.exception.ResourceNotFoundException;
 import apex.stellar.antares.mapper.MembershipMapper;
@@ -338,5 +339,134 @@ class MembershipServiceTest {
 
     // When / Then
     assertThrows(ResourceNotFoundException.class, () -> membershipService.deleteMembership(1L));
+  }
+
+  // --- Role rules by gym type ---
+
+  private Membership membershipIn(Gym gym, long id, GymRole role) {
+    Membership m = new Membership();
+    m.setId(id);
+    m.setGym(gym);
+    m.setGymRole(role);
+    m.setStatus(MembershipStatus.ACTIVE);
+    // Distinct users: Membership equality is (userId, gymId)
+    m.setUser(User.builder().id(id * 10).platformRole(PlatformRole.USER).build());
+    return m;
+  }
+
+  private User admin() {
+    User admin = new User();
+    admin.setPlatformRole(PlatformRole.ADMIN);
+    return admin;
+  }
+
+  @Test
+  @DisplayName("updateMembership: Role not allowed for the gym type should be rejected")
+  void updateMembership_RoleNotAllowed_ShouldBeRejected() {
+    Gym virtual = Gym.builder().id(1L).isProgramming(true).build();
+    Membership target = membershipIn(virtual, 2L, GymRole.ATHLETE);
+    when(membershipRepository.findById(2L)).thenReturn(Optional.of(target));
+
+    BusinessRuleException ex =
+        assertThrows(
+            BusinessRuleException.class,
+            () ->
+                membershipService.updateMembership(
+                    2L,
+                    new MembershipUpdateRequest(MembershipStatus.ACTIVE, GymRole.COACH, Set.of()),
+                    admin(),
+                    null));
+    assertEquals("error.membership.role.not.allowed", ex.getMessageKey());
+    verify(membershipRepository, never()).save(any());
+  }
+
+  @Test
+  @DisplayName("updateMembership: Assigning OWNER or changing the OWNER should be rejected")
+  void updateMembership_HolderRole_ShouldBeRejected() {
+    Gym box = Gym.builder().id(1L).isProgramming(false).build();
+    Membership athlete = membershipIn(box, 2L, GymRole.ATHLETE);
+    Membership owner = membershipIn(box, 3L, GymRole.OWNER);
+    when(membershipRepository.findById(2L)).thenReturn(Optional.of(athlete));
+    when(membershipRepository.findById(3L)).thenReturn(Optional.of(owner));
+
+    BusinessRuleException assign =
+        assertThrows(
+            BusinessRuleException.class,
+            () ->
+                membershipService.updateMembership(
+                    2L,
+                    new MembershipUpdateRequest(MembershipStatus.ACTIVE, GymRole.OWNER, Set.of()),
+                    admin(),
+                    null));
+    assertEquals("error.membership.role.holder.assign", assign.getMessageKey());
+
+    BusinessRuleException change =
+        assertThrows(
+            BusinessRuleException.class,
+            () ->
+                membershipService.updateMembership(
+                    3L,
+                    new MembershipUpdateRequest(MembershipStatus.ACTIVE, GymRole.COACH, Set.of()),
+                    admin(),
+                    null));
+    assertEquals("error.membership.role.holder.change", change.getMessageKey());
+  }
+
+  @Test
+  @DisplayName("transferOwnership: Physical gym should swap OWNER and COACH, clearing permissions")
+  void transferOwnership_Physical_ShouldSwapRoles() {
+    Gym box = Gym.builder().id(1L).isProgramming(false).build();
+    Membership owner = membershipIn(box, 2L, GymRole.OWNER);
+    Membership coach = membershipIn(box, 3L, GymRole.COACH);
+    coach.setPermissions(Set.of(Permission.WOD_WRITE));
+    when(gymRepository.findById(1L)).thenReturn(Optional.of(box));
+    when(membershipRepository.findById(3L)).thenReturn(Optional.of(coach));
+    when(membershipRepository.findHoldersByGymId(1L)).thenReturn(List.of(owner));
+    when(membershipRepository.saveAndFlush(any())).thenAnswer(i -> i.getArgument(0));
+
+    List<MembershipResponse> result = membershipService.transferOwnership(1L, 3L);
+
+    assertEquals(2, result.size());
+    assertEquals(GymRole.COACH, owner.getGymRole());
+    assertEquals(GymRole.OWNER, coach.getGymRole());
+    assertTrue(coach.getPermissions().isEmpty());
+    // The former holder is demoted (and flushed) before the new one is promoted
+    var order = inOrder(membershipRepository);
+    order.verify(membershipRepository).saveAndFlush(owner);
+    order.verify(membershipRepository).saveAndFlush(coach);
+  }
+
+  @Test
+  @DisplayName("transferOwnership: Virtual gym demotes PROGRAMMER to ATHLETE")
+  void transferOwnership_Virtual_ShouldDemoteToAthlete() {
+    Gym track = Gym.builder().id(1L).isProgramming(true).build();
+    Membership programmer = membershipIn(track, 2L, GymRole.PROGRAMMER);
+    Membership athlete = membershipIn(track, 3L, GymRole.ATHLETE);
+    when(gymRepository.findById(1L)).thenReturn(Optional.of(track));
+    when(membershipRepository.findById(3L)).thenReturn(Optional.of(athlete));
+    when(membershipRepository.findHoldersByGymId(1L)).thenReturn(List.of(programmer));
+    when(membershipRepository.saveAndFlush(any())).thenAnswer(i -> i.getArgument(0));
+
+    membershipService.transferOwnership(1L, 3L);
+
+    assertEquals(GymRole.ATHLETE, programmer.getGymRole());
+    assertEquals(GymRole.PROGRAMMER, athlete.getGymRole());
+  }
+
+  @Test
+  @DisplayName("transferOwnership: Pending or foreign member should be rejected")
+  void transferOwnership_InvalidTarget_ShouldBeRejected() {
+    Gym box = Gym.builder().id(1L).build();
+    Gym other = Gym.builder().id(9L).build();
+    Membership pending = membershipIn(box, 3L, GymRole.ATHLETE);
+    pending.setStatus(MembershipStatus.PENDING);
+    Membership foreign = membershipIn(other, 4L, GymRole.ATHLETE);
+    when(gymRepository.findById(1L)).thenReturn(Optional.of(box));
+    when(membershipRepository.findById(3L)).thenReturn(Optional.of(pending));
+    when(membershipRepository.findById(4L)).thenReturn(Optional.of(foreign));
+
+    assertThrows(BusinessRuleException.class, () -> membershipService.transferOwnership(1L, 3L));
+    assertThrows(BusinessRuleException.class, () -> membershipService.transferOwnership(1L, 4L));
+    verify(membershipRepository, never()).saveAndFlush(any());
   }
 }

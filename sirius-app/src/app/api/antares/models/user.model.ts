@@ -21,6 +21,21 @@ export interface UserResponse {
   locale: string;
   theme: Theme;
   createdAt: string;
+  // Set when a platform admin is acting as this user through a support session
+  supportSession?: SupportSessionInfo | null;
+}
+
+export interface SupportActor {
+  id: number;
+  firstName: string;
+  lastName: string;
+}
+
+export interface SupportSessionInfo {
+  id: number;
+  actor: SupportActor;
+  reason: string;
+  expiresAt: string;
 }
 
 export interface ProfileUpdateRequest {

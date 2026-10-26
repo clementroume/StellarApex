@@ -5,6 +5,7 @@ import {HttpTestingController, provideHttpClientTesting} from '@angular/common/h
 import {HttpClient, HttpErrorResponse, provideHttpClient, withInterceptors, withXhr} from '@angular/common/http';
 import {authInterceptor} from './auth.interceptor';
 import {AuthService} from '../../api/antares/services/auth.service';
+import {SupportSessionService} from '../services/support-session.service';
 import {Router} from '@angular/router';
 import {of, throwError} from 'rxjs';
 import {environment} from '../../../environments/environment';
@@ -14,13 +15,16 @@ describe('authInterceptor', () => {
   let httpClient: HttpClient;
   let authServiceSpy: MockedObject<AuthService>;
   let routerSpy: MockedObject<Router>;
+  let supportSessionSpy: {handleExpired: ReturnType<typeof vi.fn>};
   const baseApiUrl = `${environment.authUrl}`;
 
   beforeEach(() => {
     authServiceSpy = {
       refreshToken: vi.fn().mockName("AuthService.refreshToken"),
-      logout: vi.fn().mockName("AuthService.logout")
+      logout: vi.fn().mockName("AuthService.logout"),
+      isAuthenticated: vi.fn().mockName("AuthService.isAuthenticated").mockReturnValue(true)
     } as any;
+    supportSessionSpy = {handleExpired: vi.fn().mockName('SupportSessionService.handleExpired')};
     routerSpy = {
       navigate: vi.fn().mockName("Router.navigate")
     } as any;
@@ -31,6 +35,7 @@ describe('authInterceptor', () => {
         provideHttpClientTesting(),
         {provide: AuthService, useValue: authServiceSpy},
         {provide: Router, useValue: routerSpy},
+        {provide: SupportSessionService, useValue: supportSessionSpy},
       ],
     });
 
@@ -68,6 +73,18 @@ describe('authInterceptor', () => {
     expect(authServiceSpy.refreshToken).not.toHaveBeenCalled();
   });
 
+  it('should reset an expired support session instead of refreshing into the admin identity', () => {
+    let status = 0;
+    httpClient.get(`${environment.trainingUrl}/wods`).subscribe({error: (err: HttpErrorResponse) => status = err.status});
+
+    httpMock.expectOne(`${environment.trainingUrl}/wods`)
+      .flush({code: 'SUPPORT_SESSION_EXPIRED'}, {status: 401, statusText: 'Unauthorized'});
+
+    expect(status).toBe(401);
+    expect(supportSessionSpy.handleExpired).toHaveBeenCalled();
+    expect(authServiceSpy.refreshToken).not.toHaveBeenCalled();
+  });
+
   it('should retry the original request after a successful token refresh', () => {
     authServiceSpy.refreshToken.mockReturnValue(of({accessToken: 'new-token'}));
 
@@ -100,5 +117,23 @@ describe('authInterceptor', () => {
 
     expect(authServiceSpy.refreshToken).toHaveBeenCalledTimes(1);
     expect(authServiceSpy.logout).toHaveBeenCalledTimes(1);
+  });
+
+  it('should not logout or redirect if token refresh fails for an anonymous user', () => {
+    authServiceSpy.isAuthenticated.mockReturnValue(false);
+    authServiceSpy.refreshToken.mockReturnValue(throwError(() => new HttpErrorResponse({status: 404})));
+
+    httpClient.get(`${baseApiUrl}/users/me`).subscribe({
+      error: (err) => {
+        expect(err.status).toBe(404);
+      }
+    });
+
+    const firstReq = httpMock.expectOne(`${baseApiUrl}/users/me`);
+    firstReq.flush({}, {status: 401, statusText: 'Unauthorized'});
+
+    expect(authServiceSpy.refreshToken).toHaveBeenCalledTimes(1);
+    expect(authServiceSpy.logout).not.toHaveBeenCalled();
+    expect(routerSpy.navigate).not.toHaveBeenCalled();
   });
 });

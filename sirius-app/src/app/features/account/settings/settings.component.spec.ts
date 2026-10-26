@@ -10,7 +10,7 @@ import {AuthService} from '../../../api/antares/services/auth.service';
 import {UserService} from '../../../api/antares/services/user.service';
 import {NotificationService} from '../../../core/services/notification.service';
 import {of, throwError} from 'rxjs';
-import {signal} from '@angular/core';
+import {signal, WritableSignal} from '@angular/core';
 import {UserResponse} from '../../../api/antares/models/user.model';
 import {provideIcons} from '@ng-icons/core';
 import {APP_ICONS} from '../../../app.config';
@@ -144,5 +144,38 @@ describe('SettingsComponent', () => {
       expect(component.deleteModal.nativeElement.close).toHaveBeenCalled();
       expect(notificationServiceSpy.showError).toHaveBeenCalledWith('Deletion failed');
     });
+  });
+
+  it('should hide the password and deletion forms during a support session', () => {
+    (authServiceSpy.currentUser as unknown as WritableSignal<UserResponse | null>).set({
+      theme: 'light', locale: 'en',
+      supportSession: {id: 1, actor: {id: 1, firstName: 'Ad', lastName: 'Min'}, reason: 'Bug', expiresAt: ''}
+    } as UserResponse);
+    fixture.detectChanges();
+
+    expect(component.isSupportSession()).toBe(true);
+    expect(fixture.nativeElement.querySelector('#currentPassword')).toBeNull();
+    expect(fixture.nativeElement.textContent).not.toContain('SETTINGS.DELETE_ACCOUNT_BTN');
+    expect(fixture.nativeElement.textContent).toContain('ADMIN.SUPPORT.ACCOUNT_LOCKED');
+  });
+
+  it('should switch the language only on screen during a support session', () => {
+    (authServiceSpy.currentUser as unknown as WritableSignal<UserResponse | null>).set({
+      theme: 'light', locale: 'en',
+      supportSession: {id: 1, actor: {id: 1, firstName: 'Ad', lastName: 'Min'}, reason: 'Bug', expiresAt: ''}
+    } as UserResponse);
+
+    component.changeLanguage({target: {value: 'fr'}} as unknown as Event);
+
+    expect(translateService.currentLang()).toBe('fr');
+    expect(userServiceSpy.updatePreferences).not.toHaveBeenCalled();
+  });
+
+  it('should save the language outside a support session', () => {
+    userServiceSpy.updatePreferences.mockReturnValue(of({} as UserResponse));
+
+    component.changeLanguage({target: {value: 'fr'}} as unknown as Event);
+
+    expect(userServiceSpy.updatePreferences).toHaveBeenCalledWith({locale: 'fr', theme: 'light'});
   });
 });

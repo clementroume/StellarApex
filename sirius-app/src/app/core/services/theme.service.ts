@@ -24,7 +24,8 @@ export class ThemeService {
 
     effect(() => {
       const user = this.authService.currentUser();
-      if (user?.theme) {
+      // During a support session the screen keeps the admin's theme, not the target's
+      if (user?.theme && !user.supportSession) {
         this._currentTheme.set(user.theme);
       }
     });
@@ -35,7 +36,8 @@ export class ThemeService {
     this._currentTheme.set(newTheme);
 
     const currentUser = this.authService.currentUser();
-    if (currentUser) {
+    // During a support session the change stays on the admin's screen (Antares refuses to save it)
+    if (currentUser && !currentUser.supportSession) {
       const preferences: PreferencesUpdateRequest = {
         locale: currentUser.locale as 'en' | 'fr',
         theme: newTheme,

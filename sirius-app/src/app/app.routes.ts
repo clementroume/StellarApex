@@ -37,6 +37,14 @@ export const routes: Routes = [
         path: 'movements',
         loadChildren: () => import('./features/movements/movements.routes').then(m => m.MOVEMENT_ROUTES)
       },
+      {
+        path: 'wods',
+        loadChildren: () => import('./features/wods/wods.routes').then(m => m.WOD_ROUTES)
+      },
+      {
+        path: 'admin',
+        loadChildren: () => import('./features/admin/admin.routes').then(m => m.ADMIN_ROUTES)
+      },
     ]
   },
 

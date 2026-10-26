@@ -449,8 +449,8 @@ class ScoreControllerIT extends BaseIntegrationTest {
         .perform(
             get("/aldebaran/scores/leaderboard/" + gymWod.getId())
                 .header("X-Auth-User-Id", "50")
-                .header("X-Auth-Gym-Id", "101")
-                .header("X-Auth-User-Role", "ATHLETE")
+                .header("X-Auth-User-Role", "USER")
+                .header("X-Auth-Memberships", "101:ATHLETE:")
                 .header("X-Internal-Secret", "test-internal-secret"))
         .andExpect(status().isOk());
 
@@ -459,8 +459,8 @@ class ScoreControllerIT extends BaseIntegrationTest {
         .perform(
             get("/aldebaran/scores/leaderboard/" + gymWod.getId())
                 .header("X-Auth-User-Id", "60")
-                .header("X-Auth-Gym-Id", "102")
-                .header("X-Auth-User-Role", "ATHLETE")
+                .header("X-Auth-User-Role", "USER")
+                .header("X-Auth-Memberships", "102:ATHLETE:")
                 .header("X-Internal-Secret", "test-internal-secret"))
         .andExpect(status().isForbidden());
   }
@@ -581,9 +581,8 @@ class ScoreControllerIT extends BaseIntegrationTest {
         .perform(
             put("/aldebaran/scores/" + score.getId())
                 .header("X-Auth-User-Id", "50") // Coach
-                .header("X-Auth-Gym-Id", "101") // Same Gym
-                .header("X-Auth-User-Role", "COACH")
-                .header("X-Auth-User-Permissions", "SCORE_VERIFY")
+                .header("X-Auth-User-Role", "USER")
+                .header("X-Auth-Memberships", "101:COACH:SCORE_VERIFY")
                 .header("X-Internal-Secret", "test-internal-secret")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(updateRequest)))
@@ -618,9 +617,8 @@ class ScoreControllerIT extends BaseIntegrationTest {
         .perform(
             post("/aldebaran/scores")
                 .header("X-Auth-User-Id", "50") // Coach
-                .header("X-Auth-Gym-Id", "101") // Same Gym
-                .header("X-Auth-User-Role", "COACH")
-                .header("X-Auth-User-Permissions", "SCORE_VERIFY")
+                .header("X-Auth-User-Role", "USER")
+                .header("X-Auth-Memberships", "101:COACH:SCORE_VERIFY")
                 .header("X-Internal-Secret", "test-internal-secret")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
@@ -655,8 +653,8 @@ class ScoreControllerIT extends BaseIntegrationTest {
         .perform(
             post("/aldebaran/scores")
                 .header("X-Auth-User-Id", "60") // Coach
-                .header("X-Auth-Gym-Id", "102") // Different Gym
-                .header("X-Auth-User-Role", "COACH")
+                .header("X-Auth-User-Role", "USER")
+                .header("X-Auth-Memberships", "102:COACH:")
                 .header("X-Internal-Secret", "test-internal-secret")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))

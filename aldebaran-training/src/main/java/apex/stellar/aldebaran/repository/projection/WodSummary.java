@@ -60,4 +60,25 @@ public interface WodSummary {
    * @return the creation date and time as a {@link LocalDateTime}.
    */
   LocalDateTime getCreatedAt();
+
+  /**
+   * Retrieves the ID of the user who authored the workout.
+   *
+   * @return the author ID.
+   */
+  Long getAuthorId();
+
+  /**
+   * Retrieves the gym owning the workout.
+   *
+   * @return the gym ID, or {@code null} for a personal or global WOD.
+   */
+  Long getGymId();
+
+  /**
+   * Indicates whether the workout is publicly visible.
+   *
+   * @return {@code true} if public.
+   */
+  boolean isPublic();
 }

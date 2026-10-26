@@ -1,0 +1,129 @@
+<div class="container mx-auto pb-12">
+  <div class="mt-8 mb-6 text-center md:text-left">
+    <h1 class="text-3xl font-bold">{{ 'WOD.TITLE' | translate }}</h1>
+  </div>
+
+  <div class="flex justify-center mb-6 w-full px-2 sm:px-0">
+    <div role="tablist" class="tabs tabs-box flex flex-wrap justify-center gap-2 w-full max-w-4xl p-1">
+      @for (tab of scopeTabs(); track tab.key) {
+        <a role="tab"
+           class="tab h-10 flex items-center justify-center gap-2 rounded border border-neutral bg-base-100"
+           [class.tab-active]="activeScopeTab().key === tab.key"
+           [class.text-secondary]="activeScopeTab().key === tab.key"
+           [class.border-secondary]="activeScopeTab().key === tab.key"
+           (click)="onScopeChange(tab.key)">
+          @if (tab.gymId !== undefined) {
+            <ng-icon name="heroBuildingOffice" size="1.2rem"></ng-icon>
+          }
+          <span class="truncate text-sm">{{ tab.translate ? (tab.label | translate) : tab.label }}</span>
+        </a>
+      }
+    </div>
+  </div>
+
+  @if (showAdminFilters()) {
+    <div class="flex flex-col md:flex-row justify-center gap-4 mb-6">
+      <label class="flex items-center gap-2">
+        <ng-icon name="heroBuildingOffice" size="1.2rem" class="text-secondary"></ng-icon>
+        <select class="select select-bordered w-full md:w-64"
+                [attr.aria-label]="'WOD.ADMIN_FILTERS.GYM' | translate"
+                (change)="onAdminGymChange($any($event.target).value)">
+          <option value="" [selected]="adminGymId() === null">{{ 'WOD.ADMIN_FILTERS.ALL_GYMS' | translate }}</option>
+          @for (gym of adminGyms(); track gym.id) {
+            <option [value]="gym.id" [selected]="adminGymId() === gym.id">{{ gym.name }}</option>
+          }
+        </select>
+      </label>
+      <label class="flex items-center gap-2">
+        <ng-icon name="heroUser" size="1.2rem" class="text-secondary"></ng-icon>
+        <select class="select select-bordered w-full md:w-64"
+                [attr.aria-label]="'WOD.ADMIN_FILTERS.ATHLETE' | translate"
+                (change)="onAdminAuthorChange($any($event.target).value)">
+          <option value="" [selected]="adminAuthorId() === null">{{ 'WOD.ADMIN_FILTERS.ALL_ATHLETES' | translate }}</option>
+          @for (author of adminAuthors(); track author.id) {
+            <option [value]="author.id" [selected]="adminAuthorId() === author.id">
+              {{ author.firstName }} {{ author.lastName }} ({{ author.email }})
+            </option>
+          }
+        </select>
+      </label>
+    </div>
+  }
+
+  <app-search-input
+    [placeholder]="'WOD.ACTIONS.SEARCH' | translate"
+    [value]="searchQuery()"
+    (valueChange)="onSearchChange($event)">
+  </app-search-input>
+
+  <div class="flex flex-wrap justify-center gap-2 mb-8">
+    <button type="button" class="badge badge-lg cursor-pointer"
+            [class.badge-secondary]="typeFilter() === ''"
+            [class.badge-outline]="typeFilter() !== ''"
+            (click)="onTypeChange('')">
+      {{ 'WOD.ACTIONS.ALL_TYPES' | translate }}
+    </button>
+    @for (type of wodTypes(); track type) {
+      <button type="button" class="badge badge-lg cursor-pointer"
+              [class.badge-secondary]="typeFilter() === type"
+              [class.badge-outline]="typeFilter() !== type"
+              (click)="onTypeChange(type)">
+        {{ 'WOD.WOD_TYPES.' + type | translate }}
+      </button>
+    }
+  </div>
+
+  <app-list-state
+    [isLoading]="isLoading()"
+    [isRawEmpty]="!hasActiveFilter() && wods().length === 0"
+    [isFilteredEmpty]="wods().length === 0"
+    [emptyMessage]="'WOD.MESSAGES.EMPTY_LIST' | translate"
+    [emptySearchMessage]="'WOD.MESSAGES.EMPTY_LIST_SEARCH' | translate">
+
+    <div class="bg-base-100 border border-neutral rounded-box">
+      <ul class="divide-y divide-base-200">
+        @for (wod of wods(); track wod.id) {
+          <app-list-item
+            [title]="wod.title"
+            [badge]="'WOD.WOD_TYPES.' + wod.wodType | translate"
+            [subtitle]="(wod.isPublic ? ('WOD.VISIBILITY.PUBLIC' | translate)
+                : wod.gymId ? (gymName(wod.gymId) ?? ('WOD.VISIBILITY.GYM' | translate))
+                : ('WOD.VISIBILITY.PRIVATE' | translate))
+              + ' · ' + ('WOD.SCORE_TYPES.' + wod.scoreType | translate)
+              + (wod.repScheme ? ' · ' + wod.repScheme : '')
+              + (wod.timeCapSeconds ? ' · ' + ('WOD.FIELDS.TIME_CAP' | translate) + ' ' + formatTimeCap(wod.timeCapSeconds) : '')"
+            [link]="['/wods', wod.id]">
+          </app-list-item>
+        }
+      </ul>
+    </div>
+
+    @if (hasMore()) {
+      <div class="flex justify-center mt-6">
+        <button type="button" class="btn btn-outline btn-secondary min-w-36"
+                [disabled]="isLoadingMore()"
+                (click)="loadMore()">
+          @if (isLoadingMore()) {
+            <span class="loading loading-spinner"></span>
+          }
+          {{ 'WOD.ACTIONS.LOAD_MORE' | translate }}
+        </button>
+      </div>
+    }
+  </app-list-state>
+
+  <div class="pt-8 flex flex-col md:flex-row justify-end gap-4">
+    @if (isAdmin()) {
+      <button class="btn btn-outline btn-secondary min-w-36"
+              (click)="exportCsv()"
+              [disabled]="isExporting()">
+        <ng-icon name="heroDocumentArrowDown" size="1.5rem"></ng-icon>
+        {{ isExporting() ? '...' : ('EXPORT.EXPORT_CSV' | translate) }}
+      </button>
+    }
+    <a routerLink="/wods/new" [queryParams]="createTarget().queryParams" class="btn btn-secondary min-w-36">
+      <ng-icon name="heroPlus" size="1.5rem"></ng-icon>
+      {{ createTarget().labelKey | translate: {gym: createTarget().gymName} }}
+    </a>
+  </div>
+</div>

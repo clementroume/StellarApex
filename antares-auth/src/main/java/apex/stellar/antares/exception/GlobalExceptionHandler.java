@@ -100,6 +100,22 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
   }
 
   /**
+   * Handles {@link BusinessRuleException}.
+   *
+   * @param ex The exception containing the broken rule.
+   * @param request The current HTTP request.
+   * @param locale The locale for message translation.
+   * @return A {@link ResponseEntity} with status <b>400 Bad Request</b>.
+   */
+  @ExceptionHandler(BusinessRuleException.class)
+  public ResponseEntity<@NonNull ProblemDetail> handleBusinessRule(
+      BusinessRuleException ex, HttpServletRequest request, Locale locale) {
+    log.info("Business rule violated on [{}]: {}", request.getRequestURI(), ex.getMessage());
+    String message = getLocalizedMessage(ex.getMessageKey(), ex.getArgs(), locale);
+    return createProblemResponse(HttpStatus.BAD_REQUEST, "Invalid Request", message, request);
+  }
+
+  /**
    * Handles {@link BadCredentialsException}.
    *
    * <p>Occurs during failed login attempts. Returns a generic message to prevent user enumeration.

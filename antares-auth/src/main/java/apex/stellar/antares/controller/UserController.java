@@ -1,5 +1,6 @@
 package apex.stellar.antares.controller;
 
+import apex.stellar.antares.config.SupportSessionAuthentication;
 import apex.stellar.antares.dto.ChangePasswordRequest;
 import apex.stellar.antares.dto.PreferencesUpdateRequest;
 import apex.stellar.antares.dto.ProfileUpdateRequest;
@@ -7,6 +8,7 @@ import apex.stellar.antares.dto.UserResponse;
 import apex.stellar.antares.model.User;
 import apex.stellar.antares.service.CookieService;
 import apex.stellar.antares.service.JwtService;
+import apex.stellar.antares.service.SupportSessionService;
 import apex.stellar.antares.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -44,6 +46,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class UserController {
 
   private final UserService userService;
+  private final SupportSessionService supportSessionService;
   private final CookieService cookieService;
   private final JwtService jwtService;
 
@@ -56,7 +59,9 @@ public class UserController {
   @GetMapping("/me")
   @Operation(
       summary = "Get current user profile",
-      description = "Retrieves public details of the currently authenticated user.")
+      description =
+          "Retrieves public details of the currently authenticated user. During a support session"
+              + " this is the target user, with `supportSession` describing the acting admin.")
   @ApiResponses(
       value = {
         @ApiResponse(responseCode = "200", description = "Profile retrieved successfully"),
@@ -68,7 +73,8 @@ public class UserController {
   public ResponseEntity<@NonNull UserResponse> getAuthenticatedUser(Authentication authentication) {
 
     if (authentication.getPrincipal() instanceof User currentUser) {
-      return ResponseEntity.ok(userService.getProfile(currentUser));
+      return ResponseEntity.ok(
+          withSupportSession(userService.getProfile(currentUser), authentication));
     }
     return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
   }
@@ -104,7 +110,8 @@ public class UserController {
       @Valid @RequestBody ProfileUpdateRequest request, Authentication authentication) {
 
     if (authentication.getPrincipal() instanceof User currentUser) {
-      return ResponseEntity.ok(userService.updateProfile(currentUser, request));
+      return ResponseEntity.ok(
+          withSupportSession(userService.updateProfile(currentUser, request), authentication));
     }
     return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
   }
@@ -134,7 +141,8 @@ public class UserController {
       @Valid @RequestBody PreferencesUpdateRequest request, Authentication authentication) {
 
     if (authentication.getPrincipal() instanceof User currentUser) {
-      return ResponseEntity.ok(userService.updatePreferences(currentUser, request));
+      return ResponseEntity.ok(
+          withSupportSession(userService.updatePreferences(currentUser, request), authentication));
     }
     return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
   }
@@ -149,7 +157,9 @@ public class UserController {
   @PutMapping("/me/password")
   @Operation(
       summary = "Change password",
-      description = "Updates the user's password. Requires current password verification.")
+      description =
+          "Updates the user's password. Requires current password verification. Refused during a"
+              + " support session (403, code SUPPORT_SESSION_FORBIDDEN).")
   @ApiResponses(
       value = {
         @ApiResponse(responseCode = "200", description = "Password changed successfully"),
@@ -182,7 +192,9 @@ public class UserController {
   @DeleteMapping("/me")
   @Operation(
       summary = "Delete account",
-      description = "Permanently deletes the authenticated user account and clears sessions.")
+      description =
+          "Permanently deletes the authenticated user account and clears sessions. Refused during"
+              + " a support session (403, code SUPPORT_SESSION_FORBIDDEN).")
   @ApiResponses(
       value = {
         @ApiResponse(responseCode = "204", description = "Account successfully deleted"),
@@ -201,5 +213,20 @@ public class UserController {
       return ResponseEntity.noContent().build();
     }
     return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+  }
+
+  /**
+   * Adds the active support session to a profile response. Every endpoint returning the current
+   * user must use it: Sirius replaces its user with the response, and a missing session would make
+   * the UI believe the support session ended.
+   *
+   * @param profile the profile of the request's user (the target during a support session).
+   * @param authentication the request authentication.
+   * @return the profile, with {@code supportSession} set during a support session.
+   */
+  private UserResponse withSupportSession(UserResponse profile, Authentication authentication) {
+    return authentication instanceof SupportSessionAuthentication support
+        ? profile.withSupportSession(supportSessionService.toInfo(support))
+        : profile;
   }
 }

@@ -86,4 +86,16 @@ describe('NavbarComponent', () => {
     const linkElement = myAccountLink.nativeElement as HTMLAnchorElement;
     expect(linkElement.getAttribute('href')).toBe('/my-account');
   });
+
+  it('should show the support link to admins only', () => {
+    const supportLinks = () => fixture.nativeElement.querySelectorAll('a[href="/admin/support"]').length;
+
+    mockCurrentUser.set(mockUser);
+    fixture.detectChanges();
+    expect(supportLinks()).toBe(0);
+
+    mockCurrentUser.set({...mockUser, platformRole: 'ADMIN'});
+    fixture.detectChanges();
+    expect(supportLinks()).toBe(2);
+  });
 });

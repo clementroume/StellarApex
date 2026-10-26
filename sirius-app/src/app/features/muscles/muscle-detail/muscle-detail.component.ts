@@ -4,7 +4,7 @@ import {Router, RouterModule} from '@angular/router';
 import {Location, NgOptimizedImage} from '@angular/common';
 import {NgIconComponent} from '@ng-icons/core';
 import {MuscleResponse} from '../../../api/aldebaran/models/muscle.model';
-import {AuthService} from '../../../api/antares/services/auth.service';
+import {AccessService} from '../../../core/services/access.service';
 import {MuscleService} from '../../../api/aldebaran/services/muscle.service';
 import {NotificationService} from '../../../core/services/notification.service';
 import {HttpErrorResponse} from '@angular/common/http';
@@ -26,7 +26,7 @@ export class MuscleDetailComponent {
   // --- INJECTIONS ---
   id = input.required<string>();
   private readonly translate = inject(TranslateService);
-  private readonly authService = inject(AuthService);
+  private readonly accessService = inject(AccessService);
   private readonly muscleService = inject(MuscleService);
   private readonly notificationService = inject(NotificationService);
   private readonly router = inject(Router);
@@ -34,7 +34,7 @@ export class MuscleDetailComponent {
 
   // --- STATE (SIGNALS) ---
   activeLang = computed(() => this.translate.currentLang() ?? this.translate.fallbackLang() ?? 'en');
-  isAdmin = computed(() => this.authService.currentUser()?.platformRole === 'ADMIN');
+  isAdmin = this.accessService.isAdmin;
 
   muscle = signal<MuscleResponse | null>(null);
   isLoading = signal<boolean>(true); // Nouvel état explicite

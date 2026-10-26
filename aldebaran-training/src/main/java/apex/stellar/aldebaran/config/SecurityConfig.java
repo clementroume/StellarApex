@@ -1,16 +1,22 @@
 package apex.stellar.aldebaran.config;
 
 import static org.springframework.security.config.Customizer.withDefaults;
+import static org.springframework.util.StringUtils.hasText;
 
 import apex.stellar.aldebaran.security.AldebaranUserPrincipal;
+import apex.stellar.aldebaran.security.GymAccess;
+import apex.stellar.aldebaran.security.SupportSessionAuditFilter;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.NonNull;
 import org.springframework.beans.factory.annotation.Value;
@@ -54,6 +60,8 @@ public class SecurityConfig {
   @Bean
   public SecurityFilterChain securityFilterChain(HttpSecurity http) {
 
+    ForwardedAuthFilter forwardedAuthFilter = new ForwardedAuthFilter(internalSecret);
+
     http.cors(withDefaults())
         .csrf(AbstractHttpConfigurer::disable)
         .authorizeHttpRequests(
@@ -67,8 +75,9 @@ public class SecurityConfig {
                     .authenticated())
         .sessionManagement(
             session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-        .addFilterBefore(
-            new ForwardedAuthFilter(internalSecret), UsernamePasswordAuthenticationFilter.class);
+        .addFilterBefore(forwardedAuthFilter, UsernamePasswordAuthenticationFilter.class)
+        // Support session: audit writes once the principal (and its actor) is known
+        .addFilterAfter(new SupportSessionAuditFilter(), ForwardedAuthFilter.class);
     return http.build();
   }
 
@@ -88,9 +97,9 @@ public class SecurityConfig {
             "Content-Type",
             "X-Internal-Secret",
             "X-Auth-User-Id",
-            "X-Auth-Gym-Id",
             "X-Auth-User-Role",
-            "X-Auth-User-Permissions"));
+            "X-Auth-Memberships",
+            "X-Auth-Actor-Id"));
     configuration.setAllowCredentials(true);
 
     UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
@@ -101,14 +110,71 @@ public class SecurityConfig {
   /**
    * Filter responsible for validating the internal secret and extracting user identity from headers
    * provided by the API Gateway.
+   *
+   * <p>Header contract (emitted by Antares via Traefik forward-auth):
+   *
+   * <ul>
+   *   <li>{@code X-Auth-User-Id}: user ID (required);
+   *   <li>{@code X-Auth-User-Role}: platform role, ADMIN or USER (required);
+   *   <li>{@code X-Auth-Memberships}: usable memberships with effective permissions, as {@code
+   *       gymId:ROLE:PERM+PERM} entries joined by {@code ,} (e.g. {@code
+   *       12:COACH:WOD_WRITE+SCORE_VERIFY,15:ATHLETE:});
+   *   <li>{@code X-Auth-Actor-Id}: the platform admin acting as this user through an audited support
+   *       session (optional). The other headers then describe the target user, whose rights apply.
+   * </ul>
+   *
+   * <p>Membership parsing is tolerant: a malformed entry is skipped (and logged), the other entries
+   * are kept.
    */
   @Slf4j
-  private static class ForwardedAuthFilter extends OncePerRequestFilter {
+  static class ForwardedAuthFilter extends OncePerRequestFilter {
+
+    static final String HEADER_USER_ID = "X-Auth-User-Id";
+    static final String HEADER_USER_ROLE = "X-Auth-User-Role";
+    static final String HEADER_MEMBERSHIPS = "X-Auth-Memberships";
+    static final String HEADER_ACTOR_ID = "X-Auth-Actor-Id";
 
     private final String internalSecret;
 
-    public ForwardedAuthFilter(String internalSecret) {
+    ForwardedAuthFilter(String internalSecret) {
       this.internalSecret = internalSecret;
+    }
+
+    /**
+     * Parses the {@code X-Auth-Memberships} header.
+     *
+     * @param header The raw header value (may be null or blank).
+     * @return The memberships keyed by gym ID; malformed entries are skipped.
+     */
+    static Map<Long, GymAccess> parseMemberships(String header) {
+      if (!hasText(header)) {
+        return Map.of();
+      }
+      Map<Long, GymAccess> memberships = new HashMap<>();
+      for (String entry : header.split(",")) {
+        if (entry.isBlank()) {
+          continue;
+        }
+        String[] parts = entry.split(":", 3);
+        try {
+          Long gymId = Long.parseLong(parts[0].trim());
+          String role = parts.length > 1 ? parts[1].trim() : "";
+          if (role.isEmpty()) {
+            throw new IllegalArgumentException("missing role");
+          }
+          Set<String> permissions =
+              parts.length > 2
+                  ? Arrays.stream(parts[2].split("\\+"))
+                      .map(String::trim)
+                      .filter(p -> !p.isEmpty())
+                      .collect(Collectors.toSet())
+                  : Set.of();
+          memberships.put(gymId, new GymAccess(role, permissions));
+        } catch (IllegalArgumentException e) {
+          log.warn("Skipping malformed membership entry '{}': {}", entry, e.getMessage());
+        }
+      }
+      return Map.copyOf(memberships);
     }
 
     /**
@@ -135,26 +201,21 @@ public class SecurityConfig {
         return;
       }
 
-      String userIdStr = request.getHeader("X-Auth-User-Id");
-      String gymIdStr = request.getHeader("X-Auth-Gym-Id");
-      String role = request.getHeader("X-Auth-User-Role");
-      String permissionsStr = request.getHeader("X-Auth-User-Permissions");
+      String userIdStr = request.getHeader(HEADER_USER_ID);
+      String platformRole = request.getHeader(HEADER_USER_ROLE);
 
-      if (userIdStr != null && role != null) {
+      if (userIdStr != null && hasText(platformRole)) {
         try {
-          Long userId = Long.parseLong(userIdStr);
-          Long gymId = gymIdStr != null ? Long.parseLong(gymIdStr) : null;
-          List<String> permissions =
-              permissionsStr != null
-                  ? Arrays.asList(permissionsStr.split(","))
-                  : Collections.emptyList();
+          Long userId = Long.parseLong(userIdStr.trim());
+          String actorIdStr = request.getHeader(HEADER_ACTOR_ID);
+          Long actorId = hasText(actorIdStr) ? Long.parseLong(actorIdStr.trim()) : null;
 
           AldebaranUserPrincipal principal =
               AldebaranUserPrincipal.builder()
                   .id(userId)
-                  .gymId(gymId)
-                  .role(role)
-                  .permissions(permissions)
+                  .platformRole(platformRole.trim())
+                  .memberships(parseMemberships(request.getHeader(HEADER_MEMBERSHIPS)))
+                  .actorId(actorId)
                   .build();
 
           var auth =
@@ -162,9 +223,9 @@ public class SecurityConfig {
           SecurityContextHolder.getContext().setAuthentication(auth);
         } catch (NumberFormatException e) {
           log.warn(
-              "Failed to parse identity headers. userId='{}', gymId='{}'. Error: {}",
+              "Failed to parse identity headers. userId='{}', actorId='{}'. Error: {}",
               userIdStr,
-              gymIdStr,
+              request.getHeader(HEADER_ACTOR_ID),
               e.getMessage());
         }
       }
