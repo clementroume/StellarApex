@@ -72,9 +72,7 @@
             <h4
               class="text-sm font-semibold text-base-content/70 mb-2">{{ 'MOVEMENT.FIELDS.COACHING_CUES' | translate }}</h4>
             <p [class.italic]="!getLocalizedCues(mov)" [class.opacity-80]="!getLocalizedCues(mov)"
-               class="leading-relaxed text-sm md:text-base">
-              {{ getLocalizedCues(mov) || ('MOVEMENT.MESSAGES.NO_CUES' | translate) }}
-            </p>
+               class="leading-relaxed text-sm md:text-base whitespace-pre-line">{{ getLocalizedCues(mov) || ('MOVEMENT.MESSAGES.NO_CUES' | translate) }}</p>
           </div>
         </app-detail-card>
       </ng-template>
