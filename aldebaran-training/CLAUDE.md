@@ -7,7 +7,8 @@ Dev-only catalog backup (temporary, git-ignored CSVs, see root `CLAUDE.md`): `co
 volume mounted in `docker-compose.yml`; `config/DataSeeder` reloads them into empty tables (WODs:
 when no public WOD exists). `muscles.csv` has a `parent` column (functional group, by medical name).
 WOD CSV format lives in `config/WodCsvCodec` (blank = null, lossless round-trip; movements by exact
-name; WOD movement variants joined by `|`, whereas `movements.csv` lists use `, `).
+name; WOD movement variants joined by `|`, whereas `movements.csv` lists use `, `; FR/EN text
+columns `*_en` / `*_fr`, the former single-language columns still read as English).
 `config/DevGymWodSeeder` (`@Profile("dev")`, temporary) seeds WODs for the Antares test gyms,
 resolving IDs from the `antares` schema with `JdbcTemplate`.
 `./mvnw verify` runs unit tests and `*IT` (Testcontainers PostgreSQL + Redis, Docker required).

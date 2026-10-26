@@ -108,10 +108,15 @@ Rules live in `security/WodSecurity` and `security/ScoreSecurity`, used from `@P
   (`WodMovement.checkVariantsAllowed`): 400 on create/update, also enforced when reading the CSVs.
   Conversely, a movement update cannot remove an equipment or technique that any WOD (public, gym
   or personal) still prescribes for it: 409 naming the value and the number of WODs.
-* **WOD types**: `AMRAP`, `EMOM`, `FOR_TIME`, `TABATA`, `STRENGTH`, `SKILL`, `ACCESSORY`, `CHIPPER`,
-  `GIRLS`, `HERO`, `BENCHMARK` (official CrossFit benchmarks: Fight Gone Bad, Filthy Fifty...),
-  `CUSTOM_BENCHMARK` (a gym's flagship WODs), `OPEN`, `QUARTERFINALS`, `SEMIFINALS`, `GAMES`,
-  `CUSTOM`.
+* **WOD format and category**: `wodType` is the format (`FOR_TIME`, `AMRAP`, `EMOM`, `TABATA`,
+  `INTERVALS`, `STRENGTH`, `SKILL`, `ACCESSORY`, `CUSTOM`); the optional `category` is the family
+  (`GIRLS`, `HERO`, `BENCHMARK` = official CrossFit benchmarks such as Fight Gone Bad,
+  `CUSTOM_BENCHMARK` = a gym's flagship WODs, `OPEN`, `QUARTERFINALS`, `SEMIFINALS`, `GAMES`).
+  Fran is a `FOR_TIME` WOD of the `GIRLS` category.
+* **WOD texts and loads**: description and notes, and each WOD movement's notes and scaling options,
+  exist in English and French (`*En` / `*Fr`, either may be empty; clients fall back on the other
+  language). A WOD movement holds the men's load (`weight`) and the women's load (`weightFemale`) in
+  the same unit; clients convert for display only.
 
 ## API Endpoints
 
@@ -123,16 +128,18 @@ Rules live in `security/WodSecurity` and `security/ScoreSecurity`, used from `@P
 ### WODs (`/aldebaran/wods`)
 
 * `GET /`: paginated `Slice` of WOD summaries the user can read. Optional filters, all combinable:
-  `search` (title), `type`, `movementId`, `scope` (`ALL` default, `MINE`, `GYM`, `PUBLIC`),
+  `search` (title), `type` (format), `category`, `movementId`, `scope` (`ALL` default, `MINE`,
+  `GYM`, `PUBLIC`),
   `gymId` (with `GYM`) and `authorId` (that author's personal WODs). Summaries include `authorId`,
   `gymId` and `isPublic`.
-* `GET /facets`: values available to filter the list, with the same security: `wodTypes` present
-  for the current `search` / `scope` / `gymId` / `authorId` (so the UI never offers an empty type),
+* `GET /facets`: values available to filter the list, with the same security: `wodTypes` and
+  `categories` present for the current `search` / `scope` / `gymId` / `authorId` (so the UI never
+  offers an empty chip),
   plus `gymIds` and `authorIds` of readable WODs (admin selectors).
 * `GET /{id}`: full WOD with its movements and `capabilities` (`canModify`, `locked`) computed for
   the current user.
 * `POST /`, `PUT /{id}`, `DELETE /{id}`: manage a WOD (rules above).
-* `GET /reference-data`: WOD types, score types and unit groups.
+* `GET /reference-data`: WOD formats, categories, score types and unit groups.
 
 ### Scores (`/aldebaran/scores`)
 
@@ -163,9 +170,11 @@ starts empty. This mechanism (export endpoints, source volume, CSV seeding) is t
   (`parent` = medical name of the functional group, linked once every muscle is saved).
 * `movements.csv`: equipment, techniques and muscles (`agonists`, `synergists`, `stabilizers`) are
   lists separated by `, `.
-* `wods.csv`: `title,wod_type,score_type,rep_scheme,time_cap_seconds,emom_interval,emom_rounds,description,notes`
-* `wod_movements.csv`: `wod_title,order_index,movement_name,reps_scheme,weight,weight_unit,distance,distance_unit,duration_seconds,calories,notes,scaling_options`,
-  plus optional `duration_display_unit,equipment,techniques` (lists separated by `|`).
+* `wods.csv`: `title,wod_type,category,score_type,rep_scheme,time_cap_seconds,emom_interval,emom_rounds,description_en,description_fr,notes_en,notes_fr`
+* `wod_movements.csv`: `wod_title,order_index,movement_name,reps_scheme,weight,weight_unit,distance,distance_unit,duration_seconds,calories,notes_en,scaling_options_en`,
+  plus optional `duration_display_unit,equipment,techniques,weight_female,notes_fr,scaling_options_fr`
+  (lists separated by `|`). Files with the former `description`, `notes` and `scaling_options`
+  columns still load (read as English).
   `movement_name` is the exact movement name; an unknown one is logged and the row skipped.
   Blank cell = `null`, so the export → seed round-trip is lossless (`config/WodCsvCodec`).
 

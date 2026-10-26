@@ -62,6 +62,14 @@ The backends enforce every rule; Sirius only adapts what it shows:
 
 ## Catalog Screens
 
+* **WOD detail**: written like the gym whiteboard: "Fran (Girls / For Time)" with the time cap as a
+  badge ("Tc : 10'"), the rep scheme, then one line per movement: quantity (omitted when it repeats
+  the rep scheme), name, variants and "@men/women load" in the user's unit. Texts show in the user's
+  language, falling back on the other one. The list shows "category / format" and filters on both.
+* **Load unit**: kg/lb toggle in the navbar and a choice in Settings (`core/services/unit.service.ts`),
+  saved in the account (`unitSystem`); without a choice it follows the language (French: kg). Loads
+  are converted for display only (95 lb = 43 kg).
+
 * **WOD form**: the movement is picked in a search box (name, abbreviation shown in the suggestions).
   The movement's allowed equipment and techniques then appear as toggle chips (loaded from
   `GET /aldebaran/movements/{id}`); changing the movement clears them. Aldebaran rejects any other

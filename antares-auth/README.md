@@ -102,7 +102,9 @@ docker compose logs -f antares-auth
 
 * `GET /me`: Get the profile of the currently authenticated user.
 * `PUT /me/profile`: Update the user's first name, last name, or email.
-* `PATCH /me/preferences`: Update the user's locale (language) and theme (refused during a support session).
+* `PATCH /me/preferences`: Update the user's locale (language), theme and load unit (`unitSystem`:
+  `METRIC`, `IMPERIAL`, or null to follow the language). The preferences are replaced as a whole.
+  Refused during a support session.
 * `PUT /me/password`: Change the user's password (refused during a support session).
 * `DELETE /me`: Delete the current user's account (refused during a support session).
 
