@@ -19,6 +19,7 @@ import apex.stellar.aldebaran.model.enums.Equipment;
 import apex.stellar.aldebaran.model.enums.Technique;
 import apex.stellar.aldebaran.repository.MovementRepository;
 import apex.stellar.aldebaran.repository.MuscleRepository;
+import apex.stellar.aldebaran.repository.WodRepository;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -51,6 +52,7 @@ public class MovementService {
 
   private final MovementRepository movementRepository;
   private final MuscleRepository muscleRepository;
+  private final WodRepository wodRepository;
   private final MovementMapper movementMapper;
 
   /**
@@ -132,10 +134,14 @@ public class MovementService {
    * <p>This method uses a "Full Replacement" strategy for muscle relationships: the existing list
    * is cleared and rebuilt from the request to ensure the state matches exactly.
    *
+   * <p>Equipment and techniques are the allowed variants of the movement: one that WODs still
+   * prescribe cannot be removed (see {@link #checkRemovedVariantsUnused}).
+   *
    * @param id The ID of the movement to update.
    * @param request The update payload.
    * @return The updated movement details.
    * @throws ResourceNotFoundException if the movement ID is invalid.
+   * @throws DataConflictException if the name is taken or a removed variant is used by a WOD.
    */
   @Transactional
   @CacheEvict(
@@ -152,6 +158,7 @@ public class MovementService {
       throw new DataConflictException("error.movement.duplicate");
     }
 
+    checkRemovedVariantsUnused(movement, request);
     movementMapper.updateEntity(request, movement);
 
     if (request.muscles() != null) {
@@ -219,6 +226,43 @@ public class MovementService {
   // -------------------------------------------------------------------------
   // Helper Methods
   // -------------------------------------------------------------------------
+
+  /**
+   * Rejects removing an equipment or technique that a WOD movement still uses (any WOD, public,
+   * gym or personal): those WODs would no longer satisfy {@code
+   * WodMovement.checkVariantsAllowed}. Values are checked in enum declaration order.
+   *
+   * @param movement The movement in its current (persisted) state.
+   * @param request The update payload.
+   * @throws DataConflictException on the first removed value still in use.
+   */
+  private void checkRemovedVariantsUnused(Movement movement, MovementRequest request) {
+    for (Equipment equipment : Equipment.values()) {
+      if (movement.getEquipment().contains(equipment)
+          && !request.equipment().contains(equipment)) {
+        checkVariantUnused(
+            movement,
+            equipment,
+            wodRepository.countByMovementEquipment(movement.getId(), equipment.name()));
+      }
+    }
+    for (Technique technique : Technique.values()) {
+      if (movement.getTechniques().contains(technique)
+          && !request.techniques().contains(technique)) {
+        checkVariantUnused(
+            movement,
+            technique,
+            wodRepository.countByMovementTechnique(movement.getId(), technique.name()));
+      }
+    }
+  }
+
+  private static void checkVariantUnused(Movement movement, Enum<?> variant, long wodCount) {
+    if (wodCount > 0) {
+      throw new DataConflictException(
+          "error.movement.variant.in.use", variant.name(), movement.getName(), wodCount);
+    }
+  }
 
   /**
    * Resolves a muscle by its medical name and links it to the movement.

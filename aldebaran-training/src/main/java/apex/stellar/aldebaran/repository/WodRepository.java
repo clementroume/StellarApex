@@ -201,4 +201,35 @@ public interface WodRepository extends JpaRepository<Wod, Long> {
       @Param("userId") Long userId,
       @Param("memberGymIds") Collection<Long> memberGymIds,
       @Param("isAdmin") boolean isAdmin);
+
+  // -------------------------------------------------------------------------
+  // CATALOG CONSISTENCY
+  // -------------------------------------------------------------------------
+
+  /**
+   * Counts the WODs (any visibility) with a movement prescribed with the given equipment. Used to
+   * prevent removing a variant from a movement while WODs still use it.
+   *
+   * @param movementId The catalog movement ID.
+   * @param equipment The equipment name (e.g. {@code RINGS}).
+   * @return The number of distinct WODs.
+   */
+  @Query(
+      "SELECT COUNT(DISTINCT wm.wod.id) FROM WodMovement wm JOIN wm.equipment e "
+          + "WHERE wm.movement.id = :movementId AND e = :equipment")
+  long countByMovementEquipment(
+      @Param("movementId") Long movementId, @Param("equipment") String equipment);
+
+  /**
+   * Counts the WODs (any visibility) with a movement prescribed with the given technique.
+   *
+   * @param movementId The catalog movement ID.
+   * @param technique The technique name (e.g. {@code KIPPING}).
+   * @return The number of distinct WODs.
+   */
+  @Query(
+      "SELECT COUNT(DISTINCT wm.wod.id) FROM WodMovement wm JOIN wm.techniques t "
+          + "WHERE wm.movement.id = :movementId AND t = :technique")
+  long countByMovementTechnique(
+      @Param("movementId") Long movementId, @Param("technique") String technique);
 }

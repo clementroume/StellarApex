@@ -17,9 +17,16 @@ import apex.stellar.aldebaran.model.entities.Movement;
 import apex.stellar.aldebaran.model.entities.MovementMuscle.MuscleRole;
 import apex.stellar.aldebaran.model.entities.Muscle;
 import apex.stellar.aldebaran.model.entities.Muscle.MuscleGroup;
+import apex.stellar.aldebaran.model.entities.Wod;
+import apex.stellar.aldebaran.model.entities.Wod.ScoreType;
+import apex.stellar.aldebaran.model.entities.Wod.WodType;
+import apex.stellar.aldebaran.model.entities.WodMovement;
 import apex.stellar.aldebaran.model.enums.Category;
+import apex.stellar.aldebaran.model.enums.Equipment;
 import apex.stellar.aldebaran.repository.MovementRepository;
 import apex.stellar.aldebaran.repository.MuscleRepository;
+import apex.stellar.aldebaran.repository.WodRepository;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
@@ -28,6 +35,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
+import org.springframework.test.web.servlet.RequestBuilder;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
@@ -40,6 +48,7 @@ class MovementControllerIT extends BaseIntegrationTest {
 
   @Autowired private MovementRepository movementRepository;
   @Autowired private MuscleRepository muscleRepository;
+  @Autowired private WodRepository wodRepository;
 
   private Long testMovementId;
   private Long testMuscleId;
@@ -218,6 +227,85 @@ class MovementControllerIT extends BaseIntegrationTest {
                 .content(objectMapper.writeValueAsString(updateRequest)))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.name").value("Back Squat (High Bar)"));
+  }
+
+  @Test
+  @DisplayName("PUT /movements/{id}: should return 409 when removing a variant used by a WOD")
+  void testUpdateMovement_RemovedVariantInUse() throws Exception {
+    // Given: Dip allows RINGS and a personal (private) WOD prescribes Ring Dips
+    Movement dip =
+        movementRepository.save(
+            Movement.builder()
+                .name("Fake Dip")
+                .category(Category.PUSHING)
+                .equipment(new HashSet<>(Set.of(Equipment.RINGS, Equipment.PARALLETTES)))
+                .targetedMuscles(new HashSet<>())
+                .build());
+    Wod wod =
+        Wod.builder()
+            .title("Fake Elizabeth")
+            .wodType(WodType.FOR_TIME)
+            .scoreType(ScoreType.TIME)
+            .authorId(7L)
+            .isPublic(false)
+            .movements(new ArrayList<>())
+            .build();
+    WodMovement ringDips =
+        WodMovement.builder()
+            .wod(wod)
+            .movement(dip)
+            .orderIndex(1)
+            .equipment(new HashSet<>(Set.of("RINGS")))
+            .build();
+    wod.getMovements().add(ringDips);
+    wodRepository.save(wod);
+
+    // Removing the unused PARALLETTES alone is allowed
+    mockMvc
+        .perform(updateAsAdmin(dip.getId(), dipRequest(Set.of(Equipment.RINGS)), "en"))
+        .andExpect(status().isOk());
+
+    // Removing RINGS is rejected, in the user's language
+    mockMvc
+        .perform(updateAsAdmin(dip.getId(), dipRequest(Collections.emptySet()), "en"))
+        .andExpect(status().isConflict())
+        .andExpect(
+            jsonPath("$.detail")
+                .value("Cannot remove RINGS from the movement Fake Dip: it is used by 1 WOD."));
+    mockMvc
+        .perform(updateAsAdmin(dip.getId(), dipRequest(Collections.emptySet()), "fr"))
+        .andExpect(status().isConflict())
+        .andExpect(
+            jsonPath("$.detail")
+                .value("Impossible de retirer RINGS du mouvement Fake Dip : utilisé par 1 WOD."));
+  }
+
+  private static MovementRequest dipRequest(Set<Equipment> equipment) {
+    return new MovementRequest(
+        "Fake Dip",
+        null,
+        Category.PUSHING,
+        equipment,
+        Collections.emptySet(),
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null);
+  }
+
+  private RequestBuilder updateAsAdmin(
+      Long id, MovementRequest request, String locale) throws Exception {
+    return put("/aldebaran/movements/" + id)
+        .with(csrf())
+        .header("X-Auth-User-Id", "1")
+        .header("X-Auth-User-Role", "ADMIN")
+        .header("X-Auth-User-Locale", locale)
+        .header("X-Internal-Secret", "test-internal-secret")
+        .contentType(MediaType.APPLICATION_JSON)
+        .content(objectMapper.writeValueAsString(request));
   }
 
   // -------------------------------------------------------------------------

@@ -41,7 +41,9 @@ resolving IDs from the `antares` schema with `JdbcTemplate`.
 - Lombok (`@RequiredArgsConstructor`, `@Slf4j`, builders on entities). Javadoc on public classes and
   methods, 2-space indentation, Google Java style.
 - Catalog rules: `WodMovement.checkVariantsAllowed` (variants allowed by the movement; used by
-  `WodService`, `WodCsvCodec`, `DevGymWodSeeder`; `InvalidWodMovementException` → 400) and
+  `WodService`, `WodCsvCodec`, `DevGymWodSeeder`; `InvalidWodMovementException` → 400), its
+  converse in `MovementService.updateMovement` (a variant used by any WOD cannot be removed;
+  `WodRepository.countByMovementEquipment/Technique`; 409 `error.movement.variant.in.use`) and
   `MuscleService.applyParent` (one-level functional groups, same region; 409).
 - Errors: throw domain exceptions with a message key (`ResourceNotFoundException("error.wod.not.found", id)`,
   `WodLockedException` → 409); `exception/GlobalExceptionHandler` turns them into localized

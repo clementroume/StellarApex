@@ -106,6 +106,8 @@ Rules live in `security/WodSecurity` and `security/ScoreSecurity`, used from `@P
   Snatch, Shoulder-to-Overhead, Ground-to-Overhead). Coaching cues: one cue per line.
 * **WOD movements**: their equipment and techniques must be allowed by the movement
   (`WodMovement.checkVariantsAllowed`): 400 on create/update, also enforced when reading the CSVs.
+  Conversely, a movement update cannot remove an equipment or technique that any WOD (public, gym
+  or personal) still prescribes for it: 409 naming the value and the number of WODs.
 * **WOD types**: `AMRAP`, `EMOM`, `FOR_TIME`, `TABATA`, `STRENGTH`, `SKILL`, `ACCESSORY`, `CHIPPER`,
   `GIRLS`, `HERO`, `BENCHMARK` (official CrossFit benchmarks: Fight Gone Bad, Filthy Fifty...),
   `CUSTOM_BENCHMARK` (a gym's flagship WODs), `OPEN`, `QUARTERFINALS`, `SEMIFINALS`, `GAMES`,

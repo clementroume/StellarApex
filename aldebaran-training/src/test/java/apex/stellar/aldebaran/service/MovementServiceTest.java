@@ -15,8 +15,11 @@ import apex.stellar.aldebaran.model.entities.Movement;
 import apex.stellar.aldebaran.model.entities.MovementMuscle;
 import apex.stellar.aldebaran.model.entities.Muscle;
 import apex.stellar.aldebaran.model.enums.Category;
+import apex.stellar.aldebaran.model.enums.Equipment;
+import apex.stellar.aldebaran.model.enums.Technique;
 import apex.stellar.aldebaran.repository.MovementRepository;
 import apex.stellar.aldebaran.repository.MuscleRepository;
+import apex.stellar.aldebaran.repository.WodRepository;
 import apex.stellar.aldebaran.repository.projection.MovementSummary;
 import java.util.*;
 import org.junit.jupiter.api.BeforeEach;
@@ -32,6 +35,7 @@ class MovementServiceTest {
 
   @Mock private MuscleRepository muscleRepository;
   @Mock private MovementRepository movementRepository;
+  @Mock private WodRepository wodRepository;
   @Mock private MovementMapper movementMapper;
   @InjectMocks private MovementService movementService;
 
@@ -249,6 +253,94 @@ class MovementServiceTest {
 
     assertEquals("error.movement.duplicate", ex.getMessageKey());
     verify(movementRepository, never()).save(any());
+  }
+
+  @Test
+  @DisplayName("updateMovement: should reject removing an equipment still used by WODs")
+  void testUpdateMovement_RemovedEquipmentInUse() {
+    // Given: the movement allows RINGS, the request drops it, two WODs use it
+    Long id = 1L;
+    movement.setName("Dip");
+    movement.getEquipment().add(Equipment.RINGS);
+    MovementRequest dropRings =
+        new MovementRequest(
+            "Dip",
+            null,
+            Category.PUSHING,
+            Collections.emptySet(),
+            Collections.emptySet(),
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null);
+    when(movementRepository.findById(id)).thenReturn(Optional.of(movement));
+    when(wodRepository.countByMovementEquipment(id, "RINGS")).thenReturn(2L);
+
+    // When & Then
+    DataConflictException ex =
+        assertThrows(
+            DataConflictException.class, () -> movementService.updateMovement(id, dropRings));
+
+    assertEquals("error.movement.variant.in.use", ex.getMessageKey());
+    assertArrayEquals(new Object[] {"RINGS", "Dip", 2L}, ex.getArgs());
+    verify(movementMapper, never()).updateEntity(any(), any());
+    verify(movementRepository, never()).save(any());
+  }
+
+  @Test
+  @DisplayName("updateMovement: should reject removing a technique still used by WODs")
+  void testUpdateMovement_RemovedTechniqueInUse() {
+    Long id = 1L;
+    movement.getTechniques().add(Technique.PAUSED);
+    when(movementRepository.findById(id)).thenReturn(Optional.of(movement));
+    when(wodRepository.countByMovementTechnique(id, "PAUSED")).thenReturn(1L);
+
+    DataConflictException ex =
+        assertThrows(
+            DataConflictException.class, () -> movementService.updateMovement(id, request));
+
+    assertEquals("error.movement.variant.in.use", ex.getMessageKey());
+    assertArrayEquals(new Object[] {"PAUSED", "Back Squat", 1L}, ex.getArgs());
+    verify(movementRepository, never()).save(any());
+  }
+
+  @Test
+  @DisplayName("updateMovement: should allow removing unused variants and only check removed ones")
+  void testUpdateMovement_RemovedVariantsUnused() {
+    // Given: BARBELL is kept, DUMBBELL is removed but unused
+    Long id = 1L;
+    movement.getEquipment().addAll(Set.of(Equipment.BARBELL, Equipment.DUMBBELL));
+    MovementRequest keepBarbell =
+        new MovementRequest(
+            request.name(),
+            request.nameAbbreviation(),
+            request.category(),
+            Set.of(Equipment.BARBELL),
+            Collections.emptySet(),
+            request.muscles(),
+            null,
+            null,
+            null,
+            null,
+            null,
+            null);
+    when(movementRepository.findById(id)).thenReturn(Optional.of(movement));
+    when(wodRepository.countByMovementEquipment(id, "DUMBBELL")).thenReturn(0L);
+    when(muscleRepository.findById(1L)).thenReturn(Optional.of(muscle));
+    when(movementMapper.toMuscleEntity(any())).thenReturn(new MovementMuscle());
+    when(movementRepository.save(movement)).thenReturn(movement);
+    when(movementMapper.toResponse(movement)).thenReturn(mock(MovementResponse.class));
+
+    // When
+    movementService.updateMovement(id, keepBarbell);
+
+    // Then
+    verify(wodRepository).countByMovementEquipment(id, "DUMBBELL");
+    verify(wodRepository, never()).countByMovementEquipment(id, "BARBELL");
+    verify(movementRepository).save(movement);
   }
 
   @Test
