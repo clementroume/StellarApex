@@ -149,7 +149,7 @@ class ScoreSecurityTest {
         TestPrincipals.of(1L, null, "ADMIN", Collections.emptyList());
     ScoreRequest request =
         new ScoreRequest(
-            null, null, 1L, 0, 0, null, null, null, null, null, null, null, null, null, false, null,
+            null, null, 1L, 0, 0, null, null, null, null, null, null, null, null, null, false, null, null,
             null);
 
     when(securityService.isAdmin(admin)).thenReturn(true);
@@ -164,7 +164,7 @@ class ScoreSecurityTest {
         TestPrincipals.of(2L, 100L, "USER", Collections.emptyList());
     ScoreRequest request =
         new ScoreRequest(
-            2L, null, 1L, 0, 0, null, null, null, null, null, null, null, null, null, false, null,
+            2L, null, 1L, 0, 0, null, null, null, null, null, null, null, null, null, false, null, null,
             null);
     Wod publicWod = Wod.builder().isPublic(true).build();
 
@@ -181,7 +181,7 @@ class ScoreSecurityTest {
         TestPrincipals.of(2L, 100L, "USER", Collections.emptyList());
     ScoreRequest request =
         new ScoreRequest(
-            null, null, 1L, 0, 0, null, null, null, null, null, null, null, null, null, false, null,
+            null, null, 1L, 0, 0, null, null, null, null, null, null, null, null, null, false, null, null,
             null); // Implied self
     Wod gymWod = Wod.builder().isPublic(false).gymId(100L).build();
 
@@ -198,7 +198,7 @@ class ScoreSecurityTest {
         TestPrincipals.of(2L, 100L, "USER", Collections.emptyList());
     ScoreRequest request =
         new ScoreRequest(
-            2L, null, 1L, 0, 0, null, null, null, null, null, null, null, null, null, false, null,
+            2L, null, 1L, 0, 0, null, null, null, null, null, null, null, null, null, false, null, null,
             null);
     Wod gymWod = Wod.builder().isPublic(false).gymId(200L).build();
 
@@ -215,7 +215,7 @@ class ScoreSecurityTest {
         TestPrincipals.of(2L, 100L, "USER", Collections.emptyList());
     ScoreRequest request =
         new ScoreRequest(
-            2L, null, 1L, 0, 0, null, null, null, null, null, null, null, null, null, false, null,
+            2L, null, 1L, 0, 0, null, null, null, null, null, null, null, null, null, false, null, null,
             null);
     Wod privateWod = Wod.builder().isPublic(false).gymId(null).authorId(2L).build();
 
@@ -232,7 +232,7 @@ class ScoreSecurityTest {
         TestPrincipals.of(2L, 100L, "USER", Collections.emptyList());
     ScoreRequest request =
         new ScoreRequest(
-            2L, null, 1L, 0, 0, null, null, null, null, null, null, null, null, null, false, null,
+            2L, null, 1L, 0, 0, null, null, null, null, null, null, null, null, null, false, null, null,
             null);
     Wod privateWod = Wod.builder().isPublic(false).gymId(null).authorId(99L).build();
 
@@ -249,7 +249,7 @@ class ScoreSecurityTest {
         TestPrincipals.of(2L, 100L, "COACH", List.of("SCORE_VERIFY"));
     ScoreRequest request =
         new ScoreRequest(
-            99L, null, 1L, 0, 0, null, null, null, null, null, null, null, null, null, false, null,
+            99L, null, 1L, 0, 0, null, null, null, null, null, null, null, null, null, false, null, null,
             null); // Target 99
     Wod gymWod = Wod.builder().gymId(100L).build();
 
@@ -266,7 +266,7 @@ class ScoreSecurityTest {
         TestPrincipals.of(2L, 100L, "USER", Collections.emptyList());
     ScoreRequest request =
         new ScoreRequest(
-            99L, null, 1L, 0, 0, null, null, null, null, null, null, null, null, null, false, null,
+            99L, null, 1L, 0, 0, null, null, null, null, null, null, null, null, null, false, null, null,
             null);
     Wod gymWod = Wod.builder().gymId(100L).build();
 
@@ -283,7 +283,7 @@ class ScoreSecurityTest {
         TestPrincipals.of(2L, 100L, "OWNER", Collections.emptyList());
     ScoreRequest request =
         new ScoreRequest(
-            99L, null, 1L, 0, 0, null, null, null, null, null, null, null, null, null, false, null,
+            99L, null, 1L, 0, 0, null, null, null, null, null, null, null, null, null, false, null, null,
             null);
     Wod gymWod = Wod.builder().gymId(200L).build(); // Different Gym
 
@@ -385,7 +385,7 @@ class ScoreSecurityTest {
 
   private static ScoreRequest requestFor(Long userId) {
     return new ScoreRequest(
-        userId, null, 1L, 0, 0, null, null, null, null, null, null, null, null, null, false, null,
+        userId, null, 1L, 0, 0, null, null, null, null, null, null, null, null, null, false, null, null,
         null);
   }
 

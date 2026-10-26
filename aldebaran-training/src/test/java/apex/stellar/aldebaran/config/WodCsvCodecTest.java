@@ -162,6 +162,8 @@ class WodCsvCodecTest {
             .notesEn(" padded ")
             .descriptionFr("Ligne 1\nLigne 2, avec des « guillemets »")
             .notesFr("En mémoire, avec une virgule")
+            .tiebreakEn("Time after the last full set, with a comma")
+            .tiebreakFr("Temps après la dernière série complète")
             .isPublic(true)
             .build();
     wod.getMovements()
@@ -230,6 +232,8 @@ class WodCsvCodecTest {
     assertEquals(expected.getNotesEn(), actual.getNotesEn());
     assertEquals(expected.getDescriptionFr(), actual.getDescriptionFr());
     assertEquals(expected.getNotesFr(), actual.getNotesFr());
+    assertEquals(expected.getTiebreakEn(), actual.getTiebreakEn());
+    assertEquals(expected.getTiebreakFr(), actual.getTiebreakFr());
     assertEquals(expected.isPublic(), actual.isPublic());
 
     List<WodMovement> sorted =

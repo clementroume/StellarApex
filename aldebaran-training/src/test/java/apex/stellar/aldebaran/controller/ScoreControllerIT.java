@@ -91,7 +91,7 @@ class ScoreControllerIT extends BaseIntegrationTest {
             null,
             null,
             ScalingLevel.RX,
-            false,
+            false, null,
             null,
             null);
 
@@ -145,7 +145,7 @@ class ScoreControllerIT extends BaseIntegrationTest {
             null,
             null,
             ScalingLevel.RX,
-            false,
+            false, null,
             null,
             null);
 
@@ -199,7 +199,7 @@ class ScoreControllerIT extends BaseIntegrationTest {
             Unit.MILES,
             null,
             ScalingLevel.RX,
-            false,
+            false, null,
             null,
             null);
 
@@ -257,7 +257,7 @@ class ScoreControllerIT extends BaseIntegrationTest {
             null,
             null,
             ScalingLevel.RX,
-            false,
+            false, null,
             null,
             null);
 
@@ -316,7 +316,7 @@ class ScoreControllerIT extends BaseIntegrationTest {
             Unit.MILES, // distanceUnit
             null, // totalCalories
             ScalingLevel.RX,
-            false,
+            false, null,
             null,
             null);
 
@@ -375,7 +375,7 @@ class ScoreControllerIT extends BaseIntegrationTest {
             null, // distanceUnit
             null, // totalCalories
             ScalingLevel.RX,
-            false,
+            false, null,
             null,
             null);
 
@@ -490,7 +490,7 @@ class ScoreControllerIT extends BaseIntegrationTest {
             null,
             null,
             ScalingLevel.RX,
-            false,
+            false, null,
             null,
             null);
 
@@ -527,7 +527,7 @@ class ScoreControllerIT extends BaseIntegrationTest {
             null,
             null,
             ScalingLevel.RX,
-            false,
+            false, null,
             null,
             null);
 
@@ -573,7 +573,7 @@ class ScoreControllerIT extends BaseIntegrationTest {
             null,
             null,
             ScalingLevel.RX,
-            false,
+            false, null,
             null,
             null);
 
@@ -609,7 +609,7 @@ class ScoreControllerIT extends BaseIntegrationTest {
             null,
             null,
             ScalingLevel.RX,
-            false,
+            false, null,
             null,
             null);
 
@@ -645,7 +645,7 @@ class ScoreControllerIT extends BaseIntegrationTest {
             null,
             null,
             ScalingLevel.RX,
-            false,
+            false, null,
             null,
             null);
 
@@ -680,7 +680,7 @@ class ScoreControllerIT extends BaseIntegrationTest {
             null,
             null,
             ScalingLevel.RX,
-            false,
+            false, null,
             null,
             null);
 
@@ -794,7 +794,7 @@ class ScoreControllerIT extends BaseIntegrationTest {
   private ScoreRequest franRequest(Long wodId, Integer minutes, Integer reps, boolean capped) {
     return new ScoreRequest(
         null, LocalDate.now(), wodId, minutes, null, null, reps, null, null, null, null, null,
-        null, ScalingLevel.RX, capped, "my comment", null);
+        null, ScalingLevel.RX, capped, null, "my comment", null);
   }
 
   private org.springframework.test.web.servlet.ResultActions postAs(
@@ -895,6 +895,64 @@ class ScoreControllerIT extends BaseIntegrationTest {
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.content[0].userComment").value("private"))
         .andExpect(jsonPath("$.content[0].capabilities.canModify").value(true));
+  }
+
+  @Test
+  @DisplayName("POST /scores: EMOM rounds capped by the EMOM, tiebreak kept on a WOD that has one")
+  void testRoundsAndTiebreak() throws Exception {
+    Wod chelsea =
+        wodRepository.save(
+            Wod.builder()
+                .title("Chelsea")
+                .wodType(WodType.EMOM)
+                .scoreType(ScoreType.ROUNDS)
+                .emomInterval(60)
+                .emomRounds(30)
+                .isPublic(true)
+                .build());
+    Wod open =
+        wodRepository.save(
+            Wod.builder()
+                .title("Open 25.3")
+                .wodType(WodType.FOR_TIME)
+                .scoreType(ScoreType.TIME)
+                .timeCapSeconds(1200)
+                .tiebreakEn("Time after the last full set of wall walks")
+                .isPublic(true)
+                .build());
+
+    ScoreRequest rounds =
+        new ScoreRequest(
+            null, LocalDate.now(), chelsea.getId(), null, null, 24, null, null, null, null, null,
+            null, null, ScalingLevel.RX, false, null, null, null);
+    postAs("100", null, rounds)
+        .andExpect(status().isCreated())
+        .andExpect(jsonPath("$.rounds").value(24))
+        .andExpect(jsonPath("$.personalRecord").value(true));
+
+    ScoreRequest tooMany =
+        new ScoreRequest(
+            null, LocalDate.now(), chelsea.getId(), null, null, 31, null, null, null, null, null,
+            null, null, ScalingLevel.RX, false, null, null, null);
+    postAs("100", null, tooMany)
+        .andExpect(status().isBadRequest())
+        .andExpect(jsonPath("$.detail").value("A score cannot exceed the 30 rounds of the EMOM."));
+
+    ScoreRequest capped =
+        new ScoreRequest(
+            null, LocalDate.now(), open.getId(), null, null, null, 180, null, null, null, null,
+            null, null, ScalingLevel.RX, true, 1105, null, null);
+    postAs("100", null, capped)
+        .andExpect(status().isCreated())
+        .andExpect(jsonPath("$.tiebreakSeconds").value(1105));
+
+    ScoreRequest noTiebreakWod =
+        new ScoreRequest(
+            null, LocalDate.now(), chelsea.getId(), null, null, 25, null, null, null, null, null,
+            null, null, ScalingLevel.RX, false, 300, null, null);
+    postAs("100", null, noTiebreakWod)
+        .andExpect(status().isCreated())
+        .andExpect(jsonPath("$.tiebreakSeconds").doesNotExist());
   }
 
   private Score createScore(Long userId, int seconds) {

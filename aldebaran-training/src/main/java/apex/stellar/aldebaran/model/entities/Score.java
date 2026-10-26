@@ -114,6 +114,11 @@ public class Score {
   @NotNull
   private ScalingLevel scaling;
 
+  /** Official tiebreak time (elapsed seconds), optional: only used to rank equal scores. */
+  @Column(name = "tiebreak_seconds")
+  @Min(1)
+  private Integer tiebreakSeconds;
+
   @Column(name = "time_capped", nullable = false)
   @Builder.Default
   private Boolean timeCapped = false;

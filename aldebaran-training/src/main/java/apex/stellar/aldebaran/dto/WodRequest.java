@@ -33,6 +33,10 @@ public record WodRequest(
     @Size(max = 4000, message = "{validation.wod.notes.size}") String notesEn,
     @Size(max = 4000, message = "{validation.wod.notes.size}") String notesFr,
 
+    // --- Official tiebreak (EN / FR), only for WODs that define one ---
+    @Size(max = 1000, message = "{validation.wod.tiebreak.size}") String tiebreakEn,
+    @Size(max = 1000, message = "{validation.wod.tiebreak.size}") String tiebreakFr,
+
     // --- Structure and Prescription ---
     @Min(value = 0, message = "{validation.wod.timeCap.min}") Integer timeCapSeconds,
     @Min(value = 0, message = "{validation.wod.emom.min}") Integer emomInterval,

@@ -38,6 +38,7 @@ public record ScoreResponse(
     // --- Performance Context ---
     ScalingLevel scaling,
     boolean timeCapped,
+    Integer tiebreakSeconds,
     boolean personalRecord,
 
     // --- Comments and Scaling notes---
@@ -78,6 +79,7 @@ public record ScoreResponse(
         totalCalories,
         scaling,
         timeCapped,
+        tiebreakSeconds,
         personalRecord,
         showNotes ? userComment : null,
         showNotes ? scalingNotes : null,

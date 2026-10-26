@@ -13,6 +13,9 @@ import org.springframework.data.domain.Sort.Order;
  * <p>Best first: the scaling tier ({@code ELITE > RX > SCALED > CUSTOM}), then the performance for
  * the WOD's score type. For TIME, every finished time beats every time-capped score, and capped
  * scores are ranked by the reps completed at the cap. Missing values rank last.
+ *
+ * <p>The optional tiebreak time only separates equal performances between athletes (compare,
+ * leaderboard); a personal record never depends on it.
  */
 public final class ScoreRanking {
 
@@ -30,6 +33,17 @@ public final class ScoreRanking {
   }
 
   /**
+   * Orders scores of different athletes on the same WOD and scaling level: performance, then the
+   * lower tiebreak time (scores without one after those with one).
+   *
+   * @param type The WOD's score type.
+   * @return A comparator placing the best-ranked score first.
+   */
+  public static Comparator<Score> rankingFirst(ScoreType type) {
+    return performanceBestFirst(type).thenComparing(ascending(Score::getTiebreakSeconds));
+  }
+
+  /**
    * Orders scores of the same WOD and scaling level by performance only, best first.
    *
    * @param type The WOD's score type.
@@ -42,6 +56,7 @@ public final class ScoreRanking {
               .thenComparing(ascending(Score::getTimeSeconds))
               .thenComparing(descending(Score::getReps));
       case ROUNDS_REPS -> descending(Score::getRounds).thenComparing(descending(Score::getReps));
+      case ROUNDS -> descending(Score::getRounds);
       case REPS -> descending(Score::getReps);
       case WEIGHT -> descending(Score::getMaxWeightKg);
       case LOAD -> descending(Score::getTotalLoadKg);
@@ -52,7 +67,7 @@ public final class ScoreRanking {
   }
 
   /**
-   * Database sort matching {@link #performanceBestFirst(ScoreType)}, for paginated leaderboards.
+   * Database sort matching {@link #rankingFirst(ScoreType)}, for paginated leaderboards.
    *
    * @param type The WOD's score type.
    * @return The sort to apply to a scores query.
@@ -67,6 +82,7 @@ public final class ScoreRanking {
                   Order.desc("reps").nullsLast());
           case ROUNDS_REPS ->
               Sort.by(Order.desc("rounds").nullsLast(), Order.desc("reps").nullsLast());
+          case ROUNDS -> Sort.by(Order.desc("rounds").nullsLast());
           case REPS -> Sort.by(Order.desc("reps").nullsLast());
           case WEIGHT -> Sort.by(Order.desc("maxWeightKg").nullsLast());
           case LOAD -> Sort.by(Order.desc("totalLoadKg").nullsLast());
@@ -74,8 +90,9 @@ public final class ScoreRanking {
           case DISTANCE -> Sort.by(Order.desc("totalDistanceMeters").nullsLast());
           case NONE -> Sort.by(Order.desc("date"));
         };
-    // Ties: the earliest logged score first, then a stable order
-    return performance.and(Sort.by(Order.asc("loggedAt"), Order.asc("id")));
+    // Ties: the optional tiebreak time, then the earliest logged score, then a stable order
+    return performance.and(
+        Sort.by(Order.asc("tiebreakSeconds").nullsLast(), Order.asc("loggedAt"), Order.asc("id")));
   }
 
   private static <T extends Comparable<? super T>> Comparator<Score> ascending(

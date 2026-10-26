@@ -55,7 +55,10 @@ public final class WodCsvCodec {
     "description_en",
     "description_fr",
     "notes_en",
-    "notes_fr"
+    "notes_fr",
+    // Optional trailing columns (official tiebreak)
+    "tiebreak_en",
+    "tiebreak_fr"
   };
 
   static final String[] WOD_MOVEMENT_HEADERS = {
@@ -123,6 +126,8 @@ public final class WodCsvCodec {
               .descriptionFr(text(row, "description_fr"))
               .notesEn(text(row, "notes_en", "notes"))
               .notesFr(text(row, "notes_fr"))
+              .tiebreakEn(text(row, "tiebreak_en"))
+              .tiebreakFr(text(row, "tiebreak_fr"))
               .isPublic(true)
               .authorId(null)
               .gymId(null)
@@ -215,7 +220,9 @@ public final class WodCsvCodec {
             w.getDescriptionEn(),
             w.getDescriptionFr(),
             w.getNotesEn(),
-            w.getNotesFr());
+            w.getNotesFr(),
+            w.getTiebreakEn(),
+            w.getTiebreakFr());
 
         List<WodMovement> movements = new ArrayList<>(w.getMovements());
         movements.sort(Comparator.comparing(WodMovement::getOrderIndex));

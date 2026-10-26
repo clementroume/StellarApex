@@ -91,7 +91,7 @@ public class ScoreService {
     newScore.setWod(wod);
     newScore.setUserId(targetUserId);
     newScore.setLoggedAt(LocalDateTime.now());
-    normalizeAndCheck(newScore, wod.getScoreType());
+    normalizeAndCheck(newScore, wod);
 
     Score savedScore = scoreRepository.save(newScore);
 
@@ -121,7 +121,7 @@ public class ScoreService {
     }
 
     scoreMapper.updateEntity(request, existingScore);
-    normalizeAndCheck(existingScore, wod.getScoreType());
+    normalizeAndCheck(existingScore, wod);
 
     Score savedScore = scoreRepository.save(existingScore);
 
@@ -165,8 +165,7 @@ public class ScoreService {
             .findById(scoreId)
             .orElseThrow(() -> new ResourceNotFoundException(ERROR_SCORE_NOT_FOUND, scoreId));
 
-    Comparator<Score> order =
-        ScoreRanking.performanceBestFirst(score.getWod().getScoreType());
+    Comparator<Score> order = ScoreRanking.rankingFirst(score.getWod().getScoreType());
     List<Score> others =
         scoreRepository
             .findByWodIdAndScalingAndPersonalRecordTrue(score.getWod().getId(), score.getScaling())
@@ -213,18 +212,31 @@ public class ScoreService {
   }
 
   /**
-   * Clears the values that do not apply to the WOD's score type, then checks that the value it
-   * needs is present. A time-capped TIME score is recorded as the reps completed at the cap.
+   * Clears the values that do not apply to the WOD, then checks that the value its score type
+   * needs is present. A time-capped TIME score is recorded as the reps completed at the cap. The
+   * optional tiebreak is kept only for WODs that define one, and for a TIME WOD only when capped
+   * (a finished WOD has no tiebreak).
    *
    * @param score The score about to be saved.
-   * @param type The WOD's score type.
-   * @throws InvalidScoreException if the required value is missing.
+   * @param wod The WOD of the score.
+   * @throws InvalidScoreException if the required value is missing or out of range.
    */
-  private void normalizeAndCheck(Score score, ScoreType type) {
+  private void normalizeAndCheck(Score score, Wod wod) {
+    ScoreType type = wod.getScoreType();
     boolean capped = type == ScoreType.TIME && Boolean.TRUE.equals(score.getTimeCapped());
     score.setTimeCapped(capped);
     if (capped) {
       score.setTimeSeconds(null);
+    }
+    boolean hasTiebreak = wod.getTiebreakEn() != null || wod.getTiebreakFr() != null;
+    if (!hasTiebreak || (type == ScoreType.TIME && !capped)) {
+      score.setTiebreakSeconds(null);
+    }
+    if (type == ScoreType.ROUNDS
+        && score.getRounds() != null
+        && wod.getEmomRounds() != null
+        && score.getRounds() > wod.getEmomRounds()) {
+      throw new InvalidScoreException("error.score.rounds.max", wod.getEmomRounds());
     }
 
     boolean valid =
@@ -234,6 +246,7 @@ public class ScoreService {
                   ? score.getReps() != null
                   : score.getTimeSeconds() != null && score.getTimeSeconds() > 0;
           case ROUNDS_REPS -> score.getRounds() != null || score.getReps() != null;
+          case ROUNDS -> score.getRounds() != null;
           case REPS -> score.getReps() != null;
           case WEIGHT -> score.getMaxWeightKg() != null && score.getMaxWeightKg() > 0;
           case LOAD -> score.getTotalLoadKg() != null;

@@ -26,6 +26,7 @@ public class ScoreValidator implements ConstraintValidator<ValidScore, Score> {
                   ? score.getReps() != null
                   : score.getTimeSeconds() != null;
           case ROUNDS_REPS -> score.getRounds() != null || score.getReps() != null;
+          case ROUNDS -> score.getRounds() != null;
           case REPS -> score.getReps() != null;
           case WEIGHT -> score.getMaxWeightKg() != null;
           case LOAD -> score.getTotalLoadKg() != null;

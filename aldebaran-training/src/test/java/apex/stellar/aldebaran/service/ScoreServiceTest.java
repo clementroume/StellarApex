@@ -69,7 +69,7 @@ class ScoreServiceTest {
             null,
             null,
             ScalingLevel.RX,
-            false,
+            false, null,
             null,
             null);
 
@@ -146,7 +146,7 @@ class ScoreServiceTest {
   private ScoreRequest timeRequest(Long wodId, boolean capped) {
     return new ScoreRequest(
         null, LocalDate.now(), wodId, 5, 0, null, null, null, null, null, null, null, null,
-        ScalingLevel.RX, capped, null, null);
+        ScalingLevel.RX, capped, null, null, null);
   }
 
   private Score score(long id, ScalingLevel scaling) {
@@ -186,7 +186,7 @@ class ScoreServiceTest {
     ScoreRequest requestForOther =
         new ScoreRequest(
             targetUser, LocalDate.now(), 1L, 5, 0, null, null, null, null, null, null, null, null,
-            ScalingLevel.RX, false, null, null);
+            ScalingLevel.RX, false, null, null, null);
     Score scoreForOther =
         Score.builder().id(60L).userId(targetUser).timeSeconds(300).scaling(ScalingLevel.RX).build();
 
@@ -503,5 +503,88 @@ class ScoreServiceTest {
     assertEquals(1L, response.rank());
     assertEquals(1L, response.totalScores());
     assertEquals(100.0, response.percentile(), "Percentile for lone score should be 100%");
+  }
+
+  // =========================================================================
+  // ROUNDS (EMOM) AND TIEBREAK
+  // =========================================================================
+
+  private ScoreRequest anyRequest(Long wodId) {
+    return new ScoreRequest(
+        null, LocalDate.now(), wodId, null, null, null, null, null, null, null, null, null, null,
+        ScalingLevel.RX, false, null, null, null);
+  }
+
+  private Score saveThroughLog(Wod wod, Score entity) {
+    ScoreRequest request = anyRequest(wod.getId());
+    when(securityService.getCurrentUserId()).thenReturn(userId);
+    when(wodRepository.findById(wod.getId())).thenReturn(Optional.of(wod));
+    when(scoreMapper.toEntity(request)).thenReturn(entity);
+    lenient().when(scoreRepository.save(entity)).thenReturn(entity);
+    lenient().when(scoreRepository.findByWodIdAndUserId(wod.getId(), userId)).thenReturn(List.of(entity));
+    scoreService.logScore(request);
+    return entity;
+  }
+
+  @Test
+  @DisplayName("ROUNDS: rounds on the minute required, at most the EMOM rounds")
+  void testRounds_Bounds() {
+    Wod chelsea = Wod.builder().id(3L).scoreType(ScoreType.ROUNDS).emomRounds(30).build();
+
+    Score ok = saveThroughLog(chelsea, Score.builder().rounds(24).scaling(ScalingLevel.RX).build());
+    assertTrue(ok.isPersonalRecord());
+
+    Score tooMany = Score.builder().rounds(31).scaling(ScalingLevel.RX).build();
+    InvalidScoreException ex =
+        assertThrows(InvalidScoreException.class, () -> saveThroughLog(chelsea, tooMany));
+    assertEquals("error.score.rounds.max", ex.getMessageKey());
+
+    Score missing = Score.builder().reps(10).scaling(ScalingLevel.RX).build();
+    ex = assertThrows(InvalidScoreException.class, () -> saveThroughLog(chelsea, missing));
+    assertEquals("error.score.value.required.ROUNDS", ex.getMessageKey());
+  }
+
+  @Test
+  @DisplayName("Tiebreak: dropped when the WOD defines none, or when a TIME WOD is finished")
+  void testTiebreak_Dropped() {
+    Wod noTiebreak = Wod.builder().id(4L).scoreType(ScoreType.REPS).build();
+    Score reps = saveThroughLog(
+        noTiebreak, Score.builder().reps(120).tiebreakSeconds(300).scaling(ScalingLevel.RX).build());
+    assertNull(reps.getTiebreakSeconds());
+
+    Wod open = Wod.builder().id(5L).scoreType(ScoreType.TIME).tiebreakEn("Last full set").build();
+    Score finished = saveThroughLog(
+        open, Score.builder().timeSeconds(500).tiebreakSeconds(300).scaling(ScalingLevel.RX).build());
+    assertNull(finished.getTiebreakSeconds(), "A finished WOD has no tiebreak");
+  }
+
+  @Test
+  @DisplayName("Tiebreak: kept for a time-capped score and for an AMRAP of a WOD that has one")
+  void testTiebreak_Kept() {
+    Wod open = Wod.builder().id(5L).scoreType(ScoreType.TIME).tiebreakFr("Dernière série").build();
+    Score capped = saveThroughLog(
+        open,
+        Score.builder().timeCapped(true).reps(150).tiebreakSeconds(640).scaling(ScalingLevel.RX).build());
+    assertEquals(640, capped.getTiebreakSeconds());
+  }
+
+  @Test
+  @DisplayName("compareScore: equal reps ranked by tiebreak")
+  void testCompareScore_Tiebreak() {
+    Wod amrap = Wod.builder().id(6L).scoreType(ScoreType.REPS).tiebreakEn("Last set").build();
+    Score mine = Score.builder().id(70L).wod(amrap).userId(userId).scaling(ScalingLevel.RX)
+        .reps(200).tiebreakSeconds(600).build();
+    Score fasterTb = otherPr(71L, 1L);
+    fasterTb.setWod(amrap);
+    fasterTb.setReps(200);
+    fasterTb.setTiebreakSeconds(590);
+    Score noTb = otherPr(72L, 2L);
+    noTb.setWod(amrap);
+    noTb.setReps(200);
+    when(scoreRepository.findById(70L)).thenReturn(Optional.of(mine));
+    when(scoreRepository.findByWodIdAndScalingAndPersonalRecordTrue(6L, ScalingLevel.RX))
+        .thenReturn(List.of(fasterTb, noTb));
+
+    assertEquals(2L, scoreService.compareScore(70L).rank());
   }
 }

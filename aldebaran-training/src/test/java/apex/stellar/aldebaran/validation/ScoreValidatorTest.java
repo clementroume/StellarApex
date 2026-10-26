@@ -86,6 +86,15 @@ class ScoreValidatorTest {
   }
 
   @Test
+  @DisplayName("ROUNDS: valid only with the rounds completed")
+  void testRounds() {
+    Score score = createScore(ScoreType.ROUNDS);
+    assertInvalidScoreType(score);
+    score.setRounds(24);
+    assertValidScoreType(score);
+  }
+
+  @Test
   @DisplayName("TIME: time-capped score needs the reps at the cap, not a time")
   void testTime_Capped() {
     Score score = createScore(ScoreType.TIME);

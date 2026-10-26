@@ -154,7 +154,7 @@ class WodSecurityTest {
     WodRequest request =
         new WodRequest(
             "Test", null, null, null, null, 100L, false,
-            null, null, null, null, null, null, null, null, null);
+            null, null, null, null, null, null, null, null, null, null, null);
 
     when(securityService.isAdmin(admin)).thenReturn(true);
 
@@ -171,7 +171,7 @@ class WodSecurityTest {
     WodRequest request =
         new WodRequest(
             "Gym WOD", null, null, null, null, 100L, false,
-            null, null, null, null, null, null, null, null, null);
+            null, null, null, null, null, null, null, null, null, null, null);
 
     when(securityService.isAdmin(owner)).thenReturn(false);
 
@@ -188,7 +188,7 @@ class WodSecurityTest {
     WodRequest request =
         new WodRequest(
             "Prog WOD", null, null, null, null, 100L, false,
-            null, null, null, null, null, null, null, null, null);
+            null, null, null, null, null, null, null, null, null, null, null);
 
     when(securityService.isAdmin(programmer)).thenReturn(false);
 
@@ -205,7 +205,7 @@ class WodSecurityTest {
     WodRequest request =
         new WodRequest(
             "Coach WOD", null, null, null, null, 100L, false,
-            null, null, null, null, null, null, null, null, null);
+            null, null, null, null, null, null, null, null, null, null, null);
 
     when(securityService.isAdmin(coach)).thenReturn(false);
 
@@ -222,7 +222,7 @@ class WodSecurityTest {
     WodRequest request =
         new WodRequest(
             "Coach WOD", null, null, null, null, 100L, false,
-            null, null, null, null, null, null, null, null, null);
+            null, null, null, null, null, null, null, null, null, null, null);
 
     when(securityService.isAdmin(coach)).thenReturn(false);
 
@@ -239,7 +239,7 @@ class WodSecurityTest {
     WodRequest request =
         new WodRequest(
             "User WOD", null, null, null, null, 100L, false,
-            null, null, null, null, null, null, null, null, null);
+            null, null, null, null, null, null, null, null, null, null, null);
 
     when(securityService.isAdmin(user)).thenReturn(false);
 
@@ -256,7 +256,7 @@ class WodSecurityTest {
     WodRequest request =
         new WodRequest(
             "Hack WOD", null, null, null, null, 100L, false,
-            null, null, null, null, null, null, null, null, null);
+            null, null, null, null, null, null, null, null, null, null, null);
 
     when(securityService.isAdmin(owner)).thenReturn(false);
 
@@ -272,7 +272,7 @@ class WodSecurityTest {
         TestPrincipals.of(2L, 100L, "ATHLETE", Collections.emptyList());
     WodRequest request =
         new WodRequest(
-            "My WOD", null, null, null, 2L, null, false, null, null, null, null, null, null, null, null, null);
+            "My WOD", null, null, null, 2L, null, false, null, null, null, null, null, null, null, null, null, null, null);
 
     when(securityService.isAdmin(user)).thenReturn(false);
 
@@ -298,7 +298,7 @@ class WodSecurityTest {
             null,
             null,
             null,
-            null,
+            null, null, null,
             null,
             null,
             null,
@@ -533,12 +533,12 @@ class WodSecurityTest {
         wodSecurity.canCreate(
             new WodRequest(
                 "A", null, null, null, null, 100L, false,
-                null, null, null, null, null, null, null, null, null),
+                null, null, null, null, null, null, null, null, null, null, null),
             coach));
     assertFalse(
         wodSecurity.canCreate(
             new WodRequest(
-                "B", null, null, null, null, 300L, false, null, null, null, null, null, null, null, null, null),
+                "B", null, null, null, null, 300L, false, null, null, null, null, null, null, null, null, null, null, null),
             coach));
   }
 

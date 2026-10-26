@@ -102,6 +102,13 @@ public class Wod {
   @Column(name = "notes_fr", columnDefinition = "TEXT")
   private String notesFr;
 
+  // --- Tiebreak (EN / FR): how the official tiebreak time is taken; none when null ---
+  @Column(name = "tiebreak_en", columnDefinition = "TEXT")
+  private String tiebreakEn;
+
+  @Column(name = "tiebreak_fr", columnDefinition = "TEXT")
+  private String tiebreakFr;
+
   // --- Structure and Prescription ---
   @Column(name = "time_cap_seconds")
   @Min(0)
@@ -199,6 +206,8 @@ public class Wod {
   public enum ScoreType {
     TIME,
     ROUNDS_REPS,
+    // Rounds completed on the minute (EMOM such as "Chelsea"), capped by emomRounds
+    ROUNDS,
     REPS,
     WEIGHT,
     LOAD,

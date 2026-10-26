@@ -63,8 +63,38 @@ class ScoreRankingTest {
             Sort.Order.asc("timeCapped"),
             Sort.Order.asc("timeSeconds").nullsLast(),
             Sort.Order.desc("reps").nullsLast(),
+            Sort.Order.asc("tiebreakSeconds").nullsLast(),
             Sort.Order.asc("loggedAt"),
             Sort.Order.asc("id")),
         sort);
+  }
+
+  @Test
+  @DisplayName("rankingFirst: equal performances ranked by tiebreak, scores without one last")
+  void rankingFirst_Tiebreak() {
+    Score slowTb = time(1, ScalingLevel.RX, null, 150);
+    slowTb.setTiebreakSeconds(700);
+    Score fastTb = time(2, ScalingLevel.RX, null, 150);
+    fastTb.setTiebreakSeconds(650);
+    Score noTb = time(3, ScalingLevel.RX, null, 150);
+    Score moreReps = time(4, ScalingLevel.RX, null, 151);
+
+    List<Score> sorted =
+        List.of(slowTb, noTb, fastTb, moreReps).stream()
+            .sorted(ScoreRanking.rankingFirst(ScoreType.TIME))
+            .toList();
+
+    assertEquals(List.of(moreReps, fastTb, slowTb, noTb), sorted);
+  }
+
+  @Test
+  @DisplayName("bestFirst: ROUNDS ranks by rounds, a personal record ignores the tiebreak")
+  void bestFirst_RoundsIgnoresTiebreak() {
+    Score fewer = Score.builder().id(1L).scaling(ScalingLevel.RX).rounds(18).tiebreakSeconds(5).build();
+    Score more = Score.builder().id(2L).scaling(ScalingLevel.RX).rounds(24).build();
+
+    assertEquals(
+        List.of(more, fewer),
+        List.of(fewer, more).stream().sorted(ScoreRanking.bestFirst(ScoreType.ROUNDS)).toList());
   }
 }
