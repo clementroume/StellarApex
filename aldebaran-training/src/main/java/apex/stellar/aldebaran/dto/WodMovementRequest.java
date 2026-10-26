@@ -18,6 +18,7 @@ public record WodMovementRequest(
     // --- Prescription ---
     @Size(max = 50, message = "{validation.wod.repsScheme.size}") String repsScheme,
     @DecimalMin(value = "0.0", message = "{validation.value.positive}") Double weight,
+    @DecimalMin(value = "0.0", message = "{validation.value.positive}") Double weightFemale,
     Unit weightUnit,
     @Min(value = 0, message = "{validation.value.positive}") Integer durationSeconds,
     Unit durationDisplayUnit,
@@ -30,5 +31,7 @@ public record WodMovementRequest(
     Set<String> techniques,
 
     // --- Instructions ---
-    @Size(max = 4000, message = "{validation.wod.notes.size}") String notes,
-    @Size(max = 4000, message = "{validation.wod.scaling.size}") String scalingOptions) {}
+    @Size(max = 4000, message = "{validation.wod.notes.size}") String notesEn,
+    @Size(max = 4000, message = "{validation.wod.notes.size}") String notesFr,
+    @Size(max = 4000, message = "{validation.wod.scaling.size}") String scalingOptionsEn,
+    @Size(max = 4000, message = "{validation.wod.scaling.size}") String scalingOptionsFr) {}

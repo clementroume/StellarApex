@@ -23,9 +23,11 @@ public record WodResponse(
     Long gymId,
     boolean isPublic,
 
-    // --- Description and Notes ---
-    String description,
-    String notes,
+    // --- Description and Notes (EN / FR) ---
+    String descriptionEn,
+    String descriptionFr,
+    String notesEn,
+    String notesFr,
 
     // --- Structure ---
     Integer timeCapSeconds,
@@ -58,8 +60,10 @@ public record WodResponse(
         authorId,
         gymId,
         isPublic,
-        description,
-        notes,
+        descriptionEn,
+        descriptionFr,
+        notesEn,
+        notesFr,
         timeCapSeconds,
         emomInterval,
         emomRounds,

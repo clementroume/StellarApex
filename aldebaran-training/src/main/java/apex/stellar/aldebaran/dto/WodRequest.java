@@ -27,9 +27,11 @@ public record WodRequest(
     Long gymId,
     boolean isPublic,
 
-    // --- Description and Notes ---
-    @Size(max = 4000, message = "{validation.wod.description.size}") String description,
-    @Size(max = 4000, message = "{validation.wod.notes.size}") String notes,
+    // --- Description and Notes (EN / FR, either may be empty) ---
+    @Size(max = 4000, message = "{validation.wod.description.size}") String descriptionEn,
+    @Size(max = 4000, message = "{validation.wod.description.size}") String descriptionFr,
+    @Size(max = 4000, message = "{validation.wod.notes.size}") String notesEn,
+    @Size(max = 4000, message = "{validation.wod.notes.size}") String notesFr,
 
     // --- Structure and Prescription ---
     @Min(value = 0, message = "{validation.wod.timeCap.min}") Integer timeCapSeconds,

@@ -82,8 +82,8 @@ class WodCsvCodecTest {
     assertEquals(WodCategory.GIRLS, fran.getCategory());
     assertEquals(ScoreType.TIME, fran.getScoreType());
     assertEquals("21-15-9", fran.getRepScheme());
-    assertEquals("21-15-9 reps for time\nof thrusters and pull-ups.", fran.getDescription());
-    assertNull(fran.getNotes());
+    assertEquals("21-15-9 reps for time\nof thrusters and pull-ups.", fran.getDescriptionEn());
+    assertNull(fran.getNotesEn());
     assertNull(fran.getTimeCapSeconds());
     assertTrue(fran.isPublic());
     assertNull(fran.getAuthorId());
@@ -98,19 +98,19 @@ class WodCsvCodecTest {
     assertEquals(1, thruster.getOrderIndex());
     assertEquals(95.0, thruster.getWeight());
     assertEquals(Unit.LBS, thruster.getWeightUnit());
-    assertEquals("Women: 65 lb", thruster.getNotes());
-    assertNull(thruster.getScalingOptions());
+    assertEquals("Women: 65 lb", thruster.getNotesEn());
+    assertNull(thruster.getScalingOptionsEn());
     WodMovement pullUp = fran.getMovements().get(1);
     assertSame(PULL_UP, pullUp.getMovement());
     assertNull(pullUp.getWeight());
     assertNull(pullUp.getWeightUnit());
-    assertEquals("Ring rows", pullUp.getScalingOptions());
+    assertEquals("Ring rows", pullUp.getScalingOptionsEn());
 
     Wod cindy = wods.get(1);
     assertEquals(WodType.AMRAP, cindy.getWodType());
     assertNull(cindy.getCategory());
     assertEquals(1200, cindy.getTimeCapSeconds());
-    assertEquals("Note, with comma", cindy.getNotes());
+    assertEquals("Note, with comma", cindy.getNotesEn());
     WodMovement run = cindy.getMovements().getFirst();
     assertEquals(400.0, run.getDistance());
     assertEquals(Unit.METERS, run.getDistanceUnit());
@@ -158,8 +158,10 @@ class WodCsvCodecTest {
             .timeCapSeconds(600)
             .emomInterval(60)
             .emomRounds(10)
-            .description("Line 1\nLine 2, with \"quotes\"")
-            .notes(" padded ")
+            .descriptionEn("Line 1\nLine 2, with \"quotes\"")
+            .notesEn(" padded ")
+            .descriptionFr("Ligne 1\nLigne 2, avec des « guillemets »")
+            .notesFr("En mémoire, avec une virgule")
             .isPublic(true)
             .build();
     wod.getMovements()
@@ -188,8 +190,11 @@ class WodCsvCodecTest {
                 .durationSeconds(90)
                 .durationDisplayUnit(Unit.MINUTES)
                 .calories(12)
-                .notes("Women: 30 kg")
-                .scalingOptions("PVC")
+                .weightFemale(30.0)
+                .notesEn("Two dumbbells")
+                .notesFr("Deux haltères")
+                .scalingOptionsEn("PVC")
+                .scalingOptionsFr("Tube PVC")
                 .equipment(Set.of("BARBELL", "DUMBBELL"))
                 .techniques(Set.of("PAUSED"))
                 .build());
@@ -217,8 +222,10 @@ class WodCsvCodecTest {
     assertEquals(expected.getTimeCapSeconds(), actual.getTimeCapSeconds());
     assertEquals(expected.getEmomInterval(), actual.getEmomInterval());
     assertEquals(expected.getEmomRounds(), actual.getEmomRounds());
-    assertEquals(expected.getDescription(), actual.getDescription());
-    assertEquals(expected.getNotes(), actual.getNotes());
+    assertEquals(expected.getDescriptionEn(), actual.getDescriptionEn());
+    assertEquals(expected.getNotesEn(), actual.getNotesEn());
+    assertEquals(expected.getDescriptionFr(), actual.getDescriptionFr());
+    assertEquals(expected.getNotesFr(), actual.getNotesFr());
     assertEquals(expected.isPublic(), actual.isPublic());
 
     List<WodMovement> sorted =
@@ -239,8 +246,11 @@ class WodCsvCodecTest {
       assertEquals(e.getDurationSeconds(), a.getDurationSeconds());
       assertEquals(e.getDurationDisplayUnit(), a.getDurationDisplayUnit());
       assertEquals(e.getCalories(), a.getCalories());
-      assertEquals(e.getNotes(), a.getNotes());
-      assertEquals(e.getScalingOptions(), a.getScalingOptions());
+      assertEquals(e.getNotesEn(), a.getNotesEn());
+      assertEquals(e.getScalingOptionsEn(), a.getScalingOptionsEn());
+      assertEquals(e.getWeightFemale(), a.getWeightFemale());
+      assertEquals(e.getNotesFr(), a.getNotesFr());
+      assertEquals(e.getScalingOptionsFr(), a.getScalingOptionsFr());
       assertEquals(e.getEquipment(), a.getEquipment());
       assertEquals(e.getTechniques(), a.getTechniques());
     }

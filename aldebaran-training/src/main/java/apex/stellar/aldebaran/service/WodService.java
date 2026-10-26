@@ -124,8 +124,9 @@ public class WodService {
    * Computes the values available to filter the WOD list.
    *
    * <p>WOD formats and categories follow every current filter except the format and category
-   * themselves, so the UI only offers values that return results. Gyms and authors ignore the scope, gym and author filters: they feed the
-   * admin selectors, which must keep offering the other choices.
+   * themselves, so the UI only offers values that return results. Gyms and authors ignore the
+   * scope, gym and author filters: they feed the admin selectors, which must keep offering the
+   * other choices.
    *
    * @param search Optional title search.
    * @param scope List scope (defaults to ALL).
@@ -443,8 +444,11 @@ public class WodService {
     target.setDistance(temp.getDistance());
     target.setDistanceUnit(temp.getDistanceUnit());
     target.setCalories(temp.getCalories());
-    target.setNotes(temp.getNotes());
-    target.setScalingOptions(temp.getScalingOptions());
+    target.setWeightFemale(temp.getWeightFemale());
+    target.setNotesEn(temp.getNotesEn());
+    target.setNotesFr(temp.getNotesFr());
+    target.setScalingOptionsEn(temp.getScalingOptionsEn());
+    target.setScalingOptionsFr(temp.getScalingOptionsFr());
     target.setOrderIndex(temp.getOrderIndex());
 
     target.getEquipment().clear();

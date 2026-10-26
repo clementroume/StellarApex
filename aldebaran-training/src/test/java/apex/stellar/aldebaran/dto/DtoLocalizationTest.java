@@ -253,6 +253,8 @@ class DtoLocalizationTest {
               null,
               null,
               null,
+              null,
+              null,
               Collections.emptyList());
 
       assertViolationEnAndFr(
@@ -282,7 +284,9 @@ class DtoLocalizationTest {
               null,
               false,
               "A".repeat(4001),
+              null,
               "A".repeat(4001),
+              null,
               -1,
               -1,
               null,
@@ -290,7 +294,7 @@ class DtoLocalizationTest {
               Collections.singletonList(
                   new WodMovementRequest(
                       1L, 1, null, null, null, null, null, null, null, null, null, null, null,
-                      null)));
+                      null, null, null, null)));
 
       assertViolationEnAndFr(
           request,
@@ -299,12 +303,12 @@ class DtoLocalizationTest {
           "Le titre du WOD ne peut pas dépasser 100 caractères.");
       assertViolationEnAndFr(
           request,
-          "description",
+          "descriptionEn",
           "Description cannot exceed 4000 characters.",
           "La description ne peut pas dépasser 4000 caractères.");
       assertViolationEnAndFr(
           request,
-          "notes",
+          "notesEn",
           "Notes cannot exceed 4000 characters.",
           "Les notes ne peuvent pas dépasser 4000 caractères.");
       assertViolationEnAndFr(
@@ -338,7 +342,8 @@ class DtoLocalizationTest {
     void requiredFields() {
       WodMovementRequest request =
           new WodMovementRequest(
-              null, null, null, null, null, null, null, null, null, null, null, null, null, null);
+              null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+              null, null, null);
 
       assertViolationEnAndFr(
           request,
@@ -360,6 +365,7 @@ class DtoLocalizationTest {
               "A".repeat(51),
               -1.0,
               null,
+              null,
               -1,
               null,
               -1.0,
@@ -368,7 +374,9 @@ class DtoLocalizationTest {
               null,
               null,
               null,
-              "A".repeat(4001));
+              null,
+              "A".repeat(4001),
+              null);
 
       assertViolationEnAndFr(
           request,
@@ -382,7 +390,7 @@ class DtoLocalizationTest {
           "Le schéma de répétition (détail) ne peut pas dépasser 50 caractères.");
       assertViolationEnAndFr(
           request,
-          "scalingOptions",
+          "scalingOptionsEn",
           "Scaling options cannot exceed 4000 characters.",
           "Les options de scaling ne peuvent pas dépasser 4000 caractères.");
       assertViolationEnAndFr(

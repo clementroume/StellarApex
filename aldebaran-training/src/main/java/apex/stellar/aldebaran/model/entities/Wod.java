@@ -89,12 +89,18 @@ public class Wod {
   @Builder.Default
   private boolean isPublic = false;
 
-  // --- Description and Notes ---
-  @Column(name = "description", columnDefinition = "TEXT")
-  private String description;
+  // --- Description and Notes (EN / FR; a WOD may have only one language) ---
+  @Column(name = "description_en", columnDefinition = "TEXT")
+  private String descriptionEn;
 
-  @Column(name = "notes", columnDefinition = "TEXT")
-  private String notes;
+  @Column(name = "description_fr", columnDefinition = "TEXT")
+  private String descriptionFr;
+
+  @Column(name = "notes_en", columnDefinition = "TEXT")
+  private String notesEn;
+
+  @Column(name = "notes_fr", columnDefinition = "TEXT")
+  private String notesFr;
 
   // --- Structure and Prescription ---
   @Column(name = "time_cap_seconds")

@@ -73,6 +73,11 @@ public class WodMovement {
   @DecimalMin("0.0")
   private Double weight;
 
+  /** Women's load, in the same unit as {@code weight} (which is the men's load). */
+  @Column(name = "weight_female")
+  @DecimalMin("0.0")
+  private Double weightFemale;
+
   @Enumerated(EnumType.STRING)
   @Column(name = "weight_unit", length = 10)
   @Builder.Default
@@ -119,12 +124,18 @@ public class WodMovement {
   @Builder.Default
   private Set<String> techniques = new HashSet<>();
 
-  // --- Instructions ---
-  @Column(name = "notes", columnDefinition = "TEXT")
-  private String notes;
+  // --- Instructions (EN / FR) ---
+  @Column(name = "notes_en", columnDefinition = "TEXT")
+  private String notesEn;
 
-  @Column(name = "scaling_options", columnDefinition = "TEXT")
-  private String scalingOptions;
+  @Column(name = "notes_fr", columnDefinition = "TEXT")
+  private String notesFr;
+
+  @Column(name = "scaling_options_en", columnDefinition = "TEXT")
+  private String scalingOptionsEn;
+
+  @Column(name = "scaling_options_fr", columnDefinition = "TEXT")
+  private String scalingOptionsFr;
 
   // --- Business rules ---
 

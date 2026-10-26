@@ -14,6 +14,7 @@ public record WodMovementResponse(
     // --- Prescription ---
     String repsScheme,
     Double weight,
+    Double weightFemale,
     Unit weightUnit,
     Integer durationSeconds,
     Unit durationDisplayUnit,
@@ -26,5 +27,7 @@ public record WodMovementResponse(
     Set<String> techniques,
 
     // --- Instructions ---
-    String notes,
-    String scalingOptions) {}
+    String notesEn,
+    String notesFr,
+    String scalingOptionsEn,
+    String scalingOptionsFr) {}

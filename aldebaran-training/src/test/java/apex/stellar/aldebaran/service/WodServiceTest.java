@@ -76,7 +76,7 @@ class WodServiceTest {
 
     WodMovementRequest movementRequest =
         new WodMovementRequest(
-            1L, 1, "21-15-9", 0.0, null, 0, null, 0.0, null, 0, null, null, null, null);
+            1L, 1, "21-15-9", 0.0, null, null, 0, null, 0.0, null, 0, null, null, null, null, null, null);
     wodRequest =
         new WodRequest(
             "Fran",
@@ -87,7 +87,9 @@ class WodServiceTest {
             null, // gymId
             true, // isPublic
             "Desc",
+            null,
             "Notes",
+            null,
             600, // timeCap
             0, // emomInterval
             0, // emomRounds
@@ -260,12 +262,14 @@ class WodServiceTest {
             null,
             null,
             null,
+            null,
+            null,
             "21-15-9",
             List.of(
                 new WodMovementRequest(
-                    1L, 1, "21", null, null, 0, null, 225.0, null, 0, null, null, null, null),
+                    1L, 1, "21", null, null, null, 0, null, 225.0, null, 0, null, null, null, null, null, null),
                 new WodMovementRequest(
-                    2L, 2, "21", null, null, 0, null, 0.0, null, 0, null, null, null, null)));
+                    2L, 2, "21", null, null, null, 0, null, 0.0, null, 0, null, null, null, null, null, null)));
 
     when(securityService.getCurrentUserId()).thenReturn(100L);
 
@@ -435,9 +439,11 @@ class WodServiceTest {
             null,
             null,
             null,
+            null,
+            null,
             List.of(
                 new WodMovementRequest(
-                    1L, 1, "15-12-9", 0.0, null, 0, null, 0.0, null, 0, null, null, null, null)));
+                    1L, 1, "15-12-9", 0.0, null, null, 0, null, 0.0, null, 0, null, null, null, null, null, null)));
 
     wodService.updateWod(1L, updateRequest);
 
@@ -527,9 +533,11 @@ class WodServiceTest {
             null,
             null,
             null,
+            null,
+            null,
             List.of(
                 new WodMovementRequest(
-                    1L, 2, "15", null, null, 0, null, null, null, 0, null, null, null, null)));
+                    1L, 2, "15", null, null, null, 0, null, null, null, 0, null, null, null, null, null, null)));
     // When
     wodService.updateWod(1L, updateRequest);
 
@@ -562,6 +570,8 @@ class WodServiceTest {
             null,
             null,
             true,
+            null,
+            null,
             null,
             null,
             null,

@@ -159,10 +159,16 @@ public class DevGymWodSeeder implements ApplicationRunner {
             base("Sparta Burner", WodType.AMRAP, ScoreType.ROUNDS_REPS, sparta, ids.owner())
                 .repScheme("AMRAP 12 min")
                 .timeCapSeconds(720)
-                .description("As many rounds as possible in 12 minutes."),
-            mv("Wall-ball Shot", "10").weight(9.0).weightUnit(Unit.KG),
-            mv("Box Jump", "10").notes("60 cm box"),
-            mv("American Kettlebell Swing", "10").weight(24.0).weightUnit(Unit.KG)));
+                .descriptionEn("As many rounds as possible in 12 minutes.")
+                .descriptionFr("Le plus de tours possible en 12 minutes."),
+            mv("Wall-ball Shot", "10").weight(9.0).weightFemale(6.0).weightUnit(Unit.KG),
+            mv("Box Jump", "10")
+                .notesEn("60 cm box. Women: 50 cm")
+                .notesFr("Box de 60 cm. Femmes : 50 cm"),
+            mv("American Kettlebell Swing", "10")
+                .weight(24.0)
+                .weightFemale(16.0)
+                .weightUnit(Unit.KG)));
     wods.add(
         wod(
             catalog,
@@ -170,8 +176,9 @@ public class DevGymWodSeeder implements ApplicationRunner {
                 .repScheme("EMOM 10 min")
                 .emomInterval(60)
                 .emomRounds(10)
-                .description("Every minute on the minute for 10 minutes."),
-            mv("Power Clean", "3").weight(70.0).weightUnit(Unit.KG),
+                .descriptionEn("Every minute on the minute for 10 minutes.")
+                .descriptionFr("Chaque minute, pendant 10 minutes."),
+            mv("Power Clean", "3").weight(70.0).weightFemale(45.0).weightUnit(Unit.KG),
             mv("Burpee", "6")));
     wods.add(
         wod(
@@ -179,7 +186,8 @@ public class DevGymWodSeeder implements ApplicationRunner {
             base("Hoplite Chipper", WodType.FOR_TIME, ScoreType.TIME, sparta, ids.owner())
                 .repScheme("50-40-30-20-10")
                 .timeCapSeconds(900)
-                .description("For time, one movement after the other."),
+                .descriptionEn("For time, one movement after the other.")
+                .descriptionFr("Pour le temps, un mouvement après l'autre."),
             mv("Double-under", "50"),
             mv("Air Squat", "40"),
             mv("Sit-up", "30"),
@@ -190,8 +198,13 @@ public class DevGymWodSeeder implements ApplicationRunner {
             catalog,
             base("Sparta Back Squat 5x5", WodType.STRENGTH, ScoreType.WEIGHT, sparta, ids.owner())
                 .repScheme("5x5")
-                .description("5 sets of 5 reps, rest 2 minutes between sets. Score the heaviest."),
-            mv("Back Squat", "5x5").notes("Build up to a heavy 5")));
+                .descriptionEn("5 sets of 5 reps, rest 2 minutes between sets. Score the heaviest.")
+                .descriptionFr(
+                    "5 séries de 5 répétitions, 2 minutes de repos entre les séries. Score : la"
+                        + " série la plus lourde."),
+            mv("Back Squat", "5x5")
+                .notesEn("Build up to a heavy 5")
+                .notesFr("Monte jusqu'à 5 répétitions lourdes")));
 
     // --- Zeus Programming (virtual gym) ---
     wods.add(
@@ -199,7 +212,8 @@ public class DevGymWodSeeder implements ApplicationRunner {
             catalog,
             base("Olympus Deadlift", WodType.STRENGTH, ScoreType.WEIGHT, zeus, ids.programmer())
                 .repScheme("5-3-1")
-                .description("Work up to a heavy single."),
+                .descriptionEn("Work up to a heavy single.")
+                .descriptionFr("Monte jusqu'à une répétition lourde."),
             mv("Deadlift", "5-3-1")));
     wods.add(
         wod(
@@ -208,17 +222,19 @@ public class DevGymWodSeeder implements ApplicationRunner {
                 .repScheme("EMOM 16 min")
                 .emomInterval(60)
                 .emomRounds(16)
-                .description("Odd minutes: row. Even minutes: toes-to-bar."),
-            mv("Rowing", null).calories(15).notes("Odd minutes"),
-            mv("Toes-to-Bar", "12").notes("Even minutes")));
+                .descriptionEn("Odd minutes: row. Even minutes: toes-to-bar.")
+                .descriptionFr("Minutes impaires : rameur. Minutes paires : toes-to-bar."),
+            mv("Rowing", null).calories(15).notesEn("Odd minutes").notesFr("Minutes impaires"),
+            mv("Toes-to-Bar", "12").notesEn("Even minutes").notesFr("Minutes paires")));
     wods.add(
         wod(
             catalog,
             base("Titan AMRAP", WodType.AMRAP, ScoreType.ROUNDS_REPS, zeus, ids.programmer())
                 .repScheme("AMRAP 15 min")
                 .timeCapSeconds(900)
-                .description("As many rounds as possible in 15 minutes."),
-            mv("Thruster", "10").weight(43.0).weightUnit(Unit.KG),
+                .descriptionEn("As many rounds as possible in 15 minutes.")
+                .descriptionFr("Le plus de tours possible en 15 minutes."),
+            mv("Thruster", "10").weight(43.0).weightFemale(30.0).weightUnit(Unit.KG),
             mv("Chest-to-Bar Pull-up", "10"),
             mv("Rowing", null).calories(12)));
     wods.add(
@@ -227,8 +243,9 @@ public class DevGymWodSeeder implements ApplicationRunner {
             base("Pantheon 21-15-9", WodType.FOR_TIME, ScoreType.TIME, zeus, ids.programmer())
                 .repScheme("21-15-9")
                 .timeCapSeconds(720)
-                .description("21-15-9 reps for time."),
-            mv("Front Squat", "21-15-9").weight(60.0).weightUnit(Unit.KG),
+                .descriptionEn("21-15-9 reps for time.")
+                .descriptionFr("21-15-9 répétitions pour le temps."),
+            mv("Front Squat", "21-15-9").weight(60.0).weightFemale(40.0).weightUnit(Unit.KG),
             mv("Handstand Push-up", "21-15-9")));
 
     // --- Personal private WOD (no gym) ---
@@ -238,7 +255,8 @@ public class DevGymWodSeeder implements ApplicationRunner {
             base("Athlete Engine Builder", WodType.AMRAP, ScoreType.ROUNDS_REPS, null, ids.athlete())
                 .repScheme("AMRAP 20 min")
                 .timeCapSeconds(1200)
-                .description("Personal session: as many rounds as possible in 20 minutes."),
+                .descriptionEn("Personal session: as many rounds as possible in 20 minutes.")
+                .descriptionFr("Séance perso : le plus de tours possible en 20 minutes."),
             mv("Running", null).distance(400.0).distanceUnit(Unit.METERS),
             mv("Air Squat", "20")));
 
@@ -284,7 +302,8 @@ public class DevGymWodSeeder implements ApplicationRunner {
         log.warn("Dev gym WOD '{}': unknown movement '{}', skipped", wod.getTitle(), name);
         continue;
       }
-      wm.checkVariantsAllowed(movement.getName(), movement.getEquipment(), movement.getTechniques());
+      wm.checkVariantsAllowed(
+          movement.getName(), movement.getEquipment(), movement.getTechniques());
       wm.setMovement(movement);
       wm.setWod(wod);
       wm.setOrderIndex(order++);

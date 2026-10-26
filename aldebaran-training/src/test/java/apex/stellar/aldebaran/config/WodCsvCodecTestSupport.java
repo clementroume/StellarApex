@@ -39,7 +39,7 @@ public final class WodCsvCodecTestSupport {
             .category(WodCategory.GIRLS)
             .scoreType(ScoreType.TIME)
             .repScheme("21-15-9")
-            .description("21-15-9 reps for time of:\n- thrusters\n- pull-ups")
+            .descriptionEn("21-15-9 reps for time of:\n- thrusters\n- pull-ups")
             .isPublic(true)
             .modalities(Set.of(Modality.WEIGHTLIFTING, Modality.GYMNASTICS))
             .build();
@@ -52,8 +52,8 @@ public final class WodCsvCodecTestSupport {
                 .repsScheme("21-15-9")
                 .weight(95.0)
                 .weightUnit(Unit.LBS)
-                .notes("Women: 65 lb")
-                .scalingOptions("Lighter barbell, dumbbells")
+                .notesEn("Women: 65 lb")
+                .scalingOptionsEn("Lighter barbell, dumbbells")
                 .equipment(Set.of("BARBELL"))
                 .build());
     fran.getMovements()
@@ -78,7 +78,7 @@ public final class WodCsvCodecTestSupport {
             .timeCapSeconds(1800)
             .emomInterval(60)
             .emomRounds(30)
-            .notes("Score \"rounds\" completed")
+            .notesEn("Score \"rounds\" completed")
             .isPublic(true)
             .modalities(Set.of(Modality.MONOSTRUCTURAL))
             .build();
