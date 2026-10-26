@@ -9,11 +9,14 @@ import {WodService} from '../../../api/aldebaran/services/wod.service';
 import {MovementService} from '../../../api/aldebaran/services/movement.service';
 import {NotificationService} from '../../../core/services/notification.service';
 import {AccessService} from '../../../core/services/access.service';
-import {MovementSummaryResponse} from '../../../api/aldebaran/models/movement.model';
+import {MovementResponse, MovementSummaryResponse} from '../../../api/aldebaran/models/movement.model';
 import {WodMovementRequest, WodMovementResponse, WodRequest, WodResponse} from '../../../api/aldebaran/models/wod.model';
 import {ProblemDetail} from '../../../core/models/problem-detail.model';
 
 export type WodFormVisibility = 'PRIVATE' | 'GYM';
+
+/** Variant fields of a WOD movement, limited to the values allowed by its movement. */
+export type WodMovementVariant = 'equipment' | 'techniques';
 
 const minLengthArray = (min: number) => (control: AbstractControl): ValidationErrors | null =>
   (control as FormArray).length >= min ? null : {minLengthArray: {required: min}};
@@ -48,6 +51,11 @@ export class WodFormComponent implements OnInit {
   scoreTypes = signal<string[]>([]);
   unitGroups = signal<Record<string, string[]>>({});
   availableMovements = signal<MovementSummaryResponse[]>([]);
+  readonly variantFields: readonly WodMovementVariant[] = ['equipment', 'techniques'];
+  /** Full movements (allowed equipment and techniques), loaded on demand by id. */
+  readonly movementDetails = signal<Record<number, MovementResponse>>({});
+  private readonly movementsByName = computed(
+    () => new Map(this.availableMovements().map(m => [m.name.toLowerCase(), m])));
 
   massUnits = computed(() => this.unitGroups()['MASS'] ?? []);
   distanceUnits = computed(() => this.unitGroups()['DISTANCE'] ?? []);
@@ -133,6 +141,8 @@ export class WodFormComponent implements OnInit {
   addMovement(source?: WodMovementResponse): void {
     this.movementsFormArray.push(this.fb.group({
       movementId: [source?.movement.id ?? null as number | null, Validators.required],
+      // Search box (name or abbreviation), resolved to movementId; not sent to the API
+      movementQuery: [source?.movement.name ?? ''],
       repsScheme: [source?.repsScheme ?? '', [Validators.maxLength(50)]],
       weight: [source?.weight ?? null as number | null, [Validators.min(0)]],
       weightUnit: [source?.weightUnit ?? this.massUnits()[0] ?? 'KG'],
@@ -141,12 +151,71 @@ export class WodFormComponent implements OnInit {
       durationSeconds: [source?.durationSeconds ?? null as number | null, [Validators.min(0)]],
       durationDisplayUnit: [source?.durationDisplayUnit ?? null as string | null],
       calories: [source?.calories ?? null as number | null, [Validators.min(0)]],
-      // Not editable here, preserved on edition
+      // Variants: only values allowed by the movement (checked again by Aldebaran)
       equipment: [source?.equipment ?? null as string[] | null],
       techniques: [source?.techniques ?? null as string[] | null],
       notes: [source?.notes ?? '', [Validators.maxLength(4000)]],
       scalingOptions: [source?.scalingOptions ?? '', [Validators.maxLength(4000)]]
     }));
+    if (source) {
+      this.loadMovementDetails(source.movement.id);
+    }
+  }
+
+  /** Resolves the search box to a catalog movement; changing the movement clears its variants. */
+  onMovementQuery(index: number): void {
+    const group = this.movementsFormArray.at(index);
+    const query = String(group.get('movementQuery')?.value ?? '').trim().toLowerCase();
+    const match = this.movementsByName().get(query) ?? null;
+    if ((match?.id ?? null) === group.get('movementId')?.value) return;
+    group.patchValue({movementId: match?.id ?? null, equipment: [], techniques: []});
+    if (match) {
+      this.loadMovementDetails(match.id);
+    }
+  }
+
+  /** Full movement of a row, once loaded. */
+  movementDetail(index: number): MovementResponse | null {
+    const id = this.movementsFormArray.at(index)?.get('movementId')?.value as number | null;
+    return id == null ? null : this.movementDetails()[id] ?? null;
+  }
+
+  /** Allowed values of a variant field for a row, sorted for a stable display. */
+  allowedVariants(index: number, field: WodMovementVariant): string[] {
+    return [...(this.movementDetail(index)?.[field] ?? [])].sort();
+  }
+
+  isVariantSelected(index: number, field: WodMovementVariant, value: string): boolean {
+    const selected = this.movementsFormArray.at(index).get(field)?.value as string[] | null;
+    return selected?.includes(value) ?? false;
+  }
+
+  toggleVariant(index: number, field: WodMovementVariant, value: string): void {
+    const control = this.movementsFormArray.at(index).get(field)!;
+    const selected = (control.value as string[] | null) ?? [];
+    control.setValue(selected.includes(value) ? selected.filter(v => v !== value) : [...selected, value]);
+    control.markAsDirty();
+  }
+
+  private loadMovementDetails(id: number): void {
+    if (this.movementDetails()[id]) return;
+    this.movementService.getMovement(id).subscribe(movement => {
+      this.movementDetails.update(details => ({...details, [id]: movement}));
+      this.dropDisallowedVariants(movement);
+    });
+  }
+
+  /** Removes stored variants that the movement no longer allows (Aldebaran would reject them). */
+  private dropDisallowedVariants(movement: MovementResponse): void {
+    this.movementsFormArray.controls
+      .filter(group => group.get('movementId')?.value === movement.id)
+      .forEach(group => (['equipment', 'techniques'] as const).forEach(field => {
+        const control = group.get(field)!;
+        const selected = control.value as string[] | null;
+        if (selected?.some(v => !movement[field].includes(v))) {
+          control.setValue(selected.filter(v => movement[field].includes(v)));
+        }
+      }));
   }
 
   removeMovement(index: number): void {

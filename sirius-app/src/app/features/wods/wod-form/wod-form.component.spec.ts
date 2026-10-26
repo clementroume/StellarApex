@@ -101,11 +101,19 @@ describe('WodFormComponent', () => {
     mockWodService.updateWod.mockReturnValue(of(existingWod));
     mockWodService.getWod.mockReturnValue(of(existingWod));
 
-    mockMovementService = {getMovements: vi.fn().mockName('MovementService.getMovements')} as any;
+    mockMovementService = {
+      getMovements: vi.fn().mockName('MovementService.getMovements'),
+      getMovement: vi.fn().mockName('MovementService.getMovement')
+    } as any;
     mockMovementService.getMovements.mockReturnValue(of([
-      {id: 20, name: 'Pull-up', category: 'PULL'},
+      {id: 20, name: 'Pull-up', nameAbbreviation: undefined, category: 'PULL'},
       {id: 10, name: 'Air Squat', category: 'SQUAT'}
     ]));
+    const details: Record<number, any> = {
+      20: {id: 20, name: 'Pull-up', equipment: ['RINGS', 'PULL_UP_BAR'], techniques: ['STRICT', 'KIPPING'], targetedMuscles: []},
+      10: {id: 10, name: 'Thruster', equipment: ['BARBELL', 'DUMBBELL'], techniques: [], targetedMuscles: []}
+    };
+    mockMovementService.getMovement.mockImplementation((id: number) => of(details[id]));
 
     mockNotificationService = {
       showSuccess: vi.fn().mockName('NotificationService.showSuccess'),
@@ -190,6 +198,42 @@ describe('WodFormComponent', () => {
       component.moveMovement(0, -1); // out of bounds: no-op
       component.removeMovement(1);
       expect(component.buildPayload().movements.map(m => [m.movementId, m.orderIndex])).toEqual([[10, 1], [20, 2]]);
+    });
+
+    it('should resolve the movement search box and offer only the allowed variants', () => {
+      component.addMovement();
+      const row = component.movementsFormArray.at(0);
+
+      row.patchValue({movementQuery: 'pull-UP '});
+      component.onMovementQuery(0);
+      expect(row.value.movementId).toBe(20);
+      expect(mockMovementService.getMovement).toHaveBeenCalledWith(20);
+      expect(component.allowedVariants(0, 'equipment')).toEqual(['PULL_UP_BAR', 'RINGS']);
+      expect(component.allowedVariants(0, 'techniques')).toEqual(['KIPPING', 'STRICT']);
+
+      row.patchValue({movementQuery: 'Unknown move'});
+      component.onMovementQuery(0);
+      expect(row.value.movementId).toBeNull();
+      expect(row.get('movementId')!.invalid).toBe(true);
+      expect(component.allowedVariants(0, 'equipment')).toEqual([]);
+    });
+
+    it('should toggle variants, send them and clear them when the movement changes', () => {
+      fillValidForm();
+      const row = component.movementsFormArray.at(0);
+      row.patchValue({movementQuery: 'Pull-up'});
+      component.onMovementQuery(0); // same movement: nothing reset
+
+      component.toggleVariant(0, 'equipment', 'RINGS');
+      component.toggleVariant(0, 'techniques', 'STRICT');
+      component.toggleVariant(0, 'techniques', 'KIPPING');
+      component.toggleVariant(0, 'techniques', 'KIPPING');
+      expect(component.isVariantSelected(0, 'equipment', 'RINGS')).toBe(true);
+      expect(component.buildPayload().movements[0]).toMatchObject({equipment: ['RINGS'], techniques: ['STRICT']});
+
+      row.patchValue({movementQuery: 'Air Squat'});
+      component.onMovementQuery(0);
+      expect(component.buildPayload().movements[0]).toMatchObject({movementId: 10, equipment: [], techniques: []});
     });
 
     it('should display the backend error on failure', () => {
@@ -283,6 +327,16 @@ describe('WodFormComponent', () => {
       expect(component.movementsFormArray.at(0).value.movementId).toBe(10);
       expect(component.wodForm.controls.title.enabled).toBe(true);
       expect(component.wodForm.controls.isPublic.enabled).toBe(true);
+    });
+
+    it('should prefill the search box and drop stored variants the movement no longer allows', () => {
+      expect(component.movementsFormArray.at(0).value.movementQuery).toBe('Thruster');
+      mockMovementService.getMovement.mockReturnValueOnce(
+        of({id: 99, name: 'Dip', equipment: ['RINGS'], techniques: [], targetedMuscles: []} as any));
+
+      component.addMovement({id: 3, movement: {id: 99, name: 'Dip'} as any, orderIndex: 3, equipment: ['RINGS', 'BOX']});
+
+      expect(component.movementsFormArray.at(2).value.equipment).toEqual(['RINGS']);
     });
 
     it('should lock the ownership fields', () => {

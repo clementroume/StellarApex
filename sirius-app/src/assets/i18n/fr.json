@@ -430,6 +430,8 @@
       "DURATION": "Durée",
       "CALORIES": "Calories",
       "SCALING": "Scaling",
+      "EQUIPMENT": "Équipement",
+      "TECHNIQUES": "Techniques",
       "GYM": "Salle"
     },
     "PLACEHOLDERS": {
@@ -437,7 +439,8 @@
       "REP_SCHEME": "Ex : 21-15-9",
       "DESCRIPTION": "Déroulé du WOD...",
       "NOTES": "Consignes pour le coach ou l'athlète...",
-      "REPS": "Ex : 21-15-9"
+      "REPS": "Ex : 21-15-9",
+      "MOVEMENT_SEARCH": "Rechercher par nom ou abréviation (ex : HSPU)"
     },
     "VISIBILITY": {
       "PUBLIC": "Public",
@@ -452,6 +455,7 @@
       "SUCCESS_UPDATE": "WOD mis à jour avec succès.",
       "LOCKED": "Ce WOD a déjà des scores enregistrés : il ne peut plus être modifié ni supprimé.",
       "FORBIDDEN": "Tu n'as pas les droits pour effectuer cette action sur ce WOD.",
+      "MOVEMENT_UNKNOWN": "Choisissez un mouvement dans la liste.",
       "MOVEMENTS_REQUIRED": "Ajoute au moins un mouvement.",
       "NO_MOVEMENTS": "Aucun mouvement prescrit.",
       "LOCKED_BADGE": "Verrouillé (scores enregistrés)",

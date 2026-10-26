@@ -430,6 +430,8 @@
       "DURATION": "Duration",
       "CALORIES": "Calories",
       "SCALING": "Scaling",
+      "EQUIPMENT": "Equipment",
+      "TECHNIQUES": "Techniques",
       "GYM": "Gym"
     },
     "PLACEHOLDERS": {
@@ -437,7 +439,8 @@
       "REP_SCHEME": "E.g. 21-15-9",
       "DESCRIPTION": "WOD flow...",
       "NOTES": "Instructions for the coach or athlete...",
-      "REPS": "E.g. 21-15-9"
+      "REPS": "E.g. 21-15-9",
+      "MOVEMENT_SEARCH": "Search by name or abbreviation (e.g. HSPU)"
     },
     "VISIBILITY": {
       "PUBLIC": "Public",
@@ -452,6 +455,7 @@
       "SUCCESS_UPDATE": "WOD updated successfully.",
       "LOCKED": "This WOD already has logged scores: it can no longer be edited or deleted.",
       "FORBIDDEN": "You are not allowed to perform this action on this WOD.",
+      "MOVEMENT_UNKNOWN": "Pick a movement from the list.",
       "MOVEMENTS_REQUIRED": "Add at least one movement.",
       "NO_MOVEMENTS": "No prescribed movement.",
       "LOCKED_BADGE": "Locked (scores logged)",

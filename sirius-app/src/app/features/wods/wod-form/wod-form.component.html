@@ -151,6 +151,12 @@
           <p class="text-center text-base-content/50 py-4">{{ 'WOD.MESSAGES.MOVEMENTS_REQUIRED' | translate }}</p>
         }
 
+        <datalist id="wod-movement-options">
+          @for (m of availableMovements(); track m.id) {
+            <option [value]="m.name">{{ m.nameAbbreviation ?? '' }}</option>
+          }
+        </datalist>
+
         <div formArrayName="movements" class="flex flex-col gap-4">
           @for (movementCtrl of movementsFormArray.controls; track movementCtrl; let i = $index; let first = $first; let last = $last) {
 
@@ -159,12 +165,14 @@
                 <span class="badge badge-secondary self-center sm:self-end sm:mb-3">{{ i + 1 }}</span>
                 <label class="form-control w-full">
                   <div class="label"><span class="label-text">{{ 'WOD.FIELDS.MOVEMENT' | translate }} *</span></div>
-                  <select formControlName="movementId" class="select select-bordered w-full">
-                    <option [ngValue]="null" disabled>-</option>
-                    @for (m of availableMovements(); track m.id) {
-                      <option [ngValue]="m.id">{{ m.name }}</option>
-                    }
-                  </select>
+                  <input type="text" formControlName="movementQuery" list="wod-movement-options" autocomplete="off"
+                         class="input input-bordered w-full"
+                         [class.input-error]="movementCtrl.get('movementQuery')?.value && movementCtrl.get('movementId')?.invalid"
+                         [placeholder]="'WOD.PLACEHOLDERS.MOVEMENT_SEARCH' | translate"
+                         (input)="onMovementQuery(i)"/>
+                  @if (movementCtrl.get('movementQuery')?.value && movementCtrl.get('movementId')?.invalid) {
+                    <div class="label"><span class="label-text-alt text-error">{{ 'WOD.MESSAGES.MOVEMENT_UNKNOWN' | translate }}</span></div>
+                  }
                 </label>
                 <div class="flex gap-2">
                   <button type="button" class="btn btn-square btn-ghost" [disabled]="first"
@@ -181,6 +189,27 @@
                   </button>
                 </div>
               </div>
+
+              @for (field of variantFields; track field) {
+                @if (allowedVariants(i, field); as allowed) {
+                  @if (allowed.length > 0) {
+                    <div class="flex flex-wrap items-center gap-2" role="group"
+                         [attr.aria-label]="'WOD.FIELDS.' + (field === 'equipment' ? 'EQUIPMENT' : 'TECHNIQUES') | translate">
+                      <span class="label-text w-full sm:w-28">{{ 'WOD.FIELDS.' + (field === 'equipment' ? 'EQUIPMENT' : 'TECHNIQUES') | translate }}</span>
+                      @for (value of allowed; track value) {
+                        <button type="button" class="btn btn-xs"
+                                [class.btn-primary]="field === 'equipment' && isVariantSelected(i, field, value)"
+                                [class.btn-secondary]="field === 'techniques' && isVariantSelected(i, field, value)"
+                                [class.btn-outline]="!isVariantSelected(i, field, value)"
+                                [attr.aria-pressed]="isVariantSelected(i, field, value)"
+                                (click)="toggleVariant(i, field, value)">
+                          {{ 'MOVEMENT.' + (field === 'equipment' ? 'EQUIPMENT.' : 'TECHNIQUES.') + value | translate }}
+                        </button>
+                      }
+                    </div>
+                  }
+                }
+              }
 
               <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <label class="form-control w-full">
