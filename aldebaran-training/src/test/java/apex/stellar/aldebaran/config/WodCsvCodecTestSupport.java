@@ -73,7 +73,7 @@ public final class WodCsvCodecTestSupport {
             .title("Chelsea")
             .wodType(WodType.EMOM)
             .category(WodCategory.GIRLS)
-            .scoreType(ScoreType.ROUNDS_REPS)
+            .scoreType(ScoreType.ROUNDS)
             .repScheme("EMOM 30 min")
             .timeCapSeconds(1800)
             .emomInterval(60)

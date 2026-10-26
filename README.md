@@ -218,6 +218,9 @@ Rules are enforced by the backends; Sirius only adapts its UI to what they retur
 - **WODs**: readable when public, from one of the user's gyms, or authored by the user. Gym WODs are
   written with `WOD_WRITE` on that gym; personal WODs only by their author. A WOD with logged scores
   is locked. The API returns `capabilities` (`canModify`, `locked`) for each WOD.
+- **Scores**: athletes log and manage their own scores on the WODs they can read; `SCORE_VERIFY` on
+  the WOD's gym lets staff correct or delete their athletes' scores. One personal record per athlete
+  and WOD (Rx+ > Rx > Scaled > Custom, then performance; a finished time beats a time-capped score).
 - **Gym roles by type**: a physical gym has exactly one `OWNER`, any number of `COACH` and
   `ATHLETE`; a virtual (programming) gym has exactly one `PROGRAMMER` and any number of `ATHLETE`.
   The owner/programmer role changes only through an explicit transfer.

@@ -43,6 +43,8 @@ public record ScoreRequest(
     // --- Performance Context ---
     @NotNull(message = "{validation.scaling.required}") ScalingLevel scaling,
     boolean timeCapped,
+    // Optional official tiebreak time (elapsed seconds); ignored when the WOD has no tiebreak
+    @Min(value = 1, message = "{validation.value.positive}") Integer tiebreakSeconds,
 
     // --- Comments and Scaling notes---
     @Size(max = 4000, message = "{validation.score.comment.size}") String userComment,

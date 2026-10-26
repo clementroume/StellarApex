@@ -1,0 +1,23 @@
+@if (store.isLoading()) {
+  <span class="loading loading-dots loading-sm"></span>
+} @else if (store.best(); as best) {
+  <div class="flex flex-col gap-1">
+    <div class="flex flex-wrap items-center gap-2">
+      <ng-icon name="heroTrophy" class="text-warning"></ng-icon>
+      <span id="best-score-value" class="text-lg font-bold">{{ bestValue() }}</span>
+      <span class="badge badge-sm badge-soft" [class.badge-primary]="best.scaling !== 'SCALED' && best.scaling !== 'CUSTOM'">
+        {{ 'SCORE.SCALING.' + best.scaling | translate }}
+      </span>
+    </div>
+    @if (store.comparison(); as cmp) {
+      <span class="text-sm text-base-content/70">
+        {{ 'SCORE.RANK' | translate: {rank: cmp.rank, total: cmp.totalScores, scaling: ('SCORE.SCALING.' + best.scaling | translate)} }}
+      </span>
+    }
+  </div>
+} @else {
+  <button type="button" class="btn btn-primary btn-sm" (click)="store.openNew()">
+    <ng-icon name="heroPlus"></ng-icon>
+    {{ 'SCORE.ACTIONS.LOG' | translate }}
+  </button>
+}

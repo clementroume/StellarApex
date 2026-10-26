@@ -3,6 +3,7 @@ package apex.stellar.aldebaran.security;
 import static apex.stellar.aldebaran.security.SecurityService.SCORE_VERIFY;
 
 import apex.stellar.aldebaran.dto.ScoreRequest;
+import apex.stellar.aldebaran.dto.ScoreResponse;
 import apex.stellar.aldebaran.model.entities.Wod;
 import apex.stellar.aldebaran.repository.ScoreRepository;
 import apex.stellar.aldebaran.repository.WodRepository;
@@ -19,8 +20,10 @@ import org.springframework.transaction.annotation.Transactional;
  * <ul>
  *   <li><b>Participation (Self):</b> Athletes can log scores for Public WODs, the WODs of any of
  *       their member Gyms, or their Private WODs.
- *   <li><b>Moderation (Staff):</b> users holding SCORE_VERIFY in the WOD's gym can log or correct
- *       scores for other athletes.
+ *   <li><b>Moderation (Staff):</b> users holding SCORE_VERIFY in the WOD's gym can correct or
+ *       delete the scores logged on that gym's WODs (errors, cheating).
+ *   <li><b>Logging for someone else:</b> admins only, until Antares can confirm that the target
+ *       athlete belongs to the gym (Aldebaran only knows the caller's memberships).
  * </ul>
  *
  * <p><b>Strategy regarding "Not Found":</b> Methods return {@code true} if the resource ID is not
@@ -78,8 +81,9 @@ public class ScoreSecurity {
   }
 
   /**
-   * Evaluates if the authenticated user is authorized to create (log) a score. Handles both
-   * Self-Participation and Staff Moderation.
+   * Evaluates if the authenticated user is authorized to create (log) a score. Non-admin users
+   * can only log their own scores: Aldebaran cannot verify that another user is a member of the
+   * WOD's gym.
    *
    * @param request The score creation payload.
    * @param principal The authenticated user context.
@@ -113,9 +117,8 @@ public class ScoreSecurity {
                 return Objects.equals(wod.getAuthorId(), principal.getId());
               }
 
-              // CASE B: Staff Moderation (Logging for someone else)
-              // Requires: Gym WOD + SCORE_VERIFY in that gym
-              return securityService.hasGymPermission(principal, wod.getGymId(), SCORE_VERIFY);
+              // CASE B: Logging for someone else (admins only, handled above)
+              return false;
             })
         .orElse(true); // Allow service to handle 404
   }
@@ -137,16 +140,31 @@ public class ScoreSecurity {
     return scoreRepository
         .findById(scoreId)
         .map(
-            score -> {
-              // 1. Self-Correction: Users can always modify their own scores
-              if (Objects.equals(score.getUserId(), principal.getId())) {
-                return true;
-              }
-
-              // 2. Staff Moderation: Gym WOD + SCORE_VERIFY in that gym
-              Wod wod = score.getWod();
-              return securityService.hasGymPermission(principal, wod.getGymId(), SCORE_VERIFY);
-            })
+            score -> canModify(score.getUserId(), score.getWod().getGymId(), principal))
         .orElse(true); // Allow service to handle 404
+  }
+
+  /**
+   * Evaluates if the authenticated user may update or delete an already loaded score: its athlete,
+   * a staff member holding SCORE_VERIFY in the WOD's gym, or an admin.
+   *
+   * @param score The score to evaluate.
+   * @param principal The authenticated user context.
+   * @return {@code true} if authorized.
+   */
+  public boolean canModify(ScoreResponse score, AldebaranUserPrincipal principal) {
+    return canModify(score.userId(), score.wodSummary().gymId(), principal);
+  }
+
+  private boolean canModify(Long athleteId, Long wodGymId, AldebaranUserPrincipal principal) {
+    if (securityService.isAdmin(principal)) {
+      return true;
+    }
+    // 1. Self-Correction: Users can always modify their own scores
+    if (Objects.equals(athleteId, principal.getId())) {
+      return true;
+    }
+    // 2. Staff Moderation: Gym WOD + SCORE_VERIFY in that gym
+    return securityService.hasGymPermission(principal, wodGymId, SCORE_VERIFY);
   }
 }

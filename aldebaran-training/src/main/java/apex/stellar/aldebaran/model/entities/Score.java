@@ -114,6 +114,11 @@ public class Score {
   @NotNull
   private ScalingLevel scaling;
 
+  /** Official tiebreak time (elapsed seconds), optional: only used to rank equal scores. */
+  @Column(name = "tiebreak_seconds")
+  @Min(1)
+  private Integer tiebreakSeconds;
+
   @Column(name = "time_capped", nullable = false)
   @Builder.Default
   private Boolean timeCapped = false;
@@ -152,13 +157,18 @@ public class Score {
     return id != null ? id.hashCode() : 0;
   }
 
-  /** ScalingLevel Inner Enum. */
+  /**
+   * Level at which the WOD was performed. {@code tier} orders the levels when picking a personal
+   * record: any Rx+ score beats any Rx score, which beats any scaled one.
+   */
   @Getter
   @RequiredArgsConstructor
   public enum ScalingLevel {
-    RX,
-    SCALED,
-    ELITE,
-    CUSTOM
+    RX(2),
+    SCALED(1),
+    ELITE(3),
+    CUSTOM(0);
+
+    private final int tier;
   }
 }

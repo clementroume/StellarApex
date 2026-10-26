@@ -1,0 +1,57 @@
+<section class="card bg-base-100 shadow-xl">
+  <div class="card-body gap-4">
+    <div class="flex flex-wrap items-center justify-between gap-2">
+      <h2 class="card-title">{{ 'SCORE.HISTORY' | translate }}</h2>
+      <button type="button" id="log-score" class="btn btn-primary btn-sm" (click)="store.openNew()">
+        <ng-icon name="heroPlus"></ng-icon>
+        {{ 'SCORE.ACTIONS.LOG' | translate }}
+      </button>
+    </div>
+
+    @if (store.scores().length === 0) {
+      <p class="italic opacity-70">{{ 'SCORE.MESSAGES.EMPTY' | translate }}</p>
+    } @else {
+      <ul class="flex flex-col divide-y divide-base-200">
+        @for (score of store.scores(); track score.id) {
+          <li class="py-3 flex flex-wrap items-start justify-between gap-2">
+            <div class="flex flex-col gap-1">
+              <div class="flex flex-wrap items-center gap-2">
+                <span class="text-sm text-base-content/70">{{ date(score) }}</span>
+                <span class="font-bold">{{ value(score) }}</span>
+                <span class="badge badge-sm badge-soft">{{ 'SCORE.SCALING.' + score.scaling | translate }}</span>
+                @if (score.tiebreakSeconds) {
+                  <span class="text-sm text-base-content/70" [title]="'SCORE.FIELDS.TIEBREAK' | translate">
+                    {{ 'SCORE.TIEBREAK_SHORT' | translate: {time: duration(score.tiebreakSeconds)} }}
+                  </span>
+                }
+                @if (score.personalRecord) {
+                  <span class="badge badge-sm badge-warning badge-soft gap-1">
+                    <ng-icon name="heroTrophy"></ng-icon>{{ 'SCORE.PR' | translate }}
+                  </span>
+                }
+              </div>
+              @if (score.scalingNotes) {
+                <p class="text-sm opacity-70 whitespace-pre-line">{{ score.scalingNotes }}</p>
+              }
+              @if (score.userComment) {
+                <p class="text-sm whitespace-pre-line">{{ score.userComment }}</p>
+              }
+            </div>
+            @if (score.capabilities?.canModify) {
+              <div class="flex gap-1">
+                <button type="button" class="btn btn-ghost btn-sm btn-square" (click)="store.openEdit(score)"
+                        [attr.aria-label]="'GLOBAL.EDIT' | translate" [title]="'GLOBAL.EDIT' | translate">
+                  <ng-icon name="heroPencilSquare"></ng-icon>
+                </button>
+                <button type="button" class="btn btn-ghost btn-sm btn-square text-error" (click)="store.delete(score)"
+                        [attr.aria-label]="'GLOBAL.DELETE' | translate" [title]="'GLOBAL.DELETE' | translate">
+                  <ng-icon name="heroTrash"></ng-icon>
+                </button>
+              </div>
+            }
+          </li>
+        }
+      </ul>
+    }
+  </div>
+</section>

@@ -14,6 +14,7 @@ public record WodSummaryResponse(
     ScoreType scoreType,
     String repScheme,
     Integer timeCapSeconds,
+    Integer repsPerRound,
     LocalDateTime createdAt,
     Long authorId,
     Long gymId,

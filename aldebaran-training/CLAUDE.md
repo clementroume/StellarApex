@@ -8,7 +8,8 @@ volume mounted in `docker-compose.yml`; `config/DataSeeder` reloads them into em
 when no public WOD exists). `muscles.csv` has a `parent` column (functional group, by medical name).
 WOD CSV format lives in `config/WodCsvCodec` (blank = null, lossless round-trip; movements by exact
 name; WOD movement variants joined by `|`, whereas `movements.csv` lists use `, `; FR/EN text
-columns `*_en` / `*_fr`, the former single-language columns still read as English).
+columns `*_en` / `*_fr`, the former single-language columns still read as English; optional trailing
+`tiebreak_en` / `tiebreak_fr` / `reps_per_round`; a former `ROUNDS_REPS` score type reads as `REPS`).
 `config/DevGymWodSeeder` (`@Profile("dev")`, temporary) seeds WODs for the Antares test gyms,
 resolving IDs from the `antares` schema with `JdbcTemplate`.
 `./mvnw verify` runs unit tests and `*IT` (Testcontainers PostgreSQL + Redis, Docker required).
@@ -27,8 +28,12 @@ resolving IDs from the `antares` schema with `JdbcTemplate`.
   throws the proper 404 instead of a 403.
 - List filters live in one JPQL constant, `WodRepository.SECURE_FILTERS`, shared by the list and the
   `GET /wods/facets` queries: change it once.
-- Per-user flags for the UI (`WodCapabilities`) are computed by `service/WodCapabilityService` per
-  request, never inside cached methods (`WodService.getWodDetail` is `@Cacheable`).
+- Per-user flags for the UI (`WodCapabilities`, `ScoreCapabilities`) are computed by
+  `service/WodCapabilityService` / `ScoreCapabilityService` per request, never inside cached methods
+  (`WodService.getWodDetail` is `@Cacheable`). `ScoreCapabilityService.forViewer` also hides others'
+  comments/scaling notes from non-moderators.
+- Score ordering lives once in `service/ScoreRanking` (PR, compare, leaderboard sort); score/WOD
+  consistency in `ScoreService.normalizeAndCheck` (`InvalidScoreException` → 400).
 - Support session: `X-Auth-Actor-Id` (nullable `actorId`) = the admin acting as the user; rights stay
   the user's. `security/SupportSessionAuditFilter` logs every non-GET request with an actor at INFO.
 

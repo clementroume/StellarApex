@@ -38,6 +38,7 @@ public record ScoreResponse(
     // --- Performance Context ---
     ScalingLevel scaling,
     boolean timeCapped,
+    Integer tiebreakSeconds,
     boolean personalRecord,
 
     // --- Comments and Scaling notes---
@@ -45,4 +46,44 @@ public record ScoreResponse(
     String scalingNotes,
 
     // --- Audit ---
-    LocalDate loggedAt) {}
+    LocalDate loggedAt,
+
+    // --- Per-user rights (computed per request) ---
+    ScoreCapabilities capabilities) {
+
+  /**
+   * Returns a copy of this response for a given viewer: with their capabilities, and without the
+   * athlete's comment and scaling notes when the viewer may not see them.
+   *
+   * @param capabilities The rights of the viewer on this score.
+   * @param showNotes Whether the viewer may read the comment and the scaling notes.
+   * @return A new response adapted to the viewer.
+   */
+  public ScoreResponse forViewer(ScoreCapabilities capabilities, boolean showNotes) {
+    return new ScoreResponse(
+        id,
+        userId,
+        date,
+        wodSummary,
+        timeSeconds,
+        timeMinutesPart,
+        timeSecondsPart,
+        timeDisplayUnit,
+        rounds,
+        reps,
+        maxWeight,
+        totalLoad,
+        weightUnit,
+        totalDistance,
+        distanceUnit,
+        totalCalories,
+        scaling,
+        timeCapped,
+        tiebreakSeconds,
+        personalRecord,
+        showNotes ? userComment : null,
+        showNotes ? scalingNotes : null,
+        loggedAt,
+        capabilities);
+  }
+}

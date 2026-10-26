@@ -1,4 +1,5 @@
-import {ChangeDetectionStrategy, Component, computed, inject, OnInit, signal} from '@angular/core';
+import {ChangeDetectionStrategy, Component, computed, DestroyRef, inject, OnInit, signal} from '@angular/core';
+import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
 import {AbstractControl, FormArray, FormBuilder, ReactiveFormsModule, ValidationErrors, Validators} from '@angular/forms';
 import {ActivatedRoute, Router, RouterModule} from '@angular/router';
 import {HttpErrorResponse} from '@angular/common/http';
@@ -18,6 +19,11 @@ export type WodFormVisibility = 'PRIVATE' | 'GYM';
 
 /** Variant fields of a WOD movement, limited to the values allowed by its movement. */
 export type WodMovementVariant = 'equipment' | 'techniques';
+
+/** Usual score type of each format, proposed when creating a WOD. */
+const DEFAULT_SCORE_TYPE: Record<string, string> = {
+  FOR_TIME: 'TIME', AMRAP: 'REPS', EMOM: 'ROUNDS', TABATA: 'REPS', INTERVALS: 'REPS', STRENGTH: 'WEIGHT'
+};
 
 const minLengthArray = (min: number) => (control: AbstractControl): ValidationErrors | null =>
   (control as FormArray).length >= min ? null : {minLengthArray: {required: min}};
@@ -42,6 +48,7 @@ export class WodFormComponent implements OnInit {
   private readonly notificationService = inject(NotificationService);
   private readonly translate = inject(TranslateService);
   private readonly unitService = inject(UnitService);
+  private readonly destroyRef = inject(DestroyRef);
 
   isEditMode = signal<boolean>(false);
   isLoading = signal<boolean>(false);
@@ -95,9 +102,12 @@ export class WodFormComponent implements OnInit {
     descriptionEn: ['', [Validators.maxLength(4000)]],
     notesFr: ['', [Validators.maxLength(4000)]],
     notesEn: ['', [Validators.maxLength(4000)]],
+    tiebreakFr: ['', [Validators.maxLength(1000)]],
+    tiebreakEn: ['', [Validators.maxLength(1000)]],
     // --- Structure and Prescription ---
     timeCapMinutes: [null as number | null, [Validators.min(0)]],
     timeCapSeconds: [null as number | null, [Validators.min(0), Validators.max(59)]],
+    repsPerRound: [null as number | null, [Validators.min(1)]],
     emomInterval: [null as number | null, [Validators.min(0)]],
     emomRounds: [null as number | null, [Validators.min(0)]],
     repScheme: ['', [Validators.maxLength(100)]],
@@ -114,6 +124,13 @@ export class WodFormComponent implements OnInit {
       this.scoreTypes.set(wodRef.scoreTypes);
       this.unitGroups.set(wodRef.unitGroups);
       this.availableMovements.set([...movements].sort((a, b) => a.name.localeCompare(b.name)));
+    });
+
+    // A new WOD gets the usual score type of its format until the user picks one
+    this.wodForm.controls.wodType.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(wodType => {
+      const scoreType = this.wodForm.controls.scoreType;
+      const suggested = DEFAULT_SCORE_TYPE[wodType];
+      if (!this.isEditMode() && !scoreType.dirty && suggested) scoreType.setValue(suggested);
     });
 
     const idParam = this.route.snapshot.paramMap.get('id');
@@ -148,6 +165,27 @@ export class WodFormComponent implements OnInit {
   // --- MOVEMENTS FORM ARRAY ---
   get movementsFormArray(): FormArray {
     return this.wodForm.get('movements') as FormArray;
+  }
+
+  get isReps(): boolean {
+    return this.wodForm.controls.scoreType.value === 'REPS';
+  }
+
+  /**
+   * Reps of one round read from the movements (Cindy: 5 + 10 + 15 = 30; a calorie counts as a rep),
+   * or null when a movement has no whole number of reps (distance, ladder "3-6-9...", "max").
+   */
+  suggestedRepsPerRound(): number | null {
+    const movements = this.movementsFormArray.getRawValue() as {repsScheme?: string; calories?: number | null; distance?: number | null}[];
+    if (movements.length === 0) return null;
+    let total = 0;
+    for (const m of movements) {
+      const reps = m.repsScheme?.trim() ?? '';
+      if (/^\d+$/.test(reps)) total += Number(reps);
+      else if (!reps && m.distance == null && m.calories) total += m.calories;
+      else return null;
+    }
+    return total > 0 ? total : null;
   }
 
   get isEmom(): boolean {
@@ -289,9 +327,12 @@ export class WodFormComponent implements OnInit {
           descriptionEn: wod.descriptionEn || '',
           notesFr: wod.notesFr || '',
           notesEn: wod.notesEn || '',
+          tiebreakFr: wod.tiebreakFr || '',
+          tiebreakEn: wod.tiebreakEn || '',
           // --- Structure and Prescription ---
           timeCapMinutes: timeCap === null ? null : Math.floor(timeCap / 60),
           timeCapSeconds: timeCap === null ? null : timeCap % 60,
+          repsPerRound: wod.repsPerRound ?? null,
           emomInterval: wod.emomInterval ?? null,
           emomRounds: wod.emomRounds ?? null,
           repScheme: wod.repScheme || ''
@@ -392,8 +433,11 @@ export class WodFormComponent implements OnInit {
       descriptionFr: v.descriptionFr.trim() || undefined,
       notesEn: v.notesEn.trim() || undefined,
       notesFr: v.notesFr.trim() || undefined,
+      tiebreakEn: v.tiebreakEn.trim() || undefined,
+      tiebreakFr: v.tiebreakFr.trim() || undefined,
       // --- Structure and Prescription ---
       timeCapSeconds: timeCap > 0 ? timeCap : undefined,
+      repsPerRound: v.scoreType === 'REPS' ? (v.repsPerRound ?? undefined) : undefined,
       emomInterval: isEmom ? (v.emomInterval ?? undefined) : undefined,
       emomRounds: isEmom ? (v.emomRounds ?? undefined) : undefined,
       repScheme: v.repScheme.trim() || undefined,

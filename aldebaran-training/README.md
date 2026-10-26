@@ -88,8 +88,11 @@ of them:
 * **WOD create / update / delete**: `WOD_WRITE` on the WOD's gym; personal WODs (`gymId = null`) by
   their author only. A WOD with logged scores is locked (409). Ownership (`gymId`, `authorId`) cannot
   change on update.
-* **Scores**: athletes manage their own; `SCORE_VERIFY` on the WOD's gym allows managing other
-  athletes' scores.
+* **Scores**: athletes log scores for themselves on the WODs they can read and manage their own;
+  `SCORE_VERIFY` on the WOD's gym allows correcting or deleting other athletes' scores (errors,
+  cheating). Logging a score for someone else is admin-only for now (Aldebaran cannot check that the
+  athlete belongs to the gym). Each score carries `capabilities {canModify}`; other athletes' comments
+  and scaling notes are hidden from viewers who cannot moderate the score.
 * **Muscles / movements**: read by everyone, written (and exported to CSV) by platform ADMIN only.
 * A platform ADMIN can do everything.
 
@@ -146,9 +149,26 @@ Rules live in `security/WodSecurity` and `security/ScoreSecurity`, used from `@P
 ### Scores (`/aldebaran/scores`)
 
 * `GET /me`: the current user's scores (optional `wodId`, paginated).
-* `POST /`, `PUT /{id}`, `DELETE /{id}`: log or edit a score (rules above).
-* `GET /{id}/compare`: rank and percentile of a score.
-* `GET /leaderboard/{id}`: leaderboard of a WOD (`scaling`, default `RX`).
+* `POST /`, `PUT /{id}`, `DELETE /{id}`: log or edit a score (rules above). The value required by the
+  WOD's score type must be present (400 otherwise); a time-capped TIME score stores the reps done at
+  the cap and no time; a score never changes athlete or WOD (400 if `wodId` differs).
+* Score types: `TIME` (time, or reps at the time cap), `ROUNDS` (rounds completed on the minute of an
+  EMOM such as Chelsea, at most `emomRounds`), `REPS` (total reps; every AMRAP, as on
+  games.crossfit.com), `WEIGHT` (one load: 1RM, load used for every set), `LOAD` (sum of loads, e.g.
+  CrossFit Total), `CALORIES`, `DISTANCE`, `NONE`.
+* AMRAP with a fixed round: the WOD's optional `repsPerRound` (Cindy 30; a calorie, a meter rowed or
+  a 5-ft lunge section counts as a rep, as in the Open) lets clients enter and show the total as
+  rounds + reps. A score sent as `rounds` + `reps` is stored as `rounds * repsPerRound + reps`
+  (400 if the WOD has no fixed round). Ladders, chippers and rounds that differ for men and women
+  (Open 18.1) have none. Migration V7 converted the former `ROUNDS_REPS` WODs and scores.
+* Tiebreak: a WOD may define its official tiebreak (`tiebreakEn` / `tiebreakFr`, e.g. Open
+  workouts); a score's `tiebreakSeconds` is always optional, kept only for such WODs (and for a TIME
+  WOD only when time-capped), and only separates equal scores in compare and leaderboards.
+* Personal record: one per athlete and WOD, ordered by scaling level (Rx+ > Rx > Scaled > Custom),
+  then performance; for TIME every finished time beats every capped score, capped scores rank by
+  reps (`service/ScoreRanking`, shared with compare and leaderboards).
+* `GET /{id}/compare`: rank and percentile of a score among the other athletes' PRs at its level.
+* `GET /leaderboard/{id}`: leaderboard of a WOD (`scaling`, default `RX`): each athlete's PR at that level.
 * `GET /reference-data`: scaling levels.
 
 ### Export (`/aldebaran/export`) — temporary, development only
@@ -172,7 +192,7 @@ starts empty. This mechanism (export endpoints, source volume, CSV seeding) is t
   (`parent` = medical name of the functional group, linked once every muscle is saved).
 * `movements.csv`: equipment, techniques and muscles (`agonists`, `synergists`, `stabilizers`) are
   lists separated by `, `.
-* `wods.csv`: `title,wod_type,category,score_type,rep_scheme,time_cap_seconds,emom_interval,emom_rounds,description_en,description_fr,notes_en,notes_fr`
+* `wods.csv`: `title,wod_type,category,score_type,rep_scheme,time_cap_seconds,emom_interval,emom_rounds,description_en,description_fr,notes_en,notes_fr,tiebreak_en,tiebreak_fr,reps_per_round` (last three optional; a former `ROUNDS_REPS` score type reads as `REPS`)
 * `wod_movements.csv`: `wod_title,order_index,movement_name,reps_scheme,weight,weight_unit,distance,distance_unit,duration_seconds,calories,notes_en,scaling_options_en`,
   plus optional `duration_display_unit,equipment,techniques,weight_female,notes_fr,scaling_options_fr,calories_female,height,height_female,height_unit`
   (lists separated by `|`). Files with the former `description`, `notes` and `scaling_options`

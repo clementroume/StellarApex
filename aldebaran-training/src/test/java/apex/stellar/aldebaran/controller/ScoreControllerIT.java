@@ -61,7 +61,8 @@ class ScoreControllerIT extends BaseIntegrationTest {
         Wod.builder()
             .title("Gym 101 Exclusive")
             .wodType(WodType.AMRAP)
-            .scoreType(ScoreType.ROUNDS_REPS)
+            .scoreType(ScoreType.REPS)
+            .repsPerRound(30)
             .gymId(101L)
             .isPublic(false)
             .build();
@@ -91,7 +92,7 @@ class ScoreControllerIT extends BaseIntegrationTest {
             null,
             null,
             ScalingLevel.RX,
-            false,
+            false, null,
             null,
             null);
 
@@ -145,7 +146,7 @@ class ScoreControllerIT extends BaseIntegrationTest {
             null,
             null,
             ScalingLevel.RX,
-            false,
+            false, null,
             null,
             null);
 
@@ -199,7 +200,7 @@ class ScoreControllerIT extends BaseIntegrationTest {
             Unit.MILES,
             null,
             ScalingLevel.RX,
-            false,
+            false, null,
             null,
             null);
 
@@ -257,7 +258,7 @@ class ScoreControllerIT extends BaseIntegrationTest {
             null,
             null,
             ScalingLevel.RX,
-            false,
+            false, null,
             null,
             null);
 
@@ -316,7 +317,7 @@ class ScoreControllerIT extends BaseIntegrationTest {
             Unit.MILES, // distanceUnit
             null, // totalCalories
             ScalingLevel.RX,
-            false,
+            false, null,
             null,
             null);
 
@@ -375,7 +376,7 @@ class ScoreControllerIT extends BaseIntegrationTest {
             null, // distanceUnit
             null, // totalCalories
             ScalingLevel.RX,
-            false,
+            false, null,
             null,
             null);
 
@@ -490,7 +491,7 @@ class ScoreControllerIT extends BaseIntegrationTest {
             null,
             null,
             ScalingLevel.RX,
-            false,
+            false, null,
             null,
             null);
 
@@ -527,7 +528,7 @@ class ScoreControllerIT extends BaseIntegrationTest {
             null,
             null,
             ScalingLevel.RX,
-            false,
+            false, null,
             null,
             null);
 
@@ -552,7 +553,7 @@ class ScoreControllerIT extends BaseIntegrationTest {
             .userId(100L)
             .date(LocalDate.now())
             .scaling(ScalingLevel.RX)
-            .rounds(10)
+            .reps(300)
             .loggedAt(java.time.LocalDateTime.now())
             .build();
     score = scoreRepository.save(score);
@@ -573,7 +574,7 @@ class ScoreControllerIT extends BaseIntegrationTest {
             null,
             null,
             ScalingLevel.RX,
-            false,
+            false, null,
             null,
             null);
 
@@ -587,12 +588,14 @@ class ScoreControllerIT extends BaseIntegrationTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(updateRequest)))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.rounds").value(12));
+        // 12 rounds of 30 reps, stored as total reps
+        .andExpect(jsonPath("$.reps").value(360))
+        .andExpect(jsonPath("$.rounds").doesNotExist());
   }
 
   @Test
-  @DisplayName("POST /scores: Coach logs score for athlete (Same Gym) -> 201 Created")
-  void testLogScore_CoachForAthlete_Success() throws Exception {
+  @DisplayName("POST /scores: Coach cannot log for an athlete, even in their gym -> 403")
+  void testLogScore_CoachForAthlete_Forbidden() throws Exception {
     ScoreRequest request =
         new ScoreRequest(
             100L, // Target Athlete
@@ -609,7 +612,7 @@ class ScoreControllerIT extends BaseIntegrationTest {
             null,
             null,
             ScalingLevel.RX,
-            false,
+            false, null,
             null,
             null);
 
@@ -622,8 +625,8 @@ class ScoreControllerIT extends BaseIntegrationTest {
                 .header("X-Internal-Secret", "test-internal-secret")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
-        .andExpect(status().isCreated())
-        .andExpect(jsonPath("$.userId").value(100));
+        .andExpect(status().isForbidden());
+    assert scoreRepository.findAll().isEmpty();
   }
 
   @Test
@@ -645,7 +648,7 @@ class ScoreControllerIT extends BaseIntegrationTest {
             null,
             null,
             ScalingLevel.RX,
-            false,
+            false, null,
             null,
             null);
 
@@ -680,7 +683,7 @@ class ScoreControllerIT extends BaseIntegrationTest {
             null,
             null,
             ScalingLevel.RX,
-            false,
+            false, null,
             null,
             null);
 
@@ -785,6 +788,174 @@ class ScoreControllerIT extends BaseIntegrationTest {
         .andExpect(jsonPath("$.rank").value(2))
         .andExpect(jsonPath("$.totalScores").value(3))
         .andExpect(jsonPath("$.percentile").value(50.0)); // (3-2)/2 * 100 = 50%
+  }
+
+  // -------------------------------------------------------------------------
+  // Score rules (time cap, WOD consistency) and per-viewer responses
+  // -------------------------------------------------------------------------
+
+  private ScoreRequest franRequest(Long wodId, Integer minutes, Integer reps, boolean capped) {
+    return new ScoreRequest(
+        null, LocalDate.now(), wodId, minutes, null, null, reps, null, null, null, null, null,
+        null, ScalingLevel.RX, capped, null, "my comment", null);
+  }
+
+  private org.springframework.test.web.servlet.ResultActions postAs(
+      String userId, String memberships, ScoreRequest request) throws Exception {
+    var builder =
+        post("/aldebaran/scores")
+            .header("X-Auth-User-Id", userId)
+            .header("X-Auth-User-Role", "USER")
+            .header("X-Internal-Secret", "test-internal-secret")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(objectMapper.writeValueAsString(request));
+    if (memberships != null) {
+      builder = builder.header("X-Auth-Memberships", memberships);
+    }
+    return mockMvc.perform(builder);
+  }
+
+  @Test
+  @DisplayName("POST /scores: time-capped score stores reps without time, finished time is PR")
+  void testLogScore_TimeCapped() throws Exception {
+    postAs("100", null, franRequest(fran.getId(), 7, 45, true))
+        .andExpect(status().isCreated())
+        .andExpect(jsonPath("$.timeCapped").value(true))
+        .andExpect(jsonPath("$.timeSeconds").doesNotExist())
+        .andExpect(jsonPath("$.reps").value(45))
+        .andExpect(jsonPath("$.personalRecord").value(true))
+        .andExpect(jsonPath("$.capabilities.canModify").value(true));
+
+    postAs("100", null, franRequest(fran.getId(), 12, null, false))
+        .andExpect(status().isCreated())
+        .andExpect(jsonPath("$.personalRecord").value(true));
+
+    List<Score> scores = scoreRepository.findAll();
+    assert scores.stream().filter(Score::isPersonalRecord).count() == 1;
+  }
+
+  @Test
+  @DisplayName("POST /scores: time-capped score without reps -> 400 localized")
+  void testLogScore_TimeCappedWithoutReps() throws Exception {
+    postAs("100", null, franRequest(fran.getId(), 7, null, true))
+        .andExpect(status().isBadRequest())
+        .andExpect(jsonPath("$.detail").value("Enter the reps completed at the time cap."));
+  }
+
+  @Test
+  @DisplayName("POST /scores: unknown WOD -> 404")
+  void testLogScore_UnknownWod() throws Exception {
+    postAs("100", null, franRequest(999_999L, 5, null, false)).andExpect(status().isNotFound());
+  }
+
+  @Test
+  @DisplayName("PUT /{id}: request pointing at another WOD -> 400, score unchanged")
+  void testUpdateScore_WodMismatch() throws Exception {
+    Score score = createScore(100L, 100);
+
+    mockMvc
+        .perform(
+            put("/aldebaran/scores/" + score.getId())
+                .header("X-Auth-User-Id", "100")
+                .header("X-Auth-User-Role", "USER")
+                .header("X-Internal-Secret", "test-internal-secret")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    objectMapper.writeValueAsString(franRequest(gymWod.getId(), 1, null, false))))
+        .andExpect(status().isBadRequest());
+
+    assert scoreRepository.findById(score.getId()).orElseThrow().getTimeSeconds() == 100;
+  }
+
+  @Test
+  @DisplayName("GET /leaderboard: notes hidden from other athletes, shown to SCORE_VERIFY staff")
+  void testLeaderboard_NotesPerViewer() throws Exception {
+    Score score = createScore(100L, 100);
+    score.setWod(gymWod);
+    score.setReps(300);
+    score.setUserComment("private");
+    scoreRepository.save(score);
+
+    String url = "/aldebaran/scores/leaderboard/" + gymWod.getId();
+    mockMvc
+        .perform(
+            get(url)
+                .header("X-Auth-User-Id", "200")
+                .header("X-Auth-User-Role", "USER")
+                .header("X-Auth-Memberships", "101:ATHLETE:")
+                .header("X-Internal-Secret", "test-internal-secret"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.content[0].userComment").doesNotExist())
+        .andExpect(jsonPath("$.content[0].capabilities.canModify").value(false));
+
+    mockMvc
+        .perform(
+            get(url)
+                .header("X-Auth-User-Id", "50")
+                .header("X-Auth-User-Role", "USER")
+                .header("X-Auth-Memberships", "101:COACH:SCORE_VERIFY")
+                .header("X-Internal-Secret", "test-internal-secret"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.content[0].userComment").value("private"))
+        .andExpect(jsonPath("$.content[0].capabilities.canModify").value(true));
+  }
+
+  @Test
+  @DisplayName("POST /scores: EMOM rounds capped by the EMOM, tiebreak kept on a WOD that has one")
+  void testRoundsAndTiebreak() throws Exception {
+    Wod chelsea =
+        wodRepository.save(
+            Wod.builder()
+                .title("Chelsea")
+                .wodType(WodType.EMOM)
+                .scoreType(ScoreType.ROUNDS)
+                .emomInterval(60)
+                .emomRounds(30)
+                .isPublic(true)
+                .build());
+    Wod open =
+        wodRepository.save(
+            Wod.builder()
+                .title("Open 25.3")
+                .wodType(WodType.FOR_TIME)
+                .scoreType(ScoreType.TIME)
+                .timeCapSeconds(1200)
+                .tiebreakEn("Time after the last full set of wall walks")
+                .isPublic(true)
+                .build());
+
+    ScoreRequest rounds =
+        new ScoreRequest(
+            null, LocalDate.now(), chelsea.getId(), null, null, 24, null, null, null, null, null,
+            null, null, ScalingLevel.RX, false, null, null, null);
+    postAs("100", null, rounds)
+        .andExpect(status().isCreated())
+        .andExpect(jsonPath("$.rounds").value(24))
+        .andExpect(jsonPath("$.personalRecord").value(true));
+
+    ScoreRequest tooMany =
+        new ScoreRequest(
+            null, LocalDate.now(), chelsea.getId(), null, null, 31, null, null, null, null, null,
+            null, null, ScalingLevel.RX, false, null, null, null);
+    postAs("100", null, tooMany)
+        .andExpect(status().isBadRequest())
+        .andExpect(jsonPath("$.detail").value("A score cannot exceed the 30 rounds of the EMOM."));
+
+    ScoreRequest capped =
+        new ScoreRequest(
+            null, LocalDate.now(), open.getId(), null, null, null, 180, null, null, null, null,
+            null, null, ScalingLevel.RX, true, 1105, null, null);
+    postAs("100", null, capped)
+        .andExpect(status().isCreated())
+        .andExpect(jsonPath("$.tiebreakSeconds").value(1105));
+
+    ScoreRequest noTiebreakWod =
+        new ScoreRequest(
+            null, LocalDate.now(), chelsea.getId(), null, null, 25, null, null, null, null, null,
+            null, null, ScalingLevel.RX, false, 300, null, null);
+    postAs("100", null, noTiebreakWod)
+        .andExpect(status().isCreated())
+        .andExpect(jsonPath("$.tiebreakSeconds").doesNotExist());
   }
 
   private Score createScore(Long userId, int seconds) {

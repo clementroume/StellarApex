@@ -1,4 +1,5 @@
 import {ChangeDetectionStrategy, Component, computed, effect, inject, input, signal} from '@angular/core';
+import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
 import {TranslatePipe, TranslateService} from '@ngx-translate/core';
 import {Router, RouterModule} from '@angular/router';
 import {Location} from '@angular/common';
@@ -17,6 +18,10 @@ import {DetailCardComponent} from '../../../shared/component/detail/detail-card/
 import {DetailHeaderComponent} from '../../../shared/component/detail/detail-header/detail-header.component';
 import {DetailStateComponent} from '../../../shared/component/detail/detail-state/detail-state.component';
 import {formatDuration, formatTimeCapShort, localizedText} from '../wod.utils';
+import {WodScoresStore} from '../scores/wod-scores.store';
+import {ScoreBestComponent} from '../scores/score-best/score-best.component';
+import {ScoreHistoryComponent} from '../scores/score-history/score-history.component';
+import {ScoreFormComponent} from '../scores/score-form/score-form.component';
 
 export type WodVisibility = 'PUBLIC' | 'GYM' | 'PRIVATE';
 
@@ -28,7 +33,8 @@ const STRUCTURE_SCHEME = /round|tier|window|rm\b| x /i;
 @Component({
   selector: 'app-wod-detail',
   standalone: true,
-  imports: [TranslatePipe, RouterModule, NgIconComponent, DetailAdminActionsComponent, DetailCardComponent, DetailHeaderComponent, DetailStateComponent],
+  imports: [TranslatePipe, RouterModule, NgIconComponent, DetailAdminActionsComponent, DetailCardComponent, DetailHeaderComponent, DetailStateComponent, ScoreBestComponent, ScoreHistoryComponent, ScoreFormComponent],
+  providers: [WodScoresStore],
   templateUrl: './wod-detail.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
@@ -42,6 +48,7 @@ export class WodDetailComponent {
   private readonly router = inject(Router);
   private readonly location = inject(Location);
   private readonly unitService = inject(UnitService);
+  readonly scoresStore = inject(WodScoresStore);
 
   // --- STATE (SIGNALS) ---
   wod = signal<WodResponse | null>(null);
@@ -52,6 +59,7 @@ export class WodDetailComponent {
 
   description = computed(() => localizedText(this.activeLang(), this.wod()?.descriptionEn, this.wod()?.descriptionFr));
   notes = computed(() => localizedText(this.activeLang(), this.wod()?.notesEn, this.wod()?.notesFr));
+  tiebreak = computed(() => localizedText(this.activeLang(), this.wod()?.tiebreakEn, this.wod()?.tiebreakFr));
   sortedMovements = computed<WodMovementResponse[]>(() =>
     [...(this.wod()?.movements ?? [])].sort((a, b) => a.orderIndex - b.orderIndex)
   );
@@ -83,6 +91,8 @@ export class WodDetailComponent {
         this.loadWod(currentId);
       }
     });
+    // The first score locks the WOD, deleting the last one unlocks it: refresh its capabilities
+    this.scoresStore.changed$.pipe(takeUntilDestroyed()).subscribe(() => this.refreshWod());
   }
 
   // --- DATA FETCHING ---
@@ -93,6 +103,7 @@ export class WodDetailComponent {
       next: (w) => {
         this.wod.set(w);
         this.isLoading.set(false);
+        this.scoresStore.load(w);
       },
       error: () => {
         this.notificationService.showError(this.translate.instant('WOD.MESSAGES.NOT_FOUND'));
@@ -100,6 +111,12 @@ export class WodDetailComponent {
         this.location.back();
       }
     });
+  }
+
+  private refreshWod(): void {
+    const current = this.wod();
+    if (!current) return;
+    this.wodService.getWod(current.id).subscribe({next: (w) => this.wod.set(w)});
   }
 
   // --- ACTIONS ---

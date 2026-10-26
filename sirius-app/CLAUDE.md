@@ -50,6 +50,9 @@ Vitest (jsdom) through `ng test`. Commands: `npm test`, `npm run build`, `npm st
 - Wrap every `localStorage` / `sessionStorage` access in try/catch.
 - Loads, distances and heights are shown through `core/services/unit.service.ts` (`formatLoad`,
   `formatDistance`: user's metric/imperial choice, men/women pairs "43/29 kg"); never print a stored unit.
+  Lifted loads in scores use `formatScoreLoad` / `convertScoreLoad` (0.5 kg / 1 lb precision).
+- Scores on the WOD detail: `features/wods/scores` (`WodScoresStore` provided by the detail, shared by
+  `score-best`, `score-history`, `score-form`; `formatScore` in `score.utils.ts`).
 
 ## Tests
 

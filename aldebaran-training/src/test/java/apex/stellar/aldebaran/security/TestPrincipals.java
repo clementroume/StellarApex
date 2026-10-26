@@ -5,7 +5,7 @@ import java.util.Map;
 import java.util.Set;
 
 /** Factory of {@link AldebaranUserPrincipal} instances for unit tests. */
-final class TestPrincipals {
+public final class TestPrincipals {
 
   private static final Set<String> ALL_PERMISSIONS = Set.of("WOD_WRITE", "SCORE_VERIFY");
 
@@ -16,7 +16,7 @@ final class TestPrincipals {
    * gets a single membership in {@code gymId} (USER meaning ATHLETE), with permissions normalised as
    * Antares does: OWNER/PROGRAMMER hold them all, others the given set.
    */
-  static AldebaranUserPrincipal of(Long id, Long gymId, String role, List<String> permissions) {
+  public static AldebaranUserPrincipal of(Long id, Long gymId, String role, List<String> permissions) {
     if ("ADMIN".equals(role)) {
       return AldebaranUserPrincipal.builder().id(id).platformRole("ADMIN").build();
     }
@@ -30,7 +30,7 @@ final class TestPrincipals {
   }
 
   /** Builds a USER principal holding the given memberships. */
-  static AldebaranUserPrincipal withMemberships(Long id, Map<Long, GymAccess> memberships) {
+  public static AldebaranUserPrincipal withMemberships(Long id, Map<Long, GymAccess> memberships) {
     return AldebaranUserPrincipal.builder()
         .id(id)
         .platformRole("USER")

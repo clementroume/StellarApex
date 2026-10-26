@@ -66,7 +66,7 @@ class ScoreRequestValidatorTest {
         distanceUnit,
         calories,
         ScalingLevel.RX, // ScalingLevel in string
-        false,
+        false, null,
         null,
         null);
   }

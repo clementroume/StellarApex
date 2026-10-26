@@ -5,7 +5,9 @@ import apex.stellar.aldebaran.dto.ScoreReferenceData;
 import apex.stellar.aldebaran.dto.ScoreRequest;
 import apex.stellar.aldebaran.dto.ScoreResponse;
 import apex.stellar.aldebaran.model.entities.Score.ScalingLevel;
+import apex.stellar.aldebaran.security.AldebaranUserPrincipal;
 import apex.stellar.aldebaran.security.ScoreSecurity;
+import apex.stellar.aldebaran.service.ScoreCapabilityService;
 import apex.stellar.aldebaran.service.ScoreService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -16,6 +18,7 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -38,19 +41,26 @@ import org.springframework.web.bind.annotation.RestController;
 public class ScoreController {
 
   private final ScoreService scoreService;
+  private final ScoreCapabilityService scoreCapabilityService;
 
   /**
    * Retrieves the score history for the currently authenticated user.
    *
    * @param wodId Optional WOD ID to filter history (e.g., "Show me my progress on Fran").
    * @param pageable Pagination info.
-   * @return A page of the user's scores.
+   * @param principal The authenticated user.
+   * @return A page of the user's scores, with their capabilities.
    */
   @GetMapping("/me")
   public ResponseEntity<Slice<ScoreResponse>> getMyScores(
-      @RequestParam(required = false) Long wodId, @PageableDefault(size = 20) Pageable pageable) {
+      @RequestParam(required = false) Long wodId,
+      @PageableDefault(size = 20) Pageable pageable,
+      @AuthenticationPrincipal AldebaranUserPrincipal principal) {
 
-    return ResponseEntity.ok(scoreService.getMyScores(wodId, pageable));
+    return ResponseEntity.ok(
+        scoreService
+            .getMyScores(wodId, pageable)
+            .map(score -> scoreCapabilityService.forViewer(score, principal)));
   }
 
   /**
@@ -59,19 +69,21 @@ public class ScoreController {
    * <p><b>Security:</b>
    *
    * <ul>
-   *   <li>Users can log scores for themselves.
-   *   <li>Coaches can log scores for athletes belonging to their gym.
+   *   <li>Users can log scores for themselves on the WODs they can read.
    *   <li>Admins can log scores for anyone.
    * </ul>
    *
    * @param request The score details.
+   * @param principal The authenticated user.
    * @return The created score.
    */
   @PostMapping
   @PreAuthorize("@scoreSecurity.canCreate(#request, principal)")
-  public ResponseEntity<ScoreResponse> logScore(@Valid @RequestBody ScoreRequest request) {
+  public ResponseEntity<ScoreResponse> logScore(
+      @Valid @RequestBody ScoreRequest request, @AuthenticationPrincipal AldebaranUserPrincipal principal) {
 
-    return ResponseEntity.status(HttpStatus.CREATED).body(scoreService.logScore(request));
+    return ResponseEntity.status(HttpStatus.CREATED)
+        .body(scoreCapabilityService.forViewer(scoreService.logScore(request), principal));
   }
 
   /**
@@ -81,20 +93,24 @@ public class ScoreController {
    *
    * <ul>
    *   <li>Owners can update their own scores.
-   *   <li>Coaches/Owners of the gym where the WOD was created can moderate scores.
+   *   <li>Staff holding SCORE_VERIFY in the WOD's gym can correct their athletes' scores.
    *   <li>Admins can update any score.
    * </ul>
    *
+   * <p>The athlete and the WOD of a score never change (400 if {@code wodId} differs).
+   *
    * @param id The ID of the score to update.
    * @param request The updated score details.
+   * @param principal The authenticated user.
    * @return The updated score.
    */
   @PutMapping("/{id}")
   @PreAuthorize("@scoreSecurity.canModify(#id, principal)")
   public ResponseEntity<ScoreResponse> updateScore(
-      @PathVariable Long id, @Valid @RequestBody ScoreRequest request) {
+      @PathVariable Long id, @Valid @RequestBody ScoreRequest request, @AuthenticationPrincipal AldebaranUserPrincipal principal) {
 
-    return ResponseEntity.ok(scoreService.updateScore(id, request));
+    return ResponseEntity.ok(
+        scoreCapabilityService.forViewer(scoreService.updateScore(id, request), principal));
   }
 
   /**
@@ -114,7 +130,8 @@ public class ScoreController {
   }
 
   /**
-   * Calculates the rank and percentile of a specific score against the global population.
+   * Calculates the rank and percentile of a specific score against the Personal Records of the
+   * other athletes at the same scaling level.
    *
    * @param id The ID of the score to analyze.
    * @return The comparison metrics.
@@ -129,11 +146,13 @@ public class ScoreController {
   /**
    * Retrieves the leaderboard for a specific WOD.
    *
-   * <p>Returns only the best score (PR) per athlete for the given scaling level.
+   * <p>Returns the best score (PR) of each athlete whose PR is at the given scaling level. Other
+   * athletes' comments and scaling notes are hidden unless the viewer can moderate the score.
    *
    * @param id The ID of the WOD.
    * @param scaling The scaling level to filter by (default: RX).
    * @param pageable Pagination info.
+   * @param principal The authenticated user.
    * @return A page of top scores.
    */
   @GetMapping("/leaderboard/{id}")
@@ -141,9 +160,13 @@ public class ScoreController {
   public ResponseEntity<Slice<ScoreResponse>> getLeaderboard(
       @PathVariable Long id,
       @RequestParam(defaultValue = "RX") ScalingLevel scaling,
-      @PageableDefault(size = 20) Pageable pageable) {
+      @PageableDefault(size = 20) Pageable pageable,
+      @AuthenticationPrincipal AldebaranUserPrincipal principal) {
 
-    return ResponseEntity.ok(scoreService.getLeaderboard(id, scaling, pageable));
+    return ResponseEntity.ok(
+        scoreService
+            .getLeaderboard(id, scaling, pageable)
+            .map(score -> scoreCapabilityService.forViewer(score, principal)));
   }
 
   /** Retrieves reference data (scaling levels) for score submission forms. */

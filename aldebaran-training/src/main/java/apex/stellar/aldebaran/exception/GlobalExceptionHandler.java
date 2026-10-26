@@ -126,6 +126,23 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
   }
 
   /**
+   * Handles {@link InvalidScoreException} when a score does not match its WOD. Returns 400 Bad
+   * Request.
+   */
+  @ApiResponse(
+      responseCode = "400",
+      description = "Invalid score (value missing for the WOD's score type, or WOD mismatch)",
+      content = @Content(schema = @Schema(implementation = ProblemDetail.class)))
+  @ExceptionHandler(InvalidScoreException.class)
+  public ResponseEntity<@NonNull ProblemDetail> handleInvalidScore(
+      InvalidScoreException ex, HttpServletRequest request, Locale locale) {
+
+    log.warn("Invalid score: {}", ex.getMessage());
+    String message = getLocalizedMessage(ex.getMessageKey(), ex.getArgs(), locale);
+    return createProblemResponse(HttpStatus.BAD_REQUEST, "Invalid Score", message, request);
+  }
+
+  /**
    * Handles {@link ConstraintViolationException} triggered by JPA/Hibernate Validator
    * (e.g., @ValidScore). Returns 400 Bad Request with a structured array of validation errors.
    */

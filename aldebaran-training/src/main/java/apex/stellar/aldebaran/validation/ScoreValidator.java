@@ -21,8 +21,11 @@ public class ScoreValidator implements ConstraintValidator<ValidScore, Score> {
 
     boolean isValid =
         switch (scoreType) {
-          case TIME -> score.getTimeSeconds() != null;
-          case ROUNDS_REPS -> score.getRounds() != null || score.getReps() != null;
+          case TIME ->
+              Boolean.TRUE.equals(score.getTimeCapped())
+                  ? score.getReps() != null
+                  : score.getTimeSeconds() != null;
+          case ROUNDS -> score.getRounds() != null;
           case REPS -> score.getReps() != null;
           case WEIGHT -> score.getMaxWeightKg() != null;
           case LOAD -> score.getTotalLoadKg() != null;

@@ -14,6 +14,8 @@ import {AccessService} from '../../../core/services/access.service';
 import {UnitService} from '../../../core/services/unit.service';
 import {APP_ICONS} from '../../../app.config';
 import {WodResponse} from '../../../api/aldebaran/models/wod.model';
+import {ScoreService} from '../../../api/aldebaran/services/score.service';
+import {WodScoresStore} from '../scores/wod-scores.store';
 
 describe('WodDetailComponent', () => {
   let component: WodDetailComponent;
@@ -23,6 +25,7 @@ describe('WodDetailComponent', () => {
   let mockWodService: MockedObject<WodService>;
   let mockNotificationService: MockedObject<NotificationService>;
   let mockLocation: MockedObject<Location>;
+  let mockScoreService: MockedObject<ScoreService>;
 
   const movement = (id: number, name: string): any => ({id, name, category: 'SQUAT', equipment: [], techniques: [], targetedMuscles: []});
 
@@ -68,6 +71,11 @@ describe('WodDetailComponent', () => {
       showError: vi.fn().mockName('NotificationService.showError')
     } as any;
     mockLocation = {back: vi.fn().mockName('Location.back')} as any;
+    mockScoreService = {
+      getMyScores: vi.fn().mockName('ScoreService.getMyScores'),
+      compareScore: vi.fn().mockName('ScoreService.compareScore')
+    } as any;
+    mockScoreService.getMyScores.mockReturnValue(of({content: [], first: true, last: true, empty: true} as any));
 
     await TestBed.configureTestingModule({
       imports: [WodDetailComponent],
@@ -88,7 +96,8 @@ describe('WodDetailComponent', () => {
           }
         },
         {provide: NotificationService, useValue: mockNotificationService},
-        {provide: Location, useValue: mockLocation}
+        {provide: Location, useValue: mockLocation},
+        {provide: ScoreService, useValue: mockScoreService}
       ]
     }).compileComponents();
 
@@ -290,10 +299,53 @@ describe('WodDetailComponent', () => {
       expect(component.scaling(thruster)).toBe('Lighter barbell');
     });
 
+    it('should show the official tiebreak only when the WOD has one', () => {
+      init();
+      expect(fixture.nativeElement.querySelector('#tiebreak')).toBeNull();
+
+      init(buildWod({tiebreakEn: 'Time after the last full set'}));
+      expect(fixture.nativeElement.querySelector('#tiebreak').textContent).toContain('Time after the last full set');
+    });
+
     it('should not number the movements on the board', () => {
       init();
       const board: HTMLElement = fixture.nativeElement;
       expect(board.querySelector('.badge-secondary')).toBeNull();
+    });
+  });
+
+  describe('scores', () => {
+    const store = () => fixture.debugElement.injector.get(WodScoresStore);
+
+    it('should load the user\'s scores on the WOD and invite to log one when there is none', () => {
+      init();
+
+      expect(mockScoreService.getMyScores).toHaveBeenCalledWith(1, 0, 50);
+      const text: string = fixture.nativeElement.textContent;
+      expect(text).toContain('SCORE.ACTIONS.LOG');
+      expect(text).toContain('SCORE.MESSAGES.EMPTY');
+      expect(fixture.nativeElement.querySelector('app-score-form')).toBeNull();
+    });
+
+    it('should open the score form from the history', () => {
+      init();
+      (fixture.nativeElement.querySelector('#log-score') as HTMLButtonElement).click();
+      fixture.detectChanges();
+
+      expect(store().editing()).toBe('new');
+      expect(fixture.nativeElement.querySelector('app-score-form')).toBeTruthy();
+    });
+
+    it('should refresh the WOD (lock state) after a score change', () => {
+      init();
+      mockWodService.getWod.mockReturnValue(of(buildWod({capabilities: {canModify: true, locked: true}})));
+
+      store().changed$.next();
+      fixture.detectChanges();
+
+      expect(mockWodService.getWod).toHaveBeenCalledTimes(2);
+      expect(component.isLocked()).toBe(true);
+      expect(component.canModify()).toBe(false);
     });
   });
 });

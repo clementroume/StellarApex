@@ -90,6 +90,17 @@ describe('UnitService', () => {
     expect(service.formatLoad(95, 65, 'LBS')).toBe('95/65 lb');
   });
 
+  it('should keep the precision of a lifted load (score): 0.5 kg, 1 lb', () => {
+    service.setUnitSystem('METRIC');
+    expect(service.formatScoreLoad(102.5, 'KG')).toBe('102.5 kg');
+    expect(service.formatScoreLoad(225, 'LBS')).toBe('102 kg');
+    expect(service.formatScoreLoad(226, 'LBS')).toBe('102.5 kg');
+
+    service.setUnitSystem('IMPERIAL');
+    expect(service.formatScoreLoad(102.5, 'KG')).toBe('226 lb');
+    expect(service.formatScoreLoad(null, 'KG')).toBe('');
+  });
+
   it('should return an empty text without a load', () => {
     expect(service.formatLoad(undefined, undefined, 'KG')).toBe('');
     expect(service.formatDistance(null, null, 'METERS')).toBe('');

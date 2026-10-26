@@ -55,7 +55,11 @@ public final class WodCsvCodec {
     "description_en",
     "description_fr",
     "notes_en",
-    "notes_fr"
+    "notes_fr",
+    // Optional trailing columns (official tiebreak, reps of a fixed AMRAP round)
+    "tiebreak_en",
+    "tiebreak_fr",
+    "reps_per_round"
   };
 
   static final String[] WOD_MOVEMENT_HEADERS = {
@@ -114,7 +118,7 @@ public final class WodCsvCodec {
               .title(title)
               .wodType(WodType.valueOf(required(row, "wod_type").toUpperCase()))
               .category(category(row))
-              .scoreType(ScoreType.valueOf(required(row, "score_type").toUpperCase()))
+              .scoreType(scoreType(row))
               .repScheme(text(row, "rep_scheme"))
               .timeCapSeconds(integer(row, "time_cap_seconds"))
               .emomInterval(integer(row, "emom_interval"))
@@ -123,6 +127,9 @@ public final class WodCsvCodec {
               .descriptionFr(text(row, "description_fr"))
               .notesEn(text(row, "notes_en", "notes"))
               .notesFr(text(row, "notes_fr"))
+              .tiebreakEn(text(row, "tiebreak_en"))
+              .tiebreakFr(text(row, "tiebreak_fr"))
+              .repsPerRound(integer(row, "reps_per_round"))
               .isPublic(true)
               .authorId(null)
               .gymId(null)
@@ -215,7 +222,10 @@ public final class WodCsvCodec {
             w.getDescriptionEn(),
             w.getDescriptionFr(),
             w.getNotesEn(),
-            w.getNotesFr());
+            w.getNotesFr(),
+            w.getTiebreakEn(),
+            w.getTiebreakFr(),
+            w.getRepsPerRound());
 
         List<WodMovement> movements = new ArrayList<>(w.getMovements());
         movements.sort(Comparator.comparing(WodMovement::getOrderIndex));
@@ -290,6 +300,12 @@ public final class WodCsvCodec {
   /** Text of the first column present, so files written before a column rename still load. */
   private static String text(CSVRecord row, String header, String legacyHeader) {
     return row.isMapped(header) ? text(row, header) : text(row, legacyHeader);
+  }
+
+  /** Score type; the former ROUNDS_REPS (AMRAPs, now stored as total reps) reads as REPS. */
+  private static ScoreType scoreType(CSVRecord row) {
+    String value = required(row, "score_type").toUpperCase();
+    return "ROUNDS_REPS".equals(value) ? ScoreType.REPS : ScoreType.valueOf(value);
   }
 
   private static Integer integer(CSVRecord row, String header) {

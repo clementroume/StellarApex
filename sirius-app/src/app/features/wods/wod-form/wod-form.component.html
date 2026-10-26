@@ -113,6 +113,24 @@
           </div>
         </div>
 
+        @if (isReps) {
+          <div class="form-control w-full mt-2">
+            <div class="label"><span class="label-text">{{ 'WOD.FIELDS.REPS_PER_ROUND' | translate }}</span></div>
+            <div class="flex flex-wrap items-center gap-2">
+              <input type="number" min="1" formControlName="repsPerRound" class="input input-bordered w-28"/>
+              @if (suggestedRepsPerRound(); as suggested) {
+                @if (suggested !== wodForm.controls.repsPerRound.value) {
+                  <button type="button" id="use-reps-per-round" class="btn btn-sm btn-ghost"
+                          (click)="wodForm.controls.repsPerRound.setValue(suggested)">
+                    {{ 'WOD.ACTIONS.USE_REPS_PER_ROUND' | translate: {reps: suggested} }}
+                  </button>
+                }
+              }
+            </div>
+            <div class="label"><span class="label-text-alt opacity-70">{{ 'WOD.HINTS.REPS_PER_ROUND' | translate }}</span></div>
+          </div>
+        }
+
         @if (isEmom) {
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
             <label class="form-control w-full">
@@ -144,6 +162,13 @@
               <div class="label"><span class="label-text font-semibold">{{ 'WOD.FIELDS.NOTES_' + lang | translate }}</span></div>
               <textarea [formControlName]="lang === 'FR' ? 'notesFr' : 'notesEn'" class="textarea textarea-bordered h-24 w-full"
                         [placeholder]="'WOD.PLACEHOLDERS.NOTES' | translate"></textarea>
+            </label>
+          }
+          @for (lang of languages(); track lang) {
+            <label class="form-control w-full">
+              <div class="label"><span class="label-text font-semibold">{{ 'WOD.FIELDS.TIEBREAK_' + lang | translate }}</span></div>
+              <textarea [formControlName]="lang === 'FR' ? 'tiebreakFr' : 'tiebreakEn'" class="textarea textarea-bordered h-16 w-full"
+                        [placeholder]="'WOD.PLACEHOLDERS.TIEBREAK' | translate"></textarea>
             </label>
           }
         </div>

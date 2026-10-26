@@ -29,8 +29,13 @@ public record WodResponse(
     String notesEn,
     String notesFr,
 
+    // --- Official tiebreak (EN / FR), null when the WOD has none ---
+    String tiebreakEn,
+    String tiebreakFr,
+
     // --- Structure ---
     Integer timeCapSeconds,
+    Integer repsPerRound,
     Integer emomInterval,
     Integer emomRounds,
     String repScheme,
@@ -64,7 +69,10 @@ public record WodResponse(
         descriptionFr,
         notesEn,
         notesFr,
+        tiebreakEn,
+        tiebreakFr,
         timeCapSeconds,
+        repsPerRound,
         emomInterval,
         emomRounds,
         repScheme,

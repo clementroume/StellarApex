@@ -69,7 +69,7 @@
               </div>
               <div id="best-score">
                 <dt class="font-semibold text-base-content/70">{{ 'WOD.FIELDS.BEST_SCORE' | translate }}</dt>
-                <dd class="italic opacity-70">{{ 'WOD.MESSAGES.BEST_SCORE_SOON' | translate }}</dd>
+                <dd><app-score-best></app-score-best></dd>
               </div>
             </dl>
 
@@ -83,6 +83,12 @@
               <div>
                 <h4 class="text-sm font-semibold text-base-content/70 mb-2">{{ 'WOD.FIELDS.NOTES' | translate }}</h4>
                 <p class="leading-relaxed text-sm md:text-base whitespace-pre-line">{{ notes() }}</p>
+              </div>
+            }
+            @if (tiebreak()) {
+              <div id="tiebreak">
+                <h4 class="text-sm font-semibold text-base-content/70 mb-2">{{ 'WOD.FIELDS.TIEBREAK' | translate }}</h4>
+                <p class="leading-relaxed text-sm md:text-base whitespace-pre-line">{{ tiebreak() }}</p>
               </div>
             }
           </app-detail-card>
@@ -134,6 +140,12 @@
           </app-detail-card>
         </div>
       </div>
+
+      <app-score-history class="block"></app-score-history>
+
+      @if (scoresStore.editing()) {
+        <app-score-form></app-score-form>
+      }
 
       @if (canModify()) {
         <app-detail-admin-actions

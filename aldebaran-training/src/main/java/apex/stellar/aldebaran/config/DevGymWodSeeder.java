@@ -156,8 +156,9 @@ public class DevGymWodSeeder implements ApplicationRunner {
     wods.add(
         wod(
             catalog,
-            base("Sparta Burner", WodType.AMRAP, ScoreType.ROUNDS_REPS, sparta, ids.owner())
+            base("Sparta Burner", WodType.AMRAP, ScoreType.REPS, sparta, ids.owner())
                 .repScheme("AMRAP 12 min")
+                .repsPerRound(30)
                 .timeCapSeconds(720)
                 .descriptionEn("As many rounds as possible in 12 minutes.")
                 .descriptionFr("Le plus de tours possible en 12 minutes."),
@@ -231,8 +232,9 @@ public class DevGymWodSeeder implements ApplicationRunner {
     wods.add(
         wod(
             catalog,
-            base("Titan AMRAP", WodType.AMRAP, ScoreType.ROUNDS_REPS, zeus, ids.programmer())
+            base("Titan AMRAP", WodType.AMRAP, ScoreType.REPS, zeus, ids.programmer())
                 .repScheme("AMRAP 15 min")
+                .repsPerRound(32)
                 .timeCapSeconds(900)
                 .descriptionEn("As many rounds as possible in 15 minutes.")
                 .descriptionFr("Le plus de tours possible en 15 minutes."),
@@ -254,7 +256,7 @@ public class DevGymWodSeeder implements ApplicationRunner {
     wods.add(
         wod(
             catalog,
-            base("Athlete Engine Builder", WodType.AMRAP, ScoreType.ROUNDS_REPS, null, ids.athlete())
+            base("Athlete Engine Builder", WodType.AMRAP, ScoreType.REPS, null, ids.athlete())
                 .repScheme("AMRAP 20 min")
                 .timeCapSeconds(1200)
                 .descriptionEn("Personal session: as many rounds as possible in 20 minutes.")

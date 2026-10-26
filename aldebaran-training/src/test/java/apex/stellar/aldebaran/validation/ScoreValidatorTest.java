@@ -85,31 +85,25 @@ class ScoreValidatorTest {
     assertInvalidScoreType(score);
   }
 
-  // =========================================================================
-  // 2. ROUNDS_REPS (AMRAP Mixte)
-  // =========================================================================
-
   @Test
-  @DisplayName("ROUNDS_REPS: Valid if Rounds is present")
-  void testRoundsReps_ValidRounds() {
-    Score score = createScore(ScoreType.ROUNDS_REPS);
-    score.setRounds(5);
-    assertValidScoreType(score);
-  }
-
-  @Test
-  @DisplayName("ROUNDS_REPS: Valid if Reps is present")
-  void testRoundsReps_ValidReps() {
-    Score score = createScore(ScoreType.ROUNDS_REPS);
-    score.setReps(50);
-    assertValidScoreType(score);
-  }
-
-  @Test
-  @DisplayName("ROUNDS_REPS: Invalid if both are null")
-  void testRoundsReps_Invalid() {
-    Score score = createScore(ScoreType.ROUNDS_REPS);
+  @DisplayName("ROUNDS: valid only with the rounds completed")
+  void testRounds() {
+    Score score = createScore(ScoreType.ROUNDS);
     assertInvalidScoreType(score);
+    score.setRounds(24);
+    assertValidScoreType(score);
+  }
+
+  @Test
+  @DisplayName("TIME: time-capped score needs the reps at the cap, not a time")
+  void testTime_Capped() {
+    Score score = createScore(ScoreType.TIME);
+    score.setTimeCapped(true);
+    score.setTimeSeconds(null);
+    assertInvalidScoreType(score);
+
+    score.setReps(45);
+    assertValidScoreType(score);
   }
 
   // =========================================================================

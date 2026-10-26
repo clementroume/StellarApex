@@ -58,6 +58,13 @@ public interface WodSummary {
   Integer getTimeCapSeconds();
 
   /**
+   * Gets the reps of one round, when the rounds of the WOD are fixed.
+   *
+   * @return the reps per round, or null.
+   */
+  Integer getRepsPerRound();
+
+  /**
    * Retrieves the timestamp when the workout definition was created.
    *
    * @return the creation date and time as a {@link LocalDateTime}.

@@ -241,7 +241,7 @@ class DtoLocalizationTest {
               "",
               null, null, null, null, null,
               false,
-              null, null, null, null, null, null, null, null,
+              null, null, null, null, null, null, null, null, null, null, null,
               Collections.emptyList());
 
       assertViolationEnAndFr(
@@ -272,8 +272,8 @@ class DtoLocalizationTest {
               "A".repeat(4001),
               null,
               "A".repeat(4001),
-              null,
-              -1,
+              null, null, null,
+              -1, null,
               -1,
               null,
               "A".repeat(101),
@@ -412,7 +412,7 @@ class DtoLocalizationTest {
       ScoreRequest request =
           new ScoreRequest(
               null, null, null, null, null, null, null, null, null, null, null, null, null, null,
-              false, null, null);
+              false, null, null, null);
 
       assertViolationEnAndFr(request, "wodId", "WOD ID is required.", "L'ID du WOD est requis.");
       assertViolationEnAndFr(request, "date", "Date is required.", "La date est requise.");
@@ -430,7 +430,7 @@ class DtoLocalizationTest {
               1L,
               null, null, null, null, null, null, null, null, null, null,
               ScalingLevel.RX,
-              false,
+              false, null,
               null,
               null);
 
@@ -461,7 +461,7 @@ class DtoLocalizationTest {
               null,
               -1,
               ScalingLevel.RX,
-              false,
+              false, null,
               "A".repeat(4001),
               "A".repeat(4001));
 

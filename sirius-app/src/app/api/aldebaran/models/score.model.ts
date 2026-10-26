@@ -1,5 +1,13 @@
 import {WodSummaryResponse} from './wod.model';
 
+/** Level at which a WOD was performed; personal records rank ELITE (Rx+) > RX > SCALED > CUSTOM. */
+export type ScalingLevel = 'RX' | 'SCALED' | 'ELITE' | 'CUSTOM';
+
+/** Rights of the current user on a score, computed by Aldebaran (ScoreSecurity). */
+export interface ScoreCapabilities {
+  canModify: boolean;
+}
+
 export interface ScoreRequest {
   // --- Identification ---
   userId?: number;
@@ -21,8 +29,10 @@ export interface ScoreRequest {
   // --- Calories ---
   totalCalories?: number;
   // --- Performance Context ---
-  scaling: string;
+  scaling: ScalingLevel;
   timeCapped: boolean;
+  /** Optional official tiebreak time (elapsed seconds), kept only for WODs that define one. */
+  tiebreakSeconds?: number;
   // --- Comments and Scaling notes---
   userComment?: string;
   scalingNotes?: string;
@@ -52,14 +62,17 @@ export interface ScoreResponse {
   // --- Calories ---
   totalCalories?: number;
   // --- Performance Context ---
-  scaling: string;
+  scaling: ScalingLevel;
   timeCapped: boolean;
+  tiebreakSeconds?: number;
   personalRecord: boolean;
   // --- Comments and Scaling notes---
   userComment?: string;
   scalingNotes?: string;
   // --- Audit ---
   loggedAt: string;
+  // --- Per-user rights (computed per request) ---
+  capabilities?: ScoreCapabilities;
 }
 
 export interface ScoreComparisonResponse {
