@@ -7,7 +7,9 @@ import {Slice} from '../../../core/models/pagination.model';
 
 export interface WodListFilters {
   search?: string;
+  // Format (FOR_TIME, AMRAP...) and category (GIRLS, OPEN...)
   type?: string;
+  category?: string;
   movementId?: number;
   scope?: WodScope;
   // Only meaningful with the GYM scope
@@ -35,6 +37,7 @@ export class WodService {
 
     if (filters.search) params = params.set('search', filters.search);
     if (filters.type) params = params.set('type', filters.type);
+    if (filters.category) params = params.set('category', filters.category);
     if (filters.movementId) params = params.set('movementId', filters.movementId);
     if (filters.scope) params = params.set('scope', filters.scope);
     if (filters.gymId) params = params.set('gymId', filters.gymId);
@@ -84,6 +87,7 @@ export class WodService {
   // --- UI STATE ---
   public readonly savedSearchQuery = signal<string>('');
   public readonly savedTypeFilter = signal<string>('');
+  public readonly savedCategoryFilter = signal<string>('');
   // Scope tab key ('ALL', 'MINE', 'PUBLIC' or 'GYM:<id>'), empty until the user picks one
   public readonly savedScopeTab = signal<string>('');
   // Admin selectors of the "All" tab (mutually exclusive)

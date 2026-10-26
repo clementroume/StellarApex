@@ -12,6 +12,7 @@ import {AccessService} from '../../../core/services/access.service';
 import {MovementResponse, MovementSummaryResponse} from '../../../api/aldebaran/models/movement.model';
 import {WodMovementRequest, WodMovementResponse, WodRequest, WodResponse} from '../../../api/aldebaran/models/wod.model';
 import {ProblemDetail} from '../../../core/models/problem-detail.model';
+import {UnitService} from '../../../core/services/unit.service';
 
 export type WodFormVisibility = 'PRIVATE' | 'GYM';
 
@@ -40,6 +41,7 @@ export class WodFormComponent implements OnInit {
   private readonly accessService = inject(AccessService);
   private readonly notificationService = inject(NotificationService);
   private readonly translate = inject(TranslateService);
+  private readonly unitService = inject(UnitService);
 
   isEditMode = signal<boolean>(false);
   isLoading = signal<boolean>(false);
@@ -48,6 +50,7 @@ export class WodFormComponent implements OnInit {
   readonly originalWod = signal<WodResponse | null>(null);
 
   wodTypes = signal<string[]>([]);
+  categories = signal<string[]>([]);
   scoreTypes = signal<string[]>([]);
   unitGroups = signal<Record<string, string[]>>({});
   availableMovements = signal<MovementSummaryResponse[]>([]);
@@ -56,6 +59,12 @@ export class WodFormComponent implements OnInit {
   readonly movementDetails = signal<Record<number, MovementResponse>>({});
   private readonly movementsByName = computed(
     () => new Map(this.availableMovements().map(m => [m.name.toLowerCase(), m])));
+
+  /** The user's language first: a coach writes in their language, the other one is optional. */
+  readonly primaryLanguage = computed<'FR' | 'EN'>(() =>
+    (this.translate.currentLang() ?? this.translate.fallbackLang()) === 'fr' ? 'FR' : 'EN');
+  readonly secondaryLanguage = computed<'FR' | 'EN'>(() => this.primaryLanguage() === 'FR' ? 'EN' : 'FR');
+  readonly languages = computed(() => [this.primaryLanguage(), this.secondaryLanguage()]);
 
   massUnits = computed(() => this.unitGroups()['MASS'] ?? []);
   distanceUnits = computed(() => this.unitGroups()['DISTANCE'] ?? []);
@@ -72,14 +81,17 @@ export class WodFormComponent implements OnInit {
     // --- Identification ---
     title: ['', [Validators.required, Validators.maxLength(100)]],
     wodType: ['', Validators.required],
+    category: [null as string | null],
     scoreType: ['', Validators.required],
     // --- Authorship and Visibility ---
     visibility: ['PRIVATE' as WodFormVisibility],
     gymId: [null as number | null],
     isPublic: [false],
     // --- Description and Notes ---
-    description: ['', [Validators.maxLength(4000)]],
-    notes: ['', [Validators.maxLength(4000)]],
+    descriptionFr: ['', [Validators.maxLength(4000)]],
+    descriptionEn: ['', [Validators.maxLength(4000)]],
+    notesFr: ['', [Validators.maxLength(4000)]],
+    notesEn: ['', [Validators.maxLength(4000)]],
     // --- Structure and Prescription ---
     timeCapMinutes: [null as number | null, [Validators.min(0)]],
     timeCapSeconds: [null as number | null, [Validators.min(0), Validators.max(59)]],
@@ -95,6 +107,7 @@ export class WodFormComponent implements OnInit {
       movements: this.movementService.getMovements()
     }).subscribe(({wodRef, movements}) => {
       this.wodTypes.set(wodRef.wodTypes);
+      this.categories.set(wodRef.categories ?? []);
       this.scoreTypes.set(wodRef.scoreTypes);
       this.unitGroups.set(wodRef.unitGroups);
       this.availableMovements.set([...movements].sort((a, b) => a.name.localeCompare(b.name)));
@@ -145,7 +158,9 @@ export class WodFormComponent implements OnInit {
       movementQuery: [source?.movement.name ?? ''],
       repsScheme: [source?.repsScheme ?? '', [Validators.maxLength(50)]],
       weight: [source?.weight ?? null as number | null, [Validators.min(0)]],
-      weightUnit: [source?.weightUnit ?? this.massUnits()[0] ?? 'KG'],
+      weightFemale: [source?.weightFemale ?? null as number | null, [Validators.min(0)]],
+      // New movements default to the user's display unit (kg in French)
+      weightUnit: [source?.weightUnit ?? this.unitService.massUnit()],
       distance: [source?.distance ?? null as number | null, [Validators.min(0)]],
       distanceUnit: [source?.distanceUnit ?? this.distanceUnits()[0] ?? 'METERS'],
       durationSeconds: [source?.durationSeconds ?? null as number | null, [Validators.min(0)]],
@@ -154,8 +169,10 @@ export class WodFormComponent implements OnInit {
       // Variants: only values allowed by the movement (checked again by Aldebaran)
       equipment: [source?.equipment ?? null as string[] | null],
       techniques: [source?.techniques ?? null as string[] | null],
-      notes: [source?.notes ?? '', [Validators.maxLength(4000)]],
-      scalingOptions: [source?.scalingOptions ?? '', [Validators.maxLength(4000)]]
+      notesFr: [source?.notesFr ?? '', [Validators.maxLength(4000)]],
+      notesEn: [source?.notesEn ?? '', [Validators.maxLength(4000)]],
+      scalingOptionsFr: [source?.scalingOptionsFr ?? '', [Validators.maxLength(4000)]],
+      scalingOptionsEn: [source?.scalingOptionsEn ?? '', [Validators.maxLength(4000)]]
     }));
     if (source) {
       this.loadMovementDetails(source.movement.id);
@@ -218,6 +235,11 @@ export class WodFormComponent implements OnInit {
       }));
   }
 
+  /** Form control of a bilingual movement text, e.g. ('notes', 'FR') -> 'notesFr'. */
+  textControl(field: 'notes' | 'scalingOptions', lang: 'FR' | 'EN'): string {
+    return field + (lang === 'FR' ? 'Fr' : 'En');
+  }
+
   removeMovement(index: number): void {
     this.movementsFormArray.removeAt(index);
   }
@@ -249,14 +271,17 @@ export class WodFormComponent implements OnInit {
           // --- Identification ---
           title: wod.title,
           wodType: wod.wodType,
+          category: wod.category ?? null,
           scoreType: wod.scoreType,
           // --- Authorship and Visibility ---
           visibility: wod.gymId == null ? 'PRIVATE' : 'GYM',
           gymId: wod.gymId ?? null,
           isPublic: wod.isPublic,
           // --- Description and Notes ---
-          description: wod.description || '',
-          notes: wod.notes || '',
+          descriptionFr: wod.descriptionFr || '',
+          descriptionEn: wod.descriptionEn || '',
+          notesFr: wod.notesFr || '',
+          notesEn: wod.notesEn || '',
           // --- Structure and Prescription ---
           timeCapMinutes: timeCap === null ? null : Math.floor(timeCap / 60),
           timeCapSeconds: timeCap === null ? null : timeCap % 60,
@@ -324,7 +349,8 @@ export class WodFormComponent implements OnInit {
       // --- Prescription ---
       repsScheme: m.repsScheme?.trim() || undefined,
       weight: m.weight ?? undefined,
-      weightUnit: m.weight == null ? undefined : m.weightUnit,
+      weightFemale: m.weightFemale ?? undefined,
+      weightUnit: m.weight == null && m.weightFemale == null ? undefined : m.weightUnit,
       durationSeconds: m.durationSeconds ?? undefined,
       durationDisplayUnit: m.durationSeconds == null ? undefined : (m.durationDisplayUnit ?? undefined),
       distance: m.distance ?? undefined,
@@ -334,22 +360,27 @@ export class WodFormComponent implements OnInit {
       equipment: m.equipment ?? undefined,
       techniques: m.techniques ?? undefined,
       // --- Instructions ---
-      notes: m.notes?.trim() || undefined,
-      scalingOptions: m.scalingOptions?.trim() || undefined
+      notesEn: m.notesEn?.trim() || undefined,
+      notesFr: m.notesFr?.trim() || undefined,
+      scalingOptionsEn: m.scalingOptionsEn?.trim() || undefined,
+      scalingOptionsFr: m.scalingOptionsFr?.trim() || undefined
     }));
 
     return {
       // --- Identification ---
       title: v.title.trim(),
       wodType: v.wodType,
+      category: v.category ?? null,
       scoreType: v.scoreType,
       // --- Authorship and Visibility ---
       authorId: isGym ? undefined : (original?.authorId ?? this.accessService.userId() ?? undefined),
       gymId: isGym ? (original?.gymId ?? v.gymId ?? undefined) : undefined,
       isPublic: v.isPublic,
       // --- Description and Notes ---
-      description: v.description.trim() || undefined,
-      notes: v.notes.trim() || undefined,
+      descriptionEn: v.descriptionEn.trim() || undefined,
+      descriptionFr: v.descriptionFr.trim() || undefined,
+      notesEn: v.notesEn.trim() || undefined,
+      notesFr: v.notesFr.trim() || undefined,
       // --- Structure and Prescription ---
       timeCapSeconds: timeCap > 0 ? timeCap : undefined,
       emomInterval: isEmom ? (v.emomInterval ?? undefined) : undefined,

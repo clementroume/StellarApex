@@ -12,6 +12,7 @@ import {
 import {AuthService} from '../../../api/antares/services/auth.service';
 import {UserService} from '../../../api/antares/services/user.service';
 import {TranslatePipe, TranslateService} from '@ngx-translate/core';
+import {UnitService} from '../../../core/services/unit.service';
 import {NotificationService} from '../../../core/services/notification.service';
 import {HttpErrorResponse} from '@angular/common/http';
 import {PreferencesUpdateRequest} from '../../../api/antares/models/user.model';
@@ -36,6 +37,7 @@ export class SettingsComponent {
   public readonly translate = inject(TranslateService);
   @ViewChild('deleteModal') deleteModal!: ElementRef<HTMLDialogElement>;
   private readonly authService = inject(AuthService);
+  public readonly unitService = inject(UnitService);
   private readonly userService = inject(UserService);
   private readonly fb = inject(FormBuilder);
   private readonly notificationService = inject(NotificationService);
@@ -80,7 +82,9 @@ export class SettingsComponent {
     if (currentUser && !currentUser.supportSession) {
       const preferences: PreferencesUpdateRequest = {
         locale: lang,
-        theme: currentUser.theme
+        theme: currentUser.theme,
+        // Sent back unchanged: the preferences are replaced as a whole
+        unitSystem: currentUser.unitSystem ?? null
       };
 
       this.userService.updatePreferences(preferences).subscribe({

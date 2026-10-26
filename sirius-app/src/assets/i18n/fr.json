@@ -37,7 +37,8 @@
     "MOVEMENTS": "Mouvements",
     "MY_ACCOUNT": "Mon Compte",
     "LOG_OUT": "Se déconnecter",
-    "TOGGLE_THEME": "Basculer le thème"
+    "TOGGLE_THEME": "Basculer le thème",
+    "TOGGLE_UNIT": "Basculer entre kg et lb"
   },
   "DASHBOARD": {
     "TITLE": "Tableau de Bord",
@@ -83,7 +84,11 @@
     "DELETE_MODAL_TITLE": "Êtes-vous absolument sûr ?",
     "DELETE_MODAL_DESC": "Cette action est irréversible. Cela supprimera définitivement votre compte et toutes vos données associées.",
     "DELETE_MODAL_CONFIRM": "Oui, supprimer mon compte",
-    "SUCCESS_DELETE": "Votre compte a été supprimé avec succès. Au revoir !"
+    "SUCCESS_DELETE": "Votre compte a été supprimé avec succès. Au revoir !",
+    "UNIT_TITLE": "Unité de charge",
+    "UNIT_LABEL": "Afficher les charges en",
+    "UNIT_METRIC": "Kilogrammes (kg)",
+    "UNIT_IMPERIAL": "Livres (lb)"
   },
   "EXPORT": {
     "EXPORT_CSV": "Exporter CSV",
@@ -398,7 +403,9 @@
       "MOVE_UP": "Monter",
       "MOVE_DOWN": "Descendre",
       "ADD_FOR_GYM": "Créer un WOD pour {{gym}}",
-      "ADD_PERSONAL": "Créer un WOD personnel"
+      "ADD_PERSONAL": "Créer un WOD personnel",
+      "ALL_CATEGORIES": "Toutes les catégories",
+      "ALL_FORMATS": "Tous les formats"
     },
     "SCOPES": {
       "ALL": "Tous",
@@ -438,7 +445,18 @@
       "SCALING": "Scaling",
       "EQUIPMENT": "Équipement",
       "TECHNIQUES": "Techniques",
-      "GYM": "Salle"
+      "GYM": "Salle",
+      "FORMAT": "Format",
+      "CATEGORY": "Catégorie",
+      "WEIGHT_MEN": "Charge (hommes)",
+      "WEIGHT_WOMEN": "Charge (femmes)",
+      "DESCRIPTION_FR": "Description (français)",
+      "DESCRIPTION_EN": "Description (anglais)",
+      "NOTES_FR": "Notes (français)",
+      "NOTES_EN": "Notes (anglais)",
+      "OTHER_LANGUAGE": "Autre langue",
+      "TIME_CAP_SHORT": "Tc",
+      "NO_CATEGORY": "Aucune"
     },
     "PLACEHOLDERS": {
       "TITLE": "Ex : Fran",
@@ -468,23 +486,25 @@
       "OWNERSHIP_LOCKED": "Le propriétaire (personnel ou salle) d'un WOD ne peut pas être changé après sa création."
     },
     "WOD_TYPES": {
+      "FOR_TIME": "For Time",
       "AMRAP": "AMRAP",
       "EMOM": "EMOM",
-      "FOR_TIME": "For Time",
       "TABATA": "Tabata",
+      "INTERVALS": "Intervalles",
       "STRENGTH": "Force",
       "SKILL": "Skill / Technique",
       "ACCESSORY": "Renforcement (Accessory)",
-      "CHIPPER": "Chipper",
-      "GIRLS": "Girls (Benchmark)",
-      "HERO": "Hero WOD",
+      "CUSTOM": "Personnalisé"
+    },
+    "CATEGORIES": {
+      "GIRLS": "Girls",
+      "HERO": "Hero",
       "BENCHMARK": "Benchmark CrossFit",
       "CUSTOM_BENCHMARK": "Benchmark de la salle",
       "OPEN": "Open",
       "QUARTERFINALS": "Quarts de finale",
       "SEMIFINALS": "Demi-finales",
-      "GAMES": "Games",
-      "CUSTOM": "Personnalisé"
+      "GAMES": "Games"
     },
     "SCORE_TYPES": {
       "TIME": "Temps",

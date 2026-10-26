@@ -11,6 +11,7 @@ import {WodDetailComponent} from './wod-detail.component';
 import {WodService} from '../../../api/aldebaran/services/wod.service';
 import {NotificationService} from '../../../core/services/notification.service';
 import {AccessService} from '../../../core/services/access.service';
+import {UnitService} from '../../../core/services/unit.service';
 import {APP_ICONS} from '../../../app.config';
 import {WodResponse} from '../../../api/aldebaran/models/wod.model';
 
@@ -76,6 +77,10 @@ describe('WodDetailComponent', () => {
           useValue: {memberships: signal([{gymId: 5, gymName: 'Box', gymRole: 'COACH', permissions: []}])}
         },
         {provide: WodService, useValue: mockWodService},
+        {
+          provide: UnitService,
+          useValue: {formatLoad: (w?: number, f?: number, u?: string) => w == null ? '' : `${w}${f ? '/' + f : ''} ${u}`}
+        },
         {provide: NotificationService, useValue: mockNotificationService},
         {provide: Location, useValue: mockLocation}
       ]
@@ -188,6 +193,55 @@ describe('WodDetailComponent', () => {
       component.onDelete(component.wod()!);
 
       expect(mockNotificationService.showError).toHaveBeenCalledWith('GLOBAL.DELETE_ERROR');
+    });
+  });
+
+  describe('whiteboard', () => {
+    it('should title the WOD with its category and format, and the time cap as a badge', () => {
+      init(buildWod({category: 'GIRLS'}));
+
+      expect(component.typeLabel(component.wod()!)).toBe('WOD.CATEGORIES.GIRLS / WOD.WOD_TYPES.FOR_TIME');
+      expect(component.timeCapLabel(component.wod()!)).toBe("WOD.FIELDS.TIME_CAP_SHORT : 10'");
+      expect(component.typeLabel(buildWod())).toBe('WOD.WOD_TYPES.FOR_TIME');
+      expect(component.timeCapLabel(buildWod({timeCapSeconds: undefined}))).toBe('');
+    });
+
+    it('should omit the reps that repeat the rep scheme and write the other quantities first', () => {
+      const wod = buildWod({repScheme: '21-15-9'});
+      init(wod);
+
+      expect(component.quantity({...wod.movements[0]}, wod)).toBe('');
+      expect(component.quantity({...wod.movements[0], repsScheme: '50'}, wod)).toBe('50');
+      expect(component.quantity({...wod.movements[0], repsScheme: undefined, calories: 60}, wod)).toBe('60 cal');
+      expect(component.quantity({...wod.movements[0], repsScheme: undefined, distance: 400, distanceUnit: 'METERS'}, wod))
+        .toBe('400 WOD.UNITS.METERS');
+      expect(component.quantity({...wod.movements[0], repsScheme: undefined, durationSeconds: 60}, wod)).toBe('1:00');
+    });
+
+    it('should list the variants, the men/women load and the texts in the user language', () => {
+      init();
+      const thruster = {
+        ...component.sortedMovements()[0],
+        weightFemale: 30,
+        equipment: ['BARBELL'],
+        techniques: ['TOUCH_AND_GO'],
+        notesEn: 'Squat below parallel',
+        notesFr: 'Squat sous la parallèle',
+        scalingOptionsEn: 'Lighter barbell'
+      };
+
+      expect(component.variants(thruster)).toBe('MOVEMENT.EQUIPMENT.BARBELL, MOVEMENT.TECHNIQUES.TOUCH_AND_GO');
+      expect(component.load(thruster)).toBe('43/30 KG');
+      // No language loaded in tests: English, with the French text as fallback when English is missing
+      expect(component.movementNotes(thruster)).toBe('Squat below parallel');
+      expect(component.movementNotes({...thruster, notesEn: undefined})).toBe('Squat sous la parallèle');
+      expect(component.scaling(thruster)).toBe('Lighter barbell');
+    });
+
+    it('should not number the movements on the board', () => {
+      init();
+      const board: HTMLElement = fixture.nativeElement;
+      expect(board.querySelector('.badge-secondary')).toBeNull();
     });
   });
 });

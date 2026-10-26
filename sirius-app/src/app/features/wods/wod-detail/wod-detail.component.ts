@@ -9,13 +9,14 @@ import {WodService} from '../../../api/aldebaran/services/wod.service';
 import {NotificationService} from '../../../core/services/notification.service';
 import {AccessService} from '../../../core/services/access.service';
 import {ProblemDetail} from '../../../core/models/problem-detail.model';
+import {UnitService} from '../../../core/services/unit.service';
 import {
   DetailAdminActionsComponent
 } from '../../../shared/component/detail/detail-admin-actions/detail-admin-actions.component';
 import {DetailCardComponent} from '../../../shared/component/detail/detail-card/detail-card.component';
 import {DetailHeaderComponent} from '../../../shared/component/detail/detail-header/detail-header.component';
 import {DetailStateComponent} from '../../../shared/component/detail/detail-state/detail-state.component';
-import {formatDuration} from '../wod.utils';
+import {formatDuration, formatTimeCapShort, localizedText, wodTypeLabel} from '../wod.utils';
 
 export type WodVisibility = 'PUBLIC' | 'GYM' | 'PRIVATE';
 
@@ -35,12 +36,17 @@ export class WodDetailComponent {
   private readonly notificationService = inject(NotificationService);
   private readonly router = inject(Router);
   private readonly location = inject(Location);
+  private readonly unitService = inject(UnitService);
 
   // --- STATE (SIGNALS) ---
   wod = signal<WodResponse | null>(null);
   isLoading = signal<boolean>(true);
 
   // --- COMPUTED STATE ---
+  activeLang = computed(() => this.translate.currentLang() ?? this.translate.fallbackLang() ?? 'en');
+
+  description = computed(() => localizedText(this.activeLang(), this.wod()?.descriptionEn, this.wod()?.descriptionFr));
+  notes = computed(() => localizedText(this.activeLang(), this.wod()?.notesEn, this.wod()?.notesFr));
   sortedMovements = computed<WodMovementResponse[]>(() =>
     [...(this.wod()?.movements ?? [])].sort((a, b) => a.orderIndex - b.orderIndex)
   );
@@ -123,5 +129,54 @@ export class WodDetailComponent {
   // --- HELPERS ---
   formatDuration(seconds?: number): string {
     return formatDuration(seconds);
+  }
+
+  /** "Girls / For Time". */
+  typeLabel(wod: WodResponse): string {
+    return wodTypeLabel(key => this.translate.instant(key), wod);
+  }
+
+  /** "Tc : 15'" when the WOD has a time cap. */
+  timeCapLabel(wod: WodResponse): string {
+    const cap = formatTimeCapShort(wod.timeCapSeconds);
+    return cap ? `${this.translate.instant('WOD.FIELDS.TIME_CAP_SHORT')} : ${cap}` : '';
+  }
+
+  /**
+   * Quantity written before the movement on the whiteboard: its reps (omitted when they repeat the
+   * WOD's rep scheme, as in "21-15-9 / Thruster / Pull-up"), calories or distance; the duration only
+   * when nothing else is given.
+   */
+  quantity(wm: WodMovementResponse, wod: WodResponse): string {
+    const reps = wm.repsScheme && wm.repsScheme !== wod.repScheme ? wm.repsScheme : '';
+    const unit = (code?: string) => code ? this.translate.instant('WOD.UNITS.' + code) : '';
+    const parts = [
+      reps,
+      wm.calories ? `${wm.calories} cal` : '',
+      wm.distance ? `${wm.distance} ${unit(wm.distanceUnit)}`.trim() : ''
+    ].filter(Boolean);
+    if (parts.length === 0 && wm.durationSeconds) parts.push(formatDuration(wm.durationSeconds));
+    return parts.join(' ');
+  }
+
+  /** Equipment and techniques of the movement in the WOD, e.g. "Rings, Strict". */
+  variants(wm: WodMovementResponse): string {
+    return [
+      ...(wm.equipment ?? []).map(eq => this.translate.instant('MOVEMENT.EQUIPMENT.' + eq)),
+      ...(wm.techniques ?? []).map(tech => this.translate.instant('MOVEMENT.TECHNIQUES.' + tech))
+    ].join(', ');
+  }
+
+  /** Men's / women's load in the user's unit: "43/30 kg". */
+  load(wm: WodMovementResponse): string {
+    return this.unitService.formatLoad(wm.weight, wm.weightFemale, wm.weightUnit);
+  }
+
+  movementNotes(wm: WodMovementResponse): string {
+    return localizedText(this.activeLang(), wm.notesEn, wm.notesFr);
+  }
+
+  scaling(wm: WodMovementResponse): string {
+    return localizedText(this.activeLang(), wm.scalingOptionsEn, wm.scalingOptionsFr);
   }
 }

@@ -19,13 +19,22 @@
                  [placeholder]="'WOD.PLACEHOLDERS.TITLE' | translate"/>
         </label>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-2">
           <label class="form-control w-full">
-            <div class="label"><span class="label-text">{{ 'WOD.FIELDS.WOD_TYPE' | translate }} *</span></div>
+            <div class="label"><span class="label-text">{{ 'WOD.FIELDS.FORMAT' | translate }} *</span></div>
             <select formControlName="wodType" class="select select-bordered w-full">
               <option value="" disabled>{{ 'WOD.ACTIONS.SELECT_TYPE' | translate }}</option>
               @for (type of wodTypes(); track type) {
                 <option [value]="type">{{ 'WOD.WOD_TYPES.' + type | translate }}</option>
+              }
+            </select>
+          </label>
+          <label class="form-control w-full">
+            <div class="label"><span class="label-text">{{ 'WOD.FIELDS.CATEGORY' | translate }}</span></div>
+            <select formControlName="category" class="select select-bordered w-full">
+              <option [ngValue]="null">{{ 'WOD.FIELDS.NO_CATEGORY' | translate }}</option>
+              @for (category of categories(); track category) {
+                <option [ngValue]="category">{{ 'WOD.CATEGORIES.' + category | translate }}</option>
               }
             </select>
           </label>
@@ -123,16 +132,20 @@
       <div class="card-body">
         <h2 class="card-title mb-4">{{ 'WOD.SECTIONS.DESCRIPTION' | translate }}</h2>
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <label class="form-control w-full">
-            <div class="label"><span class="label-text font-semibold">{{ 'GLOBAL.DESCRIPTION' | translate }}</span></div>
-            <textarea formControlName="description" class="textarea textarea-bordered h-32 w-full"
-                      [placeholder]="'WOD.PLACEHOLDERS.DESCRIPTION' | translate"></textarea>
-          </label>
-          <label class="form-control w-full">
-            <div class="label"><span class="label-text font-semibold">{{ 'WOD.FIELDS.NOTES' | translate }}</span></div>
-            <textarea formControlName="notes" class="textarea textarea-bordered h-32 w-full"
-                      [placeholder]="'WOD.PLACEHOLDERS.NOTES' | translate"></textarea>
-          </label>
+          @for (lang of languages(); track lang) {
+            <label class="form-control w-full">
+              <div class="label"><span class="label-text font-semibold">{{ 'WOD.FIELDS.DESCRIPTION_' + lang | translate }}</span></div>
+              <textarea [formControlName]="lang === 'FR' ? 'descriptionFr' : 'descriptionEn'" class="textarea textarea-bordered h-32 w-full"
+                        [placeholder]="'WOD.PLACEHOLDERS.DESCRIPTION' | translate"></textarea>
+            </label>
+          }
+          @for (lang of languages(); track lang) {
+            <label class="form-control w-full">
+              <div class="label"><span class="label-text font-semibold">{{ 'WOD.FIELDS.NOTES_' + lang | translate }}</span></div>
+              <textarea [formControlName]="lang === 'FR' ? 'notesFr' : 'notesEn'" class="textarea textarea-bordered h-24 w-full"
+                        [placeholder]="'WOD.PLACEHOLDERS.NOTES' | translate"></textarea>
+            </label>
+          }
         </div>
       </div>
     </div>
@@ -218,9 +231,12 @@
                          [placeholder]="'WOD.PLACEHOLDERS.REPS' | translate"/>
                 </label>
                 <div class="form-control w-full">
-                  <div class="label"><span class="label-text">{{ 'WOD.FIELDS.WEIGHT' | translate }}</span></div>
+                  <div class="label"><span class="label-text">{{ 'WOD.FIELDS.WEIGHT_MEN' | translate }} / {{ 'WOD.FIELDS.WEIGHT_WOMEN' | translate }}</span></div>
                   <div class="join w-full">
-                    <input type="number" min="0" step="0.5" formControlName="weight" class="input input-bordered join-item w-full"/>
+                    <input type="number" min="0" step="0.5" formControlName="weight" class="input input-bordered join-item w-full"
+                           [attr.aria-label]="'WOD.FIELDS.WEIGHT_MEN' | translate"/>
+                    <input type="number" min="0" step="0.5" formControlName="weightFemale" class="input input-bordered join-item w-full"
+                           [attr.aria-label]="'WOD.FIELDS.WEIGHT_WOMEN' | translate"/>
                     <select formControlName="weightUnit" class="select select-bordered join-item w-24">
                       @for (u of massUnits(); track u) {
                         <option [value]="u">{{ 'WOD.UNITS.' + u | translate }}</option>
@@ -254,13 +270,28 @@
               <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <label class="form-control w-full">
                   <div class="label"><span class="label-text">{{ 'WOD.FIELDS.NOTES' | translate }}</span></div>
-                  <textarea formControlName="notes" class="textarea textarea-bordered h-16 w-full"></textarea>
+                  <textarea [formControlName]="textControl('notes', primaryLanguage())" class="textarea textarea-bordered h-16 w-full"></textarea>
                 </label>
                 <label class="form-control w-full">
                   <div class="label"><span class="label-text">{{ 'WOD.FIELDS.SCALING' | translate }}</span></div>
-                  <textarea formControlName="scalingOptions" class="textarea textarea-bordered h-16 w-full"></textarea>
+                  <textarea [formControlName]="textControl('scalingOptions', primaryLanguage())" class="textarea textarea-bordered h-16 w-full"></textarea>
                 </label>
               </div>
+              <details class="collapse collapse-arrow bg-base-100 rounded-box">
+                <summary class="collapse-title text-sm font-medium min-h-0 py-2">
+                  {{ 'WOD.FIELDS.OTHER_LANGUAGE' | translate }} ({{ secondaryLanguage() }})
+                </summary>
+                <div class="collapse-content grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <label class="form-control w-full">
+                    <div class="label"><span class="label-text">{{ 'WOD.FIELDS.NOTES' | translate }}</span></div>
+                    <textarea [formControlName]="textControl('notes', secondaryLanguage())" class="textarea textarea-bordered h-16 w-full"></textarea>
+                  </label>
+                  <label class="form-control w-full">
+                    <div class="label"><span class="label-text">{{ 'WOD.FIELDS.SCALING' | translate }}</span></div>
+                    <textarea [formControlName]="textControl('scalingOptions', secondaryLanguage())" class="textarea textarea-bordered h-16 w-full"></textarea>
+                  </label>
+                </div>
+              </details>
             </div>
           }
         </div>

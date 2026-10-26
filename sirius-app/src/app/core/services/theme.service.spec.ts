@@ -90,7 +90,8 @@ describe('ThemeService', () => {
 
       expect(userServiceSpy.updatePreferences).toHaveBeenCalledWith({
         locale: 'en',
-        theme: 'light' // The service starts at 'light', so it toggles to 'dark'
+        theme: 'light', // The service starts at 'light', so it toggles to 'dark'
+        unitSystem: null
       });
     });
 

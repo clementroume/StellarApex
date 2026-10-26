@@ -37,7 +37,8 @@
     "MOVEMENTS": "Movement",
     "MY_ACCOUNT": "My Account",
     "LOG_OUT": "Log out",
-    "TOGGLE_THEME": "Toggle light/dark theme"
+    "TOGGLE_THEME": "Toggle light/dark theme",
+    "TOGGLE_UNIT": "Switch between kg and lb"
   },
   "DASHBOARD": {
     "TITLE": "Dashboard",
@@ -83,7 +84,11 @@
     "DELETE_MODAL_TITLE": "Are you absolutely sure?",
     "DELETE_MODAL_DESC": "This action cannot be undone. This will permanently delete your account and all your associated data.",
     "DELETE_MODAL_CONFIRM": "Yes, delete my account",
-    "SUCCESS_DELETE": "Your account has been successfully deleted. Goodbye!"
+    "SUCCESS_DELETE": "Your account has been successfully deleted. Goodbye!",
+    "UNIT_TITLE": "Load unit",
+    "UNIT_LABEL": "Display loads in",
+    "UNIT_METRIC": "Kilograms (kg)",
+    "UNIT_IMPERIAL": "Pounds (lb)"
   },
   "EXPORT": {
     "EXPORT_CSV": "Export CSV",
@@ -398,7 +403,9 @@
       "MOVE_UP": "Move up",
       "MOVE_DOWN": "Move down",
       "ADD_FOR_GYM": "Create a WOD for {{gym}}",
-      "ADD_PERSONAL": "Create a personal WOD"
+      "ADD_PERSONAL": "Create a personal WOD",
+      "ALL_CATEGORIES": "All categories",
+      "ALL_FORMATS": "All formats"
     },
     "SCOPES": {
       "ALL": "All",
@@ -438,7 +445,18 @@
       "SCALING": "Scaling",
       "EQUIPMENT": "Equipment",
       "TECHNIQUES": "Techniques",
-      "GYM": "Gym"
+      "GYM": "Gym",
+      "FORMAT": "Format",
+      "CATEGORY": "Category",
+      "WEIGHT_MEN": "Load (men)",
+      "WEIGHT_WOMEN": "Load (women)",
+      "DESCRIPTION_FR": "Description (French)",
+      "DESCRIPTION_EN": "Description (English)",
+      "NOTES_FR": "Notes (French)",
+      "NOTES_EN": "Notes (English)",
+      "OTHER_LANGUAGE": "Other language",
+      "TIME_CAP_SHORT": "Tc",
+      "NO_CATEGORY": "None"
     },
     "PLACEHOLDERS": {
       "TITLE": "E.g. Fran",
@@ -468,23 +486,25 @@
       "OWNERSHIP_LOCKED": "The owner (personal or gym) of a WOD cannot be changed after creation."
     },
     "WOD_TYPES": {
+      "FOR_TIME": "For Time",
       "AMRAP": "AMRAP",
       "EMOM": "EMOM",
-      "FOR_TIME": "For Time",
       "TABATA": "Tabata",
+      "INTERVALS": "Intervals",
       "STRENGTH": "Strength",
       "SKILL": "Skill",
       "ACCESSORY": "Accessory",
-      "CHIPPER": "Chipper",
-      "GIRLS": "The Girls",
-      "HERO": "Hero WOD",
+      "CUSTOM": "Custom"
+    },
+    "CATEGORIES": {
+      "GIRLS": "Girls",
+      "HERO": "Hero",
       "BENCHMARK": "CrossFit Benchmark",
       "CUSTOM_BENCHMARK": "Gym Benchmark",
       "OPEN": "Open",
       "QUARTERFINALS": "Quarterfinals",
       "SEMIFINALS": "Semifinals",
-      "GAMES": "Games",
-      "CUSTOM": "Custom"
+      "GAMES": "Games"
     },
     "SCORE_TYPES": {
       "TIME": "Time",

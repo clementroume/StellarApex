@@ -72,6 +72,7 @@ describe('WodListComponent', () => {
       refreshNeeded$: new Subject<void>(),
       savedSearchQuery: signal(''),
       savedTypeFilter: signal(''),
+      savedCategoryFilter: signal(''),
       savedScopeTab: signal(''),
       savedAdminGymId: signal<number | null>(null),
       savedAdminAuthorId: signal<number | null>(null)
@@ -177,6 +178,16 @@ describe('WodListComponent', () => {
       mockWodService.getWods.mockClear();
       component.onTypeChange('AMRAP');
       expect(mockWodService.getWods).not.toHaveBeenCalled();
+    });
+
+    it('should filter by category and format together, and label a WOD "category / format"', () => {
+      component.onCategoryChange('GIRLS');
+      component.onTypeChange('FOR_TIME');
+
+      expect(mockWodService.getWods.mock.lastCall![0]).toMatchObject({category: 'GIRLS', type: 'FOR_TIME'});
+      expect(component.typeLabel({wodType: 'FOR_TIME', category: 'GIRLS'}))
+        .toBe('WOD.CATEGORIES.GIRLS / WOD.WOD_TYPES.FOR_TIME');
+      expect(component.typeLabel({wodType: 'AMRAP', category: null})).toBe('WOD.WOD_TYPES.AMRAP');
     });
 
     it('should reload when a refresh is requested', () => {

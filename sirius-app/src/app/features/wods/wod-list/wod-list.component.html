@@ -56,21 +56,41 @@
     (valueChange)="onSearchChange($event)">
   </app-search-input>
 
-  <div class="flex flex-wrap justify-center gap-2 mb-8">
-    <button type="button" class="badge badge-lg cursor-pointer"
-            [class.badge-secondary]="typeFilter() === ''"
-            [class.badge-outline]="typeFilter() !== ''"
-            (click)="onTypeChange('')">
-      {{ 'WOD.ACTIONS.ALL_TYPES' | translate }}
-    </button>
-    @for (type of wodTypes(); track type) {
-      <button type="button" class="badge badge-lg cursor-pointer"
-              [class.badge-secondary]="typeFilter() === type"
-              [class.badge-outline]="typeFilter() !== type"
-              (click)="onTypeChange(type)">
-        {{ 'WOD.WOD_TYPES.' + type | translate }}
-      </button>
+  <div class="flex flex-col items-center gap-2 mb-8">
+    @if (categories().length > 0) {
+      <div class="flex flex-wrap justify-center gap-2" role="group" [attr.aria-label]="'WOD.FIELDS.CATEGORY' | translate">
+        <button type="button" class="badge badge-lg cursor-pointer"
+                [class.badge-primary]="categoryFilter() === ''"
+                [class.badge-outline]="categoryFilter() !== ''"
+                (click)="onCategoryChange('')">
+          {{ 'WOD.ACTIONS.ALL_CATEGORIES' | translate }}
+        </button>
+        @for (category of categories(); track category) {
+          <button type="button" class="badge badge-lg cursor-pointer"
+                  [class.badge-primary]="categoryFilter() === category"
+                  [class.badge-outline]="categoryFilter() !== category"
+                  (click)="onCategoryChange(category)">
+            {{ 'WOD.CATEGORIES.' + category | translate }}
+          </button>
+        }
+      </div>
     }
+    <div class="flex flex-wrap justify-center gap-2" role="group" [attr.aria-label]="'WOD.FIELDS.FORMAT' | translate">
+      <button type="button" class="badge badge-lg cursor-pointer"
+              [class.badge-secondary]="typeFilter() === ''"
+              [class.badge-outline]="typeFilter() !== ''"
+              (click)="onTypeChange('')">
+        {{ 'WOD.ACTIONS.ALL_FORMATS' | translate }}
+      </button>
+      @for (type of wodTypes(); track type) {
+        <button type="button" class="badge badge-lg cursor-pointer"
+                [class.badge-secondary]="typeFilter() === type"
+                [class.badge-outline]="typeFilter() !== type"
+                (click)="onTypeChange(type)">
+          {{ 'WOD.WOD_TYPES.' + type | translate }}
+        </button>
+      }
+    </div>
   </div>
 
   <app-list-state
@@ -85,13 +105,12 @@
         @for (wod of wods(); track wod.id) {
           <app-list-item
             [title]="wod.title"
-            [badge]="'WOD.WOD_TYPES.' + wod.wodType | translate"
-            [subtitle]="(wod.isPublic ? ('WOD.VISIBILITY.PUBLIC' | translate)
+            [badge]="typeLabel(wod)"
+            [subtitle]="(wod.repScheme ? wod.repScheme + ' · ' : '')
+              + (wod.timeCapSeconds ? ('WOD.FIELDS.TIME_CAP_SHORT' | translate) + ' ' + formatTimeCap(wod.timeCapSeconds) + ' · ' : '')
+              + (wod.isPublic ? ('WOD.VISIBILITY.PUBLIC' | translate)
                 : wod.gymId ? (gymName(wod.gymId) ?? ('WOD.VISIBILITY.GYM' | translate))
-                : ('WOD.VISIBILITY.PRIVATE' | translate))
-              + ' · ' + ('WOD.SCORE_TYPES.' + wod.scoreType | translate)
-              + (wod.repScheme ? ' · ' + wod.repScheme : '')
-              + (wod.timeCapSeconds ? ' · ' + ('WOD.FIELDS.TIME_CAP' | translate) + ' ' + formatTimeCap(wod.timeCapSeconds) : '')"
+                : ('WOD.VISIBILITY.PRIVATE' | translate))"
             [link]="['/wods', wod.id]">
           </app-list-item>
         }

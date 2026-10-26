@@ -41,6 +41,8 @@ export class ThemeService {
       const preferences: PreferencesUpdateRequest = {
         locale: currentUser.locale as 'en' | 'fr',
         theme: newTheme,
+        // Sent back unchanged: the preferences are replaced as a whole
+        unitSystem: currentUser.unitSystem ?? null,
       };
 
       this.userService.updatePreferences(preferences).subscribe({

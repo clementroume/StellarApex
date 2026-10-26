@@ -176,6 +176,6 @@ describe('SettingsComponent', () => {
 
     component.changeLanguage({target: {value: 'fr'}} as unknown as Event);
 
-    expect(userServiceSpy.updatePreferences).toHaveBeenCalledWith({locale: 'fr', theme: 'light'});
+    expect(userServiceSpy.updatePreferences).toHaveBeenCalledWith({locale: 'fr', theme: 'light', unitSystem: null});
   });
 });

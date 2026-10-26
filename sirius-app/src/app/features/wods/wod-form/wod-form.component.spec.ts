@@ -11,6 +11,7 @@ import {WodService} from '../../../api/aldebaran/services/wod.service';
 import {MovementService} from '../../../api/aldebaran/services/movement.service';
 import {NotificationService} from '../../../core/services/notification.service';
 import {AccessService} from '../../../core/services/access.service';
+import {UnitService} from '../../../core/services/unit.service';
 import {APP_ICONS} from '../../../app.config';
 import {WodResponse} from '../../../api/aldebaran/models/wod.model';
 
@@ -53,6 +54,7 @@ describe('WodFormComponent', () => {
         provideTranslateService(),
         {provide: WodService, useValue: mockWodService},
         {provide: MovementService, useValue: mockMovementService},
+        {provide: UnitService, useValue: {massUnit: signal('KG')}},
         {
           provide: AccessService,
           useValue: {
@@ -94,6 +96,7 @@ describe('WodFormComponent', () => {
     } as any;
     mockWodService.getReferenceData.mockReturnValue(of({
       wodTypes: ['AMRAP', 'EMOM', 'FOR_TIME'],
+      categories: ['GIRLS', 'HERO'],
       scoreTypes: ['TIME', 'ROUNDS_REPS'],
       unitGroups: {MASS: ['KG', 'LBS'], DISTANCE: ['METERS'], TIME: ['SECONDS']}
     }));
@@ -354,6 +357,18 @@ describe('WodFormComponent', () => {
       expect(payload).toMatchObject({gymId: 5, timeCapSeconds: 425});
       expect(payload.movements[0]).toMatchObject({movementId: 10, orderIndex: 1, weight: 43, weightUnit: 'KG', equipment: ['BARBELL']});
       expect(mockNotificationService.showSuccess).toHaveBeenCalledWith('WOD.MESSAGES.SUCCESS_UPDATE');
+    });
+
+    it('should send the category, the texts of both languages and the women load', () => {
+      component.wodForm.patchValue({category: 'GIRLS', descriptionFr: ' Pour le temps ', descriptionEn: ''});
+      component.movementsFormArray.at(0).patchValue({weightFemale: 30, notesFr: 'Prise large', scalingOptionsEn: 'PVC'});
+
+      const payload = component.buildPayload();
+
+      expect(payload).toMatchObject({category: 'GIRLS', descriptionFr: 'Pour le temps', descriptionEn: undefined});
+      expect(payload.movements[0]).toMatchObject({weight: 43, weightFemale: 30, notesFr: 'Prise large', scalingOptionsEn: 'PVC'});
+      expect(component.textControl('notes', 'FR')).toBe('notesFr');
+      expect(component.textControl('scalingOptions', 'EN')).toBe('scalingOptionsEn');
     });
 
     it('should explain that a WOD with scores is locked (409)', () => {
