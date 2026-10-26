@@ -1,6 +1,7 @@
 import {Routes} from '@angular/router';
 import {ProfileComponent} from './profile/profile.component';
 import {SettingsComponent} from './settings/settings.component';
+import {UnitsComponent} from './units/units.component';
 import {AccountComponent} from './account.component';
 
 export const ACCOUNT_ROUTES: Routes = [
@@ -11,6 +12,10 @@ export const ACCOUNT_ROUTES: Routes = [
       {
         path: 'profile',
         component: ProfileComponent
+      },
+      {
+        path: 'units',
+        component: UnitsComponent
       },
       {
         path: 'settings',

@@ -68,21 +68,6 @@
       </div>
     </fieldset>
 
-    <fieldset class="fieldset bg-base-200 border-base-300 rounded-box w-full border p-4 mt-6">
-      <legend class="fieldset-legend">{{ 'SETTINGS.UNIT_TITLE' | translate }}</legend>
-
-      <label class="fieldset-label" for="unitSelect">{{ 'SETTINGS.UNIT_LABEL' | translate }}</label>
-      <div class="join w-full">
-        <div class="btn btn-square join-item bg-base-100 border-base-300 cursor-default">
-          <ng-icon name="heroScale" class="opacity-75" color="var(--color-accent)" size="2em"></ng-icon>
-        </div>
-        <select id="unitSelect" (change)="unitService.setUnitSystem($any($event.target).value)" class="select join-item w-full bg-base-100">
-          <option [selected]="unitService.unitSystem() === 'METRIC'" value="METRIC">{{ 'SETTINGS.UNIT_METRIC' | translate }}</option>
-          <option [selected]="unitService.unitSystem() === 'IMPERIAL'" value="IMPERIAL">{{ 'SETTINGS.UNIT_IMPERIAL' | translate }}</option>
-        </select>
-      </div>
-    </fieldset>
-
     @if (!isSupportSession()) {
     <fieldset class="fieldset bg-error/5 border-error/20 rounded-box w-full border p-4">
       <legend class="fieldset-legend text-error font-bold flex gap-2 items-center">

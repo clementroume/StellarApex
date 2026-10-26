@@ -63,7 +63,7 @@ describe('UnitService', () => {
     translate.use('fr');
     currentUser.set(user({locale: 'fr', theme: 'light'}));
 
-    service.toggle();
+    service.setUnitSystem('IMPERIAL');
 
     expect(service.unitSystem()).toBe('IMPERIAL');
     expect(userServiceSpy.updatePreferences)
@@ -92,5 +92,27 @@ describe('UnitService', () => {
 
   it('should return an empty text without a load', () => {
     expect(service.formatLoad(undefined, undefined, 'KG')).toBe('');
+    expect(service.formatDistance(null, null, 'METERS')).toBe('');
+  });
+
+  it('should convert imperial distances and heights to metric, rounded as gyms write them', () => {
+    service.setUnitSystem('METRIC');
+    expect(service.formatDistance(24, 20, 'INCHES')).toBe('60/50 cm');
+    expect(service.formatDistance(10, 9, 'FEET')).toBe('3/2.7 m');
+    expect(service.formatDistance(200, null, 'FEET')).toBe('61 m');
+    expect(service.formatDistance(1, null, 'MILES')).toBe('1.6 km');
+    expect(service.formatDistance(400, null, 'METERS')).toBe('400 m');
+
+    translate.use('fr');
+    expect(service.formatDistance(1, null, 'MILES')).toBe('1,6 km');
+  });
+
+  it('should keep runs and rows in meters in imperial, converting short distances and heights', () => {
+    service.setUnitSystem('IMPERIAL');
+    expect(service.formatDistance(400, null, 'METERS')).toBe('400 m');
+    expect(service.formatDistance(2, null, 'KILOMETERS')).toBe('2 km');
+    expect(service.formatDistance(15, null, 'METERS')).toBe('49 ft');
+    expect(service.formatDistance(60, 50, 'CENTIMETERS')).toBe('24/20 in');
+    expect(service.formatDistance(24, 20, 'INCHES')).toBe('24/20 in');
   });
 });

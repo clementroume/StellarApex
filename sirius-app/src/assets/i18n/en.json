@@ -37,8 +37,7 @@
     "MOVEMENTS": "Movement",
     "MY_ACCOUNT": "My Account",
     "LOG_OUT": "Log out",
-    "TOGGLE_THEME": "Toggle light/dark theme",
-    "TOGGLE_UNIT": "Switch between kg and lb"
+    "TOGGLE_THEME": "Toggle light/dark theme"
   },
   "DASHBOARD": {
     "TITLE": "Dashboard",
@@ -59,7 +58,8 @@
   "ACCOUNT": {
     "TITLE": "My Account",
     "MENU_INFO": "My information",
-    "MENU_SETTINGS": "Settings"
+    "MENU_SETTINGS": "Settings",
+    "MENU_UNITS": "Units"
   },
   "PROFILE": {
     "TITLE": "My information",
@@ -84,11 +84,16 @@
     "DELETE_MODAL_TITLE": "Are you absolutely sure?",
     "DELETE_MODAL_DESC": "This action cannot be undone. This will permanently delete your account and all your associated data.",
     "DELETE_MODAL_CONFIRM": "Yes, delete my account",
-    "SUCCESS_DELETE": "Your account has been successfully deleted. Goodbye!",
-    "UNIT_TITLE": "Load unit",
-    "UNIT_LABEL": "Display loads in",
-    "UNIT_METRIC": "Kilograms (kg)",
-    "UNIT_IMPERIAL": "Pounds (lb)"
+    "SUCCESS_DELETE": "Your account has been successfully deleted. Goodbye!"
+  },
+  "UNITS": {
+    "TITLE": "Units",
+    "SUBTITLE": "WODs are shown in this system, whatever unit they were written in.",
+    "SYSTEM_LABEL": "Unit system",
+    "METRIC": "Metric",
+    "METRIC_EXAMPLE": "Loads in kg, heights in cm, distances in m and km.",
+    "IMPERIAL": "Imperial",
+    "IMPERIAL_EXAMPLE": "Loads in lb, heights in in, short distances in ft (runs and rows stay in m)."
   },
   "EXPORT": {
     "EXPORT_CSV": "Export CSV",
@@ -456,7 +461,15 @@
       "NOTES_EN": "Notes (English)",
       "OTHER_LANGUAGE": "Other language",
       "TIME_CAP_SHORT": "Tc",
-      "NO_CATEGORY": "None"
+      "NO_CATEGORY": "None",
+      "BEST_SCORE": "My best score",
+      "DURATION_MINUTES": "{{count}} minutes",
+      "MEN_WOMEN": "M / W",
+      "HEIGHT": "Height",
+      "HEIGHT_MEN": "Height (men)",
+      "HEIGHT_WOMEN": "Height (women)",
+      "CALORIES_MEN": "Calories (men)",
+      "CALORIES_WOMEN": "Calories (women)"
     },
     "PLACEHOLDERS": {
       "TITLE": "E.g. Fran",
@@ -483,7 +496,8 @@
       "MOVEMENTS_REQUIRED": "Add at least one movement.",
       "NO_MOVEMENTS": "No prescribed movement.",
       "LOCKED_BADGE": "Locked (scores logged)",
-      "OWNERSHIP_LOCKED": "The owner (personal or gym) of a WOD cannot be changed after creation."
+      "OWNERSHIP_LOCKED": "The owner (personal or gym) of a WOD cannot be changed after creation.",
+      "BEST_SCORE_SOON": "Coming soon"
     },
     "WOD_TYPES": {
       "FOR_TIME": "For Time",
@@ -528,6 +542,8 @@
       "MINUTES": "min",
       "METERS": "m",
       "KILOMETERS": "km",
+      "CENTIMETERS": "cm",
+      "INCHES": "in",
       "FEET": "ft",
       "YARDS": "yd",
       "MILES": "mi"

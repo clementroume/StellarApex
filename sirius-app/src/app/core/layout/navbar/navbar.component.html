@@ -88,13 +88,6 @@
 
   <div class="navbar-end w-auto gap-1 pr-1">
 
-    <button type="button" class="btn btn-ghost btn-circle text-accent font-bold"
-            (click)="unitService.toggle()"
-            [title]="'NAVBAR.TOGGLE_UNIT' | translate"
-            [attr.aria-label]="'NAVBAR.TOGGLE_UNIT' | translate">
-      {{ unitService.unitSystem() === 'METRIC' ? 'kg' : 'lb' }}
-    </button>
-
     <label class="btn btn-ghost btn-circle swap swap-rotate" for="theme-toggle"
            [title]="'NAVBAR.TOGGLE_THEME' | translate">
       <span class="sr-only">{{ 'NAVBAR.TOGGLE_THEME' | translate }}</span>

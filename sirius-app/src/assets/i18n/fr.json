@@ -37,8 +37,7 @@
     "MOVEMENTS": "Mouvements",
     "MY_ACCOUNT": "Mon Compte",
     "LOG_OUT": "Se déconnecter",
-    "TOGGLE_THEME": "Basculer le thème",
-    "TOGGLE_UNIT": "Basculer entre kg et lb"
+    "TOGGLE_THEME": "Basculer le thème"
   },
   "DASHBOARD": {
     "TITLE": "Tableau de Bord",
@@ -59,7 +58,8 @@
   "ACCOUNT": {
     "TITLE": "Mon Compte",
     "MENU_INFO": "Mes informations",
-    "MENU_SETTINGS": "Paramètres"
+    "MENU_SETTINGS": "Paramètres",
+    "MENU_UNITS": "Unités"
   },
   "PROFILE": {
     "TITLE": "Mes informations",
@@ -84,11 +84,16 @@
     "DELETE_MODAL_TITLE": "Êtes-vous absolument sûr ?",
     "DELETE_MODAL_DESC": "Cette action est irréversible. Cela supprimera définitivement votre compte et toutes vos données associées.",
     "DELETE_MODAL_CONFIRM": "Oui, supprimer mon compte",
-    "SUCCESS_DELETE": "Votre compte a été supprimé avec succès. Au revoir !",
-    "UNIT_TITLE": "Unité de charge",
-    "UNIT_LABEL": "Afficher les charges en",
-    "UNIT_METRIC": "Kilogrammes (kg)",
-    "UNIT_IMPERIAL": "Livres (lb)"
+    "SUCCESS_DELETE": "Votre compte a été supprimé avec succès. Au revoir !"
+  },
+  "UNITS": {
+    "TITLE": "Unités",
+    "SUBTITLE": "Les WODs s'affichent dans ce système, quelle que soit l'unité dans laquelle ils ont été saisis.",
+    "SYSTEM_LABEL": "Système d'unités",
+    "METRIC": "Métrique",
+    "METRIC_EXAMPLE": "Charges en kg, hauteurs en cm, distances en m et km.",
+    "IMPERIAL": "Impérial",
+    "IMPERIAL_EXAMPLE": "Charges en lb, hauteurs en in, distances courtes en ft (course et rameur restent en m)."
   },
   "EXPORT": {
     "EXPORT_CSV": "Exporter CSV",
@@ -456,7 +461,15 @@
       "NOTES_EN": "Notes (anglais)",
       "OTHER_LANGUAGE": "Autre langue",
       "TIME_CAP_SHORT": "Tc",
-      "NO_CATEGORY": "Aucune"
+      "NO_CATEGORY": "Aucune",
+      "BEST_SCORE": "Mon meilleur score",
+      "DURATION_MINUTES": "{{count}} minutes",
+      "MEN_WOMEN": "H / F",
+      "HEIGHT": "Hauteur",
+      "HEIGHT_MEN": "Hauteur (hommes)",
+      "HEIGHT_WOMEN": "Hauteur (femmes)",
+      "CALORIES_MEN": "Calories (hommes)",
+      "CALORIES_WOMEN": "Calories (femmes)"
     },
     "PLACEHOLDERS": {
       "TITLE": "Ex : Fran",
@@ -483,7 +496,8 @@
       "MOVEMENTS_REQUIRED": "Ajoute au moins un mouvement.",
       "NO_MOVEMENTS": "Aucun mouvement prescrit.",
       "LOCKED_BADGE": "Verrouillé (scores enregistrés)",
-      "OWNERSHIP_LOCKED": "Le propriétaire (personnel ou salle) d'un WOD ne peut pas être changé après sa création."
+      "OWNERSHIP_LOCKED": "Le propriétaire (personnel ou salle) d'un WOD ne peut pas être changé après sa création.",
+      "BEST_SCORE_SOON": "Bientôt disponible"
     },
     "WOD_TYPES": {
       "FOR_TIME": "For Time",
@@ -528,6 +542,8 @@
       "MINUTES": "min",
       "METERS": "m",
       "KILOMETERS": "km",
+      "CENTIMETERS": "cm",
+      "INCHES": "in",
       "FEET": "ft",
       "YARDS": "yd",
       "MILES": "mi"

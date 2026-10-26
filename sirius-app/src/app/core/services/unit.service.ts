@@ -7,9 +7,28 @@ import {UnitSystem} from '../../api/antares/models/user.model';
 const STORAGE_KEY = 'unitSystem';
 const LB_IN_KG = 0.45359237;
 
+/** Size of each distance unit in meters (Aldebaran's Unit enum). */
+const METERS_PER: Record<string, number> = {
+  METERS: 1, KILOMETERS: 1000, CENTIMETERS: 0.01, INCHES: 0.0254, FEET: 0.3048, YARDS: 0.9144, MILES: 1609.344
+};
+const LABELS: Record<string, string> = {
+  KG: 'kg', LBS: 'lb', METERS: 'm', KILOMETERS: 'km', CENTIMETERS: 'cm', INCHES: 'in', FEET: 'ft', YARDS: 'yd',
+  MILES: 'mi', SECONDS: 's', MINUTES: 'min'
+};
+
+/** A value converted for display, with the unit it is now expressed in. */
+export interface DisplayValue {
+  values: number[];
+  unit: string;
+}
+
 /**
- * Display unit for loads (kg or lb). Loads stay stored in the unit they were prescribed in; only the
- * display is converted. Without an explicit choice, the unit follows the language (French: kg).
+ * Display units (metric or imperial) for loads, distances and heights. Values stay stored in the unit
+ * they were prescribed in; only the display is converted. Without an explicit choice, the system
+ * follows the language (French: metric).
+ *
+ * Distances follow CrossFit usage: imperial keeps runs and rows in meters (400 m, 2 km) and only
+ * converts short distances (under 100 m) to feet; metric converts every imperial distance.
  */
 @Injectable({
   providedIn: 'root'
@@ -36,11 +55,6 @@ export class UnitService {
   readonly massUnit = computed(() => this.unitSystem() === 'METRIC' ? 'KG' : 'LBS');
 
   // --- ACTIONS & EVENTS ---
-  toggle(): void {
-    const next: UnitSystem = this.unitSystem() === 'METRIC' ? 'IMPERIAL' : 'METRIC';
-    this.setUnitSystem(next);
-  }
-
   setUnitSystem(unitSystem: UnitSystem): void {
     this.localChoice.set(unitSystem);
     try {
@@ -71,18 +85,59 @@ export class UnitService {
     return Math.round(converted);
   }
 
-  /**
-   * Formats a men's / women's load for display: "43/30 kg", "43 kg", or the source unit for
-   * non-mass units.
-   */
+  /** Men's / women's load in the display unit: "43/30 kg", "43 kg". */
   formatLoad(weight?: number | null, weightFemale?: number | null, unit?: string | null): string {
     if (weight == null && weightFemale == null) return '';
-    const isMass = !unit || unit === 'KG' || unit === 'LBS';
-    const label = isMass ? (this.massUnit() === 'KG' ? 'kg' : 'lb') : (unit ?? '').toLowerCase();
-    const values = [weight, weightFemale]
-      .filter((v): v is number => v != null)
-      .map(v => isMass ? this.convertLoad(v, unit) : v);
-    return `${values.join('/')} ${label}`;
+    const values = [weight, weightFemale].filter((v): v is number => v != null).map(v => this.convertLoad(v, unit));
+    return this.format({values, unit: this.massUnit()});
+  }
+
+  /**
+   * Converts distances (men's then women's value) to the display system, e.g. 200 ft -> "61 m",
+   * 1 mi -> "1.6 km", 60/50 cm -> "24/20 in". Units unknown to the conversion are kept.
+   */
+  convertDistance(values: number[], unit?: string | null): DisplayValue {
+    if (!unit || !(unit in METERS_PER)) return {values, unit: unit ?? ''};
+    const meters = values.map(v => v * METERS_PER[unit]);
+    const target = this.distanceTarget(unit, Math.max(...meters));
+    if (target === unit) return {values, unit};
+    return {values: meters.map(m => this.roundDistance(m / METERS_PER[target], target)), unit: target};
+  }
+
+  /** Men's / women's distance or height in the display system: "60/50 cm", "400 m". */
+  formatDistance(value?: number | null, valueFemale?: number | null, unit?: string | null): string {
+    const values = [value, valueFemale].filter((v): v is number => v != null);
+    return values.length ? this.format(this.convertDistance(values, unit)) : '';
+  }
+
+  /** "43/30 kg": values joined with a slash, then the unit label; decimals as the language writes them ("1,6 km"). */
+  format(value: DisplayValue): string {
+    const lang = this.translate.currentLang() ?? this.translate.fallbackLang() ?? 'en';
+    const numbers = value.values.map(v => v.toLocaleString(lang, {maximumFractionDigits: 2, useGrouping: false}));
+    return `${numbers.join('/')} ${LABELS[value.unit] ?? value.unit.toLowerCase()}`.trim();
+  }
+
+  private distanceTarget(unit: string, maxMeters: number): string {
+    const metric = this.unitSystem() === 'METRIC';
+    const isMetricUnit = unit === 'METERS' || unit === 'KILOMETERS' || unit === 'CENTIMETERS';
+    if (metric) {
+      if (isMetricUnit) return unit;
+      if (unit === 'INCHES') return 'CENTIMETERS';
+      return unit === 'MILES' ? 'KILOMETERS' : 'METERS';
+    }
+    if (!isMetricUnit) return unit;
+    if (unit === 'CENTIMETERS') return 'INCHES';
+    // Runs and rows stay in meters in CrossFit, even in imperial
+    return unit === 'METERS' && maxMeters < 100 ? 'FEET' : unit;
+  }
+
+  /** Rounds a converted distance as gyms write it: 24/20 in -> 60/50 cm, 10/9 ft -> 3/2.7 m. */
+  private roundDistance(value: number, unit: string): number {
+    if (unit === 'CENTIMETERS') return Math.round(value / 5) * 5;
+    if (unit === 'KILOMETERS' || unit === 'MILES' || (unit === 'METERS' && value < 10)) {
+      return Number(value.toFixed(1));
+    }
+    return Math.round(value);
   }
 
   private readStoredChoice(): UnitSystem | null {

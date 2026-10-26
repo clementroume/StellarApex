@@ -3,7 +3,6 @@ import {CommonModule} from '@angular/common';
 import {RouterModule} from '@angular/router';
 import {AuthService} from '../../../api/antares/services/auth.service';
 import {ThemeService} from '../../services/theme.service';
-import {UnitService} from '../../services/unit.service';
 import {AccessService} from '../../services/access.service';
 import {TranslatePipe} from '@ngx-translate/core';
 import {NgIcon} from '@ng-icons/core';
@@ -18,7 +17,6 @@ import {NgIcon} from '@ng-icons/core';
 export class NavbarComponent {
   public readonly authService = inject(AuthService);
   public readonly themeService = inject(ThemeService);
-  public readonly unitService = inject(UnitService);
   public readonly accessService = inject(AccessService);
 
   logout(): void {
