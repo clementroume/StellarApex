@@ -98,8 +98,9 @@ their accounts (Antares), gym WODs for them (Aldebaran).
   (Aldebaran rejects values the movement does not allow), never a new movement or a note. Muscles have
   one functional group level (`parent`, same region). Never use a movement name absent from the catalog.
 - WODs: `wodType` = format (For Time, AMRAP...), optional `category` (Girls, Hero, Open...),
-  `scoreType` as officially scored (EMOM such as Chelsea = `ROUNDS`, 1RM = `WEIGHT`, Open AMRAP =
-  `REPS`), optional official tiebreak text (`tiebreakEn/Fr`); a score's tiebreak is always optional.
+  `scoreType` as officially scored (EMOM such as Chelsea = `ROUNDS`, 1RM = `WEIGHT`, every AMRAP =
+  `REPS` stored as total reps, shown/entered as rounds + reps when the WOD has `repsPerRound`),
+  optional official tiebreak text (`tiebreakEn/Fr`); a score's tiebreak is always optional.
   WOD texts are FR/EN pairs (`*En` / `*Fr`); men/women pairs for load (`weight`/`weightFemale`), calories and
   box/target height, stored in the prescribed unit and converted only for display (user preference
   `unitSystem` in Antares, Sirius `UnitService`). Put a measurable prescription in these fields, not in
