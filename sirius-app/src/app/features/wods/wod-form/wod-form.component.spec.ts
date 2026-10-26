@@ -79,7 +79,7 @@ describe('WodFormComponent', () => {
   };
 
   const fillValidForm = () => {
-    component.wodForm.patchValue({title: '  Cindy ', wodType: 'AMRAP', scoreType: 'ROUNDS_REPS'});
+    component.wodForm.patchValue({title: '  Cindy ', wodType: 'AMRAP', scoreType: 'REPS'});
     component.addMovement();
     component.movementsFormArray.at(0).patchValue({movementId: 20, repsScheme: '5'});
   };
@@ -97,7 +97,7 @@ describe('WodFormComponent', () => {
     mockWodService.getReferenceData.mockReturnValue(of({
       wodTypes: ['AMRAP', 'EMOM', 'FOR_TIME'],
       categories: ['GIRLS', 'HERO'],
-      scoreTypes: ['TIME', 'ROUNDS_REPS'],
+      scoreTypes: ['TIME', 'REPS'],
       unitGroups: {MASS: ['KG', 'LBS'], DISTANCE: ['METERS'], TIME: ['SECONDS']}
     }));
     mockWodService.createWod.mockReturnValue(of({...existingWod, id: 42}));
@@ -133,10 +133,30 @@ describe('WodFormComponent', () => {
       component.wodForm.controls.wodType.setValue('FOR_TIME');
       expect(component.wodForm.controls.scoreType.value).toBe('TIME');
 
-      component.wodForm.controls.scoreType.setValue('REPS');
-      component.wodForm.controls.scoreType.markAsDirty();
       component.wodForm.controls.wodType.setValue('AMRAP');
       expect(component.wodForm.controls.scoreType.value).toBe('REPS');
+
+      component.wodForm.controls.scoreType.setValue('CALORIES');
+      component.wodForm.controls.scoreType.markAsDirty();
+      component.wodForm.controls.wodType.setValue('FOR_TIME');
+      expect(component.wodForm.controls.scoreType.value).toBe('CALORIES');
+    });
+
+    it('should suggest the reps per round from the movements and send it for a REPS WOD only', () => {
+      component.wodForm.patchValue({wodType: 'AMRAP', scoreType: 'REPS'});
+      component.addMovement();
+      component.addMovement();
+      component.movementsFormArray.at(0).patchValue({movementId: 1, repsScheme: '5', calories: null, distance: null});
+      component.movementsFormArray.at(1).patchValue({movementId: 10, repsScheme: '', calories: 12});
+      expect(component.suggestedRepsPerRound()).toBe(17);
+
+      component.movementsFormArray.at(1).patchValue({repsScheme: '3-6-9...'});
+      expect(component.suggestedRepsPerRound()).toBeNull();
+
+      component.wodForm.patchValue({repsPerRound: 30});
+      expect(component.buildPayload().repsPerRound).toBe(30);
+      component.wodForm.patchValue({scoreType: 'TIME'});
+      expect(component.buildPayload().repsPerRound).toBeUndefined();
     });
 
     it('should send the optional tiebreak texts', () => {
@@ -164,7 +184,7 @@ describe('WodFormComponent', () => {
     });
 
     it('should be invalid without any movement', () => {
-      component.wodForm.patchValue({title: 'Cindy', wodType: 'AMRAP', scoreType: 'ROUNDS_REPS'});
+      component.wodForm.patchValue({title: 'Cindy', wodType: 'AMRAP', scoreType: 'REPS'});
       expect(component.wodForm.valid).toBe(false);
       expect(component.movementsFormArray.errors).toEqual({minLengthArray: {required: 1}});
 
@@ -182,7 +202,7 @@ describe('WodFormComponent', () => {
       expect(payload).toMatchObject({
         title: 'Cindy',
         wodType: 'AMRAP',
-        scoreType: 'ROUNDS_REPS',
+        scoreType: 'REPS',
         authorId: 3,
         gymId: undefined,
         isPublic: false,

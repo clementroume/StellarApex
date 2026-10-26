@@ -410,7 +410,8 @@
       "ADD_FOR_GYM": "Create a WOD for {{gym}}",
       "ADD_PERSONAL": "Create a personal WOD",
       "ALL_CATEGORIES": "All categories",
-      "ALL_FORMATS": "All formats"
+      "ALL_FORMATS": "All formats",
+      "USE_REPS_PER_ROUND": "Use {{reps}} (from the movements)"
     },
     "SCOPES": {
       "ALL": "All",
@@ -472,7 +473,8 @@
       "CALORIES_WOMEN": "Calories (women)",
       "TIEBREAK": "Tiebreak",
       "TIEBREAK_FR": "Tiebreak (French)",
-      "TIEBREAK_EN": "Tiebreak (English)"
+      "TIEBREAK_EN": "Tiebreak (English)",
+      "REPS_PER_ROUND": "Reps per round (optional)"
     },
     "PLACEHOLDERS": {
       "TITLE": "E.g. Fran",
@@ -525,7 +527,6 @@
     },
     "SCORE_TYPES": {
       "TIME": "Time",
-      "ROUNDS_REPS": "Rounds + Reps",
       "REPS": "Reps",
       "WEIGHT": "Max Weight",
       "LOAD": "Total Load",
@@ -551,6 +552,9 @@
       "FEET": "ft",
       "YARDS": "yd",
       "MILES": "mi"
+    },
+    "HINTS": {
+      "REPS_PER_ROUND": "For an AMRAP with a fixed round: scores are total reps, also shown as rounds + reps. Leave empty for ladders or chippers."
     }
   },
   "SCORE": {
@@ -584,7 +588,9 @@
       "ROUNDS_ON_MINUTE": "Rounds completed on the minute",
       "MAX": "max {{max}}",
       "TIEBREAK": "Tiebreak time",
-      "TIEBREAK_OPTIONAL": "Tiebreak (competition, optional)"
+      "TIEBREAK_OPTIONAL": "Tiebreak (competition, optional)",
+      "ENTRY": "Entry",
+      "TOTAL_REPS": "Total reps"
     },
     "PLACEHOLDERS": {
       "SCALING_NOTES": "e.g. 35 kg thrusters, banded pull-ups"
@@ -611,7 +617,12 @@
       "DONE_HINT": "This WOD has no measured result: log it to keep track of the session.",
       "ROUNDS_HINT": "Rounds done after falling behind the clock do not count."
     },
-    "TIEBREAK_SHORT": "TB {{time}}"
+    "TIEBREAK_SHORT": "TB {{time}}",
+    "ENTRY": {
+      "ROUNDS": "Rounds + reps",
+      "TOTAL": "Total reps"
+    },
+    "REPS_PER_ROUND": "{{reps}} reps per round"
   },
   "ADMIN": {
     "SUPPORT": {

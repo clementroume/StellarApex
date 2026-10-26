@@ -1,4 +1,4 @@
-import {ChangeDetectionStrategy, Component, computed, effect, inject} from '@angular/core';
+import {ChangeDetectionStrategy, Component, computed, effect, inject, signal} from '@angular/core';
 import {toSignal} from '@angular/core/rxjs-interop';
 import {FormBuilder, ReactiveFormsModule} from '@angular/forms';
 import {TranslatePipe, TranslateService} from '@ngx-translate/core';
@@ -6,7 +6,7 @@ import {NgIconComponent} from '@ng-icons/core';
 import {ScalingLevel, ScoreRequest, ScoreResponse} from '../../../../api/aldebaran/models/score.model';
 import {UnitService} from '../../../../core/services/unit.service';
 import {WodScoresStore} from '../wod-scores.store';
-import {SCALING_LEVELS} from '../score.utils';
+import {SCALING_LEVELS, splitRounds} from '../score.utils';
 import {formatTimeCapShort, localizedText} from '../../wod.utils';
 
 /** Units offered for a distance score (stored in meters by Aldebaran). */
@@ -41,6 +41,8 @@ export class ScoreFormComponent {
   readonly scalingLevels = SCALING_LEVELS;
   readonly distanceUnits = DISTANCE_UNITS;
   readonly maxDate = today();
+  /** How an AMRAP score with a fixed round is typed; both are stored as total reps. */
+  readonly repsEntry = signal<'ROUNDS' | 'TOTAL'>('ROUNDS');
 
   readonly form = this.fb.nonNullable.group({
     date: [today()],
@@ -75,6 +77,21 @@ export class ScoreFormComponent {
   readonly isEdit = computed(() => this.store.editing() !== 'new');
   readonly massUnitLabel = computed(() => this.unitService.massUnit() === 'KG' ? 'kg' : 'lb');
   readonly timeCap = computed(() => formatTimeCapShort(this.store.wod()?.timeCapSeconds));
+  /** Reps of one round of the AMRAP, when its round is fixed. */
+  readonly repsPerRound = computed(() => this.store.wod()?.repsPerRound ?? null);
+  readonly byRounds = computed(() => !!this.repsPerRound() && this.repsEntry() === 'ROUNDS');
+  /** The other way of writing the typed score: "= 312 reps" or "= 10 rounds + 12". */
+  readonly conversion = computed(() => {
+    const perRound = this.repsPerRound();
+    const v = this.formValue();
+    if (!perRound) return null;
+    if (this.byRounds()) {
+      if (v.rounds == null && v.reps == null) return null;
+      return {total: (v.rounds ?? 0) * perRound + (v.reps ?? 0), rounds: null, reps: null};
+    }
+    const split = splitRounds(v.reps, perRound);
+    return split ? {total: null, ...split} : null;
+  });
   /** Rounds of the EMOM, the best possible ROUNDS score. */
   readonly maxRounds = computed(() => this.store.wod()?.emomRounds ?? null);
   /** Official tiebreak rule of the WOD, in the user's language; none for most WODs. */
@@ -96,6 +113,21 @@ export class ScoreFormComponent {
   }
 
   // --- ACTIONS & EVENTS ---
+  /** Switches between rounds + reps and total reps, keeping the typed score. */
+  setRepsEntry(mode: 'ROUNDS' | 'TOTAL'): void {
+    const perRound = this.repsPerRound();
+    if (!perRound || mode === this.repsEntry()) return;
+    const v = this.form.getRawValue();
+    if (mode === 'TOTAL') {
+      const typed = v.rounds != null || v.reps != null;
+      this.form.patchValue({rounds: null, reps: typed ? (v.rounds ?? 0) * perRound + (v.reps ?? 0) : null});
+    } else {
+      const split = splitRounds(v.reps, perRound);
+      this.form.patchValue({rounds: split?.rounds ?? null, reps: split?.reps ?? null});
+    }
+    this.repsEntry.set(mode);
+  }
+
   onSubmit(): void {
     const wod = this.store.wod();
     if (!wod || this.isValueMissing() || this.store.isSaving()) return;
@@ -109,14 +141,12 @@ export class ScoreFormComponent {
     switch (this.scoreType()) {
       case 'TIME':
         return v.timeCapped ? v.reps == null : !((v.minutes ?? 0) * 60 + (v.seconds ?? 0));
-      case 'ROUNDS_REPS':
-        return v.rounds == null && v.reps == null;
       case 'ROUNDS': {
         const max = this.maxRounds();
         return v.rounds == null || (max != null && v.rounds > max);
       }
       case 'REPS':
-        return v.reps == null;
+        return this.byRounds() ? v.rounds == null && v.reps == null : v.reps == null;
       case 'WEIGHT':
       case 'LOAD':
         return !v.load;
@@ -131,14 +161,15 @@ export class ScoreFormComponent {
 
   private fill(score: ScoreResponse): void {
     const load = score.maxWeight ?? score.totalLoad;
+    const split = this.scoreType() === 'REPS' ? splitRounds(score.reps, this.repsPerRound()) : null;
     this.form.setValue({
       date: score.date,
       scaling: score.scaling,
       minutes: score.timeMinutesPart ?? null,
       seconds: score.timeSecondsPart ?? null,
       timeCapped: score.timeCapped,
-      rounds: score.rounds ?? null,
-      reps: score.reps ?? null,
+      rounds: split ? split.rounds : score.rounds ?? null,
+      reps: split ? split.reps : score.reps ?? null,
       load: load != null ? this.unitService.convertScoreLoad(load, score.weightUnit) : null,
       distance: score.totalDistance ?? null,
       distanceUnit: score.distanceUnit && DISTANCE_UNITS.includes(score.distanceUnit) ? score.distanceUnit : 'METERS',
@@ -169,12 +200,13 @@ export class ScoreFormComponent {
         return capped
           ? {...request, reps: v.reps ?? undefined}
           : {...request, timeMinutes: v.minutes ?? 0, timeSeconds: v.seconds ?? 0};
-      case 'ROUNDS_REPS':
-        return {...request, rounds: v.rounds ?? 0, reps: v.reps ?? 0};
       case 'ROUNDS':
         return {...request, rounds: v.rounds ?? undefined};
       case 'REPS':
-        return {...request, reps: v.reps ?? undefined};
+        // Rounds + reps are converted to total reps by Aldebaran
+        return this.byRounds()
+          ? {...request, rounds: v.rounds ?? 0, reps: v.reps ?? 0}
+          : {...request, reps: v.reps ?? undefined};
       case 'WEIGHT':
         return {...request, maxWeight: v.load ?? undefined, weightUnit: this.unitService.massUnit()};
       case 'LOAD':

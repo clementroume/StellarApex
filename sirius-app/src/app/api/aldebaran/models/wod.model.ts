@@ -11,6 +11,8 @@ export interface WodSummaryResponse {
   scoreType: string;
   repScheme?: string;
   timeCapSeconds?: number;
+  /** Reps of one round of an AMRAP with a fixed round; scores are total reps shown as rounds + reps. */
+  repsPerRound?: number;
   authorId?: number;
   gymId?: number;
   isPublic: boolean;
@@ -54,6 +56,8 @@ export interface WodRequest {
   tiebreakFr?: string;
   // --- Structure and Prescription ---
   timeCapSeconds?: number;
+  /** Reps of one round of an AMRAP with a fixed round; scores are total reps shown as rounds + reps. */
+  repsPerRound?: number;
   emomInterval?: number;
   emomRounds?: number;
   repScheme?: string;
@@ -81,6 +85,8 @@ export interface WodResponse {
   tiebreakFr?: string;
   // --- Structure and Prescription ---
   timeCapSeconds?: number;
+  /** Reps of one round of an AMRAP with a fixed round; scores are total reps shown as rounds + reps. */
+  repsPerRound?: number;
   emomInterval?: number;
   emomRounds?: number;
   repScheme?: string;

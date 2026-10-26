@@ -49,18 +49,6 @@
           </div>
         }
       }
-      @case ('ROUNDS_REPS') {
-        <div class="grid grid-cols-2 gap-4">
-          <label class="form-control w-full">
-            <div class="label"><span class="label-text">{{ 'SCORE.FIELDS.ROUNDS' | translate }}</span></div>
-            <input type="number" min="0" formControlName="rounds" class="input input-bordered w-full"/>
-          </label>
-          <label class="form-control w-full">
-            <div class="label"><span class="label-text">{{ 'SCORE.FIELDS.EXTRA_REPS' | translate }}</span></div>
-            <input type="number" min="0" formControlName="reps" class="input input-bordered w-full"/>
-          </label>
-        </div>
-      }
       @case ('ROUNDS') {
         <label class="form-control w-full">
           <div class="label justify-between">
@@ -74,10 +62,45 @@
         </label>
       }
       @case ('REPS') {
-        <label class="form-control w-full">
-          <div class="label"><span class="label-text">{{ 'SCORE.FIELDS.REPS' | translate }}</span></div>
-          <input type="number" min="0" formControlName="reps" class="input input-bordered w-full"/>
-        </label>
+        @if (repsPerRound(); as perRound) {
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <div class="join" role="group" [attr.aria-label]="'SCORE.FIELDS.ENTRY' | translate">
+              <button type="button" class="btn btn-sm join-item" [class.btn-active]="byRounds()"
+                      (click)="setRepsEntry('ROUNDS')">{{ 'SCORE.ENTRY.ROUNDS' | translate }}</button>
+              <button type="button" class="btn btn-sm join-item" [class.btn-active]="!byRounds()"
+                      (click)="setRepsEntry('TOTAL')">{{ 'SCORE.ENTRY.TOTAL' | translate }}</button>
+            </div>
+            <span class="text-sm opacity-70">{{ 'SCORE.REPS_PER_ROUND' | translate: {reps: perRound} }}</span>
+          </div>
+        }
+        @if (byRounds()) {
+          <div class="grid grid-cols-2 gap-4">
+            <label class="form-control w-full">
+              <div class="label"><span class="label-text">{{ 'SCORE.FIELDS.ROUNDS' | translate }}</span></div>
+              <input type="number" min="0" formControlName="rounds" class="input input-bordered w-full"/>
+            </label>
+            <label class="form-control w-full">
+              <div class="label"><span class="label-text">{{ 'SCORE.FIELDS.EXTRA_REPS' | translate }}</span></div>
+              <input type="number" min="0" formControlName="reps" class="input input-bordered w-full"/>
+            </label>
+          </div>
+        } @else {
+          <label class="form-control w-full">
+            <div class="label"><span class="label-text">{{ 'SCORE.FIELDS.TOTAL_REPS' | translate }}</span></div>
+            <input type="number" min="0" formControlName="reps" class="input input-bordered w-full"/>
+          </label>
+        }
+        @if (conversion(); as c) {
+          <p id="reps-conversion" class="text-sm opacity-70">
+            @if (c.total != null) {
+              = {{ 'SCORE.DISPLAY.REPS' | translate: {reps: c.total} }}
+            } @else if (c.reps) {
+              = {{ 'SCORE.DISPLAY.ROUNDS_REPS' | translate: {rounds: c.rounds, reps: c.reps} }}
+            } @else {
+              = {{ 'SCORE.DISPLAY.ROUNDS' | translate: {rounds: c.rounds} }}
+            }
+          </p>
+        }
       }
       @case ('WEIGHT') {
         <label class="form-control w-full">

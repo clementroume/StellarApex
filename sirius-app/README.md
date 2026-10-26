@@ -71,8 +71,10 @@ The backends enforce every rule; Sirius only adapts what it shows:
   language, falling back on the other one. The list shows "category / format" and filters on both.
   Below the boxes, "My scores on this WOD" lists the user's scores (level, PR badge, notes) with
   edit/delete when the backend allows it, and opens the log/edit form: fields follow the score type
-  (time or reps at the time cap, rounds + reps, rounds on the minute for an EMOM, load in the user's
-  unit, calories, distance). WODs with an official tiebreak (Open) show it and offer an optional,
+  (time or reps at the time cap, rounds on the minute for an EMOM, load in the user's unit, calories,
+  distance). AMRAP scores are total reps; when the WOD has reps per round they are shown as
+  "312 reps · 10 rounds + 12 reps" and can be typed either way (live conversion). The WOD form
+  suggests the reps per round from the movements. WODs with an official tiebreak (Open) show it and offer an optional,
   collapsed tiebreak time. The WOD form proposes the usual score type of the chosen format.
 * **Units**: a "Units" tab in My account (metric or imperial, `core/services/unit.service.ts`), saved
   in the account (`unitSystem`); without a choice it follows the language (French: metric). Values are

@@ -410,7 +410,8 @@
       "ADD_FOR_GYM": "Créer un WOD pour {{gym}}",
       "ADD_PERSONAL": "Créer un WOD personnel",
       "ALL_CATEGORIES": "Toutes les catégories",
-      "ALL_FORMATS": "Tous les formats"
+      "ALL_FORMATS": "Tous les formats",
+      "USE_REPS_PER_ROUND": "Utiliser {{reps}} (d'après les mouvements)"
     },
     "SCOPES": {
       "ALL": "Tous",
@@ -472,7 +473,8 @@
       "CALORIES_WOMEN": "Calories (femmes)",
       "TIEBREAK": "Tie-break",
       "TIEBREAK_FR": "Tie-break (français)",
-      "TIEBREAK_EN": "Tie-break (anglais)"
+      "TIEBREAK_EN": "Tie-break (anglais)",
+      "REPS_PER_ROUND": "Répétitions par tour (facultatif)"
     },
     "PLACEHOLDERS": {
       "TITLE": "Ex : Fran",
@@ -525,7 +527,6 @@
     },
     "SCORE_TYPES": {
       "TIME": "Temps",
-      "ROUNDS_REPS": "Tours + Répétitions",
       "REPS": "Répétitions",
       "WEIGHT": "Poids maximum",
       "LOAD": "Charge totale",
@@ -551,6 +552,9 @@
       "FEET": "ft",
       "YARDS": "yd",
       "MILES": "mi"
+    },
+    "HINTS": {
+      "REPS_PER_ROUND": "Pour une AMRAP à tour fixe : les scores sont en total de répétitions, aussi affichés en tours + rép. Laisser vide pour les échelles ou les chippers."
     }
   },
   "SCORE": {
@@ -584,7 +588,9 @@
       "ROUNDS_ON_MINUTE": "Tours réalisés dans la minute",
       "MAX": "max {{max}}",
       "TIEBREAK": "Temps de tie-break",
-      "TIEBREAK_OPTIONAL": "Tie-break (compétition, facultatif)"
+      "TIEBREAK_OPTIONAL": "Tie-break (compétition, facultatif)",
+      "ENTRY": "Saisie",
+      "TOTAL_REPS": "Total de répétitions"
     },
     "PLACEHOLDERS": {
       "SCALING_NOTES": "ex. thrusters à 35 kg, tractions avec élastique"
@@ -611,7 +617,12 @@
       "DONE_HINT": "Ce WOD n'a pas de résultat mesuré : enregistrez-le pour garder une trace de la séance.",
       "ROUNDS_HINT": "Les tours faits après avoir décroché du chrono ne comptent pas."
     },
-    "TIEBREAK_SHORT": "TB {{time}}"
+    "TIEBREAK_SHORT": "TB {{time}}",
+    "ENTRY": {
+      "ROUNDS": "Tours + rép.",
+      "TOTAL": "Total"
+    },
+    "REPS_PER_ROUND": "{{reps}} rép. par tour"
   },
   "ADMIN": {
     "SUPPORT": {

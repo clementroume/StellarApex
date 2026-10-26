@@ -13,14 +13,14 @@ describe('ScoreHistoryComponent', () => {
   let fixture: ComponentFixture<ScoreHistoryComponent>;
   const scores = signal<ScoreResponse[]>([]);
   const store = {
-    wod: signal({id: 1, scoreType: 'ROUNDS_REPS'}),
+    wod: signal({id: 1, scoreType: 'REPS', repsPerRound: 30}),
     scores,
     openNew: vi.fn().mockName('WodScoresStore.openNew'),
     openEdit: vi.fn().mockName('WodScoresStore.openEdit'),
     delete: vi.fn().mockName('WodScoresStore.delete')
   };
   const score = (id: number, canModify: boolean, personalRecord = false): ScoreResponse => ({
-    id, userId: 1, date: '2026-10-26', wodSummary: {} as any, rounds: 12, reps: 0, scaling: 'SCALED',
+    id, userId: 1, date: '2026-10-26', wodSummary: {} as any, reps: 360, scaling: 'SCALED',
     timeCapped: false, personalRecord, loggedAt: '', userComment: 'Tough one', capabilities: {canModify}
   });
 

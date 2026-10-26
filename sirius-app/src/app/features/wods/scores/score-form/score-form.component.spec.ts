@@ -102,11 +102,41 @@ describe('ScoreFormComponent', () => {
     expect(component.form.getRawValue()).toMatchObject({date: '2026-10-20', scaling: 'ELITE', load: 102, userComment: 'Heavy'});
   });
 
-  it('should send rounds and reps for an AMRAP, and only the date for a WOD without result', () => {
-    init('ROUNDS_REPS');
-    component.form.patchValue({rounds: 12});
+  it('should send rounds + reps of an AMRAP with a fixed round, converted by Aldebaran', () => {
+    init('REPS', 'new', {repsPerRound: 30});
+    component.form.patchValue({rounds: 10, reps: 12});
+    fixture.detectChanges();
+    expect(component.conversion()?.total).toBe(312);
+    expect(fixture.nativeElement.querySelector('#reps-conversion').textContent).toContain('SCORE.DISPLAY.REPS');
     component.onSubmit();
-    expect(store.save).toHaveBeenLastCalledWith(expect.objectContaining({rounds: 12, reps: 0}));
+    expect(store.save).toHaveBeenLastCalledWith(expect.objectContaining({rounds: 10, reps: 12}));
+  });
+
+  it('should switch between rounds + reps and total reps, keeping the typed score', () => {
+    init('REPS', 'new', {repsPerRound: 30});
+    component.form.patchValue({rounds: 10, reps: 12});
+    component.setRepsEntry('TOTAL');
+    expect(component.form.getRawValue()).toMatchObject({rounds: null, reps: 312});
+    expect(component.conversion()).toMatchObject({rounds: 10, reps: 12});
+    component.onSubmit();
+    const sent = store.save.mock.lastCall[0];
+    expect(sent.reps).toBe(312);
+    expect(sent.rounds).toBeUndefined();
+
+    component.setRepsEntry('ROUNDS');
+    expect(component.form.getRawValue()).toMatchObject({rounds: 10, reps: 12});
+  });
+
+  it('should ask for total reps only when the WOD has no fixed round, and split them when editing', () => {
+    init('REPS');
+    expect(fixture.nativeElement.textContent).not.toContain('SCORE.ENTRY.ROUNDS');
+    expect(fixture.nativeElement.textContent).toContain('SCORE.FIELDS.TOTAL_REPS');
+
+    init('REPS', {
+      id: 4, userId: 1, date: '2026-10-20', wodSummary: {} as any, reps: 312, scaling: 'RX',
+      timeCapped: false, personalRecord: true, loggedAt: ''
+    }, {repsPerRound: 30});
+    expect(component.form.getRawValue()).toMatchObject({rounds: 10, reps: 12});
   });
 
   it('should close without saving', () => {

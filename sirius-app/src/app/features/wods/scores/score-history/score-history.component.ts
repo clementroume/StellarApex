@@ -24,7 +24,7 @@ export class ScoreHistoryComponent {
   // --- HELPERS ---
   value(score: ScoreResponse): string {
     const wod = this.store.wod();
-    return wod ? formatScore(score, wod.scoreType, this.unitService, (k, p) => this.translate.instant(k, p)) : '';
+    return wod ? formatScore(score, wod, this.unitService, (k, p) => this.translate.instant(k, p)) : '';
   }
 
   duration(seconds: number): string {

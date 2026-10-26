@@ -26,6 +26,6 @@ export class ScoreBestComponent {
     // Read the unit system so the value follows a metric/imperial switch
     this.unitService.unitSystem();
     this.translate.currentLang();
-    return best && wod ? formatScore(best, wod.scoreType, this.unitService, (k, p) => this.translate.instant(k, p)) : '';
+    return best && wod ? formatScore(best, wod, this.unitService, (k, p) => this.translate.instant(k, p)) : '';
   });
 }
