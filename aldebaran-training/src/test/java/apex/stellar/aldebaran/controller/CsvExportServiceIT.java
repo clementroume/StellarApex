@@ -29,20 +29,30 @@ class CsvExportServiceIT extends BaseIntegrationTest {
   @TempDir Path tempDir;
 
   @Test
-  @DisplayName("exportMuscles: should write every muscle with its image URL")
+  @DisplayName("exportMuscles: should write every muscle with its functional group and image URL")
   void testExportMuscles_WritesImageUrl() throws Exception {
+    Muscle group =
+        muscleRepository.save(
+            Muscle.builder()
+                .medicalName("Adductor Test Group")
+                .muscleGroup(MuscleGroup.LEGS)
+                .imageUrl("https://example.com/adductors.png")
+                .build());
     muscleRepository.save(
         Muscle.builder()
-            .medicalName("Adductor Test Group")
+            .medicalName("Adductor Test Member")
             .muscleGroup(MuscleGroup.LEGS)
-            .imageUrl("https://example.com/adductors.png")
+            .parent(group)
             .build());
 
     exportService.exportMuscles(tempDir);
 
     String csv = Files.readString(tempDir.resolve("muscles.csv"), StandardCharsets.UTF_8);
-    assertThat(csv).startsWith("medical_name,muscle_group,");
-    assertThat(csv).contains("Adductor Test Group,LEGS,").contains("https://example.com/adductors.png");
+    assertThat(csv).startsWith("medical_name,muscle_group,parent,");
+    assertThat(csv)
+        .contains("Adductor Test Group,LEGS,,")
+        .contains("https://example.com/adductors.png")
+        .contains("Adductor Test Member,LEGS,Adductor Test Group,");
   }
 
   @Test

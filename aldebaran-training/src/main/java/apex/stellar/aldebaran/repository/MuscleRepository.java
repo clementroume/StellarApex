@@ -1,6 +1,8 @@
 package apex.stellar.aldebaran.repository;
 
 import apex.stellar.aldebaran.model.entities.Muscle;
+import java.util.List;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -12,6 +14,15 @@ import org.springframework.stereotype.Repository;
  */
 @Repository
 public interface MuscleRepository extends JpaRepository<Muscle, Long> {
+
+  /**
+   * Retrieves all muscles with their functional group links loaded in one query.
+   *
+   * @return Every muscle, with {@code parent} and {@code members} initialized.
+   */
+  @Override
+  @EntityGraph(attributePaths = {"parent", "members"})
+  List<Muscle> findAll();
 
   /**
    * Checks if a muscle with the specified medical name exists in the data store.

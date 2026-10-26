@@ -48,6 +48,7 @@ class MuscleServiceTest {
         new MuscleRequest(
             "Pectoralis Major",
             MuscleGroup.CHEST,
+            null,
             "Chest",
             "Pectoraux",
             "Desc EN",
@@ -59,6 +60,8 @@ class MuscleServiceTest {
             1L,
             "Pectoralis Major",
             MuscleGroup.CHEST,
+            null,
+            List.of(),
             "Chest",
             "Pectoraux",
             "Desc EN",
@@ -187,7 +190,7 @@ class MuscleServiceTest {
     Long id = 1L;
     Muscle existing = Muscle.builder().id(id).medicalName("Old Name").build();
     MuscleRequest renameRequest =
-        new MuscleRequest("New Name", MuscleGroup.CHEST, "Common", "Commun", "Desc", "Desc", null);
+        new MuscleRequest("New Name", MuscleGroup.CHEST, null, "Common", "Commun", "Desc", "Desc", null);
     when(muscleRepository.findById(id)).thenReturn(Optional.of(existing));
     when(muscleRepository.existsByMedicalNameIgnoreCase("New Name")).thenReturn(false);
 
@@ -243,5 +246,128 @@ class MuscleServiceTest {
         assertThrows(ResourceNotFoundException.class, () -> muscleService.deleteMuscle(id));
     assertEquals("error.muscle.not.found", ex.getMessageKey());
     verify(muscleRepository, never()).deleteById(any());
+  }
+
+  // =========================================================================
+  // Functional groups (parent / members)
+  // =========================================================================
+
+  private static MuscleRequest memberRequest(MuscleGroup region, Long parentId) {
+    return new MuscleRequest("Vastus Lateralis", region, parentId, null, null, null, null, null);
+  }
+
+  private static Muscle quadriceps() {
+    return Muscle.builder().id(10L).medicalName("Quadriceps Femoris").muscleGroup(MuscleGroup.LEGS).build();
+  }
+
+  @Test
+  @DisplayName("createMuscle: should link the muscle to its functional group")
+  void testCreateMuscle_WithParent() {
+    Muscle vastus = Muscle.builder().medicalName("Vastus Lateralis").muscleGroup(MuscleGroup.LEGS).build();
+    Muscle quads = quadriceps();
+    MuscleRequest request = memberRequest(MuscleGroup.LEGS, 10L);
+    when(muscleRepository.existsByMedicalNameIgnoreCase("Vastus Lateralis")).thenReturn(false);
+    when(muscleMapper.toEntity(request)).thenReturn(vastus);
+    when(muscleRepository.findById(10L)).thenReturn(Optional.of(quads));
+    when(muscleRepository.save(vastus)).thenReturn(vastus);
+    when(muscleMapper.toResponse(vastus)).thenReturn(muscleResponse);
+
+    muscleService.createMuscle(request);
+
+    assertSame(quads, vastus.getParent());
+  }
+
+  @Test
+  @DisplayName("createMuscle: should return 404 when the functional group does not exist")
+  void testCreateMuscle_ParentNotFound() {
+    MuscleRequest request = memberRequest(MuscleGroup.LEGS, 99L);
+    when(muscleRepository.existsByMedicalNameIgnoreCase("Vastus Lateralis")).thenReturn(false);
+    when(muscleMapper.toEntity(request)).thenReturn(new Muscle());
+    when(muscleRepository.findById(99L)).thenReturn(Optional.empty());
+
+    assertThrows(ResourceNotFoundException.class, () -> muscleService.createMuscle(request));
+    verify(muscleRepository, never()).save(any());
+  }
+
+  @Test
+  @DisplayName("createMuscle: should reject a parent that already belongs to a group (no nesting)")
+  void testCreateMuscle_NestedParent() {
+    Muscle rectusFemoris =
+        Muscle.builder().id(11L).medicalName("Rectus Femoris").muscleGroup(MuscleGroup.LEGS)
+            .parent(quadriceps()).build();
+    MuscleRequest request = memberRequest(MuscleGroup.LEGS, 11L);
+    when(muscleRepository.existsByMedicalNameIgnoreCase("Vastus Lateralis")).thenReturn(false);
+    when(muscleMapper.toEntity(request))
+        .thenReturn(Muscle.builder().muscleGroup(MuscleGroup.LEGS).build());
+    when(muscleRepository.findById(11L)).thenReturn(Optional.of(rectusFemoris));
+
+    DataConflictException ex =
+        assertThrows(DataConflictException.class, () -> muscleService.createMuscle(request));
+
+    assertEquals("error.muscle.parent.nested", ex.getMessageKey());
+    verify(muscleRepository, never()).save(any());
+  }
+
+  @Test
+  @DisplayName("createMuscle: should reject a functional group in another region")
+  void testCreateMuscle_ParentOtherRegion() {
+    MuscleRequest request = memberRequest(MuscleGroup.ARMS, 10L);
+    when(muscleRepository.existsByMedicalNameIgnoreCase("Vastus Lateralis")).thenReturn(false);
+    when(muscleMapper.toEntity(request))
+        .thenReturn(Muscle.builder().muscleGroup(MuscleGroup.ARMS).build());
+    when(muscleRepository.findById(10L)).thenReturn(Optional.of(quadriceps()));
+
+    DataConflictException ex =
+        assertThrows(DataConflictException.class, () -> muscleService.createMuscle(request));
+
+    assertEquals("error.muscle.parent.region", ex.getMessageKey());
+  }
+
+  @Test
+  @DisplayName("updateMuscle: should reject a muscle as its own functional group")
+  void testUpdateMuscle_SelfParent() {
+    Muscle quads = quadriceps();
+    MuscleRequest request =
+        new MuscleRequest("Quadriceps Femoris", MuscleGroup.LEGS, 10L, null, null, null, null, null);
+    when(muscleRepository.findById(10L)).thenReturn(Optional.of(quads));
+
+    DataConflictException ex =
+        assertThrows(DataConflictException.class, () -> muscleService.updateMuscle(10L, request));
+
+    assertEquals("error.muscle.parent.self", ex.getMessageKey());
+  }
+
+  @Test
+  @DisplayName("updateMuscle: should reject a group with muscles joining another group")
+  void testUpdateMuscle_GroupCannotJoinGroup() {
+    Muscle quads = quadriceps();
+    quads.getMembers().add(Muscle.builder().id(11L).medicalName("Rectus Femoris").build());
+    Muscle legs = Muscle.builder().id(20L).medicalName("Legs").muscleGroup(MuscleGroup.LEGS).build();
+    MuscleRequest request =
+        new MuscleRequest("Quadriceps Femoris", MuscleGroup.LEGS, 20L, null, null, null, null, null);
+    when(muscleRepository.findById(10L)).thenReturn(Optional.of(quads));
+    when(muscleRepository.findById(20L)).thenReturn(Optional.of(legs));
+
+    DataConflictException ex =
+        assertThrows(DataConflictException.class, () -> muscleService.updateMuscle(10L, request));
+
+    assertEquals("error.muscle.parent.group", ex.getMessageKey());
+    verify(muscleRepository, never()).save(any());
+  }
+
+  @Test
+  @DisplayName("updateMuscle: should reject a region change on a group with muscles")
+  void testUpdateMuscle_GroupRegionChange() {
+    Muscle quads = quadriceps();
+    quads.getMembers().add(Muscle.builder().id(11L).medicalName("Rectus Femoris").build());
+    MuscleRequest request =
+        new MuscleRequest("Quadriceps Femoris", MuscleGroup.CORE, null, null, null, null, null, null);
+    when(muscleRepository.findById(10L)).thenReturn(Optional.of(quads));
+
+    DataConflictException ex =
+        assertThrows(DataConflictException.class, () -> muscleService.updateMuscle(10L, request));
+
+    assertEquals("error.muscle.group.region", ex.getMessageKey());
+    verify(muscleMapper, never()).updateEntity(any(), any());
   }
 }

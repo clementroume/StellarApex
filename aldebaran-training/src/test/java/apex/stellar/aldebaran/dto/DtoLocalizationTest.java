@@ -89,7 +89,7 @@ class DtoLocalizationTest {
     @Test
     @DisplayName("Required fields")
     void requiredFields() {
-      MuscleRequest request = new MuscleRequest("", null, null, null, null, null, null);
+      MuscleRequest request = new MuscleRequest("", null, null, null, null, null, null, null);
 
       assertViolationEnAndFr(
           request, "medicalName", "Medical name is required.", "Le nom médical est requis.");
@@ -104,7 +104,7 @@ class DtoLocalizationTest {
       String long2001 = "A".repeat(2001);
 
       MuscleRequest request =
-          new MuscleRequest(long101, MuscleGroup.CHEST, long101, null, long2001, null, null);
+          new MuscleRequest(long101, MuscleGroup.CHEST, null, long101, null, long2001, null, null);
 
       assertViolationEnAndFr(
           request,

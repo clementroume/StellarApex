@@ -102,6 +102,7 @@ public class Exporter {
       String[] headers = {
         "medical_name",
         "muscle_group",
+        "parent",
         "common_name_en",
         "common_name_fr",
         "description_en",
@@ -122,6 +123,7 @@ public class Exporter {
             printer.printRecord(
                 m.getMedicalName(),
                 m.getMuscleGroup().name(),
+                m.getParent() == null ? null : m.getParent().getMedicalName(),
                 m.getCommonNameEn(),
                 m.getCommonNameFr(),
                 m.getDescriptionEn(),

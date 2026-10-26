@@ -1,5 +1,6 @@
 package apex.stellar.aldebaran.service;
 
+import static apex.stellar.aldebaran.config.RedisCacheConfig.CACHE_MOVEMENT;
 import static apex.stellar.aldebaran.config.RedisCacheConfig.CACHE_MUSCLE;
 import static apex.stellar.aldebaran.config.RedisCacheConfig.CACHE_MUSCLES;
 
@@ -84,11 +85,12 @@ public class MuscleService {
    *
    * @param request The {@link MuscleRequest} containing the details of the muscle to create.
    * @return The created {@link MuscleResponse}.
-   * @throws DataConflictException if a muscle with the same medical name already exists.
+   * @throws DataConflictException if a muscle with the same medical name already exists, or if the
+   *     functional group link is invalid (see {@link #applyParent}).
    */
   @Transactional
   @CacheEvict(
-      value = {CACHE_MUSCLES, CACHE_MUSCLE},
+      value = {CACHE_MUSCLES, CACHE_MUSCLE, CACHE_MOVEMENT},
       allEntries = true)
   public MuscleResponse createMuscle(MuscleRequest request) {
 
@@ -97,6 +99,7 @@ public class MuscleService {
     }
 
     Muscle muscle = muscleMapper.toEntity(request);
+    applyParent(muscle, request.parentId());
     Muscle savedMuscle = muscleRepository.save(muscle);
     log.info("Created new muscle: {} (ID: {})", savedMuscle.getMedicalName(), savedMuscle.getId());
 
@@ -113,11 +116,12 @@ public class MuscleService {
    * @param request The {@link MuscleRequest} containing the updated data.
    * @return The updated {@link MuscleResponse}.
    * @throws ResourceNotFoundException if no muscle is found with the provided ID.
-   * @throws DataConflictException if the new medical name conflicts with another existing muscle.
+   * @throws DataConflictException if the new medical name conflicts with another existing muscle,
+   *     if the functional group link is invalid, or if a group with muscles changes region.
    */
   @Transactional
   @CacheEvict(
-      value = {CACHE_MUSCLES, CACHE_MUSCLE},
+      value = {CACHE_MUSCLES, CACHE_MUSCLE, CACHE_MOVEMENT},
       allEntries = true)
   public MuscleResponse updateMuscle(Long id, MuscleRequest request) {
 
@@ -131,7 +135,11 @@ public class MuscleService {
       throw new DataConflictException("error.muscle.name.exists", request.medicalName());
     }
 
+    if (!muscle.getMembers().isEmpty() && muscle.getMuscleGroup() != request.muscleGroup()) {
+      throw new DataConflictException("error.muscle.group.region", muscle.getMedicalName());
+    }
     muscleMapper.updateEntity(request, muscle);
+    applyParent(muscle, request.parentId());
     Muscle savedMuscle = muscleRepository.save(muscle);
     log.info("Updated muscle: {} (ID: {})", savedMuscle.getMedicalName(), savedMuscle.getId());
 
@@ -146,7 +154,7 @@ public class MuscleService {
    */
   @Transactional
   @CacheEvict(
-      value = {CACHE_MUSCLES, CACHE_MUSCLE},
+      value = {CACHE_MUSCLES, CACHE_MUSCLE, CACHE_MOVEMENT},
       allEntries = true)
   public void deleteMuscle(Long id) {
 
@@ -155,6 +163,39 @@ public class MuscleService {
       throw new ResourceNotFoundException("error.muscle.not.found", id);
     }
     muscleRepository.deleteById(id);
+  }
+
+  /**
+   * Links a muscle to its functional group. Groups do not nest: the parent must not belong to a
+   * group itself, a group cannot join another group, and both must be in the same region.
+   *
+   * @param muscle The muscle being created or updated (region already set).
+   * @param parentId The functional group id, or null for a group or a standalone muscle.
+   * @throws ResourceNotFoundException if the parent does not exist.
+   * @throws DataConflictException if the link breaks one of the rules above.
+   */
+  private void applyParent(Muscle muscle, Long parentId) {
+    if (parentId == null) {
+      muscle.setParent(null);
+      return;
+    }
+    Muscle parent =
+        muscleRepository
+            .findById(parentId)
+            .orElseThrow(() -> new ResourceNotFoundException("error.muscle.not.found", parentId));
+    if (parent.getId().equals(muscle.getId())) {
+      throw new DataConflictException("error.muscle.parent.self");
+    }
+    if (parent.getParent() != null) {
+      throw new DataConflictException("error.muscle.parent.nested", parent.getMedicalName());
+    }
+    if (!muscle.getMembers().isEmpty()) {
+      throw new DataConflictException("error.muscle.parent.group", muscle.getMedicalName());
+    }
+    if (parent.getMuscleGroup() != muscle.getMuscleGroup()) {
+      throw new DataConflictException("error.muscle.parent.region");
+    }
+    muscle.setParent(parent);
   }
 
   /** Retrieves reference data for Muscle forms. */
