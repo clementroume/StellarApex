@@ -32,12 +32,14 @@
 
           <div class="collapse-content p-0">
             <ul class="divide-y divide-base-200">
-              @for (muscle of groupedMuscles().get(group); track muscle.id) {
+              @for (row of groupedMuscles().get(group); track row.muscle.id) {
                 <app-list-item
-                  [title]="getLocalizedName(muscle) || muscle.medicalName"
-                  [subtitle]="getLocalizedName(muscle) !== muscle.medicalName ? muscle.medicalName : undefined"
-                  [imageUrl]="muscle.imageUrl"
-                  [link]="['/muscles', muscle.id]">
+                  [class]="row.isMember ? 'block pl-8 border-l-4 border-base-200' : 'block'"
+                  [title]="getLocalizedName(row.muscle) || row.muscle.medicalName"
+                  [subtitle]="getLocalizedName(row.muscle) !== row.muscle.medicalName ? row.muscle.medicalName : undefined"
+                  [badge]="groupBadge(row.muscle)"
+                  [imageUrl]="row.muscle.imageUrl"
+                  [link]="['/muscles', row.muscle.id]">
                 </app-list-item>
               }
             </ul>

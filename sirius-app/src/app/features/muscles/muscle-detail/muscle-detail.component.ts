@@ -3,7 +3,7 @@ import {TranslatePipe, TranslateService} from '@ngx-translate/core';
 import {Router, RouterModule} from '@angular/router';
 import {Location, NgOptimizedImage} from '@angular/common';
 import {NgIconComponent} from '@ng-icons/core';
-import {MuscleResponse} from '../../../api/aldebaran/models/muscle.model';
+import {MuscleRefResponse, MuscleResponse} from '../../../api/aldebaran/models/muscle.model';
 import {AccessService} from '../../../core/services/access.service';
 import {MuscleService} from '../../../api/aldebaran/services/muscle.service';
 import {NotificationService} from '../../../core/services/notification.service';
@@ -93,7 +93,7 @@ export class MuscleDetailComponent {
   }
 
   // --- HELPERS ---
-  getLocalizedName(muscle: MuscleResponse): string {
+  getLocalizedName(muscle: MuscleResponse | MuscleRefResponse): string {
     const isFr = this.activeLang() === 'fr';
     return (isFr ? muscle.commonNameFr : muscle.commonNameEn) || muscle.medicalName;
   }

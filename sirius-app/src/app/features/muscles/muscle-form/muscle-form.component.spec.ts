@@ -24,8 +24,16 @@ describe('MuscleFormComponent', () => {
       getMuscle: vi.fn().mockName("MuscleService.getMuscle"),
       createMuscle: vi.fn().mockName("MuscleService.createMuscle"),
       updateMuscle: vi.fn().mockName("MuscleService.updateMuscle"),
-      getReferenceData: vi.fn().mockName("MuscleService.getReferenceData")
+      getReferenceData: vi.fn().mockName("MuscleService.getReferenceData"),
+      getMuscles: vi.fn().mockName("MuscleService.getMuscles")
     } as any;
+
+    muscleServiceSpy.getMuscles.mockReturnValue(of([
+      {id: 10, medicalName: 'Quadriceps Femoris', muscleGroup: 'LEGS', parent: null},
+      {id: 11, medicalName: 'Rectus Femoris', muscleGroup: 'LEGS', parent: {id: 10, medicalName: 'Quadriceps Femoris'}},
+      {id: 20, medicalName: 'Deltoids', muscleGroup: 'SHOULDERS', parent: null},
+      {id: 1, medicalName: 'Test', muscleGroup: 'CHEST'}
+    ] as any));
 
     muscleServiceSpy.getMuscle.mockReturnValue(of({
       id: 1, medicalName: 'Test', muscleGroup: 'CHEST'
@@ -117,5 +125,40 @@ describe('MuscleFormComponent', () => {
     expect(muscleServiceSpy.createMuscle).not.toHaveBeenCalled();
     expect(notificationServiceSpy.showSuccess).toHaveBeenCalled();
     expect(navigateSpy).toHaveBeenCalledWith(['/muscles']);
+  });
+
+  it('should offer only top-level muscles of the same region as functional groups, and send the choice', () => {
+    vi.spyOn(router, 'navigate').mockResolvedValue(true);
+    fixture.detectChanges();
+
+    component.muscleForm.patchValue({medicalName: 'Vastus Lateralis', muscleGroup: 'LEGS'});
+    expect(component.groupCandidates().map(m => m.medicalName)).toEqual(['Quadriceps Femoris']);
+
+    component.muscleForm.patchValue({parentId: 10});
+    component.onSubmit();
+    expect(muscleServiceSpy.createMuscle).toHaveBeenCalledWith(expect.objectContaining({parentId: 10}));
+  });
+
+  it('should drop the functional group when the region changes', () => {
+    fixture.detectChanges();
+    component.muscleForm.patchValue({muscleGroup: 'LEGS', parentId: 10});
+
+    component.muscleForm.patchValue({muscleGroup: 'SHOULDERS'});
+
+    expect(component.groupCandidates().map(m => m.medicalName)).toEqual(['Deltoids']);
+    expect(component.muscleForm.controls.parentId.value).toBeNull();
+  });
+
+  it('should lock the functional group of a muscle that is itself a group', () => {
+    muscleServiceSpy.getMuscle.mockReturnValue(of({
+      id: 10, medicalName: 'Quadriceps Femoris', muscleGroup: 'LEGS', parent: null,
+      members: [{id: 11, medicalName: 'Rectus Femoris'}]
+    } as any));
+    mockActivatedRoute.snapshot.paramMap.get = () => '10';
+    fixture.detectChanges();
+
+    expect(component.membersCount()).toBe(1);
+    expect(component.muscleForm.controls.parentId.disabled).toBe(true);
+    expect(component.groupCandidates().some(m => m.id === 10)).toBe(false);
   });
 });

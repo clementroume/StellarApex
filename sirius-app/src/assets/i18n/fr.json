@@ -99,7 +99,8 @@
     },
     "ACTIONS": {
       "ADD": "Ajouter un muscle",
-      "SELECT_GROUP": "Sélectionner un groupe",
+      "SELECT_GROUP": "Sélectionner une région",
+      "NO_FUNCTIONAL_GROUP": "Aucun (groupe ou muscle seul)",
       "SEARCH": "Rechercher un muscle..."
     },
     "SECTIONS": {
@@ -110,7 +111,9 @@
     "FIELDS": {
       "MEDICAL_NAME": "Nom Médical (Latin)",
       "COMMON_NAME": "Nom Commun",
-      "GROUP": "Muscle Group",
+      "GROUP": "Région",
+      "FUNCTIONAL_GROUP": "Groupe fonctionnel",
+      "MEMBERS": "Muscles du groupe",
       "NAME_FR": "Nom Français",
       "NAME_EN": "Nom Anglais",
       "DESC_FR": "Description (FR)",
@@ -126,6 +129,9 @@
       "IMAGE_URL": "https://..."
     },
     "MESSAGES": {
+      "IS_GROUP": "Groupe fonctionnel de {{count}} muscles : il ne peut pas appartenir à un autre groupe.",
+      "FUNCTIONAL_GROUP_HINT": "Uniquement les groupes de la même région.",
+      "GROUP_BADGE": "Groupe",
       "NOT_FOUND": "Muscle introuvable.",
       "EMPTY_LIST": "Aucun muscle trouvé.",
       "EMPTY_LIST_SEARCH": "Aucun muscle trouvé pour \"{{name}}\".",

@@ -39,6 +39,25 @@
             }
           </select>
         </div>
+
+        <div class="form-control w-full">
+          <label class="label" for="parentId">
+            <span class="label-text font-semibold">{{ 'MUSCLE.FIELDS.FUNCTIONAL_GROUP' | translate }}</span>
+          </label>
+          <select id="parentId" formControlName="parentId" class="select select-bordered w-full">
+            <option [ngValue]="null">{{ 'MUSCLE.ACTIONS.NO_FUNCTIONAL_GROUP' | translate }}</option>
+            @for (candidate of groupCandidates(); track candidate.id) {
+              <option [ngValue]="candidate.id">{{ candidate.medicalName }}</option>
+            }
+          </select>
+          <span class="label-text-alt opacity-70 mt-1">
+            @if (membersCount() > 0) {
+              {{ 'MUSCLE.MESSAGES.IS_GROUP' | translate: {count: membersCount()} }}
+            } @else {
+              {{ 'MUSCLE.MESSAGES.FUNCTIONAL_GROUP_HINT' | translate }}
+            }
+          </span>
+        </div>
       </div>
 
       <div class="divider">{{ 'MUSCLE.SECTIONS.COMMON_NAMES' | translate }}</div>

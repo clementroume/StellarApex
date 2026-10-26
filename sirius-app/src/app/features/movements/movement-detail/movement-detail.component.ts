@@ -4,7 +4,7 @@ import {Router, RouterModule} from '@angular/router';
 import {Location, NgOptimizedImage, NgTemplateOutlet} from '@angular/common';
 import {NgIconComponent} from '@ng-icons/core';
 import {MovementResponse} from '../../../api/aldebaran/models/movement.model';
-import {MuscleResponse} from '../../../api/aldebaran/models/muscle.model';
+import {MuscleRefResponse, MuscleResponse} from '../../../api/aldebaran/models/muscle.model';
 import {AccessService} from '../../../core/services/access.service';
 import {MovementService} from '../../../api/aldebaran/services/movement.service';
 import {NotificationService} from '../../../core/services/notification.service';
@@ -101,8 +101,19 @@ export class MovementDetailComponent {
     return this.activeLang() === 'fr' ? (movement.coachingCuesFr || '') : (movement.coachingCuesEn || '');
   }
 
-  getLocalizedMuscleName(muscle: MuscleResponse): string {
+  getLocalizedMuscleName(muscle: MuscleResponse | MuscleRefResponse): string {
     const isFr = this.activeLang() === 'fr';
     return (isFr ? muscle.commonNameFr : muscle.commonNameEn) || muscle.medicalName;
+  }
+
+  /** Tooltip of a targeted muscle: the muscles of a functional group, or the group of a member. */
+  getMuscleHint(muscle: MuscleResponse): string | null {
+    if (muscle.members?.length) {
+      return `${this.translate.instant('MUSCLE.FIELDS.MEMBERS')} : ${muscle.members.map(m => this.getLocalizedMuscleName(m)).join(', ')}`;
+    }
+    if (muscle.parent) {
+      return `${this.translate.instant('MUSCLE.FIELDS.FUNCTIONAL_GROUP')} : ${this.getLocalizedMuscleName(muscle.parent)}`;
+    }
+    return null;
   }
 }
