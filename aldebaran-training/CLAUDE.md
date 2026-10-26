@@ -27,8 +27,12 @@ resolving IDs from the `antares` schema with `JdbcTemplate`.
   throws the proper 404 instead of a 403.
 - List filters live in one JPQL constant, `WodRepository.SECURE_FILTERS`, shared by the list and the
   `GET /wods/facets` queries: change it once.
-- Per-user flags for the UI (`WodCapabilities`) are computed by `service/WodCapabilityService` per
-  request, never inside cached methods (`WodService.getWodDetail` is `@Cacheable`).
+- Per-user flags for the UI (`WodCapabilities`, `ScoreCapabilities`) are computed by
+  `service/WodCapabilityService` / `ScoreCapabilityService` per request, never inside cached methods
+  (`WodService.getWodDetail` is `@Cacheable`). `ScoreCapabilityService.forViewer` also hides others'
+  comments/scaling notes from non-moderators.
+- Score ordering lives once in `service/ScoreRanking` (PR, compare, leaderboard sort); score/WOD
+  consistency in `ScoreService.normalizeAndCheck` (`InvalidScoreException` → 400).
 - Support session: `X-Auth-Actor-Id` (nullable `actorId`) = the admin acting as the user; rights stay
   the user's. `security/SupportSessionAuditFilter` logs every non-GET request with an actor at INFO.
 

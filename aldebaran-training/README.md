@@ -88,8 +88,11 @@ of them:
 * **WOD create / update / delete**: `WOD_WRITE` on the WOD's gym; personal WODs (`gymId = null`) by
   their author only. A WOD with logged scores is locked (409). Ownership (`gymId`, `authorId`) cannot
   change on update.
-* **Scores**: athletes manage their own; `SCORE_VERIFY` on the WOD's gym allows managing other
-  athletes' scores.
+* **Scores**: athletes log scores for themselves on the WODs they can read and manage their own;
+  `SCORE_VERIFY` on the WOD's gym allows correcting or deleting other athletes' scores (errors,
+  cheating). Logging a score for someone else is admin-only for now (Aldebaran cannot check that the
+  athlete belongs to the gym). Each score carries `capabilities {canModify}`; other athletes' comments
+  and scaling notes are hidden from viewers who cannot moderate the score.
 * **Muscles / movements**: read by everyone, written (and exported to CSV) by platform ADMIN only.
 * A platform ADMIN can do everything.
 
@@ -146,9 +149,14 @@ Rules live in `security/WodSecurity` and `security/ScoreSecurity`, used from `@P
 ### Scores (`/aldebaran/scores`)
 
 * `GET /me`: the current user's scores (optional `wodId`, paginated).
-* `POST /`, `PUT /{id}`, `DELETE /{id}`: log or edit a score (rules above).
-* `GET /{id}/compare`: rank and percentile of a score.
-* `GET /leaderboard/{id}`: leaderboard of a WOD (`scaling`, default `RX`).
+* `POST /`, `PUT /{id}`, `DELETE /{id}`: log or edit a score (rules above). The value required by the
+  WOD's score type must be present (400 otherwise); a time-capped TIME score stores the reps done at
+  the cap and no time; a score never changes athlete or WOD (400 if `wodId` differs).
+* Personal record: one per athlete and WOD, ordered by scaling level (Rx+ > Rx > Scaled > Custom),
+  then performance; for TIME every finished time beats every capped score, capped scores rank by
+  reps (`service/ScoreRanking`, shared with compare and leaderboards).
+* `GET /{id}/compare`: rank and percentile of a score among the other athletes' PRs at its level.
+* `GET /leaderboard/{id}`: leaderboard of a WOD (`scaling`, default `RX`): each athlete's PR at that level.
 * `GET /reference-data`: scaling levels.
 
 ### Export (`/aldebaran/export`) — temporary, development only

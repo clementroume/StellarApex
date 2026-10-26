@@ -65,8 +65,10 @@ and a virtual programming); there is no "active gym" in requests.
   `WOD_WRITE` on that gym; personal WOD (`gymId = null`): author only. Admin: everything.
 - WOD with logged scores is locked (409 on update/delete). Ownership (`gymId`, `authorId`) is ignored
   on update (`WodMapper.updateEntity`); `isPublic` stays editable.
-- Score rights for others: `SCORE_VERIFY` on the WOD's gym. Movements/muscles CRUD and CSV export:
-  `hasRole('ADMIN')`.
+- Scores: self-logging on any readable WOD; correcting/deleting others' scores: `SCORE_VERIFY` on the
+  WOD's gym; logging for someone else: admin only (target membership not verifiable in Aldebaran).
+  `ScoreResponse.capabilities {canModify}`; others' comments hidden from non-moderators. Movements/
+  muscles CRUD and CSV export: `hasRole('ADMIN')`.
 - Gym settings/deletion: `MANAGE_SETTINGS`; memberships: `MANAGE_MEMBERSHIPS` (Antares `@security`).
 - Aldebaran returns `WodResponse.capabilities {canModify, locked}` (computed per request, outside the
   WOD cache) so Sirius shows edit/delete only when allowed. Prefer this per-resource pattern for new
