@@ -466,7 +466,12 @@
       "CHIPPER": "Chipper",
       "GIRLS": "Girls (Benchmark)",
       "HERO": "Hero WOD",
-      "CUSTOM_BENCHMARK": "Benchmark personnalisé",
+      "BENCHMARK": "Benchmark CrossFit",
+      "CUSTOM_BENCHMARK": "Benchmark de la salle",
+      "OPEN": "Open",
+      "QUARTERFINALS": "Quarts de finale",
+      "SEMIFINALS": "Demi-finales",
+      "GAMES": "Games",
       "CUSTOM": "Personnalisé"
     },
     "SCORE_TYPES": {

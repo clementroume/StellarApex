@@ -466,7 +466,12 @@
       "CHIPPER": "Chipper",
       "GIRLS": "The Girls",
       "HERO": "Hero WOD",
-      "CUSTOM_BENCHMARK": "Custom Benchmark",
+      "BENCHMARK": "CrossFit Benchmark",
+      "CUSTOM_BENCHMARK": "Gym Benchmark",
+      "OPEN": "Open",
+      "QUARTERFINALS": "Quarterfinals",
+      "SEMIFINALS": "Semifinals",
+      "GAMES": "Games",
       "CUSTOM": "Custom"
     },
     "SCORE_TYPES": {

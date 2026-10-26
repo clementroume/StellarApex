@@ -166,7 +166,13 @@ public class Wod {
     // --- Benchmarks ---
     GIRLS,
     HERO,
+    BENCHMARK,
     CUSTOM_BENCHMARK,
+    // --- Official competitions ---
+    OPEN,
+    QUARTERFINALS,
+    SEMIFINALS,
+    GAMES,
     // --- Other ---
     CUSTOM
   }
