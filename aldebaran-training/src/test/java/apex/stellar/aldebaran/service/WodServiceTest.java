@@ -18,6 +18,7 @@ import apex.stellar.aldebaran.mapper.WodMapper;
 import apex.stellar.aldebaran.model.entities.Movement;
 import apex.stellar.aldebaran.model.entities.Wod;
 import apex.stellar.aldebaran.model.entities.Wod.ScoreType;
+import apex.stellar.aldebaran.model.entities.Wod.WodCategory;
 import apex.stellar.aldebaran.model.entities.Wod.WodType;
 import apex.stellar.aldebaran.model.entities.WodMovement;
 import apex.stellar.aldebaran.model.enums.Category;
@@ -80,6 +81,7 @@ class WodServiceTest {
         new WodRequest(
             "Fran",
             WodType.FOR_TIME,
+            null,
             ScoreType.TIME,
             null, // authorId
             null, // gymId
@@ -108,12 +110,12 @@ class WodServiceTest {
     when(securityService.getCurrentUserMemberGymIds()).thenReturn(Set.of(101L));
     when(securityService.isCurrentUserAdmin()).thenReturn(false);
     when(wodRepository.findSecure(
-            null, null, null, "ALL", null, null, 5L, Set.of(101L), false, pageable))
+            null, null, null, null, "ALL", null, null, 5L, Set.of(101L), false, pageable))
         .thenReturn(slice);
 
     // When
     Slice<WodSummaryResponse> results =
-        wodService.getWods(null, null, null, null, null, null, pageable);
+        wodService.getWods(null, null, null, null, null, null, null, pageable);
 
     // Then
     assertNotNull(results);
@@ -129,16 +131,26 @@ class WodServiceTest {
     when(securityService.getCurrentUserMemberGymIds()).thenReturn(Set.of(101L, 202L));
     when(securityService.isCurrentUserAdmin()).thenReturn(false);
     when(wodRepository.findSecure(
-            any(), any(), any(), any(), any(), any(), any(), any(), anyBoolean(), any()))
+            any(), any(), any(), any(), any(), any(), any(), any(), any(), anyBoolean(), any()))
         .thenReturn(new SliceImpl<>(List.of()));
 
     // When
-    wodService.getWods(" FrAn ", WodType.AMRAP, 1L, WodScope.GYM, 202L, 9L, pageable);
+    wodService.getWods(" FrAn ", WodType.AMRAP, null, 1L, WodScope.GYM, 202L, 9L, pageable);
 
     // Then: search is trimmed and lower-cased into a LIKE pattern
     verify(wodRepository)
         .findSecure(
-            "%fran%", WodType.AMRAP, 1L, "GYM", 202L, 9L, 5L, Set.of(101L, 202L), false, pageable);
+            "%fran%",
+            WodType.AMRAP,
+            null,
+            1L,
+            "GYM",
+            202L,
+            9L,
+            5L,
+            Set.of(101L, 202L),
+            false,
+            pageable);
   }
 
   @Test
@@ -148,19 +160,23 @@ class WodServiceTest {
     when(securityService.getCurrentUserMemberGymIds()).thenReturn(Set.of(101L));
     when(securityService.isCurrentUserAdmin()).thenReturn(true);
     when(wodRepository.findSecureWodTypes(
-            "%fran%", null, null, "GYM", 101L, null, 5L, Set.of(101L), true))
-        .thenReturn(List.of(WodType.HERO, WodType.AMRAP));
+            "%fran%", null, null, null, "GYM", 101L, null, 5L, Set.of(101L), true))
+        .thenReturn(List.of(WodType.STRENGTH, WodType.AMRAP));
+    when(wodRepository.findSecureCategories(
+            "%fran%", null, null, null, "GYM", 101L, null, 5L, Set.of(101L), true))
+        .thenReturn(List.of(WodCategory.OPEN, WodCategory.GIRLS));
     when(wodRepository.findSecureGymIds(
-            "%fran%", null, null, "ALL", null, null, 5L, Set.of(101L), true))
+            "%fran%", null, null, null, "ALL", null, null, 5L, Set.of(101L), true))
         .thenReturn(List.of(3L, 1L));
     when(wodRepository.findSecureAuthorIds(
-            "%fran%", null, null, "ALL", null, null, 5L, Set.of(101L), true))
+            "%fran%", null, null, null, "ALL", null, null, 5L, Set.of(101L), true))
         .thenReturn(List.of(9L, 4L));
 
     WodFacetsResponse facets = wodService.getFacets("Fran", WodScope.GYM, 101L, null);
 
     // Types are returned in enum order, ids sorted
-    assertEquals(List.of(WodType.AMRAP, WodType.HERO), facets.wodTypes());
+    assertEquals(List.of(WodType.AMRAP, WodType.STRENGTH), facets.wodTypes());
+    assertEquals(List.of(WodCategory.GIRLS, WodCategory.OPEN), facets.categories());
     assertEquals(List.of(1L, 3L), facets.gymIds());
     assertEquals(List.of(4L, 9L), facets.authorIds());
   }
@@ -234,6 +250,7 @@ class WodServiceTest {
         new WodRequest(
             "Diane",
             WodType.FOR_TIME,
+            null,
             ScoreType.TIME,
             null,
             null,
@@ -407,6 +424,7 @@ class WodServiceTest {
         new WodRequest(
             "Fran",
             WodType.FOR_TIME,
+            null,
             ScoreType.TIME,
             null,
             null,
@@ -498,6 +516,7 @@ class WodServiceTest {
         new WodRequest(
             "Fran",
             WodType.FOR_TIME,
+            null,
             ScoreType.TIME,
             null,
             null,
@@ -538,6 +557,7 @@ class WodServiceTest {
         new WodRequest(
             "Empty",
             WodType.FOR_TIME,
+            null,
             ScoreType.TIME,
             null,
             null,

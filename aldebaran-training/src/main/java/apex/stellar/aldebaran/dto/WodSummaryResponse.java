@@ -1,6 +1,7 @@
 package apex.stellar.aldebaran.dto;
 
 import apex.stellar.aldebaran.model.entities.Wod.ScoreType;
+import apex.stellar.aldebaran.model.entities.Wod.WodCategory;
 import apex.stellar.aldebaran.model.entities.Wod.WodType;
 import java.time.LocalDateTime;
 
@@ -9,6 +10,7 @@ public record WodSummaryResponse(
     Long id,
     String title,
     WodType wodType,
+    WodCategory category,
     ScoreType scoreType,
     String repScheme,
     Integer timeCapSeconds,

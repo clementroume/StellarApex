@@ -3,6 +3,7 @@ package apex.stellar.aldebaran.config;
 import apex.stellar.aldebaran.model.entities.Movement;
 import apex.stellar.aldebaran.model.entities.Wod;
 import apex.stellar.aldebaran.model.entities.Wod.ScoreType;
+import apex.stellar.aldebaran.model.entities.Wod.WodCategory;
 import apex.stellar.aldebaran.model.entities.Wod.WodType;
 import apex.stellar.aldebaran.model.entities.WodMovement;
 import apex.stellar.aldebaran.model.enums.Unit;
@@ -45,6 +46,7 @@ public final class WodCsvCodec {
   static final String[] WOD_HEADERS = {
     "title",
     "wod_type",
+    "category",
     "score_type",
     "rep_scheme",
     "time_cap_seconds",
@@ -102,6 +104,7 @@ public final class WodCsvCodec {
           Wod.builder()
               .title(title)
               .wodType(WodType.valueOf(required(row, "wod_type").toUpperCase()))
+              .category(category(row))
               .scoreType(ScoreType.valueOf(required(row, "score_type").toUpperCase()))
               .repScheme(text(row, "rep_scheme"))
               .timeCapSeconds(integer(row, "time_cap_seconds"))
@@ -185,6 +188,7 @@ public final class WodCsvCodec {
         wodPrinter.printRecord(
             w.getTitle(),
             w.getWodType().name(),
+            name(w.getCategory()),
             w.getScoreType().name(),
             w.getRepScheme(),
             w.getTimeCapSeconds(),
@@ -266,6 +270,11 @@ public final class WodCsvCodec {
     return value == null ? null : Double.valueOf(value.trim());
   }
 
+  private static WodCategory category(CSVRecord row) {
+    String value = text(row, "category");
+    return value == null ? null : WodCategory.valueOf(value.trim().toUpperCase());
+  }
+
   private static Unit unit(CSVRecord row, String header) {
     String value = text(row, header);
     return value == null ? null : Unit.valueOf(value.trim().toUpperCase());
@@ -282,8 +291,8 @@ public final class WodCsvCodec {
         .collect(Collectors.toCollection(HashSet::new));
   }
 
-  private static String name(Unit unit) {
-    return unit == null ? null : unit.name();
+  private static String name(Enum<?> value) {
+    return value == null ? null : value.name();
   }
 
   private static String join(Set<String> values) {

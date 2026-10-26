@@ -6,6 +6,7 @@ import apex.stellar.aldebaran.config.BaseIntegrationTest;
 import apex.stellar.aldebaran.model.entities.Movement;
 import apex.stellar.aldebaran.model.entities.Wod;
 import apex.stellar.aldebaran.model.entities.Wod.ScoreType;
+import apex.stellar.aldebaran.model.entities.Wod.WodCategory;
 import apex.stellar.aldebaran.model.entities.Wod.WodType;
 import apex.stellar.aldebaran.model.entities.WodMovement;
 import apex.stellar.aldebaran.model.enums.Category;
@@ -80,7 +81,7 @@ class WodRepositoryIT extends BaseIntegrationTest {
   private List<String> titles(
       String search, WodType type, Long movementId, String scope, Long gymId, boolean admin) {
     return wodRepository
-        .findSecure(search, type, movementId, scope, gymId, null, ME, MY_GYMS, admin, PAGE)
+        .findSecure(search, type, null, movementId, scope, gymId, null, ME, MY_GYMS, admin, PAGE)
         .map(WodSummary::getTitle)
         .getContent();
   }
@@ -145,7 +146,7 @@ class WodRepositoryIT extends BaseIntegrationTest {
   void projectionFields() {
     WodSummary box =
         wodRepository
-            .findSecure("%box%", null, null, "ALL", null, null, ME, MY_GYMS, false, PAGE)
+            .findSecure("%box%", null, null, null, "ALL", null, null, ME, MY_GYMS, false, PAGE)
             .getContent()
             .getFirst();
 
@@ -160,20 +161,20 @@ class WodRepositoryIT extends BaseIntegrationTest {
     // A stranger's private WOD stays hidden to non-admins, even when filtering on its author
     assertThat(
             wodRepository
-                .findSecure(null, null, null, "ALL", null, 77L, ME, MY_GYMS, false, PAGE)
+                .findSecure(null, null, null, null, "ALL", null, 77L, ME, MY_GYMS, false, PAGE)
                 .map(WodSummary::getTitle)
                 .getContent())
         .containsExactly("Stranger Public");
     assertThat(
             wodRepository
-                .findSecure(null, null, null, "ALL", null, 77L, ME, MY_GYMS, true, PAGE)
+                .findSecure(null, null, null, null, "ALL", null, 77L, ME, MY_GYMS, true, PAGE)
                 .map(WodSummary::getTitle)
                 .getContent())
         .containsExactly("Stranger Private", "Stranger Public");
     // Gym WODs are never "personal", even for their author
     assertThat(
             wodRepository
-                .findSecure(null, null, null, "ALL", null, 50L, ME, MY_GYMS, true, PAGE)
+                .findSecure(null, null, null, null, "ALL", null, 50L, ME, MY_GYMS, true, PAGE)
                 .getContent())
         .isEmpty();
   }
@@ -183,23 +184,54 @@ class WodRepositoryIT extends BaseIntegrationTest {
   void facets() {
     assertThat(
             wodRepository.findSecureWodTypes(
-                null, null, null, "GYM", 101L, null, ME, MY_GYMS, false))
+                null, null, null, null, "GYM", 101L, null, ME, MY_GYMS, false))
         .containsExactly(WodType.FOR_TIME);
     assertThat(
             wodRepository.findSecureWodTypes(
-                null, null, null, "PUBLIC", null, null, ME, MY_GYMS, false))
+                null, null, null, null, "PUBLIC", null, null, ME, MY_GYMS, false))
         .containsExactlyInAnyOrder(WodType.FOR_TIME, WodType.AMRAP);
 
     assertThat(
-            wodRepository.findSecureGymIds(null, null, null, "ALL", null, null, ME, MY_GYMS, false))
+            wodRepository.findSecureGymIds(
+                null, null, null, null, "ALL", null, null, ME, MY_GYMS, false))
         .containsExactlyInAnyOrder(101L, 300L, 999L);
     assertThat(
             wodRepository.findSecureAuthorIds(
-                null, null, null, "ALL", null, null, ME, MY_GYMS, false))
+                null, null, null, null, "ALL", null, null, ME, MY_GYMS, false))
         .containsExactlyInAnyOrder(ME, 77L);
     assertThat(
             wodRepository.findSecureAuthorIds(
-                null, null, null, "ALL", null, null, ME, MY_GYMS, true))
+                null, null, null, null, "ALL", null, null, ME, MY_GYMS, true))
         .containsExactlyInAnyOrder(ME, 77L);
+  }
+
+  @Test
+  @DisplayName("category: filters the list and feeds its own facet, independent of the format")
+  void category() {
+    wodRepository.findAll().forEach(
+        w -> {
+          if (w.getTitle().equals("Stranger Public")) {
+            w.setCategory(WodCategory.GIRLS);
+          } else if (w.getTitle().equals("Other Gym Public")) {
+            w.setCategory(WodCategory.OPEN);
+          }
+          wodRepository.save(w);
+        });
+
+    assertThat(
+            wodRepository
+                .findSecure(
+                    null, null, WodCategory.GIRLS, null, "ALL", null, null, ME, MY_GYMS, false, PAGE)
+                .map(WodSummary::getTitle)
+                .getContent())
+        .containsExactly("Stranger Public");
+    assertThat(
+            wodRepository.findSecureCategories(
+                null, null, null, null, "PUBLIC", null, null, ME, MY_GYMS, false))
+        .containsExactlyInAnyOrder(WodCategory.GIRLS, WodCategory.OPEN);
+    assertThat(
+            wodRepository.findSecureCategories(
+                null, null, null, null, "MINE", null, null, ME, MY_GYMS, false))
+        .isEmpty();
   }
 }

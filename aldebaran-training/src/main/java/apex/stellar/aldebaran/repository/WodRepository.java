@@ -1,6 +1,7 @@
 package apex.stellar.aldebaran.repository;
 
 import apex.stellar.aldebaran.model.entities.Wod;
+import apex.stellar.aldebaran.model.entities.Wod.WodCategory;
 import apex.stellar.aldebaran.model.entities.Wod.WodType;
 import apex.stellar.aldebaran.repository.projection.WodSummary;
 import java.util.Collection;
@@ -109,6 +110,7 @@ public interface WodRepository extends JpaRepository<Wod, Long> {
          OR w.gymId IN :memberGymIds)
       AND (:searchPattern IS NULL OR LOWER(w.title) LIKE :searchPattern)
       AND (:wodType IS NULL OR w.wodType = :wodType)
+      AND (:category IS NULL OR w.category = :category)
       AND (:movementId IS NULL OR EXISTS (
             SELECT 1 FROM WodMovement wm WHERE wm.wod = w AND wm.movement.id = :movementId))
       AND (:scope = 'ALL'
@@ -125,7 +127,8 @@ public interface WodRepository extends JpaRepository<Wod, Long> {
    * {@link #SECURE_FILTERS}).
    *
    * @param searchPattern Lower-cased {@code LIKE} pattern on the title, or {@code null}.
-   * @param wodType WOD type filter, or {@code null}.
+   * @param wodType WOD format filter, or {@code null}.
+   * @param category WOD category filter, or {@code null}.
    * @param movementId Movement contained in the WOD, or {@code null}.
    * @param scope Scope name (see {@code WodScope}).
    * @param gymId Gym filter for the {@code GYM} scope, or {@code null}.
@@ -140,6 +143,7 @@ public interface WodRepository extends JpaRepository<Wod, Long> {
   Slice<WodSummary> findSecure(
       @Param("searchPattern") String searchPattern,
       @Param("wodType") WodType wodType,
+      @Param("category") WodCategory category,
       @Param("movementId") Long movementId,
       @Param("scope") String scope,
       @Param("gymId") Long gymId,
@@ -158,6 +162,26 @@ public interface WodRepository extends JpaRepository<Wod, Long> {
   List<WodType> findSecureWodTypes(
       @Param("searchPattern") String searchPattern,
       @Param("wodType") WodType wodType,
+      @Param("category") WodCategory category,
+      @Param("movementId") Long movementId,
+      @Param("scope") String scope,
+      @Param("gymId") Long gymId,
+      @Param("authorId") Long authorId,
+      @Param("userId") Long userId,
+      @Param("memberGymIds") Collection<Long> memberGymIds,
+      @Param("isAdmin") boolean isAdmin);
+
+  /**
+   * Distinct WOD categories among the readable WODs matching the filters (dynamic category
+   * filter).
+   *
+   * @return The WOD categories present (unordered, without null).
+   */
+  @Query("SELECT DISTINCT w.category FROM Wod w WHERE w.category IS NOT NULL AND " + SECURE_FILTERS)
+  List<WodCategory> findSecureCategories(
+      @Param("searchPattern") String searchPattern,
+      @Param("wodType") WodType wodType,
+      @Param("category") WodCategory category,
       @Param("movementId") Long movementId,
       @Param("scope") String scope,
       @Param("gymId") Long gymId,
@@ -175,6 +199,7 @@ public interface WodRepository extends JpaRepository<Wod, Long> {
   List<Long> findSecureGymIds(
       @Param("searchPattern") String searchPattern,
       @Param("wodType") WodType wodType,
+      @Param("category") WodCategory category,
       @Param("movementId") Long movementId,
       @Param("scope") String scope,
       @Param("gymId") Long gymId,
@@ -194,6 +219,7 @@ public interface WodRepository extends JpaRepository<Wod, Long> {
   List<Long> findSecureAuthorIds(
       @Param("searchPattern") String searchPattern,
       @Param("wodType") WodType wodType,
+      @Param("category") WodCategory category,
       @Param("movementId") Long movementId,
       @Param("scope") String scope,
       @Param("gymId") Long gymId,

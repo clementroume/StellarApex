@@ -5,8 +5,9 @@ import java.util.Map;
 
 /** DTO containing structural reference data for WOD creation forms. */
 public record WodReferenceData(
-    // --- Wod Types ---
+    // --- Wod Formats and Categories ---
     List<String> wodTypes,
+    List<String> categories,
     // --- Score Types ---
     List<String> scoreTypes,
     // --- Units ---

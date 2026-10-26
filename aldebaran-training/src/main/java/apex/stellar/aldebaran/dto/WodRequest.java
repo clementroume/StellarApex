@@ -1,6 +1,7 @@
 package apex.stellar.aldebaran.dto;
 
 import apex.stellar.aldebaran.model.entities.Wod.ScoreType;
+import apex.stellar.aldebaran.model.entities.Wod.WodCategory;
 import apex.stellar.aldebaran.model.entities.Wod.WodType;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
@@ -18,6 +19,7 @@ public record WodRequest(
         @Size(max = 100, message = "{validation.wod.title.size}")
         String title,
     @NotNull(message = "{validation.wod.type.required}") WodType wodType,
+    WodCategory category,
     @NotNull(message = "{validation.wod.scoreType.required}") ScoreType scoreType,
 
     // --- Authorship and Visibility ---

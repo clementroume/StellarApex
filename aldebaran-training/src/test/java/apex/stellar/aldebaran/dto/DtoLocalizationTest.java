@@ -245,6 +245,7 @@ class DtoLocalizationTest {
               null,
               null,
               null,
+              null,
               false,
               null,
               null,
@@ -275,6 +276,7 @@ class DtoLocalizationTest {
           new WodRequest(
               "A".repeat(101),
               WodType.FOR_TIME,
+              null,
               ScoreType.TIME,
               null,
               null,

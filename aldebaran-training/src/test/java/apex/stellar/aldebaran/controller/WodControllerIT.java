@@ -17,6 +17,7 @@ import apex.stellar.aldebaran.model.entities.Score;
 import apex.stellar.aldebaran.model.entities.Score.ScalingLevel;
 import apex.stellar.aldebaran.model.entities.Wod;
 import apex.stellar.aldebaran.model.entities.Wod.ScoreType;
+import apex.stellar.aldebaran.model.entities.Wod.WodCategory;
 import apex.stellar.aldebaran.model.entities.Wod.WodType;
 import apex.stellar.aldebaran.model.enums.Category;
 import apex.stellar.aldebaran.model.enums.Equipment;
@@ -259,6 +260,54 @@ class WodControllerIT extends BaseIntegrationTest {
   }
 
   @Test
+  @DisplayName("POST/PUT /wods: the category is saved with the format and can be cleared")
+  void testWodCategory_SavedAndCleared() throws Exception {
+    WodMovementRequest movement =
+        new WodMovementRequest(
+            pullUp.getId(), 1, "21-15-9", null, null, null, null, null, null, null, null, null,
+            null, null);
+    WodRequest girls =
+        new WodRequest(
+            "Girls Test", WodType.FOR_TIME, WodCategory.GIRLS, ScoreType.TIME, null, 101L, true,
+            null, null, null, null, null, "21-15-9", List.of(movement));
+    String body =
+        mockMvc
+            .perform(
+                post("/aldebaran/wods")
+                    .with(csrf())
+                    .header("X-Auth-User-Id", "20")
+                    .header("X-Auth-User-Role", "USER")
+                    .header("X-Auth-Memberships", "101:COACH:WOD_WRITE")
+                    .header("X-Internal-Secret", "test-internal-secret")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(girls)))
+            .andExpect(status().isCreated())
+            .andExpect(jsonPath("$.wodType").value("FOR_TIME"))
+            .andExpect(jsonPath("$.category").value("GIRLS"))
+            .andReturn()
+            .getResponse()
+            .getContentAsString();
+    long id = objectMapper.readTree(body).get("id").asLong();
+
+    WodRequest uncategorized =
+        new WodRequest(
+            "Girls Test", WodType.FOR_TIME, null, ScoreType.TIME, null, 101L, true, null, null,
+            null, null, null, "21-15-9", List.of(movement));
+    mockMvc
+        .perform(
+            put("/aldebaran/wods/" + id)
+                .with(csrf())
+                .header("X-Auth-User-Id", "20")
+                .header("X-Auth-User-Role", "USER")
+                .header("X-Auth-Memberships", "101:COACH:WOD_WRITE")
+                .header("X-Internal-Secret", "test-internal-secret")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(uncategorized)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.category").isEmpty());
+  }
+
+  @Test
   @DisplayName("GET/PUT /wods/{id}: a movement with several variants is returned and merged once")
   void testWodMovementWithSeveralVariants_NotDuplicated() throws Exception {
     pullUp.getEquipment().add(Equipment.RINGS);
@@ -268,6 +317,7 @@ class WodControllerIT extends BaseIntegrationTest {
         new WodRequest(
             "Ring Pull-ups",
             WodType.FOR_TIME,
+            null,
             ScoreType.TIME,
             null,
             101L,
@@ -345,6 +395,7 @@ class WodControllerIT extends BaseIntegrationTest {
         new WodRequest(
             "Ring Pull-ups",
             WodType.FOR_TIME,
+            null,
             ScoreType.TIME,
             null,
             101L,
@@ -395,6 +446,7 @@ class WodControllerIT extends BaseIntegrationTest {
         new WodRequest(
             "Murph",
             WodType.FOR_TIME,
+            null,
             ScoreType.TIME,
             null,
             101L,
@@ -446,6 +498,7 @@ class WodControllerIT extends BaseIntegrationTest {
         new WodRequest(
             "My Custom WOD",
             WodType.EMOM,
+            null,
             ScoreType.NONE,
             100L, // authorId matches User
             null, // No Gym
@@ -491,6 +544,7 @@ class WodControllerIT extends BaseIntegrationTest {
         new WodRequest(
             "Owner WOD",
             WodType.FOR_TIME,
+            null,
             ScoreType.TIME,
             null,
             101L, // Gym 101
@@ -537,6 +591,7 @@ class WodControllerIT extends BaseIntegrationTest {
         new WodRequest(
             "Unauthorized WOD",
             WodType.FOR_TIME,
+            null,
             ScoreType.TIME,
             null,
             101L, // Gym 101
@@ -584,6 +639,7 @@ class WodControllerIT extends BaseIntegrationTest {
         new WodRequest(
             "Cross Gym WOD",
             WodType.FOR_TIME,
+            null,
             ScoreType.TIME,
             null,
             101L, // Target Gym 101
@@ -629,7 +685,7 @@ class WodControllerIT extends BaseIntegrationTest {
     WodRequest invalidRequest =
         new WodRequest(
             "", // Empty title
-            null, // Null Type
+            null, null, // Null Type
             ScoreType.TIME,
             null,
             null,
@@ -664,6 +720,7 @@ class WodControllerIT extends BaseIntegrationTest {
         new WodRequest(
             "Fran Modified",
             WodType.FOR_TIME,
+            null,
             ScoreType.TIME,
             null,
             null, // GymId ignored in update
@@ -718,6 +775,7 @@ class WodControllerIT extends BaseIntegrationTest {
         new WodRequest(
             "Hacked Wod",
             WodType.AMRAP,
+            null,
             ScoreType.ROUNDS_REPS,
             null,
             null,
@@ -772,6 +830,7 @@ class WodControllerIT extends BaseIntegrationTest {
         new WodRequest(
             "My WOD Updated",
             WodType.FOR_TIME,
+            null,
             ScoreType.TIME,
             null,
             null,
@@ -826,6 +885,7 @@ class WodControllerIT extends BaseIntegrationTest {
         new WodRequest(
             "Hacked",
             WodType.FOR_TIME,
+            null,
             ScoreType.TIME,
             null,
             null,
@@ -871,6 +931,7 @@ class WodControllerIT extends BaseIntegrationTest {
         new WodRequest(
             "Ghost Wod",
             WodType.FOR_TIME,
+            null,
             ScoreType.TIME,
             null,
             null,
@@ -929,6 +990,7 @@ class WodControllerIT extends BaseIntegrationTest {
         new WodRequest(
             "Fran Modified",
             WodType.FOR_TIME,
+            null,
             ScoreType.TIME,
             null,
             null,

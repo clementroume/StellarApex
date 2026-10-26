@@ -3,6 +3,7 @@ package apex.stellar.aldebaran.config;
 import apex.stellar.aldebaran.model.entities.Movement;
 import apex.stellar.aldebaran.model.entities.Wod;
 import apex.stellar.aldebaran.model.entities.Wod.ScoreType;
+import apex.stellar.aldebaran.model.entities.Wod.WodCategory;
 import apex.stellar.aldebaran.model.entities.Wod.WodType;
 import apex.stellar.aldebaran.model.entities.WodMovement;
 import apex.stellar.aldebaran.model.enums.Category.Modality;
@@ -34,7 +35,8 @@ public final class WodCsvCodecTestSupport {
     Wod fran =
         Wod.builder()
             .title("Fran")
-            .wodType(WodType.GIRLS)
+            .wodType(WodType.FOR_TIME)
+            .category(WodCategory.GIRLS)
             .scoreType(ScoreType.TIME)
             .repScheme("21-15-9")
             .description("21-15-9 reps for time of:\n- thrusters\n- pull-ups")
@@ -69,7 +71,8 @@ public final class WodCsvCodecTestSupport {
     Wod chelsea =
         Wod.builder()
             .title("Chelsea")
-            .wodType(WodType.GIRLS)
+            .wodType(WodType.EMOM)
+            .category(WodCategory.GIRLS)
             .scoreType(ScoreType.ROUNDS_REPS)
             .repScheme("EMOM 30 min")
             .timeCapSeconds(1800)

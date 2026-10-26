@@ -5,6 +5,7 @@ import apex.stellar.aldebaran.dto.WodReferenceData;
 import apex.stellar.aldebaran.dto.WodRequest;
 import apex.stellar.aldebaran.dto.WodResponse;
 import apex.stellar.aldebaran.dto.WodSummaryResponse;
+import apex.stellar.aldebaran.model.entities.Wod.WodCategory;
 import apex.stellar.aldebaran.model.entities.Wod.WodType;
 import apex.stellar.aldebaran.model.enums.WodScope;
 import apex.stellar.aldebaran.security.AldebaranUserPrincipal;
@@ -52,7 +53,8 @@ public class WodController {
    * optimize bandwidth.
    *
    * @param search Optional text to search in WOD titles.
-   * @param type Optional filter for WOD type (e.g., AMRAP, FOR TIME).
+   * @param type Optional filter for WOD format (e.g., AMRAP, FOR_TIME).
+   * @param category Optional filter for WOD category (e.g., GIRLS, OPEN).
    * @param movementId Optional filter to find WODs containing a specific movement.
    * @param scope List scope: ALL (default), MINE, GYM or PUBLIC.
    * @param gymId Optional gym filter for the GYM scope (must be one of the user's member gyms).
@@ -64,6 +66,7 @@ public class WodController {
   public ResponseEntity<Slice<WodSummaryResponse>> getWods(
       @RequestParam(required = false) String search,
       @RequestParam(required = false) WodType type,
+      @RequestParam(required = false) WodCategory category,
       @RequestParam(required = false) Long movementId,
       @RequestParam(defaultValue = "ALL") WodScope scope,
       @RequestParam(required = false) Long gymId,
@@ -71,11 +74,11 @@ public class WodController {
       @PageableDefault(size = 20) Pageable pageable) {
 
     return ResponseEntity.ok(
-        wodService.getWods(search, type, movementId, scope, gymId, authorId, pageable));
+        wodService.getWods(search, type, category, movementId, scope, gymId, authorId, pageable));
   }
 
   /**
-   * Retrieves the values available to filter the WOD list (types, gyms, authors).
+   * Retrieves the values available to filter the WOD list (formats, categories, gyms, authors).
    *
    * <p>Computed with the same security clause as the list, so a user only learns about WODs they
    * can read.

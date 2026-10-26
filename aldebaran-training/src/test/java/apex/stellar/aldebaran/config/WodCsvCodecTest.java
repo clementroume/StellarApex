@@ -10,6 +10,7 @@ import apex.stellar.aldebaran.exception.InvalidWodMovementException;
 import apex.stellar.aldebaran.model.entities.Movement;
 import apex.stellar.aldebaran.model.entities.Wod;
 import apex.stellar.aldebaran.model.entities.Wod.ScoreType;
+import apex.stellar.aldebaran.model.entities.Wod.WodCategory;
 import apex.stellar.aldebaran.model.entities.Wod.WodType;
 import apex.stellar.aldebaran.model.entities.WodMovement;
 import apex.stellar.aldebaran.model.enums.Category;
@@ -51,10 +52,10 @@ class WodCsvCodecTest {
 
   static final String WODS_CSV =
       """
-      title,wod_type,score_type,rep_scheme,time_cap_seconds,emom_interval,emom_rounds,description,notes
-      Fran,GIRLS,TIME,21-15-9,,,,"21-15-9 reps for time
+      title,wod_type,category,score_type,rep_scheme,time_cap_seconds,emom_interval,emom_rounds,description,notes
+      Fran,FOR_TIME,GIRLS,TIME,21-15-9,,,,"21-15-9 reps for time
       of thrusters and pull-ups.",
-      Cindy,girls,ROUNDS_REPS,AMRAP 20 min,1200,,,,"Note, with comma"
+      Cindy,amrap,,ROUNDS_REPS,AMRAP 20 min,1200,,,,"Note, with comma"
       """;
 
   static final String WOD_MOVEMENTS_CSV =
@@ -77,7 +78,8 @@ class WodCsvCodecTest {
     assertEquals(2, wods.size());
     Wod fran = wods.getFirst();
     assertEquals("Fran", fran.getTitle());
-    assertEquals(WodType.GIRLS, fran.getWodType());
+    assertEquals(WodType.FOR_TIME, fran.getWodType());
+    assertEquals(WodCategory.GIRLS, fran.getCategory());
     assertEquals(ScoreType.TIME, fran.getScoreType());
     assertEquals("21-15-9", fran.getRepScheme());
     assertEquals("21-15-9 reps for time\nof thrusters and pull-ups.", fran.getDescription());
@@ -105,7 +107,8 @@ class WodCsvCodecTest {
     assertEquals("Ring rows", pullUp.getScalingOptions());
 
     Wod cindy = wods.get(1);
-    assertEquals(WodType.GIRLS, cindy.getWodType());
+    assertEquals(WodType.AMRAP, cindy.getWodType());
+    assertNull(cindy.getCategory());
     assertEquals(1200, cindy.getTimeCapSeconds());
     assertEquals("Note, with comma", cindy.getNotes());
     WodMovement run = cindy.getMovements().getFirst();
@@ -148,7 +151,8 @@ class WodCsvCodecTest {
     Wod wod =
         Wod.builder()
             .title("Josh")
-            .wodType(WodType.HERO)
+            .wodType(WodType.FOR_TIME)
+            .category(WodCategory.HERO)
             .scoreType(ScoreType.TIME)
             .repScheme("21-42 / 15-30")
             .timeCapSeconds(600)
@@ -207,6 +211,7 @@ class WodCsvCodecTest {
   static void assertSameWod(Wod expected, Wod actual) {
     assertEquals(expected.getTitle(), actual.getTitle());
     assertEquals(expected.getWodType(), actual.getWodType());
+    assertEquals(expected.getCategory(), actual.getCategory());
     assertEquals(expected.getScoreType(), actual.getScoreType());
     assertEquals(expected.getRepScheme(), actual.getRepScheme());
     assertEquals(expected.getTimeCapSeconds(), actual.getTimeCapSeconds());

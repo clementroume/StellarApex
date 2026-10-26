@@ -153,7 +153,7 @@ class WodSecurityTest {
         TestPrincipals.of(1L, null, "ADMIN", Collections.emptyList());
     WodRequest request =
         new WodRequest(
-            "Test", null, null, null, 100L, false, null, null, null, null, null, null, null);
+            "Test", null, null, null, null, 100L, false, null, null, null, null, null, null, null);
 
     when(securityService.isAdmin(admin)).thenReturn(true);
 
@@ -169,7 +169,7 @@ class WodSecurityTest {
         TestPrincipals.of(2L, 100L, "OWNER", Collections.emptyList());
     WodRequest request =
         new WodRequest(
-            "Gym WOD", null, null, null, 100L, false, null, null, null, null, null, null, null);
+            "Gym WOD", null, null, null, null, 100L, false, null, null, null, null, null, null, null);
 
     when(securityService.isAdmin(owner)).thenReturn(false);
 
@@ -185,7 +185,7 @@ class WodSecurityTest {
         TestPrincipals.of(3L, 100L, "PROGRAMMER", Collections.emptyList());
     WodRequest request =
         new WodRequest(
-            "Prog WOD", null, null, null, 100L, false, null, null, null, null, null, null, null);
+            "Prog WOD", null, null, null, null, 100L, false, null, null, null, null, null, null, null);
 
     when(securityService.isAdmin(programmer)).thenReturn(false);
 
@@ -201,7 +201,7 @@ class WodSecurityTest {
         TestPrincipals.of(4L, 100L, "COACH", List.of("WOD_WRITE"));
     WodRequest request =
         new WodRequest(
-            "Coach WOD", null, null, null, 100L, false, null, null, null, null, null, null, null);
+            "Coach WOD", null, null, null, null, 100L, false, null, null, null, null, null, null, null);
 
     when(securityService.isAdmin(coach)).thenReturn(false);
 
@@ -217,7 +217,7 @@ class WodSecurityTest {
         TestPrincipals.of(4L, 100L, "COACH", Collections.emptyList());
     WodRequest request =
         new WodRequest(
-            "Coach WOD", null, null, null, 100L, false, null, null, null, null, null, null, null);
+            "Coach WOD", null, null, null, null, 100L, false, null, null, null, null, null, null, null);
 
     when(securityService.isAdmin(coach)).thenReturn(false);
 
@@ -233,7 +233,7 @@ class WodSecurityTest {
         TestPrincipals.of(5L, 100L, "ATHLETE", Collections.emptyList());
     WodRequest request =
         new WodRequest(
-            "User WOD", null, null, null, 100L, false, null, null, null, null, null, null, null);
+            "User WOD", null, null, null, null, 100L, false, null, null, null, null, null, null, null);
 
     when(securityService.isAdmin(user)).thenReturn(false);
 
@@ -249,7 +249,7 @@ class WodSecurityTest {
         TestPrincipals.of(2L, 200L, "OWNER", Collections.emptyList());
     WodRequest request =
         new WodRequest(
-            "Hack WOD", null, null, null, 100L, false, null, null, null, null, null, null, null);
+            "Hack WOD", null, null, null, null, 100L, false, null, null, null, null, null, null, null);
 
     when(securityService.isAdmin(owner)).thenReturn(false);
 
@@ -265,7 +265,7 @@ class WodSecurityTest {
         TestPrincipals.of(2L, 100L, "ATHLETE", Collections.emptyList());
     WodRequest request =
         new WodRequest(
-            "My WOD", null, null, 2L, null, false, null, null, null, null, null, null, null);
+            "My WOD", null, null, null, 2L, null, false, null, null, null, null, null, null, null);
 
     when(securityService.isAdmin(user)).thenReturn(false);
 
@@ -282,6 +282,7 @@ class WodSecurityTest {
     WodRequest request =
         new WodRequest(
             "Impersonation",
+            null,
             null,
             null,
             99L,
@@ -522,12 +523,12 @@ class WodSecurityTest {
     assertTrue(
         wodSecurity.canCreate(
             new WodRequest(
-                "A", null, null, null, 100L, false, null, null, null, null, null, null, null),
+                "A", null, null, null, null, 100L, false, null, null, null, null, null, null, null),
             coach));
     assertFalse(
         wodSecurity.canCreate(
             new WodRequest(
-                "B", null, null, null, 300L, false, null, null, null, null, null, null, null),
+                "B", null, null, null, null, 300L, false, null, null, null, null, null, null, null),
             coach));
   }
 
