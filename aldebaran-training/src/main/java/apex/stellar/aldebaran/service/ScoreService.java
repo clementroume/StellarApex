@@ -90,6 +90,7 @@ public class ScoreService {
     Score newScore = scoreMapper.toEntity(request);
     newScore.setWod(wod);
     newScore.setUserId(targetUserId);
+    newScore.setGymId(wod.getGymId() != null ? wod.getGymId() : request.gymId());
     newScore.setLoggedAt(LocalDateTime.now());
     normalizeAndCheck(newScore, wod);
 
@@ -121,6 +122,7 @@ public class ScoreService {
     }
 
     scoreMapper.updateEntity(request, existingScore);
+    existingScore.setGymId(wod.getGymId() != null ? wod.getGymId() : request.gymId());
     normalizeAndCheck(existingScore, wod);
 
     Score savedScore = scoreRepository.save(existingScore);
@@ -183,15 +185,18 @@ public class ScoreService {
 
   /**
    * Retrieves the leaderboard for a specific WOD and scaling level: the Personal Record of each
-   * athlete whose best score is at that level, best first.
+   * athlete whose best score is at that level, best first, optionally limited to the scores
+   * performed in one gym.
    *
    * @param wodId The ID of the WOD.
    * @param scaling The scaling level (e.g., RX, Scaled).
+   * @param gymId The gym to keep, or null for every gym.
    * @param pageable Pagination information.
    * @return A slice of ScoreResponse objects representing the leaderboard.
    */
   @Transactional(readOnly = true)
-  public Slice<ScoreResponse> getLeaderboard(Long wodId, ScalingLevel scaling, Pageable pageable) {
+  public Slice<ScoreResponse> getLeaderboard(
+      Long wodId, ScalingLevel scaling, Long gymId, Pageable pageable) {
     WodResponse wod = wodService.getWodDetail(wodId);
 
     Pageable sortedPageable =
@@ -200,9 +205,13 @@ public class ScoreService {
             pageable.getPageSize(),
             ScoreRanking.leaderboardSort(wod.scoreType()));
 
-    return scoreRepository
-        .findByWodIdAndScalingAndPersonalRecordTrue(wodId, scaling, sortedPageable)
-        .map(scoreMapper::toResponse);
+    Slice<Score> scores =
+        gymId == null
+            ? scoreRepository.findByWodIdAndScalingAndPersonalRecordTrue(
+                wodId, scaling, sortedPageable)
+            : scoreRepository.findByWodIdAndScalingAndGymIdAndPersonalRecordTrue(
+                wodId, scaling, gymId, sortedPageable);
+    return scores.map(scoreMapper::toResponse);
   }
 
   /** Retrieves reference data for WOD Score forms. */
