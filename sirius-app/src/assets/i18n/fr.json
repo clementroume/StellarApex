@@ -469,7 +469,10 @@
       "HEIGHT_MEN": "Hauteur (hommes)",
       "HEIGHT_WOMEN": "Hauteur (femmes)",
       "CALORIES_MEN": "Calories (hommes)",
-      "CALORIES_WOMEN": "Calories (femmes)"
+      "CALORIES_WOMEN": "Calories (femmes)",
+      "TIEBREAK": "Tie-break",
+      "TIEBREAK_FR": "Tie-break (français)",
+      "TIEBREAK_EN": "Tie-break (anglais)"
     },
     "PLACEHOLDERS": {
       "TITLE": "Ex : Fran",
@@ -477,7 +480,8 @@
       "DESCRIPTION": "Déroulé du WOD...",
       "NOTES": "Consignes pour le coach ou l'athlète...",
       "REPS": "Ex : 21-15-9",
-      "MOVEMENT_SEARCH": "Rechercher par nom ou abréviation (ex : HSPU)"
+      "MOVEMENT_SEARCH": "Rechercher par nom ou abréviation (ex : HSPU)",
+      "TIEBREAK": "Seulement pour les WOD de compétition, ex. « Temps à la fin de la dernière série de wall walks complète »"
     },
     "VISIBILITY": {
       "PUBLIC": "Public",
@@ -527,7 +531,8 @@
       "LOAD": "Charge totale",
       "CALORIES": "Calories",
       "DISTANCE": "Distance",
-      "NONE": "Aucun score (Pour la qualité)"
+      "NONE": "Aucun score (Pour la qualité)",
+      "ROUNDS": "Tours"
     },
     "UNIT_TYPES": {
       "MASS": "Masse / Poids",
@@ -575,7 +580,11 @@
       "DISTANCE": "Distance",
       "UNIT": "Unité",
       "SCALING_NOTES": "Adaptations",
-      "COMMENT": "Commentaire"
+      "COMMENT": "Commentaire",
+      "ROUNDS_ON_MINUTE": "Tours réalisés dans la minute",
+      "MAX": "max {{max}}",
+      "TIEBREAK": "Temps de tie-break",
+      "TIEBREAK_OPTIONAL": "Tie-break (compétition, facultatif)"
     },
     "PLACEHOLDERS": {
       "SCALING_NOTES": "ex. thrusters à 35 kg, tractions avec élastique"
@@ -599,8 +608,10 @@
       "SAVE_ERROR": "Le score n'a pas pu être enregistré.",
       "FORBIDDEN": "Vous n'avez pas le droit de modifier ce score.",
       "CONFIRM_DELETE": "Supprimer ce score ?",
-      "DONE_HINT": "Ce WOD n'a pas de résultat mesuré : enregistrez-le pour garder une trace de la séance."
-    }
+      "DONE_HINT": "Ce WOD n'a pas de résultat mesuré : enregistrez-le pour garder une trace de la séance.",
+      "ROUNDS_HINT": "Les tours faits après avoir décroché du chrono ne comptent pas."
+    },
+    "TIEBREAK_SHORT": "TB {{time}}"
   },
   "ADMIN": {
     "SUPPORT": {

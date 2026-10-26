@@ -54,6 +54,12 @@ describe('ScoreHistoryComponent', () => {
     expect(text).toContain('Tough one');
   });
 
+  it('should show the optional tiebreak time', () => {
+    scores.set([{...score(1, true), tiebreakSeconds: 1105}]);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).toContain('SCORE.TIEBREAK_SHORT');
+  });
+
   it('should offer edit and delete only when Aldebaran allows it', () => {
     scores.set([score(1, false)]);
     fixture.detectChanges();

@@ -49,6 +49,9 @@ export interface WodRequest {
   descriptionFr?: string;
   notesEn?: string;
   notesFr?: string;
+  // --- Official tiebreak (EN / FR), only for WODs that define one ---
+  tiebreakEn?: string;
+  tiebreakFr?: string;
   // --- Structure and Prescription ---
   timeCapSeconds?: number;
   emomInterval?: number;
@@ -73,6 +76,9 @@ export interface WodResponse {
   descriptionFr?: string;
   notesEn?: string;
   notesFr?: string;
+  // --- Official tiebreak (EN / FR), only for WODs that define one ---
+  tiebreakEn?: string;
+  tiebreakFr?: string;
   // --- Structure and Prescription ---
   timeCapSeconds?: number;
   emomInterval?: number;

@@ -61,6 +61,18 @@
           </label>
         </div>
       }
+      @case ('ROUNDS') {
+        <label class="form-control w-full">
+          <div class="label justify-between">
+            <span class="label-text">{{ 'SCORE.FIELDS.ROUNDS_ON_MINUTE' | translate }}</span>
+            @if (maxRounds(); as max) {
+              <span class="label-text-alt">{{ 'SCORE.FIELDS.MAX' | translate: {max: max} }}</span>
+            }
+          </div>
+          <input type="number" min="0" [max]="maxRounds()" formControlName="rounds" class="input input-bordered w-full"/>
+          <div class="label"><span class="label-text-alt opacity-70">{{ 'SCORE.MESSAGES.ROUNDS_HINT' | translate }}</span></div>
+        </label>
+      }
       @case ('REPS') {
         <label class="form-control w-full">
           <div class="label"><span class="label-text">{{ 'SCORE.FIELDS.REPS' | translate }}</span></div>
@@ -104,6 +116,25 @@
       @default {
         <p class="text-sm opacity-70">{{ 'SCORE.MESSAGES.DONE_HINT' | translate }}</p>
       }
+    }
+
+    @if (showTiebreak()) {
+      <details id="tiebreak" class="collapse collapse-arrow border border-base-300 rounded-box" [open]="hasTiebreak()">
+        <summary class="collapse-title text-sm font-semibold">{{ 'SCORE.FIELDS.TIEBREAK_OPTIONAL' | translate }}</summary>
+        <div class="collapse-content flex flex-col gap-2">
+          <p class="text-sm opacity-70">{{ tiebreakRule() }}</p>
+          <div class="grid grid-cols-2 gap-4">
+            <label class="form-control w-full">
+              <div class="label"><span class="label-text">{{ 'SCORE.FIELDS.MINUTES' | translate }}</span></div>
+              <input type="number" min="0" formControlName="tiebreakMinutes" class="input input-bordered w-full"/>
+            </label>
+            <label class="form-control w-full">
+              <div class="label"><span class="label-text">{{ 'SCORE.FIELDS.SECONDS' | translate }}</span></div>
+              <input type="number" min="0" max="59" formControlName="tiebreakSeconds" class="input input-bordered w-full"/>
+            </label>
+          </div>
+        </div>
+      </details>
     }
 
     @if (!isRx()) {

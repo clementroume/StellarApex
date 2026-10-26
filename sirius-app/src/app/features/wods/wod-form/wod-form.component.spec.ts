@@ -127,6 +127,23 @@ describe('WodFormComponent', () => {
   describe('create mode', () => {
     beforeEach(async () => setup(null));
 
+    it('should propose the usual score type of the format until the user picks one', () => {
+      component.wodForm.controls.wodType.setValue('EMOM');
+      expect(component.wodForm.controls.scoreType.value).toBe('ROUNDS');
+      component.wodForm.controls.wodType.setValue('FOR_TIME');
+      expect(component.wodForm.controls.scoreType.value).toBe('TIME');
+
+      component.wodForm.controls.scoreType.setValue('REPS');
+      component.wodForm.controls.scoreType.markAsDirty();
+      component.wodForm.controls.wodType.setValue('AMRAP');
+      expect(component.wodForm.controls.scoreType.value).toBe('REPS');
+    });
+
+    it('should send the optional tiebreak texts', () => {
+      component.wodForm.patchValue({tiebreakFr: ' Dernière série complète ', tiebreakEn: ''});
+      expect(component.buildPayload()).toMatchObject({tiebreakFr: 'Dernière série complète', tiebreakEn: undefined});
+    });
+
     it('should load reference data and sort the movements alphabetically', () => {
       expect(component.isEditMode()).toBe(false);
       expect(component.wodTypes()).toEqual(['AMRAP', 'EMOM', 'FOR_TIME']);

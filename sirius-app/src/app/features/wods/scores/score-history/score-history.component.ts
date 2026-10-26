@@ -5,6 +5,7 @@ import {ScoreResponse} from '../../../../api/aldebaran/models/score.model';
 import {UnitService} from '../../../../core/services/unit.service';
 import {WodScoresStore} from '../wod-scores.store';
 import {formatScore} from '../score.utils';
+import {formatDuration} from '../../wod.utils';
 
 /** The current user's scores on the WOD, newest first, with edit/delete when Aldebaran allows it. */
 @Component({
@@ -24,6 +25,10 @@ export class ScoreHistoryComponent {
   value(score: ScoreResponse): string {
     const wod = this.store.wod();
     return wod ? formatScore(score, wod.scoreType, this.unitService, (k, p) => this.translate.instant(k, p)) : '';
+  }
+
+  duration(seconds: number): string {
+    return formatDuration(seconds);
   }
 
   /** "26 Oct 2026" / "26 oct. 2026", in the language shown. */

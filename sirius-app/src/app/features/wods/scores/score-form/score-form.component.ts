@@ -1,13 +1,13 @@
 import {ChangeDetectionStrategy, Component, computed, effect, inject} from '@angular/core';
 import {toSignal} from '@angular/core/rxjs-interop';
 import {FormBuilder, ReactiveFormsModule} from '@angular/forms';
-import {TranslatePipe} from '@ngx-translate/core';
+import {TranslatePipe, TranslateService} from '@ngx-translate/core';
 import {NgIconComponent} from '@ng-icons/core';
 import {ScalingLevel, ScoreRequest, ScoreResponse} from '../../../../api/aldebaran/models/score.model';
 import {UnitService} from '../../../../core/services/unit.service';
 import {WodScoresStore} from '../wod-scores.store';
 import {SCALING_LEVELS} from '../score.utils';
-import {formatTimeCapShort} from '../../wod.utils';
+import {formatTimeCapShort, localizedText} from '../../wod.utils';
 
 /** Units offered for a distance score (stored in meters by Aldebaran). */
 const DISTANCE_UNITS = ['METERS', 'KILOMETERS', 'MILES'];
@@ -35,6 +35,7 @@ export class ScoreFormComponent {
   readonly store = inject(WodScoresStore);
   private readonly fb = inject(FormBuilder);
   private readonly unitService = inject(UnitService);
+  private readonly translate = inject(TranslateService);
 
   // --- STATE (SIGNALS & VARIABLES) ---
   readonly scalingLevels = SCALING_LEVELS;
@@ -53,6 +54,8 @@ export class ScoreFormComponent {
     distance: [null as number | null],
     distanceUnit: ['METERS'],
     calories: [null as number | null],
+    tiebreakMinutes: [null as number | null],
+    tiebreakSeconds: [null as number | null],
     scalingNotes: [''],
     userComment: ['']
   });
@@ -63,6 +66,7 @@ export class ScoreFormComponent {
   // --- COMPUTED STATE ---
   readonly timeCapped = computed(() => !!this.formValue().timeCapped);
   readonly isRx = computed(() => this.formValue().scaling === 'RX');
+  readonly hasTiebreak = computed(() => !!(this.formValue().tiebreakMinutes || this.formValue().tiebreakSeconds));
   readonly valueMissing = computed(() => {
     this.formValue();
     return this.isValueMissing();
@@ -71,6 +75,17 @@ export class ScoreFormComponent {
   readonly isEdit = computed(() => this.store.editing() !== 'new');
   readonly massUnitLabel = computed(() => this.unitService.massUnit() === 'KG' ? 'kg' : 'lb');
   readonly timeCap = computed(() => formatTimeCapShort(this.store.wod()?.timeCapSeconds));
+  /** Rounds of the EMOM, the best possible ROUNDS score. */
+  readonly maxRounds = computed(() => this.store.wod()?.emomRounds ?? null);
+  /** Official tiebreak rule of the WOD, in the user's language; none for most WODs. */
+  readonly tiebreakRule = computed(() => {
+    const wod = this.store.wod();
+    const lang = this.translate.currentLang() ?? this.translate.fallbackLang() ?? 'en';
+    return localizedText(lang, wod?.tiebreakEn, wod?.tiebreakFr);
+  });
+  /** The tiebreak is optional and only offered when it applies: never for a finished For Time. */
+  readonly showTiebreak = computed(() =>
+    !!this.tiebreakRule() && (this.scoreType() !== 'TIME' || this.timeCapped()));
 
   // --- LIFECYCLE ---
   constructor() {
@@ -96,6 +111,10 @@ export class ScoreFormComponent {
         return v.timeCapped ? v.reps == null : !((v.minutes ?? 0) * 60 + (v.seconds ?? 0));
       case 'ROUNDS_REPS':
         return v.rounds == null && v.reps == null;
+      case 'ROUNDS': {
+        const max = this.maxRounds();
+        return v.rounds == null || (max != null && v.rounds > max);
+      }
       case 'REPS':
         return v.reps == null;
       case 'WEIGHT':
@@ -124,6 +143,8 @@ export class ScoreFormComponent {
       distance: score.totalDistance ?? null,
       distanceUnit: score.distanceUnit && DISTANCE_UNITS.includes(score.distanceUnit) ? score.distanceUnit : 'METERS',
       calories: score.totalCalories ?? null,
+      tiebreakMinutes: score.tiebreakSeconds ? Math.floor(score.tiebreakSeconds / 60) : null,
+      tiebreakSeconds: score.tiebreakSeconds ? score.tiebreakSeconds % 60 : null,
       scalingNotes: score.scalingNotes ?? '',
       userComment: score.userComment ?? ''
     });
@@ -133,11 +154,13 @@ export class ScoreFormComponent {
     const v = this.form.getRawValue();
     const type = this.scoreType();
     const capped = type === 'TIME' && v.timeCapped;
+    const tiebreak = (v.tiebreakMinutes ?? 0) * 60 + (v.tiebreakSeconds ?? 0);
     const request: ScoreRequest = {
       date: v.date,
       wodId,
       scaling: v.scaling,
       timeCapped: capped,
+      tiebreakSeconds: this.showTiebreak() && tiebreak > 0 ? tiebreak : undefined,
       scalingNotes: v.scaling === 'RX' ? undefined : v.scalingNotes.trim() || undefined,
       userComment: v.userComment.trim() || undefined
     };
@@ -148,6 +171,8 @@ export class ScoreFormComponent {
           : {...request, timeMinutes: v.minutes ?? 0, timeSeconds: v.seconds ?? 0};
       case 'ROUNDS_REPS':
         return {...request, rounds: v.rounds ?? 0, reps: v.reps ?? 0};
+      case 'ROUNDS':
+        return {...request, rounds: v.rounds ?? undefined};
       case 'REPS':
         return {...request, reps: v.reps ?? undefined};
       case 'WEIGHT':

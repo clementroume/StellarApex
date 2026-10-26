@@ -469,7 +469,10 @@
       "HEIGHT_MEN": "Height (men)",
       "HEIGHT_WOMEN": "Height (women)",
       "CALORIES_MEN": "Calories (men)",
-      "CALORIES_WOMEN": "Calories (women)"
+      "CALORIES_WOMEN": "Calories (women)",
+      "TIEBREAK": "Tiebreak",
+      "TIEBREAK_FR": "Tiebreak (French)",
+      "TIEBREAK_EN": "Tiebreak (English)"
     },
     "PLACEHOLDERS": {
       "TITLE": "E.g. Fran",
@@ -477,7 +480,8 @@
       "DESCRIPTION": "WOD flow...",
       "NOTES": "Instructions for the coach or athlete...",
       "REPS": "E.g. 21-15-9",
-      "MOVEMENT_SEARCH": "Search by name or abbreviation (e.g. HSPU)"
+      "MOVEMENT_SEARCH": "Search by name or abbreviation (e.g. HSPU)",
+      "TIEBREAK": "Only for competition WODs, e.g. \"Time after the last full set of wall walks\""
     },
     "VISIBILITY": {
       "PUBLIC": "Public",
@@ -527,7 +531,8 @@
       "LOAD": "Total Load",
       "CALORIES": "Calories",
       "DISTANCE": "Distance",
-      "NONE": "None (For Quality)"
+      "NONE": "None (For Quality)",
+      "ROUNDS": "Rounds"
     },
     "UNIT_TYPES": {
       "MASS": "Mass / Weight",
@@ -575,7 +580,11 @@
       "DISTANCE": "Distance",
       "UNIT": "Unit",
       "SCALING_NOTES": "Scaling",
-      "COMMENT": "Comment"
+      "COMMENT": "Comment",
+      "ROUNDS_ON_MINUTE": "Rounds completed on the minute",
+      "MAX": "max {{max}}",
+      "TIEBREAK": "Tiebreak time",
+      "TIEBREAK_OPTIONAL": "Tiebreak (competition, optional)"
     },
     "PLACEHOLDERS": {
       "SCALING_NOTES": "e.g. 35 kg thrusters, banded pull-ups"
@@ -599,8 +608,10 @@
       "SAVE_ERROR": "The score could not be saved.",
       "FORBIDDEN": "You are not allowed to change this score.",
       "CONFIRM_DELETE": "Delete this score?",
-      "DONE_HINT": "This WOD has no measured result: log it to keep track of the session."
-    }
+      "DONE_HINT": "This WOD has no measured result: log it to keep track of the session.",
+      "ROUNDS_HINT": "Rounds done after falling behind the clock do not count."
+    },
+    "TIEBREAK_SHORT": "TB {{time}}"
   },
   "ADMIN": {
     "SUPPORT": {

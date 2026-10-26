@@ -34,6 +34,10 @@ describe('formatScore', () => {
       .toBe('5 KILOMETERS');
   });
 
+  it('should write the rounds completed on the minute of an EMOM', () => {
+    expect(formatScore(score({rounds: 24}), 'ROUNDS', units, t)).toBe('SCORE.DISPLAY.ROUNDS {"rounds":24}');
+  });
+
   it('should write reps, calories and a done WOD', () => {
     expect(formatScore(score({reps: 150}), 'REPS', units, t)).toBe('SCORE.DISPLAY.REPS {"reps":150}');
     expect(formatScore(score({totalCalories: 86}), 'CALORIES', units, t)).toBe('86 cal');

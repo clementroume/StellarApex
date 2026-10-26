@@ -59,6 +59,7 @@ export class WodDetailComponent {
 
   description = computed(() => localizedText(this.activeLang(), this.wod()?.descriptionEn, this.wod()?.descriptionFr));
   notes = computed(() => localizedText(this.activeLang(), this.wod()?.notesEn, this.wod()?.notesFr));
+  tiebreak = computed(() => localizedText(this.activeLang(), this.wod()?.tiebreakEn, this.wod()?.tiebreakFr));
   sortedMovements = computed<WodMovementResponse[]>(() =>
     [...(this.wod()?.movements ?? [])].sort((a, b) => a.orderIndex - b.orderIndex)
   );

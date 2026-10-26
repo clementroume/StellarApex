@@ -19,6 +19,11 @@
                 <span class="text-sm text-base-content/70">{{ date(score) }}</span>
                 <span class="font-bold">{{ value(score) }}</span>
                 <span class="badge badge-sm badge-soft">{{ 'SCORE.SCALING.' + score.scaling | translate }}</span>
+                @if (score.tiebreakSeconds) {
+                  <span class="text-sm text-base-content/70" [title]="'SCORE.FIELDS.TIEBREAK' | translate">
+                    {{ 'SCORE.TIEBREAK_SHORT' | translate: {time: duration(score.tiebreakSeconds)} }}
+                  </span>
+                }
                 @if (score.personalRecord) {
                   <span class="badge badge-sm badge-warning badge-soft gap-1">
                     <ng-icon name="heroTrophy"></ng-icon>{{ 'SCORE.PR' | translate }}

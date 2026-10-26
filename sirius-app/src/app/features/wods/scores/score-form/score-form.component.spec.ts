@@ -16,8 +16,8 @@ describe('ScoreFormComponent', () => {
   let editing: WritableSignal<ScoreResponse | 'new' | null>;
   let store: any;
 
-  const init = (scoreType: string, edit: ScoreResponse | 'new' = 'new') => {
-    wod.set({id: 7, scoreType, timeCapSeconds: 600});
+  const init = (scoreType: string, edit: ScoreResponse | 'new' = 'new', extra: object = {}) => {
+    wod.set({id: 7, scoreType, timeCapSeconds: 600, ...extra});
     editing.set(edit);
     fixture = TestBed.createComponent(ScoreFormComponent);
     component = fixture.componentInstance;
@@ -114,5 +114,36 @@ describe('ScoreFormComponent', () => {
     (fixture.nativeElement.querySelector('.modal-action .btn-ghost') as HTMLButtonElement).click();
     expect(store.close).toHaveBeenCalled();
     expect(component.isValueMissing()).toBe(false);
+  });
+
+  it('should send the rounds on the minute of an EMOM, at most its rounds', () => {
+    init('ROUNDS', 'new', {emomRounds: 30});
+    component.form.patchValue({rounds: 31});
+    expect(component.isValueMissing()).toBe(true);
+
+    component.form.patchValue({rounds: 24});
+    component.onSubmit();
+    expect(store.save).toHaveBeenCalledWith(expect.objectContaining({rounds: 24}));
+    expect(fixture.nativeElement.textContent).toContain('SCORE.FIELDS.ROUNDS_ON_MINUTE');
+  });
+
+  it('should offer the optional tiebreak only for a WOD that has one, and only when capped on a For Time', () => {
+    init('TIME', 'new', {tiebreakEn: 'Last full set'});
+    expect(component.showTiebreak()).toBe(false);
+
+    component.form.patchValue({timeCapped: true, reps: 180, tiebreakMinutes: 18, tiebreakSeconds: 25});
+    fixture.detectChanges();
+    expect(component.showTiebreak()).toBe(true);
+    expect(fixture.nativeElement.querySelector('#tiebreak').textContent).toContain('Last full set');
+    component.onSubmit();
+    expect(store.save).toHaveBeenLastCalledWith(expect.objectContaining({reps: 180, tiebreakSeconds: 1105}));
+  });
+
+  it('should never require nor send a tiebreak that is left empty, and none for a WOD without one', () => {
+    init('REPS', 'new', {tiebreakFr: 'Dernière série'});
+    expect(component.showTiebreak()).toBe(true);
+    component.form.patchValue({reps: 200});
+    component.onSubmit();
+    expect(store.save.mock.lastCall[0].tiebreakSeconds).toBeUndefined();
   });
 });

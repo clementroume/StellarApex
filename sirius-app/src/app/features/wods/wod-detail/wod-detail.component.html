@@ -85,6 +85,12 @@
                 <p class="leading-relaxed text-sm md:text-base whitespace-pre-line">{{ notes() }}</p>
               </div>
             }
+            @if (tiebreak()) {
+              <div id="tiebreak">
+                <h4 class="text-sm font-semibold text-base-content/70 mb-2">{{ 'WOD.FIELDS.TIEBREAK' | translate }}</h4>
+                <p class="leading-relaxed text-sm md:text-base whitespace-pre-line">{{ tiebreak() }}</p>
+              </div>
+            }
           </app-detail-card>
         </div>
 

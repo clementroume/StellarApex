@@ -299,6 +299,14 @@ describe('WodDetailComponent', () => {
       expect(component.scaling(thruster)).toBe('Lighter barbell');
     });
 
+    it('should show the official tiebreak only when the WOD has one', () => {
+      init();
+      expect(fixture.nativeElement.querySelector('#tiebreak')).toBeNull();
+
+      init(buildWod({tiebreakEn: 'Time after the last full set'}));
+      expect(fixture.nativeElement.querySelector('#tiebreak').textContent).toContain('Time after the last full set');
+    });
+
     it('should not number the movements on the board', () => {
       init();
       const board: HTMLElement = fixture.nativeElement;

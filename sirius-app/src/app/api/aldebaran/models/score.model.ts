@@ -31,6 +31,8 @@ export interface ScoreRequest {
   // --- Performance Context ---
   scaling: ScalingLevel;
   timeCapped: boolean;
+  /** Optional official tiebreak time (elapsed seconds), kept only for WODs that define one. */
+  tiebreakSeconds?: number;
   // --- Comments and Scaling notes---
   userComment?: string;
   scalingNotes?: string;
@@ -62,6 +64,7 @@ export interface ScoreResponse {
   // --- Performance Context ---
   scaling: ScalingLevel;
   timeCapped: boolean;
+  tiebreakSeconds?: number;
   personalRecord: boolean;
   // --- Comments and Scaling notes---
   userComment?: string;
