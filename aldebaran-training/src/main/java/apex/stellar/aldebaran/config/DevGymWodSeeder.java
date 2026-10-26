@@ -162,9 +162,7 @@ public class DevGymWodSeeder implements ApplicationRunner {
                 .descriptionEn("As many rounds as possible in 12 minutes.")
                 .descriptionFr("Le plus de tours possible en 12 minutes."),
             mv("Wall-ball Shot", "10").weight(9.0).weightFemale(6.0).weightUnit(Unit.KG),
-            mv("Box Jump", "10")
-                .notesEn("60 cm box. Women: 50 cm")
-                .notesFr("Box de 60 cm. Femmes : 50 cm"),
+            mv("Box Jump", "10").height(60.0).heightFemale(50.0).heightUnit(Unit.CENTIMETERS),
             mv("American Kettlebell Swing", "10")
                 .weight(24.0)
                 .weightFemale(16.0)
@@ -224,7 +222,11 @@ public class DevGymWodSeeder implements ApplicationRunner {
                 .emomRounds(16)
                 .descriptionEn("Odd minutes: row. Even minutes: toes-to-bar.")
                 .descriptionFr("Minutes impaires : rameur. Minutes paires : toes-to-bar."),
-            mv("Rowing", null).calories(15).notesEn("Odd minutes").notesFr("Minutes impaires"),
+            mv("Rowing", null)
+                .calories(15)
+                .caloriesFemale(12)
+                .notesEn("Odd minutes")
+                .notesFr("Minutes impaires"),
             mv("Toes-to-Bar", "12").notesEn("Even minutes").notesFr("Minutes paires")));
     wods.add(
         wod(
