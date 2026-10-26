@@ -95,6 +95,22 @@ of them:
 
 Rules live in `security/WodSecurity` and `security/ScoreSecurity`, used from `@PreAuthorize`.
 
+## Catalog Model
+
+* **Muscles**: a region (`muscleGroup`: `LEGS`, `BACK`, `CHEST`, `SHOULDERS`, `ARMS`, `CORE`) and an
+  optional functional group (`parent`, e.g. Rectus Femoris in Quadriceps Femoris). One level only,
+  same region as the group (409 otherwise). A movement targets a group, or one of its muscles when
+  that muscle has its own action (e.g. Rectus Femoris as synergist of hip flexion).
+* **Movements**: variants are the `equipment` and `techniques` of the movement (Ring Dip = Dip +
+  `RINGS`), never a new movement or a note. "Any style" movements match WOD prescriptions (Clean,
+  Snatch, Shoulder-to-Overhead, Ground-to-Overhead). Coaching cues: one cue per line.
+* **WOD movements**: their equipment and techniques must be allowed by the movement
+  (`WodMovement.checkVariantsAllowed`): 400 on create/update, also enforced when reading the CSVs.
+* **WOD types**: `AMRAP`, `EMOM`, `FOR_TIME`, `TABATA`, `STRENGTH`, `SKILL`, `ACCESSORY`, `CHIPPER`,
+  `GIRLS`, `HERO`, `BENCHMARK` (official CrossFit benchmarks: Fight Gone Bad, Filthy Fifty...),
+  `CUSTOM_BENCHMARK` (a gym's flagship WODs), `OPEN`, `QUARTERFINALS`, `SEMIFINALS`, `GAMES`,
+  `CUSTOM`.
+
 ## API Endpoints
 
 ### Muscles (`/aldebaran/muscles`) and Movements (`/aldebaran/movements`)
@@ -134,13 +150,17 @@ Rules live in `security/WodSecurity` and `security/ScoreSecurity`, used from `@P
 
 ## Catalog Backup (Development)
 
-While the software is being developed, muscles, movements and public benchmark WODs (Girls, Heroes,
-Open, Games) are edited in the Sirius UI, then exported to CSV with the endpoints above. The CSV
+While the software is being developed, muscles, movements and public reference WODs (Girls, Heroes,
+CrossFit benchmarks, Open, Quarterfinals, Semifinals, Games) are edited in the Sirius UI, then exported to CSV with the endpoints above. The CSV
 files are a local backup of the latest catalog: if the database is reset, `config/DataSeeder`
 reloads muscles and movements into empty tables, then the WODs when no public WOD exists (public,
 no author, no gym). The CSV files are git-ignored (never pushed); on a fresh clone the catalog
 starts empty. This mechanism (export endpoints, source volume, CSV seeding) is temporary.
 
+* `muscles.csv`: `medical_name,muscle_group,parent,common_name_en,common_name_fr,description_en,description_fr,image_url`
+  (`parent` = medical name of the functional group, linked once every muscle is saved).
+* `movements.csv`: equipment, techniques and muscles (`agonists`, `synergists`, `stabilizers`) are
+  lists separated by `, `.
 * `wods.csv`: `title,wod_type,score_type,rep_scheme,time_cap_seconds,emom_interval,emom_rounds,description,notes`
 * `wod_movements.csv`: `wod_title,order_index,movement_name,reps_scheme,weight,weight_unit,distance,distance_unit,duration_seconds,calories,notes,scaling_options`,
   plus optional `duration_display_unit,equipment,techniques` (lists separated by `|`).

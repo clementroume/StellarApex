@@ -92,6 +92,9 @@ their accounts (Antares), gym WODs for them (Aldebaran).
   `antares` / `aldebaran`, `ddl-auto=validate`); never edit an applied migration.
 - Default branch `main`; dependabot opens most PRs. Branch before committing; commit only when asked.
 - Frontend DTOs in `sirius-app/src/app/api/**/models` mirror backend DTOs: change both together.
+- Catalog: a movement variant is the `equipment` / `techniques` of the movement and of the WOD movement
+  (Aldebaran rejects values the movement does not allow), never a new movement or a note. Muscles have
+  one functional group level (`parent`, same region). Never use a movement name absent from the catalog.
 
 ## Gotchas
 

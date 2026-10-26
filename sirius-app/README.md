@@ -60,6 +60,16 @@ The backends enforce every rule; Sirius only adapts what it shows:
   screen and are never saved to the user's account; when the session expires the
   app reloads the admin identity instead of refreshing tokens.
 
+## Catalog Screens
+
+* **WOD form**: the movement is picked in a search box (name, abbreviation shown in the suggestions).
+  The movement's allowed equipment and techniques then appear as toggle chips (loaded from
+  `GET /aldebaran/movements/{id}`); changing the movement clears them. Aldebaran rejects any other
+  value.
+* **Muscles**: the list groups muscles by region, each functional group followed by its muscles; the
+  form picks the group among the top-level muscles of the same region; a movement detail explains a
+  group (its muscles) or a member (its group) in a tooltip. Coaching cues keep their line breaks.
+
 ## Docker
 
 The image is built as part of the root `docker-compose.yml`:
