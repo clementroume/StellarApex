@@ -244,7 +244,7 @@ class DtoLocalizationTest {
   @DisplayName("PreferencesUpdateRequest: EN & FR validation")
   void testPreferencesUpdateRequest() {
     // Given
-    PreferencesUpdateRequest request = new PreferencesUpdateRequest("bad", "blue");
+    PreferencesUpdateRequest request = new PreferencesUpdateRequest("bad", "blue", "kg");
 
     // When (English)
     Locale.setDefault(Locale.ENGLISH);
@@ -253,6 +253,7 @@ class DtoLocalizationTest {
     assertViolation(
         violationsEn, "locale", "Locale must be in a valid format (e.g., 'en' or 'en-US')");
     assertViolation(violationsEn, "theme", "Theme must be either 'light' or 'dark'");
+    assertViolation(violationsEn, "unitSystem", "Unit system must be METRIC or IMPERIAL.");
 
     // When (French)
     Locale.setDefault(Locale.FRENCH);
@@ -263,13 +264,15 @@ class DtoLocalizationTest {
         "locale",
         "La locale doit être dans un format valide (ex : 'fr' ou 'fr-FR').");
     assertViolation(violationsFr, "theme", "Le thème doit être 'light' ou 'dark'.");
+    assertViolation(
+        violationsFr, "unitSystem", "Le système d'unités doit être METRIC ou IMPERIAL.");
   }
 
   @Test
   @DisplayName("PreferencesUpdateRequest: Required fields (EN & FR)")
   void testPreferencesUpdateRequest_Required() {
     // Given
-    PreferencesUpdateRequest request = new PreferencesUpdateRequest(null, "");
+    PreferencesUpdateRequest request = new PreferencesUpdateRequest(null, "", null);
 
     // When (English)
     Locale.setDefault(Locale.ENGLISH);

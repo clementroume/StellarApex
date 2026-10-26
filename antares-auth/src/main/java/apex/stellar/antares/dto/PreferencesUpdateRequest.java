@@ -24,4 +24,11 @@ public record PreferencesUpdateRequest(
             allowableValues = {"light", "dark"})
         @NotBlank(message = "{validation.theme.required}")
         @Pattern(regexp = "^(light|dark)$", message = "{validation.theme.pattern}")
-        String theme) {}
+        String theme,
+    @Schema(
+            description = "Display unit for loads; null follows the language (fr: kg)",
+            example = "METRIC",
+            nullable = true,
+            allowableValues = {"METRIC", "IMPERIAL"})
+        @Pattern(regexp = "^(METRIC|IMPERIAL)$", message = "{validation.unitSystem.pattern}")
+        String unitSystem) {}
