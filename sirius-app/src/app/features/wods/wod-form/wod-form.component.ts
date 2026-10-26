@@ -68,6 +68,9 @@ export class WodFormComponent implements OnInit {
 
   massUnits = computed(() => this.unitGroups()['MASS'] ?? []);
   distanceUnits = computed(() => this.unitGroups()['DISTANCE'] ?? []);
+  // Box and target heights: cm / in for boxes, m / ft for wall-ball targets
+  heightUnits = computed(() =>
+    ['CENTIMETERS', 'INCHES', 'METERS', 'FEET'].filter(u => this.distanceUnits().includes(u)));
 
   /** Gyms where the user may program WODs (WOD_WRITE), as Aldebaran checks on creation. */
   writableGyms = computed(() => this.accessService.gymsWithPermission('WOD_WRITE'));
@@ -166,6 +169,10 @@ export class WodFormComponent implements OnInit {
       durationSeconds: [source?.durationSeconds ?? null as number | null, [Validators.min(0)]],
       durationDisplayUnit: [source?.durationDisplayUnit ?? null as string | null],
       calories: [source?.calories ?? null as number | null, [Validators.min(0)]],
+      caloriesFemale: [source?.caloriesFemale ?? null as number | null, [Validators.min(0)]],
+      height: [source?.height ?? null as number | null, [Validators.min(0)]],
+      heightFemale: [source?.heightFemale ?? null as number | null, [Validators.min(0)]],
+      heightUnit: [source?.heightUnit ?? (this.unitService.massUnit() === 'KG' ? 'CENTIMETERS' : 'INCHES')],
       // Variants: only values allowed by the movement (checked again by Aldebaran)
       equipment: [source?.equipment ?? null as string[] | null],
       techniques: [source?.techniques ?? null as string[] | null],
@@ -356,6 +363,10 @@ export class WodFormComponent implements OnInit {
       distance: m.distance ?? undefined,
       distanceUnit: m.distance == null ? undefined : m.distanceUnit,
       calories: m.calories ?? undefined,
+      caloriesFemale: m.caloriesFemale ?? undefined,
+      height: m.height ?? undefined,
+      heightFemale: m.heightFemale ?? undefined,
+      heightUnit: m.height == null && m.heightFemale == null ? undefined : m.heightUnit,
       // --- Characteristics ---
       equipment: m.equipment ?? undefined,
       techniques: m.techniques ?? undefined,

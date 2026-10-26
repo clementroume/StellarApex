@@ -102,6 +102,11 @@ export interface WodMovementRequest {
   distance?: number;
   distanceUnit?: string;
   calories?: number;
+  caloriesFemale?: number;
+  // Box or target height (men's, women's), in heightUnit
+  height?: number;
+  heightFemale?: number;
+  heightUnit?: string;
   // --- Characteristics ---
   equipment?: string[];
   techniques?: string[];
@@ -128,6 +133,11 @@ export interface WodMovementResponse {
   distance?: number;
   distanceUnit?: string;
   calories?: number;
+  caloriesFemale?: number;
+  // Box or target height (men's, women's), in heightUnit
+  height?: number;
+  heightFemale?: number;
+  heightUnit?: string;
   // --- Characteristics ---
   equipment?: string[];
   techniques?: string[];

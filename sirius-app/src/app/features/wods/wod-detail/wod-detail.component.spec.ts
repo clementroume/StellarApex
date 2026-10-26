@@ -45,6 +45,9 @@ describe('WodDetailComponent', () => {
     ...overrides
   });
 
+  // Unit conversion is tested in UnitService: "43/30 KG"
+  const pair = (v?: number | null, f?: number | null, u?: string | null) => v == null ? '' : `${v}${f ? '/' + f : ''} ${u}`;
+
   const init = (wod: WodResponse = buildWod()) => {
     mockWodService.getWod.mockReturnValue(of(wod));
     fixture = TestBed.createComponent(WodDetailComponent);
@@ -79,7 +82,10 @@ describe('WodDetailComponent', () => {
         {provide: WodService, useValue: mockWodService},
         {
           provide: UnitService,
-          useValue: {formatLoad: (w?: number, f?: number, u?: string) => w == null ? '' : `${w}${f ? '/' + f : ''} ${u}`}
+          useValue: {
+            formatLoad: pair,
+            formatDistance: pair
+          }
         },
         {provide: NotificationService, useValue: mockNotificationService},
         {provide: Location, useValue: mockLocation}
@@ -197,13 +203,47 @@ describe('WodDetailComponent', () => {
   });
 
   describe('whiteboard', () => {
-    it('should title the WOD with its category and format, and the time cap as a badge', () => {
-      init(buildWod({category: 'GIRLS'}));
+    it('should write the format with its duration, and the time cap only when it is not the duration', () => {
+      init();
+      const amrap = buildWod({wodType: 'AMRAP', timeCapSeconds: 1200});
 
-      expect(component.typeLabel(component.wod()!)).toBe('WOD.CATEGORIES.GIRLS / WOD.WOD_TYPES.FOR_TIME');
-      expect(component.timeCapLabel(component.wod()!)).toBe("WOD.FIELDS.TIME_CAP_SHORT : 10'");
-      expect(component.typeLabel(buildWod())).toBe('WOD.WOD_TYPES.FOR_TIME');
+      expect(component.formatLine(amrap)).toBe('WOD.WOD_TYPES.AMRAP WOD.FIELDS.DURATION_MINUTES');
+      expect(component.timeCapLabel(amrap)).toBe('');
+      expect(component.formatLine({...amrap, timeCapSeconds: 425})).toBe("WOD.WOD_TYPES.AMRAP 7'05");
+      expect(component.formatLine(buildWod())).toBe('WOD.WOD_TYPES.FOR_TIME');
+      expect(component.timeCapLabel(buildWod())).toBe("WOD.FIELDS.TIME_CAP 10'");
       expect(component.timeCapLabel(buildWod({timeCapSeconds: undefined}))).toBe('');
+      expect(component.formatLine(buildWod({wodType: 'EMOM', emomInterval: 60, emomRounds: 10})))
+        .toBe('WOD.WOD_TYPES.EMOM WOD.FIELDS.DURATION_MINUTES');
+      expect(component.formatLine(buildWod({wodType: 'EMOM', emomInterval: 120, emomRounds: 5})))
+        .toBe('WOD.WOD_TYPES.EMOM 5 x 2:00');
+    });
+
+    it('should write the rep scheme only when neither the format nor the movements already say it', () => {
+      init();
+      const fran = buildWod({repScheme: '21-15-9'});
+
+      expect(component.repSchemeLine(fran)).toBe('21-15-9');
+      expect(component.repSchemeLine(buildWod({repScheme: '5 rounds'}))).toBe('5 rounds');
+      expect(component.repSchemeLine(buildWod({wodType: 'AMRAP', repScheme: 'AMRAP 20 min'}))).toBe('');
+      expect(component.repSchemeLine(buildWod({repScheme: 'For time'}))).toBe('');
+      expect(component.repSchemeLine(buildWod({repScheme: '30 reps'}))).toBe('');
+      expect(component.repSchemeLine(buildWod({repScheme: '1 mile / 100 / 200 / 300 / 1 mile'}))).toBe('');
+      expect(component.formatLine(buildWod({wodType: 'TABATA', repScheme: 'Tabata x 4'}))).toBe('Tabata x 4');
+      expect(component.formatLine(buildWod({repScheme: 'For time'}))).toBe('WOD.WOD_TYPES.FOR_TIME');
+    });
+
+    it('should show each information once: title alone, category and format in their own box', () => {
+      init(buildWod({category: 'GIRLS', descriptionEn: 'Classic couplet'}));
+      const text: string = fixture.nativeElement.textContent;
+      const count = (key: string) => text.split(key).length - 1;
+
+      expect(count('WOD.CATEGORIES.GIRLS')).toBe(1);
+      expect(count('WOD.WOD_TYPES.FOR_TIME')).toBe(1);
+      expect(count('WOD.FIELDS.TIME_CAP')).toBe(1);
+      expect(text).not.toContain('WOD.SECTIONS.MOVEMENTS');
+      expect(text).toContain('Classic couplet');
+      expect(fixture.nativeElement.querySelector('#best-score')).toBeTruthy();
     });
 
     it('should omit the reps that repeat the rep scheme and write the other quantities first', () => {
@@ -212,17 +252,30 @@ describe('WodDetailComponent', () => {
 
       expect(component.quantity({...wod.movements[0]}, wod)).toBe('');
       expect(component.quantity({...wod.movements[0], repsScheme: '50'}, wod)).toBe('50');
+      expect(component.quantity({...wod.movements[0], repsScheme: 'max'}, wod)).toBe('Max');
       expect(component.quantity({...wod.movements[0], repsScheme: undefined, calories: 60}, wod)).toBe('60 cal');
+      expect(component.quantity({...wod.movements[0], repsScheme: undefined, calories: 14, caloriesFemale: 12}, wod))
+        .toBe('14/12 cal');
       expect(component.quantity({...wod.movements[0], repsScheme: undefined, distance: 400, distanceUnit: 'METERS'}, wod))
-        .toBe('400 WOD.UNITS.METERS');
+        .toBe('400 METERS');
       expect(component.quantity({...wod.movements[0], repsScheme: undefined, durationSeconds: 60}, wod)).toBe('1:00');
     });
 
-    it('should list the variants, the men/women load and the texts in the user language', () => {
+    it('should write the men/women load and height after the movement, without "@"', () => {
+      init();
+      const thruster = {...component.sortedMovements()[0], weightFemale: 30};
+
+      expect(component.measures(thruster)).toEqual(['43/30 KG']);
+      expect(component.measures({...thruster, weight: undefined, height: 24, heightFemale: 20, heightUnit: 'INCHES'}))
+        .toEqual(['24/20 INCHES']);
+      expect(fixture.nativeElement.textContent).toContain('43 KG');
+      expect(fixture.nativeElement.textContent).not.toContain('@');
+    });
+
+    it('should list the variants and the texts in the user language', () => {
       init();
       const thruster = {
         ...component.sortedMovements()[0],
-        weightFemale: 30,
         equipment: ['BARBELL'],
         techniques: ['TOUCH_AND_GO'],
         notesEn: 'Squat below parallel',
@@ -231,7 +284,6 @@ describe('WodDetailComponent', () => {
       };
 
       expect(component.variants(thruster)).toBe('MOVEMENT.EQUIPMENT.BARBELL, MOVEMENT.TECHNIQUES.TOUCH_AND_GO');
-      expect(component.load(thruster)).toBe('43/30 KG');
       // No language loaded in tests: English, with the French text as fallback when English is missing
       expect(component.movementNotes(thruster)).toBe('Squat below parallel');
       expect(component.movementNotes({...thruster, notesEn: undefined})).toBe('Squat sous la parallèle');

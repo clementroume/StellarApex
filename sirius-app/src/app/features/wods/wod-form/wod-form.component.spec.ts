@@ -371,6 +371,15 @@ describe('WodFormComponent', () => {
       expect(component.textControl('scalingOptions', 'EN')).toBe('scalingOptionsEn');
     });
 
+    it('should send the men/women calories and heights, without a height unit when no height is given', () => {
+      expect(component.buildPayload().movements[0].heightUnit).toBeUndefined();
+
+      component.movementsFormArray.at(0).patchValue({calories: 14, caloriesFemale: 12, height: 60, heightFemale: 50});
+
+      expect(component.buildPayload().movements[0])
+        .toMatchObject({calories: 14, caloriesFemale: 12, height: 60, heightFemale: 50, heightUnit: 'CENTIMETERS'});
+    });
+
     it('should explain that a WOD with scores is locked (409)', () => {
       mockWodService.updateWod.mockReturnValue(throwError(() => ({status: 409, error: {}})));
 

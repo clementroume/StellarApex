@@ -224,14 +224,14 @@
                 }
               }
 
-              <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 <label class="form-control w-full">
                   <div class="label"><span class="label-text">{{ 'WOD.FIELDS.REPS' | translate }}</span></div>
                   <input type="text" formControlName="repsScheme" class="input input-bordered w-full"
                          [placeholder]="'WOD.PLACEHOLDERS.REPS' | translate"/>
                 </label>
                 <div class="form-control w-full">
-                  <div class="label"><span class="label-text">{{ 'WOD.FIELDS.WEIGHT_MEN' | translate }} / {{ 'WOD.FIELDS.WEIGHT_WOMEN' | translate }}</span></div>
+                  <div class="label"><span class="label-text">{{ 'WOD.FIELDS.WEIGHT' | translate }} ({{ 'WOD.FIELDS.MEN_WOMEN' | translate }})</span></div>
                   <div class="join w-full">
                     <input type="number" min="0" step="0.5" formControlName="weight" class="input input-bordered join-item w-full"
                            [attr.aria-label]="'WOD.FIELDS.WEIGHT_MEN' | translate"/>
@@ -245,6 +245,29 @@
                   </div>
                 </div>
                 <div class="form-control w-full">
+                  <div class="label"><span class="label-text">{{ 'WOD.FIELDS.HEIGHT' | translate }} ({{ 'WOD.FIELDS.MEN_WOMEN' | translate }})</span></div>
+                  <div class="join w-full">
+                    <input type="number" min="0" step="0.5" formControlName="height" class="input input-bordered join-item w-full"
+                           [attr.aria-label]="'WOD.FIELDS.HEIGHT_MEN' | translate"/>
+                    <input type="number" min="0" step="0.5" formControlName="heightFemale" class="input input-bordered join-item w-full"
+                           [attr.aria-label]="'WOD.FIELDS.HEIGHT_WOMEN' | translate"/>
+                    <select formControlName="heightUnit" class="select select-bordered join-item w-24">
+                      @for (u of heightUnits(); track u) {
+                        <option [value]="u">{{ 'WOD.UNITS.' + u | translate }}</option>
+                      }
+                    </select>
+                  </div>
+                </div>
+                <div class="form-control w-full">
+                  <div class="label"><span class="label-text">{{ 'WOD.FIELDS.CALORIES' | translate }} ({{ 'WOD.FIELDS.MEN_WOMEN' | translate }})</span></div>
+                  <div class="join w-full">
+                    <input type="number" min="0" formControlName="calories" class="input input-bordered join-item w-full"
+                           [attr.aria-label]="'WOD.FIELDS.CALORIES_MEN' | translate"/>
+                    <input type="number" min="0" formControlName="caloriesFemale" class="input input-bordered join-item w-full"
+                           [attr.aria-label]="'WOD.FIELDS.CALORIES_WOMEN' | translate"/>
+                  </div>
+                </div>
+                <div class="form-control w-full">
                   <div class="label"><span class="label-text">{{ 'WOD.FIELDS.DISTANCE' | translate }}</span></div>
                   <div class="join w-full">
                     <input type="number" min="0" formControlName="distance" class="input input-bordered join-item w-full"/>
@@ -255,16 +278,10 @@
                     </select>
                   </div>
                 </div>
-                <div class="grid grid-cols-2 gap-2">
-                  <label class="form-control w-full">
-                    <div class="label"><span class="label-text">{{ 'WOD.FIELDS.DURATION' | translate }} (s)</span></div>
-                    <input type="number" min="0" formControlName="durationSeconds" class="input input-bordered w-full"/>
-                  </label>
-                  <label class="form-control w-full">
-                    <div class="label"><span class="label-text">{{ 'WOD.FIELDS.CALORIES' | translate }}</span></div>
-                    <input type="number" min="0" formControlName="calories" class="input input-bordered w-full"/>
-                  </label>
-                </div>
+                <label class="form-control w-full">
+                  <div class="label"><span class="label-text">{{ 'WOD.FIELDS.DURATION' | translate }} (s)</span></div>
+                  <input type="number" min="0" formControlName="durationSeconds" class="input input-bordered w-full"/>
+                </label>
               </div>
 
               <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
