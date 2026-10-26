@@ -77,7 +77,11 @@ public final class WodCsvCodec {
     "techniques",
     "weight_female",
     "notes_fr",
-    "scaling_options_fr"
+    "scaling_options_fr",
+    "calories_female",
+    "height",
+    "height_female",
+    "height_unit"
   };
 
   /** Separator of the equipment / technique lists (free text, so not a comma). */
@@ -165,6 +169,10 @@ public final class WodCsvCodec {
               .notesFr(text(row, "notes_fr"))
               .scalingOptionsEn(text(row, "scaling_options_en", "scaling_options"))
               .scalingOptionsFr(text(row, "scaling_options_fr"))
+              .caloriesFemale(integer(row, "calories_female"))
+              .height(decimal(row, "height"))
+              .heightFemale(decimal(row, "height_female"))
+              .heightUnit(unit(row, "height_unit"))
               .equipment(list(row, "equipment"))
               .techniques(list(row, "techniques"))
               .build();
@@ -230,7 +238,11 @@ public final class WodCsvCodec {
               join(wm.getTechniques()),
               wm.getWeightFemale(),
               wm.getNotesFr(),
-              wm.getScalingOptionsFr());
+              wm.getScalingOptionsFr(),
+              wm.getCaloriesFemale(),
+              wm.getHeight(),
+              wm.getHeightFemale(),
+              name(wm.getHeightUnit()));
         }
       }
     }

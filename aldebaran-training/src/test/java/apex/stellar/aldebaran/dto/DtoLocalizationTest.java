@@ -198,9 +198,7 @@ class DtoLocalizationTest {
               Collections.emptySet(),
               Collections.emptySet(),
               desc4001,
-              null,
-              null,
-              null,
+              null, null, null,
               url513,
               null);
 
@@ -241,20 +239,9 @@ class DtoLocalizationTest {
       WodRequest request =
           new WodRequest(
               "",
-              null,
-              null,
-              null,
-              null,
-              null,
+              null, null, null, null, null,
               false,
-              null,
-              null,
-              null,
-              null,
-              null,
-              null,
-              null,
-              null,
+              null, null, null, null, null, null, null, null,
               Collections.emptyList());
 
       assertViolationEnAndFr(
@@ -280,8 +267,7 @@ class DtoLocalizationTest {
               WodType.FOR_TIME,
               null,
               ScoreType.TIME,
-              null,
-              null,
+              null, null,
               false,
               "A".repeat(4001),
               null,
@@ -293,7 +279,7 @@ class DtoLocalizationTest {
               "A".repeat(101),
               Collections.singletonList(
                   new WodMovementRequest(
-                      1L, 1, null, null, null, null, null, null, null, null, null, null, null,
+                      1L, 1, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
                       null, null, null, null)));
 
       assertViolationEnAndFr(
@@ -342,7 +328,7 @@ class DtoLocalizationTest {
     void requiredFields() {
       WodMovementRequest request =
           new WodMovementRequest(
-              null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+              null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
               null, null, null);
 
       assertViolationEnAndFr(
@@ -364,17 +350,13 @@ class DtoLocalizationTest {
               0,
               "A".repeat(51),
               -1.0,
-              null,
-              null,
+              null, null,
               -1,
               null,
               -1.0,
               null,
               -1,
-              null,
-              null,
-              null,
-              null,
+              null, null, null, null, null, null, null, null,
               "A".repeat(4001),
               null);
 
@@ -446,16 +428,7 @@ class DtoLocalizationTest {
               1L,
               LocalDate.now().plusDays(1),
               1L,
-              null,
-              null,
-              null,
-              null,
-              null,
-              null,
-              null,
-              null,
-              null,
-              null,
+              null, null, null, null, null, null, null, null, null, null,
               ScalingLevel.RX,
               false,
               null,

@@ -266,7 +266,8 @@ class WodControllerIT extends BaseIntegrationTest {
     WodMovementRequest movement =
         new WodMovementRequest(
             pullUp.getId(), 1, "21-15-9", 43.0, 30.0, Unit.KG, null, null, null, null, null,
-            null, null, "Wide grip", "Prise large", null, null);
+            null, 60.0, 50.0, Unit.CENTIMETERS, null, null, "Wide grip", "Prise large", null,
+            null);
     WodRequest girls =
         new WodRequest(
             "Girls Test", WodType.FOR_TIME, WodCategory.GIRLS, ScoreType.TIME, null, 101L, true,
@@ -289,6 +290,8 @@ class WodControllerIT extends BaseIntegrationTest {
             .andExpect(jsonPath("$.descriptionFr").value("21-15-9 répétitions"))
             .andExpect(jsonPath("$.movements[0].weightFemale").value(30.0))
             .andExpect(jsonPath("$.movements[0].notesFr").value("Prise large"))
+            .andExpect(jsonPath("$.movements[0].heightFemale").value(50.0))
+            .andExpect(jsonPath("$.movements[0].heightUnit").value("CENTIMETERS"))
             .andReturn()
             .getResponse()
             .getContentAsString();
@@ -329,9 +332,7 @@ class WodControllerIT extends BaseIntegrationTest {
             101L,
             true,
             "Desc",
-            null,
-            null,
-            null,
+            null, null, null,
             600,
             0,
             0,
@@ -341,18 +342,10 @@ class WodControllerIT extends BaseIntegrationTest {
                     pullUp.getId(),
                     1,
                     "50",
-                    null,
-                    null,
-                    null,
-                    null,
-                    null,
-                    null,
-                    null,
-                    null,
+                    null, null, null, null, null, null, null, null, null, null, null, null,
                     Set.of("RINGS"),
                     Set.of("STRICT", "KIPPING"),
-                    null,
-                    null,
+                    null, null,
                     null, null)));
     String body =
         mockMvc
@@ -411,9 +404,7 @@ class WodControllerIT extends BaseIntegrationTest {
             101L,
             true,
             "Desc",
-            null,
-            null,
-            null,
+            null, null, null,
             600,
             0,
             0,
@@ -423,18 +414,9 @@ class WodControllerIT extends BaseIntegrationTest {
                     pullUp.getId(),
                     1,
                     "50",
-                    null,
-                    null,
-                    null,
-                    null,
-                    null,
-                    null,
-                    null,
-                    null,
+                    null, null, null, null, null, null, null, null, null, null, null, null,
                     Set.of("RINGS"),
-                    null,
-                    null,
-                    null,
+                    null, null, null,
                     null, null)));
     mockMvc
         .perform(
@@ -479,17 +461,13 @@ class WodControllerIT extends BaseIntegrationTest {
                     1,
                     "100",
                     0.0,
-                    null,
-                    null,
+                    null, null,
                     0,
                     null,
                     0.0,
                     null,
                     0,
-                    null,
-                    null,
-                    null,
-                    null,
+                    null, null, null, null, null, null, null, null,
                     null, null)));
     mockMvc
         .perform(
@@ -521,11 +499,7 @@ class WodControllerIT extends BaseIntegrationTest {
             100L, // authorId matches User
             null, // No Gym
             false, // Private
-            null,
-            null,
-            null,
-            null,
-            null,
+            null, null, null, null, null,
             60,
             10,
             null,
@@ -535,17 +509,13 @@ class WodControllerIT extends BaseIntegrationTest {
                     1,
                     "10",
                     0.0,
-                    null,
-                    null,
+                    null, null,
                     0,
                     null,
                     0.0,
                     null,
                     0,
-                    null,
-                    null,
-                    null,
-                    null,
+                    null, null, null, null, null, null, null, null,
                     null, null)));
     mockMvc
         .perform(
@@ -571,31 +541,20 @@ class WodControllerIT extends BaseIntegrationTest {
             null,
             101L, // Gym 101
             false,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
+            null, null, null, null, null, null, null, null,
             List.of(
                 new WodMovementRequest(
                     pullUp.getId(),
                     1,
                     "50",
                     0.0,
-                    null,
-                    null,
+                    null, null,
                     0,
                     null,
                     0.0,
                     null,
                     0,
-                    null,
-                    null,
-                    null,
-                    null,
+                    null, null, null, null, null, null, null, null,
                     null, null)));
     mockMvc
         .perform(
@@ -622,31 +581,20 @@ class WodControllerIT extends BaseIntegrationTest {
             null,
             101L, // Gym 101
             false,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
+            null, null, null, null, null, null, null, null,
             List.of(
                 new WodMovementRequest(
                     pullUp.getId(),
                     1,
                     "50",
                     0.0,
-                    null,
-                    null,
+                    null, null,
                     0,
                     null,
                     0.0,
                     null,
                     0,
-                    null,
-                    null,
-                    null,
-                    null,
+                    null, null, null, null, null, null, null, null,
                     null, null)));
     mockMvc
         .perform(
@@ -674,31 +622,20 @@ class WodControllerIT extends BaseIntegrationTest {
             null,
             101L, // Target Gym 101
             false,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
+            null, null, null, null, null, null, null, null,
             List.of(
                 new WodMovementRequest(
                     pullUp.getId(),
                     1,
                     "50",
                     0.0,
-                    null,
-                    null,
+                    null, null,
                     0,
                     null,
                     0.0,
                     null,
                     0,
-                    null,
-                    null,
-                    null,
-                    null,
+                    null, null, null, null, null, null, null, null,
                     null, null)));
     mockMvc
         .perform(
@@ -721,13 +658,9 @@ class WodControllerIT extends BaseIntegrationTest {
             "", // Empty title
             null, null, // Null Type
             ScoreType.TIME,
-            null,
-            null,
+            null, null,
             true,
-            null,
-            null,
-            null,
-            null,
+            null, null, null, null,
             -10, // Negative time cap
             0,
             0,
@@ -775,17 +708,13 @@ class WodControllerIT extends BaseIntegrationTest {
                     1,
                     "21-15-9",
                     40.0,
-                    null,
-                    null,
+                    null, null,
                     0,
                     null,
                     0.0,
                     null,
                     0,
-                    null,
-                    null,
-                    null,
-                    null,
+                    null, null, null, null, null, null, null, null,
                     null, null)));
     mockMvc
         .perform(
@@ -817,13 +746,9 @@ class WodControllerIT extends BaseIntegrationTest {
             WodType.AMRAP,
             null,
             ScoreType.ROUNDS_REPS,
-            null,
-            null,
+            null, null,
             false,
-            null,
-            null,
-            null,
-            null,
+            null, null, null, null,
             0,
             0,
             0,
@@ -834,17 +759,13 @@ class WodControllerIT extends BaseIntegrationTest {
                     1,
                     "10",
                     0.0,
-                    null,
-                    null,
+                    null, null,
                     0,
                     null,
                     0.0,
                     null,
                     0,
-                    null,
-                    null,
-                    null,
-                    null,
+                    null, null, null, null, null, null, null, null,
                     null, null)));
     mockMvc
         .perform(
@@ -876,34 +797,22 @@ class WodControllerIT extends BaseIntegrationTest {
             WodType.FOR_TIME,
             null,
             ScoreType.TIME,
-            null,
-            null,
+            null, null,
             false,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
+            null, null, null, null, null, null, null, null,
             List.of(
                 new WodMovementRequest(
                     pullUp.getId(),
                     1,
                     "10",
                     0.0,
-                    null,
-                    null,
+                    null, null,
                     0,
                     null,
                     0.0,
                     null,
                     0,
-                    null,
-                    null,
-                    null,
-                    null,
+                    null, null, null, null, null, null, null, null,
                     null, null)));
     mockMvc
         .perform(
@@ -935,34 +844,22 @@ class WodControllerIT extends BaseIntegrationTest {
             WodType.FOR_TIME,
             null,
             ScoreType.TIME,
-            null,
-            null,
+            null, null,
             false,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
+            null, null, null, null, null, null, null, null,
             List.of(
                 new WodMovementRequest(
                     pullUp.getId(),
                     1,
                     "10",
                     0.0,
-                    null,
-                    null,
+                    null, null,
                     0,
                     null,
                     0.0,
                     null,
                     0,
-                    null,
-                    null,
-                    null,
-                    null,
+                    null, null, null, null, null, null, null, null,
                     null, null)));
     mockMvc
         .perform(
@@ -985,13 +882,9 @@ class WodControllerIT extends BaseIntegrationTest {
             WodType.FOR_TIME,
             null,
             ScoreType.TIME,
-            null,
-            null,
+            null, null,
             true,
-            null,
-            null,
-            null,
-            null,
+            null, null, null, null,
             0,
             0,
             0,
@@ -1002,17 +895,13 @@ class WodControllerIT extends BaseIntegrationTest {
                     1,
                     "10",
                     0.0,
-                    null,
-                    null,
+                    null, null,
                     0,
                     null,
                     0.0,
                     null,
                     0,
-                    null,
-                    null,
-                    null,
-                    null,
+                    null, null, null, null, null, null, null, null,
                     null, null)));
     mockMvc
         .perform(
@@ -1048,13 +937,9 @@ class WodControllerIT extends BaseIntegrationTest {
             WodType.FOR_TIME,
             null,
             ScoreType.TIME,
-            null,
-            null,
+            null, null,
             true,
-            null,
-            null,
-            null,
-            null,
+            null, null, null, null,
             0,
             0,
             0,
@@ -1065,17 +950,13 @@ class WodControllerIT extends BaseIntegrationTest {
                     1,
                     "21-15-9",
                     0.0,
-                    null,
-                    null,
+                    null, null,
                     0,
                     null,
                     0.0,
                     null,
                     0,
-                    null,
-                    null,
-                    null,
-                    null,
+                    null, null, null, null, null, null, null, null,
                     null, null)));
     mockMvc
         .perform(

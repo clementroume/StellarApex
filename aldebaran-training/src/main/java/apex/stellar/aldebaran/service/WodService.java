@@ -444,6 +444,10 @@ public class WodService {
     target.setDistance(temp.getDistance());
     target.setDistanceUnit(temp.getDistanceUnit());
     target.setCalories(temp.getCalories());
+    target.setCaloriesFemale(temp.getCaloriesFemale());
+    target.setHeight(temp.getHeight());
+    target.setHeightFemale(temp.getHeightFemale());
+    target.setHeightUnit(temp.getHeightUnit());
     target.setWeightFemale(temp.getWeightFemale());
     target.setNotesEn(temp.getNotesEn());
     target.setNotesFr(temp.getNotesFr());

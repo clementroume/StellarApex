@@ -191,6 +191,10 @@ class WodCsvCodecTest {
                 .durationDisplayUnit(Unit.MINUTES)
                 .calories(12)
                 .weightFemale(30.0)
+                .caloriesFemale(9)
+                .height(60.0)
+                .heightFemale(50.0)
+                .heightUnit(Unit.CENTIMETERS)
                 .notesEn("Two dumbbells")
                 .notesFr("Deux haltères")
                 .scalingOptionsEn("PVC")
@@ -249,6 +253,10 @@ class WodCsvCodecTest {
       assertEquals(e.getNotesEn(), a.getNotesEn());
       assertEquals(e.getScalingOptionsEn(), a.getScalingOptionsEn());
       assertEquals(e.getWeightFemale(), a.getWeightFemale());
+      assertEquals(e.getCaloriesFemale(), a.getCaloriesFemale());
+      assertEquals(e.getHeight(), a.getHeight());
+      assertEquals(e.getHeightFemale(), a.getHeightFemale());
+      assertEquals(e.getHeightUnit(), a.getHeightUnit());
       assertEquals(e.getNotesFr(), a.getNotesFr());
       assertEquals(e.getScalingOptionsFr(), a.getScalingOptionsFr());
       assertEquals(e.getEquipment(), a.getEquipment());

@@ -21,6 +21,10 @@ public record WodMovementResponse(
     Double distance,
     Unit distanceUnit,
     Integer calories,
+    Integer caloriesFemale,
+    Double height,
+    Double heightFemale,
+    Unit heightUnit,
 
     // --- Characteristics ---
     Set<String> equipment,

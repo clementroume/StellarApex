@@ -97,13 +97,31 @@ public class WodMovement {
   private Double distance;
 
   @Enumerated(EnumType.STRING)
-  @Column(name = "distance_unit", length = 10)
+  @Column(name = "distance_unit", length = 20)
   @Builder.Default
   private Unit distanceUnit = Unit.METERS;
 
   @Column(name = "calories")
   @Min(0)
   private Integer calories;
+
+  /** Women's calories when they differ from the men's ({@code calories}). */
+  @Column(name = "calories_female")
+  @Min(0)
+  private Integer caloriesFemale;
+
+  /** Height of the box or the target for men, then women, in {@code heightUnit}. */
+  @Column(name = "height")
+  @DecimalMin("0.0")
+  private Double height;
+
+  @Column(name = "height_female")
+  @DecimalMin("0.0")
+  private Double heightFemale;
+
+  @Enumerated(EnumType.STRING)
+  @Column(name = "height_unit", length = 20)
+  private Unit heightUnit;
 
   // --- Characteristics ---
   @ElementCollection

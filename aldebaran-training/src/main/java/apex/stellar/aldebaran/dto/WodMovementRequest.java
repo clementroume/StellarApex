@@ -25,6 +25,10 @@ public record WodMovementRequest(
     @DecimalMin(value = "0.0", message = "{validation.value.positive}") Double distance,
     Unit distanceUnit,
     @Min(value = 0, message = "{validation.value.positive}") Integer calories,
+    @Min(value = 0, message = "{validation.value.positive}") Integer caloriesFemale,
+    @DecimalMin(value = "0.0", message = "{validation.value.positive}") Double height,
+    @DecimalMin(value = "0.0", message = "{validation.value.positive}") Double heightFemale,
+    Unit heightUnit,
 
     // --- Characteristics ---
     Set<String> equipment,
