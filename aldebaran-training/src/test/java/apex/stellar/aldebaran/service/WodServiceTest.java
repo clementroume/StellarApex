@@ -11,16 +11,20 @@ import apex.stellar.aldebaran.dto.WodRequest;
 import apex.stellar.aldebaran.dto.WodFacetsResponse;
 import apex.stellar.aldebaran.dto.WodResponse;
 import apex.stellar.aldebaran.dto.WodSummaryResponse;
+import apex.stellar.aldebaran.exception.InvalidWodMovementException;
 import apex.stellar.aldebaran.exception.ResourceNotFoundException;
 import apex.stellar.aldebaran.exception.WodLockedException;
 import apex.stellar.aldebaran.mapper.WodMapper;
 import apex.stellar.aldebaran.model.entities.Movement;
 import apex.stellar.aldebaran.model.entities.Wod;
 import apex.stellar.aldebaran.model.entities.Wod.ScoreType;
+import apex.stellar.aldebaran.model.entities.Wod.WodCategory;
 import apex.stellar.aldebaran.model.entities.Wod.WodType;
 import apex.stellar.aldebaran.model.entities.WodMovement;
 import apex.stellar.aldebaran.model.enums.Category;
 import apex.stellar.aldebaran.model.enums.Category.Modality;
+import apex.stellar.aldebaran.model.enums.Equipment;
+import apex.stellar.aldebaran.model.enums.Technique;
 import apex.stellar.aldebaran.model.enums.WodScope;
 import apex.stellar.aldebaran.repository.MovementRepository;
 import apex.stellar.aldebaran.repository.ScoreRepository;
@@ -72,17 +76,20 @@ class WodServiceTest {
 
     WodMovementRequest movementRequest =
         new WodMovementRequest(
-            1L, 1, "21-15-9", 0.0, null, 0, null, 0.0, null, 0, null, null, null, null);
+            1L, 1, "21-15-9", 0.0, null, null, 0, null, 0.0, null, 0, null, null, null, null, null, null, null, null, null, null);
     wodRequest =
         new WodRequest(
             "Fran",
             WodType.FOR_TIME,
+            null,
             ScoreType.TIME,
             null, // authorId
             null, // gymId
             true, // isPublic
             "Desc",
+            null,
             "Notes",
+            null,
             600, // timeCap
             0, // emomInterval
             0, // emomRounds
@@ -105,12 +112,12 @@ class WodServiceTest {
     when(securityService.getCurrentUserMemberGymIds()).thenReturn(Set.of(101L));
     when(securityService.isCurrentUserAdmin()).thenReturn(false);
     when(wodRepository.findSecure(
-            null, null, null, "ALL", null, null, 5L, Set.of(101L), false, pageable))
+            null, null, null, null, "ALL", null, null, 5L, Set.of(101L), false, pageable))
         .thenReturn(slice);
 
     // When
     Slice<WodSummaryResponse> results =
-        wodService.getWods(null, null, null, null, null, null, pageable);
+        wodService.getWods(null, null, null, null, null, null, null, pageable);
 
     // Then
     assertNotNull(results);
@@ -126,16 +133,26 @@ class WodServiceTest {
     when(securityService.getCurrentUserMemberGymIds()).thenReturn(Set.of(101L, 202L));
     when(securityService.isCurrentUserAdmin()).thenReturn(false);
     when(wodRepository.findSecure(
-            any(), any(), any(), any(), any(), any(), any(), any(), anyBoolean(), any()))
+            any(), any(), any(), any(), any(), any(), any(), any(), any(), anyBoolean(), any()))
         .thenReturn(new SliceImpl<>(List.of()));
 
     // When
-    wodService.getWods(" FrAn ", WodType.AMRAP, 1L, WodScope.GYM, 202L, 9L, pageable);
+    wodService.getWods(" FrAn ", WodType.AMRAP, null, 1L, WodScope.GYM, 202L, 9L, pageable);
 
     // Then: search is trimmed and lower-cased into a LIKE pattern
     verify(wodRepository)
         .findSecure(
-            "%fran%", WodType.AMRAP, 1L, "GYM", 202L, 9L, 5L, Set.of(101L, 202L), false, pageable);
+            "%fran%",
+            WodType.AMRAP,
+            null,
+            1L,
+            "GYM",
+            202L,
+            9L,
+            5L,
+            Set.of(101L, 202L),
+            false,
+            pageable);
   }
 
   @Test
@@ -145,19 +162,23 @@ class WodServiceTest {
     when(securityService.getCurrentUserMemberGymIds()).thenReturn(Set.of(101L));
     when(securityService.isCurrentUserAdmin()).thenReturn(true);
     when(wodRepository.findSecureWodTypes(
-            "%fran%", null, null, "GYM", 101L, null, 5L, Set.of(101L), true))
-        .thenReturn(List.of(WodType.HERO, WodType.AMRAP));
+            "%fran%", null, null, null, "GYM", 101L, null, 5L, Set.of(101L), true))
+        .thenReturn(List.of(WodType.STRENGTH, WodType.AMRAP));
+    when(wodRepository.findSecureCategories(
+            "%fran%", null, null, null, "GYM", 101L, null, 5L, Set.of(101L), true))
+        .thenReturn(List.of(WodCategory.OPEN, WodCategory.GIRLS));
     when(wodRepository.findSecureGymIds(
-            "%fran%", null, null, "ALL", null, null, 5L, Set.of(101L), true))
+            "%fran%", null, null, null, "ALL", null, null, 5L, Set.of(101L), true))
         .thenReturn(List.of(3L, 1L));
     when(wodRepository.findSecureAuthorIds(
-            "%fran%", null, null, "ALL", null, null, 5L, Set.of(101L), true))
+            "%fran%", null, null, null, "ALL", null, null, 5L, Set.of(101L), true))
         .thenReturn(List.of(9L, 4L));
 
     WodFacetsResponse facets = wodService.getFacets("Fran", WodScope.GYM, 101L, null);
 
     // Types are returned in enum order, ids sorted
-    assertEquals(List.of(WodType.AMRAP, WodType.HERO), facets.wodTypes());
+    assertEquals(List.of(WodType.AMRAP, WodType.STRENGTH), facets.wodTypes());
+    assertEquals(List.of(WodCategory.GIRLS, WodCategory.OPEN), facets.categories());
     assertEquals(List.of(1L, 3L), facets.gymIds());
     assertEquals(List.of(4L, 9L), facets.authorIds());
   }
@@ -231,21 +252,17 @@ class WodServiceTest {
         new WodRequest(
             "Diane",
             WodType.FOR_TIME,
+            null,
             ScoreType.TIME,
-            null,
-            null,
+            null, null,
             true,
-            null,
-            null,
-            null,
-            null,
-            null,
+            null, null, null, null, null, null, null,
             "21-15-9",
             List.of(
                 new WodMovementRequest(
-                    1L, 1, "21", null, null, 0, null, 225.0, null, 0, null, null, null, null),
+                    1L, 1, "21", null, null, null, 0, null, 225.0, null, 0, null, null, null, null, null, null, null, null, null, null),
                 new WodMovementRequest(
-                    2L, 2, "21", null, null, 0, null, 0.0, null, 0, null, null, null, null)));
+                    2L, 2, "21", null, null, null, 0, null, 0.0, null, 0, null, null, null, null, null, null, null, null, null, null)));
 
     when(securityService.getCurrentUserId()).thenReturn(100L);
 
@@ -290,6 +307,51 @@ class WodServiceTest {
 
     assertEquals("error.movement.not.found", ex.getMessageKey());
     verify(wodRepository, never()).save(any());
+  }
+
+  @Test
+  @DisplayName("createWod: should reject an equipment that the movement does not allow")
+  void testCreateWod_EquipmentNotAllowed() {
+    when(securityService.getCurrentUserId()).thenReturn(100L);
+    when(wodMapper.toEntity(any())).thenReturn(wod);
+    MovementResponse dip = dipDto();
+    when(movementService.getMovement(1L)).thenReturn(dip);
+    when(movementRepository.getReferenceById(1L)).thenReturn(movement);
+    when(wodMapper.toWodMovementEntity(any()))
+        .thenReturn(WodMovement.builder().equipment(Set.of("RINGS", "BARBELL")).build());
+
+    InvalidWodMovementException ex =
+        assertThrows(InvalidWodMovementException.class, () -> wodService.createWod(wodRequest));
+
+    assertEquals("error.wod.movement.equipment.invalid", ex.getMessageKey());
+    assertArrayEquals(new Object[] {"BARBELL", "Dip"}, ex.getArgs());
+    verify(wodRepository, never()).save(any());
+  }
+
+  @Test
+  @DisplayName("createWod: should accept equipment and techniques allowed by the movement")
+  void testCreateWod_AllowedVariants() {
+    when(securityService.getCurrentUserId()).thenReturn(100L);
+    when(wodMapper.toEntity(any())).thenReturn(wod);
+    MovementResponse dip = dipDto();
+    when(movementService.getMovement(1L)).thenReturn(dip);
+    when(movementRepository.getReferenceById(1L)).thenReturn(movement);
+    when(wodMapper.toWodMovementEntity(any()))
+        .thenReturn(
+            WodMovement.builder().equipment(Set.of("RINGS")).techniques(Set.of("STRICT")).build());
+    when(wodRepository.save(wod)).thenReturn(wod);
+    when(wodMapper.toResponse(wod)).thenReturn(mock(WodResponse.class));
+
+    assertNotNull(wodService.createWod(wodRequest));
+    verify(wodRepository).save(wod);
+  }
+
+  private static MovementResponse dipDto() {
+    MovementResponse dto = mock(MovementResponse.class);
+    when(dto.name()).thenReturn("Dip");
+    when(dto.equipment()).thenReturn(Set.of(Equipment.RINGS, Equipment.BOX));
+    when(dto.techniques()).thenReturn(Set.of(Technique.STRICT, Technique.KIPPING));
+    return dto;
   }
 
   @Test
@@ -359,19 +421,14 @@ class WodServiceTest {
         new WodRequest(
             "Fran",
             WodType.FOR_TIME,
+            null,
             ScoreType.TIME,
-            null,
-            null,
+            null, null,
             true,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
+            null, null, null, null, null, null, null, null,
             List.of(
                 new WodMovementRequest(
-                    1L, 1, "15-12-9", 0.0, null, 0, null, 0.0, null, 0, null, null, null, null)));
+                    1L, 1, "15-12-9", 0.0, null, null, 0, null, 0.0, null, 0, null, null, null, null, null, null, null, null, null, null)));
 
     wodService.updateWod(1L, updateRequest);
 
@@ -390,6 +447,25 @@ class WodServiceTest {
         assertThrows(WodLockedException.class, () -> wodService.updateWod(1L, wodRequest));
 
     assertEquals("error.wod.locked", ex.getMessageKey());
+    verify(wodRepository, never()).save(any());
+  }
+
+  @Test
+  @DisplayName("updateWod: should reject a technique that the movement does not allow")
+  void testUpdateWod_TechniqueNotAllowed() {
+    when(scoreRepository.existsByWodId(1L)).thenReturn(false);
+    when(wodRepository.findByIdWithMovements(1L)).thenReturn(Optional.of(wod));
+    MovementResponse dip = dipDto();
+    when(movementService.getMovement(1L)).thenReturn(dip);
+    when(movementRepository.getReferenceById(1L)).thenReturn(movement);
+    when(wodMapper.toWodMovementEntity(any()))
+        .thenReturn(WodMovement.builder().techniques(Set.of("BUTTERFLY")).build());
+
+    InvalidWodMovementException ex =
+        assertThrows(
+            InvalidWodMovementException.class, () -> wodService.updateWod(1L, wodRequest));
+
+    assertEquals("error.wod.movement.technique.invalid", ex.getMessageKey());
     verify(wodRepository, never()).save(any());
   }
 
@@ -431,19 +507,14 @@ class WodServiceTest {
         new WodRequest(
             "Fran",
             WodType.FOR_TIME,
+            null,
             ScoreType.TIME,
-            null,
-            null,
+            null, null,
             true,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
+            null, null, null, null, null, null, null, null,
             List.of(
                 new WodMovementRequest(
-                    1L, 2, "15", null, null, 0, null, null, null, 0, null, null, null, null)));
+                    1L, 2, "15", null, null, null, 0, null, null, null, 0, null, null, null, null, null, null, null, null, null, null)));
     // When
     wodService.updateWod(1L, updateRequest);
 
@@ -471,16 +542,11 @@ class WodServiceTest {
         new WodRequest(
             "Empty",
             WodType.FOR_TIME,
+            null,
             ScoreType.TIME,
-            null,
-            null,
+            null, null,
             true,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
+            null, null, null, null, null, null, null, null,
             List.of()); // Liste vide !
 
     // When

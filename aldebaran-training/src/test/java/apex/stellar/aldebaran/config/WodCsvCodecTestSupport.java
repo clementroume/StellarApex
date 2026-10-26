@@ -3,6 +3,7 @@ package apex.stellar.aldebaran.config;
 import apex.stellar.aldebaran.model.entities.Movement;
 import apex.stellar.aldebaran.model.entities.Wod;
 import apex.stellar.aldebaran.model.entities.Wod.ScoreType;
+import apex.stellar.aldebaran.model.entities.Wod.WodCategory;
 import apex.stellar.aldebaran.model.entities.Wod.WodType;
 import apex.stellar.aldebaran.model.entities.WodMovement;
 import apex.stellar.aldebaran.model.enums.Category.Modality;
@@ -34,10 +35,11 @@ public final class WodCsvCodecTestSupport {
     Wod fran =
         Wod.builder()
             .title("Fran")
-            .wodType(WodType.GIRLS)
+            .wodType(WodType.FOR_TIME)
+            .category(WodCategory.GIRLS)
             .scoreType(ScoreType.TIME)
             .repScheme("21-15-9")
-            .description("21-15-9 reps for time of:\n- thrusters\n- pull-ups")
+            .descriptionEn("21-15-9 reps for time of:\n- thrusters\n- pull-ups")
             .isPublic(true)
             .modalities(Set.of(Modality.WEIGHTLIFTING, Modality.GYMNASTICS))
             .build();
@@ -50,9 +52,9 @@ public final class WodCsvCodecTestSupport {
                 .repsScheme("21-15-9")
                 .weight(95.0)
                 .weightUnit(Unit.LBS)
-                .notes("Women: 65 lb")
-                .scalingOptions("Lighter barbell, dumbbells")
-                .equipment(Set.of("Barbell"))
+                .notesEn("Women: 65 lb")
+                .scalingOptionsEn("Lighter barbell, dumbbells")
+                .equipment(Set.of("BARBELL"))
                 .build());
     fran.getMovements()
         .add(
@@ -69,13 +71,14 @@ public final class WodCsvCodecTestSupport {
     Wod chelsea =
         Wod.builder()
             .title("Chelsea")
-            .wodType(WodType.GIRLS)
+            .wodType(WodType.EMOM)
+            .category(WodCategory.GIRLS)
             .scoreType(ScoreType.ROUNDS_REPS)
             .repScheme("EMOM 30 min")
             .timeCapSeconds(1800)
             .emomInterval(60)
             .emomRounds(30)
-            .notes("Score \"rounds\" completed")
+            .notesEn("Score \"rounds\" completed")
             .isPublic(true)
             .modalities(Set.of(Modality.MONOSTRUCTURAL))
             .build();
@@ -91,7 +94,7 @@ public final class WodCsvCodecTestSupport {
                 .durationSeconds(45)
                 .durationDisplayUnit(Unit.SECONDS)
                 .calories(10)
-                .techniques(Set.of("Pose", "Heel strike"))
+                .techniques(Set.of("FORWARD", "WEIGHTED"))
                 .build());
     return List.of(fran, chelsea);
   }

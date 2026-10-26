@@ -118,6 +118,26 @@ describe('MuscleListComponent', () => {
     expect(grouped.has('BACK')).toBe(true);
   });
 
+  it('should list each functional group followed by its members, and keep the group for a member match', () => {
+    const quads = {id: 10, medicalName: 'Quadriceps Femoris', muscleGroup: 'LEGS', parent: null,
+      members: [{id: 12, medicalName: 'Vastus Lateralis'}, {id: 11, medicalName: 'Rectus Femoris'}]};
+    component.rawMuscles.set([
+      {id: 12, medicalName: 'Vastus Lateralis', muscleGroup: 'LEGS', parent: {id: 10, medicalName: 'Quadriceps Femoris'}},
+      quads,
+      {id: 11, medicalName: 'Rectus Femoris', muscleGroup: 'LEGS', parent: {id: 10, medicalName: 'Quadriceps Femoris'}},
+      {id: 13, medicalName: 'Tibialis Anterior', muscleGroup: 'LEGS'}
+    ] as any);
+
+    expect(component.groupedMuscles().get('LEGS')!.map(r => [r.muscle.medicalName, r.isMember])).toEqual([
+      ['Quadriceps Femoris', false], ['Rectus Femoris', true], ['Vastus Lateralis', true], ['Tibialis Anterior', false]
+    ]);
+    expect(component.groupBadge(quads as any)).toBe('MUSCLE.MESSAGES.GROUP_BADGE · 2');
+
+    component.searchQuery.set('vastus');
+    expect(component.groupedMuscles().get('LEGS')!.map(r => r.muscle.medicalName))
+      .toEqual(['Quadriceps Femoris', 'Vastus Lateralis']);
+  });
+
   it('should filter muscles locally based on the search query (case-insensitive)', () => {
     // Test search by medical name
     component.searchQuery.set('zyg');

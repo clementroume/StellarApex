@@ -1,6 +1,7 @@
 package apex.stellar.aldebaran.repository;
 
 import apex.stellar.aldebaran.model.entities.Wod;
+import apex.stellar.aldebaran.model.entities.Wod.WodCategory;
 import apex.stellar.aldebaran.model.entities.Wod.WodType;
 import apex.stellar.aldebaran.repository.projection.WodSummary;
 import java.util.Collection;
@@ -39,18 +40,16 @@ public interface WodRepository extends JpaRepository<Wod, Long> {
    * Retrieves a WOD with its movements eagerly loaded.
    *
    * <p>Essential for detailed views or editing where the complete structure is required. The {@code
-   * attributePaths} ensures we join Wod -> WodMovement -> Movement.
+   * attributePaths} ensures we join Wod -> WodMovement -> Movement. The variant collections
+   * (equipment, techniques) are not part of the graph: joining them with the movements list would
+   * duplicate a movement once per variant combination; they are batch-loaded instead
+   * ({@code @BatchSize} on {@link apex.stellar.aldebaran.model.entities.WodMovement}).
    *
    * @param id The unique identifier of the WOD.
    * @return An {@link Optional} containing the WOD if found.
    */
   @EntityGraph(
-      attributePaths = {
-        "movements",
-        "movements.movement",
-        "movements.equipment",
-        "movements.techniques"
-      })
+      attributePaths = {"movements", "movements.movement"})
   @Query("SELECT w FROM Wod w WHERE w.id = :id")
   Optional<Wod> findByIdWithMovements(@Param("id") Long id);
 
@@ -111,6 +110,7 @@ public interface WodRepository extends JpaRepository<Wod, Long> {
          OR w.gymId IN :memberGymIds)
       AND (:searchPattern IS NULL OR LOWER(w.title) LIKE :searchPattern)
       AND (:wodType IS NULL OR w.wodType = :wodType)
+      AND (:category IS NULL OR w.category = :category)
       AND (:movementId IS NULL OR EXISTS (
             SELECT 1 FROM WodMovement wm WHERE wm.wod = w AND wm.movement.id = :movementId))
       AND (:scope = 'ALL'
@@ -127,7 +127,8 @@ public interface WodRepository extends JpaRepository<Wod, Long> {
    * {@link #SECURE_FILTERS}).
    *
    * @param searchPattern Lower-cased {@code LIKE} pattern on the title, or {@code null}.
-   * @param wodType WOD type filter, or {@code null}.
+   * @param wodType WOD format filter, or {@code null}.
+   * @param category WOD category filter, or {@code null}.
    * @param movementId Movement contained in the WOD, or {@code null}.
    * @param scope Scope name (see {@code WodScope}).
    * @param gymId Gym filter for the {@code GYM} scope, or {@code null}.
@@ -142,6 +143,7 @@ public interface WodRepository extends JpaRepository<Wod, Long> {
   Slice<WodSummary> findSecure(
       @Param("searchPattern") String searchPattern,
       @Param("wodType") WodType wodType,
+      @Param("category") WodCategory category,
       @Param("movementId") Long movementId,
       @Param("scope") String scope,
       @Param("gymId") Long gymId,
@@ -160,6 +162,26 @@ public interface WodRepository extends JpaRepository<Wod, Long> {
   List<WodType> findSecureWodTypes(
       @Param("searchPattern") String searchPattern,
       @Param("wodType") WodType wodType,
+      @Param("category") WodCategory category,
+      @Param("movementId") Long movementId,
+      @Param("scope") String scope,
+      @Param("gymId") Long gymId,
+      @Param("authorId") Long authorId,
+      @Param("userId") Long userId,
+      @Param("memberGymIds") Collection<Long> memberGymIds,
+      @Param("isAdmin") boolean isAdmin);
+
+  /**
+   * Distinct WOD categories among the readable WODs matching the filters (dynamic category
+   * filter).
+   *
+   * @return The WOD categories present (unordered, without null).
+   */
+  @Query("SELECT DISTINCT w.category FROM Wod w WHERE w.category IS NOT NULL AND " + SECURE_FILTERS)
+  List<WodCategory> findSecureCategories(
+      @Param("searchPattern") String searchPattern,
+      @Param("wodType") WodType wodType,
+      @Param("category") WodCategory category,
       @Param("movementId") Long movementId,
       @Param("scope") String scope,
       @Param("gymId") Long gymId,
@@ -177,6 +199,7 @@ public interface WodRepository extends JpaRepository<Wod, Long> {
   List<Long> findSecureGymIds(
       @Param("searchPattern") String searchPattern,
       @Param("wodType") WodType wodType,
+      @Param("category") WodCategory category,
       @Param("movementId") Long movementId,
       @Param("scope") String scope,
       @Param("gymId") Long gymId,
@@ -196,6 +219,7 @@ public interface WodRepository extends JpaRepository<Wod, Long> {
   List<Long> findSecureAuthorIds(
       @Param("searchPattern") String searchPattern,
       @Param("wodType") WodType wodType,
+      @Param("category") WodCategory category,
       @Param("movementId") Long movementId,
       @Param("scope") String scope,
       @Param("gymId") Long gymId,
@@ -203,4 +227,35 @@ public interface WodRepository extends JpaRepository<Wod, Long> {
       @Param("userId") Long userId,
       @Param("memberGymIds") Collection<Long> memberGymIds,
       @Param("isAdmin") boolean isAdmin);
+
+  // -------------------------------------------------------------------------
+  // CATALOG CONSISTENCY
+  // -------------------------------------------------------------------------
+
+  /**
+   * Counts the WODs (any visibility) with a movement prescribed with the given equipment. Used to
+   * prevent removing a variant from a movement while WODs still use it.
+   *
+   * @param movementId The catalog movement ID.
+   * @param equipment The equipment name (e.g. {@code RINGS}).
+   * @return The number of distinct WODs.
+   */
+  @Query(
+      "SELECT COUNT(DISTINCT wm.wod.id) FROM WodMovement wm JOIN wm.equipment e "
+          + "WHERE wm.movement.id = :movementId AND e = :equipment")
+  long countByMovementEquipment(
+      @Param("movementId") Long movementId, @Param("equipment") String equipment);
+
+  /**
+   * Counts the WODs (any visibility) with a movement prescribed with the given technique.
+   *
+   * @param movementId The catalog movement ID.
+   * @param technique The technique name (e.g. {@code KIPPING}).
+   * @return The number of distinct WODs.
+   */
+  @Query(
+      "SELECT COUNT(DISTINCT wm.wod.id) FROM WodMovement wm JOIN wm.techniques t "
+          + "WHERE wm.movement.id = :movementId AND t = :technique")
+  long countByMovementTechnique(
+      @Param("movementId") Long movementId, @Param("technique") String technique);
 }

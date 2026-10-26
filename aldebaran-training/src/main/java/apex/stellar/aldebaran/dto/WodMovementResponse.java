@@ -14,17 +14,24 @@ public record WodMovementResponse(
     // --- Prescription ---
     String repsScheme,
     Double weight,
+    Double weightFemale,
     Unit weightUnit,
     Integer durationSeconds,
     Unit durationDisplayUnit,
     Double distance,
     Unit distanceUnit,
     Integer calories,
+    Integer caloriesFemale,
+    Double height,
+    Double heightFemale,
+    Unit heightUnit,
 
     // --- Characteristics ---
     Set<String> equipment,
     Set<String> techniques,
 
     // --- Instructions ---
-    String notes,
-    String scalingOptions) {}
+    String notesEn,
+    String notesFr,
+    String scalingOptionsEn,
+    String scalingOptionsFr) {}

@@ -20,6 +20,9 @@ public record MuscleRequest(
     // --- Characteristics ---
     @NotNull(message = "{validation.muscle.group.required}") MuscleGroup muscleGroup,
 
+    // Functional group of the muscle (null for a group or a standalone muscle)
+    Long parentId,
+
     // --- Internationalized Content ---
     @Size(max = 100, message = "{validation.muscle.commonName.size}") String commonNameEn,
     @Size(max = 100, message = "{validation.muscle.commonName.size}") String commonNameFr,

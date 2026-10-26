@@ -1,0 +1,25 @@
+<div class="card bg-base-100 shadow-xl">
+  <div class="card-body gap-4">
+    <h2 class="card-title text-2xl">{{ 'UNITS.TITLE' | translate }}</h2>
+    <p class="text-sm text-base-content/70">{{ 'UNITS.SUBTITLE' | translate }}</p>
+
+    <fieldset class="fieldset bg-base-200 border-base-300 rounded-box w-full border p-4 gap-3">
+      <legend class="fieldset-legend">{{ 'UNITS.SYSTEM_LABEL' | translate }}</legend>
+      @for (system of systems; track system) {
+        <label class="flex items-start gap-3 p-3 rounded-box border cursor-pointer bg-base-100 transition-colors"
+               [class.border-secondary]="unitService.unitSystem() === system"
+               [class.border-base-300]="unitService.unitSystem() !== system">
+          <input type="radio" name="unitSystem" class="radio radio-secondary mt-1" [id]="'unit-' + system"
+                 [value]="system" [checked]="unitService.unitSystem() === system" (change)="select(system)">
+          <span class="flex flex-col gap-1">
+            <span class="font-semibold flex items-center gap-2">
+              <ng-icon name="heroScale" class="text-accent"></ng-icon>
+              {{ 'UNITS.' + system | translate }}
+            </span>
+            <span class="text-sm text-base-content/70">{{ 'UNITS.' + system + '_EXAMPLE' | translate }}</span>
+          </span>
+        </label>
+      }
+    </fieldset>
+  </div>
+</div>

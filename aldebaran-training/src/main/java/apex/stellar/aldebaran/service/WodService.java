@@ -15,6 +15,7 @@ import apex.stellar.aldebaran.mapper.WodMapper;
 import apex.stellar.aldebaran.model.entities.Movement;
 import apex.stellar.aldebaran.model.entities.Wod;
 import apex.stellar.aldebaran.model.entities.Wod.ScoreType;
+import apex.stellar.aldebaran.model.entities.Wod.WodCategory;
 import apex.stellar.aldebaran.model.entities.Wod.WodType;
 import apex.stellar.aldebaran.model.entities.WodMovement;
 import apex.stellar.aldebaran.model.enums.Category.Modality;
@@ -81,7 +82,8 @@ public class WodService {
    * applied on top of the requested {@link WodScope}.
    *
    * @param search Optional title search term.
-   * @param type Optional WOD type filter.
+   * @param type Optional WOD format filter.
+   * @param category Optional WOD category filter.
    * @param movementId Optional movement ID filter.
    * @param scope List scope (ALL, MINE, GYM, PUBLIC); defaults to ALL when null.
    * @param gymId Optional gym filter, only used by the GYM scope.
@@ -92,6 +94,7 @@ public class WodService {
   public Slice<WodSummaryResponse> getWods(
       String search,
       WodType type,
+      WodCategory category,
       Long movementId,
       WodScope scope,
       Long gymId,
@@ -104,6 +107,7 @@ public class WodService {
         wodRepository.findSecure(
             toSearchPattern(search),
             type,
+            category,
             movementId,
             effectiveScope.name(),
             gymId,
@@ -119,15 +123,16 @@ public class WodService {
   /**
    * Computes the values available to filter the WOD list.
    *
-   * <p>WOD types follow every current filter except the type itself, so the UI only offers types
-   * that return results. Gyms and authors ignore the scope, gym and author filters: they feed the
-   * admin selectors, which must keep offering the other choices.
+   * <p>WOD formats and categories follow every current filter except the format and category
+   * themselves, so the UI only offers values that return results. Gyms and authors ignore the
+   * scope, gym and author filters: they feed the admin selectors, which must keep offering the
+   * other choices.
    *
    * @param search Optional title search.
    * @param scope List scope (defaults to ALL).
    * @param gymId Optional gym filter.
    * @param authorId Optional author filter (personal WODs).
-   * @return The available WOD types, gym IDs and author IDs.
+   * @return The available WOD formats, categories, gym IDs and author IDs.
    */
   @Transactional(readOnly = true)
   public WodFacetsResponse getFacets(String search, WodScope scope, Long gymId, Long authorId) {
@@ -140,25 +145,51 @@ public class WodService {
     List<WodType> types =
         wodRepository
             .findSecureWodTypes(
-                pattern, null, null, effectiveScope, gymId, authorId, userId, memberGymIds, isAdmin)
+                pattern,
+                null,
+                null,
+                null,
+                effectiveScope,
+                gymId,
+                authorId,
+                userId,
+                memberGymIds,
+                isAdmin)
+            .stream()
+            .sorted()
+            .toList();
+    List<WodCategory> categories =
+        wodRepository
+            .findSecureCategories(
+                pattern,
+                null,
+                null,
+                null,
+                effectiveScope,
+                gymId,
+                authorId,
+                userId,
+                memberGymIds,
+                isAdmin)
             .stream()
             .sorted()
             .toList();
     List<Long> gymIds =
         wodRepository
-            .findSecureGymIds(pattern, null, null, "ALL", null, null, userId, memberGymIds, isAdmin)
+            .findSecureGymIds(
+                pattern, null, null, null, "ALL", null, null, userId, memberGymIds, isAdmin)
             .stream()
             .sorted()
             .toList();
     List<Long> authorIds =
         wodRepository
             .findSecureAuthorIds(
-                pattern, null, null, "ALL", null, null, userId, memberGymIds, isAdmin)
+                pattern, null, null, null, "ALL", null, null, userId, memberGymIds, isAdmin)
             .stream()
             .sorted()
             .toList();
 
-    return new WodFacetsResponse(types, gymIds, authorIds);
+    return new WodFacetsResponse(types, categories, gymIds, authorIds);
   }
 
   private static String toSearchPattern(String search) {
@@ -222,6 +253,10 @@ public class WodService {
               Movement movement = movementRepository.getReferenceById(item.movementId());
 
               WodMovement wm = wodMapper.toWodMovementEntity(item);
+              wm.checkVariantsAllowed(
+                  movementResponse.name(),
+                  movementResponse.equipment(),
+                  movementResponse.techniques());
               wm.setWod(wod);
               wm.setMovement(movement);
 
@@ -308,14 +343,15 @@ public class WodService {
   }
 
   /**
-   * Retrieves reference data for workouts, including available WOD types, score types, and unit
-   * group mappings.
+   * Retrieves reference data for workouts, including available WOD formats, categories, score
+   * types, and unit group mappings.
    *
    * @return An instance of WodReferenceData containing lists of WOD types, score types, and a map
    *     of unit group types to their respective units.
    */
   public WodReferenceData getReferenceData() {
     List<String> wodTypes = Arrays.stream(WodType.values()).map(Enum::name).toList();
+    List<String> categories = Arrays.stream(WodCategory.values()).map(Enum::name).toList();
     List<String> scoreTypes = Arrays.stream(ScoreType.values()).map(Enum::name).toList();
 
     Map<String, List<String>> unitGroups = new LinkedHashMap<>();
@@ -323,7 +359,7 @@ public class WodService {
       unitGroups.computeIfAbsent(u.getType().name(), k -> new ArrayList<>()).add(u.name());
     }
 
-    return new WodReferenceData(wodTypes, scoreTypes, unitGroups);
+    return new WodReferenceData(wodTypes, categories, scoreTypes, unitGroups);
   }
 
   /**
@@ -370,6 +406,8 @@ public class WodService {
         target.setWod(wod);
       }
 
+      target.checkVariantsAllowed(
+          movementResponse.name(), movementResponse.equipment(), movementResponse.techniques());
       target.setMovement(movement);
       updatedList.add(target);
 
@@ -406,8 +444,15 @@ public class WodService {
     target.setDistance(temp.getDistance());
     target.setDistanceUnit(temp.getDistanceUnit());
     target.setCalories(temp.getCalories());
-    target.setNotes(temp.getNotes());
-    target.setScalingOptions(temp.getScalingOptions());
+    target.setCaloriesFemale(temp.getCaloriesFemale());
+    target.setHeight(temp.getHeight());
+    target.setHeightFemale(temp.getHeightFemale());
+    target.setHeightUnit(temp.getHeightUnit());
+    target.setWeightFemale(temp.getWeightFemale());
+    target.setNotesEn(temp.getNotesEn());
+    target.setNotesFr(temp.getNotesFr());
+    target.setScalingOptionsEn(temp.getScalingOptionsEn());
+    target.setScalingOptionsFr(temp.getScalingOptionsFr());
     target.setOrderIndex(temp.getOrderIndex());
 
     target.getEquipment().clear();

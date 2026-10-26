@@ -17,6 +17,7 @@ import java.io.InputStreamReader;
 import java.io.Reader;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -76,27 +77,58 @@ public class DataSeeder implements CommandLineRunner {
     }
 
     try (Reader reader = new InputStreamReader(resource.getInputStream())) {
-      Iterable<CSVRecord> records =
-          CSVFormat.DEFAULT.builder().setHeader().setSkipHeaderRecord(true).get().parse(reader);
-
-      for (CSVRecord csvRecord : records) {
-        Muscle muscle =
-            Muscle.builder()
-                .medicalName(csvRecord.get("medical_name").trim())
-                .muscleGroup(
-                    MuscleGroup.valueOf(csvRecord.get("muscle_group").trim().toUpperCase()))
-                .commonNameEn(getOptionalStr(csvRecord, "common_name_en"))
-                .commonNameFr(getOptionalStr(csvRecord, "common_name_fr"))
-                .descriptionEn(getOptionalStr(csvRecord, "description_en"))
-                .descriptionFr(getOptionalStr(csvRecord, "description_fr"))
-                .imageUrl(getOptionalStr(csvRecord, "image_url"))
-                .build();
-        muscleRepository.save(muscle);
-      }
+      seedMuscles(reader);
       log.info("Successfully seeded Muscles.");
     } catch (Exception e) {
       log.error("Failed to seed muscles", e);
     }
+  }
+
+  /**
+   * Parses the muscle CSV content, saves the muscles, then links each one to its functional group
+   * ({@code parent} column, by medical name; unknown names are logged and left unlinked).
+   *
+   * @param reader Content of {@code muscles.csv}.
+   * @throws IOException If the content cannot be read.
+   */
+  void seedMuscles(Reader reader) throws IOException {
+    Iterable<CSVRecord> records =
+        CSVFormat.DEFAULT.builder().setHeader().setSkipHeaderRecord(true).get().parse(reader);
+
+    // Functional groups are linked once every muscle is saved (the file order is free)
+    Map<String, Muscle> byName = new LinkedHashMap<>();
+    Map<Muscle, String> parentNames = new LinkedHashMap<>();
+    for (CSVRecord csvRecord : records) {
+      Muscle muscle =
+          Muscle.builder()
+              .medicalName(csvRecord.get("medical_name").trim())
+              .muscleGroup(
+                  MuscleGroup.valueOf(csvRecord.get("muscle_group").trim().toUpperCase()))
+              .commonNameEn(getOptionalStr(csvRecord, "common_name_en"))
+              .commonNameFr(getOptionalStr(csvRecord, "common_name_fr"))
+              .descriptionEn(getOptionalStr(csvRecord, "description_en"))
+              .descriptionFr(getOptionalStr(csvRecord, "description_fr"))
+              .imageUrl(getOptionalStr(csvRecord, "image_url"))
+              .build();
+      byName.put(muscle.getMedicalName(), muscle);
+      String parentName = getOptionalStr(csvRecord, "parent");
+      if (parentName != null) {
+        parentNames.put(muscle, parentName);
+      }
+    }
+    muscleRepository.saveAll(byName.values());
+    // Managed entities: the links are flushed with the seeding transaction
+    parentNames.forEach(
+        (muscle, parentName) -> {
+          Muscle parent = byName.get(parentName);
+          if (parent == null) {
+            log.warn(
+                "Unknown functional group '{}' for muscle '{}'",
+                parentName,
+                muscle.getMedicalName());
+          }
+          muscle.setParent(parent);
+        });
   }
 
   private void seedMovements() {

@@ -1,5 +1,6 @@
 package apex.stellar.aldebaran.mapper;
 
+import apex.stellar.aldebaran.dto.MuscleRefResponse;
 import apex.stellar.aldebaran.dto.MuscleRequest;
 import apex.stellar.aldebaran.dto.MuscleResponse;
 import apex.stellar.aldebaran.model.entities.Muscle;
@@ -11,7 +12,8 @@ import org.mapstruct.ReportingPolicy;
 /**
  * Mapper interface for converting between {@link Muscle} entities and DTOs.
  *
- * <p><b>Strategy:</b> Direct field-to-field mapping. ID and Audit fields are ignored during
+ * <p><b>Strategy:</b> Direct field-to-field mapping; the functional group ({@code parent}) is
+ * resolved by the service from {@code parentId}. ID and Audit fields are ignored during
  * creation/update to prevent overwriting system-managed data.
  *
  * <p>MapStruct generates an implementation of this interface at compile time. The {@code
@@ -30,6 +32,14 @@ public interface MuscleMapper {
   MuscleResponse toResponse(Muscle muscle);
 
   /**
+   * Converts a Muscle entity to a lightweight reference (functional group links).
+   *
+   * @param muscle The Muscle entity source.
+   * @return The corresponding reference.
+   */
+  MuscleRefResponse toRef(Muscle muscle);
+
+  /**
    * Creates a new Muscle entity from a Request DTO.
    *
    * <p><b>Note:</b> The {@code id}, {@code createdAt}, and {@code updatedAt} fields are
@@ -41,6 +51,8 @@ public interface MuscleMapper {
   @Mapping(target = "id", ignore = true)
   @Mapping(target = "createdAt", ignore = true)
   @Mapping(target = "updatedAt", ignore = true)
+  @Mapping(target = "parent", ignore = true)
+  @Mapping(target = "members", ignore = true)
   Muscle toEntity(MuscleRequest request);
 
   /**
@@ -54,5 +66,7 @@ public interface MuscleMapper {
   @Mapping(target = "id", ignore = true)
   @Mapping(target = "createdAt", ignore = true)
   @Mapping(target = "updatedAt", ignore = true)
+  @Mapping(target = "parent", ignore = true)
+  @Mapping(target = "members", ignore = true)
   void updateEntity(MuscleRequest request, @MappingTarget Muscle entity);
 }

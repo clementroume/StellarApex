@@ -58,7 +58,8 @@
   "ACCOUNT": {
     "TITLE": "Mon Compte",
     "MENU_INFO": "Mes informations",
-    "MENU_SETTINGS": "Paramètres"
+    "MENU_SETTINGS": "Paramètres",
+    "MENU_UNITS": "Unités"
   },
   "PROFILE": {
     "TITLE": "Mes informations",
@@ -85,6 +86,15 @@
     "DELETE_MODAL_CONFIRM": "Oui, supprimer mon compte",
     "SUCCESS_DELETE": "Votre compte a été supprimé avec succès. Au revoir !"
   },
+  "UNITS": {
+    "TITLE": "Unités",
+    "SUBTITLE": "Les WODs s'affichent dans ce système, quelle que soit l'unité dans laquelle ils ont été saisis.",
+    "SYSTEM_LABEL": "Système d'unités",
+    "METRIC": "Métrique",
+    "METRIC_EXAMPLE": "Charges en kg, hauteurs en cm, distances en m et km.",
+    "IMPERIAL": "Impérial",
+    "IMPERIAL_EXAMPLE": "Charges en lb, hauteurs en in, distances courtes en ft (course et rameur restent en m)."
+  },
   "EXPORT": {
     "EXPORT_CSV": "Exporter CSV",
     "CONFIRM_EXPORT": "Attention : Cela va écraser le fichier CSV local. Continuer ?",
@@ -99,7 +109,8 @@
     },
     "ACTIONS": {
       "ADD": "Ajouter un muscle",
-      "SELECT_GROUP": "Sélectionner un groupe",
+      "SELECT_GROUP": "Sélectionner une région",
+      "NO_FUNCTIONAL_GROUP": "Aucun (groupe ou muscle seul)",
       "SEARCH": "Rechercher un muscle..."
     },
     "SECTIONS": {
@@ -110,7 +121,9 @@
     "FIELDS": {
       "MEDICAL_NAME": "Nom Médical (Latin)",
       "COMMON_NAME": "Nom Commun",
-      "GROUP": "Muscle Group",
+      "GROUP": "Région",
+      "FUNCTIONAL_GROUP": "Groupe fonctionnel",
+      "MEMBERS": "Muscles du groupe",
       "NAME_FR": "Nom Français",
       "NAME_EN": "Nom Anglais",
       "DESC_FR": "Description (FR)",
@@ -126,6 +139,9 @@
       "IMAGE_URL": "https://..."
     },
     "MESSAGES": {
+      "IS_GROUP": "Groupe fonctionnel de {{count}} muscles : il ne peut pas appartenir à un autre groupe.",
+      "FUNCTIONAL_GROUP_HINT": "Uniquement les groupes de la même région.",
+      "GROUP_BADGE": "Groupe",
       "NOT_FOUND": "Muscle introuvable.",
       "EMPTY_LIST": "Aucun muscle trouvé.",
       "EMPTY_LIST_SEARCH": "Aucun muscle trouvé pour \"{{name}}\".",
@@ -259,6 +275,7 @@
       "PARALLEL_BARS": "Barres parallèles",
       "MATADOR": "Matador (Dips)",
       "ROPE": "Corde",
+      "PEGBOARD": "Pegboard",
       "ABMAT": "Abmat",
       "BOX": "Box",
       "ELASTIC_BAND": "Bande élastique",
@@ -320,6 +337,7 @@
       "TO_PLATFORM": "Sur plateforme",
       "FEET_ELEVATED": "Pieds surélevés",
       "CHEST_TO_WALL": "Face au mur",
+      "FREESTANDING": "Sans mur (freestanding)",
       "BOX": "Sur box",
       "FRONT_RACK": "Front Rack",
       "OVERHEAD": "Overhead",
@@ -390,7 +408,9 @@
       "MOVE_UP": "Monter",
       "MOVE_DOWN": "Descendre",
       "ADD_FOR_GYM": "Créer un WOD pour {{gym}}",
-      "ADD_PERSONAL": "Créer un WOD personnel"
+      "ADD_PERSONAL": "Créer un WOD personnel",
+      "ALL_CATEGORIES": "Toutes les catégories",
+      "ALL_FORMATS": "Tous les formats"
     },
     "SCOPES": {
       "ALL": "Tous",
@@ -428,14 +448,36 @@
       "DURATION": "Durée",
       "CALORIES": "Calories",
       "SCALING": "Scaling",
-      "GYM": "Salle"
+      "EQUIPMENT": "Équipement",
+      "TECHNIQUES": "Techniques",
+      "GYM": "Salle",
+      "FORMAT": "Format",
+      "CATEGORY": "Catégorie",
+      "WEIGHT_MEN": "Charge (hommes)",
+      "WEIGHT_WOMEN": "Charge (femmes)",
+      "DESCRIPTION_FR": "Description (français)",
+      "DESCRIPTION_EN": "Description (anglais)",
+      "NOTES_FR": "Notes (français)",
+      "NOTES_EN": "Notes (anglais)",
+      "OTHER_LANGUAGE": "Autre langue",
+      "TIME_CAP_SHORT": "Tc",
+      "NO_CATEGORY": "Aucune",
+      "BEST_SCORE": "Mon meilleur score",
+      "DURATION_MINUTES": "{{count}} minutes",
+      "MEN_WOMEN": "H / F",
+      "HEIGHT": "Hauteur",
+      "HEIGHT_MEN": "Hauteur (hommes)",
+      "HEIGHT_WOMEN": "Hauteur (femmes)",
+      "CALORIES_MEN": "Calories (hommes)",
+      "CALORIES_WOMEN": "Calories (femmes)"
     },
     "PLACEHOLDERS": {
       "TITLE": "Ex : Fran",
       "REP_SCHEME": "Ex : 21-15-9",
       "DESCRIPTION": "Déroulé du WOD...",
       "NOTES": "Consignes pour le coach ou l'athlète...",
-      "REPS": "Ex : 21-15-9"
+      "REPS": "Ex : 21-15-9",
+      "MOVEMENT_SEARCH": "Rechercher par nom ou abréviation (ex : HSPU)"
     },
     "VISIBILITY": {
       "PUBLIC": "Public",
@@ -450,24 +492,33 @@
       "SUCCESS_UPDATE": "WOD mis à jour avec succès.",
       "LOCKED": "Ce WOD a déjà des scores enregistrés : il ne peut plus être modifié ni supprimé.",
       "FORBIDDEN": "Tu n'as pas les droits pour effectuer cette action sur ce WOD.",
+      "MOVEMENT_UNKNOWN": "Choisissez un mouvement dans la liste.",
       "MOVEMENTS_REQUIRED": "Ajoute au moins un mouvement.",
       "NO_MOVEMENTS": "Aucun mouvement prescrit.",
       "LOCKED_BADGE": "Verrouillé (scores enregistrés)",
-      "OWNERSHIP_LOCKED": "Le propriétaire (personnel ou salle) d'un WOD ne peut pas être changé après sa création."
+      "OWNERSHIP_LOCKED": "Le propriétaire (personnel ou salle) d'un WOD ne peut pas être changé après sa création.",
+      "BEST_SCORE_SOON": "Bientôt disponible"
     },
     "WOD_TYPES": {
+      "FOR_TIME": "For Time",
       "AMRAP": "AMRAP",
       "EMOM": "EMOM",
-      "FOR_TIME": "For Time",
       "TABATA": "Tabata",
+      "INTERVALS": "Intervalles",
       "STRENGTH": "Force",
       "SKILL": "Skill / Technique",
       "ACCESSORY": "Renforcement (Accessory)",
-      "CHIPPER": "Chipper",
-      "GIRLS": "Girls (Benchmark)",
-      "HERO": "Hero WOD",
-      "CUSTOM_BENCHMARK": "Benchmark personnalisé",
       "CUSTOM": "Personnalisé"
+    },
+    "CATEGORIES": {
+      "GIRLS": "Girls",
+      "HERO": "Hero",
+      "BENCHMARK": "Benchmark CrossFit",
+      "CUSTOM_BENCHMARK": "Benchmark de la salle",
+      "OPEN": "Open",
+      "QUARTERFINALS": "Quarts de finale",
+      "SEMIFINALS": "Demi-finales",
+      "GAMES": "Games"
     },
     "SCORE_TYPES": {
       "TIME": "Temps",
@@ -491,6 +542,8 @@
       "MINUTES": "min",
       "METERS": "m",
       "KILOMETERS": "km",
+      "CENTIMETERS": "cm",
+      "INCHES": "in",
       "FEET": "ft",
       "YARDS": "yd",
       "MILES": "mi"

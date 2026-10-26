@@ -95,6 +95,31 @@ of them:
 
 Rules live in `security/WodSecurity` and `security/ScoreSecurity`, used from `@PreAuthorize`.
 
+## Catalog Model
+
+* **Muscles**: a region (`muscleGroup`: `LEGS`, `BACK`, `CHEST`, `SHOULDERS`, `ARMS`, `CORE`) and an
+  optional functional group (`parent`, e.g. Rectus Femoris in Quadriceps Femoris). One level only,
+  same region as the group (409 otherwise). A movement targets a group, or one of its muscles when
+  that muscle has its own action (e.g. Rectus Femoris as synergist of hip flexion).
+* **Movements**: variants are the `equipment` and `techniques` of the movement (Ring Dip = Dip +
+  `RINGS`), never a new movement or a note. "Any style" movements match WOD prescriptions (Clean,
+  Snatch, Shoulder-to-Overhead, Ground-to-Overhead). Coaching cues: one cue per line.
+* **WOD movements**: their equipment and techniques must be allowed by the movement
+  (`WodMovement.checkVariantsAllowed`): 400 on create/update, also enforced when reading the CSVs.
+  Conversely, a movement update cannot remove an equipment or technique that any WOD (public, gym
+  or personal) still prescribes for it: 409 naming the value and the number of WODs.
+* **WOD format and category**: `wodType` is the format (`FOR_TIME`, `AMRAP`, `EMOM`, `TABATA`,
+  `INTERVALS`, `STRENGTH`, `SKILL`, `ACCESSORY`, `CUSTOM`); the optional `category` is the family
+  (`GIRLS`, `HERO`, `BENCHMARK` = official CrossFit benchmarks such as Fight Gone Bad,
+  `CUSTOM_BENCHMARK` = a gym's flagship WODs, `OPEN`, `QUARTERFINALS`, `SEMIFINALS`, `GAMES`).
+  Fran is a `FOR_TIME` WOD of the `GIRLS` category.
+* **WOD texts and loads**: description and notes, and each WOD movement's notes and scaling options,
+  exist in English and French (`*En` / `*Fr`, either may be empty; clients fall back on the other
+  language). A WOD movement holds men's / women's pairs: load (`weight` / `weightFemale`, one
+  `weightUnit`), calories (`calories` / `caloriesFemale`) and box or target height (`height` /
+  `heightFemale`, one `heightUnit`: `CENTIMETERS`, `INCHES`, `METERS`, `FEET`). Values stay in the
+  prescribed unit; clients convert for display only.
+
 ## API Endpoints
 
 ### Muscles (`/aldebaran/muscles`) and Movements (`/aldebaran/movements`)
@@ -105,16 +130,18 @@ Rules live in `security/WodSecurity` and `security/ScoreSecurity`, used from `@P
 ### WODs (`/aldebaran/wods`)
 
 * `GET /`: paginated `Slice` of WOD summaries the user can read. Optional filters, all combinable:
-  `search` (title), `type`, `movementId`, `scope` (`ALL` default, `MINE`, `GYM`, `PUBLIC`),
+  `search` (title), `type` (format), `category`, `movementId`, `scope` (`ALL` default, `MINE`,
+  `GYM`, `PUBLIC`),
   `gymId` (with `GYM`) and `authorId` (that author's personal WODs). Summaries include `authorId`,
   `gymId` and `isPublic`.
-* `GET /facets`: values available to filter the list, with the same security: `wodTypes` present
-  for the current `search` / `scope` / `gymId` / `authorId` (so the UI never offers an empty type),
+* `GET /facets`: values available to filter the list, with the same security: `wodTypes` and
+  `categories` present for the current `search` / `scope` / `gymId` / `authorId` (so the UI never
+  offers an empty chip),
   plus `gymIds` and `authorIds` of readable WODs (admin selectors).
 * `GET /{id}`: full WOD with its movements and `capabilities` (`canModify`, `locked`) computed for
   the current user.
 * `POST /`, `PUT /{id}`, `DELETE /{id}`: manage a WOD (rules above).
-* `GET /reference-data`: WOD types, score types and unit groups.
+* `GET /reference-data`: WOD formats, categories, score types and unit groups.
 
 ### Scores (`/aldebaran/scores`)
 
@@ -134,16 +161,22 @@ Rules live in `security/WodSecurity` and `security/ScoreSecurity`, used from `@P
 
 ## Catalog Backup (Development)
 
-While the software is being developed, muscles, movements and public benchmark WODs (Girls, Heroes,
-Open, Games) are edited in the Sirius UI, then exported to CSV with the endpoints above. The CSV
+While the software is being developed, muscles, movements and public reference WODs (Girls, Heroes,
+CrossFit benchmarks, Open, Quarterfinals, Semifinals, Games) are edited in the Sirius UI, then exported to CSV with the endpoints above. The CSV
 files are a local backup of the latest catalog: if the database is reset, `config/DataSeeder`
 reloads muscles and movements into empty tables, then the WODs when no public WOD exists (public,
 no author, no gym). The CSV files are git-ignored (never pushed); on a fresh clone the catalog
 starts empty. This mechanism (export endpoints, source volume, CSV seeding) is temporary.
 
-* `wods.csv`: `title,wod_type,score_type,rep_scheme,time_cap_seconds,emom_interval,emom_rounds,description,notes`
-* `wod_movements.csv`: `wod_title,order_index,movement_name,reps_scheme,weight,weight_unit,distance,distance_unit,duration_seconds,calories,notes,scaling_options`,
-  plus optional `duration_display_unit,equipment,techniques` (lists separated by `|`).
+* `muscles.csv`: `medical_name,muscle_group,parent,common_name_en,common_name_fr,description_en,description_fr,image_url`
+  (`parent` = medical name of the functional group, linked once every muscle is saved).
+* `movements.csv`: equipment, techniques and muscles (`agonists`, `synergists`, `stabilizers`) are
+  lists separated by `, `.
+* `wods.csv`: `title,wod_type,category,score_type,rep_scheme,time_cap_seconds,emom_interval,emom_rounds,description_en,description_fr,notes_en,notes_fr`
+* `wod_movements.csv`: `wod_title,order_index,movement_name,reps_scheme,weight,weight_unit,distance,distance_unit,duration_seconds,calories,notes_en,scaling_options_en`,
+  plus optional `duration_display_unit,equipment,techniques,weight_female,notes_fr,scaling_options_fr,calories_female,height,height_female,height_unit`
+  (lists separated by `|`). Files with the former `description`, `notes` and `scaling_options`
+  columns still load (read as English).
   `movement_name` is the exact movement name; an unknown one is logged and the row skipped.
   Blank cell = `null`, so the export → seed round-trip is lossless (`config/WodCsvCodec`).
 

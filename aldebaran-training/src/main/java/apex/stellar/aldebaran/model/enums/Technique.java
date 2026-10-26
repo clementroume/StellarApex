@@ -40,6 +40,7 @@ public enum Technique {
   TO_PLATFORM(TechniqueCategory.STARTING_POSITION),
   FEET_ELEVATED(TechniqueCategory.STARTING_POSITION),
   CHEST_TO_WALL(TechniqueCategory.STARTING_POSITION),
+  FREESTANDING(TechniqueCategory.STARTING_POSITION),
   BOX(TechniqueCategory.STARTING_POSITION),
 
   // --- Load position ---

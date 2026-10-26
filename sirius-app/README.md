@@ -60,6 +60,29 @@ The backends enforce every rule; Sirius only adapts what it shows:
   screen and are never saved to the user's account; when the session expires the
   app reloads the admin identity instead of refreshing tokens.
 
+## Catalog Screens
+
+* **WOD detail**: the title, then two boxes that never repeat an information. Left: visibility,
+  category, modalities and locked badges, score type, a "My best score" slot (scores to come),
+  description and notes. Right, the gym whiteboard: the format with its duration ("AMRAP 20 minutes",
+  "EMOM 10 minutes", or "For Time" with the time cap as a badge), the rep scheme, then one line per
+  movement: quantity (reps omitted when they repeat the rep scheme, "14/12 cal", distance), name,
+  variants and the men/women load and height ("61/43 kg", "60/50 cm"). Texts show in the user's
+  language, falling back on the other one. The list shows "category / format" and filters on both.
+* **Units**: a "Units" tab in My account (metric or imperial, `core/services/unit.service.ts`), saved
+  in the account (`unitSystem`); without a choice it follows the language (French: metric). Values are
+  converted for display only, rounded as gyms write them: loads (95 lb = 43 kg), heights (24/20 in =
+  60/50 cm, 10/9 ft = 3/2.7 m) and distances (metric converts every imperial distance; imperial keeps
+  runs and rows in m/km and converts only distances under 100 m to feet).
+
+* **WOD form**: the movement is picked in a search box (name, abbreviation shown in the suggestions).
+  The movement's allowed equipment and techniques then appear as toggle chips (loaded from
+  `GET /aldebaran/movements/{id}`); changing the movement clears them. Aldebaran rejects any other
+  value.
+* **Muscles**: the list groups muscles by region, each functional group followed by its muscles; the
+  form picks the group among the top-level muscles of the same region; a movement detail explains a
+  group (its muscles) or a member (its group) in a tooltip. Coaching cues keep their line breaks.
+
 ## Docker
 
 The image is built as part of the root `docker-compose.yml`:

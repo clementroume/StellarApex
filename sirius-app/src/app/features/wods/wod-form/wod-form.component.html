@@ -19,13 +19,22 @@
                  [placeholder]="'WOD.PLACEHOLDERS.TITLE' | translate"/>
         </label>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-2">
           <label class="form-control w-full">
-            <div class="label"><span class="label-text">{{ 'WOD.FIELDS.WOD_TYPE' | translate }} *</span></div>
+            <div class="label"><span class="label-text">{{ 'WOD.FIELDS.FORMAT' | translate }} *</span></div>
             <select formControlName="wodType" class="select select-bordered w-full">
               <option value="" disabled>{{ 'WOD.ACTIONS.SELECT_TYPE' | translate }}</option>
               @for (type of wodTypes(); track type) {
                 <option [value]="type">{{ 'WOD.WOD_TYPES.' + type | translate }}</option>
+              }
+            </select>
+          </label>
+          <label class="form-control w-full">
+            <div class="label"><span class="label-text">{{ 'WOD.FIELDS.CATEGORY' | translate }}</span></div>
+            <select formControlName="category" class="select select-bordered w-full">
+              <option [ngValue]="null">{{ 'WOD.FIELDS.NO_CATEGORY' | translate }}</option>
+              @for (category of categories(); track category) {
+                <option [ngValue]="category">{{ 'WOD.CATEGORIES.' + category | translate }}</option>
               }
             </select>
           </label>
@@ -123,16 +132,20 @@
       <div class="card-body">
         <h2 class="card-title mb-4">{{ 'WOD.SECTIONS.DESCRIPTION' | translate }}</h2>
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <label class="form-control w-full">
-            <div class="label"><span class="label-text font-semibold">{{ 'GLOBAL.DESCRIPTION' | translate }}</span></div>
-            <textarea formControlName="description" class="textarea textarea-bordered h-32 w-full"
-                      [placeholder]="'WOD.PLACEHOLDERS.DESCRIPTION' | translate"></textarea>
-          </label>
-          <label class="form-control w-full">
-            <div class="label"><span class="label-text font-semibold">{{ 'WOD.FIELDS.NOTES' | translate }}</span></div>
-            <textarea formControlName="notes" class="textarea textarea-bordered h-32 w-full"
-                      [placeholder]="'WOD.PLACEHOLDERS.NOTES' | translate"></textarea>
-          </label>
+          @for (lang of languages(); track lang) {
+            <label class="form-control w-full">
+              <div class="label"><span class="label-text font-semibold">{{ 'WOD.FIELDS.DESCRIPTION_' + lang | translate }}</span></div>
+              <textarea [formControlName]="lang === 'FR' ? 'descriptionFr' : 'descriptionEn'" class="textarea textarea-bordered h-32 w-full"
+                        [placeholder]="'WOD.PLACEHOLDERS.DESCRIPTION' | translate"></textarea>
+            </label>
+          }
+          @for (lang of languages(); track lang) {
+            <label class="form-control w-full">
+              <div class="label"><span class="label-text font-semibold">{{ 'WOD.FIELDS.NOTES_' + lang | translate }}</span></div>
+              <textarea [formControlName]="lang === 'FR' ? 'notesFr' : 'notesEn'" class="textarea textarea-bordered h-24 w-full"
+                        [placeholder]="'WOD.PLACEHOLDERS.NOTES' | translate"></textarea>
+            </label>
+          }
         </div>
       </div>
     </div>
@@ -151,6 +164,12 @@
           <p class="text-center text-base-content/50 py-4">{{ 'WOD.MESSAGES.MOVEMENTS_REQUIRED' | translate }}</p>
         }
 
+        <datalist id="wod-movement-options">
+          @for (m of availableMovements(); track m.id) {
+            <option [value]="m.name">{{ m.nameAbbreviation ?? '' }}</option>
+          }
+        </datalist>
+
         <div formArrayName="movements" class="flex flex-col gap-4">
           @for (movementCtrl of movementsFormArray.controls; track movementCtrl; let i = $index; let first = $first; let last = $last) {
 
@@ -159,12 +178,14 @@
                 <span class="badge badge-secondary self-center sm:self-end sm:mb-3">{{ i + 1 }}</span>
                 <label class="form-control w-full">
                   <div class="label"><span class="label-text">{{ 'WOD.FIELDS.MOVEMENT' | translate }} *</span></div>
-                  <select formControlName="movementId" class="select select-bordered w-full">
-                    <option [ngValue]="null" disabled>-</option>
-                    @for (m of availableMovements(); track m.id) {
-                      <option [ngValue]="m.id">{{ m.name }}</option>
-                    }
-                  </select>
+                  <input type="text" formControlName="movementQuery" list="wod-movement-options" autocomplete="off"
+                         class="input input-bordered w-full"
+                         [class.input-error]="movementCtrl.get('movementQuery')?.value && movementCtrl.get('movementId')?.invalid"
+                         [placeholder]="'WOD.PLACEHOLDERS.MOVEMENT_SEARCH' | translate"
+                         (input)="onMovementQuery(i)"/>
+                  @if (movementCtrl.get('movementQuery')?.value && movementCtrl.get('movementId')?.invalid) {
+                    <div class="label"><span class="label-text-alt text-error">{{ 'WOD.MESSAGES.MOVEMENT_UNKNOWN' | translate }}</span></div>
+                  }
                 </label>
                 <div class="flex gap-2">
                   <button type="button" class="btn btn-square btn-ghost" [disabled]="first"
@@ -182,21 +203,68 @@
                 </div>
               </div>
 
-              <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+              @for (field of variantFields; track field) {
+                @if (allowedVariants(i, field); as allowed) {
+                  @if (allowed.length > 0) {
+                    <div class="flex flex-wrap items-center gap-2" role="group"
+                         [attr.aria-label]="'WOD.FIELDS.' + (field === 'equipment' ? 'EQUIPMENT' : 'TECHNIQUES') | translate">
+                      <span class="label-text w-full sm:w-28">{{ 'WOD.FIELDS.' + (field === 'equipment' ? 'EQUIPMENT' : 'TECHNIQUES') | translate }}</span>
+                      @for (value of allowed; track value) {
+                        <button type="button" class="btn btn-xs"
+                                [class.btn-primary]="field === 'equipment' && isVariantSelected(i, field, value)"
+                                [class.btn-secondary]="field === 'techniques' && isVariantSelected(i, field, value)"
+                                [class.btn-outline]="!isVariantSelected(i, field, value)"
+                                [attr.aria-pressed]="isVariantSelected(i, field, value)"
+                                (click)="toggleVariant(i, field, value)">
+                          {{ 'MOVEMENT.' + (field === 'equipment' ? 'EQUIPMENT.' : 'TECHNIQUES.') + value | translate }}
+                        </button>
+                      }
+                    </div>
+                  }
+                }
+              }
+
+              <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 <label class="form-control w-full">
                   <div class="label"><span class="label-text">{{ 'WOD.FIELDS.REPS' | translate }}</span></div>
                   <input type="text" formControlName="repsScheme" class="input input-bordered w-full"
                          [placeholder]="'WOD.PLACEHOLDERS.REPS' | translate"/>
                 </label>
                 <div class="form-control w-full">
-                  <div class="label"><span class="label-text">{{ 'WOD.FIELDS.WEIGHT' | translate }}</span></div>
+                  <div class="label"><span class="label-text">{{ 'WOD.FIELDS.WEIGHT' | translate }} ({{ 'WOD.FIELDS.MEN_WOMEN' | translate }})</span></div>
                   <div class="join w-full">
-                    <input type="number" min="0" step="0.5" formControlName="weight" class="input input-bordered join-item w-full"/>
+                    <input type="number" min="0" step="0.5" formControlName="weight" class="input input-bordered join-item w-full"
+                           [attr.aria-label]="'WOD.FIELDS.WEIGHT_MEN' | translate"/>
+                    <input type="number" min="0" step="0.5" formControlName="weightFemale" class="input input-bordered join-item w-full"
+                           [attr.aria-label]="'WOD.FIELDS.WEIGHT_WOMEN' | translate"/>
                     <select formControlName="weightUnit" class="select select-bordered join-item w-24">
                       @for (u of massUnits(); track u) {
                         <option [value]="u">{{ 'WOD.UNITS.' + u | translate }}</option>
                       }
                     </select>
+                  </div>
+                </div>
+                <div class="form-control w-full">
+                  <div class="label"><span class="label-text">{{ 'WOD.FIELDS.HEIGHT' | translate }} ({{ 'WOD.FIELDS.MEN_WOMEN' | translate }})</span></div>
+                  <div class="join w-full">
+                    <input type="number" min="0" step="0.5" formControlName="height" class="input input-bordered join-item w-full"
+                           [attr.aria-label]="'WOD.FIELDS.HEIGHT_MEN' | translate"/>
+                    <input type="number" min="0" step="0.5" formControlName="heightFemale" class="input input-bordered join-item w-full"
+                           [attr.aria-label]="'WOD.FIELDS.HEIGHT_WOMEN' | translate"/>
+                    <select formControlName="heightUnit" class="select select-bordered join-item w-24">
+                      @for (u of heightUnits(); track u) {
+                        <option [value]="u">{{ 'WOD.UNITS.' + u | translate }}</option>
+                      }
+                    </select>
+                  </div>
+                </div>
+                <div class="form-control w-full">
+                  <div class="label"><span class="label-text">{{ 'WOD.FIELDS.CALORIES' | translate }} ({{ 'WOD.FIELDS.MEN_WOMEN' | translate }})</span></div>
+                  <div class="join w-full">
+                    <input type="number" min="0" formControlName="calories" class="input input-bordered join-item w-full"
+                           [attr.aria-label]="'WOD.FIELDS.CALORIES_MEN' | translate"/>
+                    <input type="number" min="0" formControlName="caloriesFemale" class="input input-bordered join-item w-full"
+                           [attr.aria-label]="'WOD.FIELDS.CALORIES_WOMEN' | translate"/>
                   </div>
                 </div>
                 <div class="form-control w-full">
@@ -210,28 +278,37 @@
                     </select>
                   </div>
                 </div>
-                <div class="grid grid-cols-2 gap-2">
-                  <label class="form-control w-full">
-                    <div class="label"><span class="label-text">{{ 'WOD.FIELDS.DURATION' | translate }} (s)</span></div>
-                    <input type="number" min="0" formControlName="durationSeconds" class="input input-bordered w-full"/>
-                  </label>
-                  <label class="form-control w-full">
-                    <div class="label"><span class="label-text">{{ 'WOD.FIELDS.CALORIES' | translate }}</span></div>
-                    <input type="number" min="0" formControlName="calories" class="input input-bordered w-full"/>
-                  </label>
-                </div>
+                <label class="form-control w-full">
+                  <div class="label"><span class="label-text">{{ 'WOD.FIELDS.DURATION' | translate }} (s)</span></div>
+                  <input type="number" min="0" formControlName="durationSeconds" class="input input-bordered w-full"/>
+                </label>
               </div>
 
               <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <label class="form-control w-full">
                   <div class="label"><span class="label-text">{{ 'WOD.FIELDS.NOTES' | translate }}</span></div>
-                  <textarea formControlName="notes" class="textarea textarea-bordered h-16 w-full"></textarea>
+                  <textarea [formControlName]="textControl('notes', primaryLanguage())" class="textarea textarea-bordered h-16 w-full"></textarea>
                 </label>
                 <label class="form-control w-full">
                   <div class="label"><span class="label-text">{{ 'WOD.FIELDS.SCALING' | translate }}</span></div>
-                  <textarea formControlName="scalingOptions" class="textarea textarea-bordered h-16 w-full"></textarea>
+                  <textarea [formControlName]="textControl('scalingOptions', primaryLanguage())" class="textarea textarea-bordered h-16 w-full"></textarea>
                 </label>
               </div>
+              <details class="collapse collapse-arrow bg-base-100 rounded-box">
+                <summary class="collapse-title text-sm font-medium min-h-0 py-2">
+                  {{ 'WOD.FIELDS.OTHER_LANGUAGE' | translate }} ({{ secondaryLanguage() }})
+                </summary>
+                <div class="collapse-content grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <label class="form-control w-full">
+                    <div class="label"><span class="label-text">{{ 'WOD.FIELDS.NOTES' | translate }}</span></div>
+                    <textarea [formControlName]="textControl('notes', secondaryLanguage())" class="textarea textarea-bordered h-16 w-full"></textarea>
+                  </label>
+                  <label class="form-control w-full">
+                    <div class="label"><span class="label-text">{{ 'WOD.FIELDS.SCALING' | translate }}</span></div>
+                    <textarea [formControlName]="textControl('scalingOptions', secondaryLanguage())" class="textarea textarea-bordered h-16 w-full"></textarea>
+                  </label>
+                </div>
+              </details>
             </div>
           }
         </div>

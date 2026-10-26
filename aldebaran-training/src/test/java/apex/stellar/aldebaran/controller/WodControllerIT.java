@@ -17,13 +17,19 @@ import apex.stellar.aldebaran.model.entities.Score;
 import apex.stellar.aldebaran.model.entities.Score.ScalingLevel;
 import apex.stellar.aldebaran.model.entities.Wod;
 import apex.stellar.aldebaran.model.entities.Wod.ScoreType;
+import apex.stellar.aldebaran.model.entities.Wod.WodCategory;
 import apex.stellar.aldebaran.model.entities.Wod.WodType;
 import apex.stellar.aldebaran.model.enums.Category;
+import apex.stellar.aldebaran.model.enums.Equipment;
+import apex.stellar.aldebaran.model.enums.Technique;
+import apex.stellar.aldebaran.model.enums.Unit;
 import apex.stellar.aldebaran.repository.MovementRepository;
 import apex.stellar.aldebaran.repository.ScoreRepository;
 import apex.stellar.aldebaran.repository.WodRepository;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Locale;
+import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -55,7 +61,7 @@ class WodControllerIT extends BaseIntegrationTest {
             .title("Fran")
             .wodType(WodType.FOR_TIME)
             .scoreType(ScoreType.TIME)
-            .description("21-15-9 Thrusters and Pull-ups")
+            .descriptionEn("21-15-9 Thrusters and Pull-ups")
             .isPublic(true)
             .gymId(101L) // Important for security checks
             .authorId(50L)
@@ -255,18 +261,196 @@ class WodControllerIT extends BaseIntegrationTest {
   }
 
   @Test
+  @DisplayName("POST/PUT /wods: the category is saved with the format and can be cleared")
+  void testWodCategory_SavedAndCleared() throws Exception {
+    WodMovementRequest movement =
+        new WodMovementRequest(
+            pullUp.getId(), 1, "21-15-9", 43.0, 30.0, Unit.KG, null, null, null, null, null,
+            null, 60.0, 50.0, Unit.CENTIMETERS, null, null, "Wide grip", "Prise large", null,
+            null);
+    WodRequest girls =
+        new WodRequest(
+            "Girls Test", WodType.FOR_TIME, WodCategory.GIRLS, ScoreType.TIME, null, 101L, true,
+            "21-15-9 reps", "21-15-9 répétitions", null, null, null, null, null, "21-15-9",
+            List.of(movement));
+    String body =
+        mockMvc
+            .perform(
+                post("/aldebaran/wods")
+                    .with(csrf())
+                    .header("X-Auth-User-Id", "20")
+                    .header("X-Auth-User-Role", "USER")
+                    .header("X-Auth-Memberships", "101:COACH:WOD_WRITE")
+                    .header("X-Internal-Secret", "test-internal-secret")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(girls)))
+            .andExpect(status().isCreated())
+            .andExpect(jsonPath("$.wodType").value("FOR_TIME"))
+            .andExpect(jsonPath("$.category").value("GIRLS"))
+            .andExpect(jsonPath("$.descriptionFr").value("21-15-9 répétitions"))
+            .andExpect(jsonPath("$.movements[0].weightFemale").value(30.0))
+            .andExpect(jsonPath("$.movements[0].notesFr").value("Prise large"))
+            .andExpect(jsonPath("$.movements[0].heightFemale").value(50.0))
+            .andExpect(jsonPath("$.movements[0].heightUnit").value("CENTIMETERS"))
+            .andReturn()
+            .getResponse()
+            .getContentAsString();
+    long id = objectMapper.readTree(body).get("id").asLong();
+
+    WodRequest uncategorized =
+        new WodRequest(
+            "Girls Test", WodType.FOR_TIME, null, ScoreType.TIME, null, 101L, true, null, null, null,
+            null,
+            null, null, null, "21-15-9", List.of(movement));
+    mockMvc
+        .perform(
+            put("/aldebaran/wods/" + id)
+                .with(csrf())
+                .header("X-Auth-User-Id", "20")
+                .header("X-Auth-User-Role", "USER")
+                .header("X-Auth-Memberships", "101:COACH:WOD_WRITE")
+                .header("X-Internal-Secret", "test-internal-secret")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(uncategorized)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.category").isEmpty());
+  }
+
+  @Test
+  @DisplayName("GET/PUT /wods/{id}: a movement with several variants is returned and merged once")
+  void testWodMovementWithSeveralVariants_NotDuplicated() throws Exception {
+    pullUp.getEquipment().add(Equipment.RINGS);
+    pullUp.getTechniques().addAll(Set.of(Technique.STRICT, Technique.KIPPING));
+    movementRepository.save(pullUp);
+    WodRequest request =
+        new WodRequest(
+            "Ring Pull-ups",
+            WodType.FOR_TIME,
+            null,
+            ScoreType.TIME,
+            null,
+            101L,
+            true,
+            "Desc",
+            null, null, null,
+            600,
+            0,
+            0,
+            "50",
+            List.of(
+                new WodMovementRequest(
+                    pullUp.getId(),
+                    1,
+                    "50",
+                    null, null, null, null, null, null, null, null, null, null, null, null,
+                    Set.of("RINGS"),
+                    Set.of("STRICT", "KIPPING"),
+                    null, null,
+                    null, null)));
+    String body =
+        mockMvc
+            .perform(
+                post("/aldebaran/wods")
+                    .with(csrf())
+                    .header("X-Auth-User-Id", "20")
+                    .header("X-Auth-User-Role", "USER")
+                    .header("X-Auth-Memberships", "101:COACH:WOD_WRITE")
+                    .header("X-Internal-Secret", "test-internal-secret")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(request)))
+            .andExpect(status().isCreated())
+            .andReturn()
+            .getResponse()
+            .getContentAsString();
+    long id = objectMapper.readTree(body).get("id").asLong();
+
+    mockMvc
+        .perform(
+            get("/aldebaran/wods/" + id)
+                .header("X-Auth-User-Id", "20")
+                .header("X-Auth-User-Role", "USER")
+                .header("X-Auth-Memberships", "101:COACH:WOD_WRITE")
+                .header("X-Internal-Secret", "test-internal-secret"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.movements", hasSize(1)))
+        .andExpect(jsonPath("$.movements[0].techniques", hasSize(2)));
+
+    mockMvc
+        .perform(
+            put("/aldebaran/wods/" + id)
+                .with(csrf())
+                .header("X-Auth-User-Id", "20")
+                .header("X-Auth-User-Role", "USER")
+                .header("X-Auth-Memberships", "101:COACH:WOD_WRITE")
+                .header("X-Internal-Secret", "test-internal-secret")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.movements", hasSize(1)));
+  }
+
+  @Test
+  @DisplayName("POST /wods: should reject an equipment that the movement does not allow (400)")
+  void testCreateWod_EquipmentNotAllowed() throws Exception {
+    pullUp.getEquipment().add(Equipment.PULL_UP_BAR);
+    movementRepository.save(pullUp);
+    WodRequest request =
+        new WodRequest(
+            "Ring Pull-ups",
+            WodType.FOR_TIME,
+            null,
+            ScoreType.TIME,
+            null,
+            101L,
+            true,
+            "Desc",
+            null, null, null,
+            600,
+            0,
+            0,
+            "50",
+            List.of(
+                new WodMovementRequest(
+                    pullUp.getId(),
+                    1,
+                    "50",
+                    null, null, null, null, null, null, null, null, null, null, null, null,
+                    Set.of("RINGS"),
+                    null, null, null,
+                    null, null)));
+    mockMvc
+        .perform(
+            post("/aldebaran/wods")
+                .with(csrf())
+                .header("X-Auth-User-Id", "20")
+                .header("X-Auth-User-Role", "USER")
+                .header("X-Auth-Memberships", "101:COACH:WOD_WRITE")
+                .header("X-Internal-Secret", "test-internal-secret")
+                .locale(Locale.ENGLISH)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+        .andExpect(status().isBadRequest())
+        .andExpect(jsonPath("$.title").value("Invalid WOD Movement"))
+        .andExpect(
+            jsonPath("$.detail").value("Equipment RINGS is not allowed for the movement Pull-up."));
+  }
+
+  @Test
   @DisplayName("POST /wods: should create WOD when Coach with WOD_WRITE permission")
   void testCreateWod_Success() throws Exception {
     WodRequest request =
         new WodRequest(
             "Murph",
             WodType.FOR_TIME,
+            null,
             ScoreType.TIME,
             null,
             101L,
             true,
             "Hero Wod",
+            null,
             "Wear a vest",
+            null,
             3600,
             0,
             0,
@@ -277,16 +461,14 @@ class WodControllerIT extends BaseIntegrationTest {
                     1,
                     "100",
                     0.0,
-                    null,
+                    null, null,
                     0,
                     null,
                     0.0,
                     null,
                     0,
-                    null,
-                    null,
-                    null,
-                    null)));
+                    null, null, null, null, null, null, null, null,
+                    null, null)));
     mockMvc
         .perform(
             post("/aldebaran/wods")
@@ -312,13 +494,12 @@ class WodControllerIT extends BaseIntegrationTest {
         new WodRequest(
             "My Custom WOD",
             WodType.EMOM,
+            null,
             ScoreType.NONE,
             100L, // authorId matches User
             null, // No Gym
             false, // Private
-            null,
-            null,
-            null,
+            null, null, null, null, null,
             60,
             10,
             null,
@@ -328,16 +509,14 @@ class WodControllerIT extends BaseIntegrationTest {
                     1,
                     "10",
                     0.0,
-                    null,
+                    null, null,
                     0,
                     null,
                     0.0,
                     null,
                     0,
-                    null,
-                    null,
-                    null,
-                    null)));
+                    null, null, null, null, null, null, null, null,
+                    null, null)));
     mockMvc
         .perform(
             post("/aldebaran/wods")
@@ -357,32 +536,26 @@ class WodControllerIT extends BaseIntegrationTest {
         new WodRequest(
             "Owner WOD",
             WodType.FOR_TIME,
+            null,
             ScoreType.TIME,
             null,
             101L, // Gym 101
             false,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
+            null, null, null, null, null, null, null, null,
             List.of(
                 new WodMovementRequest(
                     pullUp.getId(),
                     1,
                     "50",
                     0.0,
-                    null,
+                    null, null,
                     0,
                     null,
                     0.0,
                     null,
                     0,
-                    null,
-                    null,
-                    null,
-                    null)));
+                    null, null, null, null, null, null, null, null,
+                    null, null)));
     mockMvc
         .perform(
             post("/aldebaran/wods")
@@ -403,32 +576,26 @@ class WodControllerIT extends BaseIntegrationTest {
         new WodRequest(
             "Unauthorized WOD",
             WodType.FOR_TIME,
+            null,
             ScoreType.TIME,
             null,
             101L, // Gym 101
             false,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
+            null, null, null, null, null, null, null, null,
             List.of(
                 new WodMovementRequest(
                     pullUp.getId(),
                     1,
                     "50",
                     0.0,
-                    null,
+                    null, null,
                     0,
                     null,
                     0.0,
                     null,
                     0,
-                    null,
-                    null,
-                    null,
-                    null)));
+                    null, null, null, null, null, null, null, null,
+                    null, null)));
     mockMvc
         .perform(
             post("/aldebaran/wods")
@@ -450,32 +617,26 @@ class WodControllerIT extends BaseIntegrationTest {
         new WodRequest(
             "Cross Gym WOD",
             WodType.FOR_TIME,
+            null,
             ScoreType.TIME,
             null,
             101L, // Target Gym 101
             false,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
+            null, null, null, null, null, null, null, null,
             List.of(
                 new WodMovementRequest(
                     pullUp.getId(),
                     1,
                     "50",
                     0.0,
-                    null,
+                    null, null,
                     0,
                     null,
                     0.0,
                     null,
                     0,
-                    null,
-                    null,
-                    null,
-                    null)));
+                    null, null, null, null, null, null, null, null,
+                    null, null)));
     mockMvc
         .perform(
             post("/aldebaran/wods")
@@ -495,13 +656,11 @@ class WodControllerIT extends BaseIntegrationTest {
     WodRequest invalidRequest =
         new WodRequest(
             "", // Empty title
-            null, // Null Type
+            null, null, // Null Type
             ScoreType.TIME,
-            null,
-            null,
+            null, null,
             true,
-            null,
-            null,
+            null, null, null, null,
             -10, // Negative time cap
             0,
             0,
@@ -530,12 +689,15 @@ class WodControllerIT extends BaseIntegrationTest {
         new WodRequest(
             "Fran Modified",
             WodType.FOR_TIME,
+            null,
             ScoreType.TIME,
             null,
             null, // GymId ignored in update
             true,
             "Harder version",
+            null,
             "Scale if needed",
+            null,
             1200,
             0,
             0,
@@ -546,16 +708,14 @@ class WodControllerIT extends BaseIntegrationTest {
                     1,
                     "21-15-9",
                     40.0,
-                    null,
+                    null, null,
                     0,
                     null,
                     0.0,
                     null,
                     0,
-                    null,
-                    null,
-                    null,
-                    null)));
+                    null, null, null, null, null, null, null, null,
+                    null, null)));
     mockMvc
         .perform(
             put("/aldebaran/wods/" + existing.getId())
@@ -584,12 +744,11 @@ class WodControllerIT extends BaseIntegrationTest {
         new WodRequest(
             "Hacked Wod",
             WodType.AMRAP,
+            null,
             ScoreType.ROUNDS_REPS,
-            null,
-            null,
+            null, null,
             false,
-            null,
-            null,
+            null, null, null, null,
             0,
             0,
             0,
@@ -600,16 +759,14 @@ class WodControllerIT extends BaseIntegrationTest {
                     1,
                     "10",
                     0.0,
-                    null,
+                    null, null,
                     0,
                     null,
                     0.0,
                     null,
                     0,
-                    null,
-                    null,
-                    null,
-                    null)));
+                    null, null, null, null, null, null, null, null,
+                    null, null)));
     mockMvc
         .perform(
             put("/aldebaran/wods/" + existing.getId())
@@ -638,32 +795,25 @@ class WodControllerIT extends BaseIntegrationTest {
         new WodRequest(
             "My WOD Updated",
             WodType.FOR_TIME,
+            null,
             ScoreType.TIME,
-            null,
-            null,
+            null, null,
             false,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
+            null, null, null, null, null, null, null, null,
             List.of(
                 new WodMovementRequest(
                     pullUp.getId(),
                     1,
                     "10",
                     0.0,
-                    null,
+                    null, null,
                     0,
                     null,
                     0.0,
                     null,
                     0,
-                    null,
-                    null,
-                    null,
-                    null)));
+                    null, null, null, null, null, null, null, null,
+                    null, null)));
     mockMvc
         .perform(
             put("/aldebaran/wods/" + personalWod.getId())
@@ -692,32 +842,25 @@ class WodControllerIT extends BaseIntegrationTest {
         new WodRequest(
             "Hacked",
             WodType.FOR_TIME,
+            null,
             ScoreType.TIME,
-            null,
-            null,
+            null, null,
             false,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
+            null, null, null, null, null, null, null, null,
             List.of(
                 new WodMovementRequest(
                     pullUp.getId(),
                     1,
                     "10",
                     0.0,
-                    null,
+                    null, null,
                     0,
                     null,
                     0.0,
                     null,
                     0,
-                    null,
-                    null,
-                    null,
-                    null)));
+                    null, null, null, null, null, null, null, null,
+                    null, null)));
     mockMvc
         .perform(
             put("/aldebaran/wods/" + personalWod.getId())
@@ -737,12 +880,11 @@ class WodControllerIT extends BaseIntegrationTest {
         new WodRequest(
             "Ghost Wod",
             WodType.FOR_TIME,
+            null,
             ScoreType.TIME,
-            null,
-            null,
+            null, null,
             true,
-            null,
-            null,
+            null, null, null, null,
             0,
             0,
             0,
@@ -753,16 +895,14 @@ class WodControllerIT extends BaseIntegrationTest {
                     1,
                     "10",
                     0.0,
-                    null,
+                    null, null,
                     0,
                     null,
                     0.0,
                     null,
                     0,
-                    null,
-                    null,
-                    null,
-                    null)));
+                    null, null, null, null, null, null, null, null,
+                    null, null)));
     mockMvc
         .perform(
             put("/aldebaran/wods/99999")
@@ -795,12 +935,11 @@ class WodControllerIT extends BaseIntegrationTest {
         new WodRequest(
             "Fran Modified",
             WodType.FOR_TIME,
+            null,
             ScoreType.TIME,
-            null,
-            null,
+            null, null,
             true,
-            null,
-            null,
+            null, null, null, null,
             0,
             0,
             0,
@@ -811,16 +950,14 @@ class WodControllerIT extends BaseIntegrationTest {
                     1,
                     "21-15-9",
                     0.0,
-                    null,
+                    null, null,
                     0,
                     null,
                     0.0,
                     null,
                     0,
-                    null,
-                    null,
-                    null,
-                    null)));
+                    null, null, null, null, null, null, null, null,
+                    null, null)));
     mockMvc
         .perform(
             put("/aldebaran/wods/" + existing.getId())

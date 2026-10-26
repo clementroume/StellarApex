@@ -13,6 +13,12 @@ import {ListStateComponent} from '../../../shared/component/list/list-state/list
 import {ListItemComponent} from '../../../shared/component/list/list-item/list-item.component';
 import {ListGridComponent} from '../../../shared/component/list/list-grid/list-grid.component';
 
+/** A row of a region: a top-level muscle (group or standalone) or a member shown under its group. */
+export interface MuscleRow {
+  muscle: MuscleResponse;
+  isMember: boolean;
+}
+
 @Component({
   selector: 'app-muscle-list',
   standalone: true,
@@ -53,17 +59,31 @@ export class MuscleListComponent implements OnInit {
     );
   });
 
+  /**
+   * Rows per region: each top-level muscle (functional group or standalone) followed by its members.
+   * A group stays visible when only one of its members matches the search.
+   */
   groupedMuscles = computed(() => {
-    const grouped = new Map<string, MuscleResponse[]>();
-    this.muscleGroupKeys().forEach(g => grouped.set(g, []));
-    this.filteredMuscles().forEach(m => {
-      if (!grouped.has(m.muscleGroup)) {
-        grouped.set(m.muscleGroup, []);
-      }
-      grouped.get(m.muscleGroup)!.push(m);
+    const all = this.rawMuscles();
+    const matched = new Set(this.filteredMuscles().map(m => m.id));
+    const ids = new Set(all.map(m => m.id));
+    const byName = (a: MuscleResponse, b: MuscleResponse) => a.medicalName.localeCompare(b.medicalName);
+    const membersOf = new Map<number, MuscleResponse[]>();
+    all.filter(m => m.parent && ids.has(m.parent.id)).forEach(m => {
+      membersOf.set(m.parent!.id, [...(membersOf.get(m.parent!.id) ?? []), m]);
     });
-    grouped.forEach((list) => {
-      list.sort((a, b) => a.medicalName.localeCompare(b.medicalName));
+
+    const grouped = new Map<string, MuscleRow[]>();
+    this.muscleGroupKeys().forEach(g => grouped.set(g, []));
+    all.filter(m => !m.parent || !ids.has(m.parent.id)).sort(byName).forEach(top => {
+      const members = (membersOf.get(top.id) ?? []).filter(m => matched.has(m.id)).sort(byName);
+      if (!matched.has(top.id) && members.length === 0) return;
+      if (!grouped.has(top.muscleGroup)) {
+        grouped.set(top.muscleGroup, []);
+      }
+      grouped.get(top.muscleGroup)!.push(
+        {muscle: top, isMember: false},
+        ...members.map(muscle => ({muscle, isMember: true})));
     });
     return grouped;
   });
@@ -119,8 +139,8 @@ export class MuscleListComponent implements OnInit {
       }
     } else {
       const expanded = new Set(this.expandedGroups());
-      for (const [group, muscles] of this.groupedMuscles().entries()) {
-        if (muscles.length > 0) {
+      for (const [group, rows] of this.groupedMuscles().entries()) {
+        if (rows.length > 0) {
           expanded.add(group);
         }
       }
@@ -141,6 +161,12 @@ export class MuscleListComponent implements OnInit {
   }
 
   // --- HELPERS ---
+  /** Badge of a functional group: "Group · 4". */
+  groupBadge(muscle: MuscleResponse): string | undefined {
+    const count = muscle.members?.length ?? 0;
+    return count > 0 ? `${this.translate.instant('MUSCLE.MESSAGES.GROUP_BADGE')} · ${count}` : undefined;
+  }
+
   getLocalizedName(muscle: MuscleResponse): string {
     const isFr = this.activeLang() === 'fr';
     const name = isFr ? muscle.commonNameFr : muscle.commonNameEn;

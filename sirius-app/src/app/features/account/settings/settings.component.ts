@@ -80,7 +80,9 @@ export class SettingsComponent {
     if (currentUser && !currentUser.supportSession) {
       const preferences: PreferencesUpdateRequest = {
         locale: lang,
-        theme: currentUser.theme
+        theme: currentUser.theme,
+        // Sent back unchanged: the preferences are replaced as a whole
+        unitSystem: currentUser.unitSystem ?? null
       };
 
       this.userService.updatePreferences(preferences).subscribe({

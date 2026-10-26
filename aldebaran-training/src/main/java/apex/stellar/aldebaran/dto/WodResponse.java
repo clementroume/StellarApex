@@ -1,6 +1,7 @@
 package apex.stellar.aldebaran.dto;
 
 import apex.stellar.aldebaran.model.entities.Wod.ScoreType;
+import apex.stellar.aldebaran.model.entities.Wod.WodCategory;
 import apex.stellar.aldebaran.model.entities.Wod.WodType;
 import apex.stellar.aldebaran.model.enums.Category.Modality;
 import java.time.LocalDateTime;
@@ -14,6 +15,7 @@ public record WodResponse(
     Long id,
     String title,
     WodType wodType,
+    WodCategory category,
     ScoreType scoreType,
 
     // --- Authorship and Visibility ---
@@ -21,9 +23,11 @@ public record WodResponse(
     Long gymId,
     boolean isPublic,
 
-    // --- Description and Notes ---
-    String description,
-    String notes,
+    // --- Description and Notes (EN / FR) ---
+    String descriptionEn,
+    String descriptionFr,
+    String notesEn,
+    String notesFr,
 
     // --- Structure ---
     Integer timeCapSeconds,
@@ -51,12 +55,15 @@ public record WodResponse(
         id,
         title,
         wodType,
+        category,
         scoreType,
         authorId,
         gymId,
         isPublic,
-        description,
-        notes,
+        descriptionEn,
+        descriptionFr,
+        notesEn,
+        notesFr,
         timeCapSeconds,
         emomInterval,
         emomRounds,

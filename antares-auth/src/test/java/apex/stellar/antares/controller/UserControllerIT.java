@@ -71,7 +71,8 @@ class UserControllerIT extends BaseIntegrationTest {
   @DisplayName("Update Preferences: should succeed with valid data and auth")
   void testUpdatePreferences_shouldSucceed() throws Exception {
     // Given
-    PreferencesUpdateRequest preferencesRequest = new PreferencesUpdateRequest("fr", "dark");
+    PreferencesUpdateRequest preferencesRequest =
+        new PreferencesUpdateRequest("fr", "dark", "IMPERIAL");
 
     // When
     mockMvc
@@ -84,7 +85,20 @@ class UserControllerIT extends BaseIntegrationTest {
         // Then
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.locale").value("fr"))
-        .andExpect(jsonPath("$.theme").value("dark"));
+        .andExpect(jsonPath("$.theme").value("dark"))
+        .andExpect(jsonPath("$.unitSystem").value("IMPERIAL"));
+
+    // Back to "follow the language"
+    mockMvc
+        .perform(
+            patch("/antares/users/me/preferences")
+                .cookie(authCookies)
+                .with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    jsonMapper.writeValueAsString(new PreferencesUpdateRequest("fr", "dark", null))))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.unitSystem").isEmpty());
   }
 
   @Test
@@ -200,7 +214,7 @@ class UserControllerIT extends BaseIntegrationTest {
   void testUpdatePreferences_withInvalidData_shouldReturnBadRequest() throws Exception {
     // Given: A request with an invalid locale format
     PreferencesUpdateRequest invalidRequest =
-        new PreferencesUpdateRequest("invalid-locale", "dark");
+        new PreferencesUpdateRequest("invalid-locale", "dark", null);
 
     // When/Then
     mockMvc

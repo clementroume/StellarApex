@@ -82,6 +82,10 @@ public class User implements UserDetails {
   @Column(nullable = false, length = 20)
   private String theme = "light";
 
+  /** Display unit for loads: METRIC (kg) or IMPERIAL (lb); null follows the language. */
+  @Column(name = "unit_system", length = 10)
+  private String unitSystem;
+
   @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
   @Builder.Default
   private List<Membership> memberships = new ArrayList<>();

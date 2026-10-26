@@ -109,6 +109,23 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
   }
 
   /**
+   * Handles {@link InvalidWodMovementException} when a WOD movement uses an equipment or a technique
+   * that its movement does not allow. Returns 400 Bad Request.
+   */
+  @ApiResponse(
+      responseCode = "400",
+      description = "Invalid WOD movement (equipment or technique not allowed by the movement)",
+      content = @Content(schema = @Schema(implementation = ProblemDetail.class)))
+  @ExceptionHandler(InvalidWodMovementException.class)
+  public ResponseEntity<@NonNull ProblemDetail> handleInvalidWodMovement(
+      InvalidWodMovementException ex, HttpServletRequest request, Locale locale) {
+
+    log.warn("Invalid WOD movement: {}", ex.getMessage());
+    String message = getLocalizedMessage(ex.getMessageKey(), ex.getArgs(), locale);
+    return createProblemResponse(HttpStatus.BAD_REQUEST, "Invalid WOD Movement", message, request);
+  }
+
+  /**
    * Handles {@link ConstraintViolationException} triggered by JPA/Hibernate Validator
    * (e.g., @ValidScore). Returns 400 Bad Request with a structured array of validation errors.
    */

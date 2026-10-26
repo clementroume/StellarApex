@@ -15,6 +15,7 @@ import apex.stellar.aldebaran.dto.MuscleRequest;
 import apex.stellar.aldebaran.model.entities.Muscle;
 import apex.stellar.aldebaran.model.entities.Muscle.MuscleGroup;
 import apex.stellar.aldebaran.repository.MuscleRepository;
+import java.util.Locale;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -86,6 +87,65 @@ class MuscleControllerIT extends BaseIntegrationTest {
   // -------------------------------------------------------------------------
 
   @Test
+  @DisplayName("POST /muscles: should create a member of a functional group, exposed on both sides")
+  void testCreateMuscle_FunctionalGroup() throws Exception {
+    Muscle quads =
+        muscleRepository.save(
+            Muscle.builder().medicalName("Quadriceps Femoris").muscleGroup(MuscleGroup.LEGS).build());
+    MuscleRequest member =
+        new MuscleRequest(
+            "Rectus Femoris", MuscleGroup.LEGS, quads.getId(), null, null, null, null, null);
+
+    String body =
+        mockMvc
+            .perform(
+                post("/aldebaran/muscles")
+                    .with(csrf())
+                    .header("X-Auth-User-Id", "1")
+                    .header("X-Auth-User-Role", "ADMIN")
+                    .header("X-Internal-Secret", "test-internal-secret")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(member)))
+            .andExpect(status().isCreated())
+            .andExpect(jsonPath("$.parent.medicalName").value("Quadriceps Femoris"))
+            .andExpect(jsonPath("$.members", hasSize(0)))
+            .andReturn()
+            .getResponse()
+            .getContentAsString();
+    Long memberId = objectMapper.readTree(body).get("id").asLong();
+
+    mockMvc
+        .perform(
+            get("/aldebaran/muscles/" + quads.getId())
+                .header("X-Auth-User-Id", "1")
+                .header("X-Auth-User-Role", "USER")
+                .header("X-Internal-Secret", "test-internal-secret"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.parent").isEmpty())
+        .andExpect(jsonPath("$.members[0].medicalName").value("Rectus Femoris"));
+
+    // Groups do not nest: a member cannot become a group
+    MuscleRequest nested =
+        new MuscleRequest(
+            "Vastus Lateralis", MuscleGroup.LEGS, memberId, null, null, null, null, null);
+    mockMvc
+        .perform(
+            post("/aldebaran/muscles")
+                .with(csrf())
+                .header("X-Auth-User-Id", "1")
+                .header("X-Auth-User-Role", "ADMIN")
+                .header("X-Internal-Secret", "test-internal-secret")
+                .locale(Locale.ENGLISH)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(nested)))
+        .andExpect(status().isConflict())
+        .andExpect(
+            jsonPath("$.detail")
+                .value(
+                    "The muscle Rectus Femoris belongs to a functional group and cannot be a group itself."));
+  }
+
+  @Test
   @DisplayName("POST /muscles: should create new muscle when Admin")
   void testCreateMuscle_AsAdmin_Success() throws Exception {
     // Given
@@ -93,6 +153,7 @@ class MuscleControllerIT extends BaseIntegrationTest {
         new MuscleRequest(
             "Latissimus Dorsi",
             MuscleGroup.BACK,
+            null,
             "Lats",
             "Dorsaux",
             "Back muscle",
@@ -123,7 +184,7 @@ class MuscleControllerIT extends BaseIntegrationTest {
   @DisplayName("POST /muscles: should return 403 Forbidden when simple User")
   void testCreateMuscle_AsUser_Forbidden() throws Exception {
     MuscleRequest request =
-        new MuscleRequest("Biceps Brachii", MuscleGroup.ARMS, "Biceps", "Biceps", null, null, null);
+        new MuscleRequest("Biceps Brachii", MuscleGroup.ARMS, null, "Biceps", "Biceps", null, null, null);
 
     mockMvc
         .perform(
@@ -142,7 +203,7 @@ class MuscleControllerIT extends BaseIntegrationTest {
   void testCreateMuscle_Conflict() throws Exception {
     // Given: Request with the existing name "Pectoralis Major" (seeded in setUp)
     MuscleRequest request =
-        new MuscleRequest("Pectoralis Major", MuscleGroup.CHEST, "Chest", "Pec", null, null, null);
+        new MuscleRequest("Pectoralis Major", MuscleGroup.CHEST, null, "Chest", "Pec", null, null, null);
 
     // When/Then
     mockMvc
@@ -169,6 +230,7 @@ class MuscleControllerIT extends BaseIntegrationTest {
         new MuscleRequest(
             "Pectoralis Major",
             MuscleGroup.CHEST,
+            null,
             "Upper Chest", // Changed value
             "Pectoraux",
             null,
@@ -193,7 +255,7 @@ class MuscleControllerIT extends BaseIntegrationTest {
   @DisplayName("PUT /muscles/{id}: should return 404 if ID unknown")
   void testUpdateMuscle_NotFound() throws Exception {
     MuscleRequest request =
-        new MuscleRequest("Unknown", MuscleGroup.LEGS, "U", "U", null, null, null);
+        new MuscleRequest("Unknown", MuscleGroup.LEGS, null, "U", "U", null, null, null);
 
     mockMvc
         .perform(

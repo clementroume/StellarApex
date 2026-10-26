@@ -5,9 +5,12 @@ Domain: muscles, movements, WODs (`Wod` + `WodMovement`) and scores.
 Dev-only catalog backup (temporary, git-ignored CSVs, see root `CLAUDE.md`): `controller/Exporter`
 (admin only) writes `src/main/resources/{muscles,movements,wods,wod_movements}.csv` through the source
 volume mounted in `docker-compose.yml`; `config/DataSeeder` reloads them into empty tables (WODs:
-when no public WOD exists). WOD CSV format lives in `config/WodCsvCodec` (blank = null, lossless
-round-trip; movements by exact name). `config/DevGymWodSeeder` (`@Profile("dev")`, temporary) seeds
-WODs for the Antares test gyms, resolving IDs from the `antares` schema with `JdbcTemplate`.
+when no public WOD exists). `muscles.csv` has a `parent` column (functional group, by medical name).
+WOD CSV format lives in `config/WodCsvCodec` (blank = null, lossless round-trip; movements by exact
+name; WOD movement variants joined by `|`, whereas `movements.csv` lists use `, `; FR/EN text
+columns `*_en` / `*_fr`, the former single-language columns still read as English).
+`config/DevGymWodSeeder` (`@Profile("dev")`, temporary) seeds WODs for the Antares test gyms,
+resolving IDs from the `antares` schema with `JdbcTemplate`.
 `./mvnw verify` runs unit tests and `*IT` (Testcontainers PostgreSQL + Redis, Docker required).
 
 ## Identity and security
@@ -38,6 +41,11 @@ WODs for the Antares test gyms, resolving IDs from the `antares` schema with `Jd
   `*Response`, `*Summary*`); MapStruct mappers in `mapper` (`unmappedTargetPolicy = IGNORE`).
 - Lombok (`@RequiredArgsConstructor`, `@Slf4j`, builders on entities). Javadoc on public classes and
   methods, 2-space indentation, Google Java style.
+- Catalog rules: `WodMovement.checkVariantsAllowed` (variants allowed by the movement; used by
+  `WodService`, `WodCsvCodec`, `DevGymWodSeeder`; `InvalidWodMovementException` → 400), its
+  converse in `MovementService.updateMovement` (a variant used by any WOD cannot be removed;
+  `WodRepository.countByMovementEquipment/Technique`; 409 `error.movement.variant.in.use`) and
+  `MuscleService.applyParent` (one-level functional groups, same region; 409).
 - Errors: throw domain exceptions with a message key (`ResourceNotFoundException("error.wod.not.found", id)`,
   `WodLockedException` → 409); `exception/GlobalExceptionHandler` turns them into localized
   `ProblemDetail`. Add new keys to `messages.properties` and `messages_fr.properties`.

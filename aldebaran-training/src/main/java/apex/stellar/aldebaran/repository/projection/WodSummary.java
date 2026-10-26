@@ -1,6 +1,7 @@
 package apex.stellar.aldebaran.repository.projection;
 
 import apex.stellar.aldebaran.model.entities.Wod.ScoreType;
+import apex.stellar.aldebaran.model.entities.Wod.WodCategory;
 import apex.stellar.aldebaran.model.entities.Wod.WodType;
 import java.time.LocalDateTime;
 
@@ -32,6 +33,8 @@ public interface WodSummary {
    * @return the {@link WodType}.
    */
   WodType getWodType();
+
+  WodCategory getCategory();
 
   /**
    * Retrieves the primary metric used to score the workout (e.g., Time, Rounds, Reps).

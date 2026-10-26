@@ -1,5 +1,8 @@
 package apex.stellar.aldebaran.model.entities;
 
+import apex.stellar.aldebaran.exception.InvalidWodMovementException;
+import apex.stellar.aldebaran.model.enums.Equipment;
+import apex.stellar.aldebaran.model.enums.Technique;
 import apex.stellar.aldebaran.model.enums.Unit;
 import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
@@ -20,12 +23,14 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
+import org.hibernate.annotations.BatchSize;
 
 /** Represents a prescribed movement within a WOD. */
 @Getter
@@ -68,6 +73,11 @@ public class WodMovement {
   @DecimalMin("0.0")
   private Double weight;
 
+  /** Women's load, in the same unit as {@code weight} (which is the men's load). */
+  @Column(name = "weight_female")
+  @DecimalMin("0.0")
+  private Double weightFemale;
+
   @Enumerated(EnumType.STRING)
   @Column(name = "weight_unit", length = 10)
   @Builder.Default
@@ -87,7 +97,7 @@ public class WodMovement {
   private Double distance;
 
   @Enumerated(EnumType.STRING)
-  @Column(name = "distance_unit", length = 10)
+  @Column(name = "distance_unit", length = 20)
   @Builder.Default
   private Unit distanceUnit = Unit.METERS;
 
@@ -95,12 +105,31 @@ public class WodMovement {
   @Min(0)
   private Integer calories;
 
+  /** Women's calories when they differ from the men's ({@code calories}). */
+  @Column(name = "calories_female")
+  @Min(0)
+  private Integer caloriesFemale;
+
+  /** Height of the box or the target for men, then women, in {@code heightUnit}. */
+  @Column(name = "height")
+  @DecimalMin("0.0")
+  private Double height;
+
+  @Column(name = "height_female")
+  @DecimalMin("0.0")
+  private Double heightFemale;
+
+  @Enumerated(EnumType.STRING)
+  @Column(name = "height_unit", length = 20)
+  private Unit heightUnit;
+
   // --- Characteristics ---
   @ElementCollection
   @CollectionTable(
       name = "wod_movement_equipment",
       joinColumns = @JoinColumn(name = "wod_movement_id"))
   @Column(name = "equipment")
+  @BatchSize(size = 50)
   @Builder.Default
   private Set<String> equipment = new HashSet<>();
 
@@ -109,15 +138,56 @@ public class WodMovement {
       name = "wod_movement_techniques",
       joinColumns = @JoinColumn(name = "wod_movement_id"))
   @Column(name = "technique")
+  @BatchSize(size = 50)
   @Builder.Default
   private Set<String> techniques = new HashSet<>();
 
-  // --- Instructions ---
-  @Column(name = "notes", columnDefinition = "TEXT")
-  private String notes;
+  // --- Instructions (EN / FR) ---
+  @Column(name = "notes_en", columnDefinition = "TEXT")
+  private String notesEn;
 
-  @Column(name = "scaling_options", columnDefinition = "TEXT")
-  private String scalingOptions;
+  @Column(name = "notes_fr", columnDefinition = "TEXT")
+  private String notesFr;
+
+  @Column(name = "scaling_options_en", columnDefinition = "TEXT")
+  private String scalingOptionsEn;
+
+  @Column(name = "scaling_options_fr", columnDefinition = "TEXT")
+  private String scalingOptionsFr;
+
+  // --- Business rules ---
+
+  /**
+   * Checks that this WOD movement only uses equipment and techniques allowed by its catalog
+   * movement: a variant (e.g. Ring Dip = Dip + {@code RINGS}) must be declared on the movement.
+   *
+   * @param movementName The movement name, used in the error message.
+   * @param allowedEquipment The equipment allowed by the movement.
+   * @param allowedTechniques The techniques allowed by the movement.
+   * @throws InvalidWodMovementException on the first value that is not allowed.
+   */
+  public void checkVariantsAllowed(
+      String movementName, Set<Equipment> allowedEquipment, Set<Technique> allowedTechniques) {
+    checkAllowed(equipment, allowedEquipment, "error.wod.movement.equipment.invalid", movementName);
+    checkAllowed(
+        techniques, allowedTechniques, "error.wod.movement.technique.invalid", movementName);
+  }
+
+  private static void checkAllowed(
+      Set<String> values, Set<? extends Enum<?>> allowed, String messageKey, String movementName) {
+    if (values == null || values.isEmpty()) {
+      return;
+    }
+    Set<String> allowedNames =
+        allowed == null
+            ? Set.of()
+            : allowed.stream().map(Enum::name).collect(Collectors.toUnmodifiableSet());
+    for (String value : values) {
+      if (!allowedNames.contains(value)) {
+        throw new InvalidWodMovementException(messageKey, value, movementName);
+      }
+    }
+  }
 
   // --- Equality and Hashing ---
   @Override

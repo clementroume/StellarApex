@@ -68,6 +68,11 @@ public class Wod {
   @NotNull
   private WodType wodType;
 
+  /** Optional family of the WOD (Girls, Hero, Open...); its format stays in {@code wodType}. */
+  @Enumerated(EnumType.STRING)
+  @Column(name = "category", length = 50)
+  private WodCategory category;
+
   @Enumerated(EnumType.STRING)
   @Column(name = "score_type", nullable = false, length = 20)
   @NotNull
@@ -84,12 +89,18 @@ public class Wod {
   @Builder.Default
   private boolean isPublic = false;
 
-  // --- Description and Notes ---
-  @Column(name = "description", columnDefinition = "TEXT")
-  private String description;
+  // --- Description and Notes (EN / FR; a WOD may have only one language) ---
+  @Column(name = "description_en", columnDefinition = "TEXT")
+  private String descriptionEn;
 
-  @Column(name = "notes", columnDefinition = "TEXT")
-  private String notes;
+  @Column(name = "description_fr", columnDefinition = "TEXT")
+  private String descriptionFr;
+
+  @Column(name = "notes_en", columnDefinition = "TEXT")
+  private String notesEn;
+
+  @Column(name = "notes_fr", columnDefinition = "TEXT")
+  private String notesFr;
 
   // --- Structure and Prescription ---
   @Column(name = "time_cap_seconds")
@@ -148,27 +159,38 @@ public class Wod {
     return id != null ? id.hashCode() : 0;
   }
 
-  /** WodType Inner Enum. */
+  /** Format of the WOD (how it is performed and scored). */
   @Getter
   @RequiredArgsConstructor
   public enum WodType {
-    // --- Time-based ---
+    // --- Conditioning ---
+    FOR_TIME,
     AMRAP,
     EMOM,
-    FOR_TIME,
     TABATA,
+    INTERVALS,
     // --- Training Focus ---
     STRENGTH,
     SKILL,
     ACCESSORY,
-    // --- Special Formats ---
-    CHIPPER,
+    // --- Other ---
+    CUSTOM
+  }
+
+  /** Optional family of the WOD, independent of its format. */
+  @Getter
+  @RequiredArgsConstructor
+  public enum WodCategory {
     // --- Benchmarks ---
     GIRLS,
     HERO,
+    BENCHMARK,
     CUSTOM_BENCHMARK,
-    // --- Other ---
-    CUSTOM
+    // --- Official competitions ---
+    OPEN,
+    QUARTERFINALS,
+    SEMIFINALS,
+    GAMES
   }
 
   /** ScoreType Inner Enum. */

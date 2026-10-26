@@ -99,7 +99,7 @@ public class Score {
   private Double totalDistanceMeters;
 
   @Enumerated(EnumType.STRING)
-  @Column(name = "distance_display_unit", length = 10)
+  @Column(name = "distance_display_unit", length = 20)
   @Builder.Default
   private Unit distanceDisplayUnit = Unit.METERS;
 

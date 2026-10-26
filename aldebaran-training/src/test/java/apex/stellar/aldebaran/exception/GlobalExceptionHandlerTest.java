@@ -155,6 +155,17 @@ class GlobalExceptionHandlerTest {
   }
 
   @Test
+  @DisplayName("EN - WOD movement: equipment not allowed")
+  void testWodMovementEquipment_EN() throws Exception {
+    mockMvc
+        .perform(get("/error/wod/movement/equipment").locale(Locale.ENGLISH))
+        .andExpect(status().isBadRequest())
+        .andExpect(jsonPath("$.title").value("Invalid WOD Movement"))
+        .andExpect(
+            jsonPath("$.detail").value("Equipment BARBELL is not allowed for the movement Dip."));
+  }
+
+  @Test
   @DisplayName("EN - Score: Not Found")
   void testScoreNotFound_EN() throws Exception {
     mockMvc
@@ -283,6 +294,18 @@ class GlobalExceptionHandlerTest {
   }
 
   @Test
+  @DisplayName("FR - WOD movement: equipment not allowed")
+  void testWodMovementEquipment_FR() throws Exception {
+    mockMvc
+        .perform(get("/error/wod/movement/equipment").locale(Locale.FRENCH))
+        .andExpect(status().isBadRequest())
+        .andExpect(jsonPath("$.title").value("Invalid WOD Movement"))
+        .andExpect(
+            jsonPath("$.detail")
+                .value("L'équipement BARBELL n'est pas autorisé pour le mouvement Dip."));
+  }
+
+  @Test
   @DisplayName("FR - Score: Not Found")
   void testScoreNotFound_FR() throws Exception {
     mockMvc
@@ -335,6 +358,12 @@ class GlobalExceptionHandlerTest {
     @GetMapping("/error/wod/locked")
     void wodLocked() {
       throw new WodLockedException("error.wod.locked", 1L);
+    }
+
+    @GetMapping("/error/wod/movement/equipment")
+    void wodMovementEquipment() {
+      throw new InvalidWodMovementException(
+          "error.wod.movement.equipment.invalid", "BARBELL", "Dip");
     }
 
     // SCORE

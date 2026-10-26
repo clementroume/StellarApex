@@ -5,7 +5,9 @@ export type WodScope = 'ALL' | 'MINE' | 'GYM' | 'PUBLIC';
 export interface WodSummaryResponse {
   id: number;
   title: string;
+  // Format (FOR_TIME, AMRAP, EMOM...) and optional category (GIRLS, HERO, OPEN...)
   wodType: string;
+  category?: string | null;
   scoreType: string;
   repScheme?: string;
   timeCapSeconds?: number;
@@ -17,8 +19,9 @@ export interface WodSummaryResponse {
 
 /** Values available to filter the WOD list, computed by Aldebaran with the list's security. */
 export interface WodFacets {
-  // WOD types present for the current filters (the type filter itself is ignored)
+  // WOD formats and categories present for the current filters (those two filters are ignored)
   wodTypes: string[];
+  categories: string[];
   // Gyms owning readable WODs and authors of readable personal WODs (admin selectors)
   gymIds: number[];
   authorIds: number[];
@@ -35,14 +38,17 @@ export interface WodRequest {
   // --- Identification ---
   title: string;
   wodType: string;
+  category?: string | null;
   scoreType: string;
   // --- Authorship and Visibility ---
   authorId?: number;
   gymId?: number;
   isPublic: boolean;
-  // --- Description and Notes ---
-  description?: string;
-  notes?: string;
+  // --- Description and Notes (EN / FR, either may be empty) ---
+  descriptionEn?: string;
+  descriptionFr?: string;
+  notesEn?: string;
+  notesFr?: string;
   // --- Structure and Prescription ---
   timeCapSeconds?: number;
   emomInterval?: number;
@@ -56,14 +62,17 @@ export interface WodResponse {
   id: number;
   title: string;
   wodType: string;
+  category?: string | null;
   scoreType: string;
   // --- Authorship and Visibility ---
   authorId?: number;
   gymId?: number;
   isPublic: boolean;
-  // --- Description and Notes ---
-  description?: string;
-  notes?: string;
+  // --- Description and Notes (EN / FR, either may be empty) ---
+  descriptionEn?: string;
+  descriptionFr?: string;
+  notesEn?: string;
+  notesFr?: string;
   // --- Structure and Prescription ---
   timeCapSeconds?: number;
   emomInterval?: number;
@@ -84,19 +93,28 @@ export interface WodMovementRequest {
   orderIndex: number;
   // --- Prescription ---
   repsScheme?: string;
+  // Men's load, women's load in the same unit
   weight?: number;
+  weightFemale?: number;
   weightUnit?: string;
   durationSeconds?: number;
   durationDisplayUnit?: string;
   distance?: number;
   distanceUnit?: string;
   calories?: number;
+  caloriesFemale?: number;
+  // Box or target height (men's, women's), in heightUnit
+  height?: number;
+  heightFemale?: number;
+  heightUnit?: string;
   // --- Characteristics ---
   equipment?: string[];
   techniques?: string[];
-  // --- Instructions ---
-  notes?: string;
-  scalingOptions?: string;
+  // --- Instructions (EN / FR) ---
+  notesEn?: string;
+  notesFr?: string;
+  scalingOptionsEn?: string;
+  scalingOptionsFr?: string;
 }
 
 export interface WodMovementResponse {
@@ -106,24 +124,34 @@ export interface WodMovementResponse {
   orderIndex: number;
   // --- Prescription ---
   repsScheme?: string;
+  // Men's load, women's load in the same unit
   weight?: number;
+  weightFemale?: number;
   weightUnit?: string;
   durationSeconds?: number;
   durationDisplayUnit?: string;
   distance?: number;
   distanceUnit?: string;
   calories?: number;
+  caloriesFemale?: number;
+  // Box or target height (men's, women's), in heightUnit
+  height?: number;
+  heightFemale?: number;
+  heightUnit?: string;
   // --- Characteristics ---
   equipment?: string[];
   techniques?: string[];
-  // --- Instructions ---
-  notes?: string;
-  scalingOptions?: string;
+  // --- Instructions (EN / FR) ---
+  notesEn?: string;
+  notesFr?: string;
+  scalingOptionsEn?: string;
+  scalingOptionsFr?: string;
 }
 
 export interface WodReferenceData {
-  // --- Wod Types ---
+  // --- Wod Formats and Categories ---
   wodTypes: string[];
+  categories: string[];
   // --- Score Types ---
   scoreTypes: string[];
   // --- Units ---

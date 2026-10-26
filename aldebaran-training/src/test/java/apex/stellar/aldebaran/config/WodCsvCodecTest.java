@@ -6,13 +6,17 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import apex.stellar.aldebaran.exception.InvalidWodMovementException;
 import apex.stellar.aldebaran.model.entities.Movement;
 import apex.stellar.aldebaran.model.entities.Wod;
 import apex.stellar.aldebaran.model.entities.Wod.ScoreType;
+import apex.stellar.aldebaran.model.entities.Wod.WodCategory;
 import apex.stellar.aldebaran.model.entities.Wod.WodType;
 import apex.stellar.aldebaran.model.entities.WodMovement;
 import apex.stellar.aldebaran.model.enums.Category;
 import apex.stellar.aldebaran.model.enums.Category.Modality;
+import apex.stellar.aldebaran.model.enums.Equipment;
+import apex.stellar.aldebaran.model.enums.Technique;
 import apex.stellar.aldebaran.model.enums.Unit;
 import java.io.StringReader;
 import java.io.StringWriter;
@@ -26,21 +30,32 @@ import org.junit.jupiter.api.Test;
 class WodCsvCodecTest {
 
   static final Movement THRUSTER =
-      Movement.builder().id(1L).name("Thruster").category(Category.COMPLEXES).build();
+      Movement.builder()
+          .id(1L)
+          .name("Thruster")
+          .category(Category.COMPLEXES)
+          .equipment(Set.of(Equipment.BARBELL, Equipment.DUMBBELL))
+          .techniques(Set.of(Technique.PAUSED, Technique.TEMPO))
+          .build();
   static final Movement PULL_UP =
       Movement.builder().id(2L).name("Pull-up").category(Category.PULLING).build();
   static final Movement RUNNING =
-      Movement.builder().id(3L).name("Running").category(Category.CARDIO).build();
+      Movement.builder()
+          .id(3L)
+          .name("Running")
+          .category(Category.CARDIO)
+          .techniques(Set.of(Technique.FORWARD, Technique.WEIGHTED))
+          .build();
 
   static final Map<String, Movement> CATALOG =
       WodCsvCodec.byName(List.of(THRUSTER, PULL_UP, RUNNING));
 
   static final String WODS_CSV =
       """
-      title,wod_type,score_type,rep_scheme,time_cap_seconds,emom_interval,emom_rounds,description,notes
-      Fran,GIRLS,TIME,21-15-9,,,,"21-15-9 reps for time
+      title,wod_type,category,score_type,rep_scheme,time_cap_seconds,emom_interval,emom_rounds,description,notes
+      Fran,FOR_TIME,GIRLS,TIME,21-15-9,,,,"21-15-9 reps for time
       of thrusters and pull-ups.",
-      Cindy,girls,ROUNDS_REPS,AMRAP 20 min,1200,,,,"Note, with comma"
+      Cindy,amrap,,ROUNDS_REPS,AMRAP 20 min,1200,,,,"Note, with comma"
       """;
 
   static final String WOD_MOVEMENTS_CSV =
@@ -63,11 +78,12 @@ class WodCsvCodecTest {
     assertEquals(2, wods.size());
     Wod fran = wods.getFirst();
     assertEquals("Fran", fran.getTitle());
-    assertEquals(WodType.GIRLS, fran.getWodType());
+    assertEquals(WodType.FOR_TIME, fran.getWodType());
+    assertEquals(WodCategory.GIRLS, fran.getCategory());
     assertEquals(ScoreType.TIME, fran.getScoreType());
     assertEquals("21-15-9", fran.getRepScheme());
-    assertEquals("21-15-9 reps for time\nof thrusters and pull-ups.", fran.getDescription());
-    assertNull(fran.getNotes());
+    assertEquals("21-15-9 reps for time\nof thrusters and pull-ups.", fran.getDescriptionEn());
+    assertNull(fran.getNotesEn());
     assertNull(fran.getTimeCapSeconds());
     assertTrue(fran.isPublic());
     assertNull(fran.getAuthorId());
@@ -82,18 +98,19 @@ class WodCsvCodecTest {
     assertEquals(1, thruster.getOrderIndex());
     assertEquals(95.0, thruster.getWeight());
     assertEquals(Unit.LBS, thruster.getWeightUnit());
-    assertEquals("Women: 65 lb", thruster.getNotes());
-    assertNull(thruster.getScalingOptions());
+    assertEquals("Women: 65 lb", thruster.getNotesEn());
+    assertNull(thruster.getScalingOptionsEn());
     WodMovement pullUp = fran.getMovements().get(1);
     assertSame(PULL_UP, pullUp.getMovement());
     assertNull(pullUp.getWeight());
     assertNull(pullUp.getWeightUnit());
-    assertEquals("Ring rows", pullUp.getScalingOptions());
+    assertEquals("Ring rows", pullUp.getScalingOptionsEn());
 
     Wod cindy = wods.get(1);
-    assertEquals(WodType.GIRLS, cindy.getWodType());
+    assertEquals(WodType.AMRAP, cindy.getWodType());
+    assertNull(cindy.getCategory());
     assertEquals(1200, cindy.getTimeCapSeconds());
-    assertEquals("Note, with comma", cindy.getNotes());
+    assertEquals("Note, with comma", cindy.getNotesEn());
     WodMovement run = cindy.getMovements().getFirst();
     assertEquals(400.0, run.getDistance());
     assertEquals(Unit.METERS, run.getDistanceUnit());
@@ -113,19 +130,38 @@ class WodCsvCodecTest {
   }
 
   @Test
+  @DisplayName("Rejects a movement variant that the movement does not allow")
+  void shouldRejectVariantNotAllowedByMovement() {
+    String movements =
+        "wod_title,order_index,movement_name,equipment,techniques\n"
+            + "Fran,1,Thruster,KETTLEBELL,\n";
+
+    InvalidWodMovementException ex =
+        assertThrows(
+            InvalidWodMovementException.class,
+            () ->
+                WodCsvCodec.read(
+                    new StringReader(WODS_CSV), new StringReader(movements), CATALOG));
+    assertEquals("error.wod.movement.equipment.invalid", ex.getMessageKey());
+  }
+
+  @Test
   @DisplayName("Write then read gives back the same values")
   void shouldRoundTrip() throws Exception {
     Wod wod =
         Wod.builder()
             .title("Josh")
-            .wodType(WodType.HERO)
+            .wodType(WodType.FOR_TIME)
+            .category(WodCategory.HERO)
             .scoreType(ScoreType.TIME)
             .repScheme("21-42 / 15-30")
             .timeCapSeconds(600)
             .emomInterval(60)
             .emomRounds(10)
-            .description("Line 1\nLine 2, with \"quotes\"")
-            .notes(" padded ")
+            .descriptionEn("Line 1\nLine 2, with \"quotes\"")
+            .notesEn(" padded ")
+            .descriptionFr("Ligne 1\nLigne 2, avec des « guillemets »")
+            .notesFr("En mémoire, avec une virgule")
             .isPublic(true)
             .build();
     wod.getMovements()
@@ -154,10 +190,17 @@ class WodCsvCodecTest {
                 .durationSeconds(90)
                 .durationDisplayUnit(Unit.MINUTES)
                 .calories(12)
-                .notes("Women: 30 kg")
-                .scalingOptions("PVC")
-                .equipment(Set.of("Barbell", "Vest, 20 lb"))
-                .techniques(Set.of("Squat"))
+                .weightFemale(30.0)
+                .caloriesFemale(9)
+                .height(60.0)
+                .heightFemale(50.0)
+                .heightUnit(Unit.CENTIMETERS)
+                .notesEn("Two dumbbells")
+                .notesFr("Deux haltères")
+                .scalingOptionsEn("PVC")
+                .scalingOptionsFr("Tube PVC")
+                .equipment(Set.of("BARBELL", "DUMBBELL"))
+                .techniques(Set.of("PAUSED"))
                 .build());
 
     StringWriter wodsOut = new StringWriter();
@@ -177,13 +220,16 @@ class WodCsvCodecTest {
   static void assertSameWod(Wod expected, Wod actual) {
     assertEquals(expected.getTitle(), actual.getTitle());
     assertEquals(expected.getWodType(), actual.getWodType());
+    assertEquals(expected.getCategory(), actual.getCategory());
     assertEquals(expected.getScoreType(), actual.getScoreType());
     assertEquals(expected.getRepScheme(), actual.getRepScheme());
     assertEquals(expected.getTimeCapSeconds(), actual.getTimeCapSeconds());
     assertEquals(expected.getEmomInterval(), actual.getEmomInterval());
     assertEquals(expected.getEmomRounds(), actual.getEmomRounds());
-    assertEquals(expected.getDescription(), actual.getDescription());
-    assertEquals(expected.getNotes(), actual.getNotes());
+    assertEquals(expected.getDescriptionEn(), actual.getDescriptionEn());
+    assertEquals(expected.getNotesEn(), actual.getNotesEn());
+    assertEquals(expected.getDescriptionFr(), actual.getDescriptionFr());
+    assertEquals(expected.getNotesFr(), actual.getNotesFr());
     assertEquals(expected.isPublic(), actual.isPublic());
 
     List<WodMovement> sorted =
@@ -204,8 +250,15 @@ class WodCsvCodecTest {
       assertEquals(e.getDurationSeconds(), a.getDurationSeconds());
       assertEquals(e.getDurationDisplayUnit(), a.getDurationDisplayUnit());
       assertEquals(e.getCalories(), a.getCalories());
-      assertEquals(e.getNotes(), a.getNotes());
-      assertEquals(e.getScalingOptions(), a.getScalingOptions());
+      assertEquals(e.getNotesEn(), a.getNotesEn());
+      assertEquals(e.getScalingOptionsEn(), a.getScalingOptionsEn());
+      assertEquals(e.getWeightFemale(), a.getWeightFemale());
+      assertEquals(e.getCaloriesFemale(), a.getCaloriesFemale());
+      assertEquals(e.getHeight(), a.getHeight());
+      assertEquals(e.getHeightFemale(), a.getHeightFemale());
+      assertEquals(e.getHeightUnit(), a.getHeightUnit());
+      assertEquals(e.getNotesFr(), a.getNotesFr());
+      assertEquals(e.getScalingOptionsFr(), a.getScalingOptionsFr());
       assertEquals(e.getEquipment(), a.getEquipment());
       assertEquals(e.getTechniques(), a.getTechniques());
     }

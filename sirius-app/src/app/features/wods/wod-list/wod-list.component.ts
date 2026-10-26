@@ -2,7 +2,7 @@ import {ChangeDetectionStrategy, Component, computed, DestroyRef, inject, OnInit
 import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
 import {Params, RouterModule} from '@angular/router';
 import {HttpContext} from '@angular/common/http';
-import {TranslatePipe} from '@ngx-translate/core';
+import {TranslatePipe, TranslateService} from '@ngx-translate/core';
 import {NgIcon} from '@ng-icons/core';
 import {debounceTime, distinctUntilChanged, Subject} from 'rxjs';
 import {WodFacetFilters, WodListFilters, WodService} from '../../../api/aldebaran/services/wod.service';
@@ -16,7 +16,7 @@ import {BYPASS_LOADER} from '../../../core/interceptors/loading.interceptor';
 import {SearchInputComponent} from '../../../shared/component/search-input/search-input.component';
 import {ListStateComponent} from '../../../shared/component/list/list-state/list-state.component';
 import {ListItemComponent} from '../../../shared/component/list/list-item/list-item.component';
-import {formatDuration} from '../wod.utils';
+import {formatTimeCapShort, wodTypeLabel} from '../wod.utils';
 
 export const WOD_PAGE_SIZE = 20;
 export const WOD_SEARCH_DEBOUNCE_MS = 300;
@@ -46,6 +46,7 @@ export interface WodCreateTarget {
 export class WodListComponent implements OnInit {
   // --- INJECTIONS ---
   private readonly wodService = inject(WodService);
+  private readonly translate = inject(TranslateService);
   private readonly accessService = inject(AccessService);
   private readonly exporterService = inject(ExporterService);
   private readonly gymService = inject(GymService);
@@ -58,8 +59,9 @@ export class WodListComponent implements OnInit {
   isExporting = signal<boolean>(false);
   wods = signal<WodSummaryResponse[]>([]);
   hasMore = signal<boolean>(false);
-  // Types present for the current filters (Aldebaran facets), so no empty category is offered
+  // Formats and categories present for the current filters (Aldebaran facets): no empty chip
   wodTypes = signal<string[]>([]);
+  categories = signal<string[]>([]);
   // Admin selectors of the "All" tab
   adminAuthors = signal<UserSummary[]>([]);
   private readonly facetGymIds = signal<number[]>([]);
@@ -70,6 +72,7 @@ export class WodListComponent implements OnInit {
   // UI State persisted in service
   searchQuery = this.wodService.savedSearchQuery;
   typeFilter = this.wodService.savedTypeFilter;
+  categoryFilter = this.wodService.savedCategoryFilter;
   private readonly savedScopeTab = this.wodService.savedScopeTab;
   adminGymId = this.wodService.savedAdminGymId;
   adminAuthorId = this.wodService.savedAdminAuthorId;
@@ -100,7 +103,8 @@ export class WodListComponent implements OnInit {
   showAdminFilters = computed(() => this.isAdmin() && this.activeScopeTab().key === 'ALL');
 
   hasActiveFilter = computed(() =>
-    !!this.searchQuery().trim() || !!this.typeFilter() || this.adminGymId() !== null || this.adminAuthorId() !== null
+    !!this.searchQuery().trim() || !!this.typeFilter() || !!this.categoryFilter()
+    || this.adminGymId() !== null || this.adminAuthorId() !== null
   );
 
   /** Filters of the list and facets, the admin selectors only applying to the "All" tab. */
@@ -171,23 +175,28 @@ export class WodListComponent implements OnInit {
     }, () => this.isLoadingMore.set(false));
   }
 
-  /** Types present for the current filters, plus the admin selector options. */
+  /** Formats and categories present for the current filters, plus the admin selector options. */
   loadFacets(): void {
     const filters: WodFacetFilters = {...this.baseFilters(), search: this.searchQuery().trim() || undefined};
 
     this.wodService.getFacets(filters, new HttpContext().set(BYPASS_LOADER, true)).subscribe({
       next: facets => {
         this.wodTypes.set(facets.wodTypes);
-        // A selected type that no longer returns anything would leave an empty list behind
-        if (this.typeFilter() && !facets.wodTypes.includes(this.typeFilter())) {
-          this.typeFilter.set('');
-          this.loadWods();
-        }
+        this.categories.set(facets.categories ?? []);
+        // A selected value that no longer returns anything would leave an empty list behind
+        const staleType = !!this.typeFilter() && !facets.wodTypes.includes(this.typeFilter());
+        const staleCategory = !!this.categoryFilter() && !(facets.categories ?? []).includes(this.categoryFilter());
+        if (staleType) this.typeFilter.set('');
+        if (staleCategory) this.categoryFilter.set('');
+        if (staleType || staleCategory) this.loadWods();
         if (this.isAdmin()) {
           this.updateAdminOptions(facets.gymIds, facets.authorIds);
         }
       },
-      error: () => this.wodTypes.set([])
+      error: () => {
+        this.wodTypes.set([]);
+        this.categories.set([]);
+      }
     });
   }
 
@@ -207,7 +216,8 @@ export class WodListComponent implements OnInit {
     const filters: WodListFilters = {
       ...this.baseFilters(),
       search: this.searchQuery().trim() || undefined,
-      type: this.typeFilter() || undefined
+      type: this.typeFilter() || undefined,
+      category: this.categoryFilter() || undefined
     };
 
     this.wodService.getWods(filters, page, WOD_PAGE_SIZE, new HttpContext().set(BYPASS_LOADER, true))
@@ -233,6 +243,17 @@ export class WodListComponent implements OnInit {
     if (this.typeFilter() === type) return;
     this.typeFilter.set(type);
     this.loadWods();
+  }
+
+  onCategoryChange(category: string): void {
+    if (this.categoryFilter() === category) return;
+    this.categoryFilter.set(category);
+    this.loadWods();
+  }
+
+  /** "Girls / For Time": the category (when any) then the format, as written on the whiteboard. */
+  typeLabel(wod: Pick<WodSummaryResponse, 'wodType' | 'category'>): string {
+    return wodTypeLabel(key => this.translate.instant(key), wod);
   }
 
   onScopeChange(key: string): void {
@@ -261,7 +282,7 @@ export class WodListComponent implements OnInit {
 
   // --- HELPERS ---
   formatTimeCap(seconds?: number): string {
-    return formatDuration(seconds);
+    return formatTimeCapShort(seconds);
   }
 
   /** Gym name for a gym WOD (member gyms, or every gym for an admin). */

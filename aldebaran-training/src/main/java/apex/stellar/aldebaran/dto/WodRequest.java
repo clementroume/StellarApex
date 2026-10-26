@@ -1,6 +1,7 @@
 package apex.stellar.aldebaran.dto;
 
 import apex.stellar.aldebaran.model.entities.Wod.ScoreType;
+import apex.stellar.aldebaran.model.entities.Wod.WodCategory;
 import apex.stellar.aldebaran.model.entities.Wod.WodType;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
@@ -18,6 +19,7 @@ public record WodRequest(
         @Size(max = 100, message = "{validation.wod.title.size}")
         String title,
     @NotNull(message = "{validation.wod.type.required}") WodType wodType,
+    WodCategory category,
     @NotNull(message = "{validation.wod.scoreType.required}") ScoreType scoreType,
 
     // --- Authorship and Visibility ---
@@ -25,9 +27,11 @@ public record WodRequest(
     Long gymId,
     boolean isPublic,
 
-    // --- Description and Notes ---
-    @Size(max = 4000, message = "{validation.wod.description.size}") String description,
-    @Size(max = 4000, message = "{validation.wod.notes.size}") String notes,
+    // --- Description and Notes (EN / FR, either may be empty) ---
+    @Size(max = 4000, message = "{validation.wod.description.size}") String descriptionEn,
+    @Size(max = 4000, message = "{validation.wod.description.size}") String descriptionFr,
+    @Size(max = 4000, message = "{validation.wod.notes.size}") String notesEn,
+    @Size(max = 4000, message = "{validation.wod.notes.size}") String notesFr,
 
     // --- Structure and Prescription ---
     @Min(value = 0, message = "{validation.wod.timeCap.min}") Integer timeCapSeconds,

@@ -124,7 +124,7 @@ public class UserController {
    * @return A ResponseEntity containing the updated {@link UserResponse}.
    */
   @PatchMapping("/me/preferences")
-  @Operation(summary = "Update user preferences", description = "Updates locale and UI theme.")
+  @Operation(summary = "Update user preferences", description = "Updates locale, UI theme and load unit.")
   @ApiResponses(
       value = {
         @ApiResponse(responseCode = "200", description = "Preferences updated successfully"),

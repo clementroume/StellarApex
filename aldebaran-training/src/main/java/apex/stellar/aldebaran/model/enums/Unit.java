@@ -16,6 +16,8 @@ public enum Unit {
   // --- Distance ---
   METERS(UnitType.DISTANCE, 1.0),
   KILOMETERS(UnitType.DISTANCE, 1000.0),
+  CENTIMETERS(UnitType.DISTANCE, 0.01),
+  INCHES(UnitType.DISTANCE, 0.0254),
   FEET(UnitType.DISTANCE, 0.3048),
   YARDS(UnitType.DISTANCE, 0.9144),
   MILES(UnitType.DISTANCE, 1609.344);

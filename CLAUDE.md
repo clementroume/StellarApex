@@ -77,8 +77,8 @@ Admin support session: a platform admin acts as a real (non-admin) user from Sir
 refreshable `support_token` cookie (admin cookies untouched), records it in `support_sessions`, and
 resolves requests as the target; writes are allowed and audited (`X-Auth-Actor-Id`). Expiry → 401
 ProblemDetail `code=SUPPORT_SESSION_EXPIRED`, never a silent fallback to admin; password change,
-account deletion and preference (language/theme) updates → 403 `SUPPORT_SESSION_FORBIDDEN`; Sirius
-keeps the admin's language/theme on screen. `/users/me` carries `supportSession` while active.
+account deletion and preference (language/theme/unit system) updates → 403 `SUPPORT_SESSION_FORBIDDEN`;
+Sirius keeps the admin's language/theme/unit on screen. `/users/me` carries `supportSession` while active.
 
 Temporary dev data (`dev` Spring profile, set in `docker-compose.yml`, to be removed like the CSV
 export): test gyms "Spartacus CrossFit" (physical), "Zeus Programming" (virtual), "Pending Box" and
@@ -92,6 +92,14 @@ their accounts (Antares), gym WODs for them (Aldebaran).
   `antares` / `aldebaran`, `ddl-auto=validate`); never edit an applied migration.
 - Default branch `main`; dependabot opens most PRs. Branch before committing; commit only when asked.
 - Frontend DTOs in `sirius-app/src/app/api/**/models` mirror backend DTOs: change both together.
+- Catalog: a movement variant is the `equipment` / `techniques` of the movement and of the WOD movement
+  (Aldebaran rejects values the movement does not allow), never a new movement or a note. Muscles have
+  one functional group level (`parent`, same region). Never use a movement name absent from the catalog.
+- WODs: `wodType` = format (For Time, AMRAP...), optional `category` (Girls, Hero, Open...). WOD texts
+  are FR/EN pairs (`*En` / `*Fr`); men/women pairs for load (`weight`/`weightFemale`), calories and
+  box/target height, stored in the prescribed unit and converted only for display (user preference
+  `unitSystem` in Antares, Sirius `UnitService`). Put a measurable prescription in these fields, not in
+  the notes.
 
 ## Gotchas
 

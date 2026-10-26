@@ -158,7 +158,7 @@ public class UserService {
   }
 
   /**
-   * Updates the preferences (locale, theme) of a user.
+   * Updates the preferences (locale, theme, load unit) of a user.
    *
    * @param currentUser The user entity to update.
    * @param request The DTO with the new preferences.

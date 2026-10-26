@@ -58,7 +58,8 @@
   "ACCOUNT": {
     "TITLE": "My Account",
     "MENU_INFO": "My information",
-    "MENU_SETTINGS": "Settings"
+    "MENU_SETTINGS": "Settings",
+    "MENU_UNITS": "Units"
   },
   "PROFILE": {
     "TITLE": "My information",
@@ -85,6 +86,15 @@
     "DELETE_MODAL_CONFIRM": "Yes, delete my account",
     "SUCCESS_DELETE": "Your account has been successfully deleted. Goodbye!"
   },
+  "UNITS": {
+    "TITLE": "Units",
+    "SUBTITLE": "WODs are shown in this system, whatever unit they were written in.",
+    "SYSTEM_LABEL": "Unit system",
+    "METRIC": "Metric",
+    "METRIC_EXAMPLE": "Loads in kg, heights in cm, distances in m and km.",
+    "IMPERIAL": "Imperial",
+    "IMPERIAL_EXAMPLE": "Loads in lb, heights in in, short distances in ft (runs and rows stay in m)."
+  },
   "EXPORT": {
     "EXPORT_CSV": "Export CSV",
     "CONFIRM_EXPORT": "Warning: This will overwrite the local CSV file. Continue?",
@@ -99,7 +109,8 @@
     },
     "ACTIONS": {
       "ADD": "Add a muscle",
-      "SELECT_GROUP": "Select a group",
+      "SELECT_GROUP": "Select a region",
+      "NO_FUNCTIONAL_GROUP": "None (group or standalone muscle)",
       "SEARCH": "Search muscles..."
     },
     "SECTIONS": {
@@ -110,7 +121,9 @@
     "FIELDS": {
       "MEDICAL_NAME": "Medical Name (Latin)",
       "COMMON_NAME": "Common Name",
-      "GROUP": "Groupe Musculaire",
+      "GROUP": "Region",
+      "FUNCTIONAL_GROUP": "Functional group",
+      "MEMBERS": "Muscles of the group",
       "NAME_FR": "French Name",
       "NAME_EN": "English Name",
       "DESC_FR": "Description (FR)",
@@ -126,6 +139,9 @@
       "IMAGE_URL": "https://..."
     },
     "MESSAGES": {
+      "IS_GROUP": "Functional group of {{count}} muscles: it cannot belong to another group.",
+      "FUNCTIONAL_GROUP_HINT": "Only groups of the same region.",
+      "GROUP_BADGE": "Group",
       "NOT_FOUND": "Muscle not found.",
       "EMPTY_LIST": "No muscle found.",
       "EMPTY_LIST_SEARCH": "No muscle found for \"{{name}}\".",
@@ -259,6 +275,7 @@
       "PARALLEL_BARS": "Parallel Bars",
       "MATADOR": "Matador",
       "ROPE": "Rope",
+      "PEGBOARD": "Pegboard",
       "ABMAT": "Abmat",
       "BOX": "Box",
       "ELASTIC_BAND": "Elastic Band",
@@ -320,6 +337,7 @@
       "TO_PLATFORM": "To Platform",
       "FEET_ELEVATED": "Feet Elevated",
       "CHEST_TO_WALL": "Chest-to-Wall",
+      "FREESTANDING": "Freestanding",
       "BOX": "Box",
       "FRONT_RACK": "Front Rack",
       "OVERHEAD": "Overhead",
@@ -390,7 +408,9 @@
       "MOVE_UP": "Move up",
       "MOVE_DOWN": "Move down",
       "ADD_FOR_GYM": "Create a WOD for {{gym}}",
-      "ADD_PERSONAL": "Create a personal WOD"
+      "ADD_PERSONAL": "Create a personal WOD",
+      "ALL_CATEGORIES": "All categories",
+      "ALL_FORMATS": "All formats"
     },
     "SCOPES": {
       "ALL": "All",
@@ -428,14 +448,36 @@
       "DURATION": "Duration",
       "CALORIES": "Calories",
       "SCALING": "Scaling",
-      "GYM": "Gym"
+      "EQUIPMENT": "Equipment",
+      "TECHNIQUES": "Techniques",
+      "GYM": "Gym",
+      "FORMAT": "Format",
+      "CATEGORY": "Category",
+      "WEIGHT_MEN": "Load (men)",
+      "WEIGHT_WOMEN": "Load (women)",
+      "DESCRIPTION_FR": "Description (French)",
+      "DESCRIPTION_EN": "Description (English)",
+      "NOTES_FR": "Notes (French)",
+      "NOTES_EN": "Notes (English)",
+      "OTHER_LANGUAGE": "Other language",
+      "TIME_CAP_SHORT": "Tc",
+      "NO_CATEGORY": "None",
+      "BEST_SCORE": "My best score",
+      "DURATION_MINUTES": "{{count}} minutes",
+      "MEN_WOMEN": "M / W",
+      "HEIGHT": "Height",
+      "HEIGHT_MEN": "Height (men)",
+      "HEIGHT_WOMEN": "Height (women)",
+      "CALORIES_MEN": "Calories (men)",
+      "CALORIES_WOMEN": "Calories (women)"
     },
     "PLACEHOLDERS": {
       "TITLE": "E.g. Fran",
       "REP_SCHEME": "E.g. 21-15-9",
       "DESCRIPTION": "WOD flow...",
       "NOTES": "Instructions for the coach or athlete...",
-      "REPS": "E.g. 21-15-9"
+      "REPS": "E.g. 21-15-9",
+      "MOVEMENT_SEARCH": "Search by name or abbreviation (e.g. HSPU)"
     },
     "VISIBILITY": {
       "PUBLIC": "Public",
@@ -450,24 +492,33 @@
       "SUCCESS_UPDATE": "WOD updated successfully.",
       "LOCKED": "This WOD already has logged scores: it can no longer be edited or deleted.",
       "FORBIDDEN": "You are not allowed to perform this action on this WOD.",
+      "MOVEMENT_UNKNOWN": "Pick a movement from the list.",
       "MOVEMENTS_REQUIRED": "Add at least one movement.",
       "NO_MOVEMENTS": "No prescribed movement.",
       "LOCKED_BADGE": "Locked (scores logged)",
-      "OWNERSHIP_LOCKED": "The owner (personal or gym) of a WOD cannot be changed after creation."
+      "OWNERSHIP_LOCKED": "The owner (personal or gym) of a WOD cannot be changed after creation.",
+      "BEST_SCORE_SOON": "Coming soon"
     },
     "WOD_TYPES": {
+      "FOR_TIME": "For Time",
       "AMRAP": "AMRAP",
       "EMOM": "EMOM",
-      "FOR_TIME": "For Time",
       "TABATA": "Tabata",
+      "INTERVALS": "Intervals",
       "STRENGTH": "Strength",
       "SKILL": "Skill",
       "ACCESSORY": "Accessory",
-      "CHIPPER": "Chipper",
-      "GIRLS": "The Girls",
-      "HERO": "Hero WOD",
-      "CUSTOM_BENCHMARK": "Custom Benchmark",
       "CUSTOM": "Custom"
+    },
+    "CATEGORIES": {
+      "GIRLS": "Girls",
+      "HERO": "Hero",
+      "BENCHMARK": "CrossFit Benchmark",
+      "CUSTOM_BENCHMARK": "Gym Benchmark",
+      "OPEN": "Open",
+      "QUARTERFINALS": "Quarterfinals",
+      "SEMIFINALS": "Semifinals",
+      "GAMES": "Games"
     },
     "SCORE_TYPES": {
       "TIME": "Time",
@@ -491,6 +542,8 @@
       "MINUTES": "min",
       "METERS": "m",
       "KILOMETERS": "km",
+      "CENTIMETERS": "cm",
+      "INCHES": "in",
       "FEET": "ft",
       "YARDS": "yd",
       "MILES": "mi"

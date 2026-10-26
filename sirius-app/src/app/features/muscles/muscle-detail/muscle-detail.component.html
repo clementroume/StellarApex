@@ -49,6 +49,26 @@
             </div>
           </div>
 
+          @if (m.parent; as parent) {
+            <div>
+              <h3 class="font-semibold text-lg pb-2 mb-2 border-b border-base-200">{{ 'MUSCLE.FIELDS.FUNCTIONAL_GROUP' | translate }}</h3>
+              <a [routerLink]="['/muscles', parent.id]" class="link link-hover link-primary">{{ getLocalizedName(parent) }}</a>
+            </div>
+          }
+
+          @if (m.members?.length) {
+            <div>
+              <h3 class="font-semibold text-lg pb-2 mb-2 border-b border-base-200">{{ 'MUSCLE.FIELDS.MEMBERS' | translate }}</h3>
+              <ul class="flex flex-wrap gap-2">
+                @for (member of m.members; track member.id) {
+                  <li>
+                    <a [routerLink]="['/muscles', member.id]" class="badge badge-soft badge-primary badge-lg">{{ getLocalizedName(member) }}</a>
+                  </li>
+                }
+              </ul>
+            </div>
+          }
+
           <div>
             <h3
               class="font-semibold text-lg pb-2 mb-2 border-b border-base-200">{{ 'GLOBAL.DESCRIPTION' | translate }}</h3>

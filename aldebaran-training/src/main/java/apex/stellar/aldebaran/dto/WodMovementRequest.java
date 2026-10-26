@@ -18,17 +18,24 @@ public record WodMovementRequest(
     // --- Prescription ---
     @Size(max = 50, message = "{validation.wod.repsScheme.size}") String repsScheme,
     @DecimalMin(value = "0.0", message = "{validation.value.positive}") Double weight,
+    @DecimalMin(value = "0.0", message = "{validation.value.positive}") Double weightFemale,
     Unit weightUnit,
     @Min(value = 0, message = "{validation.value.positive}") Integer durationSeconds,
     Unit durationDisplayUnit,
     @DecimalMin(value = "0.0", message = "{validation.value.positive}") Double distance,
     Unit distanceUnit,
     @Min(value = 0, message = "{validation.value.positive}") Integer calories,
+    @Min(value = 0, message = "{validation.value.positive}") Integer caloriesFemale,
+    @DecimalMin(value = "0.0", message = "{validation.value.positive}") Double height,
+    @DecimalMin(value = "0.0", message = "{validation.value.positive}") Double heightFemale,
+    Unit heightUnit,
 
     // --- Characteristics ---
     Set<String> equipment,
     Set<String> techniques,
 
     // --- Instructions ---
-    @Size(max = 4000, message = "{validation.wod.notes.size}") String notes,
-    @Size(max = 4000, message = "{validation.wod.scaling.size}") String scalingOptions) {}
+    @Size(max = 4000, message = "{validation.wod.notes.size}") String notesEn,
+    @Size(max = 4000, message = "{validation.wod.notes.size}") String notesFr,
+    @Size(max = 4000, message = "{validation.wod.scaling.size}") String scalingOptionsEn,
+    @Size(max = 4000, message = "{validation.wod.scaling.size}") String scalingOptionsFr) {}

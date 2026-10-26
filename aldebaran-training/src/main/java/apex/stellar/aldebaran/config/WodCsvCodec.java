@@ -3,6 +3,7 @@ package apex.stellar.aldebaran.config;
 import apex.stellar.aldebaran.model.entities.Movement;
 import apex.stellar.aldebaran.model.entities.Wod;
 import apex.stellar.aldebaran.model.entities.Wod.ScoreType;
+import apex.stellar.aldebaran.model.entities.Wod.WodCategory;
 import apex.stellar.aldebaran.model.entities.Wod.WodType;
 import apex.stellar.aldebaran.model.entities.WodMovement;
 import apex.stellar.aldebaran.model.enums.Unit;
@@ -45,13 +46,16 @@ public final class WodCsvCodec {
   static final String[] WOD_HEADERS = {
     "title",
     "wod_type",
+    "category",
     "score_type",
     "rep_scheme",
     "time_cap_seconds",
     "emom_interval",
     "emom_rounds",
-    "description",
-    "notes"
+    "description_en",
+    "description_fr",
+    "notes_en",
+    "notes_fr"
   };
 
   static final String[] WOD_MOVEMENT_HEADERS = {
@@ -65,12 +69,19 @@ public final class WodCsvCodec {
     "distance_unit",
     "duration_seconds",
     "calories",
-    "notes",
-    "scaling_options",
+    "notes_en",
+    "scaling_options_en",
     // Optional trailing columns, only needed to keep values edited in Sirius
     "duration_display_unit",
     "equipment",
-    "techniques"
+    "techniques",
+    "weight_female",
+    "notes_fr",
+    "scaling_options_fr",
+    "calories_female",
+    "height",
+    "height_female",
+    "height_unit"
   };
 
   /** Separator of the equipment / technique lists (free text, so not a comma). */
@@ -89,6 +100,8 @@ public final class WodCsvCodec {
    * @param movementsByName Catalog movements keyed by exact name.
    * @return The WODs, in file order, with {@code isPublic = true} and no author or gym.
    * @throws IOException If a file cannot be read.
+   * @throws apex.stellar.aldebaran.exception.InvalidWodMovementException If a WOD movement uses an
+   *     equipment or a technique that its movement does not allow.
    */
   public static List<Wod> read(
       Reader wodsReader, Reader wodMovementsReader, Map<String, Movement> movementsByName)
@@ -100,13 +113,16 @@ public final class WodCsvCodec {
           Wod.builder()
               .title(title)
               .wodType(WodType.valueOf(required(row, "wod_type").toUpperCase()))
+              .category(category(row))
               .scoreType(ScoreType.valueOf(required(row, "score_type").toUpperCase()))
               .repScheme(text(row, "rep_scheme"))
               .timeCapSeconds(integer(row, "time_cap_seconds"))
               .emomInterval(integer(row, "emom_interval"))
               .emomRounds(integer(row, "emom_rounds"))
-              .description(text(row, "description"))
-              .notes(text(row, "notes"))
+              .descriptionEn(text(row, "description_en", "description"))
+              .descriptionFr(text(row, "description_fr"))
+              .notesEn(text(row, "notes_en", "notes"))
+              .notesFr(text(row, "notes_fr"))
               .isPublic(true)
               .authorId(null)
               .gymId(null)
@@ -135,25 +151,34 @@ public final class WodCsvCodec {
             WOD_MOVEMENTS_FILE);
         continue;
       }
-      wod.getMovements()
-          .add(
-              WodMovement.builder()
-                  .wod(wod)
-                  .movement(movement)
-                  .orderIndex(Integer.parseInt(required(row, "order_index")))
-                  .repsScheme(text(row, "reps_scheme"))
-                  .weight(decimal(row, "weight"))
-                  .weightUnit(unit(row, "weight_unit"))
-                  .distance(decimal(row, "distance"))
-                  .distanceUnit(unit(row, "distance_unit"))
-                  .durationSeconds(integer(row, "duration_seconds"))
-                  .durationDisplayUnit(unit(row, "duration_display_unit"))
-                  .calories(integer(row, "calories"))
-                  .notes(text(row, "notes"))
-                  .scalingOptions(text(row, "scaling_options"))
-                  .equipment(list(row, "equipment"))
-                  .techniques(list(row, "techniques"))
-                  .build());
+      WodMovement wodMovement =
+          WodMovement.builder()
+              .wod(wod)
+              .movement(movement)
+              .orderIndex(Integer.parseInt(required(row, "order_index")))
+              .repsScheme(text(row, "reps_scheme"))
+              .weight(decimal(row, "weight"))
+              .weightUnit(unit(row, "weight_unit"))
+              .distance(decimal(row, "distance"))
+              .distanceUnit(unit(row, "distance_unit"))
+              .durationSeconds(integer(row, "duration_seconds"))
+              .durationDisplayUnit(unit(row, "duration_display_unit"))
+              .calories(integer(row, "calories"))
+              .weightFemale(decimal(row, "weight_female"))
+              .notesEn(text(row, "notes_en", "notes"))
+              .notesFr(text(row, "notes_fr"))
+              .scalingOptionsEn(text(row, "scaling_options_en", "scaling_options"))
+              .scalingOptionsFr(text(row, "scaling_options_fr"))
+              .caloriesFemale(integer(row, "calories_female"))
+              .height(decimal(row, "height"))
+              .heightFemale(decimal(row, "height_female"))
+              .heightUnit(unit(row, "height_unit"))
+              .equipment(list(row, "equipment"))
+              .techniques(list(row, "techniques"))
+              .build();
+      wodMovement.checkVariantsAllowed(
+          movement.getName(), movement.getEquipment(), movement.getTechniques());
+      wod.getMovements().add(wodMovement);
       if (movement.getCategory() != null && movement.getCategory().getModality() != null) {
         wod.getModalities().add(movement.getCategory().getModality());
       }
@@ -181,13 +206,16 @@ public final class WodCsvCodec {
         wodPrinter.printRecord(
             w.getTitle(),
             w.getWodType().name(),
+            name(w.getCategory()),
             w.getScoreType().name(),
             w.getRepScheme(),
             w.getTimeCapSeconds(),
             w.getEmomInterval(),
             w.getEmomRounds(),
-            w.getDescription(),
-            w.getNotes());
+            w.getDescriptionEn(),
+            w.getDescriptionFr(),
+            w.getNotesEn(),
+            w.getNotesFr());
 
         List<WodMovement> movements = new ArrayList<>(w.getMovements());
         movements.sort(Comparator.comparing(WodMovement::getOrderIndex));
@@ -203,11 +231,18 @@ public final class WodCsvCodec {
               name(wm.getDistanceUnit()),
               wm.getDurationSeconds(),
               wm.getCalories(),
-              wm.getNotes(),
-              wm.getScalingOptions(),
+              wm.getNotesEn(),
+              wm.getScalingOptionsEn(),
               name(wm.getDurationDisplayUnit()),
               join(wm.getEquipment()),
-              join(wm.getTechniques()));
+              join(wm.getTechniques()),
+              wm.getWeightFemale(),
+              wm.getNotesFr(),
+              wm.getScalingOptionsFr(),
+              wm.getCaloriesFemale(),
+              wm.getHeight(),
+              wm.getHeightFemale(),
+              name(wm.getHeightUnit()));
         }
       }
     }
@@ -252,6 +287,11 @@ public final class WodCsvCodec {
     return value == null || value.isBlank() ? null : value;
   }
 
+  /** Text of the first column present, so files written before a column rename still load. */
+  private static String text(CSVRecord row, String header, String legacyHeader) {
+    return row.isMapped(header) ? text(row, header) : text(row, legacyHeader);
+  }
+
   private static Integer integer(CSVRecord row, String header) {
     String value = text(row, header);
     return value == null ? null : Integer.valueOf(value.trim());
@@ -260,6 +300,11 @@ public final class WodCsvCodec {
   private static Double decimal(CSVRecord row, String header) {
     String value = text(row, header);
     return value == null ? null : Double.valueOf(value.trim());
+  }
+
+  private static WodCategory category(CSVRecord row) {
+    String value = text(row, "category");
+    return value == null ? null : WodCategory.valueOf(value.trim().toUpperCase());
   }
 
   private static Unit unit(CSVRecord row, String header) {
@@ -278,8 +323,8 @@ public final class WodCsvCodec {
         .collect(Collectors.toCollection(HashSet::new));
   }
 
-  private static String name(Unit unit) {
-    return unit == null ? null : unit.name();
+  private static String name(Enum<?> value) {
+    return value == null ? null : value.name();
   }
 
   private static String join(Set<String> values) {
