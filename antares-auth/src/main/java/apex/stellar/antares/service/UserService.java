@@ -1,6 +1,7 @@
 package apex.stellar.antares.service;
 
 import apex.stellar.antares.dto.ChangePasswordRequest;
+import apex.stellar.antares.dto.DisplayNameResponse;
 import apex.stellar.antares.dto.PreferencesUpdateRequest;
 import apex.stellar.antares.dto.ProfileUpdateRequest;
 import apex.stellar.antares.dto.UserResponse;
@@ -10,7 +11,9 @@ import apex.stellar.antares.exception.InvalidPasswordException;
 import apex.stellar.antares.exception.ResourceNotFoundException;
 import apex.stellar.antares.mapper.UserMapper;
 import apex.stellar.antares.model.GymRole;
+import apex.stellar.antares.model.Membership;
 import apex.stellar.antares.model.Membership.MembershipStatus;
+import apex.stellar.antares.model.PlatformRole;
 import apex.stellar.antares.model.User;
 import apex.stellar.antares.repository.jpa.UserRepository;
 import java.util.Collection;
@@ -19,6 +22,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
@@ -209,5 +213,51 @@ public class UserService {
   public void deleteAccount(User currentUser) {
     refreshTokenService.deleteTokenForUser(currentUser);
     userRepository.delete(currentUser);
+  }
+
+  /**
+   * Resolves the display names ("Clément R.") a user may see, e.g. for a leaderboard page. A name is
+   * visible to its owner, to members of a gym the owner belongs to (usable memberships on both
+   * sides), to everyone when the owner allowed it on public leaderboards, and to platform admins.
+   * Other users are left out, so clients show them as anonymous.
+   *
+   * @param viewer the authenticated user.
+   * @param userIds the users to resolve.
+   * @return the visible display names, in no particular order.
+   */
+  @Transactional(readOnly = true)
+  public List<DisplayNameResponse> getDisplayNames(User viewer, Collection<Long> userIds) {
+    if (userIds.isEmpty()) {
+      return List.of();
+    }
+    boolean admin = viewer.getPlatformRole() == PlatformRole.ADMIN;
+    Set<Long> viewerGyms =
+        userRepository.findWithMembershipsByIdIn(List.of(viewer.getId())).stream()
+            .flatMap(u -> usableGymIds(u).stream())
+            .collect(Collectors.toSet());
+
+    return userRepository.findWithMembershipsByIdIn(Set.copyOf(userIds)).stream()
+        .filter(
+            u ->
+                admin
+                    || Objects.equals(u.getId(), viewer.getId())
+                    || u.isPublicLeaderboardName()
+                    || usableGymIds(u).stream().anyMatch(viewerGyms::contains))
+        .map(u -> new DisplayNameResponse(u.getId(), displayName(u)))
+        .toList();
+  }
+
+  private static Set<Long> usableGymIds(User user) {
+    return user.getMemberships().stream()
+        .filter(Membership::isUsable)
+        .map(m -> m.getGym().getId())
+        .collect(Collectors.toSet());
+  }
+
+  /** First name and last-name initial: "Clément R.". */
+  static String displayName(User user) {
+    String first = user.getFirstName() == null ? "" : user.getFirstName().trim();
+    String last = user.getLastName() == null ? "" : user.getLastName().trim();
+    return last.isEmpty() ? first : first + " " + last.substring(0, 1).toUpperCase(Locale.ROOT) + ".";
   }
 }

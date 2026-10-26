@@ -10,6 +10,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import apex.stellar.antares.config.BaseIntegrationTest;
 import apex.stellar.antares.dto.AuthenticationRequest;
 import apex.stellar.antares.dto.ChangePasswordRequest;
+import apex.stellar.antares.dto.DisplayNamesRequest;
 import apex.stellar.antares.dto.PreferencesUpdateRequest;
 import apex.stellar.antares.dto.ProfileUpdateRequest;
 import jakarta.servlet.http.Cookie;
@@ -72,7 +73,7 @@ class UserControllerIT extends BaseIntegrationTest {
   void testUpdatePreferences_shouldSucceed() throws Exception {
     // Given
     PreferencesUpdateRequest preferencesRequest =
-        new PreferencesUpdateRequest("fr", "dark", "IMPERIAL");
+        new PreferencesUpdateRequest("fr", "dark", "IMPERIAL", null);
 
     // When
     mockMvc
@@ -96,9 +97,75 @@ class UserControllerIT extends BaseIntegrationTest {
                 .with(csrf())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(
-                    jsonMapper.writeValueAsString(new PreferencesUpdateRequest("fr", "dark", null))))
+                    jsonMapper.writeValueAsString(new PreferencesUpdateRequest("fr", "dark", null, null))))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.unitSystem").isEmpty());
+  }
+
+  @Test
+  @DisplayName("Leaderboard name: off by default, switched on, kept when the field is omitted")
+  void testPublicLeaderboardNamePreference() throws Exception {
+    mockMvc
+        .perform(get("/antares/users/me").cookie(authCookies))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.publicLeaderboardName").value(false));
+
+    mockMvc
+        .perform(
+            patch("/antares/users/me/preferences")
+                .cookie(authCookies)
+                .with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    jsonMapper.writeValueAsString(
+                        new PreferencesUpdateRequest("fr", "dark", null, true))))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.publicLeaderboardName").value(true));
+
+    mockMvc
+        .perform(
+            patch("/antares/users/me/preferences")
+                .cookie(authCookies)
+                .with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    jsonMapper.writeValueAsString(
+                        new PreferencesUpdateRequest("en", "light", null, null))))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.publicLeaderboardName").value(true));
+  }
+
+  @Test
+  @DisplayName("Display names: own name visible, strangers left out, at most 100 IDs")
+  void testDisplayNames() throws Exception {
+    Long me = userRepository.findByEmail(initialEmail).orElseThrow().getId();
+    register("stranger@example.com", "password123");
+    Long stranger = userRepository.findByEmail("stranger@example.com").orElseThrow().getId();
+
+    mockMvc
+        .perform(
+            post("/antares/users/display-names")
+                .cookie(authCookies)
+                .with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    jsonMapper.writeValueAsString(
+                        new DisplayNamesRequest(java.util.List.of(me, stranger)))))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.length()").value(1))
+        .andExpect(jsonPath("$[0].id").value(me));
+
+    mockMvc
+        .perform(
+            post("/antares/users/display-names")
+                .cookie(authCookies)
+                .with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    jsonMapper.writeValueAsString(
+                        new DisplayNamesRequest(
+                            java.util.stream.LongStream.rangeClosed(1, 101).boxed().toList()))))
+        .andExpect(status().isBadRequest());
   }
 
   @Test
@@ -214,7 +281,7 @@ class UserControllerIT extends BaseIntegrationTest {
   void testUpdatePreferences_withInvalidData_shouldReturnBadRequest() throws Exception {
     // Given: A request with an invalid locale format
     PreferencesUpdateRequest invalidRequest =
-        new PreferencesUpdateRequest("invalid-locale", "dark", null);
+        new PreferencesUpdateRequest("invalid-locale", "dark", null, null);
 
     // When/Then
     mockMvc
