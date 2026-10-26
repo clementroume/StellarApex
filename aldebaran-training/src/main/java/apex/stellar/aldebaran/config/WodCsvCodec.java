@@ -89,6 +89,8 @@ public final class WodCsvCodec {
    * @param movementsByName Catalog movements keyed by exact name.
    * @return The WODs, in file order, with {@code isPublic = true} and no author or gym.
    * @throws IOException If a file cannot be read.
+   * @throws apex.stellar.aldebaran.exception.InvalidWodMovementException If a WOD movement uses an
+   *     equipment or a technique that its movement does not allow.
    */
   public static List<Wod> read(
       Reader wodsReader, Reader wodMovementsReader, Map<String, Movement> movementsByName)
@@ -135,25 +137,27 @@ public final class WodCsvCodec {
             WOD_MOVEMENTS_FILE);
         continue;
       }
-      wod.getMovements()
-          .add(
-              WodMovement.builder()
-                  .wod(wod)
-                  .movement(movement)
-                  .orderIndex(Integer.parseInt(required(row, "order_index")))
-                  .repsScheme(text(row, "reps_scheme"))
-                  .weight(decimal(row, "weight"))
-                  .weightUnit(unit(row, "weight_unit"))
-                  .distance(decimal(row, "distance"))
-                  .distanceUnit(unit(row, "distance_unit"))
-                  .durationSeconds(integer(row, "duration_seconds"))
-                  .durationDisplayUnit(unit(row, "duration_display_unit"))
-                  .calories(integer(row, "calories"))
-                  .notes(text(row, "notes"))
-                  .scalingOptions(text(row, "scaling_options"))
-                  .equipment(list(row, "equipment"))
-                  .techniques(list(row, "techniques"))
-                  .build());
+      WodMovement wodMovement =
+          WodMovement.builder()
+              .wod(wod)
+              .movement(movement)
+              .orderIndex(Integer.parseInt(required(row, "order_index")))
+              .repsScheme(text(row, "reps_scheme"))
+              .weight(decimal(row, "weight"))
+              .weightUnit(unit(row, "weight_unit"))
+              .distance(decimal(row, "distance"))
+              .distanceUnit(unit(row, "distance_unit"))
+              .durationSeconds(integer(row, "duration_seconds"))
+              .durationDisplayUnit(unit(row, "duration_display_unit"))
+              .calories(integer(row, "calories"))
+              .notes(text(row, "notes"))
+              .scalingOptions(text(row, "scaling_options"))
+              .equipment(list(row, "equipment"))
+              .techniques(list(row, "techniques"))
+              .build();
+      wodMovement.checkVariantsAllowed(
+          movement.getName(), movement.getEquipment(), movement.getTechniques());
+      wod.getMovements().add(wodMovement);
       if (movement.getCategory() != null && movement.getCategory().getModality() != null) {
         wod.getModalities().add(movement.getCategory().getModality());
       }

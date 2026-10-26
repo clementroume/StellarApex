@@ -19,11 +19,14 @@ import apex.stellar.aldebaran.model.entities.Wod;
 import apex.stellar.aldebaran.model.entities.Wod.ScoreType;
 import apex.stellar.aldebaran.model.entities.Wod.WodType;
 import apex.stellar.aldebaran.model.enums.Category;
+import apex.stellar.aldebaran.model.enums.Equipment;
 import apex.stellar.aldebaran.repository.MovementRepository;
 import apex.stellar.aldebaran.repository.ScoreRepository;
 import apex.stellar.aldebaran.repository.WodRepository;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Locale;
+import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -252,6 +255,58 @@ class WodControllerIT extends BaseIntegrationTest {
                 .header("X-Auth-Memberships", "102:ATHLETE:")
                 .header("X-Internal-Secret", "test-internal-secret"))
         .andExpect(status().isForbidden());
+  }
+
+  @Test
+  @DisplayName("POST /wods: should reject an equipment that the movement does not allow (400)")
+  void testCreateWod_EquipmentNotAllowed() throws Exception {
+    pullUp.getEquipment().add(Equipment.PULL_UP_BAR);
+    movementRepository.save(pullUp);
+    WodRequest request =
+        new WodRequest(
+            "Ring Pull-ups",
+            WodType.FOR_TIME,
+            ScoreType.TIME,
+            null,
+            101L,
+            true,
+            "Desc",
+            null,
+            600,
+            0,
+            0,
+            "50",
+            List.of(
+                new WodMovementRequest(
+                    pullUp.getId(),
+                    1,
+                    "50",
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    Set.of("RINGS"),
+                    null,
+                    null,
+                    null)));
+    mockMvc
+        .perform(
+            post("/aldebaran/wods")
+                .with(csrf())
+                .header("X-Auth-User-Id", "20")
+                .header("X-Auth-User-Role", "USER")
+                .header("X-Auth-Memberships", "101:COACH:WOD_WRITE")
+                .header("X-Internal-Secret", "test-internal-secret")
+                .locale(Locale.ENGLISH)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+        .andExpect(status().isBadRequest())
+        .andExpect(jsonPath("$.title").value("Invalid WOD Movement"))
+        .andExpect(
+            jsonPath("$.detail").value("Equipment RINGS is not allowed for the movement Pull-up."));
   }
 
   @Test

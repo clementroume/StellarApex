@@ -11,6 +11,7 @@ import apex.stellar.aldebaran.dto.WodRequest;
 import apex.stellar.aldebaran.dto.WodFacetsResponse;
 import apex.stellar.aldebaran.dto.WodResponse;
 import apex.stellar.aldebaran.dto.WodSummaryResponse;
+import apex.stellar.aldebaran.exception.InvalidWodMovementException;
 import apex.stellar.aldebaran.exception.ResourceNotFoundException;
 import apex.stellar.aldebaran.exception.WodLockedException;
 import apex.stellar.aldebaran.mapper.WodMapper;
@@ -21,6 +22,8 @@ import apex.stellar.aldebaran.model.entities.Wod.WodType;
 import apex.stellar.aldebaran.model.entities.WodMovement;
 import apex.stellar.aldebaran.model.enums.Category;
 import apex.stellar.aldebaran.model.enums.Category.Modality;
+import apex.stellar.aldebaran.model.enums.Equipment;
+import apex.stellar.aldebaran.model.enums.Technique;
 import apex.stellar.aldebaran.model.enums.WodScope;
 import apex.stellar.aldebaran.repository.MovementRepository;
 import apex.stellar.aldebaran.repository.ScoreRepository;
@@ -293,6 +296,51 @@ class WodServiceTest {
   }
 
   @Test
+  @DisplayName("createWod: should reject an equipment that the movement does not allow")
+  void testCreateWod_EquipmentNotAllowed() {
+    when(securityService.getCurrentUserId()).thenReturn(100L);
+    when(wodMapper.toEntity(any())).thenReturn(wod);
+    MovementResponse dip = dipDto();
+    when(movementService.getMovement(1L)).thenReturn(dip);
+    when(movementRepository.getReferenceById(1L)).thenReturn(movement);
+    when(wodMapper.toWodMovementEntity(any()))
+        .thenReturn(WodMovement.builder().equipment(Set.of("RINGS", "BARBELL")).build());
+
+    InvalidWodMovementException ex =
+        assertThrows(InvalidWodMovementException.class, () -> wodService.createWod(wodRequest));
+
+    assertEquals("error.wod.movement.equipment.invalid", ex.getMessageKey());
+    assertArrayEquals(new Object[] {"BARBELL", "Dip"}, ex.getArgs());
+    verify(wodRepository, never()).save(any());
+  }
+
+  @Test
+  @DisplayName("createWod: should accept equipment and techniques allowed by the movement")
+  void testCreateWod_AllowedVariants() {
+    when(securityService.getCurrentUserId()).thenReturn(100L);
+    when(wodMapper.toEntity(any())).thenReturn(wod);
+    MovementResponse dip = dipDto();
+    when(movementService.getMovement(1L)).thenReturn(dip);
+    when(movementRepository.getReferenceById(1L)).thenReturn(movement);
+    when(wodMapper.toWodMovementEntity(any()))
+        .thenReturn(
+            WodMovement.builder().equipment(Set.of("RINGS")).techniques(Set.of("STRICT")).build());
+    when(wodRepository.save(wod)).thenReturn(wod);
+    when(wodMapper.toResponse(wod)).thenReturn(mock(WodResponse.class));
+
+    assertNotNull(wodService.createWod(wodRequest));
+    verify(wodRepository).save(wod);
+  }
+
+  private static MovementResponse dipDto() {
+    MovementResponse dto = mock(MovementResponse.class);
+    when(dto.name()).thenReturn("Dip");
+    when(dto.equipment()).thenReturn(Set.of(Equipment.RINGS, Equipment.BOX));
+    when(dto.techniques()).thenReturn(Set.of(Technique.STRICT, Technique.KIPPING));
+    return dto;
+  }
+
+  @Test
   @DisplayName("updateWod: should update when NO scores exist")
   void testUpdateWod_Success() {
     // 1. Check Locks
@@ -390,6 +438,25 @@ class WodServiceTest {
         assertThrows(WodLockedException.class, () -> wodService.updateWod(1L, wodRequest));
 
     assertEquals("error.wod.locked", ex.getMessageKey());
+    verify(wodRepository, never()).save(any());
+  }
+
+  @Test
+  @DisplayName("updateWod: should reject a technique that the movement does not allow")
+  void testUpdateWod_TechniqueNotAllowed() {
+    when(scoreRepository.existsByWodId(1L)).thenReturn(false);
+    when(wodRepository.findByIdWithMovements(1L)).thenReturn(Optional.of(wod));
+    MovementResponse dip = dipDto();
+    when(movementService.getMovement(1L)).thenReturn(dip);
+    when(movementRepository.getReferenceById(1L)).thenReturn(movement);
+    when(wodMapper.toWodMovementEntity(any()))
+        .thenReturn(WodMovement.builder().techniques(Set.of("BUTTERFLY")).build());
+
+    InvalidWodMovementException ex =
+        assertThrows(
+            InvalidWodMovementException.class, () -> wodService.updateWod(1L, wodRequest));
+
+    assertEquals("error.wod.movement.technique.invalid", ex.getMessageKey());
     verify(wodRepository, never()).save(any());
   }
 

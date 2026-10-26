@@ -1,5 +1,8 @@
 package apex.stellar.aldebaran.model.entities;
 
+import apex.stellar.aldebaran.exception.InvalidWodMovementException;
+import apex.stellar.aldebaran.model.enums.Equipment;
+import apex.stellar.aldebaran.model.enums.Technique;
 import apex.stellar.aldebaran.model.enums.Unit;
 import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
@@ -20,6 +23,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -118,6 +122,40 @@ public class WodMovement {
 
   @Column(name = "scaling_options", columnDefinition = "TEXT")
   private String scalingOptions;
+
+  // --- Business rules ---
+
+  /**
+   * Checks that this WOD movement only uses equipment and techniques allowed by its catalog
+   * movement: a variant (e.g. Ring Dip = Dip + {@code RINGS}) must be declared on the movement.
+   *
+   * @param movementName The movement name, used in the error message.
+   * @param allowedEquipment The equipment allowed by the movement.
+   * @param allowedTechniques The techniques allowed by the movement.
+   * @throws InvalidWodMovementException on the first value that is not allowed.
+   */
+  public void checkVariantsAllowed(
+      String movementName, Set<Equipment> allowedEquipment, Set<Technique> allowedTechniques) {
+    checkAllowed(equipment, allowedEquipment, "error.wod.movement.equipment.invalid", movementName);
+    checkAllowed(
+        techniques, allowedTechniques, "error.wod.movement.technique.invalid", movementName);
+  }
+
+  private static void checkAllowed(
+      Set<String> values, Set<? extends Enum<?>> allowed, String messageKey, String movementName) {
+    if (values == null || values.isEmpty()) {
+      return;
+    }
+    Set<String> allowedNames =
+        allowed == null
+            ? Set.of()
+            : allowed.stream().map(Enum::name).collect(Collectors.toUnmodifiableSet());
+    for (String value : values) {
+      if (!allowedNames.contains(value)) {
+        throw new InvalidWodMovementException(messageKey, value, movementName);
+      }
+    }
+  }
 
   // --- Equality and Hashing ---
   @Override

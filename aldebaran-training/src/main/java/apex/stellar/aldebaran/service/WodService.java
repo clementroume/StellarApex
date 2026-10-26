@@ -222,6 +222,10 @@ public class WodService {
               Movement movement = movementRepository.getReferenceById(item.movementId());
 
               WodMovement wm = wodMapper.toWodMovementEntity(item);
+              wm.checkVariantsAllowed(
+                  movementResponse.name(),
+                  movementResponse.equipment(),
+                  movementResponse.techniques());
               wm.setWod(wod);
               wm.setMovement(movement);
 
@@ -370,6 +374,8 @@ public class WodService {
         target.setWod(wod);
       }
 
+      target.checkVariantsAllowed(
+          movementResponse.name(), movementResponse.equipment(), movementResponse.techniques());
       target.setMovement(movement);
       updatedList.add(target);
 

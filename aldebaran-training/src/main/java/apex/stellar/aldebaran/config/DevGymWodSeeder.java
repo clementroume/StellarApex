@@ -284,6 +284,7 @@ public class DevGymWodSeeder implements ApplicationRunner {
         log.warn("Dev gym WOD '{}': unknown movement '{}', skipped", wod.getTitle(), name);
         continue;
       }
+      wm.checkVariantsAllowed(movement.getName(), movement.getEquipment(), movement.getTechniques());
       wm.setMovement(movement);
       wm.setWod(wod);
       wm.setOrderIndex(order++);

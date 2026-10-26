@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import apex.stellar.aldebaran.exception.InvalidWodMovementException;
 import apex.stellar.aldebaran.model.entities.Movement;
 import apex.stellar.aldebaran.model.entities.Wod;
 import apex.stellar.aldebaran.model.entities.Wod.ScoreType;
@@ -13,6 +14,8 @@ import apex.stellar.aldebaran.model.entities.Wod.WodType;
 import apex.stellar.aldebaran.model.entities.WodMovement;
 import apex.stellar.aldebaran.model.enums.Category;
 import apex.stellar.aldebaran.model.enums.Category.Modality;
+import apex.stellar.aldebaran.model.enums.Equipment;
+import apex.stellar.aldebaran.model.enums.Technique;
 import apex.stellar.aldebaran.model.enums.Unit;
 import java.io.StringReader;
 import java.io.StringWriter;
@@ -26,11 +29,22 @@ import org.junit.jupiter.api.Test;
 class WodCsvCodecTest {
 
   static final Movement THRUSTER =
-      Movement.builder().id(1L).name("Thruster").category(Category.COMPLEXES).build();
+      Movement.builder()
+          .id(1L)
+          .name("Thruster")
+          .category(Category.COMPLEXES)
+          .equipment(Set.of(Equipment.BARBELL, Equipment.DUMBBELL))
+          .techniques(Set.of(Technique.PAUSED, Technique.TEMPO))
+          .build();
   static final Movement PULL_UP =
       Movement.builder().id(2L).name("Pull-up").category(Category.PULLING).build();
   static final Movement RUNNING =
-      Movement.builder().id(3L).name("Running").category(Category.CARDIO).build();
+      Movement.builder()
+          .id(3L)
+          .name("Running")
+          .category(Category.CARDIO)
+          .techniques(Set.of(Technique.FORWARD, Technique.WEIGHTED))
+          .build();
 
   static final Map<String, Movement> CATALOG =
       WodCsvCodec.byName(List.of(THRUSTER, PULL_UP, RUNNING));
@@ -113,6 +127,22 @@ class WodCsvCodecTest {
   }
 
   @Test
+  @DisplayName("Rejects a movement variant that the movement does not allow")
+  void shouldRejectVariantNotAllowedByMovement() {
+    String movements =
+        "wod_title,order_index,movement_name,equipment,techniques\n"
+            + "Fran,1,Thruster,KETTLEBELL,\n";
+
+    InvalidWodMovementException ex =
+        assertThrows(
+            InvalidWodMovementException.class,
+            () ->
+                WodCsvCodec.read(
+                    new StringReader(WODS_CSV), new StringReader(movements), CATALOG));
+    assertEquals("error.wod.movement.equipment.invalid", ex.getMessageKey());
+  }
+
+  @Test
   @DisplayName("Write then read gives back the same values")
   void shouldRoundTrip() throws Exception {
     Wod wod =
@@ -156,8 +186,8 @@ class WodCsvCodecTest {
                 .calories(12)
                 .notes("Women: 30 kg")
                 .scalingOptions("PVC")
-                .equipment(Set.of("Barbell", "Vest, 20 lb"))
-                .techniques(Set.of("Squat"))
+                .equipment(Set.of("BARBELL", "DUMBBELL"))
+                .techniques(Set.of("PAUSED"))
                 .build());
 
     StringWriter wodsOut = new StringWriter();

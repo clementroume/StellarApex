@@ -52,7 +52,7 @@ public final class WodCsvCodecTestSupport {
                 .weightUnit(Unit.LBS)
                 .notes("Women: 65 lb")
                 .scalingOptions("Lighter barbell, dumbbells")
-                .equipment(Set.of("Barbell"))
+                .equipment(Set.of("BARBELL"))
                 .build());
     fran.getMovements()
         .add(
@@ -91,7 +91,7 @@ public final class WodCsvCodecTestSupport {
                 .durationSeconds(45)
                 .durationDisplayUnit(Unit.SECONDS)
                 .calories(10)
-                .techniques(Set.of("Pose", "Heel strike"))
+                .techniques(Set.of("FORWARD", "WEIGHTED"))
                 .build());
     return List.of(fran, chelsea);
   }
