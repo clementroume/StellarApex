@@ -39,6 +39,7 @@ public record WodRequest(
 
     // --- Structure and Prescription ---
     @Min(value = 0, message = "{validation.wod.timeCap.min}") Integer timeCapSeconds,
+    @Min(value = 1, message = "{validation.wod.repsPerRound.min}") Integer repsPerRound,
     @Min(value = 0, message = "{validation.wod.emom.min}") Integer emomInterval,
     @Min(value = 0, message = "{validation.wod.emom.min}") Integer emomRounds,
     @Size(max = 100, message = "{validation.wod.repScheme.size}") String repScheme,

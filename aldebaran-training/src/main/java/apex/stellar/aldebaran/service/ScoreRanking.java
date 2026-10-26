@@ -55,7 +55,6 @@ public final class ScoreRanking {
           Comparator.comparing((Score s) -> Boolean.TRUE.equals(s.getTimeCapped()))
               .thenComparing(ascending(Score::getTimeSeconds))
               .thenComparing(descending(Score::getReps));
-      case ROUNDS_REPS -> descending(Score::getRounds).thenComparing(descending(Score::getReps));
       case ROUNDS -> descending(Score::getRounds);
       case REPS -> descending(Score::getReps);
       case WEIGHT -> descending(Score::getMaxWeightKg);
@@ -80,8 +79,6 @@ public final class ScoreRanking {
                   Order.asc("timeCapped"),
                   Order.asc("timeSeconds").nullsLast(),
                   Order.desc("reps").nullsLast());
-          case ROUNDS_REPS ->
-              Sort.by(Order.desc("rounds").nullsLast(), Order.desc("reps").nullsLast());
           case ROUNDS -> Sort.by(Order.desc("rounds").nullsLast());
           case REPS -> Sort.by(Order.desc("reps").nullsLast());
           case WEIGHT -> Sort.by(Order.desc("maxWeightKg").nullsLast());

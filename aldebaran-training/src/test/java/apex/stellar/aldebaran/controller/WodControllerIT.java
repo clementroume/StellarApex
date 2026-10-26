@@ -233,7 +233,7 @@ class WodControllerIT extends BaseIntegrationTest {
         Wod.builder()
             .title("Gym Exclusive")
             .wodType(WodType.AMRAP)
-            .scoreType(ScoreType.ROUNDS_REPS)
+            .scoreType(ScoreType.REPS)
             .isPublic(false)
             .gymId(101L)
             .build();
@@ -271,7 +271,7 @@ class WodControllerIT extends BaseIntegrationTest {
     WodRequest girls =
         new WodRequest(
             "Girls Test", WodType.FOR_TIME, WodCategory.GIRLS, ScoreType.TIME, null, 101L, true,
-            "21-15-9 reps", "21-15-9 répétitions", null, null, null, null, null, null, null, "21-15-9",
+            "21-15-9 reps", "21-15-9 répétitions", null, null, null, null, null, null, null, null, "21-15-9",
             List.of(movement));
     String body =
         mockMvc
@@ -301,7 +301,7 @@ class WodControllerIT extends BaseIntegrationTest {
         new WodRequest(
             "Girls Test", WodType.FOR_TIME, null, ScoreType.TIME, null, 101L, true, null, null, null,
             null, null, null,
-            null, null, null, "21-15-9", List.of(movement));
+            null, null, null, null, "21-15-9", List.of(movement));
     mockMvc
         .perform(
             put("/aldebaran/wods/" + id)
@@ -333,7 +333,7 @@ class WodControllerIT extends BaseIntegrationTest {
             true,
             "Desc",
             null, null, null, null, null,
-            600,
+            600, null,
             0,
             0,
             "50",
@@ -405,7 +405,7 @@ class WodControllerIT extends BaseIntegrationTest {
             true,
             "Desc",
             null, null, null, null, null,
-            600,
+            600, null,
             0,
             0,
             "50",
@@ -451,7 +451,7 @@ class WodControllerIT extends BaseIntegrationTest {
             null,
             "Wear a vest",
             null, null, null,
-            3600,
+            3600, null,
             0,
             0,
             "Chipper",
@@ -499,7 +499,7 @@ class WodControllerIT extends BaseIntegrationTest {
             100L, // authorId matches User
             null, // No Gym
             false, // Private
-            null, null, null, null, null, null, null,
+            null, null, null, null, null, null, null, null,
             60,
             10,
             null,
@@ -541,7 +541,7 @@ class WodControllerIT extends BaseIntegrationTest {
             null,
             101L, // Gym 101
             false,
-            null, null, null, null, null, null, null, null, null, null,
+            null, null, null, null, null, null, null, null, null, null, null,
             List.of(
                 new WodMovementRequest(
                     pullUp.getId(),
@@ -581,7 +581,7 @@ class WodControllerIT extends BaseIntegrationTest {
             null,
             101L, // Gym 101
             false,
-            null, null, null, null, null, null, null, null, null, null,
+            null, null, null, null, null, null, null, null, null, null, null,
             List.of(
                 new WodMovementRequest(
                     pullUp.getId(),
@@ -622,7 +622,7 @@ class WodControllerIT extends BaseIntegrationTest {
             null,
             101L, // Target Gym 101
             false,
-            null, null, null, null, null, null, null, null, null, null,
+            null, null, null, null, null, null, null, null, null, null, null,
             List.of(
                 new WodMovementRequest(
                     pullUp.getId(),
@@ -661,7 +661,7 @@ class WodControllerIT extends BaseIntegrationTest {
             null, null,
             true,
             null, null, null, null, null, null,
-            -10, // Negative time cap
+            -10, null, // Negative time cap
             0,
             0,
             null,
@@ -698,7 +698,7 @@ class WodControllerIT extends BaseIntegrationTest {
             null,
             "Scale if needed",
             null, null, null,
-            1200,
+            1200, null,
             0,
             0,
             "21-15-9",
@@ -745,11 +745,11 @@ class WodControllerIT extends BaseIntegrationTest {
             "Hacked Wod",
             WodType.AMRAP,
             null,
-            ScoreType.ROUNDS_REPS,
+            ScoreType.REPS,
             null, null,
             false,
             null, null, null, null, null, null,
-            0,
+            0, null,
             0,
             0,
             null,
@@ -799,7 +799,7 @@ class WodControllerIT extends BaseIntegrationTest {
             ScoreType.TIME,
             null, null,
             false,
-            null, null, null, null, null, null, null, null, null, null,
+            null, null, null, null, null, null, null, null, null, null, null,
             List.of(
                 new WodMovementRequest(
                     pullUp.getId(),
@@ -846,7 +846,7 @@ class WodControllerIT extends BaseIntegrationTest {
             ScoreType.TIME,
             null, null,
             false,
-            null, null, null, null, null, null, null, null, null, null,
+            null, null, null, null, null, null, null, null, null, null, null,
             List.of(
                 new WodMovementRequest(
                     pullUp.getId(),
@@ -885,7 +885,7 @@ class WodControllerIT extends BaseIntegrationTest {
             null, null,
             true,
             null, null, null, null, null, null,
-            0,
+            0, null,
             0,
             0,
             null,
@@ -940,7 +940,7 @@ class WodControllerIT extends BaseIntegrationTest {
             null, null,
             true,
             null, null, null, null, null, null,
-            0,
+            0, null,
             0,
             0,
             null,
@@ -1078,7 +1078,7 @@ class WodControllerIT extends BaseIntegrationTest {
             Wod.builder()
                 .title("Virtual Programming")
                 .wodType(WodType.AMRAP)
-                .scoreType(ScoreType.ROUNDS_REPS)
+                .scoreType(ScoreType.REPS)
                 .isPublic(false)
                 .gymId(300L)
                 .authorId(77L)
@@ -1140,7 +1140,7 @@ class WodControllerIT extends BaseIntegrationTest {
         Wod.builder()
             .title("Virtual")
             .wodType(WodType.AMRAP)
-            .scoreType(ScoreType.ROUNDS_REPS)
+            .scoreType(ScoreType.REPS)
             .gymId(300L)
             .authorId(77L)
             .build());
@@ -1148,7 +1148,7 @@ class WodControllerIT extends BaseIntegrationTest {
         Wod.builder()
             .title("Someone's public WOD")
             .wodType(WodType.AMRAP)
-            .scoreType(ScoreType.ROUNDS_REPS)
+            .scoreType(ScoreType.REPS)
             .isPublic(true)
             .authorId(88L)
             .build());

@@ -387,19 +387,16 @@ class ScoreServiceTest {
   }
 
   @Test
-  @DisplayName("PR Calculation: Rounds+Reps (Higher is Better)")
-  void testPrCalculation_RoundsReps() {
+  @DisplayName("PR Calculation: total reps (Higher is Better)")
+  void testPrCalculation_TotalReps() {
     Score s1 = score(10L, ScalingLevel.RX);
-    s1.setRounds(5);
-    s1.setReps(10);
+    s1.setReps(160);
     Score s2 = score(11L, ScalingLevel.RX);
-    s2.setRounds(5);
-    s2.setReps(20); // Better
+    s2.setReps(170); // Better
     Score s3 = score(12L, ScalingLevel.RX);
-    s3.setRounds(4);
-    s3.setReps(50);
+    s3.setReps(150);
 
-    deleteTriggeringPr(ScoreType.ROUNDS_REPS, List.of(s1, s2, s3));
+    deleteTriggeringPr(ScoreType.REPS, List.of(s1, s2, s3));
 
     assertTrue(s2.isPersonalRecord());
     assertFalse(s3.isPersonalRecord());
@@ -472,18 +469,15 @@ class ScoreServiceTest {
   }
 
   @Test
-  @DisplayName("compareScore: ROUNDS_REPS compares rounds then reps")
-  void testCompareScore_RoundsReps() {
-    wodProxy.setScoreType(ScoreType.ROUNDS_REPS);
+  @DisplayName("compareScore: REPS compares total reps")
+  void testCompareScore_Reps() {
+    wodProxy.setScoreType(ScoreType.REPS);
     Score score = score(51L, ScalingLevel.RX);
-    score.setRounds(5);
-    score.setReps(10);
+    score.setReps(160);
     Score better = otherPr(1L, 1L);
-    better.setRounds(5);
-    better.setReps(11);
+    better.setReps(161);
     Score worse = otherPr(2L, 2L);
-    worse.setRounds(4);
-    worse.setReps(30);
+    worse.setReps(150);
     when(scoreRepository.findById(51L)).thenReturn(Optional.of(score));
     when(scoreRepository.findByWodIdAndScalingAndPersonalRecordTrue(1L, ScalingLevel.RX))
         .thenReturn(List.of(better, worse));
@@ -586,5 +580,32 @@ class ScoreServiceTest {
         .thenReturn(List.of(fasterTb, noTb));
 
     assertEquals(2L, scoreService.compareScore(70L).rank());
+  }
+
+  @Test
+  @DisplayName("REPS: rounds + reps entered on a fixed-round WOD are stored as total reps")
+  void testReps_RoundsToTotal() {
+    Wod cindy = Wod.builder().id(8L).scoreType(ScoreType.REPS).repsPerRound(30).build();
+    Score entered = Score.builder().rounds(10).reps(12).scaling(ScalingLevel.RX).build();
+
+    saveThroughLog(cindy, entered);
+
+    assertEquals(312, entered.getReps());
+    assertNull(entered.getRounds());
+  }
+
+  @Test
+  @DisplayName("REPS: rounds on a WOD without a fixed round -> 400, total reps accepted")
+  void testReps_RoundsWithoutRepsPerRound() {
+    Wod ladder = Wod.builder().id(9L).scoreType(ScoreType.REPS).build();
+
+    InvalidScoreException ex =
+        assertThrows(
+            InvalidScoreException.class,
+            () -> saveThroughLog(ladder, Score.builder().rounds(8).scaling(ScalingLevel.RX).build()));
+    assertEquals("error.score.rounds.unknown", ex.getMessageKey());
+
+    Score total = saveThroughLog(ladder, Score.builder().reps(150).scaling(ScalingLevel.RX).build());
+    assertEquals(150, total.getReps());
   }
 }

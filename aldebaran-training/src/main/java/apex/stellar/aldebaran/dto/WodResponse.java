@@ -35,6 +35,7 @@ public record WodResponse(
 
     // --- Structure ---
     Integer timeCapSeconds,
+    Integer repsPerRound,
     Integer emomInterval,
     Integer emomRounds,
     String repScheme,
@@ -71,6 +72,7 @@ public record WodResponse(
         tiebreakEn,
         tiebreakFr,
         timeCapSeconds,
+        repsPerRound,
         emomInterval,
         emomRounds,
         repScheme,

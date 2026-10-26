@@ -38,7 +38,7 @@ class WodCapabilityServiceTest {
 
   private static WodResponse gymWod(Long gymId) {
     return new WodResponse(
-        10L, "Fran", null, null, null, 50L, gymId, false, null, null, null, null, null, null, null, null, null, null, Set.of(),
+        10L, "Fran", null, null, null, 50L, gymId, false, null, null, null, null, null, null, null, null, null, null, null, Set.of(),
         List.of(), null, null, null);
   }
 

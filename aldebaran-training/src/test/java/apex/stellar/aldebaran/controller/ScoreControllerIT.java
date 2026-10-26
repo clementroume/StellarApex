@@ -61,7 +61,8 @@ class ScoreControllerIT extends BaseIntegrationTest {
         Wod.builder()
             .title("Gym 101 Exclusive")
             .wodType(WodType.AMRAP)
-            .scoreType(ScoreType.ROUNDS_REPS)
+            .scoreType(ScoreType.REPS)
+            .repsPerRound(30)
             .gymId(101L)
             .isPublic(false)
             .build();
@@ -552,7 +553,7 @@ class ScoreControllerIT extends BaseIntegrationTest {
             .userId(100L)
             .date(LocalDate.now())
             .scaling(ScalingLevel.RX)
-            .rounds(10)
+            .reps(300)
             .loggedAt(java.time.LocalDateTime.now())
             .build();
     score = scoreRepository.save(score);
@@ -587,7 +588,9 @@ class ScoreControllerIT extends BaseIntegrationTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(updateRequest)))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.rounds").value(12));
+        // 12 rounds of 30 reps, stored as total reps
+        .andExpect(jsonPath("$.reps").value(360))
+        .andExpect(jsonPath("$.rounds").doesNotExist());
   }
 
   @Test
@@ -869,7 +872,7 @@ class ScoreControllerIT extends BaseIntegrationTest {
   void testLeaderboard_NotesPerViewer() throws Exception {
     Score score = createScore(100L, 100);
     score.setWod(gymWod);
-    score.setRounds(10);
+    score.setReps(300);
     score.setUserComment("private");
     scoreRepository.save(score);
 

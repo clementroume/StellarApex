@@ -232,6 +232,9 @@ public class ScoreService {
     if (!hasTiebreak || (type == ScoreType.TIME && !capped)) {
       score.setTiebreakSeconds(null);
     }
+    if (type == ScoreType.REPS) {
+      toTotalReps(score, wod);
+    }
     if (type == ScoreType.ROUNDS
         && score.getRounds() != null
         && wod.getEmomRounds() != null
@@ -245,7 +248,6 @@ public class ScoreService {
               capped
                   ? score.getReps() != null
                   : score.getTimeSeconds() != null && score.getTimeSeconds() > 0;
-          case ROUNDS_REPS -> score.getRounds() != null || score.getReps() != null;
           case ROUNDS -> score.getRounds() != null;
           case REPS -> score.getReps() != null;
           case WEIGHT -> score.getMaxWeightKg() != null && score.getMaxWeightKg() > 0;
@@ -258,6 +260,26 @@ public class ScoreService {
       throw new InvalidScoreException(
           capped ? "error.score.capped.reps.required" : "error.score.value.required." + type);
     }
+  }
+
+  /**
+   * Stores a REPS score as its total reps (canonical, as the Open scores AMRAPs). Rounds + reps
+   * entered for a WOD with a fixed round become {@code rounds * repsPerRound + reps}.
+   *
+   * @param score The score about to be saved.
+   * @param wod The WOD of the score.
+   * @throws InvalidScoreException if rounds are entered for a WOD without reps per round.
+   */
+  private void toTotalReps(Score score, Wod wod) {
+    if (score.getRounds() == null) {
+      return;
+    }
+    if (wod.getRepsPerRound() == null) {
+      throw new InvalidScoreException("error.score.rounds.unknown");
+    }
+    int extra = score.getReps() != null ? score.getReps() : 0;
+    score.setReps(score.getRounds() * wod.getRepsPerRound() + extra);
+    score.setRounds(null);
   }
 
   /**

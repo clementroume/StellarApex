@@ -107,33 +107,6 @@ class ScoreValidatorTest {
   }
 
   // =========================================================================
-  // 2. ROUNDS_REPS (AMRAP Mixte)
-  // =========================================================================
-
-  @Test
-  @DisplayName("ROUNDS_REPS: Valid if Rounds is present")
-  void testRoundsReps_ValidRounds() {
-    Score score = createScore(ScoreType.ROUNDS_REPS);
-    score.setRounds(5);
-    assertValidScoreType(score);
-  }
-
-  @Test
-  @DisplayName("ROUNDS_REPS: Valid if Reps is present")
-  void testRoundsReps_ValidReps() {
-    Score score = createScore(ScoreType.ROUNDS_REPS);
-    score.setReps(50);
-    assertValidScoreType(score);
-  }
-
-  @Test
-  @DisplayName("ROUNDS_REPS: Invalid if both are null")
-  void testRoundsReps_Invalid() {
-    Score score = createScore(ScoreType.ROUNDS_REPS);
-    assertInvalidScoreType(score);
-  }
-
-  // =========================================================================
   // 3. REPS (AMRAP simple)
   // =========================================================================
 

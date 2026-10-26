@@ -241,7 +241,7 @@ class DtoLocalizationTest {
               "",
               null, null, null, null, null,
               false,
-              null, null, null, null, null, null, null, null, null, null,
+              null, null, null, null, null, null, null, null, null, null, null,
               Collections.emptyList());
 
       assertViolationEnAndFr(
@@ -273,7 +273,7 @@ class DtoLocalizationTest {
               null,
               "A".repeat(4001),
               null, null, null,
-              -1,
+              -1, null,
               -1,
               null,
               "A".repeat(101),

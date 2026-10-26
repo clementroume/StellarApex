@@ -90,7 +90,7 @@ class WodServiceTest {
             null,
             "Notes",
             null, null, null,
-            600, // timeCap
+            600, null, // timeCap
             0, // emomInterval
             0, // emomRounds
             "21-15-9", // repScheme
@@ -256,7 +256,7 @@ class WodServiceTest {
             ScoreType.TIME,
             null, null,
             true,
-            null, null, null, null, null, null, null, null, null,
+            null, null, null, null, null, null, null, null, null, null,
             "21-15-9",
             List.of(
                 new WodMovementRequest(
@@ -425,7 +425,7 @@ class WodServiceTest {
             ScoreType.TIME,
             null, null,
             true,
-            null, null, null, null, null, null, null, null, null, null,
+            null, null, null, null, null, null, null, null, null, null, null,
             List.of(
                 new WodMovementRequest(
                     1L, 1, "15-12-9", 0.0, null, null, 0, null, 0.0, null, 0, null, null, null, null, null, null, null, null, null, null)));
@@ -511,7 +511,7 @@ class WodServiceTest {
             ScoreType.TIME,
             null, null,
             true,
-            null, null, null, null, null, null, null, null, null, null,
+            null, null, null, null, null, null, null, null, null, null, null,
             List.of(
                 new WodMovementRequest(
                     1L, 2, "15", null, null, null, 0, null, null, null, 0, null, null, null, null, null, null, null, null, null, null)));
@@ -546,7 +546,7 @@ class WodServiceTest {
             ScoreType.TIME,
             null, null,
             true,
-            null, null, null, null, null, null, null, null, null, null,
+            null, null, null, null, null, null, null, null, null, null, null,
             List.of()); // Liste vide !
 
     // When

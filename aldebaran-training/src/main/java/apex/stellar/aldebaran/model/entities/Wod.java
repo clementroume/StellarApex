@@ -114,6 +114,14 @@ public class Wod {
   @Min(0)
   private Integer timeCapSeconds;
 
+  /**
+   * Reps of one round of an AMRAP with a fixed round (Cindy: 5 + 10 + 15 = 30), used to show and
+   * enter a total-reps score as rounds + reps; null when rounds are not fixed (ladders, chippers).
+   */
+  @Column(name = "reps_per_round")
+  @Min(1)
+  private Integer repsPerRound;
+
   @Column(name = "emom_interval")
   @Min(0)
   private Integer emomInterval;
@@ -205,7 +213,6 @@ public class Wod {
   @RequiredArgsConstructor
   public enum ScoreType {
     TIME,
-    ROUNDS_REPS,
     // Rounds completed on the minute (EMOM such as "Chelsea"), capped by emomRounds
     ROUNDS,
     REPS,

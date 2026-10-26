@@ -108,6 +108,8 @@ class WodCsvCodecTest {
 
     Wod cindy = wods.get(1);
     assertEquals(WodType.AMRAP, cindy.getWodType());
+    // Former ROUNDS_REPS files still load, as total reps
+    assertEquals(ScoreType.REPS, cindy.getScoreType());
     assertNull(cindy.getCategory());
     assertEquals(1200, cindy.getTimeCapSeconds());
     assertEquals("Note, with comma", cindy.getNotesEn());
