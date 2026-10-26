@@ -180,7 +180,7 @@ public class DevGymWodSeeder implements ApplicationRunner {
                 .repScheme("50-40-30-20-10")
                 .timeCapSeconds(900)
                 .description("For time, one movement after the other."),
-            mv("Double Under", "50"),
+            mv("Double-under", "50"),
             mv("Air Squat", "40"),
             mv("Sit-up", "30"),
             mv("Push-up", "20"),
