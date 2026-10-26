@@ -85,6 +85,18 @@ class ScoreValidatorTest {
     assertInvalidScoreType(score);
   }
 
+  @Test
+  @DisplayName("TIME: time-capped score needs the reps at the cap, not a time")
+  void testTime_Capped() {
+    Score score = createScore(ScoreType.TIME);
+    score.setTimeCapped(true);
+    score.setTimeSeconds(null);
+    assertInvalidScoreType(score);
+
+    score.setReps(45);
+    assertValidScoreType(score);
+  }
+
   // =========================================================================
   // 2. ROUNDS_REPS (AMRAP Mixte)
   // =========================================================================

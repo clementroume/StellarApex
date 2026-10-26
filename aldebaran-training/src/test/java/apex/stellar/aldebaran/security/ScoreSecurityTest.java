@@ -243,8 +243,8 @@ class ScoreSecurityTest {
   }
 
   @Test
-  @DisplayName("canCreate: Staff allowed to log for others in Same Gym")
-  void canCreate_Staff_LogForOther_ReturnsTrue() {
+  @DisplayName("canCreate: Staff cannot log for others (target membership unverifiable)")
+  void canCreate_Staff_LogForOther_ReturnsFalse() {
     AldebaranUserPrincipal coach =
         TestPrincipals.of(2L, 100L, "COACH", List.of("SCORE_VERIFY"));
     ScoreRequest request =
@@ -256,7 +256,7 @@ class ScoreSecurityTest {
     when(securityService.isAdmin(coach)).thenReturn(false);
     when(wodRepository.findById(1L)).thenReturn(Optional.of(gymWod));
 
-    assertTrue(scoreSecurity.canCreate(request, coach));
+    assertFalse(scoreSecurity.canCreate(request, coach));
   }
 
   @Test
@@ -322,7 +322,7 @@ class ScoreSecurityTest {
   void canModify_Self_ReturnsTrue() {
     AldebaranUserPrincipal user =
         TestPrincipals.of(2L, 100L, "USER", Collections.emptyList());
-    Score score = Score.builder().id(10L).userId(2L).build();
+    Score score = Score.builder().id(10L).userId(2L).wod(Wod.builder().isPublic(true).build()).build();
 
     when(securityService.isAdmin(user)).thenReturn(false);
     when(scoreRepository.findById(10L)).thenReturn(Optional.of(score));
@@ -420,16 +420,11 @@ class ScoreSecurityTest {
   }
 
   @Test
-  @DisplayName("canCreate/canModify: Staff rights checked on the WOD's gym (SCORE_VERIFY)")
+  @DisplayName("canModify: Staff rights checked on the WOD's gym (SCORE_VERIFY)")
   void staffRights_PerGym() {
     AldebaranUserPrincipal coach = coachInAAthleteInB();
     Wod wodA = Wod.builder().gymId(100L).build();
     Wod wodB = Wod.builder().gymId(300L).build();
-
-    when(wodRepository.findById(1L)).thenReturn(Optional.of(wodA));
-    assertTrue(scoreSecurity.canCreate(requestFor(99L), coach));
-    when(wodRepository.findById(1L)).thenReturn(Optional.of(wodB));
-    assertFalse(scoreSecurity.canCreate(requestFor(99L), coach));
 
     when(scoreRepository.findById(10L))
         .thenReturn(Optional.of(Score.builder().id(10L).userId(99L).wod(wodA).build()));
