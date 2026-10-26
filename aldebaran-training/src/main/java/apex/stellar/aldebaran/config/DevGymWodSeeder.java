@@ -219,7 +219,7 @@ public class DevGymWodSeeder implements ApplicationRunner {
                 .timeCapSeconds(900)
                 .description("As many rounds as possible in 15 minutes."),
             mv("Thruster", "10").weight(43.0).weightUnit(Unit.KG),
-            mv("Chest To Bar", "10"),
+            mv("Chest-to-Bar Pull-up", "10"),
             mv("Rowing", null).calories(12)));
     wods.add(
         wod(

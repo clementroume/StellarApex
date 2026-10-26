@@ -69,7 +69,7 @@ class DevGymWodSeederTest {
         Stream.of(
                 "Wall-ball Shot", "Box Jump", "American Kettlebell Swing", "Power Clean",
                 "Burpee", "Double Under", "Air Squat", "Sit-up", "Push-up", "Pull-up",
-                "Back Squat", "Deadlift", "Rowing", "Toes-to-Bar", "Thruster", "Chest To Bar",
+                "Back Squat", "Deadlift", "Rowing", "Toes-to-Bar", "Thruster", "Chest-to-Bar Pull-up",
                 "Front Squat", "Handstand Push-up", "Running")
             .map(
                 n ->
