@@ -6,6 +6,7 @@ import {provideIcons} from '@ng-icons/core';
 import {ScoreFormComponent} from './score-form.component';
 import {WodScoresStore} from '../wod-scores.store';
 import {UnitService} from '../../../../core/services/unit.service';
+import {AccessService} from '../../../../core/services/access.service';
 import {APP_ICONS} from '../../../../app.config';
 import {ScoreResponse} from '../../../../api/aldebaran/models/score.model';
 
@@ -39,6 +40,7 @@ describe('ScoreFormComponent', () => {
         provideIcons(APP_ICONS),
         provideTranslateService(),
         {provide: WodScoresStore, useValue: store},
+        {provide: AccessService, useValue: {memberships: signal([{gymId: 5, gymName: 'Box'}, {gymId: 8, gymName: 'Zeus'}])}},
         {
           provide: UnitService,
           useValue: {
@@ -175,5 +177,20 @@ describe('ScoreFormComponent', () => {
     component.form.patchValue({reps: 200});
     component.onSubmit();
     expect(store.save.mock.lastCall[0].tiebreakSeconds).toBeUndefined();
+  });
+
+  it('should send the chosen gym of a public WOD, and no gym for a gym WOD', () => {
+    init('REPS');
+    expect(component.form.controls.gymId.value).toBe(5);
+    expect(fixture.nativeElement.querySelector('#score-gym')).toBeTruthy();
+    component.form.patchValue({reps: 100, gymId: 8});
+    component.onSubmit();
+    expect(store.save).toHaveBeenLastCalledWith(expect.objectContaining({gymId: 8}));
+
+    init('REPS', 'new', {gymId: 42});
+    expect(fixture.nativeElement.querySelector('#score-gym')).toBeNull();
+    component.form.patchValue({reps: 100});
+    component.onSubmit();
+    expect(store.save).toHaveBeenLastCalledWith(expect.objectContaining({gymId: null}));
   });
 });

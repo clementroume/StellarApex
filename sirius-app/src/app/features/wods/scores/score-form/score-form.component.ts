@@ -5,6 +5,7 @@ import {TranslatePipe, TranslateService} from '@ngx-translate/core';
 import {NgIconComponent} from '@ng-icons/core';
 import {ScalingLevel, ScoreRequest, ScoreResponse} from '../../../../api/aldebaran/models/score.model';
 import {UnitService} from '../../../../core/services/unit.service';
+import {AccessService} from '../../../../core/services/access.service';
 import {WodScoresStore} from '../wod-scores.store';
 import {SCALING_LEVELS, splitRounds} from '../score.utils';
 import {formatTimeCapShort, localizedText} from '../../wod.utils';
@@ -36,6 +37,7 @@ export class ScoreFormComponent {
   private readonly fb = inject(FormBuilder);
   private readonly unitService = inject(UnitService);
   private readonly translate = inject(TranslateService);
+  private readonly accessService = inject(AccessService);
 
   // --- STATE (SIGNALS & VARIABLES) ---
   readonly scalingLevels = SCALING_LEVELS;
@@ -58,6 +60,8 @@ export class ScoreFormComponent {
     calories: [null as number | null],
     tiebreakMinutes: [null as number | null],
     tiebreakSeconds: [null as number | null],
+    // Gym where it was performed (public or personal WOD): one of the user's gyms, or none
+    gymId: [(this.accessService.memberships()[0]?.gymId ?? null) as number | null],
     scalingNotes: [''],
     userComment: ['']
   });
@@ -77,6 +81,9 @@ export class ScoreFormComponent {
   readonly isEdit = computed(() => this.store.editing() !== 'new');
   readonly massUnitLabel = computed(() => this.unitService.massUnit() === 'KG' ? 'kg' : 'lb');
   readonly timeCap = computed(() => formatTimeCapShort(this.store.wod()?.timeCapSeconds));
+  /** A gym WOD is always scored in its gym; a public or personal WOD in one of the user's gyms. */
+  readonly gymChoices = computed(() => this.store.wod()?.gymId != null ? [] : this.accessService.memberships());
+
   /** Reps of one round of the AMRAP, when its round is fixed. */
   readonly repsPerRound = computed(() => this.store.wod()?.repsPerRound ?? null);
   readonly byRounds = computed(() => !!this.repsPerRound() && this.repsEntry() === 'ROUNDS');
@@ -176,6 +183,7 @@ export class ScoreFormComponent {
       calories: score.totalCalories ?? null,
       tiebreakMinutes: score.tiebreakSeconds ? Math.floor(score.tiebreakSeconds / 60) : null,
       tiebreakSeconds: score.tiebreakSeconds ? score.tiebreakSeconds % 60 : null,
+      gymId: score.gymId ?? null,
       scalingNotes: score.scalingNotes ?? '',
       userComment: score.userComment ?? ''
     });
@@ -191,6 +199,7 @@ export class ScoreFormComponent {
       wodId,
       scaling: v.scaling,
       timeCapped: capped,
+      gymId: this.gymChoices().length > 0 ? v.gymId : null,
       tiebreakSeconds: this.showTiebreak() && tiebreak > 0 ? tiebreak : undefined,
       scalingNotes: v.scaling === 'RX' ? undefined : v.scalingNotes.trim() || undefined,
       userComment: v.userComment.trim() || undefined

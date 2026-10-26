@@ -22,6 +22,7 @@ import {WodScoresStore} from '../scores/wod-scores.store';
 import {ScoreBestComponent} from '../scores/score-best/score-best.component';
 import {ScoreHistoryComponent} from '../scores/score-history/score-history.component';
 import {ScoreFormComponent} from '../scores/score-form/score-form.component';
+import {ScoreLeaderboardComponent} from '../scores/score-leaderboard/score-leaderboard.component';
 
 export type WodVisibility = 'PUBLIC' | 'GYM' | 'PRIVATE';
 
@@ -33,7 +34,7 @@ const STRUCTURE_SCHEME = /round|tier|window|rm\b| x /i;
 @Component({
   selector: 'app-wod-detail',
   standalone: true,
-  imports: [TranslatePipe, RouterModule, NgIconComponent, DetailAdminActionsComponent, DetailCardComponent, DetailHeaderComponent, DetailStateComponent, ScoreBestComponent, ScoreHistoryComponent, ScoreFormComponent],
+  imports: [TranslatePipe, RouterModule, NgIconComponent, DetailAdminActionsComponent, DetailCardComponent, DetailHeaderComponent, DetailStateComponent, ScoreBestComponent, ScoreHistoryComponent, ScoreFormComponent, ScoreLeaderboardComponent],
   providers: [WodScoresStore],
   templateUrl: './wod-detail.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush

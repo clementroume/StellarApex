@@ -84,7 +84,12 @@
     "DELETE_MODAL_TITLE": "Êtes-vous absolument sûr ?",
     "DELETE_MODAL_DESC": "Cette action est irréversible. Cela supprimera définitivement votre compte et toutes vos données associées.",
     "DELETE_MODAL_CONFIRM": "Oui, supprimer mon compte",
-    "SUCCESS_DELETE": "Votre compte a été supprimé avec succès. Au revoir !"
+    "SUCCESS_DELETE": "Votre compte a été supprimé avec succès. Au revoir !",
+    "PRIVACY_TITLE": "Confidentialité",
+    "PUBLIC_LEADERBOARD_NAME": "Afficher mon nom dans les classements publics",
+    "PUBLIC_LEADERBOARD_NAME_HINT": "Les membres de tes salles voient toujours ton nom. Sinon, tu apparais comme athlète anonyme.",
+    "PRIVACY_SAVED": "Réglage de confidentialité enregistré.",
+    "PRIVACY_ERROR": "Le réglage de confidentialité n'a pas pu être enregistré."
   },
   "UNITS": {
     "TITLE": "Unités",
@@ -590,7 +595,9 @@
       "TIEBREAK": "Temps de tie-break",
       "TIEBREAK_OPTIONAL": "Tie-break (compétition, facultatif)",
       "ENTRY": "Saisie",
-      "TOTAL_REPS": "Total de répétitions"
+      "TOTAL_REPS": "Total de répétitions",
+      "GYM": "Salle",
+      "NO_GYM": "Aucune salle"
     },
     "PLACEHOLDERS": {
       "SCALING_NOTES": "ex. thrusters à 35 kg, tractions avec élastique"
@@ -615,14 +622,24 @@
       "FORBIDDEN": "Vous n'avez pas le droit de modifier ce score.",
       "CONFIRM_DELETE": "Supprimer ce score ?",
       "DONE_HINT": "Ce WOD n'a pas de résultat mesuré : enregistrez-le pour garder une trace de la séance.",
-      "ROUNDS_HINT": "Les tours faits après avoir décroché du chrono ne comptent pas."
+      "ROUNDS_HINT": "Les tours faits après avoir décroché du chrono ne comptent pas.",
+      "GYM_HINT": "Où tu as fait ce WOD : ton score apparaît alors dans le classement de cette salle et ses coachs peuvent le vérifier."
     },
     "TIEBREAK_SHORT": "TB {{time}}",
     "ENTRY": {
       "ROUNDS": "Tours + rép.",
       "TOTAL": "Total"
     },
-    "REPS_PER_ROUND": "{{reps}} rép. par tour"
+    "REPS_PER_ROUND": "{{reps}} rép. par tour",
+    "LEADERBOARD": {
+      "TITLE": "Classement",
+      "SCOPE": "Salle",
+      "ALL_GYMS": "Toutes les salles",
+      "ANONYMOUS": "Athlète anonyme",
+      "EMPTY": "Aucun score à ce niveau pour l'instant.",
+      "LOADING": "Chargement…",
+      "MORE": "Voir plus"
+    }
   },
   "ADMIN": {
     "SUPPORT": {

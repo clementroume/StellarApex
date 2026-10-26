@@ -42,6 +42,7 @@ export class SettingsComponent {
 
   /** Antares refuses password changes and account deletion during an admin support session. */
   readonly isSupportSession = computed(() => !!this.authService.currentUser()?.supportSession);
+  readonly publicLeaderboardName = computed(() => !!this.authService.currentUser()?.publicLeaderboardName);
 
   constructor() {
     this.passwordForm = this.fb.group({
@@ -92,6 +93,25 @@ export class SettingsComponent {
         }
       });
     }
+  }
+
+  /** Consent to show the name on public leaderboards (gym mates always see it). */
+  changePublicLeaderboardName(event: Event): void {
+    const currentUser = this.authService.currentUser();
+    if (!currentUser || currentUser.supportSession) return;
+    const checked = (event.target as HTMLInputElement).checked;
+    this.userService.updatePreferences({
+      locale: currentUser.locale,
+      theme: currentUser.theme,
+      unitSystem: currentUser.unitSystem ?? null,
+      publicLeaderboardName: checked
+    }).subscribe({
+      next: () => this.notificationService.showSuccess(this.translate.instant('SETTINGS.PRIVACY_SAVED')),
+      error: () => {
+        (event.target as HTMLInputElement).checked = !checked;
+        this.notificationService.showError(this.translate.instant('SETTINGS.PRIVACY_ERROR'));
+      }
+    });
   }
 
   openDeleteConfirmation(): void {

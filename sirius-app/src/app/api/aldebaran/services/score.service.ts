@@ -42,12 +42,16 @@ export class ScoreService {
     wodId: number,
     scaling: string = 'RX',
     page: number = 0,
-    size: number = 20
+    size: number = 20,
+    gymId?: number | null
   ): Observable<Slice<ScoreResponse>> {
-    const params = new HttpParams()
+    let params = new HttpParams()
       .set('scaling', scaling)
       .set('page', page)
       .set('size', size);
+    if (gymId) {
+      params = params.set('gymId', gymId);
+    }
 
     return this.http.get<Slice<ScoreResponse>>(this.buildUrl(`/leaderboard/${wodId}`), {params});
   }

@@ -25,6 +25,8 @@ export interface UserResponse {
   theme: Theme;
   // Display unit for loads; null follows the language (fr: kg)
   unitSystem?: UnitSystem | null;
+  // Name shown on public leaderboards (members of the user's gyms always see it)
+  publicLeaderboardName?: boolean;
   createdAt: string;
   // Set when a platform admin is acting as this user through a support session
   supportSession?: SupportSessionInfo | null;
@@ -53,4 +55,12 @@ export interface PreferencesUpdateRequest {
   locale: string;
   theme: Theme;
   unitSystem?: UnitSystem | null;
+  // Omitted (undefined) keeps the current choice
+  publicLeaderboardName?: boolean;
+}
+
+/** "Clément R.": a name the current user may see (gym mates, opted-in users, themselves). */
+export interface DisplayName {
+  id: number;
+  displayName: string;
 }

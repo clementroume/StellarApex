@@ -25,6 +25,19 @@
       </label>
     </div>
 
+    @if (gymChoices().length > 0) {
+      <label class="form-control w-full">
+        <div class="label"><span class="label-text">{{ 'SCORE.FIELDS.GYM' | translate }}</span></div>
+        <select id="score-gym" formControlName="gymId" class="select select-bordered w-full">
+          <option [ngValue]="null">{{ 'SCORE.FIELDS.NO_GYM' | translate }}</option>
+          @for (gym of gymChoices(); track gym.gymId) {
+            <option [ngValue]="gym.gymId">{{ gym.gymName }}</option>
+          }
+        </select>
+        <div class="label"><span class="label-text-alt opacity-70">{{ 'SCORE.MESSAGES.GYM_HINT' | translate }}</span></div>
+      </label>
+    }
+
     @switch (scoreType()) {
       @case ('TIME') {
         <label class="flex items-center gap-3 cursor-pointer">
