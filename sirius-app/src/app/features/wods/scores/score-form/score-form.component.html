@@ -1,0 +1,132 @@
+<div class="modal modal-open" role="dialog" aria-modal="true" aria-labelledby="score-form-title">
+  <form [formGroup]="form" (ngSubmit)="onSubmit()" class="modal-box flex flex-col gap-4">
+    <div class="flex items-center justify-between gap-2">
+      <h3 id="score-form-title" class="text-lg font-bold">
+        {{ (isEdit() ? 'SCORE.TITLES.EDIT' : 'SCORE.TITLES.LOG') | translate }}
+      </h3>
+      <button type="button" class="btn btn-ghost btn-sm btn-circle" (click)="store.close()"
+              [attr.aria-label]="'GLOBAL.CLOSE' | translate">
+        <ng-icon name="heroXMark"></ng-icon>
+      </button>
+    </div>
+
+    <div class="grid grid-cols-2 gap-4">
+      <label class="form-control w-full">
+        <div class="label"><span class="label-text">{{ 'SCORE.FIELDS.DATE' | translate }}</span></div>
+        <input type="date" formControlName="date" [max]="maxDate" class="input input-bordered w-full"/>
+      </label>
+      <label class="form-control w-full">
+        <div class="label"><span class="label-text">{{ 'SCORE.FIELDS.SCALING' | translate }}</span></div>
+        <select formControlName="scaling" class="select select-bordered w-full">
+          @for (level of scalingLevels; track level) {
+            <option [value]="level">{{ 'SCORE.SCALING.' + level | translate }}</option>
+          }
+        </select>
+      </label>
+    </div>
+
+    @switch (scoreType()) {
+      @case ('TIME') {
+        <label class="flex items-center gap-3 cursor-pointer">
+          <input type="checkbox" formControlName="timeCapped" class="checkbox checkbox-secondary"/>
+          <span>{{ 'SCORE.FIELDS.TIME_CAPPED' | translate }}@if (timeCap()) { ({{ timeCap() }})}</span>
+        </label>
+        @if (timeCapped()) {
+          <label class="form-control w-full">
+            <div class="label"><span class="label-text">{{ 'SCORE.FIELDS.REPS_AT_CAP' | translate }}</span></div>
+            <input type="number" min="0" formControlName="reps" class="input input-bordered w-full"/>
+          </label>
+        } @else {
+          <div class="grid grid-cols-2 gap-4">
+            <label class="form-control w-full">
+              <div class="label"><span class="label-text">{{ 'SCORE.FIELDS.MINUTES' | translate }}</span></div>
+              <input type="number" min="0" formControlName="minutes" class="input input-bordered w-full"/>
+            </label>
+            <label class="form-control w-full">
+              <div class="label"><span class="label-text">{{ 'SCORE.FIELDS.SECONDS' | translate }}</span></div>
+              <input type="number" min="0" max="59" formControlName="seconds" class="input input-bordered w-full"/>
+            </label>
+          </div>
+        }
+      }
+      @case ('ROUNDS_REPS') {
+        <div class="grid grid-cols-2 gap-4">
+          <label class="form-control w-full">
+            <div class="label"><span class="label-text">{{ 'SCORE.FIELDS.ROUNDS' | translate }}</span></div>
+            <input type="number" min="0" formControlName="rounds" class="input input-bordered w-full"/>
+          </label>
+          <label class="form-control w-full">
+            <div class="label"><span class="label-text">{{ 'SCORE.FIELDS.EXTRA_REPS' | translate }}</span></div>
+            <input type="number" min="0" formControlName="reps" class="input input-bordered w-full"/>
+          </label>
+        </div>
+      }
+      @case ('REPS') {
+        <label class="form-control w-full">
+          <div class="label"><span class="label-text">{{ 'SCORE.FIELDS.REPS' | translate }}</span></div>
+          <input type="number" min="0" formControlName="reps" class="input input-bordered w-full"/>
+        </label>
+      }
+      @case ('WEIGHT') {
+        <label class="form-control w-full">
+          <div class="label"><span class="label-text">{{ 'SCORE.FIELDS.MAX_WEIGHT' | translate }} ({{ massUnitLabel() }})</span></div>
+          <input type="number" min="0" step="0.5" formControlName="load" class="input input-bordered w-full"/>
+        </label>
+      }
+      @case ('LOAD') {
+        <label class="form-control w-full">
+          <div class="label"><span class="label-text">{{ 'SCORE.FIELDS.TOTAL_LOAD' | translate }} ({{ massUnitLabel() }})</span></div>
+          <input type="number" min="0" step="0.5" formControlName="load" class="input input-bordered w-full"/>
+        </label>
+      }
+      @case ('CALORIES') {
+        <label class="form-control w-full">
+          <div class="label"><span class="label-text">{{ 'SCORE.FIELDS.CALORIES' | translate }}</span></div>
+          <input type="number" min="0" formControlName="calories" class="input input-bordered w-full"/>
+        </label>
+      }
+      @case ('DISTANCE') {
+        <div class="grid grid-cols-2 gap-4">
+          <label class="form-control w-full">
+            <div class="label"><span class="label-text">{{ 'SCORE.FIELDS.DISTANCE' | translate }}</span></div>
+            <input type="number" min="0" step="any" formControlName="distance" class="input input-bordered w-full"/>
+          </label>
+          <label class="form-control w-full">
+            <div class="label"><span class="label-text">{{ 'SCORE.FIELDS.UNIT' | translate }}</span></div>
+            <select formControlName="distanceUnit" class="select select-bordered w-full">
+              @for (unit of distanceUnits; track unit) {
+                <option [value]="unit">{{ 'WOD.UNITS.' + unit | translate }}</option>
+              }
+            </select>
+          </label>
+        </div>
+      }
+      @default {
+        <p class="text-sm opacity-70">{{ 'SCORE.MESSAGES.DONE_HINT' | translate }}</p>
+      }
+    }
+
+    @if (!isRx()) {
+      <label class="form-control w-full">
+        <div class="label"><span class="label-text">{{ 'SCORE.FIELDS.SCALING_NOTES' | translate }}</span></div>
+        <textarea formControlName="scalingNotes" rows="2" maxlength="4000" class="textarea textarea-bordered w-full"
+                  [placeholder]="'SCORE.PLACEHOLDERS.SCALING_NOTES' | translate"></textarea>
+      </label>
+    }
+    <label class="form-control w-full">
+      <div class="label"><span class="label-text">{{ 'SCORE.FIELDS.COMMENT' | translate }}</span></div>
+      <textarea formControlName="userComment" rows="2" maxlength="4000" class="textarea textarea-bordered w-full"></textarea>
+    </label>
+
+    <div class="modal-action">
+      <button type="button" class="btn btn-ghost" (click)="store.close()">{{ 'GLOBAL.CANCEL' | translate }}</button>
+      <button type="submit" class="btn btn-primary" [disabled]="valueMissing() || store.isSaving()">
+        @if (store.isSaving()) {
+          <span class="loading loading-spinner loading-sm"></span>
+        }
+        {{ 'GLOBAL.SAVE' | translate }}
+      </button>
+    </div>
+  </form>
+  <div class="modal-backdrop" (click)="store.close()"></div>
+</div>

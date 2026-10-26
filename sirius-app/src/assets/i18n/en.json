@@ -496,8 +496,7 @@
       "MOVEMENTS_REQUIRED": "Add at least one movement.",
       "NO_MOVEMENTS": "No prescribed movement.",
       "LOCKED_BADGE": "Locked (scores logged)",
-      "OWNERSHIP_LOCKED": "The owner (personal or gym) of a WOD cannot be changed after creation.",
-      "BEST_SCORE_SOON": "Coming soon"
+      "OWNERSHIP_LOCKED": "The owner (personal or gym) of a WOD cannot be changed after creation."
     },
     "WOD_TYPES": {
       "FOR_TIME": "For Time",
@@ -547,6 +546,60 @@
       "FEET": "ft",
       "YARDS": "yd",
       "MILES": "mi"
+    }
+  },
+  "SCORE": {
+    "HISTORY": "My scores on this WOD",
+    "PR": "PR",
+    "RANK": "Rank {{rank}} of {{total}} ({{scaling}})",
+    "TITLES": {
+      "LOG": "Log my score",
+      "EDIT": "Edit my score"
+    },
+    "ACTIONS": {
+      "LOG": "Log my score"
+    },
+    "FIELDS": {
+      "DATE": "Date",
+      "SCALING": "Level",
+      "TIME_CAPPED": "Time cap reached",
+      "REPS_AT_CAP": "Reps completed at the cap",
+      "MINUTES": "Minutes",
+      "SECONDS": "Seconds",
+      "ROUNDS": "Rounds",
+      "EXTRA_REPS": "Extra reps",
+      "REPS": "Reps",
+      "MAX_WEIGHT": "Heaviest load",
+      "TOTAL_LOAD": "Total load",
+      "CALORIES": "Calories",
+      "DISTANCE": "Distance",
+      "UNIT": "Unit",
+      "SCALING_NOTES": "Scaling",
+      "COMMENT": "Comment"
+    },
+    "PLACEHOLDERS": {
+      "SCALING_NOTES": "e.g. 35 kg thrusters, banded pull-ups"
+    },
+    "SCALING": {
+      "ELITE": "Rx+",
+      "RX": "Rx",
+      "SCALED": "Scaled",
+      "CUSTOM": "Custom"
+    },
+    "DISPLAY": {
+      "CAPPED": "CAP + {{reps}} reps",
+      "ROUNDS_REPS": "{{rounds}} rounds + {{reps}} reps",
+      "ROUNDS": "{{rounds}} rounds",
+      "REPS": "{{reps}} reps",
+      "DONE": "Done"
+    },
+    "MESSAGES": {
+      "EMPTY": "No score logged on this WOD yet.",
+      "SAVED": "Score saved.",
+      "SAVE_ERROR": "The score could not be saved.",
+      "FORBIDDEN": "You are not allowed to change this score.",
+      "CONFIRM_DELETE": "Delete this score?",
+      "DONE_HINT": "This WOD has no measured result: log it to keep track of the session."
     }
   },
   "ADMIN": {

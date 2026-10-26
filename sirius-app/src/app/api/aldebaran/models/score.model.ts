@@ -1,5 +1,13 @@
 import {WodSummaryResponse} from './wod.model';
 
+/** Level at which a WOD was performed; personal records rank ELITE (Rx+) > RX > SCALED > CUSTOM. */
+export type ScalingLevel = 'RX' | 'SCALED' | 'ELITE' | 'CUSTOM';
+
+/** Rights of the current user on a score, computed by Aldebaran (ScoreSecurity). */
+export interface ScoreCapabilities {
+  canModify: boolean;
+}
+
 export interface ScoreRequest {
   // --- Identification ---
   userId?: number;
@@ -21,7 +29,7 @@ export interface ScoreRequest {
   // --- Calories ---
   totalCalories?: number;
   // --- Performance Context ---
-  scaling: string;
+  scaling: ScalingLevel;
   timeCapped: boolean;
   // --- Comments and Scaling notes---
   userComment?: string;
@@ -52,7 +60,7 @@ export interface ScoreResponse {
   // --- Calories ---
   totalCalories?: number;
   // --- Performance Context ---
-  scaling: string;
+  scaling: ScalingLevel;
   timeCapped: boolean;
   personalRecord: boolean;
   // --- Comments and Scaling notes---
@@ -60,6 +68,8 @@ export interface ScoreResponse {
   scalingNotes?: string;
   // --- Audit ---
   loggedAt: string;
+  // --- Per-user rights (computed per request) ---
+  capabilities?: ScoreCapabilities;
 }
 
 export interface ScoreComparisonResponse {

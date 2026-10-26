@@ -36,6 +36,7 @@ import {
   heroPlus,
   heroSun,
   heroTrash,
+  heroTrophy,
   heroUser,
   heroVideoCamera,
   heroVideoCameraSlash,
@@ -92,7 +93,8 @@ export const APP_ICONS = {
   heroBuildingOffice,
   heroLockClosed,
   heroLifebuoy,
-  heroXMark
+  heroXMark,
+  heroTrophy
 };
 
 export const appConfig: ApplicationConfig = {

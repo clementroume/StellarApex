@@ -496,8 +496,7 @@
       "MOVEMENTS_REQUIRED": "Ajoute au moins un mouvement.",
       "NO_MOVEMENTS": "Aucun mouvement prescrit.",
       "LOCKED_BADGE": "Verrouillé (scores enregistrés)",
-      "OWNERSHIP_LOCKED": "Le propriétaire (personnel ou salle) d'un WOD ne peut pas être changé après sa création.",
-      "BEST_SCORE_SOON": "Bientôt disponible"
+      "OWNERSHIP_LOCKED": "Le propriétaire (personnel ou salle) d'un WOD ne peut pas être changé après sa création."
     },
     "WOD_TYPES": {
       "FOR_TIME": "For Time",
@@ -547,6 +546,60 @@
       "FEET": "ft",
       "YARDS": "yd",
       "MILES": "mi"
+    }
+  },
+  "SCORE": {
+    "HISTORY": "Mes scores sur ce WOD",
+    "PR": "PR",
+    "RANK": "Rang {{rank}} sur {{total}} ({{scaling}})",
+    "TITLES": {
+      "LOG": "Enregistrer mon score",
+      "EDIT": "Modifier mon score"
+    },
+    "ACTIONS": {
+      "LOG": "Enregistrer mon score"
+    },
+    "FIELDS": {
+      "DATE": "Date",
+      "SCALING": "Niveau",
+      "TIME_CAPPED": "Time cap atteint",
+      "REPS_AT_CAP": "Répétitions réalisées au time cap",
+      "MINUTES": "Minutes",
+      "SECONDS": "Secondes",
+      "ROUNDS": "Tours",
+      "EXTRA_REPS": "Répétitions en plus",
+      "REPS": "Répétitions",
+      "MAX_WEIGHT": "Charge maximale",
+      "TOTAL_LOAD": "Charge totale",
+      "CALORIES": "Calories",
+      "DISTANCE": "Distance",
+      "UNIT": "Unité",
+      "SCALING_NOTES": "Adaptations",
+      "COMMENT": "Commentaire"
+    },
+    "PLACEHOLDERS": {
+      "SCALING_NOTES": "ex. thrusters à 35 kg, tractions avec élastique"
+    },
+    "SCALING": {
+      "ELITE": "Rx+",
+      "RX": "Rx",
+      "SCALED": "Scaled",
+      "CUSTOM": "Personnalisé"
+    },
+    "DISPLAY": {
+      "CAPPED": "CAP + {{reps}} rép.",
+      "ROUNDS_REPS": "{{rounds}} tours + {{reps}} rép.",
+      "ROUNDS": "{{rounds}} tours",
+      "REPS": "{{reps}} rép.",
+      "DONE": "Fait"
+    },
+    "MESSAGES": {
+      "EMPTY": "Aucun score enregistré sur ce WOD pour l'instant.",
+      "SAVED": "Score enregistré.",
+      "SAVE_ERROR": "Le score n'a pas pu être enregistré.",
+      "FORBIDDEN": "Vous n'avez pas le droit de modifier ce score.",
+      "CONFIRM_DELETE": "Supprimer ce score ?",
+      "DONE_HINT": "Ce WOD n'a pas de résultat mesuré : enregistrez-le pour garder une trace de la séance."
     }
   },
   "ADMIN": {

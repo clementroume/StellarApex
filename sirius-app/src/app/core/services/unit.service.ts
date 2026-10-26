@@ -93,6 +93,26 @@ export class UnitService {
   }
 
   /**
+   * Converts a lifted load (a score) to the display unit. Unlike prescriptions, scores keep their
+   * precision: 0.5 kg, 1 lb (102.5 kg stays 102.5 kg; 225 lb -> 102 kg).
+   *
+   * @param value The load, in `unit`.
+   * @param unit The unit of the load (KG or LBS).
+   */
+  convertScoreLoad(value: number, unit?: string | null): number {
+    const target = this.massUnit();
+    if (!unit || unit === target || (unit !== 'KG' && unit !== 'LBS')) return Number(value.toFixed(1));
+    const converted = unit === 'LBS' ? value * LB_IN_KG : value / LB_IN_KG;
+    return target === 'KG' ? Math.round(converted * 2) / 2 : Math.round(converted);
+  }
+
+  /** A lifted load (score) in the display unit: "102.5 kg", "225 lb". */
+  formatScoreLoad(value?: number | null, unit?: string | null): string {
+    if (value == null) return '';
+    return this.format({values: [this.convertScoreLoad(value, unit)], unit: this.massUnit()});
+  }
+
+  /**
    * Converts distances (men's then women's value) to the display system, e.g. 200 ft -> "61 m",
    * 1 mi -> "1.6 km", 60/50 cm -> "24/20 in". Units unknown to the conversion are kept.
    */

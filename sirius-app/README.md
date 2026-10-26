@@ -63,12 +63,15 @@ The backends enforce every rule; Sirius only adapts what it shows:
 ## Catalog Screens
 
 * **WOD detail**: the title, then two boxes that never repeat an information. Left: visibility,
-  category, modalities and locked badges, score type, a "My best score" slot (scores to come),
-  description and notes. Right, the gym whiteboard: the format with its duration ("AMRAP 20 minutes",
+  category, modalities and locked badges, score type, "My best score" (the PR with its level and rank, or a
+  "Log my score" button), description and notes. Right, the gym whiteboard: the format with its duration ("AMRAP 20 minutes",
   "EMOM 10 minutes", or "For Time" with the time cap as a badge), the rep scheme, then one line per
   movement: quantity (reps omitted when they repeat the rep scheme, "14/12 cal", distance), name,
   variants and the men/women load and height ("61/43 kg", "60/50 cm"). Texts show in the user's
   language, falling back on the other one. The list shows "category / format" and filters on both.
+  Below the boxes, "My scores on this WOD" lists the user's scores (level, PR badge, notes) with
+  edit/delete when the backend allows it, and opens the log/edit form: fields follow the score type
+  (time or reps at the time cap, rounds + reps, load in the user's unit, calories, distance).
 * **Units**: a "Units" tab in My account (metric or imperial, `core/services/unit.service.ts`), saved
   in the account (`unitSystem`); without a choice it follows the language (French: metric). Values are
   converted for display only, rounded as gyms write them: loads (95 lb = 43 kg), heights (24/20 in =
