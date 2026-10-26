@@ -30,6 +30,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
+import org.hibernate.annotations.BatchSize;
 
 /** Represents a prescribed movement within a WOD. */
 @Getter
@@ -105,6 +106,7 @@ public class WodMovement {
       name = "wod_movement_equipment",
       joinColumns = @JoinColumn(name = "wod_movement_id"))
   @Column(name = "equipment")
+  @BatchSize(size = 50)
   @Builder.Default
   private Set<String> equipment = new HashSet<>();
 
@@ -113,6 +115,7 @@ public class WodMovement {
       name = "wod_movement_techniques",
       joinColumns = @JoinColumn(name = "wod_movement_id"))
   @Column(name = "technique")
+  @BatchSize(size = 50)
   @Builder.Default
   private Set<String> techniques = new HashSet<>();
 

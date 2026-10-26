@@ -20,6 +20,7 @@ import apex.stellar.aldebaran.model.entities.Wod.ScoreType;
 import apex.stellar.aldebaran.model.entities.Wod.WodType;
 import apex.stellar.aldebaran.model.enums.Category;
 import apex.stellar.aldebaran.model.enums.Equipment;
+import apex.stellar.aldebaran.model.enums.Technique;
 import apex.stellar.aldebaran.repository.MovementRepository;
 import apex.stellar.aldebaran.repository.ScoreRepository;
 import apex.stellar.aldebaran.repository.WodRepository;
@@ -255,6 +256,84 @@ class WodControllerIT extends BaseIntegrationTest {
                 .header("X-Auth-Memberships", "102:ATHLETE:")
                 .header("X-Internal-Secret", "test-internal-secret"))
         .andExpect(status().isForbidden());
+  }
+
+  @Test
+  @DisplayName("GET/PUT /wods/{id}: a movement with several variants is returned and merged once")
+  void testWodMovementWithSeveralVariants_NotDuplicated() throws Exception {
+    pullUp.getEquipment().add(Equipment.RINGS);
+    pullUp.getTechniques().addAll(Set.of(Technique.STRICT, Technique.KIPPING));
+    movementRepository.save(pullUp);
+    WodRequest request =
+        new WodRequest(
+            "Ring Pull-ups",
+            WodType.FOR_TIME,
+            ScoreType.TIME,
+            null,
+            101L,
+            true,
+            "Desc",
+            null,
+            600,
+            0,
+            0,
+            "50",
+            List.of(
+                new WodMovementRequest(
+                    pullUp.getId(),
+                    1,
+                    "50",
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    Set.of("RINGS"),
+                    Set.of("STRICT", "KIPPING"),
+                    null,
+                    null)));
+    String body =
+        mockMvc
+            .perform(
+                post("/aldebaran/wods")
+                    .with(csrf())
+                    .header("X-Auth-User-Id", "20")
+                    .header("X-Auth-User-Role", "USER")
+                    .header("X-Auth-Memberships", "101:COACH:WOD_WRITE")
+                    .header("X-Internal-Secret", "test-internal-secret")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(request)))
+            .andExpect(status().isCreated())
+            .andReturn()
+            .getResponse()
+            .getContentAsString();
+    long id = objectMapper.readTree(body).get("id").asLong();
+
+    mockMvc
+        .perform(
+            get("/aldebaran/wods/" + id)
+                .header("X-Auth-User-Id", "20")
+                .header("X-Auth-User-Role", "USER")
+                .header("X-Auth-Memberships", "101:COACH:WOD_WRITE")
+                .header("X-Internal-Secret", "test-internal-secret"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.movements", hasSize(1)))
+        .andExpect(jsonPath("$.movements[0].techniques", hasSize(2)));
+
+    mockMvc
+        .perform(
+            put("/aldebaran/wods/" + id)
+                .with(csrf())
+                .header("X-Auth-User-Id", "20")
+                .header("X-Auth-User-Role", "USER")
+                .header("X-Auth-Memberships", "101:COACH:WOD_WRITE")
+                .header("X-Internal-Secret", "test-internal-secret")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.movements", hasSize(1)));
   }
 
   @Test

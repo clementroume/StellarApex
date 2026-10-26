@@ -39,18 +39,16 @@ public interface WodRepository extends JpaRepository<Wod, Long> {
    * Retrieves a WOD with its movements eagerly loaded.
    *
    * <p>Essential for detailed views or editing where the complete structure is required. The {@code
-   * attributePaths} ensures we join Wod -> WodMovement -> Movement.
+   * attributePaths} ensures we join Wod -> WodMovement -> Movement. The variant collections
+   * (equipment, techniques) are not part of the graph: joining them with the movements list would
+   * duplicate a movement once per variant combination; they are batch-loaded instead
+   * ({@code @BatchSize} on {@link apex.stellar.aldebaran.model.entities.WodMovement}).
    *
    * @param id The unique identifier of the WOD.
    * @return An {@link Optional} containing the WOD if found.
    */
   @EntityGraph(
-      attributePaths = {
-        "movements",
-        "movements.movement",
-        "movements.equipment",
-        "movements.techniques"
-      })
+      attributePaths = {"movements", "movements.movement"})
   @Query("SELECT w FROM Wod w WHERE w.id = :id")
   Optional<Wod> findByIdWithMovements(@Param("id") Long id);
 
