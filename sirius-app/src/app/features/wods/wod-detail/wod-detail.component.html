@@ -7,13 +7,9 @@
         <div class="w-12 h-12 rounded-full bg-base-300 shrink-0"></div>
         <div class="h-10 bg-base-300 rounded w-1/3"></div>
       </div>
-      <div class="flex flex-col md:flex-row gap-8 mb-6">
-        <div class="flex-1 w-full order-2 md:order-1">
-          <div class="w-full h-64 bg-base-300 rounded-box"></div>
-        </div>
-        <div class="flex-1 w-full order-1 md:order-2">
-          <div class="w-full h-64 bg-base-300 rounded-box"></div>
-        </div>
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-6">
+        <div class="w-full h-96 bg-base-300 rounded-box"></div>
+        <div class="w-full h-96 bg-base-300 rounded-box"></div>
       </div>
     </div>
 
@@ -22,81 +18,11 @@
 
       <app-detail-header [title]="w.title" (back)="goBack()"></app-detail-header>
 
-      <div class="flex flex-col md:flex-row gap-8 items-start w-full mb-8">
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start mb-8">
 
-        <!-- About the WOD: badges, score, texts -->
-        <div class="w-full md:flex-1 order-2 md:order-1">
-          <app-detail-card>
-            <div class="flex flex-wrap gap-2">
-              @switch (visibility()) {
-                @case ('PUBLIC') {
-                  <div class="badge badge-success badge-soft badge-lg gap-1">
-                    <ng-icon name="heroGlobeAlt"></ng-icon>
-                    {{ 'WOD.VISIBILITY.PUBLIC' | translate }}
-                  </div>
-                }
-                @case ('GYM') {
-                  <div class="badge badge-info badge-soft badge-lg gap-1">
-                    <ng-icon name="heroBuildingOffice"></ng-icon>
-                    {{ gymName() ?? ('WOD.VISIBILITY.GYM' | translate) }}
-                  </div>
-                }
-                @case ('PRIVATE') {
-                  <div class="badge badge-neutral badge-soft badge-lg gap-1">
-                    <ng-icon name="heroLockClosed"></ng-icon>
-                    {{ 'WOD.VISIBILITY.PRIVATE' | translate }}
-                  </div>
-                }
-              }
-              @if (w.category) {
-                <div class="badge badge-secondary badge-soft badge-lg">{{ 'WOD.CATEGORIES.' + w.category | translate }}</div>
-              }
-              @for (modality of w.modalities; track modality) {
-                <div class="badge badge-primary badge-soft badge-lg">{{ 'MOVEMENT.MODALITIES.' + modality | translate }}</div>
-              }
-              @if (isLocked()) {
-                <div class="badge badge-warning badge-soft badge-lg gap-1" [title]="'WOD.MESSAGES.LOCKED' | translate">
-                  <ng-icon name="heroExclamationTriangle"></ng-icon>
-                  {{ 'WOD.MESSAGES.LOCKED_BADGE' | translate }}
-                </div>
-              }
-            </div>
-
-            <dl class="grid grid-cols-2 gap-4 text-sm md:text-base">
-              <div>
-                <dt class="font-semibold text-base-content/70">{{ 'WOD.FIELDS.SCORE_TYPE' | translate }}</dt>
-                <dd>{{ 'WOD.SCORE_TYPES.' + w.scoreType | translate }}</dd>
-              </div>
-              <div id="best-score">
-                <dt class="font-semibold text-base-content/70">{{ 'WOD.FIELDS.BEST_SCORE' | translate }}</dt>
-                <dd><app-score-best></app-score-best></dd>
-              </div>
-            </dl>
-
-            @if (description()) {
-              <div>
-                <h4 class="text-sm font-semibold text-base-content/70 mb-2">{{ 'GLOBAL.DESCRIPTION' | translate }}</h4>
-                <p class="leading-relaxed text-sm md:text-base whitespace-pre-line">{{ description() }}</p>
-              </div>
-            }
-            @if (notes()) {
-              <div>
-                <h4 class="text-sm font-semibold text-base-content/70 mb-2">{{ 'WOD.FIELDS.NOTES' | translate }}</h4>
-                <p class="leading-relaxed text-sm md:text-base whitespace-pre-line">{{ notes() }}</p>
-              </div>
-            }
-            @if (tiebreak()) {
-              <div id="tiebreak">
-                <h4 class="text-sm font-semibold text-base-content/70 mb-2">{{ 'WOD.FIELDS.TIEBREAK' | translate }}</h4>
-                <p class="leading-relaxed text-sm md:text-base whitespace-pre-line">{{ tiebreak() }}</p>
-              </div>
-            }
-          </app-detail-card>
-        </div>
-
-        <!-- Whiteboard: format, time cap, movements -->
-        <div class="w-full md:flex-1 order-1 md:order-2">
-          <app-detail-card gapClass="gap-2">
+        <!-- The WOD: whiteboard (format, time cap, movements), then badges, score type and texts -->
+        <app-detail-card gapClass="gap-6">
+          <div id="whiteboard" class="flex flex-col gap-2">
             <div class="flex flex-wrap items-baseline justify-between gap-2">
               <p id="format-line" class="text-2xl font-bold">{{ formatLine(w) }}</p>
               @if (timeCapLabel(w); as cap) {
@@ -137,13 +63,92 @@
             } @else {
               <p class="italic opacity-80">{{ 'WOD.MESSAGES.NO_MOVEMENTS' | translate }}</p>
             }
-          </app-detail-card>
-        </div>
-      </div>
+          </div>
 
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
-        <app-score-history class="block"></app-score-history>
-        <app-score-leaderboard class="block"></app-score-leaderboard>
+          <div class="flex flex-col gap-6 border-t border-base-200 pt-6">
+            <div class="flex flex-wrap gap-2">
+              @switch (visibility()) {
+                @case ('PUBLIC') {
+                  <div class="badge badge-success badge-soft badge-lg gap-1">
+                    <ng-icon name="heroGlobeAlt"></ng-icon>
+                    {{ 'WOD.VISIBILITY.PUBLIC' | translate }}
+                  </div>
+                }
+                @case ('GYM') {
+                  <div class="badge badge-info badge-soft badge-lg gap-1">
+                    <ng-icon name="heroBuildingOffice"></ng-icon>
+                    {{ gymName() ?? ('WOD.VISIBILITY.GYM' | translate) }}
+                  </div>
+                }
+                @case ('PRIVATE') {
+                  <div class="badge badge-neutral badge-soft badge-lg gap-1">
+                    <ng-icon name="heroLockClosed"></ng-icon>
+                    {{ 'WOD.VISIBILITY.PRIVATE' | translate }}
+                  </div>
+                }
+              }
+              @if (w.category) {
+                <div class="badge badge-secondary badge-soft badge-lg">{{ 'WOD.CATEGORIES.' + w.category | translate }}</div>
+              }
+              @for (modality of w.modalities; track modality) {
+                <div class="badge badge-primary badge-soft badge-lg">{{ 'MOVEMENT.MODALITIES.' + modality | translate }}</div>
+              }
+              @if (isLocked()) {
+                <div class="badge badge-warning badge-soft badge-lg gap-1" [title]="'WOD.MESSAGES.LOCKED' | translate">
+                  <ng-icon name="heroExclamationTriangle"></ng-icon>
+                  {{ 'WOD.MESSAGES.LOCKED_BADGE' | translate }}
+                </div>
+              }
+            </div>
+
+            <dl class="text-sm md:text-base">
+              <dt class="font-semibold text-base-content/70">{{ 'WOD.FIELDS.SCORE_TYPE' | translate }}</dt>
+              <dd>{{ 'WOD.SCORE_TYPES.' + w.scoreType | translate }}</dd>
+            </dl>
+
+            @if (description()) {
+              <div>
+                <h4 class="text-sm font-semibold text-base-content/70 mb-2">{{ 'GLOBAL.DESCRIPTION' | translate }}</h4>
+                <p class="leading-relaxed text-sm md:text-base whitespace-pre-line">{{ description() }}</p>
+              </div>
+            }
+            @if (notes()) {
+              <div>
+                <h4 class="text-sm font-semibold text-base-content/70 mb-2">{{ 'WOD.FIELDS.NOTES' | translate }}</h4>
+                <p class="leading-relaxed text-sm md:text-base whitespace-pre-line">{{ notes() }}</p>
+              </div>
+            }
+            @if (tiebreak()) {
+              <div id="tiebreak">
+                <h4 class="text-sm font-semibold text-base-content/70 mb-2">{{ 'WOD.FIELDS.TIEBREAK' | translate }}</h4>
+                <p class="leading-relaxed text-sm md:text-base whitespace-pre-line">{{ tiebreak() }}</p>
+              </div>
+            }
+          </div>
+        </app-detail-card>
+
+        <!-- Scores: personal summary, leaderboard, own history -->
+        <app-detail-card gapClass="gap-6">
+          <div class="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-base-200">
+            <h3 class="font-semibold text-lg">{{ 'SCORE.TITLE' | translate }}</h3>
+            <button type="button" id="log-score" class="btn btn-primary btn-sm" (click)="scoresStore.openNew()">
+              <ng-icon name="heroPlus"></ng-icon>
+              {{ 'SCORE.ACTIONS.LOG' | translate }}
+            </button>
+          </div>
+          <app-score-best id="best-score" class="block"></app-score-best>
+          <app-score-leaderboard class="block"></app-score-leaderboard>
+          @if (scoresStore.scores().length > 0) {
+            <details id="score-history" class="collapse collapse-arrow border border-base-200 rounded-box">
+              <summary class="collapse-title text-sm font-semibold text-base-content/70">
+                {{ 'SCORE.HISTORY' | translate }} ({{ scoresStore.scores().length }})
+              </summary>
+              <div class="collapse-content">
+                <app-score-history class="block"></app-score-history>
+              </div>
+            </details>
+          }
+        </app-detail-card>
       </div>
 
       @if (scoresStore.editing()) {

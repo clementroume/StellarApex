@@ -187,7 +187,8 @@ admin exists (`ApplicationConfig`).
 **Temporary (to be removed):** with the `dev` profile (`SPRING_PROFILES_ACTIVE: dev` in the root
 `docker-compose.yml`), `DevDataSeeder` creates test gyms (Spartacus CrossFit, Zeus Programming,
 Pending Box) and accounts (`owner@sparta.com`, `coach@sparta.com`, `programmer@zeus.com`, ... see
-its Javadoc), all with the admin's default password. Aldebaran's dev seeder relies on these names.
+its Javadoc), all with the admin's default password; `free@athlete.com` shows its name on public
+leaderboards. Aldebaran's dev seeders (WODs, scores) rely on these names.
 
 ## Database Migrations
 

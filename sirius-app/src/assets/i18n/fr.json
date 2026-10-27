@@ -468,7 +468,6 @@
       "OTHER_LANGUAGE": "Autre langue",
       "TIME_CAP_SHORT": "Tc",
       "NO_CATEGORY": "Aucune",
-      "BEST_SCORE": "Mon meilleur score",
       "DURATION_MINUTES": "{{count}} minutes",
       "MEN_WOMEN": "H / F",
       "HEIGHT": "Hauteur",
@@ -563,9 +562,14 @@
     }
   },
   "SCORE": {
-    "HISTORY": "Mes scores sur ce WOD",
+    "TITLE": "Scores",
+    "HISTORY": "Mon historique",
     "PR": "PR",
-    "RANK": "Rang {{rank}} sur {{total}} ({{scaling}})",
+    "SUMMARY": {
+      "RECORD": "Record",
+      "RANK": "Rang ({{scaling}})",
+      "ATTEMPTS": "Tentatives"
+    },
     "TITLES": {
       "LOG": "Enregistrer mon score",
       "EDIT": "Modifier mon score"

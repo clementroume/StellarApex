@@ -1,15 +1,14 @@
 import {ChangeDetectionStrategy, Component, computed, inject} from '@angular/core';
 import {TranslatePipe, TranslateService} from '@ngx-translate/core';
-import {NgIconComponent} from '@ng-icons/core';
 import {UnitService} from '../../../../core/services/unit.service';
 import {WodScoresStore} from '../wod-scores.store';
 import {formatScore} from '../score.utils';
 
-/** "My best score" slot of the WOD detail: the personal record and its rank, or an invite to log one. */
+/** Summary of the user's scores on the WOD: personal record, its rank and the number of attempts. */
 @Component({
   selector: 'app-score-best',
   standalone: true,
-  imports: [TranslatePipe, NgIconComponent],
+  imports: [TranslatePipe],
   templateUrl: './score-best.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush
 })

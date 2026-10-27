@@ -1,23 +1,33 @@
 @if (store.isLoading()) {
   <span class="loading loading-dots loading-sm"></span>
 } @else if (store.best(); as best) {
-  <div class="flex flex-col gap-1">
-    <div class="flex flex-wrap items-center gap-2">
-      <ng-icon name="heroTrophy" class="text-warning"></ng-icon>
-      <span id="best-score-value" class="text-lg font-bold">{{ bestValue() }}</span>
-      <span class="badge badge-sm badge-soft" [class.badge-primary]="best.scaling !== 'SCALED' && best.scaling !== 'CUSTOM'">
-        {{ 'SCORE.SCALING.' + best.scaling | translate }}
-      </span>
+  <dl id="score-summary" class="grid grid-cols-3 gap-2">
+    <div class="rounded-box bg-base-200 px-3 py-2 flex flex-col gap-1">
+      <dt class="text-xs font-semibold text-base-content/70">{{ 'SCORE.SUMMARY.RECORD' | translate }}</dt>
+      <dd class="flex flex-wrap items-center gap-x-2">
+        <span id="best-score-value" class="text-lg font-bold">{{ bestValue() }}</span>
+        <span class="badge badge-sm badge-soft" [class.badge-primary]="best.scaling !== 'SCALED' && best.scaling !== 'CUSTOM'">
+          {{ 'SCORE.SCALING.' + best.scaling | translate }}
+        </span>
+      </dd>
     </div>
-    @if (store.comparison(); as cmp) {
-      <span class="text-sm text-base-content/70">
-        {{ 'SCORE.RANK' | translate: {rank: cmp.rank, total: cmp.totalScores, scaling: ('SCORE.SCALING.' + best.scaling | translate)} }}
-      </span>
-    }
-  </div>
+    <div class="rounded-box bg-base-200 px-3 py-2 flex flex-col gap-1">
+      <dt class="text-xs font-semibold text-base-content/70">
+        {{ 'SCORE.SUMMARY.RANK' | translate: {scaling: ('SCORE.SCALING.' + best.scaling | translate)} }}
+      </dt>
+      <dd id="best-score-rank" class="text-lg font-bold tabular-nums">
+        @if (store.comparison(); as cmp) {
+          {{ cmp.rank }}<span class="text-sm font-normal text-base-content/70"> / {{ cmp.totalScores }}</span>
+        } @else {
+          –
+        }
+      </dd>
+    </div>
+    <div class="rounded-box bg-base-200 px-3 py-2 flex flex-col gap-1">
+      <dt class="text-xs font-semibold text-base-content/70">{{ 'SCORE.SUMMARY.ATTEMPTS' | translate }}</dt>
+      <dd id="score-attempts" class="text-lg font-bold tabular-nums">{{ store.scores().length }}</dd>
+    </div>
+  </dl>
 } @else {
-  <button type="button" class="btn btn-primary btn-sm" (click)="store.openNew()">
-    <ng-icon name="heroPlus"></ng-icon>
-    {{ 'SCORE.ACTIONS.LOG' | translate }}
-  </button>
+  <p class="italic opacity-70">{{ 'SCORE.MESSAGES.EMPTY' | translate }}</p>
 }

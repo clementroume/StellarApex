@@ -42,7 +42,7 @@ import org.springframework.transaction.annotation.Transactional;
  *   <li>Zeus Programming (virtual, ACTIVE, code OLYMPUS): programmer, active, pending (PENDING),
  *       multi, hybrid (athletes).
  *   <li>Pending Box (physical, PENDING_APPROVAL, code WAIT): wait@box.com (owner), athlete@box.com.
- *   <li>free@athlete.com: no membership.
+ *   <li>free@athlete.com: no membership, name shown on public leaderboards.
  * </ul>
  */
 @Slf4j
@@ -116,14 +116,22 @@ public class DevDataSeeder implements CommandLineRunner {
     addMembership(
         createUser("athlete@box.com"), pendingBox, GymRole.ATHLETE, MembershipStatus.ACTIVE);
 
-    // 5. Independent user
-    createUser("free@athlete.com");
+    // 5. Independent user, visible by name on public leaderboards
+    createUser("free@athlete.com", true);
 
     log.info("DevDataSeeder: test accounts ready.");
   }
 
   /** Returns the account with this email, creating a USER named after its local part if missing. */
   private User createUser(String email) {
+    return createUser(email, false);
+  }
+
+  /**
+   * Same as {@link #createUser(String)}, choosing whether a new account shows its name on public
+   * leaderboards.
+   */
+  private User createUser(String email, boolean publicLeaderboardName) {
     return userRepository
         .findByEmail(email)
         .orElseGet(
@@ -136,6 +144,7 @@ public class DevDataSeeder implements CommandLineRunner {
                       .firstName(email.split("@")[0])
                       .lastName("User")
                       .platformRole(PlatformRole.USER)
+                      .publicLeaderboardName(publicLeaderboardName)
                       .build());
             });
   }

@@ -1,53 +1,51 @@
-<section class="card bg-base-100 shadow-xl">
-  <div class="card-body gap-4">
-    <div class="flex flex-wrap items-center justify-between gap-2">
-      <h2 class="card-title gap-2">
-        <ng-icon name="heroTrophy"></ng-icon>
-        {{ 'SCORE.LEADERBOARD.TITLE' | translate }}
-      </h2>
-      <div class="flex flex-wrap items-center gap-2">
-        <div class="join" role="group" [attr.aria-label]="'SCORE.FIELDS.SCALING' | translate">
-          @for (level of scalingLevels; track level) {
-            <button type="button" class="btn btn-sm join-item" [class.btn-active]="scaling() === level"
-                    (click)="onScalingChange(level)">{{ 'SCORE.SCALING.' + level | translate }}</button>
-          }
-        </div>
-        @if (gymChoices().length > 0) {
-          <select id="leaderboard-gym" class="select select-bordered select-sm"
-                  [attr.aria-label]="'SCORE.LEADERBOARD.SCOPE' | translate"
-                  (change)="onGymChange($any($event.target).value)">
-            <option value="" [selected]="gymId() === null">{{ 'SCORE.LEADERBOARD.ALL_GYMS' | translate }}</option>
-            @for (gym of gymChoices(); track gym.gymId) {
-              <option [value]="gym.gymId" [selected]="gymId() === gym.gymId">{{ gym.gymName }}</option>
-            }
-          </select>
+<section class="flex flex-col gap-3" aria-labelledby="leaderboard-title">
+  <div class="flex flex-wrap items-center justify-between gap-2">
+    <h4 id="leaderboard-title" class="text-sm font-semibold text-base-content/70 flex items-center gap-1">
+      <ng-icon name="heroTrophy"></ng-icon>
+      {{ 'SCORE.LEADERBOARD.TITLE' | translate }}
+    </h4>
+    <div class="flex flex-wrap items-center gap-2">
+      <div class="join" role="group" [attr.aria-label]="'SCORE.FIELDS.SCALING' | translate">
+        @for (level of scalingLevels; track level) {
+          <button type="button" class="btn btn-sm join-item" [class.btn-active]="scaling() === level"
+                  (click)="onScalingChange(level)">{{ 'SCORE.SCALING.' + level | translate }}</button>
         }
       </div>
-    </div>
-
-    @if (rows().length === 0) {
-      <p class="italic opacity-70">
-        {{ (isLoading() ? 'SCORE.LEADERBOARD.LOADING' : 'SCORE.LEADERBOARD.EMPTY') | translate }}
-      </p>
-    } @else {
-      <ol class="flex flex-col divide-y divide-base-200">
-        @for (score of rows(); track score.id; let i = $index) {
-          <li class="py-2 flex items-center gap-3 rounded-box px-2" [class.bg-primary/10]="score.userId === myId()"
-              [attr.aria-current]="score.userId === myId() ? 'true' : null">
-            <span class="w-8 text-right font-bold tabular-nums">{{ i + 1 }}</span>
-            <span class="flex-1 truncate" [class.italic]="!names()[score.userId]">{{ name(score) }}</span>
-            <span class="font-semibold">{{ value(score) }}</span>
-            @if (tiebreak(score); as tb) {
-              <span class="text-sm opacity-70">{{ 'SCORE.TIEBREAK_SHORT' | translate: {time: tb} }}</span>
-            }
-          </li>
-        }
-      </ol>
-      @if (hasMore()) {
-        <button type="button" class="btn btn-ghost btn-sm self-center" [disabled]="isLoading()" (click)="load(false)">
-          {{ 'SCORE.LEADERBOARD.MORE' | translate }}
-        </button>
+      @if (gymChoices().length > 0) {
+        <select id="leaderboard-gym" class="select select-bordered select-sm"
+                [attr.aria-label]="'SCORE.LEADERBOARD.SCOPE' | translate"
+                (change)="onGymChange($any($event.target).value)">
+          <option value="" [selected]="gymId() === null">{{ 'SCORE.LEADERBOARD.ALL_GYMS' | translate }}</option>
+          @for (gym of gymChoices(); track gym.gymId) {
+            <option [value]="gym.gymId" [selected]="gymId() === gym.gymId">{{ gym.gymName }}</option>
+          }
+        </select>
       }
-    }
+    </div>
   </div>
+
+  @if (rows().length === 0) {
+    <p class="italic opacity-70">
+      {{ (isLoading() ? 'SCORE.LEADERBOARD.LOADING' : 'SCORE.LEADERBOARD.EMPTY') | translate }}
+    </p>
+  } @else {
+    <ol class="flex flex-col divide-y divide-base-200">
+      @for (score of rows(); track score.id; let i = $index) {
+        <li class="py-2 flex items-center gap-3 rounded-box px-2" [class.bg-primary/10]="score.userId === myId()"
+            [attr.aria-current]="score.userId === myId() ? 'true' : null">
+          <span class="w-8 text-right font-bold tabular-nums">{{ i + 1 }}</span>
+          <span class="flex-1 truncate" [class.italic]="!names()[score.userId]">{{ name(score) }}</span>
+          <span class="font-semibold">{{ value(score) }}</span>
+          @if (tiebreak(score); as tb) {
+            <span class="text-sm opacity-70">{{ 'SCORE.TIEBREAK_SHORT' | translate: {time: tb} }}</span>
+          }
+        </li>
+      }
+    </ol>
+    @if (hasMore()) {
+      <button type="button" class="btn btn-ghost btn-sm self-center" [disabled]="isLoading()" (click)="load(false)">
+        {{ 'SCORE.LEADERBOARD.MORE' | translate }}
+      </button>
+    }
+  }
 </section>

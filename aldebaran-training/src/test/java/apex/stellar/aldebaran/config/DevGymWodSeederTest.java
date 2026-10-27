@@ -50,6 +50,7 @@ class DevGymWodSeederTest {
   @Mock private JdbcTemplate jdbcTemplate;
   @Mock private WodRepository wodRepository;
   @Mock private MovementRepository movementRepository;
+  @Mock private DevScoreSeeder devScoreSeeder;
   @Mock private PlatformTransactionManager transactionManager;
 
   private DevGymWodSeeder seeder;
@@ -61,6 +62,7 @@ class DevGymWodSeederTest {
             jdbcTemplate,
             wodRepository,
             movementRepository,
+            devScoreSeeder,
             transactionManager,
             3,
             Duration.ZERO);
@@ -114,6 +116,7 @@ class DevGymWodSeederTest {
     assertTrue(zeus.stream().allMatch(w -> w.getAuthorId() == 200L));
     assertEquals(300L, personal.getFirst().getAuthorId());
     assertTrue(wods.stream().noneMatch(Wod::isPublic));
+    verify(devScoreSeeder).seed(10L, 20L);
 
     // Varied formats so the UI can be checked
     assertEquals(
@@ -140,6 +143,8 @@ class DevGymWodSeederTest {
     assertTrue(seeder.seedWhenReady());
 
     verify(wodRepository, never()).saveAll(any());
+    // Scores have their own check, so an already seeded database still gets them
+    verify(devScoreSeeder).seed(10L, 20L);
   }
 
   @Test
