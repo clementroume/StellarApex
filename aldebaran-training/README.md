@@ -88,9 +88,10 @@ of them:
 * **WOD create / update / delete**: `WOD_WRITE` on the WOD's gym; personal WODs (`gymId = null`) by
   their author only. A WOD with logged scores is locked (409). Ownership (`gymId`, `authorId`) cannot
   change on update.
-* **Scores**: athletes log scores for themselves on the WODs they can read and manage their own;
-  `SCORE_VERIFY` on the WOD's gym allows correcting or deleting other athletes' scores (errors,
-  cheating). Logging a score for someone else is admin-only for now (Aldebaran cannot check that the
+* **Scores**: athletes log scores for themselves on the WODs they can read and manage their own.
+  Each score records the gym where it was performed (`gymId`): the WOD's gym for a gym WOD, else one
+  of the athlete's gyms chosen when logging (or none). `SCORE_VERIFY` on that gym allows correcting
+  or deleting other athletes' scores (errors, cheating), including on public WODs such as the Open. Logging a score for someone else is admin-only for now (Aldebaran cannot check that the
   athlete belongs to the gym). Each score carries `capabilities {canModify}`; other athletes' comments
   and scaling notes are hidden from viewers who cannot moderate the score.
 * **Muscles / movements**: read by everyone, written (and exported to CSV) by platform ADMIN only.
@@ -168,7 +169,9 @@ Rules live in `security/WodSecurity` and `security/ScoreSecurity`, used from `@P
   then performance; for TIME every finished time beats every capped score, capped scores rank by
   reps (`service/ScoreRanking`, shared with compare and leaderboards).
 * `GET /{id}/compare`: rank and percentile of a score among the other athletes' PRs at its level.
-* `GET /leaderboard/{id}`: leaderboard of a WOD (`scaling`, default `RX`): each athlete's PR at that level.
+* `GET /leaderboard/{id}`: leaderboard of a WOD (`scaling`, default `RX`): each athlete's PR at that
+  level; optional `gymId` (one of the caller's gyms, 403 otherwise) keeps the scores performed there.
+  Responses carry user IDs only: clients resolve names with Antares `POST /users/display-names`.
 * `GET /reference-data`: scaling levels.
 
 ### Export (`/aldebaran/export`) — temporary, development only

@@ -65,8 +65,11 @@ and a virtual programming); there is no "active gym" in requests.
   `WOD_WRITE` on that gym; personal WOD (`gymId = null`): author only. Admin: everything.
 - WOD with logged scores is locked (409 on update/delete). Ownership (`gymId`, `authorId`) is ignored
   on update (`WodMapper.updateEntity`); `isPublic` stays editable.
-- Scores: self-logging on any readable WOD; correcting/deleting others' scores: `SCORE_VERIFY` on the
-  WOD's gym; logging for someone else: admin only (target membership not verifiable in Aldebaran).
+- Scores: self-logging on any readable WOD; a score records the gym where it was performed
+  (`score.gymId`: the WOD's gym, else one of the athlete's gyms); correcting/deleting others' scores:
+  `SCORE_VERIFY` on that gym; logging for someone else: admin only (target membership not verifiable
+  in Aldebaran). Leaderboards return user IDs; names come from Antares `POST /antares/users/display-names`
+  (gym mates, opted-in users, oneself).
   `ScoreResponse.capabilities {canModify}`; others' comments hidden from non-moderators. Movements/
   muscles CRUD and CSV export: `hasRole('ADMIN')`.
 - Gym settings/deletion: `MANAGE_SETTINGS`; memberships: `MANAGE_MEMBERSHIPS` (Antares `@security`).

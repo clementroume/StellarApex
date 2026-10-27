@@ -48,4 +48,7 @@ public record ScoreRequest(
 
     // --- Comments and Scaling notes---
     @Size(max = 4000, message = "{validation.score.comment.size}") String userComment,
-    @Size(max = 4000, message = "{validation.score.scalingNotes.size}") String scalingNotes) {}
+    @Size(max = 4000, message = "{validation.score.scalingNotes.size}") String scalingNotes,
+
+    // --- Gym where it was performed (public or personal WOD only; a gym WOD uses its gym) ---
+    Long gymId) {}

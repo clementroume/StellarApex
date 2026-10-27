@@ -68,7 +68,7 @@ class ScoreRequestValidatorTest {
         ScalingLevel.RX, // ScalingLevel in string
         false, null,
         null,
-        null);
+        null, null);
   }
 
   /** Exécute la validation et retourne la liste des messages d'erreur. */

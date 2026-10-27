@@ -141,7 +141,10 @@
         </div>
       </div>
 
-      <app-score-history class="block"></app-score-history>
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+        <app-score-history class="block"></app-score-history>
+        <app-score-leaderboard class="block"></app-score-leaderboard>
+      </div>
 
       @if (scoresStore.editing()) {
         <app-score-form></app-score-form>

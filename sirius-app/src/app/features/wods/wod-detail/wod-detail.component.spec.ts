@@ -15,6 +15,7 @@ import {UnitService} from '../../../core/services/unit.service';
 import {APP_ICONS} from '../../../app.config';
 import {WodResponse} from '../../../api/aldebaran/models/wod.model';
 import {ScoreService} from '../../../api/aldebaran/services/score.service';
+import {UserService} from '../../../api/antares/services/user.service';
 import {WodScoresStore} from '../scores/wod-scores.store';
 
 describe('WodDetailComponent', () => {
@@ -73,8 +74,10 @@ describe('WodDetailComponent', () => {
     mockLocation = {back: vi.fn().mockName('Location.back')} as any;
     mockScoreService = {
       getMyScores: vi.fn().mockName('ScoreService.getMyScores'),
-      compareScore: vi.fn().mockName('ScoreService.compareScore')
+      compareScore: vi.fn().mockName('ScoreService.compareScore'),
+      getLeaderboard: vi.fn().mockName('ScoreService.getLeaderboard')
     } as any;
+    mockScoreService.getLeaderboard.mockReturnValue(of({content: [], last: true} as any));
     mockScoreService.getMyScores.mockReturnValue(of({content: [], first: true, last: true, empty: true} as any));
 
     await TestBed.configureTestingModule({
@@ -85,7 +88,10 @@ describe('WodDetailComponent', () => {
         provideTranslateService(),
         {
           provide: AccessService,
-          useValue: {memberships: signal([{gymId: 5, gymName: 'Box', gymRole: 'COACH', permissions: []}])}
+          useValue: {
+            memberships: signal([{gymId: 5, gymName: 'Box', gymRole: 'COACH', permissions: []}]),
+            userId: signal(1)
+          }
         },
         {provide: WodService, useValue: mockWodService},
         {
@@ -97,7 +103,8 @@ describe('WodDetailComponent', () => {
         },
         {provide: NotificationService, useValue: mockNotificationService},
         {provide: Location, useValue: mockLocation},
-        {provide: ScoreService, useValue: mockScoreService}
+        {provide: ScoreService, useValue: mockScoreService},
+        {provide: UserService, useValue: {getDisplayNames: vi.fn().mockReturnValue(of([]))}}
       ]
     }).compileComponents();
 

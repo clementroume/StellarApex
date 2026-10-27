@@ -75,6 +75,18 @@ public interface ScoreRepository extends JpaRepository<Score, Long> {
       Long wodId, ScalingLevel scaling, Pageable pageable);
 
   /**
+   * Retrieves the leaderboard (PRs only) of the scores performed in one gym.
+   *
+   * @param wodId The WOD ID.
+   * @param scaling The scaling level.
+   * @param gymId The gym where the scores were performed.
+   * @param pageable Pagination and Sorting.
+   * @return A page of Personal Record scores.
+   */
+  Slice<Score> findByWodIdAndScalingAndGymIdAndPersonalRecordTrue(
+      Long wodId, ScalingLevel scaling, Long gymId, Pageable pageable);
+
+  /**
    * Retrieves every Personal Record for a WOD and scaling level, for rank comparison (the ordering
    * lives in {@code ScoreRanking}, shared with PRs and leaderboards).
    *

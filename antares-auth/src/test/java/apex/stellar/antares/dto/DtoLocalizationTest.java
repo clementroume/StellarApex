@@ -244,7 +244,7 @@ class DtoLocalizationTest {
   @DisplayName("PreferencesUpdateRequest: EN & FR validation")
   void testPreferencesUpdateRequest() {
     // Given
-    PreferencesUpdateRequest request = new PreferencesUpdateRequest("bad", "blue", "kg");
+    PreferencesUpdateRequest request = new PreferencesUpdateRequest("bad", "blue", "kg", null);
 
     // When (English)
     Locale.setDefault(Locale.ENGLISH);
@@ -272,7 +272,7 @@ class DtoLocalizationTest {
   @DisplayName("PreferencesUpdateRequest: Required fields (EN & FR)")
   void testPreferencesUpdateRequest_Required() {
     // Given
-    PreferencesUpdateRequest request = new PreferencesUpdateRequest(null, "", null);
+    PreferencesUpdateRequest request = new PreferencesUpdateRequest(null, "", null, null);
 
     // When (English)
     Locale.setDefault(Locale.ENGLISH);

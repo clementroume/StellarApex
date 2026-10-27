@@ -1,8 +1,9 @@
 import {inject, Injectable} from '@angular/core';
-import {HttpClient} from '@angular/common/http';
+import {HttpClient, HttpContext} from '@angular/common/http';
 import {Observable, tap} from 'rxjs';
 import {environment} from '../../../../environments/environment';
-import {PreferencesUpdateRequest, ProfileUpdateRequest, UserResponse} from '../models/user.model';
+import {DisplayName, PreferencesUpdateRequest, ProfileUpdateRequest, UserResponse} from '../models/user.model';
+import {BYPASS_LOADER} from '../../../core/interceptors/loading.interceptor';
 import {ChangePasswordRequest} from '../models/auth.model';
 import {AuthService} from './auth.service';
 import {Router} from '@angular/router';
@@ -27,6 +28,12 @@ export class UserService {
     return this.http.patch<UserResponse>(this.buildUrl('/me/preferences'), payload).pipe(
       tap(user => this.authService.updateCurrentUser(user))
     );
+  }
+
+  /** Names the current user may see among these users; hidden users are left out (at most 100). */
+  getDisplayNames(userIds: number[]): Observable<DisplayName[]> {
+    return this.http.post<DisplayName[]>(this.buildUrl('/display-names'), {userIds},
+      {context: new HttpContext().set(BYPASS_LOADER, true)});
   }
 
   changePassword(payload: ChangePasswordRequest): Observable<void> {

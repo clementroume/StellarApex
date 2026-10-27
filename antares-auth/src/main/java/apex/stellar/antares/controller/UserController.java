@@ -2,6 +2,8 @@ package apex.stellar.antares.controller;
 
 import apex.stellar.antares.config.SupportSessionAuthentication;
 import apex.stellar.antares.dto.ChangePasswordRequest;
+import apex.stellar.antares.dto.DisplayNameResponse;
+import apex.stellar.antares.dto.DisplayNamesRequest;
 import apex.stellar.antares.dto.PreferencesUpdateRequest;
 import apex.stellar.antares.dto.ProfileUpdateRequest;
 import apex.stellar.antares.dto.UserResponse;
@@ -18,6 +20,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.NonNull;
 import org.springframework.http.HttpStatus;
@@ -26,6 +29,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -143,6 +147,41 @@ public class UserController {
     if (authentication.getPrincipal() instanceof User currentUser) {
       return ResponseEntity.ok(
           withSupportSession(userService.updatePreferences(currentUser, request), authentication));
+    }
+    return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+  }
+
+  /**
+   * Resolves the display names the authenticated user may see (e.g. the athletes of a
+   * leaderboard). Hidden users are left out of the response.
+   *
+   * @param request The user IDs to resolve (at most 100).
+   * @param authentication The current user's authentication principal.
+   * @return The visible display names.
+   */
+  @PostMapping("/display-names")
+  @Operation(
+      summary = "Resolve display names",
+      description =
+          "Returns \"First L.\" for the users the caller may see: themselves, members of their gyms,"
+              + " users who opted in to public leaderboards (all for platform admins).")
+  @ApiResponses(
+      value = {
+        @ApiResponse(responseCode = "200", description = "Visible display names"),
+        @ApiResponse(
+            responseCode = "400",
+            description = "More than 100 IDs",
+            content = @Content(schema = @Schema(hidden = true))),
+        @ApiResponse(
+            responseCode = "401",
+            description = "Unauthorized",
+            content = @Content(schema = @Schema(hidden = true)))
+      })
+  public ResponseEntity<@NonNull List<DisplayNameResponse>> getDisplayNames(
+      @Valid @RequestBody DisplayNamesRequest request, Authentication authentication) {
+
+    if (authentication.getPrincipal() instanceof User currentUser) {
+      return ResponseEntity.ok(userService.getDisplayNames(currentUser, request.userIds()));
     }
     return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
   }

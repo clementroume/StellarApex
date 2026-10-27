@@ -68,6 +68,19 @@
       </div>
     </fieldset>
 
+    <fieldset class="fieldset bg-base-200 border-base-300 rounded-box w-full border p-4">
+      <legend class="fieldset-legend">{{ 'SETTINGS.PRIVACY_TITLE' | translate }}</legend>
+      <label class="flex items-start gap-3 cursor-pointer">
+        <input id="public-leaderboard-name" type="checkbox" class="toggle toggle-primary mt-1"
+               [checked]="publicLeaderboardName()" [disabled]="isSupportSession()"
+               (change)="changePublicLeaderboardName($event)"/>
+        <span class="flex flex-col gap-1">
+          <span>{{ 'SETTINGS.PUBLIC_LEADERBOARD_NAME' | translate }}</span>
+          <span class="text-sm text-base-content/70">{{ 'SETTINGS.PUBLIC_LEADERBOARD_NAME_HINT' | translate }}</span>
+        </span>
+      </label>
+    </fieldset>
+
     @if (!isSupportSession()) {
     <fieldset class="fieldset bg-error/5 border-error/20 rounded-box w-full border p-4">
       <legend class="fieldset-legend text-error font-bold flex gap-2 items-center">

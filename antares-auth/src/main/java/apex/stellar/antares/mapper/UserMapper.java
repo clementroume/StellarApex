@@ -8,6 +8,7 @@ import apex.stellar.antares.model.User;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
+import org.mapstruct.NullValuePropertyMappingStrategy;
 import org.mapstruct.ReportingPolicy;
 
 /**
@@ -62,5 +63,8 @@ public interface UserMapper {
    * @param dto The DTO containing the new preferences' data.
    * @param user The existing User entity to be updated.
    */
+  @Mapping(
+      target = "publicLeaderboardName",
+      nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
   void updateFromPreferences(PreferencesUpdateRequest dto, @MappingTarget User user);
 }

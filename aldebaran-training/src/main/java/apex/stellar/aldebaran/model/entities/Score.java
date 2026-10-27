@@ -54,6 +54,13 @@ public class Score {
   @NotNull
   private LocalDate date;
 
+  /**
+   * Gym where the score was performed: the WOD's gym for a gym WOD, else one of the athlete's gyms
+   * chosen when logging (or none). Drives gym leaderboards and staff moderation.
+   */
+  @Column(name = "gym_id")
+  private Long gymId;
+
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "wod_id", nullable = false)
   @ToString.Exclude

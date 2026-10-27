@@ -17,6 +17,7 @@ import java.util.List;
  * @param locale User's preferred locale.
  * @param theme User's preferred theme.
  * @param unitSystem Display unit for loads (METRIC, IMPERIAL), or null to follow the language.
+ * @param publicLeaderboardName Whether the name is shown on public leaderboards.
  * @param createdAt Account creation timestamp.
  * @param supportSession The active support session when an admin acts as this user, else null.
  */
@@ -34,6 +35,8 @@ public record UserResponse(
             example = "METRIC",
             nullable = true)
         String unitSystem,
+    @Schema(description = "Name shown on public leaderboards", example = "false")
+        boolean publicLeaderboardName,
     @Schema(description = "Account creation date", example = "2023-01-01T12:00:00")
         LocalDateTime createdAt,
     @Schema(description = "Active support session, null outside a support session", nullable = true)
@@ -48,6 +51,6 @@ public record UserResponse(
   public UserResponse withSupportSession(SupportSessionInfo session) {
     return new UserResponse(
         id, firstName, lastName, email, platformRole, memberships, locale, theme, unitSystem,
-        createdAt, session);
+        publicLeaderboardName, createdAt, session);
   }
 }

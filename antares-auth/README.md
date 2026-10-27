@@ -103,7 +103,12 @@ docker compose logs -f antares-auth
 * `GET /me`: Get the profile of the currently authenticated user.
 * `PUT /me/profile`: Update the user's first name, last name, or email.
 * `PATCH /me/preferences`: Update the user's locale (language), theme and unit system (`unitSystem`:
-  `METRIC`, `IMPERIAL`, or null to follow the language). The preferences are replaced as a whole.
+  `METRIC`, `IMPERIAL`, or null to follow the language). The preferences are replaced as a whole,
+  except `publicLeaderboardName` (show the name on public leaderboards, off by default), kept when
+  omitted. Refused during a support session.
+* `POST /display-names` (`{userIds}`, at most 100): "First L." names the caller may see: themselves,
+  members of their gyms (usable memberships), users who opted in to public leaderboards; all for
+  platform admins. Hidden users are left out (clients show them as anonymous).
   Refused during a support session.
 * `PUT /me/password`: Change the user's password (refused during a support session).
 * `DELETE /me`: Delete the current user's account (refused during a support session).

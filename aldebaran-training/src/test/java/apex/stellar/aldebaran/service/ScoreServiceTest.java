@@ -71,7 +71,7 @@ class ScoreServiceTest {
             ScalingLevel.RX,
             false, null,
             null,
-            null);
+            null, null);
 
     scoreEntityTime =
         Score.builder()
@@ -134,7 +134,7 @@ class ScoreServiceTest {
             eq(1L), eq(ScalingLevel.RX), any(Pageable.class)))
         .thenReturn(Page.empty());
 
-    Slice<ScoreResponse> result = scoreService.getLeaderboard(1L, ScalingLevel.RX, pageable);
+    Slice<ScoreResponse> result = scoreService.getLeaderboard(1L, ScalingLevel.RX, null, pageable);
 
     assertNotNull(result);
   }
@@ -146,7 +146,7 @@ class ScoreServiceTest {
   private ScoreRequest timeRequest(Long wodId, boolean capped) {
     return new ScoreRequest(
         null, LocalDate.now(), wodId, 5, 0, null, null, null, null, null, null, null, null,
-        ScalingLevel.RX, capped, null, null, null);
+        ScalingLevel.RX, capped, null, null, null, null);
   }
 
   private Score score(long id, ScalingLevel scaling) {
@@ -186,7 +186,7 @@ class ScoreServiceTest {
     ScoreRequest requestForOther =
         new ScoreRequest(
             targetUser, LocalDate.now(), 1L, 5, 0, null, null, null, null, null, null, null, null,
-            ScalingLevel.RX, false, null, null, null);
+            ScalingLevel.RX, false, null, null, null, null);
     Score scoreForOther =
         Score.builder().id(60L).userId(targetUser).timeSeconds(300).scaling(ScalingLevel.RX).build();
 
@@ -506,7 +506,7 @@ class ScoreServiceTest {
   private ScoreRequest anyRequest(Long wodId) {
     return new ScoreRequest(
         null, LocalDate.now(), wodId, null, null, null, null, null, null, null, null, null, null,
-        ScalingLevel.RX, false, null, null, null);
+        ScalingLevel.RX, false, null, null, null, null);
   }
 
   private Score saveThroughLog(Wod wod, Score entity) {
@@ -607,5 +607,52 @@ class ScoreServiceTest {
 
     Score total = saveThroughLog(ladder, Score.builder().reps(150).scaling(ScalingLevel.RX).build());
     assertEquals(150, total.getReps());
+  }
+
+  @Test
+  @DisplayName("Gym: a gym WOD score takes the WOD's gym, a public WOD score the chosen gym")
+  void testGymOfScore() {
+    Wod gymWod = Wod.builder().id(20L).scoreType(ScoreType.TIME).gymId(100L).build();
+    ScoreRequest otherGym =
+        new ScoreRequest(
+            null, LocalDate.now(), 20L, 5, 0, null, null, null, null, null, null, null, null,
+            ScalingLevel.RX, false, null, null, null, 300L);
+    Score entity = Score.builder().timeSeconds(300).scaling(ScalingLevel.RX).build();
+    when(securityService.getCurrentUserId()).thenReturn(userId);
+    when(wodRepository.findById(20L)).thenReturn(Optional.of(gymWod));
+    when(scoreMapper.toEntity(otherGym)).thenReturn(entity);
+    when(scoreRepository.save(entity)).thenReturn(entity);
+    when(scoreRepository.findByWodIdAndUserId(20L, userId)).thenReturn(List.of(entity));
+
+    scoreService.logScore(otherGym);
+    assertEquals(100L, entity.getGymId(), "A gym WOD is always scored in its gym");
+
+    Wod open = Wod.builder().id(21L).scoreType(ScoreType.TIME).isPublic(true).build();
+    ScoreRequest inMyBox =
+        new ScoreRequest(
+            null, LocalDate.now(), 21L, 5, 0, null, null, null, null, null, null, null, null,
+            ScalingLevel.RX, false, null, null, null, 300L);
+    Score openScore = Score.builder().timeSeconds(300).scaling(ScalingLevel.RX).build();
+    when(wodRepository.findById(21L)).thenReturn(Optional.of(open));
+    when(scoreMapper.toEntity(inMyBox)).thenReturn(openScore);
+    when(scoreRepository.save(openScore)).thenReturn(openScore);
+    when(scoreRepository.findByWodIdAndUserId(21L, userId)).thenReturn(List.of(openScore));
+
+    scoreService.logScore(inMyBox);
+    assertEquals(300L, openScore.getGymId());
+  }
+
+  @Test
+  @DisplayName("getLeaderboard: a gym filter only keeps the scores performed in that gym")
+  void testGetLeaderboard_Gym() {
+    mockWodDetailHit(ScoreType.TIME);
+    when(scoreRepository.findByWodIdAndScalingAndGymIdAndPersonalRecordTrue(
+            eq(1L), eq(ScalingLevel.RX), eq(300L), any(Pageable.class)))
+        .thenReturn(Page.empty());
+
+    scoreService.getLeaderboard(1L, ScalingLevel.RX, 300L, PageRequest.of(0, 20));
+
+    verify(scoreRepository, never())
+        .findByWodIdAndScalingAndPersonalRecordTrue(any(), any(), any(Pageable.class));
   }
 }

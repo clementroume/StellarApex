@@ -105,7 +105,9 @@ public class ScoreController {
    * @return The updated score.
    */
   @PutMapping("/{id}")
-  @PreAuthorize("@scoreSecurity.canModify(#id, principal)")
+  @PreAuthorize(
+      "@scoreSecurity.canModify(#id, principal)"
+          + " and @scoreSecurity.canUseGym(#request.gymId(), principal)")
   public ResponseEntity<ScoreResponse> updateScore(
       @PathVariable Long id, @Valid @RequestBody ScoreRequest request, @AuthenticationPrincipal AldebaranUserPrincipal principal) {
 
@@ -151,21 +153,24 @@ public class ScoreController {
    *
    * @param id The ID of the WOD.
    * @param scaling The scaling level to filter by (default: RX).
+   * @param gymId Optional gym: only the scores performed there (one of the user's gyms).
    * @param pageable Pagination info.
    * @param principal The authenticated user.
    * @return A page of top scores.
    */
   @GetMapping("/leaderboard/{id}")
-  @PreAuthorize("@wodSecurity.canRead(#id, principal)")
+  @PreAuthorize(
+      "@wodSecurity.canRead(#id, principal) and @scoreSecurity.canUseGym(#gymId, principal)")
   public ResponseEntity<Slice<ScoreResponse>> getLeaderboard(
       @PathVariable Long id,
       @RequestParam(defaultValue = "RX") ScalingLevel scaling,
+      @RequestParam(required = false) Long gymId,
       @PageableDefault(size = 20) Pageable pageable,
       @AuthenticationPrincipal AldebaranUserPrincipal principal) {
 
     return ResponseEntity.ok(
         scoreService
-            .getLeaderboard(id, scaling, pageable)
+            .getLeaderboard(id, scaling, gymId, pageable)
             .map(score -> scoreCapabilityService.forViewer(score, principal)));
   }
 

@@ -36,6 +36,8 @@ export interface ScoreRequest {
   // --- Comments and Scaling notes---
   userComment?: string;
   scalingNotes?: string;
+  // --- Gym where it was performed (public or personal WOD; a gym WOD uses its own gym) ---
+  gymId?: number | null;
 }
 
 export interface ScoreResponse {
@@ -44,6 +46,8 @@ export interface ScoreResponse {
   userId: number;
   date: string;
   wodSummary: WodSummaryResponse;
+  // Gym where the score was performed, if any
+  gymId?: number | null;
   // --- Time Metrics ---
   timeSeconds?: number;
   timeMinutesPart?: number;

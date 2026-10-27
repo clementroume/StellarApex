@@ -84,7 +84,12 @@
     "DELETE_MODAL_TITLE": "Are you absolutely sure?",
     "DELETE_MODAL_DESC": "This action cannot be undone. This will permanently delete your account and all your associated data.",
     "DELETE_MODAL_CONFIRM": "Yes, delete my account",
-    "SUCCESS_DELETE": "Your account has been successfully deleted. Goodbye!"
+    "SUCCESS_DELETE": "Your account has been successfully deleted. Goodbye!",
+    "PRIVACY_TITLE": "Privacy",
+    "PUBLIC_LEADERBOARD_NAME": "Show my name on public leaderboards",
+    "PUBLIC_LEADERBOARD_NAME_HINT": "Members of your gyms always see your name. Otherwise you appear as an anonymous athlete.",
+    "PRIVACY_SAVED": "Privacy setting saved.",
+    "PRIVACY_ERROR": "The privacy setting could not be saved."
   },
   "UNITS": {
     "TITLE": "Units",
@@ -590,7 +595,9 @@
       "TIEBREAK": "Tiebreak time",
       "TIEBREAK_OPTIONAL": "Tiebreak (competition, optional)",
       "ENTRY": "Entry",
-      "TOTAL_REPS": "Total reps"
+      "TOTAL_REPS": "Total reps",
+      "GYM": "Gym",
+      "NO_GYM": "No gym"
     },
     "PLACEHOLDERS": {
       "SCALING_NOTES": "e.g. 35 kg thrusters, banded pull-ups"
@@ -615,14 +622,24 @@
       "FORBIDDEN": "You are not allowed to change this score.",
       "CONFIRM_DELETE": "Delete this score?",
       "DONE_HINT": "This WOD has no measured result: log it to keep track of the session.",
-      "ROUNDS_HINT": "Rounds done after falling behind the clock do not count."
+      "ROUNDS_HINT": "Rounds done after falling behind the clock do not count.",
+      "GYM_HINT": "Where you did this WOD: your score then appears on that gym's leaderboard and its coaches can check it."
     },
     "TIEBREAK_SHORT": "TB {{time}}",
     "ENTRY": {
       "ROUNDS": "Rounds + reps",
       "TOTAL": "Total reps"
     },
-    "REPS_PER_ROUND": "{{reps}} reps per round"
+    "REPS_PER_ROUND": "{{reps}} reps per round",
+    "LEADERBOARD": {
+      "TITLE": "Leaderboard",
+      "SCOPE": "Gym",
+      "ALL_GYMS": "All gyms",
+      "ANONYMOUS": "Anonymous athlete",
+      "EMPTY": "No score at this level yet.",
+      "LOADING": "Loading…",
+      "MORE": "Show more"
+    }
   },
   "ADMIN": {
     "SUPPORT": {

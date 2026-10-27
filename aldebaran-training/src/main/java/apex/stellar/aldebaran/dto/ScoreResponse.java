@@ -12,6 +12,7 @@ public record ScoreResponse(
     Long userId,
     LocalDate date,
     WodSummaryResponse wodSummary,
+    Long gymId,
 
     // --- Time Metrics ---
     Integer timeSeconds,
@@ -65,6 +66,7 @@ public record ScoreResponse(
         userId,
         date,
         wodSummary,
+        gymId,
         timeSeconds,
         timeMinutesPart,
         timeSecondsPart,

@@ -4,6 +4,7 @@ import static apex.stellar.aldebaran.security.SecurityService.SCORE_VERIFY;
 
 import apex.stellar.aldebaran.dto.ScoreRequest;
 import apex.stellar.aldebaran.dto.ScoreResponse;
+import apex.stellar.aldebaran.model.entities.Score;
 import apex.stellar.aldebaran.model.entities.Wod;
 import apex.stellar.aldebaran.repository.ScoreRepository;
 import apex.stellar.aldebaran.repository.WodRepository;
@@ -105,6 +106,10 @@ public class ScoreSecurity {
             wod -> {
               // CASE A: Self-Participation
               if (isSelf) {
+                // The gym of a public or personal WOD score must be one of the user's gyms
+                if (wod.getGymId() == null && !canUseGym(request.gymId(), principal)) {
+                  return false;
+                }
                 // 1. Public: Open to all
                 if (wod.isPublic()) {
                   return true;
@@ -140,7 +145,7 @@ public class ScoreSecurity {
     return scoreRepository
         .findById(scoreId)
         .map(
-            score -> canModify(score.getUserId(), score.getWod().getGymId(), principal))
+            score -> canModify(score.getUserId(), gymOf(score), principal))
         .orElse(true); // Allow service to handle 404
   }
 
@@ -153,7 +158,25 @@ public class ScoreSecurity {
    * @return {@code true} if authorized.
    */
   public boolean canModify(ScoreResponse score, AldebaranUserPrincipal principal) {
-    return canModify(score.userId(), score.wodSummary().gymId(), principal);
+    Long gymId = score.gymId() != null ? score.gymId() : score.wodSummary().gymId();
+    return canModify(score.userId(), gymId, principal);
+  }
+
+  /**
+   * Evaluates if the authenticated user may attach a score to, or filter a leaderboard on, the
+   * given gym: one of their gyms, or any gym for an admin.
+   *
+   * @param gymId The gym, or null (no gym).
+   * @param principal The authenticated user context.
+   * @return {@code true} if allowed.
+   */
+  public boolean canUseGym(Long gymId, AldebaranUserPrincipal principal) {
+    return gymId == null || securityService.isAdmin(principal) || principal.isMemberOf(gymId);
+  }
+
+  /** Gym of a score for moderation: where it was performed, else the WOD's gym. */
+  private static Long gymOf(Score score) {
+    return score.getGymId() != null ? score.getGymId() : score.getWod().getGymId();
   }
 
   private boolean canModify(Long athleteId, Long wodGymId, AldebaranUserPrincipal principal) {
@@ -164,7 +187,7 @@ public class ScoreSecurity {
     if (Objects.equals(athleteId, principal.getId())) {
       return true;
     }
-    // 2. Staff Moderation: Gym WOD + SCORE_VERIFY in that gym
+    // 2. Staff Moderation: SCORE_VERIFY in the gym where the score was performed
     return securityService.hasGymPermission(principal, wodGymId, SCORE_VERIFY);
   }
 }

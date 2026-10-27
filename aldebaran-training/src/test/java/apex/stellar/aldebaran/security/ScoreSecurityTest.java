@@ -150,7 +150,7 @@ class ScoreSecurityTest {
     ScoreRequest request =
         new ScoreRequest(
             null, null, 1L, 0, 0, null, null, null, null, null, null, null, null, null, false, null, null,
-            null);
+            null, null);
 
     when(securityService.isAdmin(admin)).thenReturn(true);
 
@@ -165,7 +165,7 @@ class ScoreSecurityTest {
     ScoreRequest request =
         new ScoreRequest(
             2L, null, 1L, 0, 0, null, null, null, null, null, null, null, null, null, false, null, null,
-            null);
+            null, null);
     Wod publicWod = Wod.builder().isPublic(true).build();
 
     when(securityService.isAdmin(user)).thenReturn(false);
@@ -182,7 +182,7 @@ class ScoreSecurityTest {
     ScoreRequest request =
         new ScoreRequest(
             null, null, 1L, 0, 0, null, null, null, null, null, null, null, null, null, false, null, null,
-            null); // Implied self
+            null, null); // Implied self
     Wod gymWod = Wod.builder().isPublic(false).gymId(100L).build();
 
     when(securityService.isAdmin(user)).thenReturn(false);
@@ -199,7 +199,7 @@ class ScoreSecurityTest {
     ScoreRequest request =
         new ScoreRequest(
             2L, null, 1L, 0, 0, null, null, null, null, null, null, null, null, null, false, null, null,
-            null);
+            null, null);
     Wod gymWod = Wod.builder().isPublic(false).gymId(200L).build();
 
     when(securityService.isAdmin(user)).thenReturn(false);
@@ -216,7 +216,7 @@ class ScoreSecurityTest {
     ScoreRequest request =
         new ScoreRequest(
             2L, null, 1L, 0, 0, null, null, null, null, null, null, null, null, null, false, null, null,
-            null);
+            null, null);
     Wod privateWod = Wod.builder().isPublic(false).gymId(null).authorId(2L).build();
 
     when(securityService.isAdmin(user)).thenReturn(false);
@@ -233,7 +233,7 @@ class ScoreSecurityTest {
     ScoreRequest request =
         new ScoreRequest(
             2L, null, 1L, 0, 0, null, null, null, null, null, null, null, null, null, false, null, null,
-            null);
+            null, null);
     Wod privateWod = Wod.builder().isPublic(false).gymId(null).authorId(99L).build();
 
     when(securityService.isAdmin(user)).thenReturn(false);
@@ -250,7 +250,7 @@ class ScoreSecurityTest {
     ScoreRequest request =
         new ScoreRequest(
             99L, null, 1L, 0, 0, null, null, null, null, null, null, null, null, null, false, null, null,
-            null); // Target 99
+            null, null); // Target 99
     Wod gymWod = Wod.builder().gymId(100L).build();
 
     when(securityService.isAdmin(coach)).thenReturn(false);
@@ -267,7 +267,7 @@ class ScoreSecurityTest {
     ScoreRequest request =
         new ScoreRequest(
             99L, null, 1L, 0, 0, null, null, null, null, null, null, null, null, null, false, null, null,
-            null);
+            null, null);
     Wod gymWod = Wod.builder().gymId(100L).build();
 
     when(securityService.isAdmin(user)).thenReturn(false);
@@ -284,7 +284,7 @@ class ScoreSecurityTest {
     ScoreRequest request =
         new ScoreRequest(
             99L, null, 1L, 0, 0, null, null, null, null, null, null, null, null, null, false, null, null,
-            null);
+            null, null);
     Wod gymWod = Wod.builder().gymId(200L).build(); // Different Gym
 
     when(securityService.isAdmin(owner)).thenReturn(false);
@@ -386,7 +386,7 @@ class ScoreSecurityTest {
   private static ScoreRequest requestFor(Long userId) {
     return new ScoreRequest(
         userId, null, 1L, 0, 0, null, null, null, null, null, null, null, null, null, false, null, null,
-        null);
+        null, null);
   }
 
   @Test
@@ -432,5 +432,51 @@ class ScoreSecurityTest {
         .thenReturn(Optional.of(Score.builder().id(11L).userId(99L).wod(wodB).build()));
     assertTrue(scoreSecurity.canModify(10L, coach));
     assertFalse(scoreSecurity.canModify(11L, coach));
+  }
+
+  private static ScoreRequest selfOnGym(Long gymId) {
+    return new ScoreRequest(
+        null, null, 1L, 0, 0, null, null, null, null, null, null, null, null, null, false, null, null,
+        null, gymId);
+  }
+
+  @Test
+  @DisplayName("canCreate: a public WOD score can only be attached to one of the user's gyms")
+  void canCreate_PublicWod_Gym() {
+    AldebaranUserPrincipal user = coachInAAthleteInB();
+    when(wodRepository.findById(1L)).thenReturn(Optional.of(Wod.builder().isPublic(true).build()));
+
+    assertTrue(scoreSecurity.canCreate(selfOnGym(null), user));
+    assertTrue(scoreSecurity.canCreate(selfOnGym(300L), user));
+    assertFalse(scoreSecurity.canCreate(selfOnGym(999L), user));
+  }
+
+  @Test
+  @DisplayName("canUseGym: no gym or a member gym; any gym for an admin")
+  void canUseGym() {
+    AldebaranUserPrincipal user = coachInAAthleteInB();
+    AldebaranUserPrincipal admin = TestPrincipals.of(1L, null, "ADMIN", Collections.emptyList());
+
+    assertTrue(scoreSecurity.canUseGym(null, user));
+    assertTrue(scoreSecurity.canUseGym(100L, user));
+    assertFalse(scoreSecurity.canUseGym(999L, user));
+    assertTrue(scoreSecurity.canUseGym(999L, admin));
+  }
+
+  @Test
+  @DisplayName("canModify: SCORE_VERIFY staff moderate public WOD scores performed in their gym")
+  void canModify_PublicWodScoreInGym() {
+    AldebaranUserPrincipal coach = coachInAAthleteInB();
+    Wod open = Wod.builder().isPublic(true).build();
+    when(scoreRepository.findById(10L))
+        .thenReturn(Optional.of(Score.builder().id(10L).userId(99L).gymId(100L).wod(open).build()));
+    when(scoreRepository.findById(11L))
+        .thenReturn(Optional.of(Score.builder().id(11L).userId(99L).gymId(300L).wod(open).build()));
+    when(scoreRepository.findById(12L))
+        .thenReturn(Optional.of(Score.builder().id(12L).userId(99L).wod(open).build()));
+
+    assertTrue(scoreSecurity.canModify(10L, coach), "Coach with SCORE_VERIFY in gym 100");
+    assertFalse(scoreSecurity.canModify(11L, coach), "Athlete only in gym 300");
+    assertFalse(scoreSecurity.canModify(12L, coach), "No gym: only the athlete");
   }
 }

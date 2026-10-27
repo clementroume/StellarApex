@@ -86,6 +86,11 @@ public class User implements UserDetails {
   @Column(name = "unit_system", length = 10)
   private String unitSystem;
 
+  /** Whether the user's name may be shown on public leaderboards (gym mates always see it). */
+  @Builder.Default
+  @Column(name = "public_leaderboard_name", nullable = false)
+  private boolean publicLeaderboardName = false;
+
   @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
   @Builder.Default
   private List<Membership> memberships = new ArrayList<>();

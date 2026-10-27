@@ -12,6 +12,8 @@ import jakarta.validation.constraints.Pattern;
  *
  * @param locale The user's preferred locale (e.g., "en" or "en-US").
  * @param theme The user's preferred theme ("light" or "dark").
+ * @param unitSystem Display unit for loads (METRIC, IMPERIAL), or null to follow the language.
+ * @param publicLeaderboardName Whether to show the name on public leaderboards; null keeps it.
  */
 public record PreferencesUpdateRequest(
     @Schema(description = "Preferred language (locale)", example = "fr")
@@ -31,4 +33,9 @@ public record PreferencesUpdateRequest(
             nullable = true,
             allowableValues = {"METRIC", "IMPERIAL"})
         @Pattern(regexp = "^(METRIC|IMPERIAL)$", message = "{validation.unitSystem.pattern}")
-        String unitSystem) {}
+        String unitSystem,
+    @Schema(
+            description = "Show the name on public leaderboards (gym mates always see it); null keeps it",
+            example = "false",
+            nullable = true)
+        Boolean publicLeaderboardName) {}

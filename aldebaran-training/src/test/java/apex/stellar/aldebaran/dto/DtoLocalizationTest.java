@@ -412,7 +412,7 @@ class DtoLocalizationTest {
       ScoreRequest request =
           new ScoreRequest(
               null, null, null, null, null, null, null, null, null, null, null, null, null, null,
-              false, null, null, null);
+              false, null, null, null, null);
 
       assertViolationEnAndFr(request, "wodId", "WOD ID is required.", "L'ID du WOD est requis.");
       assertViolationEnAndFr(request, "date", "Date is required.", "La date est requise.");
@@ -432,7 +432,7 @@ class DtoLocalizationTest {
               ScalingLevel.RX,
               false, null,
               null,
-              null);
+              null, null);
 
       assertViolationEnAndFr(
           request,
@@ -463,7 +463,7 @@ class DtoLocalizationTest {
               ScalingLevel.RX,
               false, null,
               "A".repeat(4001),
-              "A".repeat(4001));
+              "A".repeat(4001), null);
 
       // Metrics (Negative values)
       assertViolationEnAndFr(
