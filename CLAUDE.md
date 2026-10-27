@@ -67,13 +67,23 @@ and a virtual programming); there is no "active gym" in requests.
   on update (`WodMapper.updateEntity`); `isPublic` stays editable.
 - Scores: self-logging on any readable WOD; a score records the gym where it was performed
   (`score.gymId`: the WOD's gym, else one of the athlete's gyms); correcting/deleting others' scores:
-  `SCORE_VERIFY` on that gym; logging for someone else: admin only (target membership not verifiable
-  in Aldebaran). Leaderboards return user IDs; names come from Antares `POST /antares/users/display-names`
-  (gym mates, opted-in users, oneself).
-  `ScoreResponse.capabilities {canModify}`; others' comments hidden from non-moderators. Movements/
-  muscles CRUD and CSV export: `hasRole('ADMIN')`.
+  `SCORE_VERIFY` on that gym. Leaderboards return user IDs; names come from Antares
+  `POST /antares/users/display-names` (gym mates, opted-in users, oneself).
+  `ScoreResponse.capabilities {canModify, canVerify}`; others' comments hidden from non-moderators.
+  Movements/muscles CRUD and CSV export: `hasRole('ADMIN')`.
+- Competition WODs (`wods.competition`, gym WODs only, never public), the only place scores are
+  verified: `SCORE_VERIFY` staff of the gym log scores for its members (logged = verified at once;
+  Antares confirms the membership through its internal API, 503 if unavailable, never authorized by
+  default) and verify/unverify scores (`POST|DELETE /scores/{id}/verify`), never their own. A verified
+  score is locked for its athlete, staff included. Leaderboard `verifiedOnly` (verified PRs). Logging
+  for someone else elsewhere: admin only. `POST /wods/{id}/copy {gymId, competition}` copies a readable
+  WOD (e.g. a public Open WOD) into a gym (`WOD_WRITE`), private, with `sourceWodId`; scores and
+  leaderboards stay per WOD (a copy's scores never reach the public WOD).
+- Internal API: Antares `/antares/internal/**` (Aldebaran → `http://antares-auth:8080`,
+  `X-Internal-Secret`, 404 without it, excluded from the Traefik `/antares` route). Aldebaran calls it
+  through `client/AntaresClient` only.
 - Gym settings/deletion: `MANAGE_SETTINGS`; memberships: `MANAGE_MEMBERSHIPS` (Antares `@security`).
-- Aldebaran returns `WodResponse.capabilities {canModify, locked}` (computed per request, outside the
+- Aldebaran returns `WodResponse.capabilities {canModify, locked, canJudge}` (computed per request, outside the
   WOD cache) so Sirius shows edit/delete only when allowed. Prefer this per-resource pattern for new
   features (e.g. scores) over replicating rules client-side.
 
