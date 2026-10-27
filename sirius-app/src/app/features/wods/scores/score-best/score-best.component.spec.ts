@@ -1,4 +1,3 @@
-import {vi} from 'vitest';
 import {ComponentFixture, TestBed} from '@angular/core/testing';
 import {signal} from '@angular/core';
 import {provideTranslateService} from '@ngx-translate/core';
@@ -18,7 +17,7 @@ describe('ScoreBestComponent', () => {
     best,
     comparison,
     isLoading: signal(false),
-    openNew: vi.fn().mockName('WodScoresStore.openNew')
+    scores: signal([{id: 1}, {id: 2}, {id: 3}])
   };
 
   beforeEach(async () => {
@@ -37,15 +36,12 @@ describe('ScoreBestComponent', () => {
     fixture.detectChanges();
   });
 
-  it('should invite to log a score when there is none', () => {
-    const button: HTMLButtonElement = fixture.nativeElement.querySelector('button');
-    expect(button.textContent).toContain('SCORE.ACTIONS.LOG');
-
-    button.click();
-    expect(store.openNew).toHaveBeenCalled();
+  it('should say there is no score yet', () => {
+    expect(fixture.nativeElement.textContent).toContain('SCORE.MESSAGES.EMPTY');
+    expect(fixture.nativeElement.querySelector('#score-summary')).toBeNull();
   });
 
-  it('should show the personal record with its level and rank', () => {
+  it('should show the personal record with its level, its rank and the number of attempts', () => {
     best.set({
       id: 2, userId: 1, date: '2026-10-26', wodSummary: {} as any, timeSeconds: 272, scaling: 'RX',
       timeCapped: false, personalRecord: true, loggedAt: ''
@@ -56,7 +52,8 @@ describe('ScoreBestComponent', () => {
     const text: string = fixture.nativeElement.textContent;
     expect(fixture.nativeElement.querySelector('#best-score-value').textContent).toBe('4:32');
     expect(text).toContain('SCORE.SCALING.RX');
-    expect(text).toContain('SCORE.RANK');
-    expect(fixture.nativeElement.querySelector('button')).toBeNull();
+    expect(text).toContain('SCORE.SUMMARY.RANK');
+    expect(fixture.nativeElement.querySelector('#best-score-rank').textContent.replace(/\s+/g, ' ').trim()).toBe('2 / 8');
+    expect(fixture.nativeElement.querySelector('#score-attempts').textContent.trim()).toBe('3');
   });
 });
