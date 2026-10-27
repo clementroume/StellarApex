@@ -6,6 +6,8 @@ import {NgIconComponent} from '@ng-icons/core';
 import {ScalingLevel, ScoreRequest, ScoreResponse} from '../../../../api/aldebaran/models/score.model';
 import {UnitService} from '../../../../core/services/unit.service';
 import {AccessService} from '../../../../core/services/access.service';
+import {GymService} from '../../../../api/antares/services/gym.service';
+import {DisplayName} from '../../../../api/antares/models/user.model';
 import {WodScoresStore} from '../wod-scores.store';
 import {SCALING_LEVELS, splitRounds} from '../score.utils';
 import {formatTimeCapShort, localizedText} from '../../wod.utils';
@@ -20,9 +22,10 @@ function today(): string {
 }
 
 /**
- * Log or edit a score of the current user on the WOD of the detail (modal). The fields follow the
- * WOD's score type; loads are typed in the user's unit and stored in kg by Aldebaran, which also
- * checks the value required by the score type.
+ * Log or edit a score on the WOD of the detail (modal): the current user's own score, or, for the
+ * judge of a competition WOD (`capabilities.canJudge`), the score of a member of its gym. The fields
+ * follow the WOD's score type; loads are typed in the user's unit and stored in kg by Aldebaran,
+ * which also checks the value required by the score type and the right to log for someone else.
  */
 @Component({
   selector: 'app-score-form',
@@ -38,6 +41,7 @@ export class ScoreFormComponent {
   private readonly unitService = inject(UnitService);
   private readonly translate = inject(TranslateService);
   private readonly accessService = inject(AccessService);
+  private readonly gymService = inject(GymService);
 
   // --- STATE (SIGNALS & VARIABLES) ---
   readonly scalingLevels = SCALING_LEVELS;
@@ -45,6 +49,8 @@ export class ScoreFormComponent {
   readonly maxDate = today();
   /** How an AMRAP score with a fixed round is typed; both are stored as total reps. */
   readonly repsEntry = signal<'ROUNDS' | 'TOTAL'>('ROUNDS');
+  /** Members of the competition WOD's gym, offered to its judge (Antares, SCORE_VERIFY). */
+  readonly athletes = signal<DisplayName[]>([]);
 
   readonly form = this.fb.nonNullable.group({
     date: [today()],
@@ -62,6 +68,8 @@ export class ScoreFormComponent {
     tiebreakSeconds: [null as number | null],
     // Gym where it was performed (public or personal WOD): one of the user's gyms, or none
     gymId: [(this.accessService.memberships()[0]?.gymId ?? null) as number | null],
+    // Athlete of a new competition score logged by its judge; null = the current user
+    athleteId: [null as number | null],
     scalingNotes: [''],
     userComment: ['']
   });
@@ -79,6 +87,9 @@ export class ScoreFormComponent {
   });
   readonly scoreType = computed(() => this.store.wod()?.scoreType ?? 'NONE');
   readonly isEdit = computed(() => this.store.editing() !== 'new');
+  /** The judge of a competition WOD logs a new score for one of its gym's members. */
+  readonly canChooseAthlete = computed(() => !this.isEdit() && !!this.store.wod()?.capabilities?.canJudge);
+  readonly myId = computed(() => this.accessService.userId());
   readonly massUnitLabel = computed(() => this.unitService.massUnit() === 'KG' ? 'kg' : 'lb');
   readonly timeCap = computed(() => formatTimeCapShort(this.store.wod()?.timeCapSeconds));
   /** A gym WOD is always scored in its gym; a public or personal WOD in one of the user's gyms. */
@@ -116,6 +127,18 @@ export class ScoreFormComponent {
     effect(() => {
       const editing = this.store.editing();
       if (editing && editing !== 'new') this.fill(editing);
+    });
+    effect(() => {
+      const gymId = this.store.wod()?.gymId;
+      if (this.canChooseAthlete() && gymId != null) this.loadAthletes(gymId);
+    });
+  }
+
+  // --- DATA FETCHING ---
+  private loadAthletes(gymId: number): void {
+    this.gymService.getAthletes(gymId).subscribe({
+      next: (athletes) => this.athletes.set(athletes.filter(a => a.id !== this.myId())),
+      error: () => this.athletes.set([])
     });
   }
 
@@ -184,6 +207,7 @@ export class ScoreFormComponent {
       tiebreakMinutes: score.tiebreakSeconds ? Math.floor(score.tiebreakSeconds / 60) : null,
       tiebreakSeconds: score.tiebreakSeconds ? score.tiebreakSeconds % 60 : null,
       gymId: score.gymId ?? null,
+      athleteId: null,
       scalingNotes: score.scalingNotes ?? '',
       userComment: score.userComment ?? ''
     });
@@ -195,6 +219,7 @@ export class ScoreFormComponent {
     const capped = type === 'TIME' && v.timeCapped;
     const tiebreak = (v.tiebreakMinutes ?? 0) * 60 + (v.tiebreakSeconds ?? 0);
     const request: ScoreRequest = {
+      userId: this.canChooseAthlete() && v.athleteId != null ? v.athleteId : undefined,
       date: v.date,
       wodId,
       scaling: v.scaling,

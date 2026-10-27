@@ -32,11 +32,11 @@ describe('WodFormComponent', () => {
     scoreType: 'TIME',
     authorId: 3,
     gymId: 5,
-    isPublic: false,
+    isPublic: false, competition: false,
     timeCapSeconds: 425,
     repScheme: '21-15-9',
     modalities: [],
-    capabilities: {canModify: true, locked: false},
+    capabilities: {canModify: true, locked: false, canJudge: false},
     movements: [
       {id: 2, movement: {id: 20, name: 'Pull-up'} as any, orderIndex: 2, repsScheme: '21-15-9'},
       {id: 1, movement: {id: 10, name: 'Thruster'} as any, orderIndex: 1, weight: 43, weightUnit: 'KG', equipment: ['BARBELL']}
@@ -179,8 +179,8 @@ describe('WodFormComponent', () => {
     it('should let anyone make a WOD public', () => {
       expect(fixture.nativeElement.querySelector('input[formcontrolname="isPublic"]')).toBeTruthy();
       fillValidForm();
-      component.wodForm.patchValue({isPublic: true});
-      expect(component.buildPayload()).toMatchObject({isPublic: true, authorId: 3});
+      component.wodForm.patchValue({isPublic: true, competition: false});
+      expect(component.buildPayload()).toMatchObject({isPublic: true, competition: false, authorId: 3});
     });
 
     it('should be invalid without any movement', () => {
@@ -205,7 +205,7 @@ describe('WodFormComponent', () => {
         scoreType: 'REPS',
         authorId: 3,
         gymId: undefined,
-        isPublic: false,
+        isPublic: false, competition: false,
         timeCapSeconds: 1200,
         emomInterval: undefined
       });
@@ -213,6 +213,18 @@ describe('WodFormComponent', () => {
       expect(mockNotificationService.showSuccess).toHaveBeenCalledWith('WOD.MESSAGES.SUCCESS_CREATE');
       expect(mockWodService.notifyRefresh).toHaveBeenCalled();
       expect(router.navigate).toHaveBeenCalledWith(['/wods', 42]);
+    });
+
+    it('should send a competition WOD for a gym only, never public', () => {
+      fillValidForm();
+      component.wodForm.patchValue({visibility: 'GYM', gymId: 5, isPublic: true, competition: true});
+      expect(component.isCompetition()).toBe(true);
+      expect(component.buildPayload()).toMatchObject({gymId: 5, competition: true, isPublic: false});
+
+      // A personal WOD is never a competition WOD
+      component.wodForm.patchValue({visibility: 'PRIVATE', gymId: null});
+      expect(component.isCompetition()).toBe(false);
+      expect(component.buildPayload()).toMatchObject({competition: false, isPublic: true});
     });
 
     it('should only send EMOM fields for an EMOM WOD', () => {
@@ -427,7 +439,7 @@ describe('WodFormComponent', () => {
   });
 
   it('should leave the edit page when Aldebaran refuses modification', async () => {
-    mockWodService.getWod.mockReturnValue(of({...existingWod, capabilities: {canModify: false, locked: false}}));
+    mockWodService.getWod.mockReturnValue(of({...existingWod, capabilities: {canModify: false, locked: false, canJudge: false}}));
     await setup('8');
 
     expect(mockNotificationService.showError).toHaveBeenCalledWith('WOD.MESSAGES.FORBIDDEN');
@@ -436,7 +448,7 @@ describe('WodFormComponent', () => {
   });
 
   it('should leave the edit page when the WOD is locked', async () => {
-    mockWodService.getWod.mockReturnValue(of({...existingWod, capabilities: {canModify: true, locked: true}}));
+    mockWodService.getWod.mockReturnValue(of({...existingWod, capabilities: {canModify: true, locked: true, canJudge: false}}));
     await setup('8');
 
     expect(mockNotificationService.showError).toHaveBeenCalledWith('WOD.MESSAGES.LOCKED');

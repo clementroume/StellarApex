@@ -18,6 +18,8 @@ const PAGE_SIZE = 50;
  * Leaderboard of the WOD shown: each athlete's personal record at the chosen level, best first,
  * for every gym or one of the user's gyms. Names come from Antares, which only returns those the
  * user may see (gym mates, athletes who opted in, themselves); the others read "anonymous athlete".
+ * On a competition WOD only verified scores are ranked by default; judges verify, correct or delete
+ * scores from here (`ScoreResponse.capabilities`, computed by Aldebaran).
  */
 @Component({
   selector: 'app-score-leaderboard',
@@ -40,6 +42,8 @@ export class ScoreLeaderboardComponent {
   readonly scaling = signal<ScalingLevel>('RX');
   /** Gym to keep on a public or personal WOD, null for every gym. */
   readonly gymId = signal<number | null>(null);
+  /** Verified scores only (competition WODs); null until the WOD is known, then on by default. */
+  readonly verifiedOnlyChoice = signal<boolean | null>(null);
   readonly rows = signal<ScoreResponse[]>([]);
   readonly names = signal<Record<number, string>>({});
   readonly hasMore = signal<boolean>(false);
@@ -50,6 +54,8 @@ export class ScoreLeaderboardComponent {
   readonly myId = computed(() => this.accessService.userId());
   /** A gym WOD is only ranked within its gym; a public WOD can be filtered on the user's gyms. */
   readonly gymChoices = computed(() => this.store.wod()?.gymId != null ? [] : this.accessService.memberships());
+  readonly isCompetition = computed(() => !!this.store.wod()?.competition);
+  readonly verifiedOnly = computed(() => this.isCompetition() && (this.verifiedOnlyChoice() ?? true));
 
   // --- LIFECYCLE ---
   constructor() {
@@ -57,6 +63,7 @@ export class ScoreLeaderboardComponent {
       const wod = this.store.wod();
       this.scaling();
       this.gymId();
+      this.verifiedOnly();
       if (wod) untracked(() => this.load(true));
     });
     // A logged, edited or deleted score may change the ranking
@@ -69,7 +76,7 @@ export class ScoreLeaderboardComponent {
     if (!wod) return;
     this.page = reset ? 0 : this.page + 1;
     this.isLoading.set(true);
-    this.scoreService.getLeaderboard(wod.id, this.scaling(), this.page, PAGE_SIZE, this.gymId()).subscribe({
+    this.scoreService.getLeaderboard(wod.id, this.scaling(), this.page, PAGE_SIZE, this.gymId(), this.verifiedOnly()).subscribe({
       next: (slice) => {
         this.rows.set(reset ? slice.content : [...this.rows(), ...slice.content]);
         this.hasMore.set(!slice.last);
@@ -103,6 +110,10 @@ export class ScoreLeaderboardComponent {
     this.gymId.set(value ? Number(value) : null);
   }
 
+  onVerifiedOnlyChange(checked: boolean): void {
+    this.verifiedOnlyChoice.set(checked);
+  }
+
   // --- HELPERS ---
   name(score: ScoreResponse): string {
     return this.names()[score.userId] ?? this.translate.instant('SCORE.LEADERBOARD.ANONYMOUS');
@@ -111,6 +122,11 @@ export class ScoreLeaderboardComponent {
   value(score: ScoreResponse): string {
     const wod = this.store.wod();
     return wod ? formatScore(score, wod, this.unitService, (k, p) => this.translate.instant(k, p)) : '';
+  }
+
+  /** Judges correct or delete the other athletes' scores; one's own scores live in the history. */
+  canModerate(score: ScoreResponse): boolean {
+    return !!score.capabilities?.canModify && score.userId !== this.myId();
   }
 
   tiebreak(score: ScoreResponse): string {

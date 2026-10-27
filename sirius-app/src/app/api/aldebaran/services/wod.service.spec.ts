@@ -16,7 +16,7 @@ describe('WodService', () => {
     title: 'Fran',
     wodType: 'FOR_TIME',
     scoreType: 'TIME',
-    isPublic: true,
+    isPublic: true, competition: false,
     createdAt: new Date().toISOString(),
   };
 
@@ -35,7 +35,7 @@ describe('WodService', () => {
     title: 'Fran',
     wodType: 'FOR_TIME',
     scoreType: 'TIME',
-    isPublic: true,
+    isPublic: true, competition: false,
     modalities: ['WEIGHTLIFTING', 'GYMNASTICS'],
     movements: [],
     createdAt: new Date().toISOString(),
@@ -103,7 +103,7 @@ describe('WodService', () => {
       title: 'New WOD',
       wodType: 'AMRAP',
       scoreType: 'REPS',
-      isPublic: false,
+      isPublic: false, competition: false,
       movements: []
     };
     service.createWod(payload).subscribe();
@@ -119,7 +119,7 @@ describe('WodService', () => {
       title: 'Updated WOD',
       wodType: 'AMRAP',
       scoreType: 'REPS',
-      isPublic: false,
+      isPublic: false, competition: false,
       movements: []
     };
     service.updateWod(wodId, payload).subscribe();
@@ -183,5 +183,13 @@ describe('WodService', () => {
     service.refreshNeeded$.subscribe(() => emitted++);
     service.notifyRefresh();
     expect(emitted).toBe(1);
+  });
+
+  it('copyWod should POST the target to /wods/{id}/copy', () => {
+    service.copyWod(1, {gymId: 5, competition: true}).subscribe();
+    const req = httpMock.expectOne(`${base}/wods/1/copy`);
+    expect(req.request.method).toBe('POST');
+    expect(req.request.body).toEqual({gymId: 5, competition: true});
+    req.flush(mockWodResponse);
   });
 });

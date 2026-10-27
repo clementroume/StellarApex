@@ -18,7 +18,7 @@ describe('WodScoresStore', () => {
   const wod = {id: 7, scoreType: 'TIME'} as WodResponse;
   const score = (id: number, personalRecord = false): ScoreResponse => ({
     id, userId: 1, date: '2026-10-26', wodSummary: {} as any, scaling: 'RX', timeCapped: false,
-    personalRecord, loggedAt: '', capabilities: {canModify: true}
+    personalRecord, loggedAt: '', capabilities: {canModify: true, canVerify: false}
   });
   const slice = (content: ScoreResponse[]) => of({content} as any);
   const request = {wodId: 7, date: '2026-10-26', scaling: 'RX', timeCapped: false} as ScoreRequest;
@@ -29,7 +29,9 @@ describe('WodScoresStore', () => {
       compareScore: vi.fn().mockName('ScoreService.compareScore'),
       logScore: vi.fn().mockName('ScoreService.logScore'),
       updateScore: vi.fn().mockName('ScoreService.updateScore'),
-      deleteScore: vi.fn().mockName('ScoreService.deleteScore')
+      deleteScore: vi.fn().mockName('ScoreService.deleteScore'),
+      verifyScore: vi.fn().mockName('ScoreService.verifyScore'),
+      unverifyScore: vi.fn().mockName('ScoreService.unverifyScore')
     } as any;
     notifications = {
       showSuccess: vi.fn().mockName('NotificationService.showSuccess'),
@@ -137,5 +139,30 @@ describe('WodScoresStore', () => {
     store.delete(score(1));
     expect(scoreService.deleteScore).toHaveBeenCalledWith(1);
     expect(scoreService.getMyScores).toHaveBeenCalledTimes(2);
+  });
+
+  it('should verify a score or withdraw its verification, then reload', () => {
+    store.load(wod);
+    scoreService.verifyScore.mockReturnValue(of(score(1)));
+    scoreService.unverifyScore.mockReturnValue(of(score(1)));
+    let changes = 0;
+    store.changed$.subscribe(() => changes++);
+
+    store.setVerified(score(1), true);
+    store.setVerified(score(1), false);
+
+    expect(scoreService.verifyScore).toHaveBeenCalledWith(1);
+    expect(scoreService.unverifyScore).toHaveBeenCalledWith(1);
+    expect(notifications.showSuccess).toHaveBeenCalledTimes(2);
+    expect(changes).toBe(2);
+  });
+
+  it('should explain a refused verification', () => {
+    store.load(wod);
+    scoreService.verifyScore.mockReturnValue(throwError(() => new HttpErrorResponse({status: 403})));
+
+    store.setVerified(score(1), true);
+
+    expect(notifications.showError).toHaveBeenCalledWith('SCORE.MESSAGES.FORBIDDEN');
   });
 });

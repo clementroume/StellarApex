@@ -400,7 +400,8 @@
     "TITLE": "Catalogue des WODs",
     "TITLES": {
       "ADD": "Créer un WOD",
-      "EDIT": "Modifier le WOD"
+      "EDIT": "Modifier le WOD",
+      "COPY": "Copier le WOD"
     },
     "ACTIONS": {
       "ADD": "Créer un WOD",
@@ -416,7 +417,8 @@
       "ADD_PERSONAL": "Créer un WOD personnel",
       "ALL_CATEGORIES": "Toutes les catégories",
       "ALL_FORMATS": "Tous les formats",
-      "USE_REPS_PER_ROUND": "Utiliser {{reps}} (d'après les mouvements)"
+      "USE_REPS_PER_ROUND": "Utiliser {{reps}} (d'après les mouvements)",
+      "COPY": "Copier dans ma salle"
     },
     "SCOPES": {
       "ALL": "Tous",
@@ -478,7 +480,8 @@
       "TIEBREAK": "Tie-break",
       "TIEBREAK_FR": "Tie-break (français)",
       "TIEBREAK_EN": "Tie-break (anglais)",
-      "REPS_PER_ROUND": "Répétitions par tour (facultatif)"
+      "REPS_PER_ROUND": "Répétitions par tour (facultatif)",
+      "COMPETITION": "Compétition"
     },
     "PLACEHOLDERS": {
       "TITLE": "Ex : Fran",
@@ -506,7 +509,12 @@
       "MOVEMENTS_REQUIRED": "Ajoute au moins un mouvement.",
       "NO_MOVEMENTS": "Aucun mouvement prescrit.",
       "LOCKED_BADGE": "Verrouillé (scores enregistrés)",
-      "OWNERSHIP_LOCKED": "Le propriétaire (personnel ou salle) d'un WOD ne peut pas être changé après sa création."
+      "OWNERSHIP_LOCKED": "Le propriétaire (personnel ou salle) d'un WOD ne peut pas être changé après sa création.",
+      "COMPETITION_HINT": "Le staff de la salle (validation des scores) saisit les scores des athlètes et les valide. Un WOD de compétition n'est jamais public.",
+      "COPY_HINT": "La copie est privée à la salle et a son propre classement, indépendant du WOD d'origine.",
+      "COPIED": "WOD copié",
+      "COPY_ERROR": "Impossible de copier le WOD",
+      "COPIED_FROM": "Copié du WOD d'origine"
     },
     "WOD_TYPES": {
       "FOR_TIME": "For Time",
@@ -575,7 +583,9 @@
       "EDIT": "Modifier mon score"
     },
     "ACTIONS": {
-      "LOG": "Enregistrer mon score"
+      "LOG": "Enregistrer mon score",
+      "VERIFY": "Valider",
+      "UNVERIFY": "Retirer la validation"
     },
     "FIELDS": {
       "DATE": "Date",
@@ -601,7 +611,9 @@
       "ENTRY": "Saisie",
       "TOTAL_REPS": "Total de répétitions",
       "GYM": "Salle",
-      "NO_GYM": "Aucune salle"
+      "NO_GYM": "Aucune salle",
+      "ATHLETE": "Athlète",
+      "ME": "Moi"
     },
     "PLACEHOLDERS": {
       "SCALING_NOTES": "ex. thrusters à 35 kg, tractions avec élastique"
@@ -627,7 +639,10 @@
       "CONFIRM_DELETE": "Supprimer ce score ?",
       "DONE_HINT": "Ce WOD n'a pas de résultat mesuré : enregistrez-le pour garder une trace de la séance.",
       "ROUNDS_HINT": "Les tours faits après avoir décroché du chrono ne comptent pas.",
-      "GYM_HINT": "Où tu as fait ce WOD : ton score apparaît alors dans le classement de cette salle et ses coachs peuvent le vérifier."
+      "GYM_HINT": "Où tu as fait ce WOD : ton score apparaît alors dans le classement de cette salle et ses coachs peuvent le vérifier.",
+      "ATHLETE_HINT": "Un score saisi pour un athlète est validé directement.",
+      "VERIFIED": "Score validé",
+      "UNVERIFIED": "Validation retirée"
     },
     "TIEBREAK_SHORT": "TB {{time}}",
     "ENTRY": {
@@ -642,8 +657,13 @@
       "ANONYMOUS": "Athlète anonyme",
       "EMPTY": "Aucun score à ce niveau pour l'instant.",
       "LOADING": "Chargement…",
-      "MORE": "Voir plus"
-    }
+      "MORE": "Voir plus",
+      "VERIFIED_ONLY": "Validés uniquement"
+    },
+    "VERIFIED": "Validé",
+    "VERIFIED_BY": "Validé par {{name}}",
+    "LOGGED_BY": "Saisi par {{name}}",
+    "STAFF": "le staff"
   },
   "ADMIN": {
     "SUPPORT": {

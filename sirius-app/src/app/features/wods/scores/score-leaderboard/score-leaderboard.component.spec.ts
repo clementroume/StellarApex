@@ -21,20 +21,21 @@ describe('ScoreLeaderboardComponent', () => {
   let userService: MockedObject<UserService>;
   const changed$ = new Subject<void>();
   const wod = signal<any>({id: 7, scoreType: 'TIME', gymId: null});
+  const setVerified = vi.fn().mockName('WodScoresStore.setVerified');
 
   const score = (id: number, userId: number, seconds: number, tb?: number): ScoreResponse => ({
     id, userId, date: '2026-10-27', wodSummary: {} as any, timeSeconds: seconds, scaling: 'RX', timeCapped: false,
     personalRecord: true, loggedAt: '', tiebreakSeconds: tb
   });
 
-  const init = async (gymId: number | null = null) => {
-    wod.set({id: 7, scoreType: 'TIME', gymId});
+  const init = async (gymId: number | null = null, competition = false) => {
+    wod.set({id: 7, scoreType: 'TIME', gymId, competition});
     await TestBed.configureTestingModule({
       imports: [ScoreLeaderboardComponent],
       providers: [
         provideIcons(APP_ICONS),
         provideTranslateService(),
-        {provide: WodScoresStore, useValue: {wod, changed$}},
+        {provide: WodScoresStore, useValue: {wod, changed$, setVerified, openEdit: vi.fn(), delete: vi.fn()}},
         {provide: ScoreService, useValue: scoreService},
         {provide: UserService, useValue: userService},
         {provide: AccessService, useValue: {userId: signal(2), memberships: signal([{gymId: 5, gymName: 'Box'}])}},
@@ -56,7 +57,7 @@ describe('ScoreLeaderboardComponent', () => {
   it('should rank the PRs, name the visible athletes and highlight the user', async () => {
     await init();
 
-    expect(scoreService.getLeaderboard).toHaveBeenCalledWith(7, 'RX', 0, 50, null);
+    expect(scoreService.getLeaderboard).toHaveBeenCalledWith(7, 'RX', 0, 50, null, false);
     expect(userService.getDisplayNames).toHaveBeenCalledWith([1, 2]);
     const rows = fixture.nativeElement.querySelectorAll('li') as NodeListOf<HTMLElement>;
     expect(rows.length).toBe(2);
@@ -71,11 +72,11 @@ describe('ScoreLeaderboardComponent', () => {
     await init();
     component.onScalingChange('SCALED');
     fixture.detectChanges();
-    expect(scoreService.getLeaderboard).toHaveBeenLastCalledWith(7, 'SCALED', 0, 50, null);
+    expect(scoreService.getLeaderboard).toHaveBeenLastCalledWith(7, 'SCALED', 0, 50, null, false);
 
     component.onGymChange('5');
     fixture.detectChanges();
-    expect(scoreService.getLeaderboard).toHaveBeenLastCalledWith(7, 'SCALED', 0, 50, 5);
+    expect(scoreService.getLeaderboard).toHaveBeenLastCalledWith(7, 'SCALED', 0, 50, 5, false);
 
     const calls = scoreService.getLeaderboard.mock.calls.length;
     changed$.next();
@@ -95,6 +96,30 @@ describe('ScoreLeaderboardComponent', () => {
     await init();
     expect(fixture.nativeElement.textContent).toContain('SCORE.LEADERBOARD.MORE');
     component.load(false);
-    expect(scoreService.getLeaderboard).toHaveBeenLastCalledWith(7, 'RX', 1, 50, null);
+    expect(scoreService.getLeaderboard).toHaveBeenLastCalledWith(7, 'RX', 1, 50, null, false);
+  });
+
+  it('should rank verified scores only by default on a competition WOD, and let judges verify', async () => {
+    const judged = {...score(1, 1, 250), capabilities: {canModify: true, canVerify: true}};
+    const verified = {...score(3, 3, 260), verifiedAt: '2026-10-27T10:00:00', capabilities: {canModify: true, canVerify: true}};
+    scoreService.getLeaderboard.mockReturnValue(of({content: [judged, verified], last: true} as any));
+    await init(5, true);
+
+    expect(scoreService.getLeaderboard).toHaveBeenLastCalledWith(7, 'RX', 0, 50, null, true);
+    const buttons = [...fixture.nativeElement.querySelectorAll('button')] as HTMLButtonElement[];
+    buttons.find(b => b.textContent?.includes('SCORE.ACTIONS.VERIFY'))!.click();
+    expect(setVerified).toHaveBeenCalledWith(judged, true);
+    expect(buttons.some(b => b.textContent?.includes('SCORE.ACTIONS.UNVERIFY'))).toBe(true);
+
+    const filter: HTMLInputElement = fixture.nativeElement.querySelector('#leaderboard-verified');
+    filter.checked = false;
+    filter.dispatchEvent(new Event('change'));
+    fixture.detectChanges();
+    expect(scoreService.getLeaderboard).toHaveBeenLastCalledWith(7, 'RX', 0, 50, null, false);
+  });
+
+  it('should not offer the verified filter outside competitions', async () => {
+    await init();
+    expect(fixture.nativeElement.querySelector('#leaderboard-verified')).toBeNull();
   });
 });

@@ -98,6 +98,19 @@ export class WodScoresStore {
     });
   }
 
+  /** Verifies a competition score (judging) or withdraws its verification; Aldebaran checks the right. */
+  setVerified(score: ScoreResponse, verified: boolean): void {
+    const call = verified ? this.scoreService.verifyScore(score.id) : this.scoreService.unverifyScore(score.id);
+    call.subscribe({
+      next: () => {
+        const key = verified ? 'SCORE.MESSAGES.VERIFIED' : 'SCORE.MESSAGES.UNVERIFIED';
+        this.notificationService.showSuccess(this.translate.instant(key));
+        this.afterChange();
+      },
+      error: (err: HttpErrorResponse) => this.showError(err, 'SCORE.MESSAGES.SAVE_ERROR')
+    });
+  }
+
   delete(score: ScoreResponse): void {
     if (!confirm(this.translate.instant('SCORE.MESSAGES.CONFIRM_DELETE'))) return;
     this.scoreService.deleteScore(score.id).subscribe({

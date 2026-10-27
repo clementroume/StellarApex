@@ -16,6 +16,8 @@ export interface WodSummaryResponse {
   authorId?: number;
   gymId?: number;
   isPublic: boolean;
+  // Gym competition WOD: its staff logs and verifies the scores
+  competition: boolean;
   createdAt: string;
 }
 
@@ -34,6 +36,8 @@ export interface WodCapabilities {
   canModify: boolean;
   // The WOD has logged scores: edition and deletion are refused
   locked: boolean;
+  // Competition WOD judged by the user (SCORE_VERIFY in its gym): log scores for its members, verify scores
+  canJudge: boolean;
 }
 
 export interface WodRequest {
@@ -46,6 +50,8 @@ export interface WodRequest {
   authorId?: number;
   gymId?: number;
   isPublic: boolean;
+  // Competition WOD: gym WOD only, never public (Aldebaran rejects it otherwise)
+  competition: boolean;
   // --- Description and Notes (EN / FR, either may be empty) ---
   descriptionEn?: string;
   descriptionFr?: string;
@@ -75,6 +81,9 @@ export interface WodResponse {
   authorId?: number;
   gymId?: number;
   isPublic: boolean;
+  competition: boolean;
+  // WOD this one was copied from (e.g. a public Open WOD copied for a gym competition)
+  sourceWodId?: number | null;
   // --- Description and Notes (EN / FR, either may be empty) ---
   descriptionEn?: string;
   descriptionFr?: string;
@@ -97,6 +106,13 @@ export interface WodResponse {
   // --- Audit ---
   createdAt: string;
   updatedAt: string;
+}
+
+/** Copy of a readable WOD into a gym (WOD_WRITE there) or as a personal WOD (gymId null). */
+export interface WodCopyRequest {
+  gymId: number | null;
+  // Competition copy (gym copies only)
+  competition: boolean;
 }
 
 export interface WodMovementRequest {

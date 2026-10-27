@@ -19,7 +19,15 @@
                 <ng-icon name="heroTrophy"></ng-icon>{{ 'SCORE.PR' | translate }}
               </span>
             }
+            @if (score.verifiedAt) {
+              <span class="badge badge-sm badge-success badge-soft gap-1">
+                <ng-icon name="heroCheckBadge"></ng-icon>{{ 'SCORE.VERIFIED_BY' | translate: {name: staffName(score.verifiedBy)} }}
+              </span>
+            }
           </div>
+          @if (loggedByStaff(score)) {
+            <p class="text-sm opacity-70">{{ 'SCORE.LOGGED_BY' | translate: {name: staffName(score.loggedBy)} }}</p>
+          }
           @if (score.scalingNotes) {
             <p class="text-sm opacity-70 whitespace-pre-line">{{ score.scalingNotes }}</p>
           }
