@@ -69,7 +69,8 @@ The backends enforce every rule; Sirius only adapts what it shows:
   movement: quantity (reps omitted when they repeat the rep scheme, "14/12 cal", distance), name,
   variants and the men/women load and height ("61/43 kg", "60/50 cm"). Texts show in the user's
   language, falling back on the other one. The list shows "category / format" and filters on both.
-  Below the boxes, "My scores on this WOD" lists the user's scores (level, PR badge, notes) with
+  Below the boxes, "Leaderboard" ranks each athlete's PR by level, for every gym or one of the
+  user's gyms (names from Antares, others anonymous), and "My scores on this WOD" lists the user's scores (level, PR badge, notes) with
   edit/delete when the backend allows it, and opens the log/edit form: fields follow the score type
   (time or reps at the time cap, rounds on the minute for an EMOM, load in the user's unit, calories,
   distance). AMRAP scores are total reps; when the WOD has reps per round they are shown as
