@@ -10,7 +10,6 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
@@ -44,8 +43,9 @@ public class SecurityConfig {
 
   /**
    * Filter chain of the internal API ({@code /antares/internal/**}), called by Aldebaran on the
-   * Docker network: no cookie, no CSRF, only the shared secret checked by {@link
-   * InternalSecretFilter} (404 without it). Evaluated before the main chain.
+   * Docker network: no cookie, only the shared secret checked by {@link InternalSecretFilter} (404
+   * without it). Evaluated before the main chain. CSRF protection stays on: the internal API is
+   * read-only (GET), which CSRF never blocks.
    *
    * @param http The {@link HttpSecurity} builder.
    * @return The configured {@link SecurityFilterChain}.
@@ -55,7 +55,6 @@ public class SecurityConfig {
   public SecurityFilterChain internalFilterChain(HttpSecurity http) {
 
     http.securityMatcher("/antares/internal/**")
-        .csrf(AbstractHttpConfigurer::disable)
         .addFilterBefore(
             new InternalSecretFilter(internalSecret), UsernamePasswordAuthenticationFilter.class)
         .authorizeHttpRequests(auth -> auth.anyRequest().permitAll())
