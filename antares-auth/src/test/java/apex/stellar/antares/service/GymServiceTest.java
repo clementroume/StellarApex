@@ -240,4 +240,55 @@ class GymServiceTest {
     // Then
     verify(gymRepository).deleteById(1L);
   }
+
+  // --- Competition support: usable members ---
+
+  private static Membership membership(
+      long userId, String first, String last, Membership.MembershipStatus status, Gym gym) {
+    User user = new User();
+    user.setId(userId);
+    user.setFirstName(first);
+    user.setLastName(last);
+    return Membership.builder()
+        .user(user)
+        .gym(gym)
+        .gymRole(GymRole.ATHLETE)
+        .status(status)
+        .build();
+  }
+
+  @Test
+  @DisplayName("getAthletes: usable members only, sorted by display name")
+  void getAthletes_UsableMembersSorted() {
+    Gym gym = Gym.builder().id(1L).status(GymStatus.ACTIVE).build();
+    when(membershipRepository.findByGymId(1L))
+        .thenReturn(
+            List.of(
+                membership(3L, "Zoé", "Martin", Membership.MembershipStatus.ACTIVE, gym),
+                membership(4L, "Paul", "Durand", Membership.MembershipStatus.PENDING, gym),
+                membership(5L, "Anne", "Leroy", Membership.MembershipStatus.ACTIVE, gym)));
+
+    var athletes = gymService.getAthletes(1L);
+
+    assertEquals(2, athletes.size());
+    assertEquals("Anne L.", athletes.get(0).displayName());
+    assertEquals(3L, athletes.get(1).id());
+  }
+
+  @Test
+  @DisplayName("isUsableMember: true only for a usable membership")
+  void isUsableMember() {
+    Gym active = Gym.builder().id(1L).status(GymStatus.ACTIVE).build();
+    when(membershipRepository.findByUserIdAndGymId(3L, 1L))
+        .thenReturn(
+            Optional.of(membership(3L, "Zoé", "Martin", Membership.MembershipStatus.ACTIVE, active)));
+    when(membershipRepository.findByUserIdAndGymId(4L, 1L))
+        .thenReturn(
+            Optional.of(membership(4L, "Paul", "Durand", Membership.MembershipStatus.BANNED, active)));
+    when(membershipRepository.findByUserIdAndGymId(5L, 1L)).thenReturn(Optional.empty());
+
+    assertTrue(gymService.isUsableMember(1L, 3L));
+    assertFalse(gymService.isUsableMember(1L, 4L));
+    assertFalse(gymService.isUsableMember(1L, 5L));
+  }
 }

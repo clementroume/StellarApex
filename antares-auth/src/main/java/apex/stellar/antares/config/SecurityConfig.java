@@ -7,8 +7,10 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.annotation.Order;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
@@ -37,6 +39,32 @@ public class SecurityConfig {
   @Value("${cors.allowed-origins}")
   private String allowedOrigins;
 
+  @Value("${application.security.internal-secret}")
+  private String internalSecret;
+
+  /**
+   * Filter chain of the internal API ({@code /antares/internal/**}), called by Aldebaran on the
+   * Docker network: no cookie, no CSRF, only the shared secret checked by {@link
+   * InternalSecretFilter} (404 without it). Evaluated before the main chain.
+   *
+   * @param http The {@link HttpSecurity} builder.
+   * @return The configured {@link SecurityFilterChain}.
+   */
+  @Bean
+  @Order(1)
+  public SecurityFilterChain internalFilterChain(HttpSecurity http) {
+
+    http.securityMatcher("/antares/internal/**")
+        .csrf(AbstractHttpConfigurer::disable)
+        .addFilterBefore(
+            new InternalSecretFilter(internalSecret), UsernamePasswordAuthenticationFilter.class)
+        .authorizeHttpRequests(auth -> auth.anyRequest().permitAll())
+        .sessionManagement(
+            session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
+
+    return http.build();
+  }
+
   /**
    * Configures the primary security filter chain for the application.
    *
@@ -44,6 +72,7 @@ public class SecurityConfig {
    * @return The configured {@link SecurityFilterChain}.
    */
   @Bean
+  @Order(2)
   public SecurityFilterChain securityFilterChain(HttpSecurity http) {
 
     http.cors(withDefaults()) // Delegate to the corsConfigurationSource bean

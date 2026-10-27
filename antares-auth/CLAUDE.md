@@ -23,6 +23,10 @@ HttpOnly cookies, XSRF cookie `XSRF-TOKEN`). `./mvnw verify` runs unit tests and
   listed in `JwtAuthenticationFilter.FORBIDDEN_DURING_SUPPORT` (403 `SUPPORT_SESSION_FORBIDDEN`).
   Every endpoint returning the current user goes through `UserController.withSupportSession`
   (Sirius replaces its user with the response).
+- Internal API `/antares/internal/**` (`controller/InternalController`): service-to-service only,
+  separate `SecurityFilterChain` (`@Order(1)`) with `config/InternalSecretFilter` (shared
+  `X-Internal-Secret`, constant-time, 404 otherwise), excluded from the Traefik route. Never expose
+  user data there beyond what a caller needs to enforce its own rule.
 - Gym holder: exactly one OWNER (physical) / PROGRAMMER (virtual) per gym (`Gym.holderRole`,
   `Gym.allowsRole`, unique index V4); changed only by `MembershipService.transferOwnership`.
 - Bootstrap: the admin from `ApplicationConfig.adminUserInitializer`. `config/DevDataSeeder`
