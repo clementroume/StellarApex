@@ -21,6 +21,11 @@
           <a id="source-wod" [routerLink]="['/wods', w.sourceWodId]" class="link link-hover text-sm flex items-center gap-1">
             <ng-icon name="heroDocumentDuplicate"></ng-icon>{{ 'WOD.MESSAGES.COPIED_FROM' | translate }}
           </a>
+        } @else if (canCopy()) {
+          <button type="button" id="copy-wod" class="btn btn-outline btn-sm" (click)="openCopy(w)">
+            <ng-icon name="heroDocumentDuplicate"></ng-icon>
+            {{ 'WOD.ACTIONS.COPY' | translate }}
+          </button>
         }
       </app-detail-header>
 
@@ -118,12 +123,6 @@
               <dd>{{ 'WOD.SCORE_TYPES.' + w.scoreType | translate }}</dd>
             </dl>
 
-            @if (canCopy()) {
-              <button type="button" id="copy-wod" class="btn btn-outline btn-sm self-start" (click)="openCopy(w)">
-                <ng-icon name="heroDocumentDuplicate"></ng-icon>
-                {{ 'WOD.ACTIONS.COPY' | translate }}
-              </button>
-            }
 
             @if (description()) {
               <div>

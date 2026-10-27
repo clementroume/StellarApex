@@ -78,7 +78,7 @@ The backends enforce every rule; Sirius only adapts what it shows:
   suggests the reps per round from the movements. WODs with an official tiebreak (Open) show it and offer an optional,
   collapsed tiebreak time. The WOD form proposes the usual score type of the chosen format.
 * **Competitions**: the WOD form has a "Competition" toggle for gym WODs (a competition WOD is never
-  public), and an original WOD detail offers "Copy to my gym" to users who program a gym (copy of an
+  public), and an original WOD offers "Copy to my gym" in its title bar to users who program a gym (copy of an
   Open WOD checked as competition by default). A copy shows its gym next to its title and a link to
   its original on the right, and cannot be copied again. On a competition WOD the judge
   (`capabilities.canJudge`) picks the athlete when logging a score (gym members from Antares); the

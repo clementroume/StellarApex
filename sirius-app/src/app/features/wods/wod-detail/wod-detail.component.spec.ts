@@ -377,9 +377,13 @@ describe('WodDetailComponent', () => {
       expect(fixture.nativeElement.querySelector('#copy-wod')).toBeNull();
     });
 
-    it('should offer the copy only to users programming a gym', () => {
+    it('should offer the copy in the title bar, only to users programming a gym', () => {
       init();
       expect(fixture.nativeElement.querySelector('#copy-wod')).toBeNull();
+
+      writableGyms.mockReturnValue([{gymId: 5, gymName: 'Box'}]);
+      init();
+      expect(fixture.nativeElement.querySelector('app-detail-header #copy-wod')).toBeTruthy();
     });
 
     it('should copy an Open WOD as a competition WOD of the gym, then open the copy', () => {
