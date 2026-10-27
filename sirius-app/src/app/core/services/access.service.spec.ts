@@ -15,6 +15,7 @@ describe('AccessService', () => {
     gymRole: 'ATHLETE',
     status: 'ACTIVE',
     permissions: [],
+    gymProgramming: false,
     ...overrides
   });
 

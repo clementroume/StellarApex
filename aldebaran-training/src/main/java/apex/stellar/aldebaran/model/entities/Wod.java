@@ -89,6 +89,18 @@ public class Wod {
   @Builder.Default
   private boolean isPublic = false;
 
+  /**
+   * Competition WOD (gym WODs only, never public): staff holding SCORE_VERIFY in its gym may log
+   * scores for the gym's athletes and verify them.
+   */
+  @Column(name = "competition", nullable = false)
+  @Builder.Default
+  private boolean competition = false;
+
+  /** WOD this one was copied from (e.g. a public Open WOD copied for a gym competition). */
+  @Column(name = "source_wod_id")
+  private Long sourceWodId;
+
   // --- Description and Notes (EN / FR; a WOD may have only one language) ---
   @Column(name = "description_en", columnDefinition = "TEXT")
   private String descriptionEn;

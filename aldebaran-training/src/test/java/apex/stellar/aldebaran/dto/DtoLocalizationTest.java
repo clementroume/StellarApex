@@ -241,6 +241,7 @@ class DtoLocalizationTest {
               "",
               null, null, null, null, null,
               false,
+              false,
               null, null, null, null, null, null, null, null, null, null, null,
               Collections.emptyList());
 
@@ -268,6 +269,7 @@ class DtoLocalizationTest {
               null,
               ScoreType.TIME,
               null, null,
+              false,
               false,
               "A".repeat(4001),
               null,

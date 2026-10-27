@@ -34,6 +34,14 @@ export class ScoreService {
     return this.http.delete<void>(this.buildUrl(`/${id}`));
   }
 
+  verifyScore(id: number): Observable<ScoreResponse> {
+    return this.http.post<ScoreResponse>(this.buildUrl(`/${id}/verify`), {});
+  }
+
+  unverifyScore(id: number): Observable<ScoreResponse> {
+    return this.http.delete<ScoreResponse>(this.buildUrl(`/${id}/verify`));
+  }
+
   compareScore(id: number): Observable<ScoreComparisonResponse> {
     return this.http.get<ScoreComparisonResponse>(this.buildUrl(`/${id}/compare`));
   }
@@ -43,14 +51,19 @@ export class ScoreService {
     scaling: string = 'RX',
     page: number = 0,
     size: number = 20,
-    gymId?: number | null
+    gymIds: number[] = [],
+    verifiedOnly: boolean = false
   ): Observable<Slice<ScoreResponse>> {
     let params = new HttpParams()
       .set('scaling', scaling)
       .set('page', page)
       .set('size', size);
-    if (gymId) {
-      params = params.set('gymId', gymId);
+    // Scores performed in some of the user's boxes / programs (narrow leaderboard), else worldwide
+    if (gymIds.length > 0) {
+      params = params.set('gymIds', gymIds.join(','));
+    }
+    if (verifiedOnly) {
+      params = params.set('verifiedOnly', true);
     }
 
     return this.http.get<Slice<ScoreResponse>>(this.buildUrl(`/leaderboard/${wodId}`), {params});

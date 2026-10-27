@@ -220,7 +220,16 @@ Rules are enforced by the backends; Sirius only adapts its UI to what they retur
   is locked. The API returns `capabilities` (`canModify`, `locked`) for each WOD.
 - **Scores**: athletes log and manage their own scores on the WODs they can read, in one of their
   gyms; `SCORE_VERIFY` on that gym lets staff correct or delete their athletes' scores.
-- **Leaderboards**: per WOD and level, for every gym or one of the user's gyms. Names are shown to
+- **Competitions**: a physical gym's WOD can be flagged "competition" (never public), for instance a
+  public Open WOD copied into the gym. A virtual programming sells its own programming: no
+  competitions and no copies there; its staff only corrects or deletes aberrant scores. Its judges (`SCORE_VERIFY` in the gym) log scores for the gym's members and
+  verify scores; a verified score is locked for its athlete. The competition leaderboard shows
+  verified scores by default. Outside competitions scores are never verified.
+- **Service-to-service**: Aldebaran asks Antares whether an athlete belongs to a gym through an
+  internal API (`/antares/internal`, shared secret, not routed by Traefik).
+- **Leaderboards**: per WOD and level, worldwide or narrowed on the user's boxes and/or programs
+  ("My box(es)", "My program(s)"); a score on a public WOD is attached to the box or program where
+  it was performed (automatic for a single one). Names are shown to
   members of the same gym; elsewhere only if the athlete opted in (My account), else "anonymous". One personal record per athlete
   and WOD (Rx+ > Rx > Scaled > Custom, then performance; a finished time beats a time-capped score).
 - **Gym roles by type**: a physical gym has exactly one `OWNER`, any number of `COACH` and

@@ -1,5 +1,7 @@
 package apex.stellar.aldebaran.config;
 
+import apex.stellar.aldebaran.client.AntaresClient;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.junit.jupiter.api.AfterEach;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -53,6 +55,9 @@ public abstract class BaseIntegrationTest {
   @Autowired protected MockMvc mockMvc;
   @Autowired protected JsonMapper objectMapper;
   @Autowired protected StringRedisTemplate redisTemplate;
+
+  /** Antares internal API: no Antares in tests, each test states the memberships it needs. */
+  @MockitoBean protected AntaresClient antaresClient;
 
   // --- Configuration Injection ---
 

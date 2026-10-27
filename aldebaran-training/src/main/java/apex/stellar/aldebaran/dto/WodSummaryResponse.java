@@ -18,4 +18,5 @@ public record WodSummaryResponse(
     LocalDateTime createdAt,
     Long authorId,
     Long gymId,
-    boolean isPublic) {}
+    boolean isPublic,
+    boolean competition) {}

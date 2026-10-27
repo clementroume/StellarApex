@@ -1,5 +1,6 @@
 package apex.stellar.antares.controller;
 
+import apex.stellar.antares.dto.DisplayNameResponse;
 import apex.stellar.antares.dto.GymRequest;
 import apex.stellar.antares.dto.GymResponse;
 import apex.stellar.antares.dto.GymSettingsRequest;
@@ -219,6 +220,38 @@ public class GymController {
       })
   public ResponseEntity<GymSettingsRequest> getSettings(@PathVariable Long gymId) {
     return ResponseEntity.ok(gymService.getSettings(gymId));
+  }
+
+  /**
+   * Lists the usable members of a gym with their display name, for the staff logging competition
+   * scores on their behalf.
+   *
+   * <p>Access is granted to Global Admins and users with the {@code SCORE_VERIFY} permission for
+   * this gym.
+   *
+   * @param gymId The ID of the gym.
+   * @return The members (ID and "First L." name), sorted by name.
+   */
+  @GetMapping("/{gymId}/athletes")
+  @PreAuthorize("@security.hasGymPermission(#gymId, 'SCORE_VERIFY')")
+  @Operation(
+      summary = "List gym athletes",
+      description =
+          "Usable members of the gym with their display name. Requires SCORE_VERIFY permission.")
+  @ApiResponses(
+      value = {
+        @ApiResponse(responseCode = "200", description = "Members retrieved"),
+        @ApiResponse(
+            responseCode = "403",
+            description = "Forbidden - Insufficient permissions",
+            content = @Content(schema = @Schema(hidden = true))),
+        @ApiResponse(
+            responseCode = "401",
+            description = "Unauthorized",
+            content = @Content(schema = @Schema(hidden = true)))
+      })
+  public ResponseEntity<List<DisplayNameResponse>> getAthletes(@PathVariable Long gymId) {
+    return ResponseEntity.ok(gymService.getAthletes(gymId));
   }
 
   /**

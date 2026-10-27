@@ -3,6 +3,7 @@ package apex.stellar.aldebaran.repository;
 import apex.stellar.aldebaran.model.entities.Score;
 import apex.stellar.aldebaran.model.entities.Score.ScalingLevel;
 import jakarta.persistence.LockModeType;
+import java.util.Collection;
 import java.util.List;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
@@ -64,27 +65,30 @@ public interface ScoreRepository extends JpaRepository<Score, Long> {
   boolean existsByWodId(Long wodId);
 
   /**
-   * Retrieves the leaderboard (PRs only) for a specific WOD and scaling level.
+   * Retrieves the leaderboard (PRs only) for a specific WOD and scaling level, optionally limited
+   * to the scores performed in some gyms and to verified scores (an athlete whose PR is not
+   * verified is then left out).
    *
    * @param wodId The WOD ID.
    * @param scaling The scaling level (RX, SCALED...).
+   * @param filterGyms Whether to keep the scores performed in {@code gymIds} only.
+   * @param gymIds The gyms to keep (never empty, so that the JPQL {@code IN} stays valid).
+   * @param verifiedOnly Whether to keep verified scores only.
    * @param pageable Pagination and Sorting (Sort is handled by Service based on WOD type).
    * @return A page of Personal Record scores.
    */
-  Slice<Score> findByWodIdAndScalingAndPersonalRecordTrue(
-      Long wodId, ScalingLevel scaling, Pageable pageable);
-
-  /**
-   * Retrieves the leaderboard (PRs only) of the scores performed in one gym.
-   *
-   * @param wodId The WOD ID.
-   * @param scaling The scaling level.
-   * @param gymId The gym where the scores were performed.
-   * @param pageable Pagination and Sorting.
-   * @return A page of Personal Record scores.
-   */
-  Slice<Score> findByWodIdAndScalingAndGymIdAndPersonalRecordTrue(
-      Long wodId, ScalingLevel scaling, Long gymId, Pageable pageable);
+  @Query(
+      "SELECT s FROM Score s WHERE s.wod.id = :wodId AND s.scaling = :scaling"
+          + " AND s.personalRecord = true"
+          + " AND (:filterGyms = false OR s.gymId IN :gymIds)"
+          + " AND (:verifiedOnly = false OR s.verifiedAt IS NOT NULL)")
+  Slice<Score> findLeaderboard(
+      Long wodId,
+      ScalingLevel scaling,
+      boolean filterGyms,
+      Collection<Long> gymIds,
+      boolean verifiedOnly,
+      Pageable pageable);
 
   /**
    * Retrieves every Personal Record for a WOD and scaling level, for rank comparison (the ordering

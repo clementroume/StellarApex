@@ -4,6 +4,7 @@ import {Observable} from 'rxjs';
 import {environment} from '../../../../environments/environment';
 import {GymRequest, GymResponse, GymSettingsRequest, GymStatus, JoinGymRequest} from '../models/gym.model';
 import {MembershipResponse} from '../models/membership.model';
+import {DisplayName} from '../models/user.model';
 
 @Injectable({providedIn: 'root'})
 export class GymService {
@@ -36,6 +37,11 @@ export class GymService {
 
   updateSettings(gymId: number, payload: GymSettingsRequest): Observable<void> {
     return this.http.put<void>(this.buildUrl(`/${gymId}/settings`), payload);
+  }
+
+  /** Usable members of a gym ("First L."), for the staff logging competition scores (SCORE_VERIFY). */
+  getAthletes(gymId: number): Observable<DisplayName[]> {
+    return this.http.get<DisplayName[]>(this.buildUrl(`/${gymId}/athletes`));
   }
 
   deleteGym(id: number): Observable<void> {

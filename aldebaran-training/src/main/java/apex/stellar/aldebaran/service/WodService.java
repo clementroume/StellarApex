@@ -2,13 +2,17 @@ package apex.stellar.aldebaran.service;
 
 import static apex.stellar.aldebaran.config.RedisCacheConfig.CACHE_WODS;
 
+import apex.stellar.aldebaran.client.AntaresClient;
 import apex.stellar.aldebaran.dto.MovementResponse;
+import apex.stellar.aldebaran.dto.WodCopyRequest;
 import apex.stellar.aldebaran.dto.WodMovementRequest;
 import apex.stellar.aldebaran.dto.WodReferenceData;
 import apex.stellar.aldebaran.dto.WodFacetsResponse;
+import apex.stellar.aldebaran.dto.WodMovementResponse;
 import apex.stellar.aldebaran.dto.WodRequest;
 import apex.stellar.aldebaran.dto.WodResponse;
 import apex.stellar.aldebaran.dto.WodSummaryResponse;
+import apex.stellar.aldebaran.exception.InvalidWodException;
 import apex.stellar.aldebaran.exception.ResourceNotFoundException;
 import apex.stellar.aldebaran.exception.WodLockedException;
 import apex.stellar.aldebaran.mapper.WodMapper;
@@ -71,6 +75,7 @@ public class WodService {
   private final ScoreRepository scoreRepository;
   private final WodMapper wodMapper;
   private final SecurityService securityService;
+  private final AntaresClient antaresClient;
 
   /**
    * Retrieves a paginated list of WOD summaries based on filters.
@@ -228,11 +233,99 @@ public class WodService {
    */
   @Transactional
   public WodResponse createWod(WodRequest request) {
+    return wodMapper.toResponse(create(request, null));
+  }
+
+  /**
+   * Copies a WOD (prescription, texts and movements) into a gym or as a personal WOD of the caller.
+   * The copy is never public, is not locked by the scores of its source and keeps a link to it.
+   *
+   * @param id The ID of the WOD to copy.
+   * @param request The target gym and the competition flag.
+   * @return The created copy.
+   * @throws ResourceNotFoundException if the source WOD does not exist.
+   * @throws InvalidWodException if a competition copy has no gym, or the target gym is a virtual
+   *     programming (it sells its own programming: no copies, no competitions).
+   */
+  @Transactional
+  public WodResponse copyWod(Long id, WodCopyRequest request) {
+    WodResponse source =
+        wodRepository
+            .findByIdWithMovements(id)
+            .map(wodMapper::toResponse)
+            .orElseThrow(() -> new ResourceNotFoundException("error.wod.not.found", id));
+    if (request.gymId() != null && antaresClient.isProgrammingGym(request.gymId())) {
+      throw new InvalidWodException("error.wod.copy.programming");
+    }
+
+    WodRequest copy =
+        new WodRequest(
+            source.title(),
+            source.wodType(),
+            source.category(),
+            source.scoreType(),
+            null,
+            request.gymId(),
+            false,
+            request.competition(),
+            source.descriptionEn(),
+            source.descriptionFr(),
+            source.notesEn(),
+            source.notesFr(),
+            source.tiebreakEn(),
+            source.tiebreakFr(),
+            source.timeCapSeconds(),
+            source.repsPerRound(),
+            source.emomInterval(),
+            source.emomRounds(),
+            source.repScheme(),
+            source.movements().stream().map(WodService::toMovementRequest).toList());
+
+    Wod saved = create(copy, id);
+    log.info("Copied WOD id={} into WOD id={} (gym {})", id, saved.getId(), saved.getGymId());
+    return wodMapper.toResponse(saved);
+  }
+
+  private static WodMovementRequest toMovementRequest(WodMovementResponse wm) {
+    return new WodMovementRequest(
+        wm.movement().id(),
+        wm.orderIndex(),
+        wm.repsScheme(),
+        wm.weight(),
+        wm.weightFemale(),
+        wm.weightUnit(),
+        wm.durationSeconds(),
+        wm.durationDisplayUnit(),
+        wm.distance(),
+        wm.distanceUnit(),
+        wm.calories(),
+        wm.caloriesFemale(),
+        wm.height(),
+        wm.heightFemale(),
+        wm.heightUnit(),
+        wm.equipment(),
+        wm.techniques(),
+        wm.notesEn(),
+        wm.notesFr(),
+        wm.scalingOptionsEn(),
+        wm.scalingOptionsFr());
+  }
+
+  /**
+   * Builds, checks and saves a new WOD authored by the current user.
+   *
+   * @param request The WOD definition.
+   * @param sourceWodId The WOD it was copied from, or null.
+   * @return The saved entity.
+   */
+  private Wod create(WodRequest request, Long sourceWodId) {
     Long authorId = securityService.getCurrentUserId();
 
     // 1. Build Entity
     Wod wod = wodMapper.toEntity(request);
     wod.setAuthorId(authorId);
+    wod.setSourceWodId(sourceWodId);
+    checkCompetition(wod);
 
     // Ensure collections are initialized
     if (wod.getMovements() == null) {
@@ -275,8 +368,31 @@ public class WodService {
     log.info(
         "Created WOD id={} with {} movements", savedWod.getId(), savedWod.getMovements().size());
 
-    // Mapping occurs inside the transaction, avoiding LazyInitializationException
-    return wodMapper.toResponse(savedWod);
+    // Mapping occurs inside the transaction (caller), avoiding LazyInitializationException
+    return savedWod;
+  }
+
+  /**
+   * A competition WOD belongs to a physical gym (its staff judges the scores; a virtual
+   * programming has no competitions, Antares tells the gym type) and is never public: only the
+   * gym's members may score it.
+   *
+   * @param wod The WOD about to be saved.
+   * @throws InvalidWodException if the rule is broken.
+   */
+  private void checkCompetition(Wod wod) {
+    if (!wod.isCompetition()) {
+      return;
+    }
+    if (wod.getGymId() == null) {
+      throw new InvalidWodException("error.wod.competition.gym.required");
+    }
+    if (wod.isPublic()) {
+      throw new InvalidWodException("error.wod.competition.public");
+    }
+    if (antaresClient.isProgrammingGym(wod.getGymId())) {
+      throw new InvalidWodException("error.wod.competition.programming");
+    }
   }
 
   /**
@@ -310,6 +426,7 @@ public class WodService {
 
     // 3. Update Scalar Fields
     wodMapper.updateEntity(request, existingWod);
+    checkCompetition(existingWod);
 
     // 4. Smart Merge Movements
     mergeWodMovements(existingWod, request.movements());

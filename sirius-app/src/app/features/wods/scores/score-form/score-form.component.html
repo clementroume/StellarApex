@@ -25,7 +25,20 @@
       </label>
     </div>
 
-    @if (gymChoices().length > 0) {
+    @if (canChooseAthlete()) {
+      <label class="form-control w-full">
+        <div class="label"><span class="label-text">{{ 'SCORE.FIELDS.ATHLETE' | translate }}</span></div>
+        <select id="score-athlete" formControlName="athleteId" class="select select-bordered w-full">
+          <option [ngValue]="null">{{ 'SCORE.FIELDS.ME' | translate }}</option>
+          @for (athlete of athletes(); track athlete.id) {
+            <option [ngValue]="athlete.id">{{ athlete.displayName }}</option>
+          }
+        </select>
+        <div class="label"><span class="label-text-alt opacity-70">{{ 'SCORE.MESSAGES.ATHLETE_HINT' | translate }}</span></div>
+      </label>
+    }
+
+    @if (showGymChoice()) {
       <label class="form-control w-full">
         <div class="label"><span class="label-text">{{ 'SCORE.FIELDS.GYM' | translate }}</span></div>
         <select id="score-gym" formControlName="gymId" class="select select-bordered w-full">

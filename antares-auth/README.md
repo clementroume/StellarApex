@@ -135,6 +135,8 @@ During a support session `GET /me` returns the target user with
 * `POST /join`: Join a gym using an enrollment code.
 * `PUT /{id}/status`: [ADMIN] Approve, reject or suspend a gym.
 * `GET /{gymId}/settings`: [`MANAGE_SETTINGS`] Get gym settings.
+* `GET /{gymId}/athletes`: [`SCORE_VERIFY`] Usable members of the gym (`{id, displayName}`, sorted by
+  name), for the staff logging competition scores.
 * `PUT /{gymId}/settings`: [`MANAGE_SETTINGS`] Update gym settings.
 * `POST /{gymId}/transfer-ownership` `{membershipId}`: [gym OWNER/PROGRAMMER] Make an ACTIVE member
   the gym holder; the former holder becomes COACH (physical) or ATHLETE (virtual). Returns both
@@ -148,6 +150,17 @@ During a support session `GET /me` returns the target user with
 * `DELETE /{id}`: [`MANAGE_MEMBERSHIPS`] Remove a member from a gym.
 
 Bracketed permissions are gym permissions; a platform ADMIN always passes.
+
+### Internal API (`/antares/internal`)
+
+Called by Aldebaran on the Docker network (`http://antares-auth:8080`), never through Traefik (the
+public `/antares` route excludes `/antares/internal`). Every request needs `X-Internal-Secret`
+(`INTERNAL_SECRET`, checked in constant time by `config/InternalSecretFilter`, own filter chain);
+without it the answer is a bare 404.
+
+* `GET /gyms/{gymId}`: `{programming}`, whether the gym is a virtual programming (404 if unknown).
+* `GET /gyms/{gymId}/members/{userId}`: `{member}`, whether the user holds a usable membership in the
+  gym (ACTIVE, and ACTIVE gym or OWNER/PROGRAMMER).
 
 ## Roles and Permissions
 

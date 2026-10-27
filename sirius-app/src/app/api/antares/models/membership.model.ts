@@ -13,6 +13,8 @@ export interface MembershipSummary {
   status: MembershipStatus;
   // Effective permissions (OWNER/PROGRAMMER: all, COACH: granted ones, ATHLETE: none)
   permissions: Permission[];
+  // Virtual programming (no competitions, no WOD copies), as opposed to a physical box
+  gymProgramming: boolean;
 }
 
 export interface MembershipUpdateRequest {

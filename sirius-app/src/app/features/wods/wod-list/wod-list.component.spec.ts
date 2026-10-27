@@ -29,12 +29,12 @@ describe('WodListComponent', () => {
   let mockAdminService: any;
   let writableGymIds: number[];
 
-  const fran: WodSummaryResponse = {id: 1, title: 'Fran', wodType: 'FOR_TIME', scoreType: 'TIME', repScheme: '21-15-9', timeCapSeconds: 600, gymId: 5, isPublic: false, createdAt: ''};
-  const cindy: WodSummaryResponse = {id: 2, title: 'Cindy', wodType: 'AMRAP', scoreType: 'ROUNDS_REPS', isPublic: true, createdAt: ''};
-  const grace: WodSummaryResponse = {id: 3, title: 'Grace', wodType: 'FOR_TIME', scoreType: 'TIME', authorId: 1, isPublic: false, createdAt: ''};
+  const fran: WodSummaryResponse = {id: 1, title: 'Fran', wodType: 'FOR_TIME', scoreType: 'TIME', repScheme: '21-15-9', timeCapSeconds: 600, gymId: 5, isPublic: false, competition: false, createdAt: ''};
+  const cindy: WodSummaryResponse = {id: 2, title: 'Cindy', wodType: 'AMRAP', scoreType: 'ROUNDS_REPS', isPublic: true, competition: false, createdAt: ''};
+  const grace: WodSummaryResponse = {id: 3, title: 'Grace', wodType: 'FOR_TIME', scoreType: 'TIME', authorId: 1, isPublic: false, competition: false, createdAt: ''};
 
-  const box: MembershipSummary = {gymId: 5, gymName: 'Box', gymStatus: 'ACTIVE', gymRole: 'ATHLETE', status: 'ACTIVE', permissions: []};
-  const zeus: MembershipSummary = {gymId: 7, gymName: 'Zeus', gymStatus: 'ACTIVE', gymRole: 'ATHLETE', status: 'ACTIVE', permissions: []};
+  const box: MembershipSummary = {gymId: 5, gymName: 'Box', gymStatus: 'ACTIVE', gymRole: 'ATHLETE', status: 'ACTIVE', permissions: [], gymProgramming: false};
+  const zeus: MembershipSummary = {gymId: 7, gymName: 'Zeus', gymStatus: 'ACTIVE', gymRole: 'ATHLETE', status: 'ACTIVE', permissions: [], gymProgramming: false};
 
   const slice = (content: WodSummaryResponse[], last: boolean, number = 0): Slice<WodSummaryResponse> => ({
     content, last, first: number === 0, size: WOD_PAGE_SIZE, number, numberOfElements: content.length, empty: content.length === 0

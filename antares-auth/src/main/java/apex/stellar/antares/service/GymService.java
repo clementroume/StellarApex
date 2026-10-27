@@ -1,5 +1,6 @@
 package apex.stellar.antares.service;
 
+import apex.stellar.antares.dto.DisplayNameResponse;
 import apex.stellar.antares.dto.GymRequest;
 import apex.stellar.antares.dto.GymResponse;
 import apex.stellar.antares.dto.GymSettingsRequest;
@@ -16,6 +17,7 @@ import apex.stellar.antares.model.PlatformRole;
 import apex.stellar.antares.model.User;
 import apex.stellar.antares.repository.jpa.GymRepository;
 import apex.stellar.antares.repository.jpa.MembershipRepository;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -133,6 +135,55 @@ public class GymService {
             .orElseThrow(() -> new ResourceNotFoundException(ERROR_GYM_NOT_FOUND, gymId));
 
     return new GymSettingsRequest(gym.getEnrollmentCode(), gym.isAutoSubscription());
+  }
+
+  /**
+   * Lists the members of a gym whose membership is usable ({@link Membership#isUsable()}), with
+   * their display name, sorted by name. Feeds the athlete selector of the staff entering
+   * competition scores.
+   *
+   * @param gymId The unique identifier of the gym.
+   * @return The usable members of the gym (empty for an unknown gym).
+   */
+  @Transactional(readOnly = true)
+  public List<DisplayNameResponse> getAthletes(Long gymId) {
+    return membershipRepository.findByGymId(gymId).stream()
+        .filter(Membership::isUsable)
+        .map(m -> new DisplayNameResponse(m.getUserId(), UserService.displayName(m.getUser())))
+        .sorted(
+            Comparator.comparing(DisplayNameResponse::displayName, String.CASE_INSENSITIVE_ORDER))
+        .toList();
+  }
+
+  /**
+   * Tells whether a gym is a virtual programming (internal API for Aldebaran).
+   *
+   * @param gymId The unique identifier of the gym.
+   * @return {@code true} for a virtual programming, {@code false} for a physical gym.
+   * @throws ResourceNotFoundException If no gym is found with the provided ID.
+   */
+  @Transactional(readOnly = true)
+  public boolean isProgramming(Long gymId) {
+    return gymRepository
+        .findById(gymId)
+        .map(Gym::isProgramming)
+        .orElseThrow(() -> new ResourceNotFoundException(ERROR_GYM_NOT_FOUND, gymId));
+  }
+
+  /**
+   * Checks whether a user holds a usable membership in a gym ({@link Membership#isUsable()}).
+   * Called by Aldebaran (internal API) before letting gym staff log a score for an athlete.
+   *
+   * @param gymId The unique identifier of the gym.
+   * @param userId The unique identifier of the user.
+   * @return {@code true} if the user is a usable member of the gym.
+   */
+  @Transactional(readOnly = true)
+  public boolean isUsableMember(Long gymId, Long userId) {
+    return membershipRepository
+        .findByUserIdAndGymId(userId, gymId)
+        .map(Membership::isUsable)
+        .orElse(false);
   }
 
   /**

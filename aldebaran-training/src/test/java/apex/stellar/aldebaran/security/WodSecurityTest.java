@@ -1,5 +1,6 @@
 package apex.stellar.aldebaran.security;
 
+import apex.stellar.aldebaran.dto.WodCopyRequest;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -154,6 +155,7 @@ class WodSecurityTest {
     WodRequest request =
         new WodRequest(
             "Test", null, null, null, null, 100L, false,
+            false,
             null, null, null, null, null, null, null, null, null, null, null, null);
 
     when(securityService.isAdmin(admin)).thenReturn(true);
@@ -171,6 +173,7 @@ class WodSecurityTest {
     WodRequest request =
         new WodRequest(
             "Gym WOD", null, null, null, null, 100L, false,
+            false,
             null, null, null, null, null, null, null, null, null, null, null, null);
 
     when(securityService.isAdmin(owner)).thenReturn(false);
@@ -188,6 +191,7 @@ class WodSecurityTest {
     WodRequest request =
         new WodRequest(
             "Prog WOD", null, null, null, null, 100L, false,
+            false,
             null, null, null, null, null, null, null, null, null, null, null, null);
 
     when(securityService.isAdmin(programmer)).thenReturn(false);
@@ -205,6 +209,7 @@ class WodSecurityTest {
     WodRequest request =
         new WodRequest(
             "Coach WOD", null, null, null, null, 100L, false,
+            false,
             null, null, null, null, null, null, null, null, null, null, null, null);
 
     when(securityService.isAdmin(coach)).thenReturn(false);
@@ -222,6 +227,7 @@ class WodSecurityTest {
     WodRequest request =
         new WodRequest(
             "Coach WOD", null, null, null, null, 100L, false,
+            false,
             null, null, null, null, null, null, null, null, null, null, null, null);
 
     when(securityService.isAdmin(coach)).thenReturn(false);
@@ -239,6 +245,7 @@ class WodSecurityTest {
     WodRequest request =
         new WodRequest(
             "User WOD", null, null, null, null, 100L, false,
+            false,
             null, null, null, null, null, null, null, null, null, null, null, null);
 
     when(securityService.isAdmin(user)).thenReturn(false);
@@ -256,6 +263,7 @@ class WodSecurityTest {
     WodRequest request =
         new WodRequest(
             "Hack WOD", null, null, null, null, 100L, false,
+            false,
             null, null, null, null, null, null, null, null, null, null, null, null);
 
     when(securityService.isAdmin(owner)).thenReturn(false);
@@ -272,7 +280,7 @@ class WodSecurityTest {
         TestPrincipals.of(2L, 100L, "ATHLETE", Collections.emptyList());
     WodRequest request =
         new WodRequest(
-            "My WOD", null, null, null, 2L, null, false, null, null, null, null, null, null, null, null, null, null, null, null);
+            "My WOD", null, null, null, 2L, null, false, false, null, null, null, null, null, null, null, null, null, null, null, null);
 
     when(securityService.isAdmin(user)).thenReturn(false);
 
@@ -294,6 +302,7 @@ class WodSecurityTest {
             null,
             99L,
             null,
+            false,
             false,
             null,
             null,
@@ -533,12 +542,13 @@ class WodSecurityTest {
         wodSecurity.canCreate(
             new WodRequest(
                 "A", null, null, null, null, 100L, false,
+                false,
                 null, null, null, null, null, null, null, null, null, null, null, null),
             coach));
     assertFalse(
         wodSecurity.canCreate(
             new WodRequest(
-                "B", null, null, null, null, 300L, false, null, null, null, null, null, null, null, null, null, null, null, null),
+                "B", null, null, null, null, 300L, false, false, null, null, null, null, null, null, null, null, null, null, null, null),
             coach));
   }
 
@@ -553,5 +563,19 @@ class WodSecurityTest {
 
     assertTrue(wodSecurity.canModify(wodA, coach));
     assertFalse(wodSecurity.canModify(wodB, coach));
+  }
+
+  // --- canCopy Checks ---
+
+  @Test
+  @DisplayName("canCopy: WOD_WRITE in the target gym, anyone for a personal copy")
+  void canCopy_Rules() {
+    AldebaranUserPrincipal coach = TestPrincipals.of(2L, 100L, "COACH", List.of("WOD_WRITE"));
+    AldebaranUserPrincipal athlete = TestPrincipals.of(3L, 100L, "USER", List.of());
+
+    assertTrue(wodSecurity.canCopy(new WodCopyRequest(100L, true), coach));
+    assertFalse(wodSecurity.canCopy(new WodCopyRequest(200L, true), coach), "Other gym");
+    assertFalse(wodSecurity.canCopy(new WodCopyRequest(100L, false), athlete), "No WOD_WRITE");
+    assertTrue(wodSecurity.canCopy(new WodCopyRequest(null, false), athlete), "Personal copy");
   }
 }

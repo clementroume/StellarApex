@@ -1,5 +1,10 @@
 package apex.stellar.aldebaran.service;
 
+import apex.stellar.aldebaran.client.AntaresClient;
+import org.mockito.ArgumentCaptor;
+import apex.stellar.aldebaran.exception.InvalidWodException;
+import apex.stellar.aldebaran.dto.WodMovementResponse;
+import apex.stellar.aldebaran.dto.WodCopyRequest;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
@@ -55,6 +60,7 @@ class WodServiceTest {
   @Mock private ScoreRepository scoreRepository;
   @Mock private WodMapper wodMapper;
   @Mock private SecurityService securityService;
+  @Mock private AntaresClient antaresClient;
 
   @InjectMocks private WodService wodService;
 
@@ -86,6 +92,7 @@ class WodServiceTest {
             null, // authorId
             null, // gymId
             true, // isPublic
+            false, // competition
             "Desc",
             null,
             "Notes",
@@ -256,6 +263,7 @@ class WodServiceTest {
             ScoreType.TIME,
             null, null,
             true,
+            false,
             null, null, null, null, null, null, null, null, null, null,
             "21-15-9",
             List.of(
@@ -425,6 +433,7 @@ class WodServiceTest {
             ScoreType.TIME,
             null, null,
             true,
+            false,
             null, null, null, null, null, null, null, null, null, null, null,
             List.of(
                 new WodMovementRequest(
@@ -511,6 +520,7 @@ class WodServiceTest {
             ScoreType.TIME,
             null, null,
             true,
+            false,
             null, null, null, null, null, null, null, null, null, null, null,
             List.of(
                 new WodMovementRequest(
@@ -546,6 +556,7 @@ class WodServiceTest {
             ScoreType.TIME,
             null, null,
             true,
+            false,
             null, null, null, null, null, null, null, null, null, null, null,
             List.of()); // Liste vide !
 
@@ -587,5 +598,110 @@ class WodServiceTest {
 
     assertEquals("error.wod.locked", ex.getMessageKey());
     verify(wodRepository, never()).deleteById(any());
+  }
+
+  // =========================================================================
+  // TEST: competition WODs and copies
+  // =========================================================================
+
+  @Test
+  @DisplayName("createWod: a competition WOD needs a gym and cannot be public (400)")
+  void testCreateWod_CompetitionRules() {
+    when(securityService.getCurrentUserId()).thenReturn(100L);
+
+    wod.setCompetition(true);
+    wod.setPublic(false);
+    when(wodMapper.toEntity(wodRequest)).thenReturn(wod);
+    InvalidWodException noGym =
+        assertThrows(InvalidWodException.class, () -> wodService.createWod(wodRequest));
+    assertEquals("error.wod.competition.gym.required", noGym.getMessageKey());
+
+    wod.setGymId(10L);
+    wod.setPublic(true);
+    InvalidWodException isPublic =
+        assertThrows(InvalidWodException.class, () -> wodService.createWod(wodRequest));
+    assertEquals("error.wod.competition.public", isPublic.getMessageKey());
+
+    verify(wodRepository, never()).save(any());
+  }
+
+  @Test
+  @DisplayName("copyWod: private copy in the target gym, linked to its source")
+  void testCopyWod() {
+    when(securityService.getCurrentUserId()).thenReturn(100L);
+    apex.stellar.aldebaran.dto.MovementResponse movementDto =
+        mock(apex.stellar.aldebaran.dto.MovementResponse.class);
+    when(movementDto.id()).thenReturn(1L);
+    when(movementDto.category()).thenReturn(Category.PULLING);
+    when(movementService.getMovement(1L)).thenReturn(movementDto);
+    when(movementRepository.getReferenceById(1L)).thenReturn(movement);
+
+    Wod source = Wod.builder().id(7L).title("26.1").isPublic(true).build();
+    WodMovementResponse sourceMovement =
+        new WodMovementResponse(
+            3L, movementDto, 1, "21-15-9", 43.0, 29.0, null, null, null, null, null, null, null,
+            null, null, null, Set.of(), Set.of(), null, null, null, null);
+    WodResponse sourceDto = mock(WodResponse.class);
+    when(sourceDto.title()).thenReturn("26.1");
+    when(sourceDto.movements()).thenReturn(List.of(sourceMovement));
+    when(wodRepository.findByIdWithMovements(7L)).thenReturn(Optional.of(source));
+    when(wodMapper.toResponse(source)).thenReturn(sourceDto);
+
+    Wod copy = Wod.builder().movements(new java.util.ArrayList<>()).modalities(new HashSet<>()).build();
+    ArgumentCaptor<WodRequest> request = ArgumentCaptor.forClass(WodRequest.class);
+    when(wodMapper.toEntity(request.capture())).thenAnswer(inv -> {
+      WodRequest r = inv.getArgument(0);
+      copy.setGymId(r.gymId());
+      copy.setCompetition(r.competition());
+      copy.setPublic(r.isPublic());
+      return copy;
+    });
+    when(wodMapper.toWodMovementEntity(any())).thenReturn(new WodMovement());
+    when(wodRepository.save(copy)).thenReturn(copy);
+    when(wodMapper.toResponse(copy)).thenReturn(mock(WodResponse.class));
+
+    wodService.copyWod(7L, new WodCopyRequest(10L, true));
+
+    assertEquals("26.1", request.getValue().title());
+    assertEquals(10L, request.getValue().gymId());
+    assertTrue(request.getValue().competition());
+    assertFalse(request.getValue().isPublic());
+    assertEquals(1L, request.getValue().movements().getFirst().movementId());
+    assertEquals(43.0, request.getValue().movements().getFirst().weight());
+    assertEquals(7L, copy.getSourceWodId());
+    assertEquals(100L, copy.getAuthorId());
+  }
+
+  @Test
+  @DisplayName("copyWod: unknown source -> 404")
+  void testCopyWod_NotFound() {
+    when(wodRepository.findByIdWithMovements(7L)).thenReturn(Optional.empty());
+    WodCopyRequest request = new WodCopyRequest(10L, false);
+
+    assertThrows(ResourceNotFoundException.class, () -> wodService.copyWod(7L, request));
+  }
+
+  @Test
+  @DisplayName("Virtual programming: no competition WOD, no copy into it (400)")
+  void testProgrammingGym_NoCompetitionNoCopy() {
+    when(securityService.getCurrentUserId()).thenReturn(100L);
+    when(antaresClient.isProgrammingGym(20L)).thenReturn(true);
+
+    wod.setCompetition(true);
+    wod.setGymId(20L);
+    when(wodMapper.toEntity(wodRequest)).thenReturn(wod);
+    InvalidWodException competition =
+        assertThrows(InvalidWodException.class, () -> wodService.createWod(wodRequest));
+    assertEquals("error.wod.competition.programming", competition.getMessageKey());
+
+    when(wodRepository.findByIdWithMovements(7L))
+        .thenReturn(Optional.of(Wod.builder().id(7L).build()));
+    when(wodMapper.toResponse(any(Wod.class))).thenReturn(mock(WodResponse.class));
+    WodCopyRequest copy = new WodCopyRequest(20L, false);
+    InvalidWodException copied =
+        assertThrows(InvalidWodException.class, () -> wodService.copyWod(7L, copy));
+    assertEquals("error.wod.copy.programming", copied.getMessageKey());
+
+    verify(wodRepository, never()).save(any());
   }
 }

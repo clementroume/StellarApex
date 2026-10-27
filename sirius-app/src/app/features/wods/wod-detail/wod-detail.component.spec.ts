@@ -11,6 +11,7 @@ import {WodDetailComponent} from './wod-detail.component';
 import {WodService} from '../../../api/aldebaran/services/wod.service';
 import {NotificationService} from '../../../core/services/notification.service';
 import {AccessService} from '../../../core/services/access.service';
+import {GymService} from '../../../api/antares/services/gym.service';
 import {UnitService} from '../../../core/services/unit.service';
 import {APP_ICONS} from '../../../app.config';
 import {WodResponse} from '../../../api/aldebaran/models/wod.model';
@@ -36,10 +37,10 @@ describe('WodDetailComponent', () => {
     wodType: 'FOR_TIME',
     scoreType: 'TIME',
     authorId: 10,
-    isPublic: false,
+    isPublic: false, competition: false,
     timeCapSeconds: 600,
     modalities: ['WEIGHTLIFTING'],
-    capabilities: {canModify: true, locked: false},
+    capabilities: {canModify: true, locked: false, canJudge: false},
     movements: [
       {id: 12, movement: movement(2, 'Pull-up'), orderIndex: 2, repsScheme: '21-15-9'},
       {id: 11, movement: movement(1, 'Thruster'), orderIndex: 1, repsScheme: '21-15-9', weight: 43, weightUnit: 'KG'}
@@ -60,11 +61,17 @@ describe('WodDetailComponent', () => {
     fixture.detectChanges();
   };
 
+  // Gyms where the user holds WOD_WRITE (copy targets)
+  const writableGyms = vi.fn().mockName('AccessService.gymsWithPermission');
+
   beforeEach(async () => {
+    writableGyms.mockReset();
+    writableGyms.mockReturnValue([]);
 
     mockWodService = {
       getWod: vi.fn().mockName('WodService.getWod'),
       deleteWod: vi.fn().mockName('WodService.deleteWod'),
+      copyWod: vi.fn().mockName('WodService.copyWod'),
       notifyRefresh: vi.fn().mockName('WodService.notifyRefresh')
     } as any;
     mockNotificationService = {
@@ -90,7 +97,8 @@ describe('WodDetailComponent', () => {
           provide: AccessService,
           useValue: {
             memberships: signal([{gymId: 5, gymName: 'Box', gymRole: 'COACH', permissions: []}]),
-            userId: signal(1)
+            userId: signal(1),
+            gymsWithPermission: writableGyms
           }
         },
         {provide: WodService, useValue: mockWodService},
@@ -104,7 +112,8 @@ describe('WodDetailComponent', () => {
         {provide: NotificationService, useValue: mockNotificationService},
         {provide: Location, useValue: mockLocation},
         {provide: ScoreService, useValue: mockScoreService},
-        {provide: UserService, useValue: {getDisplayNames: vi.fn().mockReturnValue(of([]))}}
+        {provide: UserService, useValue: {getDisplayNames: vi.fn().mockReturnValue(of([]))}},
+        {provide: GymService, useValue: {getAthletes: vi.fn().mockReturnValue(of([]))}}
       ]
     }).compileComponents();
 
@@ -131,7 +140,7 @@ describe('WodDetailComponent', () => {
 
   describe('visibility', () => {
     it('should be PUBLIC, GYM or PRIVATE', () => {
-      init(buildWod({isPublic: true}));
+      init(buildWod({isPublic: true, competition: false}));
       expect(component.visibility()).toBe('PUBLIC');
 
       component.wod.set(buildWod({gymId: 5}));
@@ -150,13 +159,13 @@ describe('WodDetailComponent', () => {
     });
 
     it('should hide the actions when Aldebaran refuses modification', () => {
-      init(buildWod({capabilities: {canModify: false, locked: false}}));
+      init(buildWod({capabilities: {canModify: false, locked: false, canJudge: false}}));
       expect(component.canModify()).toBe(false);
       expect(fixture.nativeElement.querySelector('app-detail-admin-actions')).toBeNull();
     });
 
     it('should hide the actions and show a badge when the WOD is locked', () => {
-      init(buildWod({capabilities: {canModify: true, locked: true}}));
+      init(buildWod({capabilities: {canModify: true, locked: true, canJudge: false}}));
       expect(component.canModify()).toBe(false);
       expect(component.isLocked()).toBe(true);
       expect(fixture.nativeElement.textContent).toContain('WOD.MESSAGES.LOCKED_BADGE');
@@ -345,7 +354,7 @@ describe('WodDetailComponent', () => {
 
     it('should refresh the WOD (lock state) after a score change', () => {
       init();
-      mockWodService.getWod.mockReturnValue(of(buildWod({capabilities: {canModify: true, locked: true}})));
+      mockWodService.getWod.mockReturnValue(of(buildWod({capabilities: {canModify: true, locked: true, canJudge: false}})));
 
       store().changed$.next();
       fixture.detectChanges();
@@ -353,6 +362,63 @@ describe('WodDetailComponent', () => {
       expect(mockWodService.getWod).toHaveBeenCalledTimes(2);
       expect(component.isLocked()).toBe(true);
       expect(component.canModify()).toBe(false);
+    });
+  });
+
+  describe('competition and copy', () => {
+    it('should flag a competition copy: gym next to the title, link to the original, no copy button', () => {
+      writableGyms.mockReturnValue([{gymId: 5, gymName: 'Box'}]);
+      init(buildWod({gymId: 5, competition: true, sourceWodId: 3}));
+
+      expect(fixture.nativeElement.querySelector('#competition-badge')).toBeTruthy();
+      const header: HTMLElement = fixture.nativeElement.querySelector('app-detail-header');
+      expect(header.querySelector('h1')?.textContent).toContain('(Box)');
+      expect(header.querySelector('#source-wod')?.getAttribute('href')).toBe('/wods/3');
+      expect(fixture.nativeElement.querySelector('#copy-wod')).toBeNull();
+    });
+
+    it('should offer the copy in the title bar, only to users programming a gym', () => {
+      init();
+      expect(fixture.nativeElement.querySelector('#copy-wod')).toBeNull();
+
+      writableGyms.mockReturnValue([{gymId: 5, gymName: 'Box'}]);
+      init();
+      expect(fixture.nativeElement.querySelector('app-detail-header #copy-wod')).toBeTruthy();
+    });
+
+    it('should copy an Open WOD as a competition WOD of the gym, then open the copy', () => {
+      writableGyms.mockReturnValue([{gymId: 5, gymName: 'Box'}]);
+      mockWodService.copyWod.mockReturnValue(of(buildWod({id: 42, gymId: 5, competition: true})));
+      const navigate = vi.spyOn(router, 'navigate').mockResolvedValue(true);
+      init(buildWod({isPublic: true, category: 'OPEN'}));
+
+      (fixture.nativeElement.querySelector('#copy-wod') as HTMLButtonElement).click();
+      fixture.detectChanges();
+      expect(component.copyDraft()).toEqual({gymId: 5, competition: true});
+
+      (fixture.nativeElement.querySelector('#copy-confirm') as HTMLButtonElement).click();
+
+      expect(mockWodService.copyWod).toHaveBeenCalledWith(1, {gymId: 5, competition: true});
+      expect(mockWodService.notifyRefresh).toHaveBeenCalled();
+      expect(navigate).toHaveBeenCalledWith(['/wods', 42]);
+    });
+
+    it('should never offer a copy into a virtual programming', () => {
+      writableGyms.mockReturnValue([{gymId: 8, gymName: 'Zeus', gymProgramming: true}]);
+      init(buildWod({isPublic: true, category: 'OPEN'}));
+      expect(fixture.nativeElement.querySelector('#copy-wod')).toBeNull();
+    });
+
+    it('should show the backend message when the copy fails', () => {
+      writableGyms.mockReturnValue([{gymId: 5, gymName: 'Box'}]);
+      mockWodService.copyWod.mockReturnValue(throwError(() => ({status: 400, error: {detail: 'No gym'}})));
+      init();
+
+      component.openCopy(component.wod()!);
+      component.onCopy(component.wod()!);
+
+      expect(mockNotificationService.showError).toHaveBeenCalledWith('No gym');
+      expect(component.copyDraft()).not.toBeNull();
     });
   });
 });

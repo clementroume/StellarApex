@@ -355,6 +355,44 @@ class GymControllerIT extends BaseIntegrationTest {
         .andExpect(status().isForbidden());
   }
 
+  @Test
+  @DisplayName("Athletes: SCORE_VERIFY lists usable members by name, athletes are forbidden")
+  void testAthletes_AccessControl() throws Exception {
+    // Given: the caller is an athlete, plus one pending member who must not be listed
+    createMembership(testUser, activeGym, GymRole.ATHLETE);
+    register("pending@test.com", "password1234");
+    User pending = userRepository.findByEmail("pending@test.com").orElseThrow();
+    membershipRepository.save(
+        Membership.builder()
+            .user(pending)
+            .gym(activeGym)
+            .gymRole(GymRole.ATHLETE)
+            .status(MembershipStatus.PENDING)
+            .build());
+
+    // When: an athlete asks -> Forbidden
+    mockMvc
+        .perform(get("/antares/gyms/" + activeGym.getId() + "/athletes").cookie(authCookies))
+        .andExpect(status().isForbidden());
+
+    // Given: the caller becomes a coach holding SCORE_VERIFY
+    Membership m =
+        membershipRepository
+            .findByUserIdAndGymId(testUser.getId(), activeGym.getId())
+            .orElseThrow();
+    m.setGymRole(GymRole.COACH);
+    m.getPermissions().add(apex.stellar.antares.model.Permission.SCORE_VERIFY);
+    membershipRepository.save(m);
+
+    // Then: only the usable member (the coach) is listed, with a display name
+    mockMvc
+        .perform(get("/antares/gyms/" + activeGym.getId() + "/athletes").cookie(authCookies))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.length()").value(1))
+        .andExpect(jsonPath("$[0].id").value(testUser.getId()))
+        .andExpect(jsonPath("$[0].displayName").value("Test U."));
+  }
+
   // Helper
   private void createMembership(User user, Gym gym, GymRole role) {
     Membership m =

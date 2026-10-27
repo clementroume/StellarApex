@@ -26,6 +26,8 @@ import {ScoreLeaderboardComponent} from '../scores/score-leaderboard/score-leade
 
 export type WodVisibility = 'PUBLIC' | 'GYM' | 'PRIVATE';
 
+// Official competition categories: their copies are competition WODs by default
+const COMPETITION_CATEGORIES = ['OPEN', 'QUARTERFINALS', 'SEMIFINALS', 'GAMES'];
 // Rep schemes that only restate the format ("AMRAP 20 min", "For time", "Tabata x 4")
 const FORMAT_SCHEME = /^(amrap|emom|tabata|for time)\b/i;
 // Rep schemes that describe the structure rather than list the movement quantities
@@ -54,6 +56,9 @@ export class WodDetailComponent {
   // --- STATE (SIGNALS) ---
   wod = signal<WodResponse | null>(null);
   isLoading = signal<boolean>(true);
+  /** Copy dialog: target gym and competition flag, null while closed. */
+  copyDraft = signal<{gymId: number; competition: boolean} | null>(null);
+  isCopying = signal<boolean>(false);
 
   // --- COMPUTED STATE ---
   activeLang = computed(() => this.translate.currentLang() ?? this.translate.fallbackLang() ?? 'en');
@@ -79,6 +84,14 @@ export class WodDetailComponent {
   });
 
   isLocked = computed(() => !!this.wod()?.capabilities?.locked);
+
+  /**
+   * Physical gyms where the user may program WODs (WOD_WRITE): targets of a copy. A virtual
+   * programming sells its own WODs and never copies (Aldebaran refuses it too).
+   */
+  copyTargets = computed(() => this.accessService.gymsWithPermission('WOD_WRITE').filter(g => !g.gymProgramming));
+  /** An original WOD can be copied by users programming a gym; a copy is never copied again. */
+  canCopy = computed(() => this.copyTargets().length > 0 && !this.wod()?.sourceWodId);
 
   gymName = computed(() => {
     const gymId = this.wod()?.gymId;
@@ -123,6 +136,47 @@ export class WodDetailComponent {
   // --- ACTIONS ---
   goBack(): void {
     this.location.back();
+  }
+
+  openCopy(wod: WodResponse): void {
+    const target = this.copyTargets()[0];
+    if (!target) return;
+    this.copyDraft.set({gymId: target.gymId, competition: COMPETITION_CATEGORIES.includes(wod.category ?? '')});
+  }
+
+  closeCopy(): void {
+    this.copyDraft.set(null);
+  }
+
+  onCopyGymChange(value: string): void {
+    this.copyDraft.update(d => d && {...d, gymId: Number(value)});
+  }
+
+  onCopyCompetitionChange(competition: boolean): void {
+    this.copyDraft.update(d => d && {...d, competition});
+  }
+
+  /** Copies the WOD into the chosen gym (private), then opens the copy. */
+  onCopy(wod: WodResponse): void {
+    const draft = this.copyDraft();
+    if (!draft || this.isCopying()) return;
+    this.isCopying.set(true);
+    this.wodService.copyWod(wod.id, draft).subscribe({
+      next: (copy) => {
+        this.isCopying.set(false);
+        this.copyDraft.set(null);
+        this.notificationService.showSuccess(this.translate.instant('WOD.MESSAGES.COPIED'));
+        this.wodService.notifyRefresh();
+        void this.router.navigate(['/wods', copy.id]);
+      },
+      error: (err: HttpErrorResponse) => {
+        this.isCopying.set(false);
+        const problem: ProblemDetail | undefined = err.error;
+        this.notificationService.showError(err.status === 403
+          ? this.translate.instant('WOD.MESSAGES.FORBIDDEN')
+          : problem?.detail || this.translate.instant('WOD.MESSAGES.COPY_ERROR'));
+      }
+    });
   }
 
   onDelete(wod: WodResponse): void {

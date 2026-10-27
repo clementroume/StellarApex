@@ -5,11 +5,15 @@ export type ScalingLevel = 'RX' | 'SCALED' | 'ELITE' | 'CUSTOM';
 
 /** Rights of the current user on a score, computed by Aldebaran (ScoreSecurity). */
 export interface ScoreCapabilities {
+  // Update/delete: the athlete until the score is verified, the gym's SCORE_VERIFY staff, admins
   canModify: boolean;
+  // Verify or withdraw the verification: SCORE_VERIFY staff of a competition WOD's gym (not on their own score)
+  canVerify: boolean;
 }
 
 export interface ScoreRequest {
   // --- Identification ---
+  // Athlete, when competition staff log the score for them (defaults to the current user)
   userId?: number;
   date: string;
   wodId: number;
@@ -75,6 +79,11 @@ export interface ScoreResponse {
   scalingNotes?: string;
   // --- Audit ---
   loggedAt: string;
+  // User who logged the score (the athlete, or staff logging it for them)
+  loggedBy?: number;
+  // --- Verification (competition WODs), absent while not verified ---
+  verifiedBy?: number | null;
+  verifiedAt?: string | null;
   // --- Per-user rights (computed per request) ---
   capabilities?: ScoreCapabilities;
 }

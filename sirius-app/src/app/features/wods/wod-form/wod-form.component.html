@@ -79,12 +79,23 @@
               }
             }
           }
-          <label class="flex items-center gap-3 cursor-pointer md:ml-auto">
-            <input type="checkbox" class="toggle toggle-success" formControlName="isPublic"/>
-            <ng-icon name="heroGlobeAlt"></ng-icon>
-            <span>{{ 'WOD.VISIBILITY.PUBLIC' | translate }}</span>
-          </label>
+          @if (!isCompetition()) {
+            <label class="flex items-center gap-3 cursor-pointer md:ml-auto">
+              <input type="checkbox" class="toggle toggle-success" formControlName="isPublic"/>
+              <ng-icon name="heroGlobeAlt"></ng-icon>
+              <span>{{ 'WOD.VISIBILITY.PUBLIC' | translate }}</span>
+            </label>
+          }
         </div>
+        @if (canBeCompetition()) {
+          <label class="flex items-start gap-3 cursor-pointer mt-3">
+            <input id="wod-competition" type="checkbox" class="toggle toggle-warning mt-0.5" formControlName="competition"/>
+            <span class="flex flex-col">
+              <span class="flex items-center gap-2"><ng-icon name="heroTrophy"></ng-icon>{{ 'WOD.FIELDS.COMPETITION' | translate }}</span>
+              <span class="text-sm opacity-70">{{ 'WOD.MESSAGES.COMPETITION_HINT' | translate }}</span>
+            </span>
+          </label>
+        }
         @if (isEditMode()) {
           <p class="text-sm opacity-70 mt-2">{{ 'WOD.MESSAGES.OWNERSHIP_LOCKED' | translate }}</p>
         }

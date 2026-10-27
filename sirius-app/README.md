@@ -69,14 +69,24 @@ The backends enforce every rule; Sirius only adapts what it shows:
   movement: quantity (reps omitted when they repeat the rep scheme, "14/12 cal", distance), name,
   variants and the men/women load and height ("61/43 kg", "60/50 cm"). Texts show in the user's
   language, falling back on the other one. The list shows "category / format" and filters on both.
-  Below the boxes, "Leaderboard" ranks each athlete's PR by level, for every gym or one of the
-  user's gyms (names from Antares, others anonymous), and "My scores on this WOD" lists the user's scores (level, PR badge, notes) with
+  Below the boxes, "Leaderboard" ranks each athlete's PR by level, worldwide or, with the
+  "My box(es)" / "My program(s)" boxes, in the user's boxes and/or programs only (names from Antares, others anonymous); the score form only
+  asks the gym of a public WOD score to members of several gyms, and "My scores on this WOD" lists the user's scores (level, PR badge, notes) with
   edit/delete when the backend allows it, and opens the log/edit form: fields follow the score type
   (time or reps at the time cap, rounds on the minute for an EMOM, load in the user's unit, calories,
   distance). AMRAP scores are total reps; when the WOD has reps per round they are shown as
   "312 reps · 10 rounds + 12 reps" and can be typed either way (live conversion). The WOD form
   suggests the reps per round from the movements. WODs with an official tiebreak (Open) show it and offer an optional,
   collapsed tiebreak time. The WOD form proposes the usual score type of the chosen format.
+* **Competitions**: the WOD form has a "Competition" toggle for physical gym WODs (never for a virtual
+  programming, `MembershipSummary.gymProgramming`; a competition WOD is never public); the copy
+  targets are physical gyms only, and an original WOD offers "Copy to my gym" in its title bar to users who program a gym (copy of an
+  Open WOD checked as competition by default). A copy shows its gym next to its title and a link to
+  its original on the right, and cannot be copied again. On a competition WOD the judge
+  (`capabilities.canJudge`) picks the athlete when logging a score (gym members from Antares); the
+  leaderboard shows every score to judges (to verify them) and verified scores only to the others by
+  default, with a "Verified" badge and Verify / Withdraw / edit / delete buttons when the backend
+  allows them; the history shows "Verified by" / "Logged by".
 * **Units**: a "Units" tab in My account (metric or imperial, `core/services/unit.service.ts`), saved
   in the account (`unitSystem`); without a choice it follows the language (French: metric). Values are
   converted for display only, rounded as gyms write them: loads (95 lb = 43 kg), heights (24/20 in =

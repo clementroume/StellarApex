@@ -91,9 +91,19 @@ of them:
 * **Scores**: athletes log scores for themselves on the WODs they can read and manage their own.
   Each score records the gym where it was performed (`gymId`): the WOD's gym for a gym WOD, else one
   of the athlete's gyms chosen when logging (or none). `SCORE_VERIFY` on that gym allows correcting
-  or deleting other athletes' scores (errors, cheating), including on public WODs such as the Open. Logging a score for someone else is admin-only for now (Aldebaran cannot check that the
-  athlete belongs to the gym). Each score carries `capabilities {canModify}`; other athletes' comments
-  and scaling notes are hidden from viewers who cannot moderate the score.
+  or deleting other athletes' scores (errors, cheating), including on public WODs such as the Open.
+  Logging a score for someone else is admin-only, except on competition WODs (below). Each score
+  carries `capabilities {canModify, canVerify}`; other athletes' comments and scaling notes are hidden
+  from viewers who cannot moderate the score.
+* **Competition WODs** (`competition`, physical gym WODs only, never public: 400 otherwise; Antares
+  tells the gym type): staff holding
+  `SCORE_VERIFY` in the WOD's gym log scores for the gym's members (`userId`; Antares confirms the
+  membership through its internal API with `X-Internal-Secret`, `client/AntaresClient`; 503 if
+  Antares does not answer, never authorized by default). Such a score is verified at once. They also
+  verify other athletes' scores or withdraw the verification (never on their own score). A verified
+  score is locked for its athlete (staff included); the staff can still correct it. Every score
+  records who logged it (`loggedBy`) and who verified it (`verifiedBy`, `verifiedAt`). Scores are
+  verified on competition WODs only.
 * **Muscles / movements**: read by everyone, written (and exported to CSV) by platform ADMIN only.
 * A platform ADMIN can do everything.
 
@@ -142,8 +152,11 @@ Rules live in `security/WodSecurity` and `security/ScoreSecurity`, used from `@P
   `categories` present for the current `search` / `scope` / `gymId` / `authorId` (so the UI never
   offers an empty chip),
   plus `gymIds` and `authorIds` of readable WODs (admin selectors).
-* `GET /{id}`: full WOD with its movements and `capabilities` (`canModify`, `locked`) computed for
-  the current user.
+* `GET /{id}`: full WOD with its movements and `capabilities` (`canModify`, `locked`, `canJudge`:
+  judge of a competition WOD) computed for the current user.
+* `POST /{id}/copy` `{gymId, competition}`: copy a readable WOD into a physical gym (`WOD_WRITE` there;
+  400 for a virtual programming) or as a personal WOD (`gymId` null), e.g. a public Open WOD copied as a gym competition WOD. The copy is
+  private, owned by the caller, keeps `sourceWodId` and has its own scores and leaderboard.
 * `POST /`, `PUT /{id}`, `DELETE /{id}`: manage a WOD (rules above).
 * `GET /reference-data`: WOD formats, categories, score types and unit groups.
 
@@ -161,7 +174,8 @@ Rules live in `security/WodSecurity` and `security/ScoreSecurity`, used from `@P
   a 5-ft lunge section counts as a rep, as in the Open) lets clients enter and show the total as
   rounds + reps. A score sent as `rounds` + `reps` is stored as `rounds * repsPerRound + reps`
   (400 if the WOD has no fixed round). Ladders, chippers and rounds that differ for men and women
-  (Open 18.1) have none. Migration V7 converted the former `ROUNDS_REPS` WODs and scores.
+  (Open 18.1) have none. Migration V7 converted the former `ROUNDS_REPS` WODs and scores; V9 adds
+  competition WODs, WOD copies and score verification.
 * Tiebreak: a WOD may define its official tiebreak (`tiebreakEn` / `tiebreakFr`, e.g. Open
   workouts); a score's `tiebreakSeconds` is always optional, kept only for such WODs (and for a TIME
   WOD only when time-capped), and only separates equal scores in compare and leaderboards.
@@ -170,7 +184,11 @@ Rules live in `security/WodSecurity` and `security/ScoreSecurity`, used from `@P
   reps (`service/ScoreRanking`, shared with compare and leaderboards).
 * `GET /{id}/compare`: rank and percentile of a score among the other athletes' PRs at its level.
 * `GET /leaderboard/{id}`: leaderboard of a WOD (`scaling`, default `RX`): each athlete's PR at that
-  level; optional `gymId` (one of the caller's gyms, 403 otherwise) keeps the scores performed there.
+  level; optional `gymIds` (comma-separated, all among the caller's gyms, 403 otherwise) keeps the
+  scores performed there (e.g. the caller's boxes, or programs);
+  `verifiedOnly=true` keeps verified PRs only (an athlete whose PR is not verified is left out).
+* `POST /{id}/verify`, `DELETE /{id}/verify`: verify a competition score or withdraw the verification
+  (rules above; 400 outside a competition WOD).
   Responses carry user IDs only: clients resolve names with Antares `POST /users/display-names`.
 * `GET /reference-data`: scaling levels.
 

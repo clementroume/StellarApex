@@ -87,6 +87,20 @@ export class WodFormComponent implements OnInit {
   });
   canTargetGym = computed(() => this.writableGyms().length > 0);
 
+  /** Competitions exist in physical gyms only: never in a personal WOD nor a virtual programming. */
+  canBeCompetition(): boolean {
+    const v = this.wodForm.getRawValue();
+    if (v.visibility !== 'GYM') return false;
+    const gymId = this.originalWod()?.gymId ?? v.gymId;
+    const gym = this.accessService.memberships().find(m => m.gymId === gymId);
+    return !gym?.gymProgramming;
+  }
+
+  /** A gym WOD flagged as competition: the public toggle is then hidden (never public). */
+  isCompetition(): boolean {
+    return this.canBeCompetition() && this.wodForm.getRawValue().competition;
+  }
+
   wodForm = this.fb.nonNullable.group({
     // --- Identification ---
     title: ['', [Validators.required, Validators.maxLength(100)]],
@@ -97,6 +111,8 @@ export class WodFormComponent implements OnInit {
     visibility: ['PRIVATE' as WodFormVisibility],
     gymId: [null as number | null],
     isPublic: [false],
+    // Competition WOD: gym WODs only, never public (its staff logs and verifies the scores)
+    competition: [false],
     // --- Description and Notes ---
     descriptionFr: ['', [Validators.maxLength(4000)]],
     descriptionEn: ['', [Validators.maxLength(4000)]],
@@ -322,6 +338,7 @@ export class WodFormComponent implements OnInit {
           visibility: wod.gymId == null ? 'PRIVATE' : 'GYM',
           gymId: wod.gymId ?? null,
           isPublic: wod.isPublic,
+          competition: wod.competition,
           // --- Description and Notes ---
           descriptionFr: wod.descriptionFr || '',
           descriptionEn: wod.descriptionEn || '',
@@ -427,7 +444,9 @@ export class WodFormComponent implements OnInit {
       // --- Authorship and Visibility ---
       authorId: isGym ? undefined : (original?.authorId ?? this.accessService.userId() ?? undefined),
       gymId: isGym ? (original?.gymId ?? v.gymId ?? undefined) : undefined,
-      isPublic: v.isPublic,
+      // A competition WOD is reserved to its gym: never public (Aldebaran checks it too)
+      isPublic: this.isCompetition() ? false : v.isPublic,
+      competition: this.isCompetition(),
       // --- Description and Notes ---
       descriptionEn: v.descriptionEn.trim() || undefined,
       descriptionFr: v.descriptionFr.trim() || undefined,

@@ -51,6 +51,9 @@ Vitest (jsdom) through `ng test`. Commands: `npm test`, `npm run build`, `npm st
 - Loads, distances and heights are shown through `core/services/unit.service.ts` (`formatLoad`,
   `formatDistance`: user's metric/imperial choice, men/women pairs "43/29 kg"); never print a stored unit.
   Lifted loads in scores use `formatScoreLoad` / `convertScoreLoad` (0.5 kg / 1 lb precision).
+- Competition WODs: `WodResponse.capabilities.canJudge` decides the athlete selector of the score form
+  (`GymService.getAthletes`); per-score buttons follow `ScoreCapabilities.canModify/canVerify`;
+  `WodScoresStore.setVerified`. The copy dialog lives in the WOD detail (`WodService.copyWod`).
 - Scores on the WOD detail: `features/wods/scores` (`WodScoresStore` provided by the detail, shared by
   `score-best`, `score-history`, `score-form`; `formatScore` in `score.utils.ts`).
 

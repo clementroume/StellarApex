@@ -16,7 +16,18 @@
 
     @if (wod(); as w) {
 
-      <app-detail-header [title]="w.title" (back)="goBack()"></app-detail-header>
+      <app-detail-header [title]="w.title" [subtitle]="w.sourceWodId ? (gymName() ?? undefined) : undefined" (back)="goBack()">
+        @if (w.sourceWodId) {
+          <a id="source-wod" [routerLink]="['/wods', w.sourceWodId]" class="link link-hover text-sm flex items-center gap-1">
+            <ng-icon name="heroDocumentDuplicate"></ng-icon>{{ 'WOD.MESSAGES.COPIED_FROM' | translate }}
+          </a>
+        } @else if (canCopy()) {
+          <button type="button" id="copy-wod" class="btn btn-outline btn-sm" (click)="openCopy(w)">
+            <ng-icon name="heroDocumentDuplicate"></ng-icon>
+            {{ 'WOD.ACTIONS.COPY' | translate }}
+          </button>
+        }
+      </app-detail-header>
 
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start mb-8">
 
@@ -87,6 +98,12 @@
                   </div>
                 }
               }
+              @if (w.competition) {
+                <div id="competition-badge" class="badge badge-warning badge-soft badge-lg gap-1" [title]="'WOD.MESSAGES.COMPETITION_HINT' | translate">
+                  <ng-icon name="heroTrophy"></ng-icon>
+                  {{ 'WOD.FIELDS.COMPETITION' | translate }}
+                </div>
+              }
               @if (w.category) {
                 <div class="badge badge-secondary badge-soft badge-lg">{{ 'WOD.CATEGORIES.' + w.category | translate }}</div>
               }
@@ -105,6 +122,7 @@
               <dt class="font-semibold text-base-content/70">{{ 'WOD.FIELDS.SCORE_TYPE' | translate }}</dt>
               <dd>{{ 'WOD.SCORE_TYPES.' + w.scoreType | translate }}</dd>
             </dl>
+
 
             @if (description()) {
               <div>
@@ -150,6 +168,41 @@
           }
         </app-detail-card>
       </div>
+
+      @if (copyDraft(); as draft) {
+        <div class="modal modal-open" role="dialog" aria-modal="true" aria-labelledby="copy-title">
+          <div class="modal-box flex flex-col gap-4">
+            <h3 id="copy-title" class="text-lg font-bold">{{ 'WOD.TITLES.COPY' | translate }}</h3>
+            <p class="text-sm opacity-70">{{ 'WOD.MESSAGES.COPY_HINT' | translate }}</p>
+            <label class="form-control w-full">
+              <div class="label"><span class="label-text">{{ 'WOD.FIELDS.GYM' | translate }}</span></div>
+              <select id="copy-gym" class="select select-bordered w-full" (change)="onCopyGymChange($any($event.target).value)">
+                @for (gym of copyTargets(); track gym.gymId) {
+                  <option [value]="gym.gymId" [selected]="gym.gymId === draft.gymId">{{ gym.gymName }}</option>
+                }
+              </select>
+            </label>
+            <label class="flex items-start gap-3 cursor-pointer">
+              <input id="copy-competition" type="checkbox" class="toggle toggle-warning mt-0.5" [checked]="draft.competition"
+                     (change)="onCopyCompetitionChange($any($event.target).checked)"/>
+              <span class="flex flex-col">
+                <span class="flex items-center gap-2"><ng-icon name="heroTrophy"></ng-icon>{{ 'WOD.FIELDS.COMPETITION' | translate }}</span>
+                <span class="text-sm opacity-70">{{ 'WOD.MESSAGES.COMPETITION_HINT' | translate }}</span>
+              </span>
+            </label>
+            <div class="modal-action">
+              <button type="button" class="btn btn-ghost" (click)="closeCopy()">{{ 'GLOBAL.CANCEL' | translate }}</button>
+              <button type="button" id="copy-confirm" class="btn btn-primary" [disabled]="isCopying()" (click)="onCopy(w)">
+                @if (isCopying()) {
+                  <span class="loading loading-spinner loading-sm"></span>
+                }
+                {{ 'WOD.ACTIONS.COPY' | translate }}
+              </button>
+            </div>
+          </div>
+          <div class="modal-backdrop" (click)="closeCopy()"></div>
+        </div>
+      }
 
       @if (scoresStore.editing()) {
         <app-score-form></app-score-form>

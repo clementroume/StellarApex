@@ -1,7 +1,9 @@
 package apex.stellar.aldebaran.security;
 
+import static apex.stellar.aldebaran.security.SecurityService.SCORE_VERIFY;
 import static apex.stellar.aldebaran.security.SecurityService.WOD_WRITE;
 
+import apex.stellar.aldebaran.dto.WodCopyRequest;
 import apex.stellar.aldebaran.dto.WodRequest;
 import apex.stellar.aldebaran.dto.WodResponse;
 import apex.stellar.aldebaran.service.WodService;
@@ -86,6 +88,38 @@ public class WodSecurity {
 
     // Personal WOD Creation (Self-service)
     return Objects.equals(request.authorId(), principal.getId());
+  }
+
+  /**
+   * Evaluates if the authenticated user judges a competition WOD: logs scores for the members of
+   * its gym and verifies scores. The per-score rules stay in {@code ScoreSecurity}; this flag only
+   * tells clients which tools to offer.
+   *
+   * @param wod The WOD to evaluate.
+   * @param principal The authenticated user context.
+   * @return {@code true} for a competition WOD and SCORE_VERIFY in its gym (or an admin).
+   */
+  public boolean canJudge(WodResponse wod, AldebaranUserPrincipal principal) {
+    return wod.competition()
+        && (securityService.isAdmin(principal)
+            || securityService.hasGymPermission(principal, wod.gymId(), SCORE_VERIFY));
+  }
+
+  /**
+   * Evaluates if the authenticated user may copy a WOD to the requested target (reading the source
+   * is checked apart with {@link #canRead}): WOD_WRITE in the target gym, anyone for a personal
+   * copy.
+   *
+   * @param request The copy target.
+   * @param principal The authenticated user context.
+   * @return {@code true} if authorized.
+   */
+  public boolean canCopy(WodCopyRequest request, AldebaranUserPrincipal principal) {
+
+    if (securityService.isAdmin(principal) || request.gymId() == null) {
+      return true;
+    }
+    return securityService.hasGymPermission(principal, request.gymId(), WOD_WRITE);
   }
 
   /**

@@ -11,15 +11,26 @@
                   (click)="onScalingChange(level)">{{ 'SCORE.SCALING.' + level | translate }}</button>
         }
       </div>
-      @if (gymChoices().length > 0) {
-        <select id="leaderboard-gym" class="select select-bordered select-sm"
-                [attr.aria-label]="'SCORE.LEADERBOARD.SCOPE' | translate"
-                (change)="onGymChange($any($event.target).value)">
-          <option value="" [selected]="gymId() === null">{{ 'SCORE.LEADERBOARD.ALL_GYMS' | translate }}</option>
-          @for (gym of gymChoices(); track gym.gymId) {
-            <option [value]="gym.gymId" [selected]="gymId() === gym.gymId">{{ gym.gymName }}</option>
-          }
-        </select>
+      @if (isCompetition()) {
+        <label class="flex items-center gap-2 cursor-pointer text-sm">
+          <input id="leaderboard-verified" type="checkbox" class="checkbox checkbox-sm checkbox-success"
+                 [checked]="verifiedOnly()" (change)="onVerifiedOnlyChange($any($event.target).checked)"/>
+          {{ 'SCORE.LEADERBOARD.VERIFIED_ONLY' | translate }}
+        </label>
+      }
+      @if (boxes().length > 0) {
+        <label class="flex items-center gap-2 cursor-pointer text-sm">
+          <input id="leaderboard-my-boxes" type="checkbox" class="checkbox checkbox-sm checkbox-primary"
+                 [checked]="myBoxes()" (change)="onMyBoxesChange($any($event.target).checked)"/>
+          {{ (boxes().length > 1 ? 'SCORE.LEADERBOARD.MY_BOXES' : 'SCORE.LEADERBOARD.MY_BOX') | translate }}
+        </label>
+      }
+      @if (progs().length > 0) {
+        <label class="flex items-center gap-2 cursor-pointer text-sm">
+          <input id="leaderboard-my-progs" type="checkbox" class="checkbox checkbox-sm checkbox-secondary"
+                 [checked]="myProgs()" (change)="onMyProgsChange($any($event.target).checked)"/>
+          {{ (progs().length > 1 ? 'SCORE.LEADERBOARD.MY_PROGS' : 'SCORE.LEADERBOARD.MY_PROG') | translate }}
+        </label>
       }
     </div>
   </div>
@@ -31,13 +42,44 @@
   } @else {
     <ol class="flex flex-col divide-y divide-base-200">
       @for (score of rows(); track score.id; let i = $index) {
-        <li class="py-2 flex items-center gap-3 rounded-box px-2" [class.bg-primary/10]="score.userId === myId()"
+        <li class="py-2 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-box px-2" [class.bg-primary/10]="score.userId === myId()"
             [attr.aria-current]="score.userId === myId() ? 'true' : null">
           <span class="w-8 text-right font-bold tabular-nums">{{ i + 1 }}</span>
-          <span class="flex-1 truncate" [class.italic]="!names()[score.userId]">{{ name(score) }}</span>
+          <span class="flex-1 min-w-24 truncate" [class.italic]="!names()[score.userId]">{{ name(score) }}</span>
+          @if (score.verifiedAt) {
+            <span class="text-success" [title]="'SCORE.VERIFIED' | translate" [attr.aria-label]="'SCORE.VERIFIED' | translate">
+              <ng-icon name="heroCheckBadge"></ng-icon>
+            </span>
+          }
           <span class="font-semibold">{{ value(score) }}</span>
           @if (tiebreak(score); as tb) {
             <span class="text-sm opacity-70">{{ 'SCORE.TIEBREAK_SHORT' | translate: {time: tb} }}</span>
+          }
+          @if (score.capabilities?.canVerify || canModerate(score)) {
+            <span class="flex gap-1">
+              @if (score.capabilities?.canVerify) {
+                @if (score.verifiedAt) {
+                  <button type="button" class="btn btn-ghost btn-xs btn-square" (click)="store.setVerified(score, false)"
+                          [attr.aria-label]="'SCORE.ACTIONS.UNVERIFY' | translate" [title]="'SCORE.ACTIONS.UNVERIFY' | translate">
+                    <ng-icon name="heroXMark"></ng-icon>
+                  </button>
+                } @else {
+                  <button type="button" class="btn btn-success btn-soft btn-xs" (click)="store.setVerified(score, true)">
+                    <ng-icon name="heroCheckBadge"></ng-icon>{{ 'SCORE.ACTIONS.VERIFY' | translate }}
+                  </button>
+                }
+              }
+              @if (canModerate(score)) {
+                <button type="button" class="btn btn-ghost btn-xs btn-square" (click)="store.openEdit(score)"
+                        [attr.aria-label]="'GLOBAL.EDIT' | translate" [title]="'GLOBAL.EDIT' | translate">
+                  <ng-icon name="heroPencilSquare"></ng-icon>
+                </button>
+                <button type="button" class="btn btn-ghost btn-xs btn-square text-error" (click)="store.delete(score)"
+                        [attr.aria-label]="'GLOBAL.DELETE' | translate" [title]="'GLOBAL.DELETE' | translate">
+                  <ng-icon name="heroTrash"></ng-icon>
+                </button>
+              }
+            </span>
           }
         </li>
       }

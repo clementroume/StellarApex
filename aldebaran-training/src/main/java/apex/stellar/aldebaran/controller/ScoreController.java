@@ -11,6 +11,7 @@ import apex.stellar.aldebaran.service.ScoreCapabilityService;
 import apex.stellar.aldebaran.service.ScoreService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
@@ -70,6 +71,9 @@ public class ScoreController {
    *
    * <ul>
    *   <li>Users can log scores for themselves on the WODs they can read.
+   *   <li>On a competition WOD, staff holding SCORE_VERIFY in its gym can log the score of a member
+   *       of that gym ({@code userId}); Antares confirms the membership (503 if unavailable). Such
+   *       a score is verified at once.
    *   <li>Admins can log scores for anyone.
    * </ul>
    *
@@ -92,8 +96,8 @@ public class ScoreController {
    * <p><b>Security:</b>
    *
    * <ul>
-   *   <li>Owners can update their own scores.
-   *   <li>Staff holding SCORE_VERIFY in the WOD's gym can correct their athletes' scores.
+   *   <li>Owners can update their own scores until they are verified.
+   *   <li>Staff holding SCORE_VERIFY in the score's gym can correct their athletes' scores.
    *   <li>Admins can update any score.
    * </ul>
    *
@@ -132,6 +136,43 @@ public class ScoreController {
   }
 
   /**
+   * Verifies a score of a competition WOD (judging).
+   *
+   * <p><b>Security:</b> staff holding SCORE_VERIFY in the gym of the competition WOD, never on
+   * their own score, or admins. A verified score is locked for its athlete.
+   *
+   * @param id The ID of the score.
+   * @param principal The authenticated user.
+   * @return The verified score.
+   */
+  @PostMapping("/{id}/verify")
+  @PreAuthorize("@scoreSecurity.canVerify(#id, principal)")
+  public ResponseEntity<ScoreResponse> verifyScore(
+      @PathVariable Long id, @AuthenticationPrincipal AldebaranUserPrincipal principal) {
+
+    return ResponseEntity.ok(
+        scoreCapabilityService.forViewer(scoreService.setVerified(id, true), principal));
+  }
+
+  /**
+   * Withdraws the verification of a score, which unlocks it for its athlete.
+   *
+   * <p><b>Security:</b> same rules as verification.
+   *
+   * @param id The ID of the score.
+   * @param principal The authenticated user.
+   * @return The score, no longer verified.
+   */
+  @DeleteMapping("/{id}/verify")
+  @PreAuthorize("@scoreSecurity.canVerify(#id, principal)")
+  public ResponseEntity<ScoreResponse> unverifyScore(
+      @PathVariable Long id, @AuthenticationPrincipal AldebaranUserPrincipal principal) {
+
+    return ResponseEntity.ok(
+        scoreCapabilityService.forViewer(scoreService.setVerified(id, false), principal));
+  }
+
+  /**
    * Calculates the rank and percentile of a specific score against the Personal Records of the
    * other athletes at the same scaling level.
    *
@@ -153,24 +194,27 @@ public class ScoreController {
    *
    * @param id The ID of the WOD.
    * @param scaling The scaling level to filter by (default: RX).
-   * @param gymId Optional gym: only the scores performed there (one of the user's gyms).
+   * @param gymIds Optional gyms (all among the user's gyms, 403 otherwise): only the scores
+   *     performed there, e.g. "my box(es)" or "my program(s)"; worldwide when absent.
+   * @param verifiedOnly Only verified scores (competition WODs); default false.
    * @param pageable Pagination info.
    * @param principal The authenticated user.
    * @return A page of top scores.
    */
   @GetMapping("/leaderboard/{id}")
   @PreAuthorize(
-      "@wodSecurity.canRead(#id, principal) and @scoreSecurity.canUseGym(#gymId, principal)")
+      "@wodSecurity.canRead(#id, principal) and @scoreSecurity.canUseGyms(#gymIds, principal)")
   public ResponseEntity<Slice<ScoreResponse>> getLeaderboard(
       @PathVariable Long id,
       @RequestParam(defaultValue = "RX") ScalingLevel scaling,
-      @RequestParam(required = false) Long gymId,
+      @RequestParam(required = false) List<Long> gymIds,
+      @RequestParam(defaultValue = "false") boolean verifiedOnly,
       @PageableDefault(size = 20) Pageable pageable,
       @AuthenticationPrincipal AldebaranUserPrincipal principal) {
 
     return ResponseEntity.ok(
         scoreService
-            .getLeaderboard(id, scaling, gymId, pageable)
+            .getLeaderboard(id, scaling, gymIds, verifiedOnly, pageable)
             .map(score -> scoreCapabilityService.forViewer(score, principal)));
   }
 

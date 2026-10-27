@@ -69,7 +69,8 @@ http:
 
     # --- 2. Antares-Auth Sirius Router ---
     antares-auth-router:
-      rule: "Host(`stellar.apex`) && PathPrefix(`/antares`)" # Match 'stellar.apex/antares...'.
+      # Match 'stellar.apex/antares...' except the internal API, reserved to Aldebaran on the Docker network.
+      rule: "Host(`stellar.apex`) && PathPrefix(`/antares`) && !PathPrefix(`/antares/internal`)"
       entryPoints: [ "websecure" ]              # Use the 'websecure' (HTTPS) entrypoint.
       tls: true                                 # Enable TLS (HTTPS).
       priority: 10                              # Higher priority to override the main app router.

@@ -41,6 +41,8 @@ import {
   heroVideoCamera,
   heroVideoCameraSlash,
   heroXMark,
+  heroCheckBadge,
+  heroDocumentDuplicate,
 } from '@ng-icons/heroicons/outline';
 import {
   hugeBodyPartMuscle,
@@ -94,7 +96,9 @@ export const APP_ICONS = {
   heroLockClosed,
   heroLifebuoy,
   heroXMark,
-  heroTrophy
+  heroTrophy,
+  heroCheckBadge,
+  heroDocumentDuplicate
 };
 
 export const appConfig: ApplicationConfig = {

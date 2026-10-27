@@ -271,6 +271,7 @@ class WodControllerIT extends BaseIntegrationTest {
     WodRequest girls =
         new WodRequest(
             "Girls Test", WodType.FOR_TIME, WodCategory.GIRLS, ScoreType.TIME, null, 101L, true,
+            false,
             "21-15-9 reps", "21-15-9 répétitions", null, null, null, null, null, null, null, null, "21-15-9",
             List.of(movement));
     String body =
@@ -299,7 +300,7 @@ class WodControllerIT extends BaseIntegrationTest {
 
     WodRequest uncategorized =
         new WodRequest(
-            "Girls Test", WodType.FOR_TIME, null, ScoreType.TIME, null, 101L, true, null, null, null,
+            "Girls Test", WodType.FOR_TIME, null, ScoreType.TIME, null, 101L, true, false, null, null, null,
             null, null, null,
             null, null, null, null, "21-15-9", List.of(movement));
     mockMvc
@@ -331,6 +332,7 @@ class WodControllerIT extends BaseIntegrationTest {
             null,
             101L,
             true,
+            false,
             "Desc",
             null, null, null, null, null,
             600, null,
@@ -403,6 +405,7 @@ class WodControllerIT extends BaseIntegrationTest {
             null,
             101L,
             true,
+            false,
             "Desc",
             null, null, null, null, null,
             600, null,
@@ -447,6 +450,7 @@ class WodControllerIT extends BaseIntegrationTest {
             null,
             101L,
             true,
+            false,
             "Hero Wod",
             null,
             "Wear a vest",
@@ -498,7 +502,7 @@ class WodControllerIT extends BaseIntegrationTest {
             ScoreType.NONE,
             100L, // authorId matches User
             null, // No Gym
-            false, // Private
+            false, false, // Private
             null, null, null, null, null, null, null, null,
             60,
             10,
@@ -541,6 +545,7 @@ class WodControllerIT extends BaseIntegrationTest {
             null,
             101L, // Gym 101
             false,
+            false,
             null, null, null, null, null, null, null, null, null, null, null,
             List.of(
                 new WodMovementRequest(
@@ -580,6 +585,7 @@ class WodControllerIT extends BaseIntegrationTest {
             ScoreType.TIME,
             null,
             101L, // Gym 101
+            false,
             false,
             null, null, null, null, null, null, null, null, null, null, null,
             List.of(
@@ -622,6 +628,7 @@ class WodControllerIT extends BaseIntegrationTest {
             null,
             101L, // Target Gym 101
             false,
+            false,
             null, null, null, null, null, null, null, null, null, null, null,
             List.of(
                 new WodMovementRequest(
@@ -660,6 +667,7 @@ class WodControllerIT extends BaseIntegrationTest {
             ScoreType.TIME,
             null, null,
             true,
+            false,
             null, null, null, null, null, null,
             -10, null, // Negative time cap
             0,
@@ -694,6 +702,7 @@ class WodControllerIT extends BaseIntegrationTest {
             null,
             null, // GymId ignored in update
             true,
+            false,
             "Harder version",
             null,
             "Scale if needed",
@@ -748,6 +757,7 @@ class WodControllerIT extends BaseIntegrationTest {
             ScoreType.REPS,
             null, null,
             false,
+            false,
             null, null, null, null, null, null,
             0, null,
             0,
@@ -799,6 +809,7 @@ class WodControllerIT extends BaseIntegrationTest {
             ScoreType.TIME,
             null, null,
             false,
+            false,
             null, null, null, null, null, null, null, null, null, null, null,
             List.of(
                 new WodMovementRequest(
@@ -846,6 +857,7 @@ class WodControllerIT extends BaseIntegrationTest {
             ScoreType.TIME,
             null, null,
             false,
+            false,
             null, null, null, null, null, null, null, null, null, null, null,
             List.of(
                 new WodMovementRequest(
@@ -884,6 +896,7 @@ class WodControllerIT extends BaseIntegrationTest {
             ScoreType.TIME,
             null, null,
             true,
+            false,
             null, null, null, null, null, null,
             0, null,
             0,
@@ -939,6 +952,7 @@ class WodControllerIT extends BaseIntegrationTest {
             ScoreType.TIME,
             null, null,
             true,
+            false,
             null, null, null, null, null, null,
             0, null,
             0,

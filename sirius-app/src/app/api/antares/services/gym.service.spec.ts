@@ -137,4 +137,11 @@ describe('GymService', () => {
         expect(req.request.method).toBe('DELETE');
         req.flush(null, { status: 204, statusText: 'No Content' });
     });
+
+    it('getAthletes should GET /gyms/{gymId}/athletes', () => {
+        service.getAthletes(1).subscribe(athletes => expect(athletes).toEqual([{id: 9, displayName: 'Anne L.'}]));
+        const req = httpMock.expectOne(`${base}/gyms/1/athletes`);
+        expect(req.request.method).toBe('GET');
+        req.flush([{id: 9, displayName: 'Anne L.'}]);
+    });
 });

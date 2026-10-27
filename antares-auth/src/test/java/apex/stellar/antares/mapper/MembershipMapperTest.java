@@ -36,6 +36,7 @@ class MembershipMapperTest {
     assertEquals(7L, summary.gymId());
     assertEquals("Box", summary.gymName());
     assertEquals(GymStatus.ACTIVE, summary.gymStatus());
+    assertFalse(summary.gymProgramming());
     assertEquals(GymRole.ATHLETE, summary.gymRole());
     assertEquals(MembershipStatus.ACTIVE, summary.status());
   }

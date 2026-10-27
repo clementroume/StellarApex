@@ -36,6 +36,13 @@ resolving IDs from the `antares` schema with `JdbcTemplate`, then calls `config/
   comments/scaling notes from non-moderators.
 - Score ordering lives once in `service/ScoreRanking` (PR, compare, leaderboard sort); score/WOD
   consistency in `ScoreService.normalizeAndCheck` (`InvalidScoreException` → 400).
+- Antares facts Aldebaran cannot know (another user's membership) come from `client/AntaresClient`
+  (`application.antares.url`, internal API with `X-Internal-Secret`, 3 s timeout). Any failure throws
+  `AntaresUnavailableException` (503): never authorize by default. ITs mock it in
+  `BaseIntegrationTest` (`antaresClient`).
+- Competition WODs: `ScoreSecurity.canCreate` (staff logging), `canModify` (verified score locked for
+  its athlete), `canVerify`; `WodSecurity.canJudge` feeds `WodCapabilities.canJudge`;
+  `WodService.checkCompetition` (gym required, never public, `InvalidWodException` → 400).
 - Support session: `X-Auth-Actor-Id` (nullable `actorId`) = the admin acting as the user; rights stay
   the user's. `security/SupportSessionAuditFilter` logs every non-GET request with an actor at INFO.
 

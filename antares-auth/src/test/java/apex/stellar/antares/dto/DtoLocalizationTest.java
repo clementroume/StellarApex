@@ -303,19 +303,19 @@ class DtoLocalizationTest {
     Locale.setDefault(Locale.ENGLISH);
     Set<ConstraintViolation<GymRequest>> violationsEn = validator.validate(request);
     // Then (English)
-    assertViolation(violationsEn, "name", "Gym name is required");
-    assertViolation(violationsEn, "isProgramming", "Programming flag is required");
+    assertViolation(violationsEn, "name", "Box or program name is required");
+    assertViolation(violationsEn, "isProgramming", "Type flag (box or program) is required");
     assertViolation(violationsEn, "creationToken", "Creation token is required");
 
     // When (French)
     Locale.setDefault(Locale.FRENCH);
     Set<ConstraintViolation<GymRequest>> violationsFr = validator.validate(request);
     // Then (French)
-    assertViolation(violationsFr, "name", "Le nom de la salle est obligatoire.");
+    assertViolation(violationsFr, "name", "Le nom de la box ou de la prog est obligatoire.");
     assertViolation(
         violationsFr,
         "isProgramming",
-        "L''indicateur de type (Programmation ou Physique) est obligatoire.");
+        "Le type (box ou prog) est obligatoire.");
     assertViolation(violationsFr, "creationToken", "Le jeton de création (token) est obligatoire.");
   }
 
@@ -353,14 +353,14 @@ class DtoLocalizationTest {
     Locale.setDefault(Locale.ENGLISH);
     Set<ConstraintViolation<JoinGymRequest>> violationsEn = validator.validate(request);
     // Then (English)
-    assertViolation(violationsEn, "gymId", "Gym ID is required");
+    assertViolation(violationsEn, "gymId", "Box or program ID is required");
     assertViolation(violationsEn, "enrollmentCode", "Enrollment code is required");
 
     // When (French)
     Locale.setDefault(Locale.FRENCH);
     Set<ConstraintViolation<JoinGymRequest>> violationsFr = validator.validate(request);
     // Then (French)
-    assertViolation(violationsFr, "gymId", "L'identifiant de la salle est obligatoire.");
+    assertViolation(violationsFr, "gymId", "L'identifiant de la box ou de la prog est obligatoire.");
     assertViolation(violationsFr, "enrollmentCode", "Le code d'inscription est obligatoire.");
   }
 

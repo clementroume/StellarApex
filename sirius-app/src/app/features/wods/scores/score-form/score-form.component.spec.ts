@@ -9,6 +9,8 @@ import {UnitService} from '../../../../core/services/unit.service';
 import {AccessService} from '../../../../core/services/access.service';
 import {APP_ICONS} from '../../../../app.config';
 import {ScoreResponse} from '../../../../api/aldebaran/models/score.model';
+import {GymService} from '../../../../api/antares/services/gym.service';
+import {of} from 'rxjs';
 
 describe('ScoreFormComponent', () => {
   let fixture: ComponentFixture<ScoreFormComponent>;
@@ -16,6 +18,7 @@ describe('ScoreFormComponent', () => {
   let wod: WritableSignal<any>;
   let editing: WritableSignal<ScoreResponse | 'new' | null>;
   let store: any;
+  let gymService: {getAthletes: ReturnType<typeof vi.fn>};
 
   const init = (scoreType: string, edit: ScoreResponse | 'new' = 'new', extra: object = {}) => {
     wod.set({id: 7, scoreType, timeCapSeconds: 600, ...extra});
@@ -28,6 +31,8 @@ describe('ScoreFormComponent', () => {
   beforeEach(async () => {
     wod = signal(null);
     editing = signal(null);
+    gymService = {getAthletes: vi.fn().mockName('GymService.getAthletes')};
+    gymService.getAthletes.mockReturnValue(of([{id: 2, displayName: 'Me M.'}, {id: 9, displayName: 'Anne L.'}]));
     store = {
       wod, editing,
       isSaving: signal(false),
@@ -40,7 +45,8 @@ describe('ScoreFormComponent', () => {
         provideIcons(APP_ICONS),
         provideTranslateService(),
         {provide: WodScoresStore, useValue: store},
-        {provide: AccessService, useValue: {memberships: signal([{gymId: 5, gymName: 'Box'}, {gymId: 8, gymName: 'Zeus'}])}},
+        {provide: AccessService, useValue: {userId: signal(2), memberships: signal([{gymId: 5, gymName: 'Box'}, {gymId: 8, gymName: 'Zeus'}])}},
+        {provide: GymService, useValue: gymService},
         {
           provide: UnitService,
           useValue: {
@@ -192,5 +198,37 @@ describe('ScoreFormComponent', () => {
     component.form.patchValue({reps: 100});
     component.onSubmit();
     expect(store.save).toHaveBeenLastCalledWith(expect.objectContaining({gymId: null}));
+  });
+
+  it('should let the judge of a competition WOD log a score for a gym member', () => {
+    init('TIME', 'new', {gymId: 5, competition: true, capabilities: {canModify: false, locked: false, canJudge: true}});
+
+    expect(gymService.getAthletes).toHaveBeenCalledWith(5);
+    expect(component.athletes()).toEqual([{id: 9, displayName: 'Anne L.'}]);
+    expect(fixture.nativeElement.querySelector('#score-athlete')).not.toBeNull();
+
+    component.form.patchValue({athleteId: 9, minutes: 8, seconds: 0});
+    component.onSubmit();
+    expect(store.save).toHaveBeenCalledWith(expect.objectContaining({userId: 9, wodId: 7}));
+  });
+
+  it('should not offer the athlete choice to a non-judge, nor when editing', () => {
+    init('TIME', 'new', {gymId: 5, competition: true, capabilities: {canModify: false, locked: false, canJudge: false}});
+    expect(fixture.nativeElement.querySelector('#score-athlete')).toBeNull();
+    expect(gymService.getAthletes).not.toHaveBeenCalled();
+
+    component.form.patchValue({minutes: 8});
+    component.onSubmit();
+    expect(store.save).toHaveBeenCalledWith(expect.objectContaining({userId: undefined}));
+  });
+
+  it('should use the only gym of the user without asking', () => {
+    (TestBed.inject(AccessService) as any).memberships.set([{gymId: 5, gymName: 'Box'}]);
+    init('REPS');
+
+    expect(fixture.nativeElement.querySelector('#score-gym')).toBeNull();
+    component.form.patchValue({reps: 100});
+    component.onSubmit();
+    expect(store.save).toHaveBeenLastCalledWith(expect.objectContaining({gymId: 5}));
   });
 });

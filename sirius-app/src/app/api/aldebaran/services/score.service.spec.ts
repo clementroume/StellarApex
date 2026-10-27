@@ -16,7 +16,7 @@ describe('ScoreService', () => {
     id: 1,
     userId: 1,
     date: new Date().toISOString().split('T')[0],
-    wodSummary: {id: 1, title: 'Fran', wodType: 'FOR_TIME', scoreType: 'TIME', isPublic: true, createdAt: ''},
+    wodSummary: {id: 1, title: 'Fran', wodType: 'FOR_TIME', scoreType: 'TIME', isPublic: true, competition: false, createdAt: ''},
     timeSeconds: 180,
     scaling: 'RX',
     personalRecord: true,
@@ -132,5 +132,24 @@ describe('ScoreService', () => {
     const req = httpMock.expectOne(`${base}/scores/reference-data`);
     expect(req.request.method).toBe('GET');
     req.flush(mockReferenceData);
+  });
+
+  it('getLeaderboard should pass the gyms and verified-only filters', () => {
+    service.getLeaderboard(1, 'RX', 0, 20, [5, 8], true).subscribe();
+    const req = httpMock.expectOne(`${base}/scores/leaderboard/1?scaling=RX&page=0&size=20&gymIds=5,8&verifiedOnly=true`);
+    expect(req.request.method).toBe('GET');
+    req.flush(mockSlice);
+  });
+
+  it('verifyScore should POST and unverifyScore DELETE /scores/{id}/verify', () => {
+    service.verifyScore(1).subscribe();
+    const verify = httpMock.expectOne(`${base}/scores/1/verify`);
+    expect(verify.request.method).toBe('POST');
+    verify.flush(mockScoreResponse);
+
+    service.unverifyScore(1).subscribe();
+    const unverify = httpMock.expectOne(`${base}/scores/1/verify`);
+    expect(unverify.request.method).toBe('DELETE');
+    unverify.flush(mockScoreResponse);
   });
 });

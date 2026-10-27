@@ -2,7 +2,7 @@ import {inject, Injectable, signal} from '@angular/core';
 import {HttpClient, HttpContext, HttpParams} from '@angular/common/http';
 import {Observable, Subject} from 'rxjs';
 import {environment} from '../../../../environments/environment';
-import {WodFacets, WodReferenceData, WodRequest, WodResponse, WodScope, WodSummaryResponse,} from '../models/wod.model';
+import {WodCopyRequest, WodFacets, WodReferenceData, WodRequest, WodResponse, WodScope, WodSummaryResponse,} from '../models/wod.model';
 import {Slice} from '../../../core/models/pagination.model';
 
 export interface WodListFilters {
@@ -62,6 +62,10 @@ export class WodService {
 
   createWod(request: WodRequest): Observable<WodResponse> {
     return this.http.post<WodResponse>(this.buildUrl(), request);
+  }
+
+  copyWod(id: number, request: WodCopyRequest): Observable<WodResponse> {
+    return this.http.post<WodResponse>(this.buildUrl(`/${id}/copy`), request);
   }
 
   updateWod(id: number, request: WodRequest): Observable<WodResponse> {
