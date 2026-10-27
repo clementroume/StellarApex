@@ -21,6 +21,20 @@ class SecurityIT extends BaseIntegrationTest {
   }
 
   @Test
+  @DisplayName("Should reject request with a wrong internal secret, even a prefix of it (403)")
+  void shouldRejectRequestWithWrongInternalSecret() throws Exception {
+    for (String secret : new String[] {"wrong-secret", "test-internal", ""}) {
+      mockMvc
+          .perform(
+              get("/aldebaran/muscles")
+                  .header("X-Auth-User-Id", "1")
+                  .header("X-Auth-User-Role", "USER")
+                  .header("X-Internal-Secret", secret))
+          .andExpect(status().isForbidden());
+    }
+  }
+
+  @Test
   @DisplayName("Should accept request with valid internal secret (200)")
   void shouldAcceptRequestWithInternalSecret() throws Exception {
     // Valid secret + Valid Auth headers -> OK

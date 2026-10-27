@@ -98,6 +98,19 @@ class GymServiceTest {
   }
 
   @Test
+  @DisplayName("createGym: Should fail without a configured secret, even with a blank token")
+  void createGym_shouldFail_BlankSecret() {
+    // Given
+    ReflectionTestUtils.setField(gymService, "creationSecret", "");
+    GymRequest request = new GymRequest("A", "B", false, "");
+    User user = new User();
+
+    // When / Then
+    assertThrows(AccessDeniedException.class, () -> gymService.createGym(request, user));
+    verifyNoInteractions(gymRepository);
+  }
+
+  @Test
   @DisplayName("updateSettings: Should update fields successfully")
   void updateSettings_ShouldUpdateFields() {
     // Given

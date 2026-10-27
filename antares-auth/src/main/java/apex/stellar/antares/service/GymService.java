@@ -17,6 +17,8 @@ import apex.stellar.antares.model.PlatformRole;
 import apex.stellar.antares.model.User;
 import apex.stellar.antares.repository.jpa.GymRepository;
 import apex.stellar.antares.repository.jpa.MembershipRepository;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
@@ -65,8 +67,12 @@ public class GymService {
    */
   @Transactional
   public GymResponse createGym(GymRequest request, User creator) {
-    // 1. Security Check (Anti-Spam)
-    if (!request.creationToken().equals(creationSecret)) {
+    // 1. Security Check (Anti-Spam), in constant time; a blank secret rejects every request
+    if (creationSecret == null
+        || creationSecret.isBlank()
+        || !MessageDigest.isEqual(
+            creationSecret.getBytes(StandardCharsets.UTF_8),
+            request.creationToken().getBytes(StandardCharsets.UTF_8))) {
       throw new AccessDeniedException("error.creation.token.invalid");
     }
 
