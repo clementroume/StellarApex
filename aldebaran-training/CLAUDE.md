@@ -11,7 +11,9 @@ name; WOD movement variants joined by `|`, whereas `movements.csv` lists use `, 
 columns `*_en` / `*_fr`, the former single-language columns still read as English; optional trailing
 `tiebreak_en` / `tiebreak_fr` / `reps_per_round`; a former `ROUNDS_REPS` score type reads as `REPS`).
 `config/DevGymWodSeeder` (`@Profile("dev")`, temporary) seeds WODs for the Antares test gyms,
-resolving IDs from the `antares` schema with `JdbcTemplate`.
+resolving IDs from the `antares` schema with `JdbcTemplate`, then calls `config/DevScoreSeeder`
+(scores of the test accounts on gym WODs and public benchmarks, PRs via `ScoreRanking`; skipped when
+`owner@sparta.com` already has scores).
 `./mvnw verify` runs unit tests and `*IT` (Testcontainers PostgreSQL + Redis, Docker required).
 
 ## Identity and security

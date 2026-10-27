@@ -87,7 +87,8 @@ Sirius keeps the admin's language/theme/unit on screen. `/users/me` carries `sup
 
 Temporary dev data (`dev` Spring profile, set in `docker-compose.yml`, to be removed like the CSV
 export): test gyms "Spartacus CrossFit" (physical), "Zeus Programming" (virtual), "Pending Box" and
-their accounts (Antares), gym WODs for them (Aldebaran).
+their accounts (Antares; `free@athlete.com` shows its name on public leaderboards), gym WODs and
+scores for them (Aldebaran).
 
 ## Conventions
 

@@ -207,7 +207,10 @@ With the `dev` Spring profile, `config/DevGymWodSeeder` (temporary) also creates
 the Antares test gyms "Spartacus CrossFit" (author `owner@sparta.com`) and "Zeus Programming"
 (author `programmer@zeus.com`), plus a personal WOD for `athlete@sparta.com`. IDs are read from the
 `antares` schema of the same database, retried in the background for about 60 s; skipped if Sparta
-already has WODs.
+already has WODs. `config/DevScoreSeeder` then logs about 80 scores for the test accounts (gym WODs,
+Fran, Chelsea, Cindy, Grace, Murph, Open 25.1/25.2, CrossFit Total; several levels and gyms, some
+repeated attempts) so histories and leaderboards can be checked; skipped if `owner@sparta.com`
+already has scores, so an existing database gets them on the next start.
 
 ## API Documentation
 
