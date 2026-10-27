@@ -156,6 +156,21 @@ public class GymService {
   }
 
   /**
+   * Tells whether a gym is a virtual programming (internal API for Aldebaran).
+   *
+   * @param gymId The unique identifier of the gym.
+   * @return {@code true} for a virtual programming, {@code false} for a physical gym.
+   * @throws ResourceNotFoundException If no gym is found with the provided ID.
+   */
+  @Transactional(readOnly = true)
+  public boolean isProgramming(Long gymId) {
+    return gymRepository
+        .findById(gymId)
+        .map(Gym::isProgramming)
+        .orElseThrow(() -> new ResourceNotFoundException(ERROR_GYM_NOT_FOUND, gymId));
+  }
+
+  /**
    * Checks whether a user holds a usable membership in a gym ({@link Membership#isUsable()}).
    * Called by Aldebaran (internal API) before letting gym staff log a score for an athlete.
    *

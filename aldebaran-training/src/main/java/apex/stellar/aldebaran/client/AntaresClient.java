@@ -78,6 +78,32 @@ public class AntaresClient {
     }
   }
 
+  /**
+   * Asks Antares whether a gym is a virtual programming (no competition, no WOD copies there).
+   *
+   * @param gymId The gym.
+   * @return {@code true} for a virtual programming.
+   * @throws AntaresUnavailableException if Antares does not give a clear answer (unknown gym
+   *     included).
+   */
+  public boolean isProgrammingGym(Long gymId) {
+    try {
+      GymType type =
+          restClient
+              .get()
+              .uri("/antares/internal/gyms/{gymId}", gymId)
+              .retrieve()
+              .body(GymType.class);
+      if (type == null) {
+        throw new AntaresUnavailableException("Empty gym type answer from Antares", null);
+      }
+      return type.programming();
+    } catch (RestClientException e) {
+      log.warn("Antares gym type check failed (gym {})", gymId, e);
+      throw new AntaresUnavailableException("Antares gym type check failed", e);
+    }
+  }
+
   private static SimpleClientHttpRequestFactory requestFactory(Duration timeout) {
     SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
     factory.setConnectTimeout(timeout);
@@ -87,4 +113,7 @@ public class AntaresClient {
 
   /** Answer of {@code GET /antares/internal/gyms/{gymId}/members/{userId}}. */
   record MemberCheck(boolean member) {}
+
+  /** Answer of {@code GET /antares/internal/gyms/{gymId}}. */
+  record GymType(boolean programming) {}
 }

@@ -99,4 +99,33 @@ class InternalControllerIT extends BaseIntegrationTest {
             .status(status)
             .build());
   }
+
+  @Test
+  @DisplayName("Gym type: physical or programming, 404 for an unknown gym or without the secret")
+  void gymType() throws Exception {
+    Gym prog =
+        gymRepository.save(
+            Gym.builder()
+                .name("Internal Prog")
+                .status(GymStatus.ACTIVE)
+                .enrollmentCode("PROG1")
+                .isProgramming(true)
+                .isAutoSubscription(false)
+                .build());
+
+    mockMvc
+        .perform(get("/antares/internal/gyms/" + gym.getId()).header("X-Internal-Secret", SECRET))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.programming").value(false));
+    mockMvc
+        .perform(get("/antares/internal/gyms/" + prog.getId()).header("X-Internal-Secret", SECRET))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.programming").value(true));
+    mockMvc
+        .perform(get("/antares/internal/gyms/999999").header("X-Internal-Secret", SECRET))
+        .andExpect(status().isNotFound());
+    mockMvc
+        .perform(get("/antares/internal/gyms/" + prog.getId()))
+        .andExpect(status().isNotFound());
+  }
 }

@@ -403,6 +403,12 @@ describe('WodDetailComponent', () => {
       expect(navigate).toHaveBeenCalledWith(['/wods', 42]);
     });
 
+    it('should never offer a copy into a virtual programming', () => {
+      writableGyms.mockReturnValue([{gymId: 8, gymName: 'Zeus', gymProgramming: true}]);
+      init(buildWod({isPublic: true, category: 'OPEN'}));
+      expect(fixture.nativeElement.querySelector('#copy-wod')).toBeNull();
+    });
+
     it('should show the backend message when the copy fails', () => {
       writableGyms.mockReturnValue([{gymId: 5, gymName: 'Box'}]);
       mockWodService.copyWod.mockReturnValue(throwError(() => ({status: 400, error: {detail: 'No gym'}})));

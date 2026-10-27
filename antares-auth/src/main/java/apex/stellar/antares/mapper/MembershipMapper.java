@@ -38,6 +38,7 @@ public interface MembershipMapper {
   @Mapping(target = "gymId", source = "gym.id")
   @Mapping(target = "gymName", source = "gym.name")
   @Mapping(target = "gymStatus", source = "gym.status")
+  @Mapping(target = "gymProgramming", source = "gym.programming")
   @Mapping(target = "gymRole", source = "gymRole")
   @Mapping(target = "status", source = "status")
   @Mapping(

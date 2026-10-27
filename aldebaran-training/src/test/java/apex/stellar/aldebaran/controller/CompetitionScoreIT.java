@@ -270,4 +270,17 @@ class CompetitionScoreIT extends BaseIntegrationTest {
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.content.length()").value(0));
   }
+
+  @Test
+  @DisplayName("Virtual programming: no copy into it, no competition WOD (400)")
+  void programmingGymRefusesCopiesAndCompetitions() throws Exception {
+    when(antaresClient.isProgrammingGym(GYM)).thenReturn(true);
+
+    mockMvc
+        .perform(
+            as(post("/aldebaran/wods/" + open.getId() + "/copy"), COACH, COACH_MEMBERSHIPS)
+                .content(objectMapper.writeValueAsString(new WodCopyRequest(GYM, false))))
+        .andExpect(status().isBadRequest())
+        .andExpect(jsonPath("$.detail").value("WODs cannot be copied into a virtual programming."));
+  }
 }

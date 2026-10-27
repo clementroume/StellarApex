@@ -2,6 +2,7 @@ package apex.stellar.antares.controller;
 
 import apex.stellar.antares.config.InternalSecretFilter;
 import apex.stellar.antares.dto.GymMemberCheckResponse;
+import apex.stellar.antares.dto.GymTypeResponse;
 import apex.stellar.antares.service.GymService;
 import io.swagger.v3.oas.annotations.Hidden;
 import lombok.RequiredArgsConstructor;
@@ -26,6 +27,18 @@ import org.springframework.web.bind.annotation.RestController;
 public class InternalController {
 
   private final GymService gymService;
+
+  /**
+   * Tells whether a gym is a virtual programming or a physical box. Used by Aldebaran to keep
+   * competitions and WOD copies to physical gyms.
+   *
+   * @param gymId The ID of the gym.
+   * @return {@code {"programming": true|false}}, 404 for an unknown gym.
+   */
+  @GetMapping("/gyms/{gymId}")
+  public ResponseEntity<GymTypeResponse> getGymType(@PathVariable Long gymId) {
+    return ResponseEntity.ok(new GymTypeResponse(gymService.isProgramming(gymId)));
+  }
 
   /**
    * Tells whether a user holds a usable membership in a gym (ACTIVE membership, and ACTIVE gym or

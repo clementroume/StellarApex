@@ -59,7 +59,7 @@ describe('WodFormComponent', () => {
           provide: AccessService,
           useValue: {
             userId: signal(3),
-            memberships: signal([{gymId: 5, gymName: 'Box'}, {gymId: 7, gymName: 'Zeus'}]),
+            memberships: signal([{gymId: 5, gymName: 'Box'}, {gymId: 7, gymName: 'Zeus', gymProgramming: true}]),
             gymsWithPermission: () => writableGyms()
           }
         },
@@ -220,6 +220,11 @@ describe('WodFormComponent', () => {
       component.wodForm.patchValue({visibility: 'GYM', gymId: 5, isPublic: true, competition: true});
       expect(component.isCompetition()).toBe(true);
       expect(component.buildPayload()).toMatchObject({gymId: 5, competition: true, isPublic: false});
+
+      // A virtual programming has no competitions
+      component.wodForm.patchValue({gymId: 7});
+      expect(component.canBeCompetition()).toBe(false);
+      expect(component.buildPayload()).toMatchObject({gymId: 7, competition: false, isPublic: true});
 
       // A personal WOD is never a competition WOD
       component.wodForm.patchValue({visibility: 'PRIVATE', gymId: null});

@@ -95,7 +95,8 @@ of them:
   Logging a score for someone else is admin-only, except on competition WODs (below). Each score
   carries `capabilities {canModify, canVerify}`; other athletes' comments and scaling notes are hidden
   from viewers who cannot moderate the score.
-* **Competition WODs** (`competition`, gym WODs only, never public: 400 otherwise): staff holding
+* **Competition WODs** (`competition`, physical gym WODs only, never public: 400 otherwise; Antares
+  tells the gym type): staff holding
   `SCORE_VERIFY` in the WOD's gym log scores for the gym's members (`userId`; Antares confirms the
   membership through its internal API with `X-Internal-Secret`, `client/AntaresClient`; 503 if
   Antares does not answer, never authorized by default). Such a score is verified at once. They also
@@ -153,8 +154,8 @@ Rules live in `security/WodSecurity` and `security/ScoreSecurity`, used from `@P
   plus `gymIds` and `authorIds` of readable WODs (admin selectors).
 * `GET /{id}`: full WOD with its movements and `capabilities` (`canModify`, `locked`, `canJudge`:
   judge of a competition WOD) computed for the current user.
-* `POST /{id}/copy` `{gymId, competition}`: copy a readable WOD into a gym (`WOD_WRITE` there) or as a
-  personal WOD (`gymId` null), e.g. a public Open WOD copied as a gym competition WOD. The copy is
+* `POST /{id}/copy` `{gymId, competition}`: copy a readable WOD into a physical gym (`WOD_WRITE` there;
+  400 for a virtual programming) or as a personal WOD (`gymId` null), e.g. a public Open WOD copied as a gym competition WOD. The copy is
   private, owned by the caller, keeps `sourceWodId` and has its own scores and leaderboard.
 * `POST /`, `PUT /{id}`, `DELETE /{id}`: manage a WOD (rules above).
 * `GET /reference-data`: WOD formats, categories, score types and unit groups.

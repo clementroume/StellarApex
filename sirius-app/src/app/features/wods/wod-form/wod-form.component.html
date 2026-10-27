@@ -87,7 +87,7 @@
             </label>
           }
         </div>
-        @if (wodForm.controls.visibility.value === 'GYM' || originalWod()?.gymId != null) {
+        @if (canBeCompetition()) {
           <label class="flex items-start gap-3 cursor-pointer mt-3">
             <input id="wod-competition" type="checkbox" class="toggle toggle-warning mt-0.5" formControlName="competition"/>
             <span class="flex flex-col">

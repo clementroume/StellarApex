@@ -85,8 +85,11 @@ export class WodDetailComponent {
 
   isLocked = computed(() => !!this.wod()?.capabilities?.locked);
 
-  /** Gyms where the user may program WODs (WOD_WRITE): targets of a copy, checked by Aldebaran. */
-  copyTargets = computed(() => this.accessService.gymsWithPermission('WOD_WRITE'));
+  /**
+   * Physical gyms where the user may program WODs (WOD_WRITE): targets of a copy. A virtual
+   * programming sells its own WODs and never copies (Aldebaran refuses it too).
+   */
+  copyTargets = computed(() => this.accessService.gymsWithPermission('WOD_WRITE').filter(g => !g.gymProgramming));
   /** An original WOD can be copied by users programming a gym; a copy is never copied again. */
   canCopy = computed(() => this.copyTargets().length > 0 && !this.wod()?.sourceWodId);
 

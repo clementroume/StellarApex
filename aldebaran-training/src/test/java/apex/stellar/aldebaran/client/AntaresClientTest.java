@@ -53,4 +53,20 @@ class AntaresClientTest {
 
     assertThrows(AntaresUnavailableException.class, () -> client.isGymMember(100L, 99L));
   }
+
+  @Test
+  @DisplayName("isProgrammingGym: reads the gym type, an unknown gym is an error")
+  void isProgrammingGym() {
+    server
+        .expect(requestTo("http://antares/antares/internal/gyms/100"))
+        .andExpect(header("X-Internal-Secret", "s3cret"))
+        .andRespond(withSuccess("{\"programming\":true}", MediaType.APPLICATION_JSON));
+    server
+        .expect(requestTo("http://antares/antares/internal/gyms/101"))
+        .andRespond(org.springframework.test.web.client.response.MockRestResponseCreators
+            .withResourceNotFound());
+
+    assertTrue(client.isProgrammingGym(100L));
+    assertThrows(AntaresUnavailableException.class, () -> client.isProgrammingGym(101L));
+  }
 }

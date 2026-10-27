@@ -71,16 +71,18 @@ and a virtual programming); there is no "active gym" in requests.
   `POST /antares/users/display-names` (gym mates, opted-in users, oneself).
   `ScoreResponse.capabilities {canModify, canVerify}`; others' comments hidden from non-moderators.
   Movements/muscles CRUD and CSV export: `hasRole('ADMIN')`.
-- Competition WODs (`wods.competition`, gym WODs only, never public), the only place scores are
+- Competition WODs (`wods.competition`, physical gym WODs only, never public; a virtual programming
+  sells its own WODs: no competition, no copies into it, only moderation of aberrant scores), the
+  only place scores are
   verified: `SCORE_VERIFY` staff of the gym log scores for its members (logged = verified at once;
   Antares confirms the membership through its internal API, 503 if unavailable, never authorized by
   default) and verify/unverify scores (`POST|DELETE /scores/{id}/verify`), never their own. A verified
   score is locked for its athlete, staff included. Leaderboard `verifiedOnly` (verified PRs; Sirius
   defaults it off for judges so they see the scores to verify). Logging
   for someone else elsewhere: admin only. `POST /wods/{id}/copy {gymId, competition}` copies a readable
-  WOD (e.g. a public Open WOD) into a gym (`WOD_WRITE`), private, with `sourceWodId`; scores and
+  WOD (e.g. a public Open WOD) into a physical gym (`WOD_WRITE`), private, with `sourceWodId`; scores and
   leaderboards stay per WOD (a copy's scores never reach the public WOD).
-- Internal API: Antares `/antares/internal/**` (Aldebaran → `http://antares-auth:8080`,
+- Internal API: Antares `/antares/internal/**` (membership check, gym type; Aldebaran → `http://antares-auth:8080`,
   `X-Internal-Secret`, 404 without it, excluded from the Traefik `/antares` route). Aldebaran calls it
   through `client/AntaresClient` only.
 - Gym settings/deletion: `MANAGE_SETTINGS`; memberships: `MANAGE_MEMBERSHIPS` (Antares `@security`).

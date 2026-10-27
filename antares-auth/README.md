@@ -158,6 +158,7 @@ public `/antares` route excludes `/antares/internal`). Every request needs `X-In
 (`INTERNAL_SECRET`, checked in constant time by `config/InternalSecretFilter`, own filter chain);
 without it the answer is a bare 404.
 
+* `GET /gyms/{gymId}`: `{programming}`, whether the gym is a virtual programming (404 if unknown).
 * `GET /gyms/{gymId}/members/{userId}`: `{member}`, whether the user holds a usable membership in the
   gym (ACTIVE, and ACTIVE gym or OWNER/PROGRAMMER).
 

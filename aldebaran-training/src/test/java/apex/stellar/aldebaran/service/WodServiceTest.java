@@ -1,5 +1,6 @@
 package apex.stellar.aldebaran.service;
 
+import apex.stellar.aldebaran.client.AntaresClient;
 import org.mockito.ArgumentCaptor;
 import apex.stellar.aldebaran.exception.InvalidWodException;
 import apex.stellar.aldebaran.dto.WodMovementResponse;
@@ -59,6 +60,7 @@ class WodServiceTest {
   @Mock private ScoreRepository scoreRepository;
   @Mock private WodMapper wodMapper;
   @Mock private SecurityService securityService;
+  @Mock private AntaresClient antaresClient;
 
   @InjectMocks private WodService wodService;
 
@@ -677,5 +679,29 @@ class WodServiceTest {
     WodCopyRequest request = new WodCopyRequest(10L, false);
 
     assertThrows(ResourceNotFoundException.class, () -> wodService.copyWod(7L, request));
+  }
+
+  @Test
+  @DisplayName("Virtual programming: no competition WOD, no copy into it (400)")
+  void testProgrammingGym_NoCompetitionNoCopy() {
+    when(securityService.getCurrentUserId()).thenReturn(100L);
+    when(antaresClient.isProgrammingGym(20L)).thenReturn(true);
+
+    wod.setCompetition(true);
+    wod.setGymId(20L);
+    when(wodMapper.toEntity(wodRequest)).thenReturn(wod);
+    InvalidWodException competition =
+        assertThrows(InvalidWodException.class, () -> wodService.createWod(wodRequest));
+    assertEquals("error.wod.competition.programming", competition.getMessageKey());
+
+    when(wodRepository.findByIdWithMovements(7L))
+        .thenReturn(Optional.of(Wod.builder().id(7L).build()));
+    when(wodMapper.toResponse(any(Wod.class))).thenReturn(mock(WodResponse.class));
+    WodCopyRequest copy = new WodCopyRequest(20L, false);
+    InvalidWodException copied =
+        assertThrows(InvalidWodException.class, () -> wodService.copyWod(7L, copy));
+    assertEquals("error.wod.copy.programming", copied.getMessageKey());
+
+    verify(wodRepository, never()).save(any());
   }
 }

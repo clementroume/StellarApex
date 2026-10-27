@@ -2,6 +2,7 @@ package apex.stellar.aldebaran.service;
 
 import static apex.stellar.aldebaran.config.RedisCacheConfig.CACHE_WODS;
 
+import apex.stellar.aldebaran.client.AntaresClient;
 import apex.stellar.aldebaran.dto.MovementResponse;
 import apex.stellar.aldebaran.dto.WodCopyRequest;
 import apex.stellar.aldebaran.dto.WodMovementRequest;
@@ -74,6 +75,7 @@ public class WodService {
   private final ScoreRepository scoreRepository;
   private final WodMapper wodMapper;
   private final SecurityService securityService;
+  private final AntaresClient antaresClient;
 
   /**
    * Retrieves a paginated list of WOD summaries based on filters.
@@ -242,7 +244,8 @@ public class WodService {
    * @param request The target gym and the competition flag.
    * @return The created copy.
    * @throws ResourceNotFoundException if the source WOD does not exist.
-   * @throws InvalidWodException if a competition copy has no gym.
+   * @throws InvalidWodException if a competition copy has no gym, or the target gym is a virtual
+   *     programming (it sells its own programming: no copies, no competitions).
    */
   @Transactional
   public WodResponse copyWod(Long id, WodCopyRequest request) {
@@ -251,6 +254,9 @@ public class WodService {
             .findByIdWithMovements(id)
             .map(wodMapper::toResponse)
             .orElseThrow(() -> new ResourceNotFoundException("error.wod.not.found", id));
+    if (request.gymId() != null && antaresClient.isProgrammingGym(request.gymId())) {
+      throw new InvalidWodException("error.wod.copy.programming");
+    }
 
     WodRequest copy =
         new WodRequest(
@@ -367,13 +373,14 @@ public class WodService {
   }
 
   /**
-   * A competition WOD belongs to a gym (its staff judges the scores) and is never public: only
-   * the gym's members may score it.
+   * A competition WOD belongs to a physical gym (its staff judges the scores; a virtual
+   * programming has no competitions, Antares tells the gym type) and is never public: only the
+   * gym's members may score it.
    *
    * @param wod The WOD about to be saved.
    * @throws InvalidWodException if the rule is broken.
    */
-  private static void checkCompetition(Wod wod) {
+  private void checkCompetition(Wod wod) {
     if (!wod.isCompetition()) {
       return;
     }
@@ -382,6 +389,9 @@ public class WodService {
     }
     if (wod.isPublic()) {
       throw new InvalidWodException("error.wod.competition.public");
+    }
+    if (antaresClient.isProgrammingGym(wod.getGymId())) {
+      throw new InvalidWodException("error.wod.competition.programming");
     }
   }
 
