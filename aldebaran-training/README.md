@@ -183,7 +183,8 @@ Rules live in `security/WodSecurity` and `security/ScoreSecurity`, used from `@P
   reps (`service/ScoreRanking`, shared with compare and leaderboards).
 * `GET /{id}/compare`: rank and percentile of a score among the other athletes' PRs at its level.
 * `GET /leaderboard/{id}`: leaderboard of a WOD (`scaling`, default `RX`): each athlete's PR at that
-  level; optional `gymId` (one of the caller's gyms, 403 otherwise) keeps the scores performed there;
+  level; optional `gymId` (one of the caller's gyms, 403 otherwise) keeps the scores performed there,
+  `myGyms=true` the scores performed in any of the caller's gyms (none without a gym);
   `verifiedOnly=true` keeps verified PRs only (an athlete whose PR is not verified is left out).
 * `POST /{id}/verify`, `DELETE /{id}/verify`: verify a competition score or withdraw the verification
   (rules above; 400 outside a competition WOD).

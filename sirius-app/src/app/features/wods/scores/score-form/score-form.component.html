@@ -38,7 +38,7 @@
       </label>
     }
 
-    @if (gymChoices().length > 0) {
+    @if (showGymChoice()) {
       <label class="form-control w-full">
         <div class="label"><span class="label-text">{{ 'SCORE.FIELDS.GYM' | translate }}</span></div>
         <select id="score-gym" formControlName="gymId" class="select select-bordered w-full">

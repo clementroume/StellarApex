@@ -221,4 +221,14 @@ describe('ScoreFormComponent', () => {
     component.onSubmit();
     expect(store.save).toHaveBeenCalledWith(expect.objectContaining({userId: undefined}));
   });
+
+  it('should use the only gym of the user without asking', () => {
+    (TestBed.inject(AccessService) as any).memberships.set([{gymId: 5, gymName: 'Box'}]);
+    init('REPS');
+
+    expect(fixture.nativeElement.querySelector('#score-gym')).toBeNull();
+    component.form.patchValue({reps: 100});
+    component.onSubmit();
+    expect(store.save).toHaveBeenLastCalledWith(expect.objectContaining({gymId: 5}));
+  });
 });

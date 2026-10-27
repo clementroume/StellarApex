@@ -94,6 +94,8 @@ export class ScoreFormComponent {
   readonly timeCap = computed(() => formatTimeCapShort(this.store.wod()?.timeCapSeconds));
   /** A gym WOD is always scored in its gym; a public or personal WOD in one of the user's gyms. */
   readonly gymChoices = computed(() => this.store.wod()?.gymId != null ? [] : this.accessService.memberships());
+  /** The gym is only asked to members of several gyms; a single gym is used automatically. */
+  readonly showGymChoice = computed(() => this.gymChoices().length > 1);
 
   /** Reps of one round of the AMRAP, when its round is fixed. */
   readonly repsPerRound = computed(() => this.store.wod()?.repsPerRound ?? null);

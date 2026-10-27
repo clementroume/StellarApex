@@ -234,4 +234,40 @@ class CompetitionScoreIT extends BaseIntegrationTest {
         .andExpect(jsonPath("$.content[0].capabilities.canModify").value(false))
         .andExpect(jsonPath("$.content[0].capabilities.canVerify").value(false));
   }
+
+  @Test
+  @DisplayName("Leaderboard: myGyms keeps the scores performed in the caller's gyms (public WOD)")
+  void leaderboardMyGyms() throws Exception {
+    for (long[] row : new long[][] {{ATHLETE, GYM}, {ATHLETE + 1, 555L}}) {
+      scoreRepository.save(
+          Score.builder()
+              .userId(row[0])
+              .wod(open)
+              .gymId(row[1])
+              .date(LocalDate.now())
+              .timeSeconds(600)
+              .scaling(ScalingLevel.RX)
+              .personalRecord(true)
+              .build());
+    }
+
+    mockMvc
+        .perform(as(get("/aldebaran/scores/leaderboard/" + open.getId()), ATHLETE, ATHLETE_MEMBERSHIPS))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.content.length()").value(2));
+    mockMvc
+        .perform(
+            as(get("/aldebaran/scores/leaderboard/" + open.getId()), ATHLETE, ATHLETE_MEMBERSHIPS)
+                .param("myGyms", "true"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.content.length()").value(1))
+        .andExpect(jsonPath("$.content[0].gymId").value(GYM));
+    // No gym at all: nothing to show
+    mockMvc
+        .perform(
+            as(get("/aldebaran/scores/leaderboard/" + open.getId()), ATHLETE, "")
+                .param("myGyms", "true"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.content.length()").value(0));
+  }
 }

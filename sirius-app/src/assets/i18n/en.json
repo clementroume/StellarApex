@@ -652,13 +652,13 @@
     "REPS_PER_ROUND": "{{reps}} reps per round",
     "LEADERBOARD": {
       "TITLE": "Leaderboard",
-      "SCOPE": "Gym",
-      "ALL_GYMS": "All gyms",
       "ANONYMOUS": "Anonymous athlete",
       "EMPTY": "No score at this level yet.",
       "LOADING": "Loading…",
       "MORE": "Show more",
-      "VERIFIED_ONLY": "Verified only"
+      "VERIFIED_ONLY": "Verified only",
+      "MY_GYM": "My gym",
+      "MY_GYMS": "My gyms"
     },
     "VERIFIED": "Verified",
     "VERIFIED_BY": "Verified by {{name}}",

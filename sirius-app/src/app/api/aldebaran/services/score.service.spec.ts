@@ -134,9 +134,9 @@ describe('ScoreService', () => {
     req.flush(mockReferenceData);
   });
 
-  it('getLeaderboard should pass the gym and verified-only filters', () => {
-    service.getLeaderboard(1, 'RX', 0, 20, 5, true).subscribe();
-    const req = httpMock.expectOne(`${base}/scores/leaderboard/1?scaling=RX&page=0&size=20&gymId=5&verifiedOnly=true`);
+  it('getLeaderboard should pass the my-gyms and verified-only filters', () => {
+    service.getLeaderboard(1, 'RX', 0, 20, true, true).subscribe();
+    const req = httpMock.expectOne(`${base}/scores/leaderboard/1?scaling=RX&page=0&size=20&myGyms=true&verifiedOnly=true`);
     expect(req.request.method).toBe('GET');
     req.flush(mockSlice);
   });

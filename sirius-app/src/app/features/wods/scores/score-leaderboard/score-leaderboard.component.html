@@ -18,15 +18,12 @@
           {{ 'SCORE.LEADERBOARD.VERIFIED_ONLY' | translate }}
         </label>
       }
-      @if (gymChoices().length > 0) {
-        <select id="leaderboard-gym" class="select select-bordered select-sm"
-                [attr.aria-label]="'SCORE.LEADERBOARD.SCOPE' | translate"
-                (change)="onGymChange($any($event.target).value)">
-          <option value="" [selected]="gymId() === null">{{ 'SCORE.LEADERBOARD.ALL_GYMS' | translate }}</option>
-          @for (gym of gymChoices(); track gym.gymId) {
-            <option [value]="gym.gymId" [selected]="gymId() === gym.gymId">{{ gym.gymName }}</option>
-          }
-        </select>
+      @if (canFilterMyGyms()) {
+        <label class="flex items-center gap-2 cursor-pointer text-sm">
+          <input id="leaderboard-my-gyms" type="checkbox" class="checkbox checkbox-sm checkbox-primary"
+                 [checked]="myGyms()" (change)="onMyGymsChange($any($event.target).checked)"/>
+          {{ myGymsLabel() | translate }}
+        </label>
       }
     </div>
   </div>

@@ -21,6 +21,7 @@ import apex.stellar.aldebaran.security.SecurityService;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -131,11 +132,11 @@ class ScoreServiceTest {
     Pageable pageable = PageRequest.of(0, 20);
     mockWodDetailHit(ScoreType.TIME);
     when(scoreRepository.findLeaderboard(
-            eq(1L), eq(ScalingLevel.RX), eq(null), eq(false), any(Pageable.class)))
+            eq(1L), eq(ScalingLevel.RX), eq(false), any(), eq(false), any(Pageable.class)))
         .thenReturn(Page.empty());
 
     Slice<ScoreResponse> result =
-        scoreService.getLeaderboard(1L, ScalingLevel.RX, null, false, pageable);
+        scoreService.getLeaderboard(1L, ScalingLevel.RX, null, false, false, pageable);
 
     assertNotNull(result);
   }
@@ -648,13 +649,32 @@ class ScoreServiceTest {
   void testGetLeaderboard_Gym() {
     mockWodDetailHit(ScoreType.TIME);
     when(scoreRepository.findLeaderboard(
-            eq(1L), eq(ScalingLevel.RX), eq(300L), eq(true), any(Pageable.class)))
+            eq(1L), eq(ScalingLevel.RX), eq(true), eq(Set.of(300L)), eq(true), any(Pageable.class)))
         .thenReturn(Page.empty());
 
-    scoreService.getLeaderboard(1L, ScalingLevel.RX, 300L, true, PageRequest.of(0, 20));
+    scoreService.getLeaderboard(1L, ScalingLevel.RX, 300L, false, true, PageRequest.of(0, 20));
 
     verify(scoreRepository)
-        .findLeaderboard(eq(1L), eq(ScalingLevel.RX), eq(300L), eq(true), any(Pageable.class));
+        .findLeaderboard(
+            eq(1L), eq(ScalingLevel.RX), eq(true), eq(Set.of(300L)), eq(true), any(Pageable.class));
+  }
+
+  @Test
+  @DisplayName("getLeaderboard: myGyms keeps the scores performed in any of the user's gyms")
+  void testGetLeaderboard_MyGyms() {
+    mockWodDetailHit(ScoreType.TIME);
+    when(securityService.getCurrentUserMemberGymIds()).thenReturn(Set.of(100L, 200L));
+    when(scoreRepository.findLeaderboard(
+            eq(1L), eq(ScalingLevel.RX), eq(true), eq(Set.of(100L, 200L)), eq(false),
+            any(Pageable.class)))
+        .thenReturn(Page.empty());
+
+    scoreService.getLeaderboard(1L, ScalingLevel.RX, null, true, false, PageRequest.of(0, 20));
+
+    verify(scoreRepository)
+        .findLeaderboard(
+            eq(1L), eq(ScalingLevel.RX), eq(true), eq(Set.of(100L, 200L)), eq(false),
+            any(Pageable.class));
   }
 
   // =========================================================================

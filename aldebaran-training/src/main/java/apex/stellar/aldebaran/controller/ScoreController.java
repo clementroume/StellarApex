@@ -194,6 +194,8 @@ public class ScoreController {
    * @param id The ID of the WOD.
    * @param scaling The scaling level to filter by (default: RX).
    * @param gymId Optional gym: only the scores performed there (one of the user's gyms).
+   * @param myGyms Only the scores performed in any of the user's gyms (narrow leaderboard);
+   *     default false (worldwide).
    * @param verifiedOnly Only verified scores (competition WODs); default false.
    * @param pageable Pagination info.
    * @param principal The authenticated user.
@@ -206,13 +208,14 @@ public class ScoreController {
       @PathVariable Long id,
       @RequestParam(defaultValue = "RX") ScalingLevel scaling,
       @RequestParam(required = false) Long gymId,
+      @RequestParam(defaultValue = "false") boolean myGyms,
       @RequestParam(defaultValue = "false") boolean verifiedOnly,
       @PageableDefault(size = 20) Pageable pageable,
       @AuthenticationPrincipal AldebaranUserPrincipal principal) {
 
     return ResponseEntity.ok(
         scoreService
-            .getLeaderboard(id, scaling, gymId, verifiedOnly, pageable)
+            .getLeaderboard(id, scaling, gymId, myGyms, verifiedOnly, pageable)
             .map(score -> scoreCapabilityService.forViewer(score, principal)));
   }
 

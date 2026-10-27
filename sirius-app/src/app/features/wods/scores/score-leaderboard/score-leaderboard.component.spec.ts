@@ -57,7 +57,7 @@ describe('ScoreLeaderboardComponent', () => {
   it('should rank the PRs, name the visible athletes and highlight the user', async () => {
     await init();
 
-    expect(scoreService.getLeaderboard).toHaveBeenCalledWith(7, 'RX', 0, 50, null, false);
+    expect(scoreService.getLeaderboard).toHaveBeenCalledWith(7, 'RX', 0, 50, false, false);
     expect(userService.getDisplayNames).toHaveBeenCalledWith([1, 2]);
     const rows = fixture.nativeElement.querySelectorAll('li') as NodeListOf<HTMLElement>;
     expect(rows.length).toBe(2);
@@ -72,23 +72,24 @@ describe('ScoreLeaderboardComponent', () => {
     await init();
     component.onScalingChange('SCALED');
     fixture.detectChanges();
-    expect(scoreService.getLeaderboard).toHaveBeenLastCalledWith(7, 'SCALED', 0, 50, null, false);
+    expect(scoreService.getLeaderboard).toHaveBeenLastCalledWith(7, 'SCALED', 0, 50, false, false);
 
-    component.onGymChange('5');
+    component.onMyGymsChange(true);
     fixture.detectChanges();
-    expect(scoreService.getLeaderboard).toHaveBeenLastCalledWith(7, 'SCALED', 0, 50, 5, false);
+    expect(scoreService.getLeaderboard).toHaveBeenLastCalledWith(7, 'SCALED', 0, 50, true, false);
 
     const calls = scoreService.getLeaderboard.mock.calls.length;
     changed$.next();
     expect(scoreService.getLeaderboard.mock.calls.length).toBe(calls + 1);
   });
 
-  it('should offer the gym filter on a public WOD only', async () => {
+  it('should offer the my-gym filter on a public WOD only', async () => {
     await init();
-    expect(fixture.nativeElement.querySelector('#leaderboard-gym')).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('#leaderboard-my-gyms')).toBeTruthy();
+    expect(fixture.nativeElement.textContent).toContain('SCORE.LEADERBOARD.MY_GYM');
     TestBed.resetTestingModule();
     await init(42);
-    expect(fixture.nativeElement.querySelector('#leaderboard-gym')).toBeNull();
+    expect(fixture.nativeElement.querySelector('#leaderboard-my-gyms')).toBeNull();
   });
 
   it('should load the next page on demand', async () => {
@@ -96,7 +97,7 @@ describe('ScoreLeaderboardComponent', () => {
     await init();
     expect(fixture.nativeElement.textContent).toContain('SCORE.LEADERBOARD.MORE');
     component.load(false);
-    expect(scoreService.getLeaderboard).toHaveBeenLastCalledWith(7, 'RX', 1, 50, null, false);
+    expect(scoreService.getLeaderboard).toHaveBeenLastCalledWith(7, 'RX', 1, 50, false, false);
   });
 
   it('should rank verified scores only by default on a competition WOD, and let judges verify', async () => {
@@ -105,7 +106,7 @@ describe('ScoreLeaderboardComponent', () => {
     scoreService.getLeaderboard.mockReturnValue(of({content: [judged, verified], last: true} as any));
     await init(5, true);
 
-    expect(scoreService.getLeaderboard).toHaveBeenLastCalledWith(7, 'RX', 0, 50, null, true);
+    expect(scoreService.getLeaderboard).toHaveBeenLastCalledWith(7, 'RX', 0, 50, false, true);
     const buttons = [...fixture.nativeElement.querySelectorAll('button')] as HTMLButtonElement[];
     buttons.find(b => b.textContent?.includes('SCORE.ACTIONS.VERIFY'))!.click();
     expect(setVerified).toHaveBeenCalledWith(judged, true);
@@ -115,7 +116,7 @@ describe('ScoreLeaderboardComponent', () => {
     filter.checked = false;
     filter.dispatchEvent(new Event('change'));
     fixture.detectChanges();
-    expect(scoreService.getLeaderboard).toHaveBeenLastCalledWith(7, 'RX', 0, 50, null, false);
+    expect(scoreService.getLeaderboard).toHaveBeenLastCalledWith(7, 'RX', 0, 50, false, false);
   });
 
   it('should show every score to a judge by default, so they see the scores to verify', async () => {
@@ -135,7 +136,7 @@ describe('ScoreLeaderboardComponent', () => {
     fixture = TestBed.createComponent(ScoreLeaderboardComponent);
     fixture.detectChanges();
 
-    expect(scoreService.getLeaderboard).toHaveBeenLastCalledWith(7, 'RX', 0, 50, null, false);
+    expect(scoreService.getLeaderboard).toHaveBeenLastCalledWith(7, 'RX', 0, 50, false, false);
     expect((fixture.nativeElement.querySelector('#leaderboard-verified') as HTMLInputElement).checked).toBe(false);
   });
 

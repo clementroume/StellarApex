@@ -226,7 +226,8 @@ Rules are enforced by the backends; Sirius only adapts its UI to what they retur
   verified scores by default. Outside competitions scores are never verified.
 - **Service-to-service**: Aldebaran asks Antares whether an athlete belongs to a gym through an
   internal API (`/antares/internal`, shared secret, not routed by Traefik).
-- **Leaderboards**: per WOD and level, for every gym or one of the user's gyms. Names are shown to
+- **Leaderboards**: per WOD and level, worldwide or for the user's gyms only ("My gym(s)"); a score
+  on a public WOD is attached to the gym where it was performed (automatic for a single gym). Names are shown to
   members of the same gym; elsewhere only if the athlete opted in (My account), else "anonymous". One personal record per athlete
   and WOD (Rx+ > Rx > Scaled > Custom, then performance; a finished time beats a time-capped score).
 - **Gym roles by type**: a physical gym has exactly one `OWNER`, any number of `COACH` and

@@ -652,13 +652,13 @@
     "REPS_PER_ROUND": "{{reps}} rép. par tour",
     "LEADERBOARD": {
       "TITLE": "Classement",
-      "SCOPE": "Salle",
-      "ALL_GYMS": "Toutes les salles",
       "ANONYMOUS": "Athlète anonyme",
       "EMPTY": "Aucun score à ce niveau pour l'instant.",
       "LOADING": "Chargement…",
       "MORE": "Voir plus",
-      "VERIFIED_ONLY": "Validés uniquement"
+      "VERIFIED_ONLY": "Validés uniquement",
+      "MY_GYM": "Ma salle",
+      "MY_GYMS": "Mes salles"
     },
     "VERIFIED": "Validé",
     "VERIFIED_BY": "Validé par {{name}}",

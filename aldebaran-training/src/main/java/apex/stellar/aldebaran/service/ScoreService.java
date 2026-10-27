@@ -20,6 +20,7 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -217,18 +218,25 @@ public class ScoreService {
   /**
    * Retrieves the leaderboard for a specific WOD and scaling level: the Personal Record of each
    * athlete whose best score is at that level, best first, optionally limited to the scores
-   * performed in one gym and to verified scores.
+   * performed in one gym or in any of the current user's gyms, and to verified scores.
    *
    * @param wodId The ID of the WOD.
    * @param scaling The scaling level (e.g., RX, Scaled).
-   * @param gymId The gym to keep, or null for every gym.
+   * @param gymId The gym to keep, or null.
+   * @param myGyms Whether to keep the scores performed in the current user's gyms (ignored when
+   *     {@code gymId} is set); none when the user has no gym.
    * @param verifiedOnly Whether to keep verified scores only (competition WODs).
    * @param pageable Pagination information.
    * @return A slice of ScoreResponse objects representing the leaderboard.
    */
   @Transactional(readOnly = true)
   public Slice<ScoreResponse> getLeaderboard(
-      Long wodId, ScalingLevel scaling, Long gymId, boolean verifiedOnly, Pageable pageable) {
+      Long wodId,
+      ScalingLevel scaling,
+      Long gymId,
+      boolean myGyms,
+      boolean verifiedOnly,
+      Pageable pageable) {
     WodResponse wod = wodService.getWodDetail(wodId);
 
     Pageable sortedPageable =
@@ -237,8 +245,15 @@ public class ScoreService {
             pageable.getPageSize(),
             ScoreRanking.leaderboardSort(wod.scoreType()));
 
+    // getCurrentUserMemberGymIds is {-1} without any gym: the IN clause then keeps nothing
+    Set<Long> gymIds =
+        gymId != null
+            ? Set.of(gymId)
+            : myGyms ? securityService.getCurrentUserMemberGymIds() : Set.of(-1L);
+    boolean filterGyms = gymId != null || myGyms;
+
     return scoreRepository
-        .findLeaderboard(wodId, scaling, gymId, verifiedOnly, sortedPageable)
+        .findLeaderboard(wodId, scaling, filterGyms, gymIds, verifiedOnly, sortedPageable)
         .map(scoreMapper::toResponse);
   }
 
