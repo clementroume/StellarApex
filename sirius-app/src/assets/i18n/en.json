@@ -65,9 +65,9 @@
     "TITLE": "My information",
     "SUCCESS_UPDATE": "Your profile has been updated successfully!",
     "GYMS": {
-      "TITLE": "My gyms",
-      "NO_PERMISSION": "No specific permission in this gym.",
-      "NONE": "You are not a member of any gym."
+      "TITLE": "My boxes and programs",
+      "NO_PERMISSION": "No specific permission here.",
+      "NONE": "You are not a member of any box or program."
     }
   },
   "SETTINGS": {
@@ -87,7 +87,7 @@
     "SUCCESS_DELETE": "Your account has been successfully deleted. Goodbye!",
     "PRIVACY_TITLE": "Privacy",
     "PUBLIC_LEADERBOARD_NAME": "Show my name on public leaderboards",
-    "PUBLIC_LEADERBOARD_NAME_HINT": "Members of your gyms always see your name. Otherwise you appear as an anonymous athlete.",
+    "PUBLIC_LEADERBOARD_NAME_HINT": "Members of your boxes and programs always see your name. Otherwise you appear as an anonymous athlete.",
     "PRIVACY_SAVED": "Privacy setting saved.",
     "PRIVACY_ERROR": "The privacy setting could not be saved."
   },
@@ -418,7 +418,7 @@
       "ALL_CATEGORIES": "All categories",
       "ALL_FORMATS": "All formats",
       "USE_REPS_PER_ROUND": "Use {{reps}} (from the movements)",
-      "COPY": "Copy to my gym"
+      "COPY": "Copy to my box"
     },
     "SCOPES": {
       "ALL": "All",
@@ -426,8 +426,8 @@
       "PUBLIC": "Public"
     },
     "ADMIN_FILTERS": {
-      "GYM": "Gym",
-      "ALL_GYMS": "All gyms",
+      "GYM": "Box / program",
+      "ALL_GYMS": "All boxes and programs",
       "ATHLETE": "Athlete",
       "ALL_ATHLETES": "All athletes (personal WODs)"
     },
@@ -458,7 +458,7 @@
       "SCALING": "Scaling",
       "EQUIPMENT": "Equipment",
       "TECHNIQUES": "Techniques",
-      "GYM": "Gym",
+      "GYM": "Box / program",
       "FORMAT": "Format",
       "CATEGORY": "Category",
       "WEIGHT_MEN": "Load (men)",
@@ -494,7 +494,7 @@
     },
     "VISIBILITY": {
       "PUBLIC": "Public",
-      "GYM": "My gym",
+      "GYM": "My box / program",
       "PRIVATE": "Personal"
     },
     "MESSAGES": {
@@ -509,9 +509,9 @@
       "MOVEMENTS_REQUIRED": "Add at least one movement.",
       "NO_MOVEMENTS": "No prescribed movement.",
       "LOCKED_BADGE": "Locked (scores logged)",
-      "OWNERSHIP_LOCKED": "The owner (personal or gym) of a WOD cannot be changed after creation.",
-      "COMPETITION_HINT": "The gym staff (score verification) log the athletes' scores and verify them. A competition WOD is never public.",
-      "COPY_HINT": "The copy is private to the gym and has its own leaderboard, independent of the original WOD.",
+      "OWNERSHIP_LOCKED": "The owner of a WOD (personal, box or program) cannot be changed after creation.",
+      "COMPETITION_HINT": "The box staff (score verification) log the athletes' scores and verify them. A competition WOD is never public.",
+      "COPY_HINT": "The copy is private to the box and has its own leaderboard, independent of the original WOD.",
       "COPIED": "WOD copied",
       "COPY_ERROR": "Unable to copy the WOD",
       "COPIED_FROM": "Copied from the original WOD"
@@ -531,7 +531,7 @@
       "GIRLS": "Girls",
       "HERO": "Hero",
       "BENCHMARK": "CrossFit Benchmark",
-      "CUSTOM_BENCHMARK": "Gym Benchmark",
+      "CUSTOM_BENCHMARK": "Box Benchmark",
       "OPEN": "Open",
       "QUARTERFINALS": "Quarterfinals",
       "SEMIFINALS": "Semifinals",
@@ -610,8 +610,8 @@
       "TIEBREAK_OPTIONAL": "Tiebreak (competition, optional)",
       "ENTRY": "Entry",
       "TOTAL_REPS": "Total reps",
-      "GYM": "Gym",
-      "NO_GYM": "No gym",
+      "GYM": "Box / program",
+      "NO_GYM": "None",
       "ATHLETE": "Athlete",
       "ME": "Me"
     },
@@ -639,7 +639,7 @@
       "CONFIRM_DELETE": "Delete this score?",
       "DONE_HINT": "This WOD has no measured result: log it to keep track of the session.",
       "ROUNDS_HINT": "Rounds done after falling behind the clock do not count.",
-      "GYM_HINT": "Where you did this WOD: your score then appears on that gym's leaderboard and its coaches can check it.",
+      "GYM_HINT": "Where you did this WOD: your score then appears on that box or program's leaderboard and its coaches can check it.",
       "ATHLETE_HINT": "A score logged for an athlete is verified at once.",
       "VERIFIED": "Score verified",
       "UNVERIFIED": "Verification withdrawn"
@@ -657,8 +657,10 @@
       "LOADING": "Loading…",
       "MORE": "Show more",
       "VERIFIED_ONLY": "Verified only",
-      "MY_GYM": "My gym",
-      "MY_GYMS": "My gyms"
+      "MY_BOX": "My box",
+      "MY_BOXES": "My boxes",
+      "MY_PROG": "My program",
+      "MY_PROGS": "My programs"
     },
     "VERIFIED": "Verified",
     "VERIFIED_BY": "Verified by {{name}}",
@@ -672,10 +674,10 @@
       "SEARCH": "Search by name or email...",
       "NO_RESULT": "No user found.",
       "ADMIN_TARGET": "Admin (not eligible)",
-      "NO_MEMBERSHIP": "No gym",
+      "NO_MEMBERSHIP": "No box or program",
       "ACT_AS": "Act as {{name}}",
       "REASON": "Reason for the intervention",
-      "REASON_PH": "E.g. bug reported by the gym on the WOD display",
+      "REASON_PH": "E.g. bug reported by the box on the WOD display",
       "WARNING": "Your actions will be recorded as this user, with your admin identity in the audit log.",
       "START": "Start session",
       "STARTED": "Support session started: you are acting as {{name}}.",
@@ -686,8 +688,8 @@
       "ACCOUNT_LOCKED": "During a support session, the password and account deletion cannot be changed, and language and theme only apply to your screen: they are not saved to the user's account.",
       "RECENT": "Recently acted as",
       "SEARCH_MIN": "Type at least 2 characters to search.",
-      "FILTER_GYM": "Filter by gym",
-      "ALL_GYMS": "All gyms",
+      "FILTER_GYM": "Filter by box or program",
+      "ALL_GYMS": "All boxes and programs",
       "FILTER_ROLE": "Role",
       "FILTER_STATUS": "Status",
       "ALL": "All",
@@ -708,27 +710,27 @@
       "BANNED": "Banned"
     },
     "GYM_STATUS": {
-      "ACTIVE": "Active gym",
-      "PENDING_APPROVAL": "Gym awaiting approval",
-      "REJECTED": "Gym rejected",
-      "SUSPENDED": "Gym suspended"
+      "ACTIVE": "Active",
+      "PENDING_APPROVAL": "Awaiting approval",
+      "REJECTED": "Rejected",
+      "SUSPENDED": "Suspended"
     },
     "PERMISSIONS": {
       "WOD_WRITE": {
         "LABEL": "Programming",
-        "DESCRIPTION": "Can create, edit and delete the gym's WODs."
+        "DESCRIPTION": "Can create, edit and delete the box or program's WODs."
       },
       "SCORE_VERIFY": {
         "LABEL": "Score verification",
-        "DESCRIPTION": "Can enter, correct and verify the scores of the gym's athletes."
+        "DESCRIPTION": "Can enter, correct and verify the scores of the box or program's athletes."
       },
       "MANAGE_MEMBERSHIPS": {
         "LABEL": "Member management",
         "DESCRIPTION": "Can approve registrations and manage athletes' status."
       },
       "MANAGE_SETTINGS": {
-        "LABEL": "Gym settings",
-        "DESCRIPTION": "Can change the gym settings (enrollment code, automatic registration)."
+        "LABEL": "Settings",
+        "DESCRIPTION": "Can change the box or program settings (enrollment code, automatic registration)."
       }
     }
   }

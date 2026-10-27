@@ -65,9 +65,9 @@
     "TITLE": "Mes informations",
     "SUCCESS_UPDATE": "Votre profil a été mis à jour avec succès !",
     "GYMS": {
-      "TITLE": "Mes salles",
-      "NO_PERMISSION": "Aucune permission particulière dans cette salle.",
-      "NONE": "Tu n'es membre d'aucune salle."
+      "TITLE": "Mes boxes et progs",
+      "NO_PERMISSION": "Aucune permission particulière ici.",
+      "NONE": "Tu n'es membre d'aucune box ni prog."
     }
   },
   "SETTINGS": {
@@ -87,7 +87,7 @@
     "SUCCESS_DELETE": "Votre compte a été supprimé avec succès. Au revoir !",
     "PRIVACY_TITLE": "Confidentialité",
     "PUBLIC_LEADERBOARD_NAME": "Afficher mon nom dans les classements publics",
-    "PUBLIC_LEADERBOARD_NAME_HINT": "Les membres de tes salles voient toujours ton nom. Sinon, tu apparais comme athlète anonyme.",
+    "PUBLIC_LEADERBOARD_NAME_HINT": "Les membres de tes boxes et progs voient toujours ton nom. Sinon, tu apparais comme athlète anonyme.",
     "PRIVACY_SAVED": "Réglage de confidentialité enregistré.",
     "PRIVACY_ERROR": "Le réglage de confidentialité n'a pas pu être enregistré."
   },
@@ -418,7 +418,7 @@
       "ALL_CATEGORIES": "Toutes les catégories",
       "ALL_FORMATS": "Tous les formats",
       "USE_REPS_PER_ROUND": "Utiliser {{reps}} (d'après les mouvements)",
-      "COPY": "Copier dans ma salle"
+      "COPY": "Copier dans ma box"
     },
     "SCOPES": {
       "ALL": "Tous",
@@ -426,8 +426,8 @@
       "PUBLIC": "Publics"
     },
     "ADMIN_FILTERS": {
-      "GYM": "Salle",
-      "ALL_GYMS": "Toutes les salles",
+      "GYM": "Box / prog",
+      "ALL_GYMS": "Toutes les boxes et progs",
       "ATHLETE": "Athlète",
       "ALL_ATHLETES": "Tous les athlètes (WODs perso)"
     },
@@ -458,7 +458,7 @@
       "SCALING": "Scaling",
       "EQUIPMENT": "Équipement",
       "TECHNIQUES": "Techniques",
-      "GYM": "Salle",
+      "GYM": "Box / prog",
       "FORMAT": "Format",
       "CATEGORY": "Catégorie",
       "WEIGHT_MEN": "Charge (hommes)",
@@ -494,7 +494,7 @@
     },
     "VISIBILITY": {
       "PUBLIC": "Public",
-      "GYM": "Ma salle",
+      "GYM": "Ma box / prog",
       "PRIVATE": "Personnel"
     },
     "MESSAGES": {
@@ -509,9 +509,9 @@
       "MOVEMENTS_REQUIRED": "Ajoute au moins un mouvement.",
       "NO_MOVEMENTS": "Aucun mouvement prescrit.",
       "LOCKED_BADGE": "Verrouillé (scores enregistrés)",
-      "OWNERSHIP_LOCKED": "Le propriétaire (personnel ou salle) d'un WOD ne peut pas être changé après sa création.",
-      "COMPETITION_HINT": "Le staff de la salle (validation des scores) saisit les scores des athlètes et les valide. Un WOD de compétition n'est jamais public.",
-      "COPY_HINT": "La copie est privée à la salle et a son propre classement, indépendant du WOD d'origine.",
+      "OWNERSHIP_LOCKED": "Le rattachement d'un WOD (personnel, box ou prog) ne peut pas être changé après sa création.",
+      "COMPETITION_HINT": "Le staff de la box (validation des scores) saisit les scores des athlètes et les valide. Un WOD de compétition n'est jamais public.",
+      "COPY_HINT": "La copie est privée à la box et a son propre classement, indépendant du WOD d'origine.",
       "COPIED": "WOD copié",
       "COPY_ERROR": "Impossible de copier le WOD",
       "COPIED_FROM": "Copié du WOD d'origine"
@@ -531,7 +531,7 @@
       "GIRLS": "Girls",
       "HERO": "Hero",
       "BENCHMARK": "Benchmark CrossFit",
-      "CUSTOM_BENCHMARK": "Benchmark de la salle",
+      "CUSTOM_BENCHMARK": "Benchmark de la box",
       "OPEN": "Open",
       "QUARTERFINALS": "Quarts de finale",
       "SEMIFINALS": "Demi-finales",
@@ -610,8 +610,8 @@
       "TIEBREAK_OPTIONAL": "Tie-break (compétition, facultatif)",
       "ENTRY": "Saisie",
       "TOTAL_REPS": "Total de répétitions",
-      "GYM": "Salle",
-      "NO_GYM": "Aucune salle",
+      "GYM": "Box / prog",
+      "NO_GYM": "Aucune",
       "ATHLETE": "Athlète",
       "ME": "Moi"
     },
@@ -639,7 +639,7 @@
       "CONFIRM_DELETE": "Supprimer ce score ?",
       "DONE_HINT": "Ce WOD n'a pas de résultat mesuré : enregistrez-le pour garder une trace de la séance.",
       "ROUNDS_HINT": "Les tours faits après avoir décroché du chrono ne comptent pas.",
-      "GYM_HINT": "Où tu as fait ce WOD : ton score apparaît alors dans le classement de cette salle et ses coachs peuvent le vérifier.",
+      "GYM_HINT": "Où tu as fait ce WOD : ton score apparaît alors dans le classement de cette box ou prog et ses coachs peuvent le vérifier.",
       "ATHLETE_HINT": "Un score saisi pour un athlète est validé directement.",
       "VERIFIED": "Score validé",
       "UNVERIFIED": "Validation retirée"
@@ -657,8 +657,10 @@
       "LOADING": "Chargement…",
       "MORE": "Voir plus",
       "VERIFIED_ONLY": "Validés uniquement",
-      "MY_GYM": "Ma salle",
-      "MY_GYMS": "Mes salles"
+      "MY_BOX": "Ma box",
+      "MY_BOXES": "Mes boxes",
+      "MY_PROG": "Ma prog",
+      "MY_PROGS": "Mes progs"
     },
     "VERIFIED": "Validé",
     "VERIFIED_BY": "Validé par {{name}}",
@@ -672,10 +674,10 @@
       "SEARCH": "Rechercher par nom ou email...",
       "NO_RESULT": "Aucun utilisateur trouvé.",
       "ADMIN_TARGET": "Admin (non éligible)",
-      "NO_MEMBERSHIP": "Sans salle",
+      "NO_MEMBERSHIP": "Sans box ni prog",
       "ACT_AS": "Agir en tant que {{name}}",
       "REASON": "Raison de l'intervention",
-      "REASON_PH": "Ex : bug signalé par la salle sur l'affichage des WODs",
+      "REASON_PH": "Ex : bug signalé par la box sur l'affichage des WODs",
       "WARNING": "Tes actions seront enregistrées au nom de cet utilisateur, avec ton identité admin dans le journal d'audit.",
       "START": "Démarrer la session",
       "STARTED": "Session de support démarrée : tu agis en tant que {{name}}.",
@@ -686,8 +688,8 @@
       "ACCOUNT_LOCKED": "Pendant une session de support, le mot de passe et la suppression du compte ne sont pas modifiables, et la langue comme le thème ne s'appliquent qu'à ton écran : ils ne sont pas enregistrés sur le compte de l'utilisateur.",
       "RECENT": "Récemment incarnés",
       "SEARCH_MIN": "Saisis au moins 2 caractères pour lancer la recherche.",
-      "FILTER_GYM": "Filtrer par salle",
-      "ALL_GYMS": "Toutes les salles",
+      "FILTER_GYM": "Filtrer par box ou prog",
+      "ALL_GYMS": "Toutes les boxes et progs",
       "FILTER_ROLE": "Rôle",
       "FILTER_STATUS": "Statut",
       "ALL": "Tous",
@@ -696,8 +698,8 @@
   },
   "GYM": {
     "ROLES": {
-      "OWNER": "Propriétaire",
-      "PROGRAMMER": "Programmeur",
+      "OWNER": "Owner",
+      "PROGRAMMER": "Programmer",
       "COACH": "Coach",
       "ATHLETE": "Athlète"
     },
@@ -708,27 +710,27 @@
       "BANNED": "Banni"
     },
     "GYM_STATUS": {
-      "ACTIVE": "Salle active",
-      "PENDING_APPROVAL": "Salle en attente de validation",
-      "REJECTED": "Salle refusée",
-      "SUSPENDED": "Salle suspendue"
+      "ACTIVE": "Active",
+      "PENDING_APPROVAL": "En attente de validation",
+      "REJECTED": "Refusée",
+      "SUSPENDED": "Suspendue"
     },
     "PERMISSIONS": {
       "WOD_WRITE": {
         "LABEL": "Programmation",
-        "DESCRIPTION": "Peut créer, modifier et supprimer les WODs de la salle."
+        "DESCRIPTION": "Peut créer, modifier et supprimer les WODs de la box ou prog."
       },
       "SCORE_VERIFY": {
         "LABEL": "Validation des scores",
-        "DESCRIPTION": "Peut saisir, corriger et valider les scores des athlètes de la salle."
+        "DESCRIPTION": "Peut saisir, corriger et valider les scores des athlètes de la box ou prog."
       },
       "MANAGE_MEMBERSHIPS": {
         "LABEL": "Gestion des membres",
         "DESCRIPTION": "Peut valider les inscriptions et gérer le statut des athlètes."
       },
       "MANAGE_SETTINGS": {
-        "LABEL": "Réglages de la salle",
-        "DESCRIPTION": "Peut modifier les réglages de la salle (code d'inscription, inscriptions automatiques)."
+        "LABEL": "Réglages",
+        "DESCRIPTION": "Peut modifier les réglages de la box ou prog (code d'inscription, inscriptions automatiques)."
       }
     }
   }

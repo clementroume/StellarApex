@@ -236,7 +236,7 @@ class CompetitionScoreIT extends BaseIntegrationTest {
   }
 
   @Test
-  @DisplayName("Leaderboard: myGyms keeps the scores performed in the caller's gyms (public WOD)")
+  @DisplayName("Leaderboard: gymIds keeps the scores performed in the caller's gyms (public WOD)")
   void leaderboardMyGyms() throws Exception {
     for (long[] row : new long[][] {{ATHLETE, GYM}, {ATHLETE + 1, 555L}}) {
       scoreRepository.save(
@@ -258,17 +258,16 @@ class CompetitionScoreIT extends BaseIntegrationTest {
     mockMvc
         .perform(
             as(get("/aldebaran/scores/leaderboard/" + open.getId()), ATHLETE, ATHLETE_MEMBERSHIPS)
-                .param("myGyms", "true"))
+                .param("gymIds", String.valueOf(GYM)))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.content.length()").value(1))
         .andExpect(jsonPath("$.content[0].gymId").value(GYM));
-    // No gym at all: nothing to show
+    // One of the gyms is not the caller's: refused
     mockMvc
         .perform(
-            as(get("/aldebaran/scores/leaderboard/" + open.getId()), ATHLETE, "")
-                .param("myGyms", "true"))
-        .andExpect(status().isOk())
-        .andExpect(jsonPath("$.content.length()").value(0));
+            as(get("/aldebaran/scores/leaderboard/" + open.getId()), ATHLETE, ATHLETE_MEMBERSHIPS)
+                .param("gymIds", GYM + ",555"))
+        .andExpect(status().isForbidden());
   }
 
   @Test
@@ -281,6 +280,6 @@ class CompetitionScoreIT extends BaseIntegrationTest {
             as(post("/aldebaran/wods/" + open.getId() + "/copy"), COACH, COACH_MEMBERSHIPS)
                 .content(objectMapper.writeValueAsString(new WodCopyRequest(GYM, false))))
         .andExpect(status().isBadRequest())
-        .andExpect(jsonPath("$.detail").value("WODs cannot be copied into a virtual programming."));
+        .andExpect(jsonPath("$.detail").value("WODs cannot be copied into a program."));
   }
 }

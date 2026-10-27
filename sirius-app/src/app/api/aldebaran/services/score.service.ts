@@ -51,16 +51,16 @@ export class ScoreService {
     scaling: string = 'RX',
     page: number = 0,
     size: number = 20,
-    myGyms: boolean = false,
+    gymIds: number[] = [],
     verifiedOnly: boolean = false
   ): Observable<Slice<ScoreResponse>> {
     let params = new HttpParams()
       .set('scaling', scaling)
       .set('page', page)
       .set('size', size);
-    // Scores performed in any of the user's gyms (narrow leaderboard), else worldwide
-    if (myGyms) {
-      params = params.set('myGyms', true);
+    // Scores performed in some of the user's boxes / programs (narrow leaderboard), else worldwide
+    if (gymIds.length > 0) {
+      params = params.set('gymIds', gymIds.join(','));
     }
     if (verifiedOnly) {
       params = params.set('verifiedOnly', true);

@@ -10,6 +10,7 @@ import apex.stellar.aldebaran.model.entities.Score;
 import apex.stellar.aldebaran.model.entities.Wod;
 import apex.stellar.aldebaran.repository.ScoreRepository;
 import apex.stellar.aldebaran.repository.WodRepository;
+import java.util.Collection;
 import java.util.Objects;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -214,6 +215,18 @@ public class ScoreSecurity {
    */
   public boolean canUseGym(Long gymId, AldebaranUserPrincipal principal) {
     return gymId == null || securityService.isAdmin(principal) || principal.isMemberOf(gymId);
+  }
+
+  /**
+   * Evaluates if the authenticated user may filter a leaderboard on the given gyms: all of them
+   * among their gyms (any gym for an admin).
+   *
+   * @param gymIds The gyms, or null / empty (no filter).
+   * @param principal The authenticated user context.
+   * @return {@code true} if allowed.
+   */
+  public boolean canUseGyms(Collection<Long> gymIds, AldebaranUserPrincipal principal) {
+    return gymIds == null || gymIds.stream().allMatch(gymId -> canUseGym(gymId, principal));
   }
 
   /** Gym of a score for moderation: where it was performed, else the WOD's gym. */

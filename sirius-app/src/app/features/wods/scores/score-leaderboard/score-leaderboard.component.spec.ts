@@ -38,7 +38,7 @@ describe('ScoreLeaderboardComponent', () => {
         {provide: WodScoresStore, useValue: {wod, changed$, setVerified, openEdit: vi.fn(), delete: vi.fn()}},
         {provide: ScoreService, useValue: scoreService},
         {provide: UserService, useValue: userService},
-        {provide: AccessService, useValue: {userId: signal(2), memberships: signal([{gymId: 5, gymName: 'Box'}])}},
+        {provide: AccessService, useValue: {userId: signal(2), memberships: signal([{gymId: 5, gymName: 'Box', gymProgramming: false}, {gymId: 8, gymName: 'Zeus', gymProgramming: true}])}},
         {provide: UnitService, useValue: {}}
       ]
     }).compileComponents();
@@ -57,7 +57,7 @@ describe('ScoreLeaderboardComponent', () => {
   it('should rank the PRs, name the visible athletes and highlight the user', async () => {
     await init();
 
-    expect(scoreService.getLeaderboard).toHaveBeenCalledWith(7, 'RX', 0, 50, false, false);
+    expect(scoreService.getLeaderboard).toHaveBeenCalledWith(7, 'RX', 0, 50, [], false);
     expect(userService.getDisplayNames).toHaveBeenCalledWith([1, 2]);
     const rows = fixture.nativeElement.querySelectorAll('li') as NodeListOf<HTMLElement>;
     expect(rows.length).toBe(2);
@@ -72,24 +72,32 @@ describe('ScoreLeaderboardComponent', () => {
     await init();
     component.onScalingChange('SCALED');
     fixture.detectChanges();
-    expect(scoreService.getLeaderboard).toHaveBeenLastCalledWith(7, 'SCALED', 0, 50, false, false);
+    expect(scoreService.getLeaderboard).toHaveBeenLastCalledWith(7, 'SCALED', 0, 50, [], false);
 
-    component.onMyGymsChange(true);
+    component.onMyBoxesChange(true);
     fixture.detectChanges();
-    expect(scoreService.getLeaderboard).toHaveBeenLastCalledWith(7, 'SCALED', 0, 50, true, false);
+    expect(scoreService.getLeaderboard).toHaveBeenLastCalledWith(7, 'SCALED', 0, 50, [5], false);
 
     const calls = scoreService.getLeaderboard.mock.calls.length;
     changed$.next();
     expect(scoreService.getLeaderboard.mock.calls.length).toBe(calls + 1);
   });
 
-  it('should offer the my-gym filter on a public WOD only', async () => {
+  it('should offer the my-box and my-prog filters on a public WOD only, alone or together', async () => {
     await init();
-    expect(fixture.nativeElement.querySelector('#leaderboard-my-gyms')).toBeTruthy();
-    expect(fixture.nativeElement.textContent).toContain('SCORE.LEADERBOARD.MY_GYM');
+    expect(fixture.nativeElement.textContent).toContain('SCORE.LEADERBOARD.MY_BOX');
+    expect(fixture.nativeElement.textContent).toContain('SCORE.LEADERBOARD.MY_PROG');
+    component.onMyProgsChange(true);
+    fixture.detectChanges();
+    expect(scoreService.getLeaderboard).toHaveBeenLastCalledWith(7, 'RX', 0, 50, [8], false);
+    component.onMyBoxesChange(true);
+    fixture.detectChanges();
+    expect(scoreService.getLeaderboard).toHaveBeenLastCalledWith(7, 'RX', 0, 50, [5, 8], false);
+
     TestBed.resetTestingModule();
     await init(42);
-    expect(fixture.nativeElement.querySelector('#leaderboard-my-gyms')).toBeNull();
+    expect(fixture.nativeElement.querySelector('#leaderboard-my-boxes')).toBeNull();
+    expect(fixture.nativeElement.querySelector('#leaderboard-my-progs')).toBeNull();
   });
 
   it('should load the next page on demand', async () => {
@@ -97,7 +105,7 @@ describe('ScoreLeaderboardComponent', () => {
     await init();
     expect(fixture.nativeElement.textContent).toContain('SCORE.LEADERBOARD.MORE');
     component.load(false);
-    expect(scoreService.getLeaderboard).toHaveBeenLastCalledWith(7, 'RX', 1, 50, false, false);
+    expect(scoreService.getLeaderboard).toHaveBeenLastCalledWith(7, 'RX', 1, 50, [], false);
   });
 
   it('should rank verified scores only by default on a competition WOD, and let judges verify', async () => {
@@ -106,7 +114,7 @@ describe('ScoreLeaderboardComponent', () => {
     scoreService.getLeaderboard.mockReturnValue(of({content: [judged, verified], last: true} as any));
     await init(5, true);
 
-    expect(scoreService.getLeaderboard).toHaveBeenLastCalledWith(7, 'RX', 0, 50, false, true);
+    expect(scoreService.getLeaderboard).toHaveBeenLastCalledWith(7, 'RX', 0, 50, [], true);
     const buttons = [...fixture.nativeElement.querySelectorAll('button')] as HTMLButtonElement[];
     buttons.find(b => b.textContent?.includes('SCORE.ACTIONS.VERIFY'))!.click();
     expect(setVerified).toHaveBeenCalledWith(judged, true);
@@ -116,7 +124,7 @@ describe('ScoreLeaderboardComponent', () => {
     filter.checked = false;
     filter.dispatchEvent(new Event('change'));
     fixture.detectChanges();
-    expect(scoreService.getLeaderboard).toHaveBeenLastCalledWith(7, 'RX', 0, 50, false, false);
+    expect(scoreService.getLeaderboard).toHaveBeenLastCalledWith(7, 'RX', 0, 50, [], false);
   });
 
   it('should show every score to a judge by default, so they see the scores to verify', async () => {
@@ -136,7 +144,7 @@ describe('ScoreLeaderboardComponent', () => {
     fixture = TestBed.createComponent(ScoreLeaderboardComponent);
     fixture.detectChanges();
 
-    expect(scoreService.getLeaderboard).toHaveBeenLastCalledWith(7, 'RX', 0, 50, false, false);
+    expect(scoreService.getLeaderboard).toHaveBeenLastCalledWith(7, 'RX', 0, 50, [], false);
     expect((fixture.nativeElement.querySelector('#leaderboard-verified') as HTMLInputElement).checked).toBe(false);
   });
 

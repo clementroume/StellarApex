@@ -996,7 +996,7 @@ class ScoreControllerIT extends BaseIntegrationTest {
                 .content(body))
         .andExpect(status().isForbidden());
 
-    String url = "/aldebaran/scores/leaderboard/" + fran.getId() + "?gymId=101";
+    String url = "/aldebaran/scores/leaderboard/" + fran.getId() + "?gymIds=101";
     mockMvc
         .perform(
             get(url)

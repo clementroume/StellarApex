@@ -70,7 +70,7 @@ The backends enforce every rule; Sirius only adapts what it shows:
   variants and the men/women load and height ("61/43 kg", "60/50 cm"). Texts show in the user's
   language, falling back on the other one. The list shows "category / format" and filters on both.
   Below the boxes, "Leaderboard" ranks each athlete's PR by level, worldwide or, with the
-  "My gym(s)" box, in the user's gyms only (names from Antares, others anonymous); the score form only
+  "My box(es)" / "My program(s)" boxes, in the user's boxes and/or programs only (names from Antares, others anonymous); the score form only
   asks the gym of a public WOD score to members of several gyms, and "My scores on this WOD" lists the user's scores (level, PR badge, notes) with
   edit/delete when the backend allows it, and opens the log/edit form: fields follow the score type
   (time or reps at the time cap, rounds on the minute for an EMOM, load in the user's unit, calories,

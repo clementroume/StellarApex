@@ -125,6 +125,8 @@ scores for them (Aldebaran).
 
 ## Gotchas
 
+- Wording: CrossFit French keeps English jargon. Physical gym = "box" (FR/EN), virtual gym = "prog"
+  (FR) / "program" (EN), roles Owner / Programmer / Coach / Athlète; code keeps `gym`.
 - `.env` (secrets) is git-ignored: never print or commit it.
 - Muscle/movement/public-WOD CSVs (`aldebaran-training/src/main/resources/*.csv`) are a temporary,
   git-ignored local backup: the catalog is edited in Sirius, exported with `POST /aldebaran/export/*`,

@@ -17,6 +17,7 @@ import apex.stellar.aldebaran.repository.WodRepository;
 import apex.stellar.aldebaran.security.SecurityService;
 import java.time.LocalDateTime;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
@@ -218,13 +219,11 @@ public class ScoreService {
   /**
    * Retrieves the leaderboard for a specific WOD and scaling level: the Personal Record of each
    * athlete whose best score is at that level, best first, optionally limited to the scores
-   * performed in one gym or in any of the current user's gyms, and to verified scores.
+   * performed in some gyms (e.g. the user's boxes or programs) and to verified scores.
    *
    * @param wodId The ID of the WOD.
    * @param scaling The scaling level (e.g., RX, Scaled).
-   * @param gymId The gym to keep, or null.
-   * @param myGyms Whether to keep the scores performed in the current user's gyms (ignored when
-   *     {@code gymId} is set); none when the user has no gym.
+   * @param gymIds The gyms to keep, or null / empty for every gym (worldwide).
    * @param verifiedOnly Whether to keep verified scores only (competition WODs).
    * @param pageable Pagination information.
    * @return A slice of ScoreResponse objects representing the leaderboard.
@@ -233,8 +232,7 @@ public class ScoreService {
   public Slice<ScoreResponse> getLeaderboard(
       Long wodId,
       ScalingLevel scaling,
-      Long gymId,
-      boolean myGyms,
+      Collection<Long> gymIds,
       boolean verifiedOnly,
       Pageable pageable) {
     WodResponse wod = wodService.getWodDetail(wodId);
@@ -245,15 +243,12 @@ public class ScoreService {
             pageable.getPageSize(),
             ScoreRanking.leaderboardSort(wod.scoreType()));
 
-    // getCurrentUserMemberGymIds is {-1} without any gym: the IN clause then keeps nothing
-    Set<Long> gymIds =
-        gymId != null
-            ? Set.of(gymId)
-            : myGyms ? securityService.getCurrentUserMemberGymIds() : Set.of(-1L);
-    boolean filterGyms = gymId != null || myGyms;
+    boolean filterGyms = gymIds != null && !gymIds.isEmpty();
+    // A JPQL IN clause needs a non-empty collection, even when the filter is off
+    Collection<Long> gyms = filterGyms ? gymIds : Set.of(-1L);
 
     return scoreRepository
-        .findLeaderboard(wodId, scaling, filterGyms, gymIds, verifiedOnly, sortedPageable)
+        .findLeaderboard(wodId, scaling, filterGyms, gyms, verifiedOnly, sortedPageable)
         .map(scoreMapper::toResponse);
   }
 

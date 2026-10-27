@@ -136,7 +136,7 @@ class ScoreServiceTest {
         .thenReturn(Page.empty());
 
     Slice<ScoreResponse> result =
-        scoreService.getLeaderboard(1L, ScalingLevel.RX, null, false, false, pageable);
+        scoreService.getLeaderboard(1L, ScalingLevel.RX, null, false, pageable);
 
     assertNotNull(result);
   }
@@ -649,37 +649,15 @@ class ScoreServiceTest {
   void testGetLeaderboard_Gym() {
     mockWodDetailHit(ScoreType.TIME);
     when(scoreRepository.findLeaderboard(
-            eq(1L), eq(ScalingLevel.RX), eq(true), eq(Set.of(300L)), eq(true), any(Pageable.class)))
+            eq(1L), eq(ScalingLevel.RX), eq(true), eq(List.of(300L)), eq(true), any(Pageable.class)))
         .thenReturn(Page.empty());
 
-    scoreService.getLeaderboard(1L, ScalingLevel.RX, 300L, false, true, PageRequest.of(0, 20));
+    scoreService.getLeaderboard(1L, ScalingLevel.RX, List.of(300L), true, PageRequest.of(0, 20));
 
     verify(scoreRepository)
         .findLeaderboard(
-            eq(1L), eq(ScalingLevel.RX), eq(true), eq(Set.of(300L)), eq(true), any(Pageable.class));
+            eq(1L), eq(ScalingLevel.RX), eq(true), eq(List.of(300L)), eq(true), any(Pageable.class));
   }
-
-  @Test
-  @DisplayName("getLeaderboard: myGyms keeps the scores performed in any of the user's gyms")
-  void testGetLeaderboard_MyGyms() {
-    mockWodDetailHit(ScoreType.TIME);
-    when(securityService.getCurrentUserMemberGymIds()).thenReturn(Set.of(100L, 200L));
-    when(scoreRepository.findLeaderboard(
-            eq(1L), eq(ScalingLevel.RX), eq(true), eq(Set.of(100L, 200L)), eq(false),
-            any(Pageable.class)))
-        .thenReturn(Page.empty());
-
-    scoreService.getLeaderboard(1L, ScalingLevel.RX, null, true, false, PageRequest.of(0, 20));
-
-    verify(scoreRepository)
-        .findLeaderboard(
-            eq(1L), eq(ScalingLevel.RX), eq(true), eq(Set.of(100L, 200L)), eq(false),
-            any(Pageable.class));
-  }
-
-  // =========================================================================
-  // COMPETITION WODs (staff logging, verification)
-  // =========================================================================
 
   @Test
   @DisplayName("logScore: a score logged by staff for an athlete on a competition WOD is verified")

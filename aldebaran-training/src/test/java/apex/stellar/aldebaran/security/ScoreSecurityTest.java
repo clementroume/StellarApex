@@ -467,6 +467,12 @@ class ScoreSecurityTest {
     assertTrue(scoreSecurity.canUseGym(100L, user));
     assertFalse(scoreSecurity.canUseGym(999L, user));
     assertTrue(scoreSecurity.canUseGym(999L, admin));
+
+    // Several gyms (my boxes, my programs): every one must be the user's
+    assertTrue(scoreSecurity.canUseGyms(null, user));
+    assertTrue(scoreSecurity.canUseGyms(List.of(100L), user));
+    assertFalse(scoreSecurity.canUseGyms(List.of(100L, 999L), user));
+    assertTrue(scoreSecurity.canUseGyms(List.of(999L), admin));
   }
 
   @Test

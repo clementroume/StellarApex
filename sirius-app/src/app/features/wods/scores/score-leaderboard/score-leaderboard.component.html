@@ -18,11 +18,18 @@
           {{ 'SCORE.LEADERBOARD.VERIFIED_ONLY' | translate }}
         </label>
       }
-      @if (canFilterMyGyms()) {
+      @if (boxes().length > 0) {
         <label class="flex items-center gap-2 cursor-pointer text-sm">
-          <input id="leaderboard-my-gyms" type="checkbox" class="checkbox checkbox-sm checkbox-primary"
-                 [checked]="myGyms()" (change)="onMyGymsChange($any($event.target).checked)"/>
-          {{ myGymsLabel() | translate }}
+          <input id="leaderboard-my-boxes" type="checkbox" class="checkbox checkbox-sm checkbox-primary"
+                 [checked]="myBoxes()" (change)="onMyBoxesChange($any($event.target).checked)"/>
+          {{ (boxes().length > 1 ? 'SCORE.LEADERBOARD.MY_BOXES' : 'SCORE.LEADERBOARD.MY_BOX') | translate }}
+        </label>
+      }
+      @if (progs().length > 0) {
+        <label class="flex items-center gap-2 cursor-pointer text-sm">
+          <input id="leaderboard-my-progs" type="checkbox" class="checkbox checkbox-sm checkbox-secondary"
+                 [checked]="myProgs()" (change)="onMyProgsChange($any($event.target).checked)"/>
+          {{ (progs().length > 1 ? 'SCORE.LEADERBOARD.MY_PROGS' : 'SCORE.LEADERBOARD.MY_PROG') | translate }}
         </label>
       }
     </div>

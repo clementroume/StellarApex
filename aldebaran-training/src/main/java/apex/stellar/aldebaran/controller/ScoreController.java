@@ -11,6 +11,7 @@ import apex.stellar.aldebaran.service.ScoreCapabilityService;
 import apex.stellar.aldebaran.service.ScoreService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
@@ -193,9 +194,8 @@ public class ScoreController {
    *
    * @param id The ID of the WOD.
    * @param scaling The scaling level to filter by (default: RX).
-   * @param gymId Optional gym: only the scores performed there (one of the user's gyms).
-   * @param myGyms Only the scores performed in any of the user's gyms (narrow leaderboard);
-   *     default false (worldwide).
+   * @param gymIds Optional gyms (all among the user's gyms, 403 otherwise): only the scores
+   *     performed there, e.g. "my box(es)" or "my program(s)"; worldwide when absent.
    * @param verifiedOnly Only verified scores (competition WODs); default false.
    * @param pageable Pagination info.
    * @param principal The authenticated user.
@@ -203,19 +203,18 @@ public class ScoreController {
    */
   @GetMapping("/leaderboard/{id}")
   @PreAuthorize(
-      "@wodSecurity.canRead(#id, principal) and @scoreSecurity.canUseGym(#gymId, principal)")
+      "@wodSecurity.canRead(#id, principal) and @scoreSecurity.canUseGyms(#gymIds, principal)")
   public ResponseEntity<Slice<ScoreResponse>> getLeaderboard(
       @PathVariable Long id,
       @RequestParam(defaultValue = "RX") ScalingLevel scaling,
-      @RequestParam(required = false) Long gymId,
-      @RequestParam(defaultValue = "false") boolean myGyms,
+      @RequestParam(required = false) List<Long> gymIds,
       @RequestParam(defaultValue = "false") boolean verifiedOnly,
       @PageableDefault(size = 20) Pageable pageable,
       @AuthenticationPrincipal AldebaranUserPrincipal principal) {
 
     return ResponseEntity.ok(
         scoreService
-            .getLeaderboard(id, scaling, gymId, myGyms, verifiedOnly, pageable)
+            .getLeaderboard(id, scaling, gymIds, verifiedOnly, pageable)
             .map(score -> scoreCapabilityService.forViewer(score, principal)));
   }
 

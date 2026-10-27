@@ -92,7 +92,7 @@ class GymRoleRulesIT extends BaseIntegrationTest {
     update("owner", boxAthlete, GymRole.PROGRAMMER)
         .andExpect(status().isBadRequest())
         .andExpect(
-            jsonPath("$.detail").value("The role PROGRAMMER is not allowed in this type of gym."));
+            jsonPath("$.detail").value("The role PROGRAMMER is not allowed in this type of box or program."));
   }
 
   @Test
