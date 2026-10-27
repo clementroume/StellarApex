@@ -33,6 +33,7 @@ public class WodCapabilityService {
   public WodResponse withCapabilities(WodResponse wod, AldebaranUserPrincipal principal) {
     boolean canModify = wodSecurity.canModify(wod, principal);
     boolean locked = scoreRepository.existsByWodId(wod.id());
-    return wod.withCapabilities(new WodCapabilities(canModify, locked));
+    boolean canJudge = wodSecurity.canJudge(wod, principal);
+    return wod.withCapabilities(new WodCapabilities(canModify, locked, canJudge));
   }
 }

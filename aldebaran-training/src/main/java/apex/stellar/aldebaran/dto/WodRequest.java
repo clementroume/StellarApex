@@ -26,6 +26,8 @@ public record WodRequest(
     Long authorId,
     Long gymId,
     boolean isPublic,
+    // Competition WOD: gym WOD only, never public
+    boolean competition,
 
     // --- Description and Notes (EN / FR, either may be empty) ---
     @Size(max = 4000, message = "{validation.wod.description.size}") String descriptionEn,

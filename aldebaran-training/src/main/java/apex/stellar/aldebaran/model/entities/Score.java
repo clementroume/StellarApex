@@ -13,6 +13,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Min;
@@ -145,6 +146,35 @@ public class Score {
   @CreatedDate
   @Column(name = "logged_at", nullable = false, updatable = false)
   private LocalDateTime loggedAt;
+
+  /** User who logged the score: the athlete, or the staff member / admin logging it for them. */
+  @Column(name = "logged_by", nullable = false, updatable = false)
+  private Long loggedBy;
+
+  // --- Verification (competition WODs) ---
+  /** Staff member who verified the score, or null while it is not verified. */
+  @Column(name = "verified_by")
+  private Long verifiedBy;
+
+  @Column(name = "verified_at")
+  private LocalDateTime verifiedAt;
+
+  /** A score logged without an explicit author was logged by its athlete. */
+  @PrePersist
+  void defaultLoggedBy() {
+    if (loggedBy == null) {
+      loggedBy = userId;
+    }
+  }
+
+  /**
+   * Indicates whether the score was verified by the staff of a competition.
+   *
+   * @return {@code true} once verified.
+   */
+  public boolean isVerified() {
+    return verifiedAt != null;
+  }
 
   // --- Equality and Hashing ---
   @Override

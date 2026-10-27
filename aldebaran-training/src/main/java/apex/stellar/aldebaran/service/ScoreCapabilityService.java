@@ -4,6 +4,7 @@ import apex.stellar.aldebaran.dto.ScoreCapabilities;
 import apex.stellar.aldebaran.dto.ScoreResponse;
 import apex.stellar.aldebaran.security.AldebaranUserPrincipal;
 import apex.stellar.aldebaran.security.ScoreSecurity;
+import java.util.Objects;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -26,7 +27,9 @@ public class ScoreCapabilityService {
    */
   public ScoreResponse forViewer(ScoreResponse score, AldebaranUserPrincipal principal) {
     boolean canModify = scoreSecurity.canModify(score, principal);
-    // The athlete and the staff able to moderate the score see its notes
-    return score.forViewer(new ScoreCapabilities(canModify), canModify);
+    boolean canVerify = scoreSecurity.canVerify(score, principal);
+    // The athlete (even once the score is verified and locked) and the moderating staff see notes
+    boolean showNotes = canModify || Objects.equals(score.userId(), principal.getId());
+    return score.forViewer(new ScoreCapabilities(canModify, canVerify), showNotes);
   }
 }

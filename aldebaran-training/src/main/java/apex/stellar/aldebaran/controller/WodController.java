@@ -1,5 +1,6 @@
 package apex.stellar.aldebaran.controller;
 
+import apex.stellar.aldebaran.dto.WodCopyRequest;
 import apex.stellar.aldebaran.dto.WodFacetsResponse;
 import apex.stellar.aldebaran.dto.WodReferenceData;
 import apex.stellar.aldebaran.dto.WodRequest;
@@ -135,6 +136,26 @@ public class WodController {
 
     return ResponseEntity.status(HttpStatus.CREATED)
         .body(wodCapabilityService.withCapabilities(wodService.createWod(request), principal));
+  }
+
+  /**
+   * Copies a readable WOD into a gym (WOD_WRITE there) or as a personal WOD, e.g. a public Open WOD
+   * copied as a gym competition WOD. The copy is private and scored independently of its source.
+   *
+   * @param id The ID of the WOD to copy.
+   * @param request The target gym (null for a personal copy) and the competition flag.
+   * @param principal The authenticated user.
+   * @return The created copy with HTTP 201 Created status.
+   */
+  @PostMapping("/{id}/copy")
+  @PreAuthorize("@wodSecurity.canRead(#id, principal) and @wodSecurity.canCopy(#request, principal)")
+  public ResponseEntity<WodResponse> copyWod(
+      @PathVariable Long id,
+      @RequestBody WodCopyRequest request,
+      @AuthenticationPrincipal AldebaranUserPrincipal principal) {
+
+    return ResponseEntity.status(HttpStatus.CREATED)
+        .body(wodCapabilityService.withCapabilities(wodService.copyWod(id, request), principal));
   }
 
   /**

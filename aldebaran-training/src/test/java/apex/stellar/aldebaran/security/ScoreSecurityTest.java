@@ -1,13 +1,17 @@
 package apex.stellar.aldebaran.security;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import apex.stellar.aldebaran.client.AntaresClient;
 import apex.stellar.aldebaran.dto.ScoreRequest;
+import apex.stellar.aldebaran.exception.AntaresUnavailableException;
 import apex.stellar.aldebaran.model.entities.Score;
 import apex.stellar.aldebaran.model.entities.Wod;
 import apex.stellar.aldebaran.repository.ScoreRepository;
@@ -30,6 +34,7 @@ class ScoreSecurityTest {
 
   @Mock private ScoreRepository scoreRepository;
   @Mock private WodRepository wodRepository;
+  @Mock private AntaresClient antaresClient;
   @Spy private SecurityService securityService;
   @InjectMocks private ScoreSecurity scoreSecurity;
 
@@ -243,7 +248,7 @@ class ScoreSecurityTest {
   }
 
   @Test
-  @DisplayName("canCreate: Staff cannot log for others (target membership unverifiable)")
+  @DisplayName("canCreate: Staff cannot log for others outside a competition WOD")
   void canCreate_Staff_LogForOther_ReturnsFalse() {
     AldebaranUserPrincipal coach =
         TestPrincipals.of(2L, 100L, "COACH", List.of("SCORE_VERIFY"));
@@ -257,6 +262,7 @@ class ScoreSecurityTest {
     when(wodRepository.findById(1L)).thenReturn(Optional.of(gymWod));
 
     assertFalse(scoreSecurity.canCreate(request, coach));
+    verify(antaresClient, never()).isGymMember(anyLong(), anyLong());
   }
 
   @Test
@@ -478,5 +484,96 @@ class ScoreSecurityTest {
     assertTrue(scoreSecurity.canModify(10L, coach), "Coach with SCORE_VERIFY in gym 100");
     assertFalse(scoreSecurity.canModify(11L, coach), "Athlete only in gym 300");
     assertFalse(scoreSecurity.canModify(12L, coach), "No gym: only the athlete");
+  }
+
+  // --- Competition WODs: staff logging and verification ---
+
+  private static Wod competitionWod(Long gymId) {
+    return Wod.builder().id(1L).gymId(gymId).competition(true).build();
+  }
+
+  @Test
+  @DisplayName("canCreate: competition staff log for a member of the gym (confirmed by Antares)")
+  void canCreate_CompetitionStaff_ForMember_ReturnsTrue() {
+    AldebaranUserPrincipal coach = TestPrincipals.of(2L, 100L, "COACH", List.of("SCORE_VERIFY"));
+    when(wodRepository.findById(1L)).thenReturn(Optional.of(competitionWod(100L)));
+    when(antaresClient.isGymMember(100L, 99L)).thenReturn(true);
+
+    assertTrue(scoreSecurity.canCreate(requestFor(99L), coach));
+  }
+
+  @Test
+  @DisplayName("canCreate: competition staff cannot log for a non-member")
+  void canCreate_CompetitionStaff_ForNonMember_ReturnsFalse() {
+    AldebaranUserPrincipal coach = TestPrincipals.of(2L, 100L, "COACH", List.of("SCORE_VERIFY"));
+    when(wodRepository.findById(1L)).thenReturn(Optional.of(competitionWod(100L)));
+    when(antaresClient.isGymMember(100L, 99L)).thenReturn(false);
+
+    assertFalse(scoreSecurity.canCreate(requestFor(99L), coach));
+  }
+
+  @Test
+  @DisplayName("canCreate: Antares down -> refused with an error, never authorized")
+  void canCreate_CompetitionStaff_AntaresDown_Throws() {
+    AldebaranUserPrincipal coach = TestPrincipals.of(2L, 100L, "COACH", List.of("SCORE_VERIFY"));
+    when(wodRepository.findById(1L)).thenReturn(Optional.of(competitionWod(100L)));
+    when(antaresClient.isGymMember(100L, 99L))
+        .thenThrow(new AntaresUnavailableException("down", null));
+    ScoreRequest request = requestFor(99L);
+
+    assertThrows(AntaresUnavailableException.class, () -> scoreSecurity.canCreate(request, coach));
+  }
+
+  @Test
+  @DisplayName("canCreate: without SCORE_VERIFY, Antares is not even asked")
+  void canCreate_CompetitionAthlete_ForOther_ReturnsFalse() {
+    AldebaranUserPrincipal athlete = TestPrincipals.of(2L, 100L, "USER", List.of());
+    when(wodRepository.findById(1L)).thenReturn(Optional.of(competitionWod(100L)));
+
+    assertFalse(scoreSecurity.canCreate(requestFor(99L), athlete));
+    verify(antaresClient, never()).isGymMember(anyLong(), anyLong());
+  }
+
+  @Test
+  @DisplayName("canModify: a verified score is locked for its athlete, staff included")
+  void canModify_VerifiedScore() {
+    AldebaranUserPrincipal athlete = TestPrincipals.of(99L, 100L, "USER", List.of());
+    AldebaranUserPrincipal coach = TestPrincipals.of(2L, 100L, "COACH", List.of("SCORE_VERIFY"));
+    Wod wod = competitionWod(100L);
+    Score verified =
+        Score.builder().id(10L).userId(99L).gymId(100L).wod(wod)
+            .verifiedAt(java.time.LocalDateTime.now()).build();
+    Score coachOwn =
+        Score.builder().id(11L).userId(2L).gymId(100L).wod(wod)
+            .verifiedAt(java.time.LocalDateTime.now()).build();
+    when(scoreRepository.findById(10L)).thenReturn(Optional.of(verified));
+    when(scoreRepository.findById(11L)).thenReturn(Optional.of(coachOwn));
+
+    assertFalse(scoreSecurity.canModify(10L, athlete), "Athlete: locked once verified");
+    assertTrue(scoreSecurity.canModify(10L, coach), "Staff corrects an athlete's verified score");
+    assertFalse(scoreSecurity.canModify(11L, coach), "Staff: own verified score locked too");
+  }
+
+  @Test
+  @DisplayName("canVerify: competition staff of the gym, never on their own score")
+  void canVerify_Rules() {
+    AldebaranUserPrincipal coach = TestPrincipals.of(2L, 100L, "COACH", List.of("SCORE_VERIFY"));
+    AldebaranUserPrincipal athlete = TestPrincipals.of(3L, 100L, "USER", List.of());
+    AldebaranUserPrincipal otherCoach =
+        TestPrincipals.of(4L, 200L, "COACH", List.of("SCORE_VERIFY"));
+    Wod competition = competitionWod(100L);
+    Wod regular = Wod.builder().id(2L).gymId(100L).build();
+    when(scoreRepository.findById(10L))
+        .thenReturn(Optional.of(Score.builder().id(10L).userId(99L).gymId(100L).wod(competition).build()));
+    when(scoreRepository.findById(11L))
+        .thenReturn(Optional.of(Score.builder().id(11L).userId(2L).gymId(100L).wod(competition).build()));
+    when(scoreRepository.findById(12L))
+        .thenReturn(Optional.of(Score.builder().id(12L).userId(99L).gymId(100L).wod(regular).build()));
+
+    assertTrue(scoreSecurity.canVerify(10L, coach));
+    assertFalse(scoreSecurity.canVerify(10L, athlete), "No SCORE_VERIFY");
+    assertFalse(scoreSecurity.canVerify(10L, otherCoach), "Other gym");
+    assertFalse(scoreSecurity.canVerify(11L, coach), "Own score");
+    assertFalse(scoreSecurity.canVerify(12L, coach), "Not a competition WOD");
   }
 }

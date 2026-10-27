@@ -12,6 +12,7 @@ import apex.stellar.aldebaran.repository.ScoreRepository;
 import apex.stellar.aldebaran.repository.WodRepository;
 import apex.stellar.aldebaran.security.AldebaranUserPrincipal;
 import apex.stellar.aldebaran.security.ScoreSecurity;
+import apex.stellar.aldebaran.client.AntaresClient;
 import apex.stellar.aldebaran.security.SecurityService;
 import apex.stellar.aldebaran.security.TestPrincipals;
 import java.time.LocalDate;
@@ -26,15 +27,16 @@ class ScoreCapabilityServiceTest {
       new ScoreSecurity(
           Mockito.mock(ScoreRepository.class),
           Mockito.mock(WodRepository.class),
-          new SecurityService());
+          new SecurityService(),
+          Mockito.mock(AntaresClient.class));
   private final ScoreCapabilityService service = new ScoreCapabilityService(scoreSecurity);
 
   private static ScoreResponse score(Long athleteId, Long gymId) {
     WodSummaryResponse wod =
-        new WodSummaryResponse(1L, "Fran", null, null, null, null, null, null, null, 5L, gymId, true);
+        new WodSummaryResponse(1L, "Fran", null, null, null, null, null, null, null, 5L, gymId, true, false);
     return new ScoreResponse(
         10L, athleteId, LocalDate.now(), wod, null, 300, 5, 0, null, null, null, null, null, null, null,
-        null, null, ScalingLevel.RX, false, null, true, "felt good", "band", null, null);
+        null, null, ScalingLevel.RX, false, null, true, "felt good", "band", null, null, null, null, null);
   }
 
   @Test

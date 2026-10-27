@@ -126,6 +126,41 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
   }
 
   /**
+   * Handles {@link InvalidWodException} when a WOD breaks one of its own rules (e.g. a competition
+   * WOD without a gym). Returns 400 Bad Request.
+   */
+  @ApiResponse(
+      responseCode = "400",
+      description = "Invalid WOD (e.g. competition WOD without a gym, or public)",
+      content = @Content(schema = @Schema(implementation = ProblemDetail.class)))
+  @ExceptionHandler(InvalidWodException.class)
+  public ResponseEntity<@NonNull ProblemDetail> handleInvalidWod(
+      InvalidWodException ex, HttpServletRequest request, Locale locale) {
+
+    log.warn("Invalid WOD: {}", ex.getMessage());
+    String message = getLocalizedMessage(ex.getMessageKey(), ex.getArgs(), locale);
+    return createProblemResponse(HttpStatus.BAD_REQUEST, "Invalid WOD", message, request);
+  }
+
+  /**
+   * Handles {@link AntaresUnavailableException} when Antares cannot confirm a fact needed to
+   * authorize the request. The request is refused: 503 Service Unavailable.
+   */
+  @ApiResponse(
+      responseCode = "503",
+      description = "Antares unavailable: the request could not be authorized",
+      content = @Content(schema = @Schema(implementation = ProblemDetail.class)))
+  @ExceptionHandler(AntaresUnavailableException.class)
+  public ResponseEntity<@NonNull ProblemDetail> handleAntaresUnavailable(
+      AntaresUnavailableException ex, HttpServletRequest request, Locale locale) {
+
+    log.warn("Antares unavailable: {}", ex.getMessage());
+    String message = getLocalizedMessage("error.antares.unavailable", null, locale);
+    return createProblemResponse(
+        HttpStatus.SERVICE_UNAVAILABLE, "Service Unavailable", message, request);
+  }
+
+  /**
    * Handles {@link InvalidScoreException} when a score does not match its WOD. Returns 400 Bad
    * Request.
    */

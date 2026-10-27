@@ -22,6 +22,9 @@ public record WodResponse(
     Long authorId,
     Long gymId,
     boolean isPublic,
+    boolean competition,
+    // WOD this one was copied from, if any
+    Long sourceWodId,
 
     // --- Description and Notes (EN / FR) ---
     String descriptionEn,
@@ -65,6 +68,8 @@ public record WodResponse(
         authorId,
         gymId,
         isPublic,
+        competition,
+        sourceWodId,
         descriptionEn,
         descriptionFr,
         notesEn,

@@ -91,4 +91,11 @@ public interface WodSummary {
    * @return {@code true} if public.
    */
   boolean isPublic();
+
+  /**
+   * Indicates whether the workout is a gym competition WOD.
+   *
+   * @return {@code true} for a competition WOD.
+   */
+  boolean isCompetition();
 }

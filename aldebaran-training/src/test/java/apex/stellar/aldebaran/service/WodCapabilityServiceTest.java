@@ -38,7 +38,7 @@ class WodCapabilityServiceTest {
 
   private static WodResponse gymWod(Long gymId) {
     return new WodResponse(
-        10L, "Fran", null, null, null, 50L, gymId, false, null, null, null, null, null, null, null, null, null, null, null, Set.of(),
+        10L, "Fran", null, null, null, 50L, gymId, false, false, null, null, null, null, null, null, null, null, null, null, null, null, Set.of(),
         List.of(), null, null, null);
   }
 
@@ -109,5 +109,32 @@ class WodCapabilityServiceTest {
     assertTrue(capabilityService.withCapabilities(gymWod(101L), coach).capabilities().canModify());
     assertFalse(
         capabilityService.withCapabilities(gymWod(202L), coach).capabilities().canModify());
+  }
+
+  @Test
+  @DisplayName("canJudge: SCORE_VERIFY in the gym of a competition WOD only")
+  void canJudge_CompetitionStaffOnly() {
+    when(scoreRepository.existsByWodId(10L)).thenReturn(false);
+    WodResponse regular = gymWod(101L);
+    WodResponse competition =
+        new WodResponse(
+            10L, "26.1", null, null, null, 50L, 101L, false, true, 7L, null, null, null, null, null,
+            null, null, null, null, null, null, Set.of(), List.of(), null, null, null);
+
+    assertTrue(
+        capabilityService
+            .withCapabilities(competition, member("COACH", List.of("SCORE_VERIFY")))
+            .capabilities()
+            .canJudge());
+    assertFalse(
+        capabilityService
+            .withCapabilities(competition, member("ATHLETE", List.of()))
+            .capabilities()
+            .canJudge());
+    assertFalse(
+        capabilityService
+            .withCapabilities(regular, member("COACH", List.of("SCORE_VERIFY")))
+            .capabilities()
+            .canJudge());
   }
 }

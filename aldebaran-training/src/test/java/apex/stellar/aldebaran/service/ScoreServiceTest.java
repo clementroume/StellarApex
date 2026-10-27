@@ -130,11 +130,12 @@ class ScoreServiceTest {
   void testGetLeaderboard_Success() {
     Pageable pageable = PageRequest.of(0, 20);
     mockWodDetailHit(ScoreType.TIME);
-    when(scoreRepository.findByWodIdAndScalingAndPersonalRecordTrue(
-            eq(1L), eq(ScalingLevel.RX), any(Pageable.class)))
+    when(scoreRepository.findLeaderboard(
+            eq(1L), eq(ScalingLevel.RX), eq(null), eq(false), any(Pageable.class)))
         .thenReturn(Page.empty());
 
-    Slice<ScoreResponse> result = scoreService.getLeaderboard(1L, ScalingLevel.RX, null, pageable);
+    Slice<ScoreResponse> result =
+        scoreService.getLeaderboard(1L, ScalingLevel.RX, null, false, pageable);
 
     assertNotNull(result);
   }
@@ -643,16 +644,89 @@ class ScoreServiceTest {
   }
 
   @Test
-  @DisplayName("getLeaderboard: a gym filter only keeps the scores performed in that gym")
+  @DisplayName("getLeaderboard: gym and verified filters are passed to the query")
   void testGetLeaderboard_Gym() {
     mockWodDetailHit(ScoreType.TIME);
-    when(scoreRepository.findByWodIdAndScalingAndGymIdAndPersonalRecordTrue(
-            eq(1L), eq(ScalingLevel.RX), eq(300L), any(Pageable.class)))
+    when(scoreRepository.findLeaderboard(
+            eq(1L), eq(ScalingLevel.RX), eq(300L), eq(true), any(Pageable.class)))
         .thenReturn(Page.empty());
 
-    scoreService.getLeaderboard(1L, ScalingLevel.RX, 300L, PageRequest.of(0, 20));
+    scoreService.getLeaderboard(1L, ScalingLevel.RX, 300L, true, PageRequest.of(0, 20));
 
-    verify(scoreRepository, never())
-        .findByWodIdAndScalingAndPersonalRecordTrue(any(), any(), any(Pageable.class));
+    verify(scoreRepository)
+        .findLeaderboard(eq(1L), eq(ScalingLevel.RX), eq(300L), eq(true), any(Pageable.class));
+  }
+
+  // =========================================================================
+  // COMPETITION WODs (staff logging, verification)
+  // =========================================================================
+
+  @Test
+  @DisplayName("logScore: a score logged by staff for an athlete on a competition WOD is verified")
+  void testLogScore_CompetitionStaffForAthlete_Verified() {
+    Long coachId = 2L;
+    Long athleteId = 99L;
+    Wod competition =
+        Wod.builder().id(1L).gymId(100L).competition(true).scoreType(ScoreType.TIME).build();
+    ScoreRequest request =
+        new ScoreRequest(
+            athleteId, LocalDate.now(), 1L, 5, 0, null, null, null, null, null, null, null, null,
+            ScalingLevel.RX, false, null, null, null, null);
+    Score entity = Score.builder().timeSeconds(300).scaling(ScalingLevel.RX).build();
+    when(securityService.getCurrentUserId()).thenReturn(coachId);
+    when(wodRepository.findById(1L)).thenReturn(Optional.of(competition));
+    when(scoreMapper.toEntity(request)).thenReturn(entity);
+    when(scoreRepository.save(entity)).thenReturn(entity);
+    when(scoreRepository.findByWodIdAndUserId(1L, athleteId)).thenReturn(List.of(entity));
+
+    scoreService.logScore(request);
+
+    assertEquals(athleteId, entity.getUserId());
+    assertEquals(coachId, entity.getLoggedBy());
+    assertEquals(coachId, entity.getVerifiedBy());
+    assertTrue(entity.isVerified());
+  }
+
+  @Test
+  @DisplayName("logScore: an athlete's own score on a competition WOD waits for verification")
+  void testLogScore_CompetitionSelf_NotVerified() {
+    wodProxy.setCompetition(true);
+    wodProxy.setGymId(100L);
+    when(securityService.getCurrentUserId()).thenReturn(userId);
+    when(wodRepository.findById(1L)).thenReturn(Optional.of(wodProxy));
+    when(scoreMapper.toEntity(requestTime)).thenReturn(scoreEntityTime);
+    when(scoreRepository.save(scoreEntityTime)).thenReturn(scoreEntityTime);
+    when(scoreRepository.findByWodIdAndUserId(1L, userId)).thenReturn(List.of(scoreEntityTime));
+
+    scoreService.logScore(requestTime);
+
+    assertEquals(userId, scoreEntityTime.getLoggedBy());
+    assertFalse(scoreEntityTime.isVerified());
+  }
+
+  @Test
+  @DisplayName("setVerified: verifies then withdraws the verification of a competition score")
+  void testSetVerified() {
+    wodProxy.setCompetition(true);
+    when(securityService.getCurrentUserId()).thenReturn(2L);
+    when(scoreRepository.findById(50L)).thenReturn(Optional.of(scoreEntityTime));
+    when(scoreRepository.save(scoreEntityTime)).thenReturn(scoreEntityTime);
+
+    scoreService.setVerified(50L, true);
+    assertEquals(2L, scoreEntityTime.getVerifiedBy());
+    assertNotNull(scoreEntityTime.getVerifiedAt());
+
+    scoreService.setVerified(50L, false);
+    assertNull(scoreEntityTime.getVerifiedBy());
+    assertFalse(scoreEntityTime.isVerified());
+  }
+
+  @Test
+  @DisplayName("setVerified: only competition scores can be verified (400)")
+  void testSetVerified_NotCompetition() {
+    when(scoreRepository.findById(50L)).thenReturn(Optional.of(scoreEntityTime));
+
+    assertThrows(InvalidScoreException.class, () -> scoreService.setVerified(50L, true));
+    verify(scoreRepository, never()).save(any());
   }
 }

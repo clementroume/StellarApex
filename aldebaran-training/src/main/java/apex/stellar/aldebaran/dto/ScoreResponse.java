@@ -3,6 +3,7 @@ package apex.stellar.aldebaran.dto;
 import apex.stellar.aldebaran.model.entities.Score.ScalingLevel;
 import apex.stellar.aldebaran.model.enums.Unit;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 /** DTO representing a logged score. */
 public record ScoreResponse(
@@ -48,6 +49,12 @@ public record ScoreResponse(
 
     // --- Audit ---
     LocalDate loggedAt,
+    // User who logged the score (the athlete, or staff / admin logging it for them)
+    Long loggedBy,
+
+    // --- Verification (competition WODs), null while not verified ---
+    Long verifiedBy,
+    LocalDateTime verifiedAt,
 
     // --- Per-user rights (computed per request) ---
     ScoreCapabilities capabilities) {
@@ -86,6 +93,9 @@ public record ScoreResponse(
         showNotes ? userComment : null,
         showNotes ? scalingNotes : null,
         loggedAt,
+        loggedBy,
+        verifiedBy,
+        verifiedAt,
         capabilities);
   }
 }

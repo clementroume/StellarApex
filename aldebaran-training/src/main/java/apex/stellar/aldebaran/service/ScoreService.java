@@ -71,7 +71,8 @@ public class ScoreService {
   }
 
   /**
-   * Logs a new score for a WOD.
+   * Logs a new score for a WOD. A score logged for someone else on a competition WOD (by its
+   * judging staff, checked by {@code ScoreSecurity}) is verified at once by whoever logged it.
    *
    * @param request The score details.
    * @return The newly created ScoreResponse.
@@ -84,14 +85,19 @@ public class ScoreService {
         wodRepository
             .findById(request.wodId())
             .orElseThrow(() -> new ResourceNotFoundException(ERROR_WOD_NOT_FOUND, request.wodId()));
-    Long targetUserId =
-        request.userId() != null ? request.userId() : securityService.getCurrentUserId();
+    Long currentUserId = securityService.getCurrentUserId();
+    Long targetUserId = request.userId() != null ? request.userId() : currentUserId;
 
     Score newScore = scoreMapper.toEntity(request);
     newScore.setWod(wod);
     newScore.setUserId(targetUserId);
     newScore.setGymId(wod.getGymId() != null ? wod.getGymId() : request.gymId());
     newScore.setLoggedAt(LocalDateTime.now());
+    newScore.setLoggedBy(currentUserId);
+    if (wod.isCompetition() && !Objects.equals(targetUserId, currentUserId)) {
+      newScore.setVerifiedBy(currentUserId);
+      newScore.setVerifiedAt(LocalDateTime.now());
+    }
     normalizeAndCheck(newScore, wod);
 
     Score savedScore = scoreRepository.save(newScore);
@@ -102,7 +108,8 @@ public class ScoreService {
   }
 
   /**
-   * Updates an existing score. The athlete and the WOD of a score never change.
+   * Updates an existing score. The athlete and the WOD of a score never change, nor does its
+   * verification (only staff may update a verified score, see {@code ScoreSecurity}).
    *
    * @param id The ID of the score to update.
    * @param request The updated score details.
@@ -154,6 +161,30 @@ public class ScoreService {
   }
 
   /**
+   * Verifies a score of a competition WOD (judging), or withdraws its verification.
+   *
+   * @param scoreId The ID of the score.
+   * @param verified {@code true} to verify the score, {@code false} to withdraw the verification.
+   * @return The updated ScoreResponse.
+   * @throws InvalidScoreException if the WOD of the score is not a competition WOD.
+   */
+  @Transactional
+  public ScoreResponse setVerified(Long scoreId, boolean verified) {
+    Score score =
+        scoreRepository
+            .findById(scoreId)
+            .orElseThrow(() -> new ResourceNotFoundException(ERROR_SCORE_NOT_FOUND, scoreId));
+    if (!score.getWod().isCompetition()) {
+      throw new InvalidScoreException("error.score.verify.not.competition");
+    }
+
+    score.setVerifiedBy(verified ? securityService.getCurrentUserId() : null);
+    score.setVerifiedAt(verified ? LocalDateTime.now() : null);
+
+    return scoreMapper.toResponse(scoreRepository.save(score));
+  }
+
+  /**
    * Ranks a score among the Personal Records of the other athletes on the same WOD and scaling
    * level, with the ordering of {@link ScoreRanking}.
    *
@@ -186,17 +217,18 @@ public class ScoreService {
   /**
    * Retrieves the leaderboard for a specific WOD and scaling level: the Personal Record of each
    * athlete whose best score is at that level, best first, optionally limited to the scores
-   * performed in one gym.
+   * performed in one gym and to verified scores.
    *
    * @param wodId The ID of the WOD.
    * @param scaling The scaling level (e.g., RX, Scaled).
    * @param gymId The gym to keep, or null for every gym.
+   * @param verifiedOnly Whether to keep verified scores only (competition WODs).
    * @param pageable Pagination information.
    * @return A slice of ScoreResponse objects representing the leaderboard.
    */
   @Transactional(readOnly = true)
   public Slice<ScoreResponse> getLeaderboard(
-      Long wodId, ScalingLevel scaling, Long gymId, Pageable pageable) {
+      Long wodId, ScalingLevel scaling, Long gymId, boolean verifiedOnly, Pageable pageable) {
     WodResponse wod = wodService.getWodDetail(wodId);
 
     Pageable sortedPageable =
@@ -205,13 +237,9 @@ public class ScoreService {
             pageable.getPageSize(),
             ScoreRanking.leaderboardSort(wod.scoreType()));
 
-    Slice<Score> scores =
-        gymId == null
-            ? scoreRepository.findByWodIdAndScalingAndPersonalRecordTrue(
-                wodId, scaling, sortedPageable)
-            : scoreRepository.findByWodIdAndScalingAndGymIdAndPersonalRecordTrue(
-                wodId, scaling, gymId, sortedPageable);
-    return scores.map(scoreMapper::toResponse);
+    return scoreRepository
+        .findLeaderboard(wodId, scaling, gymId, verifiedOnly, sortedPageable)
+        .map(scoreMapper::toResponse);
   }
 
   /** Retrieves reference data for WOD Score forms. */
