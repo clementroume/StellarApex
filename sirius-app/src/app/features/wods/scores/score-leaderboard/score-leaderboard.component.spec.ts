@@ -109,13 +109,34 @@ describe('ScoreLeaderboardComponent', () => {
     const buttons = [...fixture.nativeElement.querySelectorAll('button')] as HTMLButtonElement[];
     buttons.find(b => b.textContent?.includes('SCORE.ACTIONS.VERIFY'))!.click();
     expect(setVerified).toHaveBeenCalledWith(judged, true);
-    expect(buttons.some(b => b.textContent?.includes('SCORE.ACTIONS.UNVERIFY'))).toBe(true);
+    expect(buttons.some(b => b.getAttribute('aria-label') === 'SCORE.ACTIONS.UNVERIFY')).toBe(true);
 
     const filter: HTMLInputElement = fixture.nativeElement.querySelector('#leaderboard-verified');
     filter.checked = false;
     filter.dispatchEvent(new Event('change'));
     fixture.detectChanges();
     expect(scoreService.getLeaderboard).toHaveBeenLastCalledWith(7, 'RX', 0, 50, null, false);
+  });
+
+  it('should show every score to a judge by default, so they see the scores to verify', async () => {
+    wod.set({id: 7, scoreType: 'TIME', gymId: 5, competition: true, capabilities: {canJudge: true}});
+    await TestBed.configureTestingModule({
+      imports: [ScoreLeaderboardComponent],
+      providers: [
+        provideIcons(APP_ICONS),
+        provideTranslateService(),
+        {provide: WodScoresStore, useValue: {wod, changed$, setVerified, openEdit: vi.fn(), delete: vi.fn()}},
+        {provide: ScoreService, useValue: scoreService},
+        {provide: UserService, useValue: userService},
+        {provide: AccessService, useValue: {userId: signal(2), memberships: signal([])}},
+        {provide: UnitService, useValue: {}}
+      ]
+    }).compileComponents();
+    fixture = TestBed.createComponent(ScoreLeaderboardComponent);
+    fixture.detectChanges();
+
+    expect(scoreService.getLeaderboard).toHaveBeenLastCalledWith(7, 'RX', 0, 50, null, false);
+    expect((fixture.nativeElement.querySelector('#leaderboard-verified') as HTMLInputElement).checked).toBe(false);
   });
 
   it('should not offer the verified filter outside competitions', async () => {

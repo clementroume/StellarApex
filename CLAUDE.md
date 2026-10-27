@@ -75,7 +75,8 @@ and a virtual programming); there is no "active gym" in requests.
   verified: `SCORE_VERIFY` staff of the gym log scores for its members (logged = verified at once;
   Antares confirms the membership through its internal API, 503 if unavailable, never authorized by
   default) and verify/unverify scores (`POST|DELETE /scores/{id}/verify`), never their own. A verified
-  score is locked for its athlete, staff included. Leaderboard `verifiedOnly` (verified PRs). Logging
+  score is locked for its athlete, staff included. Leaderboard `verifiedOnly` (verified PRs; Sirius
+  defaults it off for judges so they see the scores to verify). Logging
   for someone else elsewhere: admin only. `POST /wods/{id}/copy {gymId, competition}` copies a readable
   WOD (e.g. a public Open WOD) into a gym (`WOD_WRITE`), private, with `sourceWodId`; scores and
   leaderboards stay per WOD (a copy's scores never reach the public WOD).

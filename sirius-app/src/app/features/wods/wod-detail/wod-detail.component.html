@@ -16,7 +16,13 @@
 
     @if (wod(); as w) {
 
-      <app-detail-header [title]="w.title" (back)="goBack()"></app-detail-header>
+      <app-detail-header [title]="w.title" [subtitle]="w.sourceWodId ? (gymName() ?? undefined) : undefined" (back)="goBack()">
+        @if (w.sourceWodId) {
+          <a id="source-wod" [routerLink]="['/wods', w.sourceWodId]" class="link link-hover text-sm flex items-center gap-1">
+            <ng-icon name="heroDocumentDuplicate"></ng-icon>{{ 'WOD.MESSAGES.COPIED_FROM' | translate }}
+          </a>
+        }
+      </app-detail-header>
 
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start mb-8">
 
@@ -112,12 +118,7 @@
               <dd>{{ 'WOD.SCORE_TYPES.' + w.scoreType | translate }}</dd>
             </dl>
 
-            @if (w.sourceWodId) {
-              <a id="source-wod" [routerLink]="['/wods', w.sourceWodId]" class="link link-hover text-sm flex items-center gap-1">
-                <ng-icon name="heroDocumentDuplicate"></ng-icon>{{ 'WOD.MESSAGES.COPIED_FROM' | translate }}
-              </a>
-            }
-            @if (copyTargets().length > 0) {
+            @if (canCopy()) {
               <button type="button" id="copy-wod" class="btn btn-outline btn-sm self-start" (click)="openCopy(w)">
                 <ng-icon name="heroDocumentDuplicate"></ng-icon>
                 {{ 'WOD.ACTIONS.COPY' | translate }}

@@ -87,6 +87,8 @@ export class WodDetailComponent {
 
   /** Gyms where the user may program WODs (WOD_WRITE): targets of a copy, checked by Aldebaran. */
   copyTargets = computed(() => this.accessService.gymsWithPermission('WOD_WRITE'));
+  /** An original WOD can be copied by users programming a gym; a copy is never copied again. */
+  canCopy = computed(() => this.copyTargets().length > 0 && !this.wod()?.sourceWodId);
 
   gymName = computed(() => {
     const gymId = this.wod()?.gymId;

@@ -41,7 +41,7 @@
         <li class="py-2 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-box px-2" [class.bg-primary/10]="score.userId === myId()"
             [attr.aria-current]="score.userId === myId() ? 'true' : null">
           <span class="w-8 text-right font-bold tabular-nums">{{ i + 1 }}</span>
-          <span class="flex-1 truncate" [class.italic]="!names()[score.userId]">{{ name(score) }}</span>
+          <span class="flex-1 min-w-24 truncate" [class.italic]="!names()[score.userId]">{{ name(score) }}</span>
           @if (score.verifiedAt) {
             <span class="text-success" [title]="'SCORE.VERIFIED' | translate" [attr.aria-label]="'SCORE.VERIFIED' | translate">
               <ng-icon name="heroCheckBadge"></ng-icon>
@@ -55,8 +55,9 @@
             <span class="flex gap-1">
               @if (score.capabilities?.canVerify) {
                 @if (score.verifiedAt) {
-                  <button type="button" class="btn btn-ghost btn-xs" (click)="store.setVerified(score, false)">
-                    {{ 'SCORE.ACTIONS.UNVERIFY' | translate }}
+                  <button type="button" class="btn btn-ghost btn-xs btn-square" (click)="store.setVerified(score, false)"
+                          [attr.aria-label]="'SCORE.ACTIONS.UNVERIFY' | translate" [title]="'SCORE.ACTIONS.UNVERIFY' | translate">
+                    <ng-icon name="heroXMark"></ng-icon>
                   </button>
                 } @else {
                   <button type="button" class="btn btn-success btn-soft btn-xs" (click)="store.setVerified(score, true)">

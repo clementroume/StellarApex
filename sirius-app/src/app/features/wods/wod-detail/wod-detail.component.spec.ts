@@ -366,11 +366,15 @@ describe('WodDetailComponent', () => {
   });
 
   describe('competition and copy', () => {
-    it('should flag a competition WOD and link the WOD it was copied from', () => {
+    it('should flag a competition copy: gym next to the title, link to the original, no copy button', () => {
+      writableGyms.mockReturnValue([{gymId: 5, gymName: 'Box'}]);
       init(buildWod({gymId: 5, competition: true, sourceWodId: 3}));
 
       expect(fixture.nativeElement.querySelector('#competition-badge')).toBeTruthy();
-      expect(fixture.nativeElement.querySelector('#source-wod')?.getAttribute('href')).toBe('/wods/3');
+      const header: HTMLElement = fixture.nativeElement.querySelector('app-detail-header');
+      expect(header.querySelector('h1')?.textContent).toContain('(Box)');
+      expect(header.querySelector('#source-wod')?.getAttribute('href')).toBe('/wods/3');
+      expect(fixture.nativeElement.querySelector('#copy-wod')).toBeNull();
     });
 
     it('should offer the copy only to users programming a gym', () => {

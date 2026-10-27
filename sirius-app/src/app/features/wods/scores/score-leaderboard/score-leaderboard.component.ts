@@ -42,7 +42,10 @@ export class ScoreLeaderboardComponent {
   readonly scaling = signal<ScalingLevel>('RX');
   /** Gym to keep on a public or personal WOD, null for every gym. */
   readonly gymId = signal<number | null>(null);
-  /** Verified scores only (competition WODs); null until the WOD is known, then on by default. */
+  /**
+   * Verified scores only (competition WODs), as chosen by the user. By default on for athletes (the
+   * official ranking) and off for judges, who must see the scores waiting for their verification.
+   */
   readonly verifiedOnlyChoice = signal<boolean | null>(null);
   readonly rows = signal<ScoreResponse[]>([]);
   readonly names = signal<Record<number, string>>({});
@@ -55,7 +58,8 @@ export class ScoreLeaderboardComponent {
   /** A gym WOD is only ranked within its gym; a public WOD can be filtered on the user's gyms. */
   readonly gymChoices = computed(() => this.store.wod()?.gymId != null ? [] : this.accessService.memberships());
   readonly isCompetition = computed(() => !!this.store.wod()?.competition);
-  readonly verifiedOnly = computed(() => this.isCompetition() && (this.verifiedOnlyChoice() ?? true));
+  readonly verifiedOnly = computed(() =>
+    this.isCompetition() && (this.verifiedOnlyChoice() ?? !this.store.wod()?.capabilities?.canJudge));
 
   // --- LIFECYCLE ---
   constructor() {

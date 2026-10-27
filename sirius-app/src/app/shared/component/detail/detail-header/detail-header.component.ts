@@ -19,11 +19,15 @@ import {NgIcon} from '@ng-icons/core';
           }
         </h1>
       </div>
-      @if (badgeText()) {
-        <div class="badge badge-soft badge-accent badge-lg">
-          {{ badgeText() }}
-        </div>
-      }
+      <div class="flex items-center gap-2 empty:hidden">
+        @if (badgeText()) {
+          <div class="badge badge-soft badge-accent badge-lg">
+            {{ badgeText() }}
+          </div>
+        }
+        <!-- Optional right-hand content (e.g. a link to related content) -->
+        <ng-content></ng-content>
+      </div>
     </div>
   `
 })

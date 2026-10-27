@@ -78,11 +78,13 @@ The backends enforce every rule; Sirius only adapts what it shows:
   suggests the reps per round from the movements. WODs with an official tiebreak (Open) show it and offer an optional,
   collapsed tiebreak time. The WOD form proposes the usual score type of the chosen format.
 * **Competitions**: the WOD form has a "Competition" toggle for gym WODs (a competition WOD is never
-  public), and a WOD detail offers "Copy to my gym" to users who program a gym (copy of an Open WOD
-  checked as competition by default; the copy links to its original). On a competition WOD the judge
-  (`capabilities.canJudge`) picks the athlete when logging a score (gym members from Antares), the
-  leaderboard shows verified scores by default with a "Verified" badge and Verify / Withdraw / edit /
-  delete buttons when the backend allows them, and the history shows "Verified by" / "Logged by".
+  public), and an original WOD detail offers "Copy to my gym" to users who program a gym (copy of an
+  Open WOD checked as competition by default). A copy shows its gym next to its title and a link to
+  its original on the right, and cannot be copied again. On a competition WOD the judge
+  (`capabilities.canJudge`) picks the athlete when logging a score (gym members from Antares); the
+  leaderboard shows every score to judges (to verify them) and verified scores only to the others by
+  default, with a "Verified" badge and Verify / Withdraw / edit / delete buttons when the backend
+  allows them; the history shows "Verified by" / "Logged by".
 * **Units**: a "Units" tab in My account (metric or imperial, `core/services/unit.service.ts`), saved
   in the account (`unitSystem`); without a choice it follows the language (French: metric). Values are
   converted for display only, rounded as gyms write them: loads (95 lb = 43 kg), heights (24/20 in =
