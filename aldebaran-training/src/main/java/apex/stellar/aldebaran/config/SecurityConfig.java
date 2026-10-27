@@ -11,6 +11,8 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -134,10 +136,12 @@ public class SecurityConfig {
     static final String HEADER_MEMBERSHIPS = "X-Auth-Memberships";
     static final String HEADER_ACTOR_ID = "X-Auth-Actor-Id";
 
-    private final String internalSecret;
+    // Compared in constant time; an empty secret rejects every request
+    private final byte[] internalSecret;
 
     ForwardedAuthFilter(String internalSecret) {
-      this.internalSecret = internalSecret;
+      this.internalSecret =
+          internalSecret == null ? new byte[0] : internalSecret.getBytes(StandardCharsets.UTF_8);
     }
 
     /**
@@ -195,7 +199,9 @@ public class SecurityConfig {
 
       String headerSecret = request.getHeader("X-Internal-Secret");
 
-      if (headerSecret == null || !headerSecret.equals(internalSecret)) {
+      if (internalSecret.length == 0
+          || headerSecret == null
+          || !MessageDigest.isEqual(internalSecret, headerSecret.getBytes(StandardCharsets.UTF_8))) {
         response.sendError(
             HttpServletResponse.SC_FORBIDDEN, "Access Denied: Invalid Internal Secret");
         return;

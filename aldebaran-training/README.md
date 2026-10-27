@@ -185,8 +185,10 @@ Rules live in `security/WodSecurity` and `security/ScoreSecurity`, used from `@P
 * `GET /{id}/compare`: rank and percentile of a score among the other athletes' PRs at its level.
 * `GET /leaderboard/{id}`: leaderboard of a WOD (`scaling`, default `RX`): each athlete's PR at that
   level; optional `gymIds` (comma-separated, all among the caller's gyms, 403 otherwise) keeps the
-  scores performed there (e.g. the caller's boxes, or programs);
-  `verifiedOnly=true` keeps verified PRs only (an athlete whose PR is not verified is left out).
+  scores performed there (e.g. the caller's boxes, or programs) and `verifiedOnly=true` the
+  verified ones. Filters apply before choosing each athlete's best score: an athlete is ranked by
+  their best kept score, which may not be their PR (done in another gym, or not verified yet).
+  Filtered leaderboards are ranked in memory in `ScoreService`, the worldwide one in the database.
 * `POST /{id}/verify`, `DELETE /{id}/verify`: verify a competition score or withdraw the verification
   (rules above; 400 outside a competition WOD).
   Responses carry user IDs only: clients resolve names with Antares `POST /users/display-names`.

@@ -19,13 +19,16 @@ import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
+import org.springframework.data.domain.SliceImpl;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -218,8 +221,13 @@ public class ScoreService {
 
   /**
    * Retrieves the leaderboard for a specific WOD and scaling level: the Personal Record of each
-   * athlete whose best score is at that level, best first, optionally limited to the scores
-   * performed in some gyms (e.g. the user's boxes or programs) and to verified scores.
+   * athlete whose best score is at that level, best first.
+   *
+   * <p>The filters apply before choosing each athlete's best score: with {@code gymIds} (e.g. the
+   * user's boxes or programs) and / or {@code verifiedOnly}, each athlete is ranked by their best
+   * score among those kept (scaling tier first, as for a PR). It may differ from their PR, done in
+   * another gym or not verified yet; athletes whose best kept score is at another level are left
+   * out.
    *
    * @param wodId The ID of the WOD.
    * @param scaling The scaling level (e.g., RX, Scaled).
@@ -237,19 +245,60 @@ public class ScoreService {
       Pageable pageable) {
     WodResponse wod = wodService.getWodDetail(wodId);
 
+    boolean filterGyms = gymIds != null && !gymIds.isEmpty();
+    // A JPQL IN clause needs a non-empty collection, even when the filter is off
+    Collection<Long> gyms = filterGyms ? gymIds : Set.of(-1L);
+
+    if (filterGyms || verifiedOnly) {
+      return filteredLeaderboard(
+              wodId, wod.scoreType(), scaling, filterGyms, gyms, verifiedOnly, pageable)
+          .map(scoreMapper::toResponse);
+    }
+
     Pageable sortedPageable =
         PageRequest.of(
             pageable.getPageNumber(),
             pageable.getPageSize(),
             ScoreRanking.leaderboardSort(wod.scoreType()));
 
-    boolean filterGyms = gymIds != null && !gymIds.isEmpty();
-    // A JPQL IN clause needs a non-empty collection, even when the filter is off
-    Collection<Long> gyms = filterGyms ? gymIds : Set.of(-1L);
-
     return scoreRepository
-        .findLeaderboard(wodId, scaling, filterGyms, gyms, verifiedOnly, sortedPageable)
+        .findLeaderboard(wodId, scaling, sortedPageable)
         .map(scoreMapper::toResponse);
+  }
+
+  /**
+   * Ranks each athlete by their best score among those kept by the filters, in memory: the ordering
+   * lives in {@link ScoreRanking} and cannot be expressed as a "best per athlete" query. The kept
+   * scores belong to a few gyms (or to a competition WOD of one gym), so the set stays small.
+   */
+  private Slice<Score> filteredLeaderboard(
+      Long wodId,
+      ScoreType type,
+      ScalingLevel scaling,
+      boolean filterGyms,
+      Collection<Long> gyms,
+      boolean verifiedOnly,
+      Pageable pageable) {
+    Comparator<Score> best = ScoreRanking.bestFirst(type);
+    Map<Long, Score> bestByAthlete = new HashMap<>();
+    for (Score score : scoreRepository.findFilteredByWod(wodId, filterGyms, gyms, verifiedOnly)) {
+      bestByAthlete.merge(score.getUserId(), score, (a, b) -> best.compare(a, b) <= 0 ? a : b);
+    }
+
+    // Same order as ScoreRanking.leaderboardSort: performance, tiebreak, earliest logged, id
+    Comparator<Score> ranking =
+        ScoreRanking.rankingFirst(type)
+            .thenComparing(Score::getLoggedAt, Comparator.nullsLast(Comparator.naturalOrder()))
+            .thenComparing(Score::getId, Comparator.nullsLast(Comparator.naturalOrder()));
+    List<Score> ranked =
+        bestByAthlete.values().stream()
+            .filter(s -> s.getScaling() == scaling)
+            .sorted(ranking)
+            .toList();
+
+    int from = (int) Math.min(pageable.getOffset(), ranked.size());
+    int to = Math.min(from + pageable.getPageSize(), ranked.size());
+    return new SliceImpl<>(ranked.subList(from, to), pageable, to < ranked.size());
   }
 
   /** Retrieves reference data for WOD Score forms. */

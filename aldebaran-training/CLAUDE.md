@@ -19,7 +19,7 @@ resolving IDs from the `antares` schema with `JdbcTemplate`, then calls `config/
 ## Identity and security
 
 - No login here: `config/SecurityConfig` trusts the `X-Auth-*` headers set by Antares through Traefik
-  (checked with `X-Internal-Secret`) and builds `security/AldebaranUserPrincipal`
+  (checked with `X-Internal-Secret`, constant time, empty secret rejects all) and builds `security/AldebaranUserPrincipal`
   (`platformRole`, `memberships: Map<gymId, GymAccess(role, permissions)>`, `actorId`).
   Header contract: see root `CLAUDE.md`.
 - `security/SecurityService`: `isAdmin`, `hasGymPermission(principal, gymId, perm)`,
