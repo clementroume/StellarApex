@@ -236,6 +236,34 @@ class CompetitionScoreIT extends BaseIntegrationTest {
   }
 
   @Test
+  @DisplayName("Leaderboard: verifiedOnly ranks an athlete whose PR is not verified yet")
+  void leaderboardVerifiedOnlyBestVerifiedScore() throws Exception {
+    // Verified 600 s, then a better 500 s PR not verified yet
+    Score verified = saveScore(ATHLETE, true);
+    verified.setPersonalRecord(false);
+    verified = scoreRepository.save(verified);
+    scoreRepository.save(
+        Score.builder()
+            .userId(ATHLETE)
+            .wod(competition)
+            .gymId(GYM)
+            .date(LocalDate.now())
+            .timeSeconds(500)
+            .scaling(ScalingLevel.RX)
+            .personalRecord(true)
+            .build());
+
+    mockMvc
+        .perform(
+            as(get("/aldebaran/scores/leaderboard/" + competition.getId()), ATHLETE, ATHLETE_MEMBERSHIPS)
+                .param("verifiedOnly", "true"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.content.length()").value(1))
+        .andExpect(jsonPath("$.content[0].id").value(verified.getId()))
+        .andExpect(jsonPath("$.content[0].timeSeconds").value(600));
+  }
+
+  @Test
   @DisplayName("Leaderboard: gymIds keeps the scores performed in the caller's gyms (public WOD)")
   void leaderboardMyGyms() throws Exception {
     for (long[] row : new long[][] {{ATHLETE, GYM}, {ATHLETE + 1, 555L}}) {
@@ -268,6 +296,47 @@ class CompetitionScoreIT extends BaseIntegrationTest {
             as(get("/aldebaran/scores/leaderboard/" + open.getId()), ATHLETE, ATHLETE_MEMBERSHIPS)
                 .param("gymIds", GYM + ",555"))
         .andExpect(status().isForbidden());
+  }
+
+  @Test
+  @DisplayName("Leaderboard: gymIds ranks an athlete whose PR was done in another gym")
+  void leaderboardMyGymsBestScoreInGym() throws Exception {
+    // 270 s in the caller's gym, then a better 230 s PR in another gym
+    Score inMyBox =
+        scoreRepository.save(
+            Score.builder()
+                .userId(ATHLETE)
+                .wod(open)
+                .gymId(GYM)
+                .date(LocalDate.now())
+                .timeSeconds(270)
+                .scaling(ScalingLevel.RX)
+                .build());
+    scoreRepository.save(
+        Score.builder()
+            .userId(ATHLETE)
+            .wod(open)
+            .gymId(555L)
+            .date(LocalDate.now())
+            .timeSeconds(230)
+            .scaling(ScalingLevel.RX)
+            .personalRecord(true)
+            .build());
+
+    mockMvc
+        .perform(
+            as(get("/aldebaran/scores/leaderboard/" + open.getId()), ATHLETE, ATHLETE_MEMBERSHIPS)
+                .param("gymIds", String.valueOf(GYM)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.content.length()").value(1))
+        .andExpect(jsonPath("$.content[0].id").value(inMyBox.getId()))
+        .andExpect(jsonPath("$.content[0].timeSeconds").value(270));
+    // Worldwide: the PR
+    mockMvc
+        .perform(as(get("/aldebaran/scores/leaderboard/" + open.getId()), ATHLETE, ATHLETE_MEMBERSHIPS))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.content.length()").value(1))
+        .andExpect(jsonPath("$.content[0].timeSeconds").value(230));
   }
 
   @Test

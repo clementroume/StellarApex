@@ -131,8 +131,7 @@ class ScoreServiceTest {
   void testGetLeaderboard_Success() {
     Pageable pageable = PageRequest.of(0, 20);
     mockWodDetailHit(ScoreType.TIME);
-    when(scoreRepository.findLeaderboard(
-            eq(1L), eq(ScalingLevel.RX), eq(false), any(), eq(false), any(Pageable.class)))
+    when(scoreRepository.findLeaderboard(eq(1L), eq(ScalingLevel.RX), any(Pageable.class)))
         .thenReturn(Page.empty());
 
     Slice<ScoreResponse> result =
@@ -645,18 +644,81 @@ class ScoreServiceTest {
   }
 
   @Test
-  @DisplayName("getLeaderboard: gym and verified filters are passed to the query")
-  void testGetLeaderboard_Gym() {
+  @DisplayName("getLeaderboard gym filter: each athlete ranked by their best score in those gyms")
+  void testGetLeaderboard_Gym_BestScoreInGyms() {
     mockWodDetailHit(ScoreType.TIME);
-    when(scoreRepository.findLeaderboard(
-            eq(1L), eq(ScalingLevel.RX), eq(true), eq(List.of(300L)), eq(true), any(Pageable.class)))
-        .thenReturn(Page.empty());
+    // Athlete 7: PR 230 s done elsewhere, 270 s in gym 300; only the latter is returned
+    Score inMyBox = verified(1L, 7L, 270, ScalingLevel.RX);
+    when(scoreRepository.findFilteredByWod(eq(1L), eq(true), eq(List.of(300L)), eq(false)))
+        .thenReturn(List.of(inMyBox));
 
-    scoreService.getLeaderboard(1L, ScalingLevel.RX, List.of(300L), true, PageRequest.of(0, 20));
+    Slice<ScoreResponse> result =
+        scoreService.getLeaderboard(
+            1L, ScalingLevel.RX, List.of(300L), false, PageRequest.of(0, 20));
 
-    verify(scoreRepository)
-        .findLeaderboard(
-            eq(1L), eq(ScalingLevel.RX), eq(true), eq(List.of(300L)), eq(true), any(Pageable.class));
+    assertEquals(1, result.getNumberOfElements());
+    verify(scoreMapper).toResponse(inMyBox);
+    verify(scoreRepository, never()).findLeaderboard(any(), any(), any(Pageable.class));
+  }
+
+  private Score verified(long id, long athlete, int seconds, ScalingLevel scaling) {
+    return Score.builder()
+        .id(id)
+        .userId(athlete)
+        .timeSeconds(seconds)
+        .scaling(scaling)
+        .timeCapped(false)
+        .build();
+  }
+
+  @Test
+  @DisplayName("getLeaderboard verifiedOnly: each athlete ranked by their best verified score")
+  void testGetLeaderboard_VerifiedOnly_BestVerifiedPerAthlete() {
+    mockWodDetailHit(ScoreType.TIME);
+    // Athlete 7: two verified RX scores, the best one (290 s) counts, whatever the PR flag says
+    Score slow7 = verified(1L, 7L, 320, ScalingLevel.RX);
+    Score best7 = verified(2L, 7L, 290, ScalingLevel.RX);
+    // Athlete 8: verified RX 300 s
+    Score only8 = verified(3L, 8L, 300, ScalingLevel.RX);
+    // Athlete 9: best verified score is ELITE, so not on the RX leaderboard
+    Score rx9 = verified(4L, 9L, 250, ScalingLevel.RX);
+    Score elite9 = verified(5L, 9L, 400, ScalingLevel.ELITE);
+    when(scoreRepository.findFilteredByWod(eq(1L), eq(true), eq(List.of(300L)), eq(true)))
+        .thenReturn(List.of(slow7, only8, best7, rx9, elite9));
+
+    Slice<ScoreResponse> result =
+        scoreService.getLeaderboard(
+            1L, ScalingLevel.RX, List.of(300L), true, PageRequest.of(0, 20));
+
+    assertEquals(2, result.getNumberOfElements());
+    assertFalse(result.hasNext());
+    var order = inOrder(scoreMapper);
+    order.verify(scoreMapper).toResponse(best7);
+    order.verify(scoreMapper).toResponse(only8);
+    verify(scoreMapper, never()).toResponse(slow7);
+    verify(scoreRepository, never()).findLeaderboard(any(), any(), any(Pageable.class));
+  }
+
+  @Test
+  @DisplayName("getLeaderboard verifiedOnly: paginated in memory")
+  void testGetLeaderboard_VerifiedOnly_Pagination() {
+    mockWodDetailHit(ScoreType.TIME);
+    Score first = verified(1L, 7L, 290, ScalingLevel.RX);
+    Score second = verified(2L, 8L, 300, ScalingLevel.RX);
+    Score third = verified(3L, 9L, 310, ScalingLevel.RX);
+    when(scoreRepository.findFilteredByWod(eq(1L), eq(false), any(), eq(true)))
+        .thenReturn(List.of(third, first, second));
+
+    Slice<ScoreResponse> page0 =
+        scoreService.getLeaderboard(1L, ScalingLevel.RX, null, true, PageRequest.of(0, 2));
+    Slice<ScoreResponse> page1 =
+        scoreService.getLeaderboard(1L, ScalingLevel.RX, null, true, PageRequest.of(1, 2));
+
+    assertEquals(2, page0.getNumberOfElements());
+    assertTrue(page0.hasNext());
+    assertEquals(1, page1.getNumberOfElements());
+    assertFalse(page1.hasNext());
+    verify(scoreMapper, times(1)).toResponse(third);
   }
 
   @Test

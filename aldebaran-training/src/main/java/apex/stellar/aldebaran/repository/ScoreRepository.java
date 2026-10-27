@@ -65,30 +65,35 @@ public interface ScoreRepository extends JpaRepository<Score, Long> {
   boolean existsByWodId(Long wodId);
 
   /**
-   * Retrieves the leaderboard (PRs only) for a specific WOD and scaling level, optionally limited
-   * to the scores performed in some gyms and to verified scores (an athlete whose PR is not
-   * verified is then left out).
+   * Retrieves the worldwide leaderboard (PRs only) for a specific WOD and scaling level.
    *
    * @param wodId The WOD ID.
    * @param scaling The scaling level (RX, SCALED...).
-   * @param filterGyms Whether to keep the scores performed in {@code gymIds} only.
-   * @param gymIds The gyms to keep (never empty, so that the JPQL {@code IN} stays valid).
-   * @param verifiedOnly Whether to keep verified scores only.
    * @param pageable Pagination and Sorting (Sort is handled by Service based on WOD type).
    * @return A page of Personal Record scores.
    */
   @Query(
       "SELECT s FROM Score s WHERE s.wod.id = :wodId AND s.scaling = :scaling"
-          + " AND s.personalRecord = true"
+          + " AND s.personalRecord = true")
+  Slice<Score> findLeaderboard(Long wodId, ScalingLevel scaling, Pageable pageable);
+
+  /**
+   * Retrieves every score of a WOD, at every scaling level, kept by the leaderboard filters: the
+   * scores performed in some gyms and / or the verified scores. Used to rank each athlete by their
+   * best score among those kept, which is not always their personal record.
+   *
+   * @param wodId The WOD ID.
+   * @param filterGyms Whether to keep the scores performed in {@code gymIds} only.
+   * @param gymIds The gyms to keep (never empty, so that the JPQL {@code IN} stays valid).
+   * @param verifiedOnly Whether to keep verified scores only.
+   * @return The scores of the WOD kept by the filters.
+   */
+  @Query(
+      "SELECT s FROM Score s WHERE s.wod.id = :wodId"
           + " AND (:filterGyms = false OR s.gymId IN :gymIds)"
           + " AND (:verifiedOnly = false OR s.verifiedAt IS NOT NULL)")
-  Slice<Score> findLeaderboard(
-      Long wodId,
-      ScalingLevel scaling,
-      boolean filterGyms,
-      Collection<Long> gymIds,
-      boolean verifiedOnly,
-      Pageable pageable);
+  List<Score> findFilteredByWod(
+      Long wodId, boolean filterGyms, Collection<Long> gymIds, boolean verifiedOnly);
 
   /**
    * Retrieves every Personal Record for a WOD and scaling level, for rank comparison (the ordering
