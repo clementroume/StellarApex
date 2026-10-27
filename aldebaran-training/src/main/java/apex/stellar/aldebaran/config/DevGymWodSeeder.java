@@ -34,6 +34,9 @@ import org.springframework.transaction.support.TransactionTemplate;
  *   <li>one personal private WOD for {@code athlete@sparta.com}.
  * </ul>
  *
+ * <p>Then {@link DevScoreSeeder} logs scores for the test accounts (its own idempotency check, so
+ * an existing database gets them too).
+ *
  * <p>Gym and user IDs are read with {@link JdbcTemplate} from the Antares schema of the same
  * PostgreSQL instance. Antares may seed after Aldebaran starts, so the lookup is retried in the
  * background (about 60 s by default) before giving up. Idempotent: nothing is done when the Sparta
@@ -53,6 +56,7 @@ public class DevGymWodSeeder implements ApplicationRunner {
   private final JdbcTemplate jdbcTemplate;
   private final WodRepository wodRepository;
   private final MovementRepository movementRepository;
+  private final DevScoreSeeder devScoreSeeder;
   private final TransactionTemplate transactionTemplate;
   private final int maxAttempts;
   private final Duration retryDelay;
@@ -63,6 +67,7 @@ public class DevGymWodSeeder implements ApplicationRunner {
    * @param jdbcTemplate Access to the Antares tables.
    * @param wodRepository WOD persistence.
    * @param movementRepository Movement catalog.
+   * @param devScoreSeeder Test scores, logged once the WODs exist.
    * @param transactionManager Transaction manager used for the background seeding.
    * @param maxAttempts Number of lookups before giving up.
    * @param retryDelay Delay between two lookups.
@@ -71,12 +76,14 @@ public class DevGymWodSeeder implements ApplicationRunner {
       JdbcTemplate jdbcTemplate,
       WodRepository wodRepository,
       MovementRepository movementRepository,
+      DevScoreSeeder devScoreSeeder,
       PlatformTransactionManager transactionManager,
       @Value("${aldebaran.dev-seeder.max-attempts:12}") int maxAttempts,
       @Value("${aldebaran.dev-seeder.retry-delay:5s}") Duration retryDelay) {
     this.jdbcTemplate = jdbcTemplate;
     this.wodRepository = wodRepository;
     this.movementRepository = movementRepository;
+    this.devScoreSeeder = devScoreSeeder;
     this.transactionTemplate = new TransactionTemplate(transactionManager);
     this.maxAttempts = maxAttempts;
     this.retryDelay = retryDelay;
@@ -98,6 +105,8 @@ public class DevGymWodSeeder implements ApplicationRunner {
         Ids ids = lookupIds();
         if (ids != null && movementRepository.count() > 0) {
           transactionTemplate.executeWithoutResult(status -> seed(ids));
+          transactionTemplate.executeWithoutResult(
+              status -> devScoreSeeder.seed(ids.sparta(), ids.zeus()));
           return true;
         }
       } catch (DataAccessException e) {
