@@ -31,7 +31,9 @@
     "CLEAR": "Clear",
     "LOADING": "Loading…",
     "REQUIRED": "This field is required.",
-    "COMING_SOON": "Coming soon"
+    "COMING_SOON": "Coming soon",
+    "UPDATE_READY": "A new version of StellarApex is available.",
+    "RELOAD": "Reload"
   },
   "NAVBAR": {
     "DASHBOARD": "Dashboard",

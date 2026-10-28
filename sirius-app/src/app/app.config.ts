@@ -1,4 +1,5 @@
-import {ApplicationConfig} from '@angular/core';
+import {ApplicationConfig, isDevMode} from '@angular/core';
+import {provideServiceWorker} from '@angular/service-worker';
 import {provideRouter, withComponentInputBinding, withViewTransitions} from '@angular/router';
 import {provideHttpClient, withInterceptors, withXhr, withXsrfConfiguration} from '@angular/common/http';
 
@@ -147,6 +148,12 @@ export const appConfig: ApplicationConfig = {
     }),
 
     // 4. GLOBAL ICON IMPORT
-    provideIcons(APP_ICONS)
+    provideIcons(APP_ICONS),
+
+    // 5. PWA (D40): installable, app shell cached; API calls always go to the network (ngsw-config.json)
+    provideServiceWorker('ngsw-worker.js', {
+      enabled: !isDevMode(),
+      registrationStrategy: 'registerWhenStable:30000'
+    })
   ],
 };
