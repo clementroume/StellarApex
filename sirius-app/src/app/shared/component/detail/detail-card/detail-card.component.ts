@@ -7,10 +7,10 @@ import {NgClass} from '@angular/common';
   imports: [NgClass],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="bg-base-100 rounded-box border border-neutral flex flex-col w-full h-full"
+    <div data-slot="detail-card" class="bg-card text-card-foreground rounded-xl border flex flex-col w-full h-full"
          [ngClass]="[paddingClass(), gapClass()]">
       @if (title()) {
-        <h3 class="font-semibold text-lg pb-2 border-b border-base-200" [class.mb-4]="gapClass() === 'gap-0'">
+        <h3 class="font-semibold text-lg pb-2 border-b" [class.mb-4]="gapClass() === 'gap-0'">
           {{ title() }}
         </h3>
       }

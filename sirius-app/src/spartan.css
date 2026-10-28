@@ -95,6 +95,12 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
+  --animate-indeterminate: indeterminate 1.5s ease-in-out infinite;
+
+  @keyframes indeterminate {
+    0% { transform: translateX(-100%) scaleX(0.5); }
+    100% { transform: translateX(100%) scaleX(0.5); }
+  }
 }
 
 /* Spartan token values (--border-color: DaisyUI already uses --border for the border width). */

@@ -28,7 +28,8 @@
     "DELETE_ERROR": "An error occurred while deleting.",
     "VIDEO": "Video",
     "NO_VIDEO": "No video",
-    "CLEAR": "Clear"
+    "CLEAR": "Clear",
+    "LOADING": "Loading…"
   },
   "NAVBAR": {
     "DASHBOARD": "Dashboard",

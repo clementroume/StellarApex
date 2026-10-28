@@ -28,7 +28,8 @@
     "DELETE_ERROR": "Une erreur est survenue lors de la suppression.",
     "VIDEO": "Vidéo",
     "NO_VIDEO": "Aucune vidéo",
-    "CLEAR": "Effacer"
+    "CLEAR": "Effacer",
+    "LOADING": "Chargement…"
   },
   "NAVBAR": {
     "DASHBOARD": "Dashboard",

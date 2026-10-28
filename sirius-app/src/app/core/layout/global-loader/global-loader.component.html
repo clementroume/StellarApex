@@ -1,5 +1,6 @@
 @if (loadingService.isLoading()) {
-  <div class="fixed top-0 left-0 right-0 z-[9999]">
-    <progress class="progress progress-primary w-full h-1 rounded-none bg-transparent"></progress>
+  <div class="fixed top-0 left-0 right-0 z-[9999] h-1 overflow-hidden" role="progressbar"
+       [attr.aria-label]="'GLOBAL.LOADING' | translate">
+    <div class="h-full w-full bg-primary animate-indeterminate"></div>
   </div>
 }

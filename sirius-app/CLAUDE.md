@@ -69,6 +69,7 @@ Vitest (jsdom) through `ng test`. Commands: `npm test`, `npm run build`, `npm st
 - Lists: `BYPASS_LOADER` HttpContext to skip the global loader; UI state worth keeping across
   navigation lives in service signals (`savedSearchQuery`...); services expose `refreshNeeded$` +
   `notifyRefresh()` so forms/details can refresh lists.
+- Toasts: `NotificationService.showSuccess/showError` (spartan sonner, top centre).
 - Errors: show `ProblemDetail.detail` from the backend when present (already localized), else a
   translated fallback; 409 = conflict/locked, 403 = forbidden.
 - Wrap every `localStorage` / `sessionStorage` access in try/catch.
@@ -93,6 +94,8 @@ Vitest (jsdom) through `ng test`. Commands: `npm test`, `npm run build`, `npm st
 
 ## Known state
 
-- Production build warns that the initial bundle is over the 500 kB budget (`angular.json`): ~644 kB
-  during the DaisyUI → spartan migration (Tailwind generates the utilities of every helm file, ~283 kB
-  of CSS). Measured without DaisyUI: ~492 kB, back under budget once the migration ends.
+- Production build warns that the initial bundle is over the 500 kB budget (`angular.json`): ~695 kB
+  during the DaisyUI → spartan migration (Tailwind generates the utilities of every helm file, ~280 kB
+  of CSS, of which DaisyUI ~150 kB). Helm in the shell brings `tailwind-merge` (~37 kB) into the
+  initial JS. Expected after DaisyUI removal: ~550 kB. Keep heavy brain modules out of the shell
+  (sonner is loaded on first toast and its toaster is `@defer (on idle)`).

@@ -61,7 +61,7 @@ describe('ListItemComponent', () => {
     fixture.componentRef.setInput('badge', 'BS');
     fixture.detectChanges();
 
-    const badgeElement = fixture.debugElement.query(By.css('.badge'));
+    const badgeElement = fixture.debugElement.query(By.css('[data-slot="badge"]'));
     expect(badgeElement).toBeTruthy();
     expect(badgeElement.nativeElement.textContent.trim()).toBe('BS');
   });
@@ -70,7 +70,7 @@ describe('ListItemComponent', () => {
     fixture.componentRef.setInput('badge', undefined);
     fixture.detectChanges();
 
-    const badgeElement = fixture.debugElement.query(By.css('.badge'));
+    const badgeElement = fixture.debugElement.query(By.css('[data-slot="badge"]'));
     expect(badgeElement).toBeNull();
   });
 
@@ -80,7 +80,7 @@ describe('ListItemComponent', () => {
     fixture.detectChanges();
 
     // On cherche l'élément avec la classe opacité-60 que l'on a mise pour le sous-titre
-    const subtitleElement = fixture.debugElement.query(By.css('.opacity-60'));
+    const subtitleElement = fixture.debugElement.query(By.css('[data-slot="list-item-subtitle"]'));
     expect(subtitleElement).toBeTruthy();
     expect(subtitleElement.nativeElement.textContent.trim()).toBe('Pectoralis major');
   });
@@ -89,7 +89,7 @@ describe('ListItemComponent', () => {
     fixture.componentRef.setInput('subtitle', undefined);
     fixture.detectChanges();
 
-    const subtitleElement = fixture.debugElement.query(By.css('.opacity-60'));
+    const subtitleElement = fixture.debugElement.query(By.css('[data-slot="list-item-subtitle"]'));
     expect(subtitleElement).toBeNull();
   });
 

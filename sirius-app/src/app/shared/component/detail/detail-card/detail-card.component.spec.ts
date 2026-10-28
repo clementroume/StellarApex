@@ -41,7 +41,7 @@ describe('DetailCardComponent', () => {
   });
 
   it('should apply padding and gap classes', () => {
-    const cardEl = hostElement.querySelector('.bg-base-100');
+    const cardEl = hostElement.querySelector('[data-slot="detail-card"]');
     expect(cardEl?.classList.contains('p-4')).toBe(true);
     expect(cardEl?.classList.contains('gap-2')).toBe(true);
   });

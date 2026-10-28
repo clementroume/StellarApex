@@ -2,6 +2,9 @@ import {ComponentFixture, TestBed} from '@angular/core/testing';
 import {ListStateComponent} from './list-state.component';
 import {Component, signal} from '@angular/core';
 import {By} from '@angular/platform-browser';
+import {provideTranslateService} from '@ngx-translate/core';
+import {provideIcons} from '@ng-icons/core';
+import {APP_ICONS} from '../../../../app.config';
 
 @Component({
   template: `
@@ -31,7 +34,8 @@ describe('ListStateComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [TestHostComponent]
+      imports: [TestHostComponent],
+      providers: [provideTranslateService(), provideIcons(APP_ICONS)]
     }).compileComponents();
 
     fixture = TestBed.createComponent(TestHostComponent);
@@ -44,7 +48,7 @@ describe('ListStateComponent', () => {
     hostComponent.isRawEmpty.set(true);
     fixture.detectChanges();
 
-    const spinner = fixture.debugElement.query(By.css('.loading-spinner'));
+    const spinner = fixture.debugElement.query(By.css('hlm-spinner'));
     const projectedContent = fixture.debugElement.query(By.css('.my-projected-content'));
 
     expect(spinner).toBeTruthy();

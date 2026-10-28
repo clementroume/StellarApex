@@ -3,6 +3,7 @@ import {DetailHeaderComponent} from './detail-header.component';
 import {provideIcons} from '@ng-icons/core';
 import {heroArrowLeft} from '@ng-icons/heroicons/outline';
 import {vi} from 'vitest';
+import {provideTranslateService} from '@ngx-translate/core';
 
 describe('DetailHeaderComponent', () => {
   let component: DetailHeaderComponent;
@@ -12,6 +13,7 @@ describe('DetailHeaderComponent', () => {
     await TestBed.configureTestingModule({
       imports: [DetailHeaderComponent],
       providers: [
+        provideTranslateService(),
         provideIcons({hugeCircleArrowLeft02: heroArrowLeft})
       ]
     }).compileComponents();

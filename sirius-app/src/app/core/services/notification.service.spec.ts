@@ -1,49 +1,28 @@
 import {TestBed} from '@angular/core/testing';
 import {vi} from 'vitest';
+import {toast} from '@spartan-ng/brain/sonner';
 import {NotificationService} from './notification.service';
+
 
 describe('NotificationService', () => {
   let service: NotificationService;
 
+  afterEach(() => vi.restoreAllMocks());
+
   beforeEach(() => {
-    TestBed.configureTestingModule({
-      providers: [NotificationService]
-    });
+    vi.spyOn(toast, 'success').mockImplementation(() => 0);
+    vi.spyOn(toast, 'error').mockImplementation(() => 0);
+    TestBed.configureTestingModule({providers: [NotificationService]});
     service = TestBed.inject(NotificationService);
   });
 
-  it('should be created', () => {
-    expect(service).toBeTruthy();
+  it('should show a success toast', async () => {
+    service.showSuccess('Saved');
+    await vi.waitFor(() => expect(toast.success).toHaveBeenCalledWith('Saved'));
   });
 
-  it('should have a null notification initially', () => {
-    expect(service.notification()).toBeNull();
-  });
-
-  it('should set a success notification correctly', () => {
-    service.showSuccess('Success!');
-    const notification = service.notification();
-
-    expect(notification).not.toBeNull();
-    expect(notification?.message).toBe('Success!');
-    expect(notification?.type).toBe('success');
-  });
-
-  it('should set an error notification correctly', () => {
-    service.showError('Error!');
-    const notification = service.notification();
-
-    expect(notification).not.toBeNull();
-    expect(notification?.message).toBe('Error!');
-    expect(notification?.type).toBe('error');
-  });
-
-  it('should clear the notification automatically after 5 seconds', () => {
-    vi.useFakeTimers();
-    service.showSuccess('A temporary message');
-    expect(service.notification()).not.toBeNull();
-    vi.advanceTimersByTime(5000);
-    expect(service.notification()).toBeNull();
-    vi.useRealTimers();
+  it('should show an error toast', async () => {
+    service.showError('Failed');
+    await vi.waitFor(() => expect(toast.error).toHaveBeenCalledWith('Failed'));
   });
 });

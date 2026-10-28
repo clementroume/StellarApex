@@ -1,30 +1,18 @@
-import {Injectable, signal} from '@angular/core';
+import {Injectable} from '@angular/core';
 
-export type NotificationType = 'success' | 'error';
-
-export interface Notification {
-  message: string;
-  type: NotificationType;
-}
-
+/**
+ * Toast messages, rendered by `app-notification` (spartan sonner) at the app root. sonner is loaded
+ * on first use to keep it out of the initial bundle.
+ */
 @Injectable({
   providedIn: 'root'
 })
 export class NotificationService {
-  private readonly _notification = signal<Notification | null>(null);
-  public readonly notification = this._notification.asReadonly();
-
   showSuccess(message: string): void {
-    this._notification.set({message, type: 'success'});
-    this.autoClear();
+    void import('@spartan-ng/brain/sonner').then(({toast}) => toast.success(message));
   }
 
   showError(message: string): void {
-    this._notification.set({message, type: 'error'});
-    this.autoClear();
-  }
-
-  private autoClear(): void {
-    setTimeout(() => this._notification.set(null), 5000);
+    void import('@spartan-ng/brain/sonner').then(({toast}) => toast.error(message));
   }
 }
