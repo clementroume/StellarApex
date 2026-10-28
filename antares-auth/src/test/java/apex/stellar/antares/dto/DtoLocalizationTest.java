@@ -299,7 +299,7 @@ class DtoLocalizationTest {
   @DisplayName("GymRequest: EN & FR validation")
   void testGymRequest() {
     // Given
-    GymRequest request = new GymRequest("", null, null, "");
+    GymRequest request = new GymRequest("", "x".repeat(1001), null);
 
     // When (English)
     Locale.setDefault(Locale.ENGLISH);
@@ -307,7 +307,7 @@ class DtoLocalizationTest {
     // Then (English)
     assertViolation(violationsEn, "name", "Box or program name is required");
     assertViolation(violationsEn, "isProgramming", "Type flag (box or program) is required");
-    assertViolation(violationsEn, "creationToken", "Creation token is required");
+    assertViolation(violationsEn, "description", "The description cannot exceed 1000 characters");
 
     // When (French)
     Locale.setDefault(Locale.FRENCH);
@@ -318,7 +318,8 @@ class DtoLocalizationTest {
         violationsFr,
         "isProgramming",
         "Le type (box ou prog) est obligatoire.");
-    assertViolation(violationsFr, "creationToken", "Le jeton de création (token) est obligatoire.");
+    assertViolation(
+        violationsFr, "description", "La description ne peut pas dépasser 1000 caractères");
   }
 
   @Test

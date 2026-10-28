@@ -33,7 +33,11 @@
     "REQUIRED": "Ce champ est requis.",
     "COMING_SOON": "Bientôt disponible",
     "UPDATE_READY": "Une nouvelle version de StellarApex est disponible.",
-    "RELOAD": "Recharger"
+    "RELOAD": "Recharger",
+    "CONFIRM": "Confirmer",
+    "COPY": "Copier",
+    "COPIED": "Copié dans le presse-papiers.",
+    "LOAD_MORE": "Charger plus"
   },
   "NAVBAR": {
     "WODS": "WODs",
@@ -67,16 +71,12 @@
     "TITLE": "Mon Compte",
     "MENU_INFO": "Mes informations",
     "MENU_SETTINGS": "Paramètres",
-    "MENU_UNITS": "Unités"
+    "MENU_UNITS": "Unités",
+    "MENU_GYMS": "Box & progs"
   },
   "PROFILE": {
     "TITLE": "Mes informations",
     "SUCCESS_UPDATE": "Votre profil a été mis à jour avec succès !",
-    "GYMS": {
-      "TITLE": "Mes boxes et progs",
-      "NO_PERMISSION": "Aucune permission particulière ici.",
-      "NONE": "Tu n'es membre d'aucune box ni prog."
-    },
     "VERIFIED": "Vérifié"
   },
   "SETTINGS": {
@@ -726,6 +726,26 @@
       "FILTER_STATUS": "Statut",
       "ALL": "Tous",
       "LOAD_MORE": "Charger plus"
+    },
+    "GYMS": {
+      "TITLE": "Box & progs",
+      "INTRO": "Valide les demandes de création, suspends ou réactive une box ou une prog.",
+      "SEARCH": "Rechercher par nom…",
+      "ALL": "Toutes",
+      "NO_RESULT": "Aucune box ni prog.",
+      "HOLDER": "Titulaire",
+      "NO_HOLDER": "Sans titulaire",
+      "MEMBERS": "{{count}} membre(s) actif(s)",
+      "REQUESTED": "Demandée le {{date}}",
+      "APPROVE": "Approuver",
+      "REJECT": "Refuser",
+      "SUSPEND": "Suspendre",
+      "REACTIVATE": "Réactiver",
+      "STATUS_CHANGED": "{{name}} : {{status}}.",
+      "REJECT_TITLE": "Refuser la demande « {{name}} » ?",
+      "REJECT_DESC": "Le demandeur verra la demande refusée et pourra la supprimer pour en refaire une.",
+      "SUSPEND_TITLE": "Suspendre {{name}} ?",
+      "SUSPEND_DESC": "Ses membres, Owner ou Programmer compris, perdent l'accès jusqu'à la réactivation."
     }
   },
   "GYM": {
@@ -764,6 +784,10 @@
         "LABEL": "Réglages",
         "DESCRIPTION": "Peut modifier les réglages de la box ou prog (code d'inscription, inscriptions automatiques)."
       }
+    },
+    "TYPE": {
+      "BOX": "Box",
+      "PROGRAM": "Prog"
     }
   },
   "SHARED": {
@@ -826,11 +850,132 @@
     },
     "MEMBERS": {
       "TITLE": "Membres",
-      "COMING": "La gestion des membres (demandes, rôles, permissions) arrive au prochain lot."
+      "SUBTITLE": "Demandes, rôles et permissions de tes membres.",
+      "PENDING": "Demandes en attente",
+      "FILTER_STATUS": "Statut",
+      "FILTER_ROLE": "Rôle",
+      "ALL": "Tous",
+      "NONE": "Aucun membre ne correspond.",
+      "YOU": "Toi",
+      "SINCE": "Depuis le {{date}}",
+      "VALIDATE": "Valider",
+      "REFUSE": "Refuser",
+      "REMOVE": "Retirer",
+      "BAN": "Bannir",
+      "UNBAN": "Lever le bannissement",
+      "REACTIVATE": "Réactiver",
+      "EDIT": "Rôle et permissions",
+      "ROLE": "Rôle",
+      "PERMISSIONS": "Permissions",
+      "PERMISSIONS_COACH_ONLY": "Les permissions ne s'appliquent qu'aux Coachs.",
+      "UPDATED": "{{name}} mis à jour.",
+      "REFUSED": "Demande de {{name}} refusée.",
+      "REMOVED": "{{name}} retiré de la box ou prog.",
+      "REFUSE_TITLE": "Refuser la demande de {{name}} ?",
+      "REFUSE_DESC": "La demande est supprimée : {{name}} pourra en refaire une.",
+      "REMOVE_TITLE": "Retirer {{name}} ?",
+      "REMOVE_DESC": "{{name}} passe inactif : son historique et ses scores sont conservés ; retour possible avec le code.",
+      "BAN_TITLE": "Bannir {{name}} ?",
+      "BAN_DESC": "{{name}} perd l'accès et ne pourra plus faire de demande, sauf si tu lèves le bannissement.",
+      "INVITE": "Inviter des membres"
     },
     "SETTINGS": {
       "TITLE": "Réglages",
-      "COMING": "Les réglages de la box ou de la prog arrivent au prochain lot."
-    }
+      "SUBTITLE": "Identité, inscriptions et zone sensible.",
+      "PENDING_APPROVAL": "En attente de validation par un admin StellarApex : la box ou prog n'apparaît pas encore dans la recherche.",
+      "IDENTITY": "Identité",
+      "SAVED": "Réglages enregistrés.",
+      "ENROLLMENT": "Inscriptions",
+      "CODE": "Code d'inscription",
+      "CODE_EDIT_HINT": "4 à 50 caractères, sans tenir compte des majuscules.",
+      "REGENERATE": "Nouveau code",
+      "REGENERATE_TITLE": "Générer un nouveau code ?",
+      "REGENERATE_DESC": "L'ancien code et les liens d'invitation déjà partagés ne fonctionneront plus.",
+      "REGENERATED": "Nouveau code généré.",
+      "INVITE_LINK": "Lien d'invitation",
+      "INVITE_HINT": "Pré-remplit la box ou prog et le code : partage-le à tes athlètes.",
+      "AUTO": "Inscription automatique",
+      "AUTO_DESC": "Les nouveaux membres sont actifs tout de suite, sans validation du staff.",
+      "DANGER": "Zone sensible",
+      "TRANSFER": "Transférer",
+      "TRANSFER_TITLE_BOX": "Transférer la box",
+      "TRANSFER_TITLE_PROG": "Transférer la prog",
+      "TRANSFER_DESC_BOX": "Le nouvel Owner obtient tous les droits ; tu deviens Coach sans permission.",
+      "TRANSFER_DESC_PROG": "Le nouveau Programmer obtient tous les droits ; tu deviens Athlète.",
+      "TRANSFER_TO": "Membre actif",
+      "TRANSFER_PICK": "Choisis un membre",
+      "TRANSFER_NONE": "Aucun membre actif ne peut la recevoir.",
+      "TRANSFER_CONFIRM": "Transférer {{gym}} à {{name}} ?",
+      "TRANSFERRED": "{{gym}} transférée à {{name}}.",
+      "DELETE": "Supprimer définitivement",
+      "DELETE_DESC": "Supprime la box ou prog et toutes ses adhésions. Action irréversible.",
+      "DELETE_TITLE": "Supprimer {{name}} ?",
+      "DELETE_CONFIRM_LABEL": "Saisis « {{name}} » pour confirmer",
+      "DELETED": "{{name}} supprimée."
+    },
+    "STAFF_GYM": "Box ou prog gérée"
+  },
+  "MY_GYMS": {
+    "TITLE": "Mes box & progs",
+    "SUBTITLE": "Tes adhésions, tes demandes et tes permissions.",
+    "JOIN": "Rejoindre",
+    "CREATE": "Créer une box ou une prog",
+    "NONE": "Tu n'es membre d'aucune box ni prog. Rejoins celle de ton coach avec son code d'inscription.",
+    "HISTORY": "Anciennes adhésions",
+    "LEFT_ON": "Quittée le {{date}}",
+    "REJOIN": "Revenir",
+    "NO_PERMISSION": "Aucune permission particulière ici.",
+    "MANAGE": "Gérer",
+    "LEAVE": "Quitter",
+    "LEAVE_TITLE": "Quitter {{name}} ?",
+    "LEAVE_DESC": "Ton historique et tes scores sont conservés. Tu pourras revenir avec le code d'inscription.",
+    "LEFT": "Tu as quitté {{name}}.",
+    "WITHDRAW": "Annuler la demande",
+    "WITHDRAW_TITLE": "Annuler ta demande pour {{name}} ?",
+    "WITHDRAW_DESC": "Tu pourras en refaire une plus tard.",
+    "WITHDRAWN": "Demande annulée.",
+    "PENDING_HINT": "Ta demande attend la validation du staff.",
+    "BANNED_HINT": "Tu ne peux plus rejoindre cette box ou cette prog.",
+    "HOLDER_HINT": "Pour quitter, transfère d'abord la box ou la prog à un membre (Ma box › Réglages).",
+    "PENDING_APPROVAL_HINT": "En attente de validation par un admin StellarApex. Tu peux déjà préparer les réglages.",
+    "REJECTED_HINT": "Ta demande a été refusée. Supprime-la pour en faire une nouvelle.",
+    "SUSPENDED_HINT": "Suspendue par un admin StellarApex : ses membres n'y ont plus accès.",
+    "DELETE_REQUEST": "Supprimer la demande",
+    "DELETE_REQUEST_TITLE": "Supprimer la demande « {{name}} » ?",
+    "DELETE_REQUEST_DESC": "Le nom redevient disponible pour une nouvelle demande.",
+    "REQUEST_DELETED": "Demande supprimée."
+  },
+  "JOIN_GYM": {
+    "TITLE": "Rejoindre une box ou une prog",
+    "SUBTITLE": "Trouve-la par son nom, puis saisis le code d'inscription donné par le staff.",
+    "SEARCH": "Rechercher par nom…",
+    "ALL": "Toutes",
+    "NO_RESULT": "Aucune box ni prog trouvée.",
+    "MEMBER": "Déjà membre",
+    "SELECTED": "Box ou prog choisie",
+    "CHANGE": "Changer",
+    "CODE": "Code d'inscription",
+    "CODE_HINT": "Donné par ta box ou ta prog, ou inclus dans son lien d'invitation.",
+    "SUBMIT": "Rejoindre",
+    "JOINED": "Bienvenue dans {{name}} !",
+    "REQUESTED": "Demande envoyée à {{name}} : elle attend la validation du staff.",
+    "INVITATION": "Tu as été invité à rejoindre cette box ou prog.",
+    "INVITATION_NOT_FOUND": "Lien d'invitation invalide : cette box ou prog n'est pas disponible."
+  },
+  "CREATE_GYM": {
+    "TITLE": "Créer une box ou une prog",
+    "INTRO": "Un admin StellarApex valide chaque demande. Tu en deviens l'Owner (box) ou le Programmer (prog) et tu peux préparer les réglages en attendant.",
+    "TYPE": "Type",
+    "TYPE_BOX_DESC": "Une box physique : un Owner, des Coachs et des Athlètes.",
+    "TYPE_PROGRAM_DESC": "Une programmation à distance : un Programmer et des Athlètes.",
+    "NAME": "Nom",
+    "NAME_PH": "Ex : CrossFit Stellar",
+    "DESCRIPTION": "Description",
+    "DESCRIPTION_PH": "Quelques mots pour la reconnaître",
+    "SUBMIT": "Envoyer la demande",
+    "SENT": "Demande envoyée : un admin StellarApex va la valider.",
+    "PENDING_EXISTS": "Tu as déjà une demande en attente de validation ({{name}}) : une seule à la fois.",
+    "ERROR_NAME_MAX": "100 caractères maximum.",
+    "ERROR_DESCRIPTION_MAX": "1000 caractères maximum."
   }
 }

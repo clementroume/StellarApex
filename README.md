@@ -96,8 +96,6 @@ POLLUX_PASSWORD=
 # Generate with 'openssl rand -base64 64'
 ANTARES_JWT_SECRET=
 COOKIE_DOMAIN=
-# Token required to create a gym
-SECRET_ADMIN_TOKEN=
 
 # === ANTARES <-> ALDEBARAN ===
 # Shared secret proving that identity headers come from Antares (same value for both services)
@@ -234,7 +232,15 @@ Rules are enforced by the backends; Sirius only adapts its UI to what they retur
   and WOD (Rx+ > Rx > Scaled > Custom, then performance; a finished time beats a time-capped score).
 - **Gym roles by type**: a physical gym has exactly one `OWNER`, any number of `COACH` and
   `ATHLETE`; a virtual (programming) gym has exactly one `PROGRAMMER` and any number of `ATHLETE`.
-  The owner/programmer role changes only through an explicit transfer.
+  The owner/programmer role changes only through an explicit transfer, the only way out for them;
+  only they (or an admin) transfer or delete the gym.
+- **Boxes and programs**: any user may request one (admin approval, one request waiting at a time)
+  and becomes its owner/programmer. Members join an active one with its enrollment code (search by
+  name or invitation link), leave it (membership `INACTIVE`, history and scores kept; joining again
+  reactivates it) and can be refused (request deleted) or banned (no new request). A coach with
+  `MANAGE_MEMBERSHIPS` validates, refuses or removes athletes; roles, permissions and bans stay with
+  the owner/programmer. Antares returns per-member `capabilities` so Sirius shows only the allowed
+  actions. A suspended or rejected gym opens access to nobody.
 - **Admin support session**: from Sirius `/admin/support`, an admin acts as a real user (a gym member
   who reported a bug, a test account) for 30 minutes, with a mandatory reason. Writes are allowed;
   Antares records every session and Aldebaran logs every write with the admin's id. The admin's own

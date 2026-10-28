@@ -16,6 +16,7 @@ describe('AccessService', () => {
     status: 'ACTIVE',
     permissions: [],
     gymProgramming: false,
+    usable: true,
     ...overrides
   });
 
@@ -25,11 +26,11 @@ describe('AccessService', () => {
     service = TestBed.inject(AccessService);
   });
 
-  it('should keep only memberships accepted by Antares', () => {
+  it('should keep only the memberships Antares marks usable', () => {
     currentUser.set({
       id: 1, platformRole: 'USER', memberships: [
-        membership(1, {status: 'PENDING'}),
-        membership(2, {gymStatus: 'SUSPENDED'}),
+        membership(1, {status: 'PENDING', usable: false}),
+        membership(2, {gymStatus: 'SUSPENDED', usable: false}),
         membership(3, {gymStatus: 'PENDING_APPROVAL', gymRole: 'OWNER'}),
         membership(4)
       ]

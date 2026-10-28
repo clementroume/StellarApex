@@ -47,7 +47,8 @@ public class MembershipController {
    *
    * @param gymId The ID of the gym.
    * @param status The optional status to filter by.
-   * @return A list of membership responses.
+   * @param user The authenticated user (capabilities are computed for them).
+   * @return The memberships, pending requests first, each with its capabilities.
    */
   @GetMapping
   @PreAuthorize("@security.hasGymPermission(#gymId, 'MANAGE_MEMBERSHIPS')")
@@ -65,8 +66,10 @@ public class MembershipController {
             content = @Content(schema = @Schema(hidden = true)))
       })
   public ResponseEntity<List<MembershipResponse>> getMemberships(
-      @RequestParam Long gymId, @RequestParam(required = false) MembershipStatus status) {
-    return ResponseEntity.ok(membershipService.getMemberships(gymId, status));
+      @RequestParam Long gymId,
+      @RequestParam(required = false) MembershipStatus status,
+      @AuthenticationPrincipal User user) {
+    return ResponseEntity.ok(membershipService.getMemberships(gymId, status, user));
   }
 
   /**
@@ -105,29 +108,26 @@ public class MembershipController {
       @Valid @RequestBody MembershipUpdateRequest request,
       @AuthenticationPrincipal User user) {
 
-    // Resolve requester's membership context to enforce hierarchical logic in service
-    Membership target = membershipRepository.findById(id).orElseThrow();
-    Membership requesterMembership =
-        membershipRepository
-            .findByUserIdAndGymId(user.getId(), target.getGym().getId())
-            .orElse(null);
-
     return ResponseEntity.ok(
-        membershipService.updateMembership(id, request, user, requesterMembership));
+        membershipService.updateMembership(id, request, user, requesterContext(id, user)));
   }
 
   /**
-   * Deletes a membership by its ID.
+   * Removes a member: a pending request is refused (deleted, the user may ask again), an ACTIVE
+   * member becomes INACTIVE (history and scores kept).
    *
-   * @param id The ID of the membership to delete.
-   * @return A response indicating the result of the operation.
+   * @param id The ID of the membership.
+   * @param user The currently authenticated user.
+   * @return HTTP 204 No Content.
    */
   @DeleteMapping("/{id}")
   @PreAuthorize("@security.canManageMembership(#id, 'MANAGE_MEMBERSHIPS')")
-  @Operation(summary = "Delete Membership", description = "Remove a member from a gym.")
+  @Operation(
+      summary = "Remove Membership",
+      description = "Refuse a pending request (deleted) or set a member INACTIVE.")
   @ApiResponses(
       value = {
-        @ApiResponse(responseCode = "204", description = "Membership deleted successfully"),
+        @ApiResponse(responseCode = "204", description = "Request refused or member removed"),
         @ApiResponse(
             responseCode = "403",
             description = "Forbidden - Insufficient permissions",
@@ -137,12 +137,25 @@ public class MembershipController {
             description = "Membership not found",
             content = @Content(schema = @Schema(hidden = true))),
         @ApiResponse(
+            responseCode = "409",
+            description = "The owner/programmer cannot be removed (transfer first)",
+            content = @Content(schema = @Schema(hidden = true))),
+        @ApiResponse(
             responseCode = "401",
             description = "Unauthorized",
             content = @Content(schema = @Schema(hidden = true)))
       })
-  public ResponseEntity<Void> deleteMembership(@PathVariable Long id) {
-    membershipService.deleteMembership(id);
+  public ResponseEntity<Void> deleteMembership(
+      @PathVariable Long id, @AuthenticationPrincipal User user) {
+    membershipService.removeMembership(id, user, requesterContext(id, user));
     return ResponseEntity.noContent().build();
+  }
+
+  /** The requester's membership in the gym of the target membership (null if none). */
+  private Membership requesterContext(Long targetMembershipId, User user) {
+    return membershipRepository
+        .findById(targetMembershipId)
+        .map(target -> membershipService.requesterMembership(user, target.getGymId()))
+        .orElse(null);
   }
 }

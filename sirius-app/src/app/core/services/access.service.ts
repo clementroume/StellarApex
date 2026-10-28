@@ -1,8 +1,6 @@
 import {computed, inject, Injectable} from '@angular/core';
 import {AuthService} from '../../api/antares/services/auth.service';
-import {GymRole, MembershipSummary, Permission} from '../../api/antares/models/membership.model';
-
-const PENDING_GYM_ROLES: GymRole[] = ['OWNER', 'PROGRAMMER'];
+import {MembershipSummary, Permission} from '../../api/antares/models/membership.model';
 
 /**
  * Single source of truth for UI rights. Mirrors what Antares sends to Aldebaran (X-Auth-Memberships)
@@ -18,11 +16,9 @@ export class AccessService {
   readonly userId = computed(() => this.authService.currentUser()?.id ?? null);
   readonly isAdmin = computed(() => this.authService.currentUser()?.platformRole === 'ADMIN');
 
-  /** Memberships Antares accepts (see Membership.isUsable). */
+  /** Memberships Antares accepts (`usable`, computed by Antares from Membership.isUsable). */
   readonly memberships = computed<MembershipSummary[]>(() =>
-    (this.authService.currentUser()?.memberships ?? []).filter(m =>
-      m.status === 'ACTIVE' && (m.gymStatus === 'ACTIVE' || PENDING_GYM_ROLES.includes(m.gymRole))
-    )
+    (this.authService.currentUser()?.memberships ?? []).filter(m => m.usable)
   );
 
   // --- HELPERS ---

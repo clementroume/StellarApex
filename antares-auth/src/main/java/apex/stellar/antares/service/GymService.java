@@ -1,31 +1,40 @@
 package apex.stellar.antares.service;
 
+import apex.stellar.antares.dto.AdminGymResponse;
 import apex.stellar.antares.dto.DisplayNameResponse;
+import apex.stellar.antares.dto.GymPublicResponse;
 import apex.stellar.antares.dto.GymRequest;
 import apex.stellar.antares.dto.GymResponse;
 import apex.stellar.antares.dto.GymSettingsRequest;
+import apex.stellar.antares.dto.GymSettingsResponse;
+import apex.stellar.antares.dto.GymUpdateRequest;
 import apex.stellar.antares.exception.DataConflictException;
 import apex.stellar.antares.exception.ResourceNotFoundException;
 import apex.stellar.antares.mapper.GymMapper;
+import apex.stellar.antares.mapper.UserMapper;
 import apex.stellar.antares.model.Gym;
 import apex.stellar.antares.model.Gym.GymStatus;
-import apex.stellar.antares.model.GymRole;
+import apex.stellar.antares.model.GymType;
 import apex.stellar.antares.model.Membership;
 import apex.stellar.antares.model.Membership.MembershipStatus;
 import apex.stellar.antares.model.Permission;
-import apex.stellar.antares.model.PlatformRole;
 import apex.stellar.antares.model.User;
 import apex.stellar.antares.repository.jpa.GymRepository;
 import apex.stellar.antares.repository.jpa.MembershipRepository;
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.access.AccessDeniedException;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
+import org.springframework.data.domain.SliceImpl;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -33,11 +42,13 @@ import org.springframework.transaction.annotation.Transactional;
  * Service class responsible for managing gym-related operations such as creating, updating,
  * retrieving, and deleting gyms, as well as handling gym settings and memberships.
  */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class GymService {
 
   private static final String ERROR_GYM_NOT_FOUND = "error.gym.not.found";
+  private static final int SEARCH_MAX_PAGE_SIZE = 50;
   // Explicitly defining the full permission set for Gym Creators (Owners/Programmers)
   private static final Set<Permission> FULL_ADMIN_PERMISSIONS =
       Set.of(
@@ -48,62 +59,91 @@ public class GymService {
   private final GymRepository gymRepository;
   private final MembershipRepository membershipRepository;
   private final GymMapper gymMapper;
-
-  @Value("${application.gym.creation-secret}")
-  private String creationSecret;
+  private final UserMapper userMapper;
 
   /**
-   * Creates a new gym and assigns the creator as the owner.
+   * Creates a gym creation request and makes the requester its holder.
    *
-   * <p>The creation process involves validating a secret token, checking for duplicate gym names,
-   * initializing the gym status to pending approval, and generating an initial enrollment code. A
-   * membership with the role of an owner is also created for the user who initiated the request.
+   * <p>Any user may ask for a box or program: the gym starts {@code PENDING_APPROVAL} (a platform
+   * admin approves, rejects or later suspends it), with a random enrollment code, and the requester
+   * becomes its ACTIVE OWNER (physical) or PROGRAMMER (virtual). A user may have at most one
+   * request waiting for approval.
    *
    * @param request The {@link GymRequest} containing the details of the gym to be created.
    * @param creator The {@link User} who is creating the gym and will be assigned as the owner.
    * @return A {@link GymResponse} object representing the newly created gym.
-   * @throws AccessDeniedException If the provided creation token is invalid.
-   * @throws DataConflictException If a gym with the same name already exists.
+   * @throws DataConflictException If the user already has a pending request, or the name is taken.
    */
   @Transactional
   public GymResponse createGym(GymRequest request, User creator) {
-    // 1. Security Check (Anti-Spam), in constant time; a blank secret rejects every request
-    if (creationSecret == null
-        || creationSecret.isBlank()
-        || !MessageDigest.isEqual(
-            creationSecret.getBytes(StandardCharsets.UTF_8),
-            request.creationToken().getBytes(StandardCharsets.UTF_8))) {
-      throw new AccessDeniedException("error.creation.token.invalid");
+    // 1. At most one request waiting for approval per user
+    if (membershipRepository.existsPendingGymRequest(creator.getId())) {
+      throw new DataConflictException("error.gym.request.pending");
     }
 
-    // 2. Uniqueness Check (Name only)
-    if (gymRepository.existsByName(request.name())) {
-      throw new DataConflictException("error.gym.name.exists", request.name());
+    // 2. Uniqueness Check (Name only, ignoring case)
+    String name = request.name().trim();
+    if (gymRepository.existsByNameIgnoreCase(name)) {
+      throw new DataConflictException("error.gym.name.exists", name);
     }
 
     // 3. Entity Creation
     Gym gym = gymMapper.toEntity(request);
-
-    // Initial enrollment code is random (8 chars)
-    gym.setEnrollmentCode(UUID.randomUUID().toString().substring(0, 8).toUpperCase());
+    gym.setName(name);
+    gym.setDescription(blankToNull(request.description()));
+    gym.setEnrollmentCode(newEnrollmentCode());
     Gym savedGym = gymRepository.save(gym);
 
-    // 4. Assign Owner/Programmer Role
-    GymRole initialRole = request.isProgramming() ? GymRole.PROGRAMMER : GymRole.OWNER;
-
-    // 5. Create Owner Membership
+    // 4. Holder membership: OWNER (physical) or PROGRAMMER (virtual)
     Membership ownerMembership =
         Membership.builder()
             .gym(savedGym)
             .user(creator)
-            .gymRole(initialRole)
+            .gymRole(savedGym.holderRole())
             .status(MembershipStatus.ACTIVE)
-            .permissions(FULL_ADMIN_PERMISSIONS)
+            .permissions(new HashSet<>(FULL_ADMIN_PERMISSIONS))
             .build();
 
     membershipRepository.save(ownerMembership);
+    log.info("Gym creation requested: {} by userId={}", savedGym, creator.getId());
 
     return gymMapper.toResponse(savedGym);
+  }
+
+  /**
+   * Renames a gym or changes its description.
+   *
+   * @param gymId The gym to update.
+   * @param request The new name and description.
+   * @return The updated settings view.
+   * @throws ResourceNotFoundException If no gym is found with the provided ID.
+   * @throws DataConflictException If another gym already has this name.
+   */
+  @Transactional
+  public GymSettingsResponse updateGym(Long gymId, GymUpdateRequest request) {
+    Gym gym = findGym(gymId);
+    String name = request.name().trim();
+    if (gymRepository.existsByNameIgnoreCaseAndIdNot(name, gymId)) {
+      throw new DataConflictException("error.gym.name.exists", name);
+    }
+    gym.setName(name);
+    gym.setDescription(blankToNull(request.description()));
+    return gymMapper.toSettingsResponse(gymRepository.save(gym));
+  }
+
+  /**
+   * Replaces the enrollment code of a gym with a new random one (e.g. after it leaked). Pending
+   * invitation links stop working.
+   *
+   * @param gymId The gym.
+   * @return The updated settings view.
+   * @throws ResourceNotFoundException If no gym is found with the provided ID.
+   */
+  @Transactional
+  public GymSettingsResponse regenerateEnrollmentCode(Long gymId) {
+    Gym gym = findGym(gymId);
+    gym.setEnrollmentCode(newEnrollmentCode());
+    return gymMapper.toSettingsResponse(gymRepository.save(gym));
   }
 
   /**
@@ -111,36 +151,27 @@ public class GymService {
    *
    * @param gymId The unique identifier of the gym whose settings are being updated.
    * @param request The {@link GymSettingsRequest} containing the new settings.
+   * @return The updated settings view.
    * @throws ResourceNotFoundException If no gym is found with the provided ID.
    */
   @Transactional
-  public void updateSettings(Long gymId, GymSettingsRequest request) {
-    Gym gym =
-        gymRepository
-            .findById(gymId)
-            .orElseThrow(() -> new ResourceNotFoundException(ERROR_GYM_NOT_FOUND, gymId));
-
-    gym.setEnrollmentCode(request.enrollmentCode());
+  public GymSettingsResponse updateSettings(Long gymId, GymSettingsRequest request) {
+    Gym gym = findGym(gymId);
+    gym.setEnrollmentCode(request.enrollmentCode().trim());
     gym.setAutoSubscription(request.isAutoSubscription());
-
-    gymRepository.save(gym);
+    return gymMapper.toSettingsResponse(gymRepository.save(gym));
   }
 
   /**
    * Retrieves the current settings for a specific gym.
    *
    * @param gymId The unique identifier of the gym.
-   * @return A {@link GymSettingsRequest} containing the gym's current settings.
+   * @return The gym's name, description, status, enrollment code and auto-subscription flag.
    * @throws ResourceNotFoundException If no gym is found with the provided ID.
    */
   @Transactional(readOnly = true)
-  public GymSettingsRequest getSettings(Long gymId) {
-    Gym gym =
-        gymRepository
-            .findById(gymId)
-            .orElseThrow(() -> new ResourceNotFoundException(ERROR_GYM_NOT_FOUND, gymId));
-
-    return new GymSettingsRequest(gym.getEnrollmentCode(), gym.isAutoSubscription());
+  public GymSettingsResponse getSettings(Long gymId) {
+    return gymMapper.toSettingsResponse(findGym(gymId));
   }
 
   /**
@@ -193,26 +224,75 @@ public class GymService {
   }
 
   /**
-   * Retrieves a list of gyms based on the requester's role and an optional status filter.
+   * Searches the ACTIVE gyms a user may join, by name and type.
    *
-   * <p>If the requester has the admin role and a status filter is provided, gyms matching the
-   * specified status are returned. Otherwise, only gyms with an active status are returned.
-   *
-   * @param requesterRole The role of the requester. Determines the level of access for filtering
-   *     gyms.
-   * @param statusFilter An optional filter to retrieve gyms with a specific status. This parameter
-   *     is considered only if the requester has an admin role.
-   * @return A list of {@link GymResponse} objects representing the gyms that match the provided
-   *     criteria.
+   * @param search text matched against the name (case-insensitive); blank matches every gym.
+   * @param type the type to keep, or null for both.
+   * @param pageable the requested page (size capped at {@value #SEARCH_MAX_PAGE_SIZE}).
+   * @return a slice of public gym views, ordered by name.
    */
   @Transactional(readOnly = true)
-  public List<GymResponse> getAllGyms(PlatformRole requesterRole, GymStatus statusFilter) {
-    if (requesterRole == PlatformRole.ADMIN && statusFilter != null) {
-      return gymRepository.findByStatus(statusFilter).stream().map(gymMapper::toResponse).toList();
+  public Slice<GymPublicResponse> searchActiveGyms(
+      String search, GymType type, Pageable pageable) {
+    Pageable page = capped(pageable);
+    Slice<Gym> gyms =
+        gymRepository.search(likePattern(search), programmingOf(type), GymStatus.ACTIVE, page);
+    return gyms.map(gymMapper::toPublicResponse);
+  }
+
+  /**
+   * Returns the public view of an ACTIVE gym (e.g. the gym of an invitation link).
+   *
+   * @param gymId The gym.
+   * @return The public view.
+   * @throws ResourceNotFoundException If the gym does not exist or is not ACTIVE.
+   */
+  @Transactional(readOnly = true)
+  public GymPublicResponse getActiveGym(Long gymId) {
+    return gymRepository
+        .findById(gymId)
+        .filter(g -> g.getStatus() == GymStatus.ACTIVE)
+        .map(gymMapper::toPublicResponse)
+        .orElseThrow(() -> new ResourceNotFoundException(ERROR_GYM_NOT_FOUND, gymId));
+  }
+
+  /**
+   * Searches every gym for platform admins (approval queue, suspension), with its holder and its
+   * number of ACTIVE members.
+   *
+   * @param search text matched against the name (case-insensitive); blank matches every gym.
+   * @param status the status to keep, or null for any.
+   * @param pageable the requested page (size capped at {@value #SEARCH_MAX_PAGE_SIZE}).
+   * @return a slice of admin gym views, ordered by name.
+   */
+  @Transactional(readOnly = true)
+  public Slice<AdminGymResponse> searchGymsForAdmin(
+      String search, GymStatus status, Pageable pageable) {
+    Pageable page = capped(pageable);
+    Slice<Gym> gyms = gymRepository.search(likePattern(search), null, status, page);
+    List<Long> ids = gyms.getContent().stream().map(Gym::getId).toList();
+    if (ids.isEmpty()) {
+      return new SliceImpl<>(List.of(), page, false);
     }
-    return gymRepository.findByStatus(GymStatus.ACTIVE).stream()
-        .map(gymMapper::toResponse)
-        .toList();
+    Map<Long, User> holders =
+        membershipRepository.findHoldersByGymIdIn(ids).stream()
+            .collect(Collectors.toMap(Membership::getGymId, Membership::getUser, (a, b) -> a));
+    Map<Long, Long> counts =
+        membershipRepository.countByGymIdInAndStatus(ids, MembershipStatus.ACTIVE).stream()
+            .collect(Collectors.toMap(row -> (Long) row[0], row -> (Long) row[1]));
+    return gyms.map(
+        g ->
+            new AdminGymResponse(
+                g.getId(),
+                g.getName(),
+                g.getDescription(),
+                g.isProgramming(),
+                g.getStatus(),
+                g.getCreatedAt(),
+                holders.containsKey(g.getId())
+                    ? userMapper.toSummary(holders.get(g.getId()))
+                    : null,
+                counts.getOrDefault(g.getId(), 0L)));
   }
 
   /**
@@ -231,6 +311,7 @@ public class GymService {
             .orElseThrow(() -> new ResourceNotFoundException(ERROR_GYM_NOT_FOUND, id));
 
     gym.setStatus(status);
+    log.info("Gym {} status set to {}", id, status);
     return gymMapper.toResponse(gymRepository.save(gym));
   }
 
@@ -246,5 +327,37 @@ public class GymService {
       throw new ResourceNotFoundException(ERROR_GYM_NOT_FOUND, id);
     }
     gymRepository.deleteById(id);
+  }
+
+  // --- Helpers ---
+
+  private Gym findGym(Long gymId) {
+    return gymRepository
+        .findById(gymId)
+        .orElseThrow(() -> new ResourceNotFoundException(ERROR_GYM_NOT_FOUND, gymId));
+  }
+
+  /** A random 8-character enrollment code (upper-case hexadecimal). */
+  private static String newEnrollmentCode() {
+    return UUID.randomUUID().toString().replace("-", "").substring(0, 8).toUpperCase(Locale.ROOT);
+  }
+
+  private static String blankToNull(String text) {
+    return text == null || text.isBlank() ? null : text.trim();
+  }
+
+  private static Pageable capped(Pageable pageable) {
+    return PageRequest.of(
+        pageable.getPageNumber(), Math.min(pageable.getPageSize(), SEARCH_MAX_PAGE_SIZE));
+  }
+
+  /** Lower-case {@code LIKE} pattern matching the text anywhere, with wildcards escaped. */
+  private static String likePattern(String search) {
+    String text = search == null ? "" : search.trim().toLowerCase(Locale.ROOT);
+    return "%" + text.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_") + "%";
+  }
+
+  private static Boolean programmingOf(GymType type) {
+    return type == null ? null : type == GymType.PROGRAM;
   }
 }

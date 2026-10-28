@@ -1,0 +1,172 @@
+<app-page [title]="'BOX.SETTINGS.TITLE' | translate" [subtitle]="'BOX.SETTINGS.SUBTITLE' | translate" width="max-w-3xl">
+  <div class="mb-6">
+    <app-staff-gym-picker [candidates]="staffGym.candidates()" [value]="staffGym.gymId()" (valueChange)="staffGym.select($event)"/>
+  </div>
+
+  @if (settings(); as s) {
+    <div class="flex flex-col gap-6">
+      @if (s.status === 'PENDING_APPROVAL') {
+        <div hlmAlert class="border-warning/40 text-warning">
+          <ng-icon name="heroClock" aria-hidden="true"/>
+          <p hlmAlertDescription class="text-warning">{{ 'BOX.SETTINGS.PENDING_APPROVAL' | translate }}</p>
+        </div>
+      }
+
+      <!-- Identity -->
+      <form hlmCard [formGroup]="identityForm" (ngSubmit)="saveIdentity()">
+        <div hlmCardHeader>
+          <h2 hlmCardTitle class="text-lg">{{ 'BOX.SETTINGS.IDENTITY' | translate }}</h2>
+        </div>
+        <div hlmCardContent class="flex flex-col gap-4">
+          <app-form-field for="settings-name" [label]="'CREATE_GYM.NAME' | translate" icon="heroBuildingOffice"
+                          [error]="identityForm.controls.name.touched && identityForm.controls.name.invalid ? ('GLOBAL.REQUIRED' | translate) : null">
+            <input hlmInputGroupInput id="settings-name" formControlName="name" maxlength="100" autocomplete="off"
+                   aria-describedby="settings-name-message"/>
+          </app-form-field>
+          <div class="flex flex-col gap-1.5">
+            <label hlmLabel for="settings-description">{{ 'CREATE_GYM.DESCRIPTION' | translate }}</label>
+            <textarea hlmTextarea id="settings-description" formControlName="description" rows="3" maxlength="1000"></textarea>
+          </div>
+          <button type="submit" hlmBtn class="h-11 md:h-10 sm:self-end" [disabled]="isSaving() || identityForm.pristine">
+            {{ 'GLOBAL.SAVE' | translate }}
+          </button>
+        </div>
+      </form>
+
+      <!-- Enrollment -->
+      <form hlmCard [formGroup]="enrollmentForm" (ngSubmit)="saveEnrollment()">
+        <div hlmCardHeader>
+          <h2 hlmCardTitle class="text-lg">{{ 'BOX.SETTINGS.ENROLLMENT' | translate }}</h2>
+        </div>
+        <div hlmCardContent class="flex flex-col gap-4">
+          <div class="flex flex-col sm:flex-row sm:items-end gap-2">
+            <div class="flex-1">
+              <app-form-field for="settings-code" [label]="'BOX.SETTINGS.CODE' | translate" icon="heroKey"
+                              [hint]="'BOX.SETTINGS.CODE_EDIT_HINT' | translate"
+                              [error]="enrollmentForm.controls.enrollmentCode.touched && enrollmentForm.controls.enrollmentCode.invalid ? ('BOX.SETTINGS.CODE_EDIT_HINT' | translate) : null">
+                <input hlmInputGroupInput id="settings-code" formControlName="enrollmentCode" autocomplete="off"
+                       spellcheck="false" class="font-mono" aria-describedby="settings-code-message"/>
+              </app-form-field>
+            </div>
+            <div class="flex gap-2 sm:mb-6">
+              <button type="button" hlmBtn variant="outline" class="h-11 md:h-10 flex-1" (click)="copy(s.enrollmentCode)">
+                <ng-icon name="heroClipboardDocument" size="1rem" aria-hidden="true"/>
+                {{ 'GLOBAL.COPY' | translate }}
+              </button>
+              <button type="button" hlmBtn variant="outline" class="h-11 md:h-10 flex-1" (click)="openDialog('regenerate')">
+                <ng-icon name="heroArrowPath" size="1rem" aria-hidden="true"/>
+                {{ 'BOX.SETTINGS.REGENERATE' | translate }}
+              </button>
+            </div>
+          </div>
+
+          <label class="flex items-start gap-3 cursor-pointer">
+            <hlm-switch class="mt-1" inputId="settings-auto" formControlName="isAutoSubscription"
+                        aria-describedby="settings-auto-hint"/>
+            <span class="flex flex-col gap-1">
+              <span class="font-medium">{{ 'BOX.SETTINGS.AUTO' | translate }}</span>
+              <span id="settings-auto-hint" class="text-sm text-muted-foreground">{{ 'BOX.SETTINGS.AUTO_DESC' | translate }}</span>
+            </span>
+          </label>
+
+          <button type="submit" hlmBtn class="h-11 md:h-10 sm:self-end" [disabled]="isSaving() || enrollmentForm.pristine">
+            {{ 'GLOBAL.SAVE' | translate }}
+          </button>
+
+          <div class="flex flex-col gap-1.5 border-t pt-4">
+            <label hlmLabel for="settings-invite">{{ 'BOX.SETTINGS.INVITE_LINK' | translate }}</label>
+            <div class="flex flex-col sm:flex-row gap-2">
+              <input hlmInput id="settings-invite" class="flex-1 h-11 md:h-10 font-mono text-xs" readonly [value]="inviteLink()"
+                     aria-describedby="settings-invite-hint"/>
+              <button type="button" hlmBtn variant="outline" class="h-11 md:h-10" (click)="copy(inviteLink())">
+                <ng-icon name="heroLink" size="1rem" aria-hidden="true"/>
+                {{ 'GLOBAL.COPY' | translate }}
+              </button>
+            </div>
+            <p id="settings-invite-hint" class="text-xs text-muted-foreground">{{ 'BOX.SETTINGS.INVITE_HINT' | translate }}</p>
+          </div>
+        </div>
+      </form>
+
+      <!-- Danger zone: holder (or platform admin) only -->
+      @if (isHolder()) {
+        <section hlmCard class="border-destructive/40" data-slot="danger-zone">
+          <div hlmCardHeader>
+            <h2 hlmCardTitle class="text-lg text-destructive flex items-center gap-2">
+              <ng-icon name="heroExclamationTriangle" size="1.25rem" aria-hidden="true"/>
+              {{ 'BOX.SETTINGS.DANGER' | translate }}
+            </h2>
+          </div>
+          <div hlmCardContent class="flex flex-col gap-6">
+            <div class="flex flex-col gap-2">
+              <h3 class="font-semibold">{{ (s.isProgramming ? 'BOX.SETTINGS.TRANSFER_TITLE_PROG' : 'BOX.SETTINGS.TRANSFER_TITLE_BOX') | translate }}</h3>
+              <p class="text-sm text-muted-foreground">{{ (s.isProgramming ? 'BOX.SETTINGS.TRANSFER_DESC_PROG' : 'BOX.SETTINGS.TRANSFER_DESC_BOX') | translate }}</p>
+              @if (transferCandidates().length > 0) {
+                <div class="flex flex-col sm:flex-row sm:items-end gap-2">
+                  <label class="flex flex-col gap-1.5 flex-1">
+                    <span class="text-sm font-medium">{{ 'BOX.SETTINGS.TRANSFER_TO' | translate }}</span>
+                    <select appNativeSelect (change)="onTransferTo($any($event.target).value)">
+                      <option value="" [selected]="transferTo() === null">{{ 'BOX.SETTINGS.TRANSFER_PICK' | translate }}</option>
+                      @for (m of transferCandidates(); track m.id) {
+                        <option [value]="m.id" [selected]="transferTo() === m.id">{{ fullName(m) }} · {{ 'GYM.ROLES.' + m.gymRole | translate }}</option>
+                      }
+                    </select>
+                  </label>
+                  <button type="button" hlmBtn variant="outline" class="h-11 md:h-10" [disabled]="!transferTarget() || isSaving()"
+                          (click)="openDialog('transfer')">
+                    <ng-icon name="heroArrowsRightLeft" size="1rem" aria-hidden="true"/>
+                    {{ 'BOX.SETTINGS.TRANSFER' | translate }}
+                  </button>
+                </div>
+              } @else {
+                <p class="text-sm text-muted-foreground">{{ 'BOX.SETTINGS.TRANSFER_NONE' | translate }}</p>
+              }
+            </div>
+
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-t pt-4">
+              <span class="text-sm text-muted-foreground">{{ 'BOX.SETTINGS.DELETE_DESC' | translate }}</span>
+              <button type="button" hlmBtn variant="destructive" class="h-11 md:h-10" [disabled]="isSaving()" (click)="openDialog('delete')">
+                <ng-icon name="heroTrash" size="1rem" aria-hidden="true"/>
+                {{ 'BOX.SETTINGS.DELETE' | translate }}
+              </button>
+            </div>
+          </div>
+        </section>
+      }
+    </div>
+  } @else if (isLoading()) {
+    <div class="flex justify-center p-8"><hlm-spinner/></div>
+  }
+</app-page>
+
+@if (settings(); as s) {
+  @switch (dialog()) {
+    @case ('regenerate') {
+      <app-confirm-dialog [open]="true" [title]="'BOX.SETTINGS.REGENERATE_TITLE' | translate"
+                          [description]="'BOX.SETTINGS.REGENERATE_DESC' | translate"
+                          [confirmLabel]="'BOX.SETTINGS.REGENERATE' | translate"
+                          (confirmed)="confirmDialog()" (closed)="closeDialog()"/>
+    }
+    @case ('transfer') {
+      <app-confirm-dialog [open]="true" [destructive]="true"
+                          [title]="'BOX.SETTINGS.TRANSFER_CONFIRM' | translate: {gym: s.name, name: fullName(transferTarget())}"
+                          [description]="(s.isProgramming ? 'BOX.SETTINGS.TRANSFER_DESC_PROG' : 'BOX.SETTINGS.TRANSFER_DESC_BOX') | translate"
+                          [confirmLabel]="'BOX.SETTINGS.TRANSFER' | translate"
+                          (confirmed)="confirmDialog()" (closed)="closeDialog()"/>
+    }
+    @case ('delete') {
+      <app-confirm-dialog [open]="true" [destructive]="true"
+                          [title]="'BOX.SETTINGS.DELETE_TITLE' | translate: {name: s.name}"
+                          [description]="'BOX.SETTINGS.DELETE_DESC' | translate"
+                          [confirmLabel]="'BOX.SETTINGS.DELETE' | translate"
+                          [confirmDisabled]="!canConfirmDelete()"
+                          (confirmed)="confirmDialog()" (closed)="closeDialog()">
+        <label class="flex flex-col gap-1.5">
+          <span class="text-sm">{{ 'BOX.SETTINGS.DELETE_CONFIRM_LABEL' | translate: {name: s.name} }}</span>
+          <input hlmInput class="h-11 md:h-10" autocomplete="off" data-slot="delete-confirmation"
+                 [value]="deleteConfirmation()" (input)="deleteConfirmation.set($any($event.target).value)"/>
+        </label>
+      </app-confirm-dialog>
+    }
+  }
+}

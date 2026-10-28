@@ -8,6 +8,7 @@ import {MembershipResponse, MembershipStatus, MembershipUpdateRequest} from '../
 export class MembershipService {
   private readonly http = inject(HttpClient);
 
+  /** Members of a gym, pending requests first, each with the current user's capabilities. */
   getMemberships(gymId: number, status?: MembershipStatus): Observable<MembershipResponse[]> {
     let params = new HttpParams().set('gymId', gymId);
     if (status) {
@@ -20,6 +21,7 @@ export class MembershipService {
     return this.http.put<MembershipResponse>(this.buildUrl(`/${id}`), payload);
   }
 
+  /** Refuses a pending request (deleted) or removes a member (INACTIVE, history kept). */
   deleteMembership(id: number): Observable<void> {
     return this.http.delete<void>(this.buildUrl(`/${id}`));
   }

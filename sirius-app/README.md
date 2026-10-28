@@ -1,8 +1,8 @@
 # Sirius (Frontend)
 
 Angular frontend of the StellarApex platform: navigation by spaces (Today, My training, My box,
-Catalogue, Admin), movement and muscle catalog, WODs (list, detail, form), scores, account pages and
-the admin support page. Mobile first, installable (PWA), available in French and English.
+Catalogue, Admin), movement and muscle catalog, WODs (list, detail, form), scores, account pages,
+box/prog memberships and management, and the admin pages (boxes & programs, support). Mobile first, installable (PWA), available in French and English.
 
 ## Tech Stack
 
@@ -28,8 +28,9 @@ npm test            # unit tests (single run)
 npm run build       # production build (dist/sirius-app)
 ```
 
-`npm start` proxies `/antares` and `/aldebaran` to `https://stellar.apex` (`proxy.conf.json`) and
-rewrites the session cookies for `localhost`.
+`npm start` proxies `/antares` and `/aldebaran` to the local Traefik (`https://localhost` with
+`Host: stellar.apex`, `proxy.conf.json`; the Docker stack must run) and rewrites the session cookies
+for `localhost`, so the app on `http://localhost:4200` works with the dev seed accounts.
 
 ## Project Structure
 
@@ -69,8 +70,18 @@ The backends enforce every rule; Sirius only adapts what it shows:
 * `core/services/access.service.ts` answers every rights question (admin, memberships, gym
   permissions) from `GET /antares/users/me`.
 * Resource-level flags come from the API, e.g. `WodResponse.capabilities` (`canModify`, `locked`).
-* **My gyms** (profile page): each membership with role, status and effective permissions, each
-  permission explained in one sentence.
+* **My boxes & programs** (`/my-account/gyms`): memberships with role, status and permissions (each
+  explained in one sentence), former memberships, leave / withdraw a request; join a box or program
+  (`gyms/join`: search by name and type, enrollment code; the invitation link `/join?gym=&code=`
+  pre-fills both, after sign-in if needed); request a new one (`gyms/new`, admin approval).
+* **My box › Members / Settings** (staff with `MANAGE_MEMBERSHIPS` / `MANAGE_SETTINGS`): the managed
+  box/prog follows the displayed one when allowed (picker when several). Members: pending requests
+  first, status and role filters, validate / refuse / remove / ban / role and permissions as
+  `MembershipResponse.capabilities` allow. Settings: name and description, enrollment code (copy,
+  edit, regenerate), invitation link, auto-subscription; the owner/programmer also gets the danger
+  zone (transfer to a member Antares marks `canBecomeHolder`, deletion after typing the name).
+* **Admin › Boxes & programs** (`/admin/gyms`): approval queue by default, search, approve, reject,
+  suspend, reactivate, with the requester and the active member count.
 * **WOD list**: type filters come from `GET /aldebaran/wods/facets` (only types that return
   results); the create button follows the tab (gym WOD where the user programs, personal
   otherwise); on the "All" tab an admin can pick any gym or any athlete with personal WODs.

@@ -1,12 +1,15 @@
 package apex.stellar.antares.controller;
 
+import apex.stellar.antares.dto.AdminGymResponse;
 import apex.stellar.antares.dto.SupportSessionRequest;
 import apex.stellar.antares.dto.SupportSessionResponse;
 import apex.stellar.antares.dto.UserResponse;
 import apex.stellar.antares.dto.UserSummary;
+import apex.stellar.antares.model.Gym.GymStatus;
 import apex.stellar.antares.model.GymRole;
 import apex.stellar.antares.model.Membership.MembershipStatus;
 import apex.stellar.antares.model.User;
+import apex.stellar.antares.service.GymService;
 import apex.stellar.antares.service.SupportSessionService;
 import apex.stellar.antares.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -41,11 +44,44 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/antares/admin")
 @RequiredArgsConstructor
-@Tag(name = "Administration", description = "Platform admin tools: user search, support sessions")
+@Tag(name = "Administration", description = "Platform admin tools: user and gym search, support sessions")
 public class AdminController {
 
   private final UserService userService;
   private final SupportSessionService supportSessionService;
+  private final GymService gymService;
+
+  /**
+   * Searches every box and program (approval queue, suspension), with holder and member count.
+   *
+   * @param search the text matched against the name (case-insensitive); blank lists every gym.
+   * @param status optional gym status (e.g. {@code PENDING_APPROVAL} for the approval queue).
+   * @param pageable page and size (default 20, capped at 50).
+   * @return a slice of gyms ordered by name.
+   */
+  @GetMapping("/gyms")
+  @PreAuthorize("hasRole('ADMIN')")
+  @Operation(
+      summary = "Search gyms",
+      description = "Platform Admin only. Every gym, any status, with its owner/programmer.")
+  @ApiResponses(
+      value = {
+        @ApiResponse(responseCode = "200", description = "Matching gyms"),
+        @ApiResponse(
+            responseCode = "403",
+            description = "Forbidden - Admin only",
+            content = @Content(schema = @Schema(hidden = true))),
+        @ApiResponse(
+            responseCode = "401",
+            description = "Unauthorized",
+            content = @Content(schema = @Schema(hidden = true)))
+      })
+  public ResponseEntity<Slice<AdminGymResponse>> searchGyms(
+      @RequestParam(defaultValue = "") String search,
+      @RequestParam(required = false) GymStatus status,
+      @PageableDefault(size = 20) Pageable pageable) {
+    return ResponseEntity.ok(gymService.searchGymsForAdmin(search, status, pageable));
+  }
 
   /**
    * Searches users by first name, last name or email, optionally narrowed to a gym membership.

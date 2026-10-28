@@ -1,0 +1,106 @@
+<section>
+  <header class="mb-4">
+    <a hlmBtn variant="ghost" size="sm" routerLink=".." class="-ml-2 mb-2">
+      <ng-icon name="heroArrowLeft" size="1rem" aria-hidden="true"/>
+      {{ 'GLOBAL.BACK' | translate }}
+    </a>
+    <h2 class="text-2xl font-bold">{{ 'JOIN_GYM.TITLE' | translate }}</h2>
+    <p class="mt-1 text-muted-foreground">{{ 'JOIN_GYM.SUBTITLE' | translate }}</p>
+  </header>
+
+  @if (invitationNotFound()) {
+    <div hlmAlert variant="destructive" class="mb-4">
+      <ng-icon name="heroExclamationTriangle" aria-hidden="true"/>
+      <p hlmAlertDescription>{{ 'JOIN_GYM.INVITATION_NOT_FOUND' | translate }}</p>
+    </div>
+  }
+
+  @if (selected(); as gym) {
+    <form hlmCard [formGroup]="form" (ngSubmit)="join()" data-slot="join-form">
+      <div hlmCardContent class="flex flex-col gap-4">
+        @if (fromInvitation()) {
+          <p class="text-sm text-muted-foreground">{{ 'JOIN_GYM.INVITATION' | translate }}</p>
+        }
+        <div class="flex flex-wrap items-start justify-between gap-2">
+          <div class="min-w-0">
+            <p class="text-xs uppercase text-muted-foreground">{{ 'JOIN_GYM.SELECTED' | translate }}</p>
+            <p class="flex flex-wrap items-center gap-2 font-semibold text-lg">
+              {{ gym.name }}
+              <span hlmBadge variant="outline">{{ (gym.isProgramming ? 'GYM.TYPE.PROGRAM' : 'GYM.TYPE.BOX') | translate }}</span>
+            </p>
+            @if (gym.description) {
+              <p class="text-sm text-muted-foreground">{{ gym.description }}</p>
+            }
+          </div>
+          <button type="button" hlmBtn variant="ghost" class="h-11 md:h-9" (click)="changeGym()">{{ 'JOIN_GYM.CHANGE' | translate }}</button>
+        </div>
+
+        <app-form-field for="enrollment-code" [label]="'JOIN_GYM.CODE' | translate" icon="heroKey"
+                        [hint]="'JOIN_GYM.CODE_HINT' | translate"
+                        [error]="form.controls.enrollmentCode.touched && form.controls.enrollmentCode.invalid ? ('GLOBAL.REQUIRED' | translate) : null">
+          <input hlmInputGroupInput id="enrollment-code" formControlName="enrollmentCode" autocomplete="off"
+                 autocapitalize="characters" spellcheck="false" aria-describedby="enrollment-code-message"/>
+        </app-form-field>
+
+        <button type="submit" hlmBtn class="h-11 md:h-10 sm:self-end" [disabled]="isJoining() || isMember(gym.id)">
+          @if (isJoining()) {
+            <hlm-spinner/>
+          }
+          {{ (isMember(gym.id) ? 'JOIN_GYM.MEMBER' : 'JOIN_GYM.SUBMIT') | translate }}
+        </button>
+      </div>
+    </form>
+  } @else {
+    <app-search-input [placeholder]="'JOIN_GYM.SEARCH' | translate" [value]="searchQuery()"
+                      (valueChange)="onSearchChange($event)"/>
+    <div class="flex flex-wrap items-center gap-2 -mt-4 mb-4" role="group" [attr.aria-label]="'CREATE_GYM.TYPE' | translate">
+      <button type="button" hlmBadge variant="outline"
+              class="h-9 px-3 text-sm cursor-pointer aria-pressed:border-secondary aria-pressed:bg-secondary aria-pressed:text-secondary-content"
+              [attr.aria-pressed]="typeFilter() === null" (click)="onTypeChange(null)">{{ 'JOIN_GYM.ALL' | translate }}</button>
+      @for (type of types; track type) {
+        <button type="button" hlmBadge variant="outline"
+                class="h-9 px-3 text-sm cursor-pointer aria-pressed:border-secondary aria-pressed:bg-secondary aria-pressed:text-secondary-content"
+                [attr.aria-pressed]="typeFilter() === type" (click)="onTypeChange(type)">{{ 'GYM.TYPE.' + type | translate }}</button>
+      }
+    </div>
+
+    <ul class="bg-card border rounded-xl divide-y" [attr.aria-busy]="isSearching()">
+      @for (gym of gyms(); track gym.id) {
+        <li>
+          <button type="button" data-slot="gym-result"
+                  class="w-full text-left p-4 flex items-center justify-between gap-3 hover:bg-muted/50 rounded-xl"
+                  (click)="select(gym)">
+            <span class="min-w-0">
+              <span class="flex flex-wrap items-center gap-2 font-semibold">
+                {{ gym.name }}
+                <span hlmBadge variant="outline">{{ (gym.isProgramming ? 'GYM.TYPE.PROGRAM' : 'GYM.TYPE.BOX') | translate }}</span>
+                @if (isMember(gym.id)) {
+                  <span hlmBadge class="bg-primary/15 text-primary">{{ 'JOIN_GYM.MEMBER' | translate }}</span>
+                }
+              </span>
+              @if (gym.description) {
+                <span class="block text-sm text-muted-foreground truncate">{{ gym.description }}</span>
+              }
+            </span>
+            <ng-icon name="heroChevronRight" size="1.1rem" class="shrink-0 text-muted-foreground" aria-hidden="true"/>
+          </button>
+        </li>
+      } @empty {
+        <li class="p-8 text-center text-muted-foreground">
+          @if (isSearching()) {
+            <hlm-spinner class="mx-auto"/>
+          } @else {
+            {{ 'JOIN_GYM.NO_RESULT' | translate }}
+          }
+        </li>
+      }
+    </ul>
+    @if (hasMore()) {
+      <div class="flex justify-center mt-4">
+        <button type="button" hlmBtn variant="outline" class="h-11 md:h-10" [disabled]="isSearching()" (click)="loadMore()">
+          {{ 'GLOBAL.LOAD_MORE' | translate }}
+        </button>
+      </div>
+    }
+  }
+</section>

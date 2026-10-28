@@ -121,9 +121,21 @@ public class Membership implements Serializable {
   }
 
   /**
+   * Returns the permissions this membership grants inside Antares: the effective permissions of an
+   * ACTIVE membership, none otherwise (PENDING, INACTIVE and BANNED members manage nothing).
+   *
+   * @return the active permissions, in {@link Permission} declaration order.
+   */
+  public Set<Permission> activePermissions() {
+    return status == MembershipStatus.ACTIVE
+        ? effectivePermissions()
+        : EnumSet.noneOf(Permission.class);
+  }
+
+  /**
    * Indicates whether this membership can be used as a gym context: the membership is ACTIVE and
-   * either the gym is ACTIVE or the member is gym staff (OWNER/PROGRAMMER may work on a gym that is
-   * still pending approval).
+   * either the gym is ACTIVE or the member is the gym holder (OWNER/PROGRAMMER) of a gym still
+   * pending approval. A suspended or rejected gym opens access to nobody.
    *
    * @return {@code true} if the membership opens access to its gym.
    */
@@ -132,8 +144,7 @@ public class Membership implements Serializable {
       return false;
     }
     return gym.getStatus() == Gym.GymStatus.ACTIVE
-        || gymRole == GymRole.OWNER
-        || gymRole == GymRole.PROGRAMMER;
+        || (gym.getStatus() == Gym.GymStatus.PENDING_APPROVAL && gymRole.isHolder());
   }
 
   /**

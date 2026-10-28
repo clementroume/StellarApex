@@ -61,6 +61,7 @@ class AntaresSecurityServiceTest {
     mockUser();
     Membership m = new Membership();
     m.setGymRole(GymRole.OWNER); // VIP Owner
+    m.setStatus(Membership.MembershipStatus.ACTIVE);
     m.setPermissions(Set.of());
 
     when(membershipRepository.findByUserIdAndGymId(1L, 100L)).thenReturn(Optional.of(m));
@@ -70,12 +71,26 @@ class AntaresSecurityServiceTest {
   }
 
   @Test
+  @DisplayName("hasGymPermission: a membership that is not ACTIVE grants nothing")
+  void hasGymPermission_InactiveOwner_ShouldReturnFalse() {
+    mockUser();
+    Membership m = new Membership();
+    m.setGymRole(GymRole.OWNER);
+    m.setStatus(Membership.MembershipStatus.INACTIVE);
+
+    when(membershipRepository.findByUserIdAndGymId(1L, 100L)).thenReturn(Optional.of(m));
+
+    assertFalse(securityService.hasGymPermission(100L, "MANAGE_SETTINGS"));
+  }
+
+  @Test
   @DisplayName("hasGymPermission: Programmer should return true implicitly")
   void hasGymPermission_Programmer_ShouldReturnTrue_Implicitly() {
     // Given
     mockUser(); // Verify Programmer is also VIP
     Membership m = new Membership();
     m.setGymRole(GymRole.PROGRAMMER); // VIP Programmer
+    m.setStatus(Membership.MembershipStatus.ACTIVE);
     m.setPermissions(Set.of()); // No explicit permissions needed
 
     when(membershipRepository.findByUserIdAndGymId(1L, 100L)).thenReturn(Optional.of(m));
@@ -91,6 +106,7 @@ class AntaresSecurityServiceTest {
     mockUser();
     Membership m = new Membership();
     m.setGymRole(GymRole.COACH);
+    m.setStatus(Membership.MembershipStatus.ACTIVE);
     m.setPermissions(Set.of(Permission.MANAGE_MEMBERSHIPS));
 
     when(membershipRepository.findByUserIdAndGymId(1L, 100L)).thenReturn(Optional.of(m));
@@ -106,6 +122,7 @@ class AntaresSecurityServiceTest {
     mockUser();
     Membership m = new Membership();
     m.setGymRole(GymRole.ATHLETE);
+    m.setStatus(Membership.MembershipStatus.ACTIVE);
     m.setPermissions(Set.of(Permission.WOD_WRITE)); // Ignored by the effective rule
 
     when(membershipRepository.findByUserIdAndGymId(1L, 100L)).thenReturn(Optional.of(m));
@@ -121,6 +138,7 @@ class AntaresSecurityServiceTest {
     mockUser();
     Membership m = new Membership();
     m.setGymRole(GymRole.COACH);
+    m.setStatus(Membership.MembershipStatus.ACTIVE);
     m.setPermissions(Set.of(Permission.WOD_WRITE));
 
     when(membershipRepository.findByUserIdAndGymId(1L, 100L)).thenReturn(Optional.of(m));
@@ -151,6 +169,7 @@ class AntaresSecurityServiceTest {
 
     Membership requesterMem = new Membership();
     requesterMem.setGymRole(GymRole.OWNER);
+    requesterMem.setStatus(Membership.MembershipStatus.ACTIVE);
 
     when(membershipRepository.findById(50L)).thenReturn(Optional.of(target));
     when(membershipRepository.findByUserIdAndGymId(1L, 100L)).thenReturn(Optional.of(requesterMem));

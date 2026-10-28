@@ -1,0 +1,100 @@
+<app-page [title]="'ADMIN.GYMS.TITLE' | translate" [subtitle]="'ADMIN.GYMS.INTRO' | translate">
+  <app-search-input [placeholder]="'ADMIN.GYMS.SEARCH' | translate" [value]="searchQuery()"
+                    (valueChange)="onSearchChange($event)"/>
+  <div class="flex flex-wrap items-center gap-2 -mt-4 mb-4" role="group" [attr.aria-label]="'ADMIN.SUPPORT.FILTER_STATUS' | translate">
+    @for (status of statuses; track status) {
+      <button type="button" hlmBadge variant="outline"
+              class="h-9 px-3 text-sm cursor-pointer aria-pressed:border-secondary aria-pressed:bg-secondary aria-pressed:text-secondary-content"
+              [attr.aria-pressed]="statusFilter() === status" (click)="onStatusFilter(status)">{{ 'GYM.GYM_STATUS.' + status | translate }}</button>
+    }
+    <button type="button" hlmBadge variant="outline"
+            class="h-9 px-3 text-sm cursor-pointer aria-pressed:border-secondary aria-pressed:bg-secondary aria-pressed:text-secondary-content"
+            [attr.aria-pressed]="statusFilter() === null" (click)="onStatusFilter(null)">{{ 'ADMIN.GYMS.ALL' | translate }}</button>
+  </div>
+
+  <ul class="bg-card border rounded-xl divide-y" [attr.aria-busy]="isLoading()">
+    @for (gym of gyms(); track gym.id) {
+      <li class="p-4 flex flex-col md:flex-row md:items-center gap-3 md:justify-between" data-slot="admin-gym">
+        <div class="min-w-0 flex flex-col gap-1">
+          <p class="flex flex-wrap items-center gap-2 font-semibold">
+            {{ gym.name }}
+            <span hlmBadge variant="outline">{{ (gym.isProgramming ? 'GYM.TYPE.PROGRAM' : 'GYM.TYPE.BOX') | translate }}</span>
+            @if (gym.status !== 'ACTIVE') {
+              <span hlmBadge class="bg-warning/15 text-warning">{{ 'GYM.GYM_STATUS.' + gym.status | translate }}</span>
+            }
+          </p>
+          @if (gym.description) {
+            <p class="text-sm text-muted-foreground line-clamp-2">{{ gym.description }}</p>
+          }
+          <p class="text-sm">
+            <span class="text-muted-foreground">{{ 'ADMIN.GYMS.HOLDER' | translate }} :</span>
+            @if (gym.holder; as holder) {
+              {{ holder.firstName }} {{ holder.lastName }} <span class="text-muted-foreground">({{ holder.email }})</span>
+            } @else {
+              {{ 'ADMIN.GYMS.NO_HOLDER' | translate }}
+            }
+          </p>
+          <p class="text-xs text-muted-foreground">
+            {{ 'ADMIN.GYMS.REQUESTED' | translate: {date: formatDate(gym.createdAt)} }} ·
+            {{ 'ADMIN.GYMS.MEMBERS' | translate: {count: gym.memberCount} }}
+          </p>
+        </div>
+        <div class="flex flex-col sm:flex-row gap-2 shrink-0">
+          @switch (gym.status) {
+            @case ('PENDING_APPROVAL') {
+              <button type="button" hlmBtn class="h-11 md:h-9" [disabled]="busyId() === gym.id" (click)="setStatus(gym, 'ACTIVE')">
+                <ng-icon name="heroCheck" size="1rem" aria-hidden="true"/>
+                {{ 'ADMIN.GYMS.APPROVE' | translate }}
+              </button>
+              <button type="button" hlmBtn variant="outline" class="h-11 md:h-9" [disabled]="busyId() === gym.id" (click)="setStatus(gym, 'REJECTED')">
+                <ng-icon name="heroXMark" size="1rem" aria-hidden="true"/>
+                {{ 'ADMIN.GYMS.REJECT' | translate }}
+              </button>
+            }
+            @case ('ACTIVE') {
+              <button type="button" hlmBtn variant="outline" class="h-11 md:h-9 text-destructive" [disabled]="busyId() === gym.id" (click)="setStatus(gym, 'SUSPENDED')">
+                <ng-icon name="heroPause" size="1rem" aria-hidden="true"/>
+                {{ 'ADMIN.GYMS.SUSPEND' | translate }}
+              </button>
+            }
+            @case ('SUSPENDED') {
+              <button type="button" hlmBtn variant="outline" class="h-11 md:h-9" [disabled]="busyId() === gym.id" (click)="setStatus(gym, 'ACTIVE')">
+                <ng-icon name="heroPlay" size="1rem" aria-hidden="true"/>
+                {{ 'ADMIN.GYMS.REACTIVATE' | translate }}
+              </button>
+            }
+            @case ('REJECTED') {
+              <button type="button" hlmBtn variant="outline" class="h-11 md:h-9" [disabled]="busyId() === gym.id" (click)="setStatus(gym, 'ACTIVE')">
+                <ng-icon name="heroCheck" size="1rem" aria-hidden="true"/>
+                {{ 'ADMIN.GYMS.APPROVE' | translate }}
+              </button>
+            }
+          }
+        </div>
+      </li>
+    } @empty {
+      <li class="p-8 text-center text-muted-foreground">
+        @if (isLoading()) {
+          <hlm-spinner class="mx-auto"/>
+        } @else {
+          {{ 'ADMIN.GYMS.NO_RESULT' | translate }}
+        }
+      </li>
+    }
+  </ul>
+  @if (hasMore()) {
+    <div class="flex justify-center mt-4">
+      <button type="button" hlmBtn variant="outline" class="h-11 md:h-10" [disabled]="isLoading()" (click)="loadMore()">
+        {{ 'GLOBAL.LOAD_MORE' | translate }}
+      </button>
+    </div>
+  }
+</app-page>
+
+@if (pendingAction(); as action) {
+  <app-confirm-dialog [open]="true" [destructive]="true"
+                      [title]="(action.status === 'REJECTED' ? 'ADMIN.GYMS.REJECT_TITLE' : 'ADMIN.GYMS.SUSPEND_TITLE') | translate: {name: action.gym.name}"
+                      [description]="(action.status === 'REJECTED' ? 'ADMIN.GYMS.REJECT_DESC' : 'ADMIN.GYMS.SUSPEND_DESC') | translate"
+                      [confirmLabel]="(action.status === 'REJECTED' ? 'ADMIN.GYMS.REJECT' : 'ADMIN.GYMS.SUSPEND') | translate"
+                      (confirmed)="confirmAction()" (closed)="cancelAction()"/>
+}

@@ -4,6 +4,7 @@ import apex.stellar.antares.model.Gym;
 import apex.stellar.antares.model.Membership;
 import apex.stellar.antares.model.Membership.MembershipStatus;
 import apex.stellar.antares.model.User;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.EntityGraph;
@@ -95,4 +96,43 @@ public interface MembershipRepository extends JpaRepository<Membership, Long> {
           + " AND m.gymRole IN (apex.stellar.antares.model.GymRole.OWNER,"
           + " apex.stellar.antares.model.GymRole.PROGRAMMER)")
   List<Membership> findHoldersByGymId(Long gymId);
+
+  /**
+   * Retrieves the holder memberships (with their user) of several gyms.
+   *
+   * @param gymIds the gyms.
+   * @return the holder memberships of these gyms.
+   */
+  @EntityGraph(attributePaths = {"user"})
+  @Query(
+      "SELECT m FROM Membership m WHERE m.gym.id IN :gymIds"
+          + " AND m.gymRole IN (apex.stellar.antares.model.GymRole.OWNER,"
+          + " apex.stellar.antares.model.GymRole.PROGRAMMER)")
+  List<Membership> findHoldersByGymIdIn(Collection<Long> gymIds);
+
+  /**
+   * Counts the memberships of several gyms having a given status.
+   *
+   * @param gymIds the gyms.
+   * @param status the membership status to count.
+   * @return pairs {@code [gymId, count]}.
+   */
+  @Query(
+      "SELECT m.gym.id, count(m) FROM Membership m WHERE m.gym.id IN :gymIds"
+          + " AND m.status = :status GROUP BY m.gym.id")
+  List<Object[]> countByGymIdInAndStatus(Collection<Long> gymIds, MembershipStatus status);
+
+  /**
+   * Tells whether a user holds a gym that still waits for admin approval (at most one creation
+   * request per user).
+   *
+   * @param userId the user.
+   * @return {@code true} if the user holds a gym in {@code PENDING_APPROVAL}.
+   */
+  @Query(
+      "SELECT count(m) > 0 FROM Membership m WHERE m.user.id = :userId"
+          + " AND m.gymRole IN (apex.stellar.antares.model.GymRole.OWNER,"
+          + " apex.stellar.antares.model.GymRole.PROGRAMMER)"
+          + " AND m.gym.status = apex.stellar.antares.model.Gym.GymStatus.PENDING_APPROVAL")
+  boolean existsPendingGymRequest(Long userId);
 }

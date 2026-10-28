@@ -3,6 +3,9 @@ import {ProfileComponent} from './profile/profile.component';
 import {SettingsComponent} from './settings/settings.component';
 import {UnitsComponent} from './units/units.component';
 import {AccountComponent} from './account.component';
+import {MyGymsComponent} from './gyms/my-gyms.component';
+import {JoinGymComponent} from './gyms/join-gym.component';
+import {GymRequestComponent} from './gyms/gym-request.component';
 
 export const ACCOUNT_ROUTES: Routes = [
   {
@@ -12,6 +15,18 @@ export const ACCOUNT_ROUTES: Routes = [
       {
         path: 'profile',
         component: ProfileComponent
+      },
+      {
+        path: 'gyms',
+        component: MyGymsComponent
+      },
+      {
+        path: 'gyms/join',
+        component: JoinGymComponent
+      },
+      {
+        path: 'gyms/new',
+        component: GymRequestComponent
       },
       {
         path: 'units',

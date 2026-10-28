@@ -52,6 +52,15 @@ import {
   heroArrowTrendingUp,
   heroCheckCircle,
   heroAdjustmentsHorizontal,
+  heroUserPlus,
+  heroClipboardDocument,
+  heroLink,
+  heroArrowPath,
+  heroNoSymbol,
+  heroArrowsRightLeft,
+  heroCheck,
+  heroPause,
+  heroUserMinus,
 } from '@ng-icons/heroicons/outline';
 import {
   hugeBodyPartMuscle,
@@ -105,7 +114,8 @@ export const APP_ICONS = {
   heroTrophy,
   heroCheckBadge,
   heroDocumentDuplicate,
-  heroHome, heroBookOpen, heroChartBar, heroUsers, heroCalendarDays, heroClipboardDocumentList, heroArrowTrendingUp, heroCheckCircle, heroAdjustmentsHorizontal
+  heroHome, heroBookOpen, heroChartBar, heroUsers, heroCalendarDays, heroClipboardDocumentList, heroArrowTrendingUp, heroCheckCircle, heroAdjustmentsHorizontal,
+  heroUserPlus, heroClipboardDocument, heroLink, heroArrowPath, heroNoSymbol, heroArrowsRightLeft, heroCheck, heroPause, heroUserMinus
 };
 
 export const appConfig: ApplicationConfig = {

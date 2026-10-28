@@ -33,6 +33,13 @@ describe('AdminService', () => {
     httpMock.expectOne(`${base}/users?page=0&size=20`).flush({content: []});
   });
 
+  it('searchGyms should GET /admin/gyms with paging, search and status when given', () => {
+    service.searchGyms('box', 'PENDING_APPROVAL').subscribe();
+    httpMock.expectOne(`${base}/gyms?page=0&size=20&search=box&status=PENDING_APPROVAL`).flush({content: []});
+    service.searchGyms().subscribe();
+    httpMock.expectOne(`${base}/gyms?page=0&size=20`).flush({content: []});
+  });
+
   it('lookupUsers should GET summaries by ids', () => {
     service.lookupUsers([4, 9]).subscribe();
     httpMock.expectOne(`${base}/users/lookup?ids=4,9`).flush([]);

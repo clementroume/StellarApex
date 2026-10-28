@@ -3,6 +3,7 @@ package apex.stellar.antares.dto;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 
 /**
  * Data Transfer Object (DTO) for submitting gym settings configuration requests.
@@ -19,6 +20,7 @@ import jakarta.validation.constraints.NotNull;
 public record GymSettingsRequest(
     @Schema(description = "Code required to join the gym", example = "JOIN-9988")
         @NotBlank(message = "{validation.gym.enrollmentCode.required}")
+        @Size(min = 4, max = 50, message = "{validation.gym.enrollmentCode.size}")
         String enrollmentCode,
     @Schema(description = "Automatically approve new members", example = "false")
         @NotNull(message = "{validation.gym.isAutoSubscription.required}")

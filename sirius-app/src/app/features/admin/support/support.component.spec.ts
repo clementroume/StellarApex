@@ -6,7 +6,6 @@ import {of, throwError} from 'rxjs';
 import {vi} from 'vitest';
 import {SupportComponent, USER_PAGE_SIZE, USER_SEARCH_DEBOUNCE_MS} from './support.component';
 import {AdminService} from '../../../api/antares/services/admin.service';
-import {GymService} from '../../../api/antares/services/gym.service';
 import {SupportSessionService} from '../../../core/services/support-session.service';
 import {NotificationService} from '../../../core/services/notification.service';
 import {APP_ICONS} from '../../../app.config';
@@ -15,7 +14,6 @@ describe('SupportComponent', () => {
   let component: SupportComponent;
   let fixture: ComponentFixture<SupportComponent>;
   let adminService: any;
-  let gymService: any;
   let supportSessionService: any;
   let notificationService: any;
 
@@ -36,11 +34,11 @@ describe('SupportComponent', () => {
     vi.useFakeTimers();
     adminService = {
       searchUsers: vi.fn().mockReturnValue(of(slice([athlete, admin], false))),
-      getRecentSupportTargets: vi.fn().mockReturnValue(of([coach]))
-    };
-    gymService = {
-      getGyms: vi.fn((status?: string) =>
-        of(status ? [{id: 3, name: 'Pending Box'}] : [{id: 2, name: 'Zeus Programming'}, {id: 1, name: 'Spartacus CrossFit'}]))
+      getRecentSupportTargets: vi.fn().mockReturnValue(of([coach])),
+      searchGyms: vi.fn().mockReturnValue(of({
+        content: [{id: 3, name: 'Pending Box'}, {id: 1, name: 'Spartacus CrossFit'}, {id: 2, name: 'Zeus Programming'}],
+        last: true
+      }))
     };
     supportSessionService = {start: vi.fn().mockReturnValue(of(undefined))};
     notificationService = {showSuccess: vi.fn(), showError: vi.fn()};
@@ -52,7 +50,6 @@ describe('SupportComponent', () => {
         provideIcons(APP_ICONS),
         provideTranslateService(),
         {provide: AdminService, useValue: adminService},
-        {provide: GymService, useValue: gymService},
         {provide: SupportSessionService, useValue: supportSessionService},
         {provide: NotificationService, useValue: notificationService}
       ]

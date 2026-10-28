@@ -62,7 +62,6 @@ public abstract class BaseIntegrationTest {
     registry.add("application.admin.default-lastname", () -> "Admin");
     registry.add("application.admin.default-email", () -> "admin.test@antares.com");
     registry.add("application.admin.default-password", () -> "testPassword123!");
-    registry.add("application.gym.creation-secret", () -> "gym-creation-secret");
     registry.add("application.security.jwt.issuer", () -> "antares-test-issuer");
     registry.add("application.security.jwt.audience", () -> "antares-test-audience");
     registry.add("application.security.jwt.cookie.domain", () -> "antares-domain");

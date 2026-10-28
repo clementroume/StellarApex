@@ -2,9 +2,11 @@ package apex.stellar.antares.service;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 import apex.stellar.antares.dto.JoinGymRequest;
+import apex.stellar.antares.dto.MembershipCapabilities;
 import apex.stellar.antares.dto.MembershipResponse;
 import apex.stellar.antares.dto.MembershipSummary;
 import apex.stellar.antares.dto.MembershipUpdateRequest;
@@ -41,91 +43,194 @@ class MembershipServiceTest {
 
   @Captor private ArgumentCaptor<Membership> membershipCaptor;
 
+  private static Gym activeGym(boolean autoSubscription) {
+    return Gym.builder()
+        .id(1L)
+        .name("Box")
+        .enrollmentCode("CODE")
+        .isAutoSubscription(autoSubscription)
+        .status(Gym.GymStatus.ACTIVE)
+        .build();
+  }
+
+  private static User user(long id) {
+    return User.builder().id(id).platformRole(PlatformRole.USER).build();
+  }
+
   @Test
   @DisplayName("joinGym: Should succeed and set status to PENDING when auto-sub is false")
   void joinGym_Success_Pending() {
     // Given
-    Gym gym = new Gym();
-    gym.setId(1L);
-    gym.setEnrollmentCode("CODE");
-    gym.setAutoSubscription(false); // Should be PENDING
-
-    JoinGymRequest request = new JoinGymRequest(1L, "CODE");
-    User user = new User();
-    user.setId(10L);
-
-    when(gymRepository.findById(1L)).thenReturn(Optional.of(gym));
-    when(membershipRepository.existsByUserIdAndGymId(10L, 1L)).thenReturn(false);
+    JoinGymRequest request = new JoinGymRequest(1L, " code ");
+    when(gymRepository.findById(1L)).thenReturn(Optional.of(activeGym(false)));
+    when(membershipRepository.findByUserIdAndGymId(10L, 1L)).thenReturn(Optional.empty());
     when(membershipRepository.save(any(Membership.class))).thenAnswer(i -> i.getArgument(0));
-    when(membershipMapper.toResponse(any())).thenReturn(mock(MembershipResponse.class));
 
     // When
-    membershipService.joinGym(request, user);
+    membershipService.joinGym(request, user(10L));
 
     // Then
     verify(membershipRepository).save(membershipCaptor.capture());
     assertEquals(MembershipStatus.PENDING, membershipCaptor.getValue().getStatus());
+    assertEquals(GymRole.ATHLETE, membershipCaptor.getValue().getGymRole());
   }
 
   @Test
-  @DisplayName("joinGym: Should fail if membership already exists")
-  void joinGym_Fail_AlreadyExists() {
-    // Given
-    Gym gym = new Gym();
-    gym.setId(1L);
-    gym.setEnrollmentCode("CODE");
+  @DisplayName("joinGym: a former member is reactivated on the same membership, as athlete")
+  void joinGym_Reactivates_Inactive() {
+    Gym gym = activeGym(true);
+    Membership former = membershipIn(gym, 5L, GymRole.COACH);
+    former.setStatus(MembershipStatus.INACTIVE);
+    former.setPermissions(Set.of(Permission.WOD_WRITE));
+    when(gymRepository.findById(1L)).thenReturn(Optional.of(gym));
+    when(membershipRepository.findByUserIdAndGymId(10L, 1L)).thenReturn(Optional.of(former));
+    when(membershipRepository.save(former)).thenReturn(former);
 
+    membershipService.joinGym(new JoinGymRequest(1L, "CODE"), user(10L));
+
+    assertEquals(MembershipStatus.ACTIVE, former.getStatus());
+    assertEquals(GymRole.ATHLETE, former.getGymRole());
+    assertTrue(former.getPermissions().isEmpty());
+  }
+
+  @Test
+  @DisplayName("joinGym: Should fail if already a member, or banned")
+  void joinGym_Fail_AlreadyExists_OrBanned() {
+    Gym gym = activeGym(false);
+    Membership existing = membershipIn(gym, 5L, GymRole.ATHLETE);
+    when(gymRepository.findById(1L)).thenReturn(Optional.of(gym));
+    when(membershipRepository.findByUserIdAndGymId(10L, 1L)).thenReturn(Optional.of(existing));
     JoinGymRequest request = new JoinGymRequest(1L, "CODE");
-    User user = new User();
-    user.setId(10L);
+    User user = user(10L);
 
-    when(gymRepository.findById(1L)).thenReturn(Optional.of(gym));
-    when(membershipRepository.existsByUserIdAndGymId(10L, 1L)).thenReturn(true);
+    DataConflictException exists =
+        assertThrows(DataConflictException.class, () -> membershipService.joinGym(request, user));
+    assertEquals("error.membership.exists", exists.getMessageKey());
 
-    // When / Then
-    assertThrows(DataConflictException.class, () -> membershipService.joinGym(request, user));
+    existing.setStatus(MembershipStatus.BANNED);
+    DataConflictException banned =
+        assertThrows(DataConflictException.class, () -> membershipService.joinGym(request, user));
+    assertEquals("error.membership.banned", banned.getMessageKey());
   }
 
   @Test
-  @DisplayName("joinGym: Should throw ResourceNotFoundException if gym not found")
+  @DisplayName("joinGym: 404 for an unknown gym or a gym that is not ACTIVE")
   void joinGym_GymNotFound() {
-    // Given
     when(gymRepository.findById(99L)).thenReturn(Optional.empty());
+    Gym pending = activeGym(false);
+    pending.setStatus(Gym.GymStatus.PENDING_APPROVAL);
+    when(gymRepository.findById(1L)).thenReturn(Optional.of(pending));
 
-    // When / Then
-    JoinGymRequest request = new JoinGymRequest(99L, "CODE");
-    User user = new User();
-    assertThrows(ResourceNotFoundException.class, () -> membershipService.joinGym(request, user));
+    User user = user(10L);
+    JoinGymRequest unknown = new JoinGymRequest(99L, "CODE");
+    JoinGymRequest notActive = new JoinGymRequest(1L, "CODE");
+    assertThrows(ResourceNotFoundException.class, () -> membershipService.joinGym(unknown, user));
+    assertThrows(
+        ResourceNotFoundException.class, () -> membershipService.joinGym(notActive, user));
   }
 
   @Test
-  @DisplayName("joinGym: Should throw AccessDeniedException if code is invalid")
+  @DisplayName("joinGym: an invalid code is a bad request (400), not a forbidden one")
   void joinGym_InvalidCode() {
-    // Given
-    Gym gym = new Gym();
-    gym.setEnrollmentCode("CORRECT");
-    when(gymRepository.findById(1L)).thenReturn(Optional.of(gym));
+    when(gymRepository.findById(1L)).thenReturn(Optional.of(activeGym(false)));
 
-    // When / Then
     JoinGymRequest request = new JoinGymRequest(1L, "WRONG");
-    User user = new User();
-    assertThrows(AccessDeniedException.class, () -> membershipService.joinGym(request, user));
+    User user = user(10L);
+    BusinessRuleException ex =
+        assertThrows(BusinessRuleException.class, () -> membershipService.joinGym(request, user));
+    assertEquals("error.enrollment.code.invalid", ex.getMessageKey());
   }
 
   @Test
-  @DisplayName("getMemberships: Should return list filtered by status")
+  @DisplayName("leaveGym: ACTIVE becomes INACTIVE, PENDING is withdrawn, holder and banned refused")
+  void leaveGym() {
+    Gym gym = activeGym(false);
+    Membership active = membershipIn(gym, 2L, GymRole.ATHLETE);
+    Membership pending = membershipIn(gym, 3L, GymRole.ATHLETE);
+    pending.setStatus(MembershipStatus.PENDING);
+    Membership owner = membershipIn(gym, 4L, GymRole.OWNER);
+    Membership banned = membershipIn(gym, 5L, GymRole.ATHLETE);
+    banned.setStatus(MembershipStatus.BANNED);
+    when(membershipRepository.findByUserIdAndGymId(2L, 1L)).thenReturn(Optional.of(active));
+    when(membershipRepository.findByUserIdAndGymId(3L, 1L)).thenReturn(Optional.of(pending));
+    when(membershipRepository.findByUserIdAndGymId(4L, 1L)).thenReturn(Optional.of(owner));
+    when(membershipRepository.findByUserIdAndGymId(5L, 1L)).thenReturn(Optional.of(banned));
+
+    membershipService.leaveGym(1L, user(2L));
+    assertEquals(MembershipStatus.INACTIVE, active.getStatus());
+    verify(membershipRepository).save(active);
+
+    membershipService.leaveGym(1L, user(3L));
+    verify(membershipRepository).delete(pending);
+
+    User ownerUser = user(4L);
+    DataConflictException holder =
+        assertThrows(DataConflictException.class, () -> membershipService.leaveGym(1L, ownerUser));
+    assertEquals("error.membership.leave.holder", holder.getMessageKey());
+
+    User bannedUser = user(5L);
+    assertThrows(DataConflictException.class, () -> membershipService.leaveGym(1L, bannedUser));
+    assertEquals(MembershipStatus.BANNED, banned.getStatus());
+  }
+
+  @Test
+  @DisplayName("getMemberships: pending first, each with the requester's capabilities")
   void getMemberships_ShouldReturnList() {
-    // Given
-    when(membershipRepository.findByGymIdAndStatus(1L, MembershipStatus.ACTIVE))
-        .thenReturn(List.of(new Membership()));
-    when(membershipMapper.toResponse(any())).thenReturn(mock(MembershipResponse.class));
+    Gym gym = activeGym(false);
+    Membership owner = membershipIn(gym, 1L, GymRole.OWNER);
+    Membership athlete = membershipIn(gym, 2L, GymRole.ATHLETE);
+    Membership pending = membershipIn(gym, 3L, GymRole.ATHLETE);
+    pending.setStatus(MembershipStatus.PENDING);
+    when(membershipRepository.findByGymId(1L)).thenReturn(List.of(owner, athlete, pending));
+    when(membershipRepository.findByUserIdAndGymId(10L, 1L)).thenReturn(Optional.of(owner));
 
-    // When
-    List<MembershipResponse> result = membershipService.getMemberships(1L, MembershipStatus.ACTIVE);
+    membershipService.getMemberships(1L, null, owner.getUser());
 
-    // Then
-    assertEquals(1, result.size());
-    verify(membershipRepository).findByGymIdAndStatus(1L, MembershipStatus.ACTIVE);
+    var order = org.mockito.Mockito.inOrder(membershipMapper);
+    order.verify(membershipMapper).toResponse(eq(pending), any());
+    order.verify(membershipMapper).toResponse(eq(owner), eq(MembershipCapabilities.NONE));
+    order.verify(membershipMapper).toResponse(eq(athlete), any());
+  }
+
+  // --- Capabilities ---
+
+  @Test
+  @DisplayName("capabilities: holder manages everyone else, coach validates athletes only")
+  void capabilities() {
+    Gym box = activeGym(false);
+    Membership owner = membershipIn(box, 1L, GymRole.OWNER);
+    Membership coach = membershipIn(box, 2L, GymRole.COACH);
+    coach.setPermissions(Set.of(Permission.MANAGE_MEMBERSHIPS));
+    Membership athlete = membershipIn(box, 3L, GymRole.ATHLETE);
+    Membership pending = membershipIn(box, 4L, GymRole.ATHLETE);
+    pending.setStatus(MembershipStatus.PENDING);
+
+    assertEquals(
+        new MembershipCapabilities(true, true, true, true, true, true),
+        membershipService.capabilities(owner.getUser(), owner, athlete));
+    assertEquals(
+        new MembershipCapabilities(true, true, true, true, true, false),
+        membershipService.capabilities(owner.getUser(), owner, pending));
+    assertEquals(
+        MembershipCapabilities.NONE, membershipService.capabilities(owner.getUser(), owner, owner));
+    assertEquals(
+        new MembershipCapabilities(true, false, false, true, false, false),
+        membershipService.capabilities(coach.getUser(), coach, athlete));
+    assertEquals(
+        MembershipCapabilities.NONE, membershipService.capabilities(coach.getUser(), coach, coach));
+
+    // A coach without the delegation, or no longer ACTIVE, manages nothing
+    coach.setStatus(MembershipStatus.INACTIVE);
+    assertEquals(
+        MembershipCapabilities.NONE,
+        membershipService.capabilities(coach.getUser(), coach, athlete));
+
+    // Virtual program: athletes only, so no role or permission change
+    Gym program = Gym.builder().id(2L).isProgramming(true).status(Gym.GymStatus.ACTIVE).build();
+    Membership member = membershipIn(program, 5L, GymRole.ATHLETE);
+    assertEquals(
+        new MembershipCapabilities(true, false, false, true, true, true),
+        membershipService.capabilities(admin(), null, member));
   }
 
   @Test
@@ -141,61 +246,55 @@ class MembershipServiceTest {
   }
 
   @Test
-  @DisplayName("updateMembership: Coach cannot change role (Access Denied)")
+  @DisplayName("updateMembership: Coach cannot change role nor ban (Access Denied)")
   void updateMembership_Coach_AccessDenied_ChangeRole() {
-    // Given
-    // Coach tries to promote Athlete to Coach -> Should Fail
-    User requester = new User();
-    requester.setPlatformRole(PlatformRole.USER);
-
-    Gym gym = new Gym();
-    gym.setId(1L);
-
-    Membership requesterMem = new Membership();
-    requesterMem.setGymRole(GymRole.COACH);
-    requesterMem.setGym(gym);
+    Gym gym = activeGym(false);
+    Membership requesterMem = membershipIn(gym, 1L, GymRole.COACH);
     requesterMem.setPermissions(Set.of(Permission.MANAGE_MEMBERSHIPS));
-
-    Membership targetMem = new Membership();
-    targetMem.setId(2L);
-    targetMem.setGym(gym);
-    targetMem.setGymRole(GymRole.ATHLETE);
-    targetMem.setUser(new User());
-
-    MembershipUpdateRequest request =
-        new MembershipUpdateRequest(
-            MembershipStatus.ACTIVE,
-            GymRole.COACH, // Trying to change the role
-            Set.of());
-
+    Membership targetMem = membershipIn(gym, 2L, GymRole.ATHLETE);
+    User requester = requesterMem.getUser();
     when(membershipRepository.findById(2L)).thenReturn(Optional.of(targetMem));
 
-    // When / Then
+    MembershipUpdateRequest promote =
+        new MembershipUpdateRequest(MembershipStatus.ACTIVE, GymRole.COACH, Set.of());
     assertThrows(
         AccessDeniedException.class,
-        () -> membershipService.updateMembership(2L, request, requester, requesterMem));
+        () -> membershipService.updateMembership(2L, promote, requester, requesterMem));
+
+    MembershipUpdateRequest ban =
+        new MembershipUpdateRequest(MembershipStatus.BANNED, GymRole.ATHLETE, Set.of());
+    assertThrows(
+        AccessDeniedException.class,
+        () -> membershipService.updateMembership(2L, ban, requester, requesterMem));
+  }
+
+  @Test
+  @DisplayName("updateMembership: Coach validates and deactivates an athlete")
+  void updateMembership_Coach_ChangesStatus() {
+    Gym gym = activeGym(false);
+    Membership requesterMem = membershipIn(gym, 1L, GymRole.COACH);
+    requesterMem.setPermissions(Set.of(Permission.MANAGE_MEMBERSHIPS));
+    Membership targetMem = membershipIn(gym, 2L, GymRole.ATHLETE);
+    targetMem.setStatus(MembershipStatus.PENDING);
+    when(membershipRepository.findById(2L)).thenReturn(Optional.of(targetMem));
+    when(membershipRepository.save(targetMem)).thenReturn(targetMem);
+
+    membershipService.updateMembership(
+        2L,
+        new MembershipUpdateRequest(MembershipStatus.ACTIVE, GymRole.ATHLETE, Set.of()),
+        requesterMem.getUser(),
+        requesterMem);
+
+    assertEquals(MembershipStatus.ACTIVE, targetMem.getStatus());
   }
 
   @Test
   @DisplayName("updateMembership: Cross-tenant update should fail")
   void updateMembership_CrossTenant_ShouldFail() {
-    // Given
-    // Owner of Gym A tries to update Member of Gym B
-    User requester = new User();
-    requester.setPlatformRole(PlatformRole.USER);
-
-    Gym gymA = new Gym();
-    gymA.setId(1L);
-    Gym gymB = new Gym();
-    gymB.setId(2L);
-
-    Membership requesterMem = new Membership();
-    requesterMem.setGymRole(GymRole.OWNER);
-    requesterMem.setGym(gymA);
-
-    Membership targetMem = new Membership();
-    targetMem.setId(99L);
-    targetMem.setGym(gymB); // Different Gym
+    Membership requesterMem = membershipIn(activeGym(false), 1L, GymRole.OWNER);
+    Gym gymB = Gym.builder().id(2L).status(Gym.GymStatus.ACTIVE).build();
+    Membership targetMem = membershipIn(gymB, 99L, GymRole.ATHLETE);
+    User requester = requesterMem.getUser();
 
     when(membershipRepository.findById(99L)).thenReturn(Optional.of(targetMem));
     MembershipUpdateRequest req =
@@ -210,57 +309,55 @@ class MembershipServiceTest {
   @Test
   @DisplayName("updateMembership: Owner should succeed updating Athlete")
   void updateMembership_Owner_Success() {
-    // Given
-    User requester = new User();
-    requester.setPlatformRole(PlatformRole.USER);
-    Gym gym = new Gym();
-    gym.setId(1L);
-
-    Membership requesterMem = new Membership();
-    requesterMem.setGymRole(GymRole.OWNER);
-    requesterMem.setGym(gym);
-
-    Membership targetMem = new Membership();
-    targetMem.setId(2L);
-    targetMem.setGym(gym);
-    targetMem.setGymRole(GymRole.ATHLETE);
-    targetMem.setUser(new User());
+    Gym gym = activeGym(false);
+    Membership requesterMem = membershipIn(gym, 1L, GymRole.OWNER);
+    Membership targetMem = membershipIn(gym, 2L, GymRole.ATHLETE);
 
     MembershipUpdateRequest request =
-        new MembershipUpdateRequest(MembershipStatus.ACTIVE, GymRole.COACH, Set.of());
+        new MembershipUpdateRequest(
+            MembershipStatus.ACTIVE, GymRole.COACH, Set.of(Permission.WOD_WRITE));
 
     when(membershipRepository.findById(2L)).thenReturn(Optional.of(targetMem));
     when(membershipRepository.save(any())).thenReturn(targetMem);
-    when(membershipMapper.toResponse(any())).thenReturn(mock(MembershipResponse.class));
 
     // When
-    membershipService.updateMembership(2L, request, requester, requesterMem);
+    membershipService.updateMembership(2L, request, requesterMem.getUser(), requesterMem);
 
     // Then
     assertEquals(GymRole.COACH, targetMem.getGymRole());
+    assertEquals(Set.of(Permission.WOD_WRITE), targetMem.getPermissions());
     verify(membershipRepository).save(targetMem);
+  }
+
+  @Test
+  @DisplayName("updateMembership: the holder's status never changes here")
+  void updateMembership_HolderStatus_ShouldBeRejected() {
+    Gym gym = activeGym(false);
+    Membership owner = membershipIn(gym, 1L, GymRole.OWNER);
+    when(membershipRepository.findById(1L)).thenReturn(Optional.of(owner));
+
+    MembershipUpdateRequest request =
+        new MembershipUpdateRequest(MembershipStatus.INACTIVE, GymRole.OWNER, Set.of());
+    BusinessRuleException ex =
+        assertThrows(
+            BusinessRuleException.class,
+            () -> membershipService.updateMembership(1L, request, owner.getUser(), owner));
+    assertEquals("error.membership.holder.status", ex.getMessageKey());
   }
 
   @Test
   @DisplayName("updateMembership: Global Admin should succeed without membership context")
   void updateMembership_GlobalAdmin_Success() {
-    // Given
-    User admin = new User();
-    admin.setPlatformRole(PlatformRole.ADMIN);
-
-    Membership targetMem = new Membership();
-    targetMem.setId(2L);
-    targetMem.setUser(new User());
+    Membership targetMem = membershipIn(activeGym(false), 2L, GymRole.ATHLETE);
 
     MembershipUpdateRequest request =
         new MembershipUpdateRequest(MembershipStatus.BANNED, GymRole.ATHLETE, Set.of());
 
     when(membershipRepository.findById(2L)).thenReturn(Optional.of(targetMem));
     when(membershipRepository.save(any())).thenReturn(targetMem);
-    when(membershipMapper.toResponse(any())).thenReturn(mock(MembershipResponse.class));
 
     // When
-    membershipService.updateMembership(2L, request, admin, null); // requesterMembership is null
+    membershipService.updateMembership(2L, request, admin(), null);
 
     // Then
     assertEquals(MembershipStatus.BANNED, targetMem.getStatus());
@@ -269,22 +366,11 @@ class MembershipServiceTest {
   @Test
   @DisplayName("updateMembership: Owner cannot modify Global Admin (Access Denied)")
   void updateMembership_ModifyAdmin_Forbidden() {
-    // Given
-    User owner = new User();
-    owner.setPlatformRole(PlatformRole.USER);
-
-    Gym gym = new Gym();
-    gym.setId(1L);
-
-    Membership ownerMem = new Membership();
-    ownerMem.setGymRole(GymRole.OWNER);
-    ownerMem.setGym(gym);
-
-    User globalAdmin = new User();
-    globalAdmin.setPlatformRole(PlatformRole.ADMIN);
-    Membership targetMem = new Membership();
-    targetMem.setUser(globalAdmin); // Target is ADMIN
-    targetMem.setGym(gym); // Same Gym
+    Gym gym = activeGym(false);
+    Membership ownerMem = membershipIn(gym, 1L, GymRole.OWNER);
+    Membership targetMem = membershipIn(gym, 2L, GymRole.ATHLETE);
+    targetMem.getUser().setPlatformRole(PlatformRole.ADMIN);
+    User owner = ownerMem.getUser();
 
     when(membershipRepository.findById(2L)).thenReturn(Optional.of(targetMem));
 
@@ -319,31 +405,50 @@ class MembershipServiceTest {
   }
 
   @Test
-  @DisplayName("deleteMembership: Should delete if exists")
-  void deleteMembership_Success() {
-    // Given
-    when(membershipRepository.existsById(1L)).thenReturn(true);
+  @DisplayName("removeMembership: refuses (deletes) a request, deactivates a member")
+  void removeMembership() {
+    Gym gym = activeGym(false);
+    Membership coach = membershipIn(gym, 1L, GymRole.COACH);
+    coach.setPermissions(Set.of(Permission.MANAGE_MEMBERSHIPS));
+    Membership pending = membershipIn(gym, 2L, GymRole.ATHLETE);
+    pending.setStatus(MembershipStatus.PENDING);
+    Membership active = membershipIn(gym, 3L, GymRole.ATHLETE);
+    when(membershipRepository.findById(2L)).thenReturn(Optional.of(pending));
+    when(membershipRepository.findById(3L)).thenReturn(Optional.of(active));
 
-    // When
-    membershipService.deleteMembership(1L);
+    membershipService.removeMembership(2L, coach.getUser(), coach);
+    verify(membershipRepository).delete(pending);
 
-    // Then
-    verify(membershipRepository).deleteById(1L);
+    membershipService.removeMembership(3L, coach.getUser(), coach);
+    assertEquals(MembershipStatus.INACTIVE, active.getStatus());
+    verify(membershipRepository).save(active);
   }
 
   @Test
-  @DisplayName("deleteMembership: Should throw if not found")
-  void deleteMembership_NotFound() {
-    // Given
-    when(membershipRepository.existsById(1L)).thenReturn(false);
+  @DisplayName("removeMembership: a coach never removes the owner nor another coach")
+  void removeMembership_Refused() {
+    Gym gym = activeGym(false);
+    Membership coach = membershipIn(gym, 1L, GymRole.COACH);
+    coach.setPermissions(Set.of(Permission.MANAGE_MEMBERSHIPS));
+    Membership owner = membershipIn(gym, 2L, GymRole.OWNER);
+    Membership otherCoach = membershipIn(gym, 3L, GymRole.COACH);
+    when(membershipRepository.findById(2L)).thenReturn(Optional.of(owner));
+    when(membershipRepository.findById(3L)).thenReturn(Optional.of(otherCoach));
+    User requester = coach.getUser();
 
-    // When / Then
-    assertThrows(ResourceNotFoundException.class, () -> membershipService.deleteMembership(1L));
+    assertThrows(
+        DataConflictException.class,
+        () -> membershipService.removeMembership(2L, requester, coach));
+    assertThrows(
+        AccessDeniedException.class,
+        () -> membershipService.removeMembership(3L, requester, coach));
+    verify(membershipRepository, never()).delete(any());
+    verify(membershipRepository, never()).save(any());
   }
 
   // --- Role rules by gym type ---
 
-  private Membership membershipIn(Gym gym, long id, GymRole role) {
+  private static Membership membershipIn(Gym gym, long id, GymRole role) {
     Membership m = new Membership();
     m.setId(id);
     m.setGym(gym);
@@ -354,7 +459,7 @@ class MembershipServiceTest {
     return m;
   }
 
-  private User admin() {
+  private static User admin() {
     User admin = new User();
     admin.setPlatformRole(PlatformRole.ADMIN);
     return admin;

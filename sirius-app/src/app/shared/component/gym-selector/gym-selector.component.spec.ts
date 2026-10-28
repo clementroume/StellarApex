@@ -10,8 +10,8 @@ describe('GymSelectorComponent', () => {
   let fixture: ComponentFixture<GymSelectorComponent>;
 
   const memberships: MembershipSummary[] = [
-    {gymId: 4, gymName: 'Test Box', gymStatus: 'ACTIVE', gymRole: 'ATHLETE', status: 'ACTIVE', permissions: [], gymProgramming: false},
-    {gymId: 7, gymName: 'Test Prog', gymStatus: 'ACTIVE', gymRole: 'ATHLETE', status: 'ACTIVE', permissions: [], gymProgramming: true},
+    {gymId: 4, gymName: 'Test Box', gymStatus: 'ACTIVE', gymRole: 'ATHLETE', status: 'ACTIVE', permissions: [], gymProgramming: false, usable: true},
+    {gymId: 7, gymName: 'Test Prog', gymStatus: 'ACTIVE', gymRole: 'ATHLETE', status: 'ACTIVE', permissions: [], gymProgramming: true, usable: true},
   ];
   const select = (): HTMLSelectElement => fixture.nativeElement.querySelector('select');
 

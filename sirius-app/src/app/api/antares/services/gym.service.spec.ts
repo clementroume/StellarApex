@@ -3,8 +3,15 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { provideHttpClient, withXhr } from '@angular/common/http';
 import { GymService } from './gym.service';
 import { environment } from '../../../../environments/environment';
-import { GymRequest, GymResponse, GymSettingsRequest, GymStatus, JoinGymRequest } from '../models/gym.model';
-import { MembershipResponse } from '../models/membership.model';
+import {
+    GymRequest,
+    GymResponse,
+    GymSettingsRequest,
+    GymSettingsResponse,
+    GymStatus,
+    JoinGymRequest
+} from '../models/gym.model';
+import { MembershipSummary } from '../models/membership.model';
 
 describe('GymService', () => {
     let service: GymService;
@@ -42,7 +49,7 @@ describe('GymService', () => {
     });
 
     it('createGym should POST to /gyms', () => {
-        const payload: GymRequest = { name: 'New Gym', isProgramming: false, creationToken: 'token' };
+        const payload: GymRequest = { name: 'New Gym', isProgramming: false };
         service.createGym(payload).subscribe(response => {
             expect(response).toEqual(mockGymResponse);
         });
@@ -52,25 +59,50 @@ describe('GymService', () => {
         req.flush(mockGymResponse);
     });
 
-    it('getGyms should GET from /gyms without params', () => {
-        service.getGyms().subscribe(response => {
-            expect(response).toEqual([mockGymResponse]);
-        });
-        const req = httpMock.expectOne(`${base}/gyms`);
-        expect(req.request.method).toBe('GET');
-        expect(req.request.params.has('status')).toBe(false);
-        req.flush([mockGymResponse]);
+    it('searchGyms should GET /gyms with paging, and search and type when given', () => {
+        service.searchGyms().subscribe();
+        const all = httpMock.expectOne(r => r.url === `${base}/gyms`);
+        expect(all.request.params.get('page')).toBe('0');
+        expect(all.request.params.has('search')).toBe(false);
+        expect(all.request.params.has('type')).toBe(false);
+        all.flush({content: [], last: true});
+
+        service.searchGyms('sparta', 'BOX', 2, 10).subscribe();
+        const filtered = httpMock.expectOne(r => r.url === `${base}/gyms`);
+        expect(filtered.request.params.get('search')).toBe('sparta');
+        expect(filtered.request.params.get('type')).toBe('BOX');
+        expect(filtered.request.params.get('page')).toBe('2');
+        expect(filtered.request.params.get('size')).toBe('10');
+        filtered.flush({content: [], last: true});
     });
 
-    it('getGyms should GET from /gyms with status param', () => {
-        const status: GymStatus = 'ACTIVE';
-        service.getGyms(status).subscribe(response => {
-            expect(response).toEqual([mockGymResponse]);
-        });
-        const req = httpMock.expectOne(`${base}/gyms?status=${status}`);
-        expect(req.request.method).toBe('GET');
-        expect(req.request.params.get('status')).toBe(status);
-        req.flush([mockGymResponse]);
+    it('getGym should GET /gyms/{id}', () => {
+        service.getGym(3).subscribe();
+        expect(httpMock.expectOne(`${base}/gyms/3`).request.method).toBe('GET');
+    });
+
+    it('updateGym should PUT /gyms/{id}', () => {
+        service.updateGym(3, {name: 'Renamed'}).subscribe();
+        const req = httpMock.expectOne(`${base}/gyms/3`);
+        expect(req.request.method).toBe('PUT');
+        expect(req.request.body).toEqual({name: 'Renamed'});
+    });
+
+    it('leaveGym should DELETE /gyms/{id}/membership/me', () => {
+        service.leaveGym(3).subscribe();
+        expect(httpMock.expectOne(`${base}/gyms/3/membership/me`).request.method).toBe('DELETE');
+    });
+
+    it('regenerateEnrollmentCode should POST /gyms/{id}/settings/enrollment-code', () => {
+        service.regenerateEnrollmentCode(3).subscribe();
+        expect(httpMock.expectOne(`${base}/gyms/3/settings/enrollment-code`).request.method).toBe('POST');
+    });
+
+    it('transferOwnership should POST the new holder membership', () => {
+        service.transferOwnership(3, 50).subscribe();
+        const req = httpMock.expectOne(`${base}/gyms/3/transfer-ownership`);
+        expect(req.request.method).toBe('POST');
+        expect(req.request.body).toEqual({membershipId: 50});
     });
 
     it('updateStatus should PUT to /gyms/{id}/status', () => {
@@ -87,31 +119,24 @@ describe('GymService', () => {
 
     it('joinGym should POST to /gyms/join', () => {
         const payload: JoinGymRequest = { gymId: 1, enrollmentCode: 'JOIN-ME' };
-        const mockMembershipResponse: MembershipResponse = {
-            id: 1,
-            user: {
-                id: 101,
-                firstName: 'John',
-                lastName: 'Doe',
-                email: 'john.doe@example.com',
-                platformRole: 'USER' // ou 'ADMIN'
-            },
-            gymRole: 'ATHLETE', // ou 'COACH' / 'OWNER'
-            status: 'PENDING',
-            permissions: []
+        const membership: MembershipSummary = {
+            gymId: 1, gymName: 'Stellar Gym', gymStatus: 'ACTIVE', gymRole: 'ATHLETE', status: 'PENDING',
+            permissions: [], gymProgramming: false, usable: false
         };
         service.joinGym(payload).subscribe(response => {
-            expect(response).toEqual(mockMembershipResponse);
+            expect(response).toEqual(membership);
         });
         const req = httpMock.expectOne(`${base}/gyms/join`);
         expect(req.request.method).toBe('POST');
         expect(req.request.body).toEqual(payload);
-        req.flush(mockMembershipResponse);
+        req.flush(membership);
     });
 
     it('getSettings should GET from /gyms/{gymId}/settings', () => {
         const gymId = 1;
-        const mockSettings: GymSettingsRequest = { enrollmentCode: 'CODE', isAutoSubscription: false };
+        const mockSettings: GymSettingsResponse = {
+            id: 1, name: 'Stellar Gym', isProgramming: false, status: 'ACTIVE', enrollmentCode: 'CODE', isAutoSubscription: false
+        };
         service.getSettings(gymId).subscribe(response => {
             expect(response).toEqual(mockSettings);
         });
