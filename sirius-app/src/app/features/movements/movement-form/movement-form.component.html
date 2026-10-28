@@ -1,6 +1,7 @@
 <div class="container mx-auto max-w-5xl pb-12 mt-8">
   <div class="mb-6 flex items-center gap-4">
-    <a routerLink="/movements" class="btn btn-ghost btn-circle">
+    <a routerLink="/movements" hlmBtn variant="ghost" size="icon-lg" class="rounded-full"
+       [attr.aria-label]="'GLOBAL.BACK' | translate">
       <ng-icon name="hugeCircleArrowLeft02" size="1.75em"></ng-icon>
     </a>
     <h1 class="text-2xl font-bold">
@@ -10,26 +11,26 @@
 
   <form [formGroup]="movementForm" (ngSubmit)="onSubmit()" class="flex flex-col gap-8">
 
-    <div class="card bg-base-100 shadow-xl">
-      <div class="card-body">
-        <h2 class="card-title mb-4">{{ 'MOVEMENT.SECTIONS.BASIC' | translate }}</h2>
+    <div hlmCard>
+      <div hlmCardContent class="flex flex-col gap-4">
+        <h2 hlmCardTitle class="text-lg flex items-center gap-2 mb-4">{{ 'MOVEMENT.SECTIONS.BASIC' | translate }}</h2>
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <label class="form-control w-full md:col-span-2">
-            <div class="label"><span class="label-text">{{ 'MOVEMENT.FIELDS.NAME' | translate }} *</span></div>
-            <input type="text" formControlName="name" class="input input-bordered w-full"
+          <label class="flex flex-col gap-1.5 w-full md:col-span-2">
+            <span class="text-sm font-medium">{{ 'MOVEMENT.FIELDS.NAME' | translate }} *</span>
+            <input type="text" formControlName="name" hlmInput class="h-11 md:h-10"
                    [placeholder]="'MOVEMENT.PLACEHOLDERS.NAME' | translate"/>
           </label>
-          <label class="form-control w-full">
-            <div class="label"><span class="label-text">{{ 'MOVEMENT.FIELDS.ABBREVIATION' | translate }}</span></div>
-            <input type="text" formControlName="nameAbbreviation" class="input input-bordered w-full"
+          <label class="flex flex-col gap-1.5 w-full">
+            <span class="text-sm font-medium">{{ 'MOVEMENT.FIELDS.ABBREVIATION' | translate }}</span>
+            <input type="text" formControlName="nameAbbreviation" hlmInput class="h-11 md:h-10"
                    [placeholder]="'MOVEMENT.PLACEHOLDERS.ABBREVIATION' | translate"/>
           </label>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
-          <label class="form-control w-full">
-            <div class="label"><span class="label-text">{{ 'MOVEMENT.FIELDS.CATEGORY' | translate }} *</span></div>
-            <select formControlName="category" class="select select-bordered w-full">
+          <label class="flex flex-col gap-1.5 w-full">
+            <span class="text-sm font-medium">{{ 'MOVEMENT.FIELDS.CATEGORY' | translate }} *</span>
+            <select formControlName="category" appNativeSelect class="w-full">
               <option value="" disabled>{{ 'MOVEMENT.ACTIONS.SELECT_CATEGORY' | translate }}</option>
               @for (group of categoryGroups(); track group.modality) {
                 <optgroup [label]="'MOVEMENT.MODALITIES.' + group.modality | translate">
@@ -44,35 +45,31 @@
       </div>
     </div>
 
-    <div class="card bg-base-100 shadow-xl">
-      <div class="card-body">
-        <h2 class="card-title mb-4">{{ 'MOVEMENT.SECTIONS.DESCRIPTIONS' | translate }}</h2>
+    <div hlmCard>
+      <div hlmCardContent class="flex flex-col gap-4">
+        <h2 hlmCardTitle class="text-lg flex items-center gap-2 mb-4">{{ 'MOVEMENT.SECTIONS.DESCRIPTIONS' | translate }}</h2>
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <div class="flex flex-col gap-4">
-            <label class="form-control w-full">
-              <div class="label"><span
-                class="label-text font-semibold">{{ 'MOVEMENT.FIELDS.DESC_FR' | translate }}</span></div>
-              <textarea formControlName="descriptionFr" class="textarea textarea-bordered h-24"
+            <label class="flex flex-col gap-1.5 w-full">
+              <span class="text-sm font-medium">{{ 'MOVEMENT.FIELDS.DESC_FR' | translate }}</span>
+              <textarea formControlName="descriptionFr" hlmTextarea class="h-24"
                         [placeholder]="'MOVEMENT.PLACEHOLDERS.DESC_FR' | translate"></textarea>
             </label>
-            <label class="form-control w-full">
-              <div class="label"><span
-                class="label-text font-semibold">{{ 'MOVEMENT.FIELDS.COACHING_CUES_FR' | translate }}</span></div>
-              <textarea formControlName="coachingCuesFr" class="textarea textarea-bordered h-20"
+            <label class="flex flex-col gap-1.5 w-full">
+              <span class="text-sm font-medium">{{ 'MOVEMENT.FIELDS.COACHING_CUES_FR' | translate }}</span>
+              <textarea formControlName="coachingCuesFr" hlmTextarea class="h-20"
                         [placeholder]="'MOVEMENT.PLACEHOLDERS.COACHING_CUES_FR' | translate"></textarea>
             </label>
           </div>
           <div class="flex flex-col gap-4">
-            <label class="form-control w-full">
-              <div class="label"><span
-                class="label-text font-semibold">{{ 'MOVEMENT.FIELDS.DESC_EN' | translate }}</span></div>
-              <textarea formControlName="descriptionEn" class="textarea textarea-bordered h-24"
+            <label class="flex flex-col gap-1.5 w-full">
+              <span class="text-sm font-medium">{{ 'MOVEMENT.FIELDS.DESC_EN' | translate }}</span>
+              <textarea formControlName="descriptionEn" hlmTextarea class="h-24"
                         [placeholder]="'MOVEMENT.PLACEHOLDERS.DESC_EN' | translate"></textarea>
             </label>
-            <label class="form-control w-full">
-              <div class="label"><span
-                class="label-text font-semibold">{{ 'MOVEMENT.FIELDS.COACHING_CUES_EN' | translate }}</span></div>
-              <textarea formControlName="coachingCuesEn" class="textarea textarea-bordered h-20"
+            <label class="flex flex-col gap-1.5 w-full">
+              <span class="text-sm font-medium">{{ 'MOVEMENT.FIELDS.COACHING_CUES_EN' | translate }}</span>
+              <textarea formControlName="coachingCuesEn" hlmTextarea class="h-20"
                         [placeholder]="'MOVEMENT.PLACEHOLDERS.COACHING_CUES_EN' | translate"></textarea>
             </label>
           </div>
@@ -80,42 +77,41 @@
       </div>
     </div>
 
-    <div class="card bg-base-100 shadow-xl">
-      <div class="card-body">
-        <h2 class="card-title mb-4">{{ 'MOVEMENT.SECTIONS.MEDIA' | translate }}</h2>
+    <div hlmCard>
+      <div hlmCardContent class="flex flex-col gap-4">
+        <h2 hlmCardTitle class="text-lg flex items-center gap-2 mb-4">{{ 'MOVEMENT.SECTIONS.MEDIA' | translate }}</h2>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <label class="form-control w-full">
-            <div class="label"><span class="label-text">{{ 'MOVEMENT.FIELDS.IMAGE_URL' | translate }}</span></div>
-            <input type="url" formControlName="imageUrl" class="input input-bordered w-full"
+          <label class="flex flex-col gap-1.5 w-full">
+            <span class="text-sm font-medium">{{ 'MOVEMENT.FIELDS.IMAGE_URL' | translate }}</span>
+            <input type="url" formControlName="imageUrl" hlmInput class="h-11 md:h-10"
                    placeholder="https://..."/>
           </label>
-          <label class="form-control w-full">
-            <div class="label"><span class="label-text">{{ 'MOVEMENT.FIELDS.VIDEO_URL' | translate }}</span></div>
-            <input type="url" formControlName="videoUrl" class="input input-bordered w-full"
+          <label class="flex flex-col gap-1.5 w-full">
+            <span class="text-sm font-medium">{{ 'MOVEMENT.FIELDS.VIDEO_URL' | translate }}</span>
+            <input type="url" formControlName="videoUrl" hlmInput class="h-11 md:h-10"
                    placeholder="https://..."/>
           </label>
         </div>
       </div>
     </div>
 
-    <div class="card bg-base-100 shadow-xl">
-      <div class="card-body">
-        <h2 class="card-title mb-6">{{ 'MOVEMENT.SECTIONS.TAGS' | translate }}</h2>
+    <div hlmCard>
+      <div hlmCardContent class="flex flex-col gap-4">
+        <h2 hlmCardTitle class="text-lg flex items-center gap-2 mb-6">{{ 'MOVEMENT.SECTIONS.TAGS' | translate }}</h2>
 
         <div class="mb-8">
           <h3 class="text-lg font-bold mb-4">{{ 'MOVEMENT.FIELDS.EQUIPMENT' | translate }}</h3>
           <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             @for (group of equipmentGroups(); track group.category) {
               <div>
-                <h4 class="font-semibold text-sm text-base-content/70 border-b border-base-300 pb-1 mb-3">
+                <h4 class="font-semibold text-sm text-muted-foreground border-b border-border pb-1 mb-3">
                   {{ 'MOVEMENT.EQUIPMENT_CATEGORIES.' + group.category | translate }}
                 </h4>
                 <div class="flex flex-col gap-2 items-start">
                   @for (eq of group.items; track eq) {
                     <button type="button"
-                            class="badge badge-lg cursor-pointer transition-colors text-left py-3 h-auto leading-tight w-full justify-start"
-                            [class.badge-primary]="isItemSelected('equipment', eq)"
-                            [class.badge-outline]="!isItemSelected('equipment', eq)"
+                            hlmBadge variant="outline" class="cursor-pointer transition-colors text-left py-3 h-auto leading-tight w-full justify-start aria-pressed:border-primary aria-pressed:bg-primary aria-pressed:text-primary-content"
+                            [attr.aria-pressed]="isItemSelected('equipment', eq)"
                             (click)="toggleSelection('equipment', eq)">
                       {{ 'MOVEMENT.EQUIPMENT.' + eq | translate }}
                     </button>
@@ -131,14 +127,13 @@
           <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             @for (group of techniqueGroups(); track group.category) {
               <div>
-                <h4 class="font-semibold text-sm text-base-content/70 border-b border-base-300 pb-1 mb-3">
+                <h4 class="font-semibold text-sm text-muted-foreground border-b border-border pb-1 mb-3">
                   {{ 'MOVEMENT.TECHNIQUE_CATEGORIES.' + group.category | translate }}
                 </h4>
                 <div class="flex flex-wrap gap-2">
                   @for (tech of group.items; track tech) {
-                    <button type="button" class="badge badge-lg cursor-pointer transition-colors"
-                            [class.badge-secondary]="isItemSelected('techniques', tech)"
-                            [class.badge-outline]="!isItemSelected('techniques', tech)"
+                    <button type="button" hlmBadge variant="outline" class="cursor-pointer transition-colors aria-pressed:border-secondary aria-pressed:bg-secondary aria-pressed:text-secondary-content"
+                            [attr.aria-pressed]="isItemSelected('techniques', tech)"
                             (click)="toggleSelection('techniques', tech)">
                       {{ 'MOVEMENT.TECHNIQUES.' + tech | translate }}
                     </button>
@@ -151,27 +146,27 @@
       </div>
     </div>
 
-    <div class="card bg-base-100 shadow-xl">
-      <div class="card-body">
+    <div hlmCard>
+      <div hlmCardContent class="flex flex-col gap-4">
         <div class="flex justify-between items-center mb-4">
-          <h2 class="card-title">{{ 'MOVEMENT.SECTIONS.MUSCLES' | translate }}</h2>
-          <button type="button" class="btn btn-sm btn-secondary btn-outline" (click)="addMuscle()">
+          <h2 hlmCardTitle class="text-lg flex items-center gap-2">{{ 'MOVEMENT.SECTIONS.MUSCLES' | translate }}</h2>
+          <button type="button" hlmBtn variant="outline" size="sm" (click)="addMuscle()">
             <ng-icon name="heroPlus"></ng-icon>
             {{ 'MOVEMENT.ACTIONS.ADD_MUSCLE' | translate }}
           </button>
         </div>
 
         @if (musclesFormArray.controls.length === 0) {
-          <p class="text-center text-base-content/50 py-4">{{ 'MOVEMENT.MESSAGES.NO_MUSCLES_FORM' | translate }}</p>
+          <p class="text-center text-muted-foreground py-4">{{ 'MOVEMENT.MESSAGES.NO_MUSCLES_FORM' | translate }}</p>
         }
 
         <div formArrayName="muscles" class="flex flex-col gap-4">
           @for (muscleCtrl of musclesFormArray.controls; track muscleCtrl; let i = $index) {
 
-            <div [formGroupName]="i" class="flex flex-col sm:flex-row gap-4 items-end bg-base-200 p-4 rounded-box">
-              <label class="form-control w-full sm:w-1/3">
-                <div class="label"><span class="label-text">{{ 'MOVEMENT.FIELDS.MUSCLE' | translate }}</span></div>
-                <select formControlName="muscleId" class="select select-bordered w-full">
+            <div [formGroupName]="i" class="flex flex-col sm:flex-row gap-4 items-end bg-muted p-4 rounded-xl">
+              <label class="flex flex-col gap-1.5 w-full sm:w-1/3">
+                <span class="text-sm font-medium">{{ 'MOVEMENT.FIELDS.MUSCLE' | translate }}</span>
+                <select formControlName="muscleId" appNativeSelect class="w-full">
                   <option [ngValue]="null" disabled>-</option>
                   @for (m of availableMuscles(); track m.id) {
                     <option [ngValue]="m.id">
@@ -181,16 +176,16 @@
                 </select>
               </label>
 
-              <label class="form-control w-full sm:w-1/3">
-                <div class="label"><span class="label-text">{{ 'MOVEMENT.FIELDS.ROLE' | translate }}</span></div>
-                <select formControlName="role" class="select select-bordered w-full">
+              <label class="flex flex-col gap-1.5 w-full sm:w-1/3">
+                <span class="text-sm font-medium">{{ 'MOVEMENT.FIELDS.ROLE' | translate }}</span>
+                <select formControlName="role" appNativeSelect class="w-full">
                   @for (r of muscleRoles(); track r) {
                     <option [value]="r">{{ 'MUSCLE.ROLES.' + r | translate }}</option>
                   }
                 </select>
               </label>
 
-              <button type="button" class="btn btn-square btn-error btn-outline" (click)="removeMuscle(i)">
+              <button type="button" hlmBtn variant="destructive" size="icon-lg" (click)="removeMuscle(i)">
                 <ng-icon name="heroTrash"></ng-icon>
               </button>
             </div>
@@ -200,10 +195,10 @@
     </div>
 
     <div class="mt-8 flex justify-end gap-4">
-      <a routerLink="/movements" class="btn btn-ghost">{{ 'GLOBAL.CANCEL' | translate }}</a>
-      <button type="submit" class="btn btn-primary" [disabled]="movementForm.invalid || isLoading()">
+      <a routerLink="/movements" hlmBtn variant="ghost" size="lg">{{ 'GLOBAL.CANCEL' | translate }}</a>
+      <button type="submit" hlmBtn size="lg" [disabled]="movementForm.invalid || isLoading()">
         @if (isLoading()) {
-          <span class="loading loading-spinner"></span>
+          <hlm-spinner/>
         }
         {{ (isEditMode() ? 'GLOBAL.EDIT' : 'GLOBAL.SAVE') | translate }}
       </button>

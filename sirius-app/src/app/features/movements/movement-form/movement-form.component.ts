@@ -13,10 +13,17 @@ import {MovementRequest} from '../../../api/aldebaran/models/movement.model';
 import {ProblemDetail} from '../../../core/models/problem-detail.model';
 import {forkJoin} from 'rxjs';
 
+import {HlmSpinner} from '@spartan-ng/helm/spinner';
+import {NativeSelectDirective} from '../../../shared/component/native-select/native-select.directive';
+import {HlmBadge} from '@spartan-ng/helm/badge';
+import {HlmButton} from '@spartan-ng/helm/button';
+import {HlmInput} from '@spartan-ng/helm/input';
+import {HlmTextarea} from '@spartan-ng/helm/textarea';
+import {HlmCardImports} from '@spartan-ng/helm/card';
 @Component({
   selector: 'app-movement-form',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterModule, TranslatePipe, NgIconComponent],
+  imports: [HlmCardImports, HlmTextarea, HlmInput, HlmButton, HlmBadge, NativeSelectDirective, HlmSpinner, CommonModule, ReactiveFormsModule, RouterModule, TranslatePipe, NgIconComponent],
   templateUrl: './movement-form.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
