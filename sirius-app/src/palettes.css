@@ -1,11 +1,10 @@
 /*
  * Colour palettes (user preference `palette`, Antares) × theme (light/dark), set by ThemeService as
  * `data-palette` / `data-theme` on <html>. Ocean is the default and keeps the historical colours.
- * DaisyUI themes (styles.css) and the spartan bridge read these --sa-* variables, so every screen
- * follows the palette. Names follow DaisyUI semantics until DaisyUI is removed:
- * base-200 = page, base-100 = card, base-300 = border/raised, secondary = records (PR).
+ * spartan.css maps every Tailwind colour and spartan token to these --sa-* variables, so every screen
+ * follows the palette: base-200 = page, base-100 = card, base-300 = border/raised, secondary = records (PR).
  * Selectors also match nested elements (palette previews): there, use the --sa-* variables directly,
- * DaisyUI's --color-* are resolved on <html>.
+ * the Tailwind colours are resolved on <html>.
  */
 
 /* --- Ocean (default) --- */

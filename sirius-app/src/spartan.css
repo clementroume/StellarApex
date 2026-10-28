@@ -1,9 +1,9 @@
 /*
  * spartan/ui (D42) wiring, imported by styles.css. Brain primitives come from npm, helm styles are
- * copied in src/app/shared/ui. The spartan preset is not imported while DaisyUI coexists: it redefines
- * primary/secondary/accent/border (border is a width in DaisyUI) and `container`. This file keeps its
- * state variants and maps every spartan token to the palette variables of palettes.css.
- * Helm code uses `muted` where spartan uses a subtle secondary/accent (DaisyUI's are brand colours).
+ * copied in src/app/shared/ui. The spartan preset is not imported (its `container` and colour mapping
+ * differ): this file keeps its state variants and maps every token to the palette variables of
+ * palettes.css. Brand colours keep the app's meaning: primary, secondary = records (PR), accent = brand
+ * orange; helm code therefore uses `muted` where spartan uses a subtle secondary/accent.
  */
 @import "@angular/cdk/overlay-prebuilt.css";
 @import "tw-animate-css";
@@ -74,6 +74,25 @@
 }
 
 @theme inline {
+  /* Brand and status colours (text on them: *-content) */
+  --color-primary: var(--sa-primary);
+  --color-primary-content: var(--sa-primary-content);
+  --color-secondary: var(--sa-secondary);
+  --color-secondary-content: var(--sa-secondary-content);
+  --color-accent: var(--sa-accent);
+  --color-accent-content: var(--sa-accent-content);
+  --color-neutral: var(--sa-neutral);
+  --color-neutral-content: var(--sa-neutral-content);
+  --color-info: var(--sa-info);
+  --color-info-content: var(--sa-info-content);
+  --color-success: var(--sa-success);
+  --color-success-content: var(--sa-success-content);
+  --color-warning: var(--sa-warning);
+  --color-warning-content: var(--sa-warning-content);
+  --color-error: var(--sa-error);
+  --color-error-content: var(--sa-error-content);
+
+  /* spartan tokens */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -103,7 +122,7 @@
   }
 }
 
-/* Spartan token values (--border-color: DaisyUI already uses --border for the border width). */
+/* Spartan token values (named --border-color to keep --border free). */
 :root {
   --radius: 0.5rem;
   --background: var(--sa-base-200);
@@ -129,10 +148,24 @@
   --sidebar-ring: var(--sa-primary);
 }
 
-/* Spartan default: borders use the border token instead of Tailwind 4's currentColor. */
 @layer base {
+  /* Spartan default: borders use the border token instead of Tailwind 4's currentColor. */
   *, ::after, ::before, ::backdrop, ::file-selector-button {
     border-color: var(--color-border);
+  }
+
+  :root {
+    color-scheme: dark;
+  }
+
+  :root[data-theme=light] {
+    color-scheme: light;
+  }
+
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    -webkit-tap-highlight-color: transparent;
   }
 }
 
