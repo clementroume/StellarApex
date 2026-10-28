@@ -13,6 +13,8 @@ import apex.stellar.antares.exception.InvalidPasswordException;
 import apex.stellar.antares.mapper.UserMapper;
 import apex.stellar.antares.model.User;
 import apex.stellar.antares.repository.jpa.UserRepository;
+import java.time.Clock;
+import java.time.Instant;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -33,6 +35,7 @@ class UserServiceTest {
   @Mock private RefreshTokenService refreshTokenService;
 
   @Mock private EmailVerificationService emailVerificationService;
+  @Mock private Clock clock;
   @InjectMocks private UserService userService;
 
   private User testUser;
@@ -134,6 +137,8 @@ class UserServiceTest {
     ChangePasswordRequest request =
         new ChangePasswordRequest("oldPassword", "newPassword", "newPassword");
     when(passwordEncoder.matches("oldPassword", "hashedPassword")).thenReturn(true);
+    Instant now = Instant.parse("2026-10-29T08:00:00Z");
+    when(clock.instant()).thenReturn(now);
 
     // When
     userService.changePassword(request, testUser);
@@ -141,6 +146,7 @@ class UserServiceTest {
     // Then
     verify(passwordEncoder).encode("newPassword");
     verify(userRepository).save(testUser);
+    assertEquals(now, testUser.getPasswordChangedAt());
   }
 
   @Test

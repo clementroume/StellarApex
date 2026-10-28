@@ -90,6 +90,8 @@ public class AdminController {
    * @param gymId optional gym the user must belong to.
    * @param role optional role of that membership.
    * @param status optional status of that membership.
+   * @param withoutGym only users without any ACTIVE membership (no box nor program yet).
+   * @param emailVerified optional address state (true verified, false unverified).
    * @param pageable page and size (default 20, capped at 50).
    * @return a slice of users with their memberships, ordered by last name.
    */
@@ -99,7 +101,9 @@ public class AdminController {
       summary = "Search users",
       description =
           "Platform Admin only. Paginated users matching first name, last name or email, optionally"
-              + " filtered by gym, membership role and membership status.")
+              + " filtered by gym, membership role and membership status, by users without any"
+              + " ACTIVE membership (`withoutGym=true`, gym filters then ignored) and by address"
+              + " state (`emailVerified`).")
   @ApiResponses(
       value = {
         @ApiResponse(responseCode = "200", description = "Matching users"),
@@ -117,8 +121,11 @@ public class AdminController {
       @RequestParam(required = false) Long gymId,
       @RequestParam(required = false) GymRole role,
       @RequestParam(required = false) MembershipStatus status,
+      @RequestParam(defaultValue = "false") boolean withoutGym,
+      @RequestParam(required = false) Boolean emailVerified,
       @PageableDefault(size = 20) Pageable pageable) {
-    return ResponseEntity.ok(userService.searchUsers(search, gymId, role, status, pageable));
+    return ResponseEntity.ok(
+        userService.searchUsers(search, gymId, role, status, withoutGym, emailVerified, pageable));
   }
 
   /**

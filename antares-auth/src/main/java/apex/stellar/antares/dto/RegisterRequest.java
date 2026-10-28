@@ -3,6 +3,7 @@ package apex.stellar.antares.dto;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
 /**
@@ -15,6 +16,8 @@ import jakarta.validation.constraints.Size;
  * @param lastName The user's last name.
  * @param email The user's email address.
  * @param password The user's plain-text password (min 8 characters).
+ * @param locale The language shown at sign-up ("fr", "en"...), for the account and its e-mails;
+ *     null means "en".
  */
 public record RegisterRequest(
     @Schema(description = "User's first name", example = "John")
@@ -33,4 +36,26 @@ public record RegisterRequest(
     @Schema(description = "User's password (min 8 chars)", example = "SecurePass123!")
         @NotBlank(message = "{validation.password.required}")
         @Size(min = 8, message = "{validation.password.size}")
-        String password) {}
+        String password,
+    @Schema(description = "Language shown at sign-up, null means en", example = "fr", nullable = true)
+        @Pattern(regexp = "^[a-z]{2}(-[A-Z]{2})?$", message = "{validation.locale.pattern}")
+        String locale) {
+
+  /**
+   * A registration in the default language.
+   *
+   * @param firstName The user's first name.
+   * @param lastName The user's last name.
+   * @param email The user's email address.
+   * @param password The user's plain-text password.
+   */
+  public RegisterRequest(String firstName, String lastName, String email, String password) {
+    this(firstName, lastName, email, password, null);
+  }
+
+  /** Masks the password in logs. */
+  @Override
+  public String toString() {
+    return "RegisterRequest[email=" + email + ", locale=" + locale + "]";
+  }
+}

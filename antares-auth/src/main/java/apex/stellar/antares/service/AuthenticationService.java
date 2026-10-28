@@ -89,6 +89,7 @@ public class AuthenticationService {
                 .email(request.email())
                 .password(passwordEncoder.encode(request.password()))
                 .platformRole(PlatformRole.USER)
+                .locale(request.locale() != null ? request.locale() : "en")
                 .emailVerified(false)
                 .build());
 
@@ -173,6 +174,18 @@ public class AuthenticationService {
     supportSessionService.endActiveSessions(currentUser, response);
     cookieService.clearCookie(jwtService.getAccessTokenCookieName(), response);
     cookieService.clearCookie(jwtService.getRefreshTokenCookieName(), response);
+  }
+
+  /**
+   * Issues fresh cookies for the current session after a password change: the new access token is
+   * accepted (not older than the change), and the new refresh token replaces the user's previous
+   * one, so other devices are signed out.
+   *
+   * @param user The user who changed their password.
+   * @param response The HTTP response to set cookies.
+   */
+  public void reissueSession(User user, HttpServletResponse response) {
+    issueTokensAndSetCookies(user, response);
   }
 
   /**

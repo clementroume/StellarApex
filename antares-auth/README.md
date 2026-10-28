@@ -89,6 +89,7 @@ docker compose logs -f antares-auth
 ### Authentication (`/antares/auth`)
 
 * `POST /register`: Register a new user (e-mail not verified yet: a verification link is mailed).
+  Optional `locale` (language shown at sign-up, `en` by default) for the account and its e-mails.
   At most 10 registrations per client IP per sliding hour (429 + `Retry-After`).
 * `POST /password/forgot` (`{email}`): mails a single-use reset link (30 min). Always 202, whether
   or not the account exists; 5 requests per client IP per hour (429), 3 mails per address per hour
@@ -126,7 +127,8 @@ docker compose logs -f antares-auth
   members of their gyms (usable memberships), users who opted in to public leaderboards; all for
   platform admins. Hidden users are left out (clients show them as anonymous).
   Refused during a support session.
-* `PUT /me/password`: Change the user's password (refused during a support session).
+* `PUT /me/password`: Change the user's password (refused during a support session). Other devices
+  are signed out (`passwordChangedAt`, refresh token replaced); this session gets fresh cookies.
 * `DELETE /me`: Delete the current user's account (refused during a support session).
 
 During a support session `GET /me` returns the target user with
@@ -134,9 +136,11 @@ During a support session `GET /me` returns the target user with
 
 ### Administration (`/antares/admin`, platform ADMIN)
 
-* `GET /users?search=&gymId=&role=&status=&page=&size=`: Paginated `Slice` (20 per page, max 50) of
-  users matching first name, last name or email (case-insensitive), ordered by last name, with
-  their memberships. The optional `gymId`, `role` and `status` must hold on the same membership.
+* `GET /users?search=&gymId=&role=&status=&withoutGym=&emailVerified=&page=&size=`: Paginated
+  `Slice` (20 per page, max 50) of users matching first name, last name or email (case-insensitive),
+  ordered by last name, with their memberships. The optional `gymId`, `role` and `status` must hold
+  on the same membership; `withoutGym=true` keeps the users without any ACTIVE membership (the gym
+  filters are then ignored); `emailVerified=false|true` keeps unverified / verified addresses.
 * `GET /users/lookup?ids=`: User summaries by ids (e.g. WOD authors in the admin WOD filters).
 * `GET /support-sessions/recent`: The last 5 users the admin acted as, latest first.
 * `POST /support-sessions` `{userId, reason}`: Start a support session (see below). 201

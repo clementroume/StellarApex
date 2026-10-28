@@ -81,13 +81,21 @@ public class AthleteProfileService {
   /**
    * Records a body weight measure; a measure of the same day is replaced.
    *
+   * <p>The day comes from the client (the user's local day): one day after today in UTC is
+   * accepted, so a measure taken after midnight in Europe is not "in the future" for the server.
+   *
    * @param currentUser The authenticated user.
    * @param request The measure.
    * @return The stored measure.
+   * @throws BusinessRuleException When the day is later than tomorrow (UTC) (400).
    */
   @Transactional
   public BodyWeightResponse recordBodyWeight(User currentUser, BodyWeightRequest request) {
-    LocalDate day = request.measuredOn() != null ? request.measuredOn() : LocalDate.now(clock);
+    LocalDate today = LocalDate.now(clock);
+    LocalDate day = request.measuredOn() != null ? request.measuredOn() : today;
+    if (day.isAfter(today.plusDays(1))) {
+      throw new BusinessRuleException("validation.bodyWeight.date");
+    }
     BodyWeight measure =
         bodyWeightRepository
             .findByUserIdAndMeasuredOn(currentUser.getId(), day)

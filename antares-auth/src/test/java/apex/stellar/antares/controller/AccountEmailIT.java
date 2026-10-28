@@ -19,6 +19,7 @@ import apex.stellar.antares.dto.ForgotPasswordRequest;
 import apex.stellar.antares.dto.GymRequest;
 import apex.stellar.antares.dto.JoinGymRequest;
 import apex.stellar.antares.dto.ProfileUpdateRequest;
+import apex.stellar.antares.dto.RegisterRequest;
 import apex.stellar.antares.dto.ResetPasswordRequest;
 import apex.stellar.antares.dto.VerifyEmailRequest;
 import apex.stellar.antares.model.Gym;
@@ -26,6 +27,7 @@ import apex.stellar.antares.model.Gym.GymStatus;
 import apex.stellar.antares.model.User;
 import apex.stellar.antares.repository.jpa.GymRepository;
 import jakarta.mail.BodyPart;
+import jakarta.mail.MessagingException;
 import jakarta.mail.Multipart;
 import jakarta.mail.Part;
 import jakarta.mail.internet.MimeMessage;
@@ -75,9 +77,8 @@ class AccountEmailIT extends BaseIntegrationTest {
     Thread.sleep(1100);
 
     forgot("reset.me@example.com").andExpect(status().isAccepted());
-    MimeMessage mail = lastMail(2); // verification mail at registration, then the reset mail
-    assertThat(mail.getSubject()).isEqualTo("Reset your StellarApex password");
-    String token = tokenOf(mail);
+    // Verification mail at registration, then the reset mail
+    String token = tokenOf(mail(2, "Reset your StellarApex password"));
 
     resetPassword(token, "brandNewPass1", "brandNewPass1").andExpect(status().isNoContent());
 
@@ -114,7 +115,8 @@ class AccountEmailIT extends BaseIntegrationTest {
   void reset_mismatchKeepsToken() throws Exception {
     register("typo@example.com", PASSWORD);
     forgot("typo@example.com").andExpect(status().isAccepted());
-    String token = tokenOf(lastMail(2)); // verification mail at registration, then the reset mail
+    // Verification mail at registration, then the reset mail
+    String token = tokenOf(mail(2, "Reset your StellarApex password"));
 
     resetPassword(token, "brandNewPass1", "brandNewPass2").andExpect(status().isBadRequest());
     resetPassword(token, "brandNewPass1", "brandNewPass1").andExpect(status().isNoContent());
@@ -153,6 +155,31 @@ class AccountEmailIT extends BaseIntegrationTest {
     assertThat(isVerified("new.athlete@example.com")).isTrue();
 
     verifyEmail(token).andExpect(status().isBadRequest());
+  }
+
+  @Test
+  @DisplayName("register: the account and its verification mail take the language of sign-up")
+  void register_inUserLanguage() throws Exception {
+    mockMvc
+        .perform(
+            post("/antares/auth/register")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    jsonMapper.writeValueAsString(
+                        new RegisterRequest("Léa", "Martin", "lea@example.com", PASSWORD, "fr"))))
+        .andExpect(status().isCreated())
+        .andExpect(jsonPath("$.locale").value("fr"));
+
+    assertThat(lastMail(1).getSubject()).isEqualTo("Confirme ton adresse e-mail");
+
+    mockMvc
+        .perform(
+            post("/antares/auth/register")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    jsonMapper.writeValueAsString(
+                        new RegisterRequest("X", "Y", "bad.locale@example.com", PASSWORD, "French"))))
+        .andExpect(status().isBadRequest());
   }
 
   @Test
@@ -202,7 +229,7 @@ class AccountEmailIT extends BaseIntegrationTest {
     Cookie[] cookies = login("resend@example.com", PASSWORD);
 
     resend(cookies).andExpect(status().isAccepted());
-    String second = tokenOf(lastMail(2));
+    String second = tokenOf(lastMail(2)); // sent after the first one was received
     resend(cookies).andExpect(status().isAccepted());
     resend(cookies).andExpect(status().isAccepted());
     resend(cookies).andExpect(status().isTooManyRequests());
@@ -229,8 +256,14 @@ class AccountEmailIT extends BaseIntegrationTest {
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.emailVerified").value(false));
 
-    MimeMessage mail = lastMail(2);
-    assertThat(mail.getAllRecipients()[0].toString()).isEqualTo("new.address@example.com");
+    // Registration mail to the old address, then this one (asynchronous: any order)
+    ArgumentCaptor<MimeMessage> captor = ArgumentCaptor.forClass(MimeMessage.class);
+    verify(mailSender, timeout(5000).times(2)).send(captor.capture());
+    MimeMessage mail =
+        captor.getAllValues().stream()
+            .filter(m -> recipient(m).equals("new.address@example.com"))
+            .findFirst()
+            .orElseThrow();
     verifyEmail(tokenOf(mail)).andExpect(status().isNoContent());
     assertThat(isVerified("new.address@example.com")).isTrue();
   }
@@ -277,6 +310,31 @@ class AccountEmailIT extends BaseIntegrationTest {
     ArgumentCaptor<MimeMessage> captor = ArgumentCaptor.forClass(MimeMessage.class);
     verify(mailSender, timeout(5000).times(expectedCount)).send(captor.capture());
     return captor.getValue();
+  }
+
+  private static String recipient(MimeMessage message) {
+    try {
+      return message.getAllRecipients()[0].toString();
+    } catch (MessagingException e) {
+      throw new IllegalStateException(e);
+    }
+  }
+
+  /**
+   * Waits for the n mails of this test and returns the last one with this subject (mails are sent
+   * asynchronously, so their order is not guaranteed).
+   */
+  private MimeMessage mail(int expectedCount, String subject) throws Exception {
+    ArgumentCaptor<MimeMessage> captor = ArgumentCaptor.forClass(MimeMessage.class);
+    verify(mailSender, timeout(5000).times(expectedCount)).send(captor.capture());
+    MimeMessage found = null;
+    for (MimeMessage message : captor.getAllValues()) {
+      if (subject.equals(message.getSubject())) {
+        found = message;
+      }
+    }
+    assertThat(found).as("mail '%s'", subject).isNotNull();
+    return found;
   }
 
   private static String tokenOf(MimeMessage mail) throws Exception {

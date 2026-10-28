@@ -16,6 +16,7 @@ import apex.stellar.antares.model.Division;
 import jakarta.servlet.http.Cookie;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.ZoneOffset;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -79,14 +80,15 @@ class AthleteProfileIT extends BaseIntegrationTest {
   @Test
   @DisplayName("body weights: one per day (replaced), most recent first, own measures only")
   void bodyWeights() throws Exception {
-    LocalDate today = LocalDate.now();
+    // The server's day is UTC; a client's local day may already be tomorrow
+    LocalDate today = LocalDate.now(ZoneOffset.UTC);
     recordWeight(new BodyWeightRequest(new BigDecimal("80.4"), today.minusDays(7)))
         .andExpect(status().isOk());
     recordWeight(new BodyWeightRequest(new BigDecimal("79"), null)).andExpect(status().isOk());
     recordWeight(new BodyWeightRequest(new BigDecimal("78.6"), null))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.measuredOn").value(today.toString()));
-    recordWeight(new BodyWeightRequest(new BigDecimal("78"), today.plusDays(1)))
+    recordWeight(new BodyWeightRequest(new BigDecimal("78"), today.plusDays(2)))
         .andExpect(status().isBadRequest());
     recordWeight(new BodyWeightRequest(new BigDecimal("5"), null))
         .andExpect(status().isBadRequest());

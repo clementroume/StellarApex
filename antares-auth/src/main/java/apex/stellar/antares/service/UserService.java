@@ -16,6 +16,7 @@ import apex.stellar.antares.model.Membership.MembershipStatus;
 import apex.stellar.antares.model.PlatformRole;
 import apex.stellar.antares.model.User;
 import apex.stellar.antares.repository.jpa.UserRepository;
+import java.time.Clock;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
@@ -53,6 +54,7 @@ public class UserService {
   private final UserMapper userMapper;
   private final RefreshTokenService refreshTokenService;
   private final EmailVerificationService emailVerificationService;
+  private final Clock clock;
 
   /**
    * Retrieves the public profile of the authenticated user.
@@ -78,21 +80,39 @@ public class UserService {
    * @param gymId optional gym the user must belong to.
    * @param role optional role of that membership.
    * @param status optional status of that membership.
+   * @param withoutGym true to keep users without any ACTIVE membership (no box nor program yet);
+   *     the gym, role and status filters are then ignored.
+   * @param emailVerified optional address state (true verified, false unverified).
    * @param pageable the requested page (size capped at {@value #SEARCH_MAX_PAGE_SIZE}).
    * @return a slice of users with their memberships, ordered by last name.
    */
   @Transactional(readOnly = true)
   public Slice<UserResponse> searchUsers(
-      String search, Long gymId, GymRole role, MembershipStatus status, Pageable pageable) {
+      String search,
+      Long gymId,
+      GymRole role,
+      MembershipStatus status,
+      boolean withoutGym,
+      Boolean emailVerified,
+      Pageable pageable) {
     String text = search == null ? "" : search.trim().toLowerCase(Locale.ROOT);
     String escaped = text.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_");
     Pageable page =
         PageRequest.of(
             pageable.getPageNumber(), Math.min(pageable.getPageSize(), SEARCH_MAX_PAGE_SIZE));
-    boolean anyMembership = gymId == null && role == null && status == null;
+    boolean anyMembership = withoutGym || (gymId == null && role == null && status == null);
 
     Slice<Long> ids =
-        userRepository.searchIds("%" + escaped + "%", anyMembership, gymId, role, status, page);
+        userRepository.searchIds(
+            "%" + escaped + "%",
+            anyMembership,
+            gymId,
+            role,
+            status,
+            withoutGym,
+            MembershipStatus.ACTIVE,
+            emailVerified,
+            page);
     List<UserResponse> users = loadWithMemberships(ids.getContent());
     return new SliceImpl<>(users, page, ids.hasNext());
   }
@@ -186,6 +206,10 @@ public class UserService {
   /**
    * Securely changes the password for the currently authenticated user.
    *
+   * <p>Sets {@code passwordChangedAt}: access tokens issued before are refused on every device. The
+   * caller issues fresh cookies for the current session ({@link
+   * AuthenticationService#reissueSession}), which also replaces the user's refresh token.
+   *
    * @param request The DTO containing old and new passwords.
    * @param currentUser The user entity to update.
    * @throws InvalidPasswordException If the current password is incorrect or new passwords
@@ -206,6 +230,7 @@ public class UserService {
 
     // 3. Update password
     currentUser.setPassword(passwordEncoder.encode(request.newPassword()));
+    currentUser.setPasswordChangedAt(clock.instant());
     userRepository.save(currentUser);
   }
 

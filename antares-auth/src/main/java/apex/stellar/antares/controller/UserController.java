@@ -12,6 +12,7 @@ import apex.stellar.antares.dto.ProfileUpdateRequest;
 import apex.stellar.antares.dto.UserResponse;
 import apex.stellar.antares.model.User;
 import apex.stellar.antares.service.AthleteProfileService;
+import apex.stellar.antares.service.AuthenticationService;
 import apex.stellar.antares.service.CookieService;
 import apex.stellar.antares.service.EmailVerificationService;
 import apex.stellar.antares.service.JwtService;
@@ -61,6 +62,7 @@ public class UserController {
   private final JwtService jwtService;
   private final EmailVerificationService emailVerificationService;
   private final AthleteProfileService athleteProfileService;
+  private final AuthenticationService authenticationService;
 
   /**
    * Retrieves the profile of the currently authenticated user.
@@ -355,14 +357,16 @@ public class UserController {
    *
    * @param request The DTO with current and new passwords.
    * @param authentication The current user's authentication principal.
+   * @param response The HTTP response, for the fresh session cookies.
    * @return 200 OK on success.
    */
   @PutMapping("/me/password")
   @Operation(
       summary = "Change password",
       description =
-          "Updates the user's password. Requires current password verification. Refused during a"
-              + " support session (403, code SUPPORT_SESSION_FORBIDDEN).")
+          "Updates the user's password. Requires current password verification. Signs the other"
+              + " devices out (new cookies for this session). Refused during a support session"
+              + " (403, code SUPPORT_SESSION_FORBIDDEN).")
   @ApiResponses(
       value = {
         @ApiResponse(responseCode = "200", description = "Password changed successfully"),
@@ -376,10 +380,13 @@ public class UserController {
             content = @Content(schema = @Schema(hidden = true)))
       })
   public ResponseEntity<@NonNull Void> changePassword(
-      @Valid @RequestBody ChangePasswordRequest request, Authentication authentication) {
+      @Valid @RequestBody ChangePasswordRequest request,
+      Authentication authentication,
+      HttpServletResponse response) {
 
     if (authentication.getPrincipal() instanceof User currentUser) {
       userService.changePassword(request, currentUser);
+      authenticationService.reissueSession(currentUser, response);
       return ResponseEntity.ok().build();
     }
     return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
