@@ -94,7 +94,8 @@ and a virtual programming); there is no "active gym" in requests.
 - Internal API: Antares `/antares/internal/**` (membership check, gym type; Aldebaran → `http://antares-auth:8080`,
   `X-Internal-Secret`, 404 without it, excluded from the Traefik `/antares` route). Aldebaran calls it
   through `client/AntaresClient` only.
-- Gym settings/deletion: `MANAGE_SETTINGS`; memberships: `MANAGE_MEMBERSHIPS` (Antares `@security`).
+- Gym settings: `MANAGE_SETTINGS`; deletion and ownership transfer: holder or admin (`@security.isGymHolder`);
+  memberships: `MANAGE_MEMBERSHIPS` (Antares `@security`).
 - Aldebaran returns `WodResponse.capabilities {canModify, locked, canJudge}` (computed per request, outside the
   WOD cache) so Sirius shows edit/delete only when allowed. Prefer this per-resource pattern for new
   features (e.g. scores) over replicating rules client-side.
