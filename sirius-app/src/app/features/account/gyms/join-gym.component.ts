@@ -19,6 +19,7 @@ import {NotificationService} from '../../../core/services/notification.service';
 import {problemDetailOf} from '../../../core/models/problem-detail.model';
 import {SearchInputComponent} from '../../../shared/component/search-input/search-input.component';
 import {FormFieldComponent} from '../../../shared/component/form-field/form-field.component';
+import {EmailVerificationNoticeComponent} from '../../../shared/component/email-verification-notice/email-verification-notice.component';
 
 export const GYM_SEARCH_DEBOUNCE_MS = 300;
 export const GYM_PAGE_SIZE = 20;
@@ -31,7 +32,8 @@ export const GYM_PAGE_SIZE = 20;
   selector: 'app-join-gym',
   standalone: true,
   imports: [ReactiveFormsModule, RouterLink, TranslatePipe, NgIcon, HlmAlertImports, HlmBadge, HlmButton, HlmCardImports,
-    HlmInputGroupImports, HlmSpinner, SearchInputComponent, FormFieldComponent],
+    HlmInputGroupImports, HlmSpinner, SearchInputComponent, FormFieldComponent,
+    EmailVerificationNoticeComponent],
   templateUrl: './join-gym.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

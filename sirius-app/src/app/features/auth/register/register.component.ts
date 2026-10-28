@@ -11,7 +11,7 @@ import {
 } from '@angular/forms';
 import {ActivatedRoute, Router, RouterModule} from '@angular/router';
 import {AuthService} from '../../../api/antares/services/auth.service';
-import {TranslatePipe} from '@ngx-translate/core';
+import {TranslatePipe, TranslateService} from '@ngx-translate/core';
 import {NotificationService} from '../../../core/services/notification.service';
 import {HttpErrorResponse} from '@angular/common/http';
 import {ProblemDetail} from '../../../core/models/problem-detail.model';
@@ -45,6 +45,7 @@ export class RegisterComponent {
   private readonly fb = inject(FormBuilder);
   private readonly notificationService = inject(NotificationService);
   private readonly document = inject(DOCUMENT);
+  private readonly translate = inject(TranslateService);
 
   /** Checked destination after sign-up (e.g. the join step of an invitation link). */
   private readonly target = resolveReturnUrl(
@@ -76,6 +77,8 @@ export class RegisterComponent {
 
     this.authService.register(registerPayload).subscribe({
       next: () => {
+        this.notificationService.showSuccess(
+          this.translate.instant('REGISTER.CHECK_EMAIL', {email: registerPayload.email}));
         if (this.target.kind === 'external') {
           this.redirectToExternal(this.target.url);
         } else {

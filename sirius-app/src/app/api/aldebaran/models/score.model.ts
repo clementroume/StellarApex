@@ -1,3 +1,4 @@
+import {Division} from '../../antares/models/user.model';
 import {WodSummaryResponse} from './wod.model';
 
 /** Level at which a WOD was performed; personal records rank ELITE (Rx+) > RX > SCALED > CUSTOM. */
@@ -74,6 +75,8 @@ export interface ScoreResponse {
   timeCapped: boolean;
   tiebreakSeconds?: number;
   personalRecord: boolean;
+  // Athlete's division when the score was logged (null: not chosen yet)
+  division?: Division | null;
   // --- Comments and Scaling notes---
   userComment?: string;
   scalingNotes?: string;

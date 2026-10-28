@@ -59,25 +59,91 @@
     "TITLE": "Welcome back!",
     "SUBTITLE": "Log in to access your dashboard.",
     "SIGN_IN": "Log in",
-    "NO_ACCOUNT": "No account yet? Sign up"
+    "NO_ACCOUNT": "No account yet? Sign up",
+    "FORGOT_PASSWORD": "Forgot your password?"
   },
   "REGISTER": {
     "TITLE": "Join Stellar Apex!",
     "SUBTITLE": "Create your account to start logging your WODs.",
     "SIGN_UP": "Sign up",
-    "HAVE_ACCOUNT": "Already have an account? Log in"
+    "HAVE_ACCOUNT": "Already have an account? Log in",
+    "CHECK_EMAIL": "Account created! Confirm your address with the link sent to {{email}}."
+  },
+  "FORGOT_PASSWORD": {
+    "TITLE": "Forgot your password",
+    "SUBTITLE": "Enter your e-mail address: we'll send you a link to choose a new password.",
+    "SUBMIT": "Send the link",
+    "SENT": "If an account exists for {{email}}, a reset link has just been sent to it.",
+    "SENT_HINT": "The link works once and expires in 30 minutes. Check your spam folder too.",
+    "BACK_TO_LOGIN": "Back to sign in"
+  },
+  "RESET_PASSWORD": {
+    "TITLE": "New password",
+    "SUBTITLE": "Choose the new password of your account.",
+    "NEW_PASSWORD": "New password",
+    "SUBMIT": "Change the password",
+    "SIGN_OUT_HINT": "You will be signed out of every device: sign in again with this password afterwards.",
+    "SUCCESS": "Password changed. Sign in with your new password.",
+    "INVALID_LINK": "This link is incomplete or invalid. Ask for a new reset link.",
+    "NEW_LINK": "Ask for a new link"
+  },
+  "VERIFY_EMAIL": {
+    "VERIFYING": "Checking your address…",
+    "VERIFIED_TITLE": "Address confirmed",
+    "VERIFIED_TEXT": "Thanks! You can now join your box or program.",
+    "JOIN_GYM": "Join a box or program",
+    "CONTINUE": "Continue to the app",
+    "FAILED_TITLE": "Invalid link",
+    "FAILED_TEXT": "This link is invalid or has expired.",
+    "RESEND_HINT": "You can get a new link from \"My details\".",
+    "TO_PROFILE": "Go to my details"
+  },
+  "EMAIL_VERIFICATION": {
+    "TITLE": "Confirm your e-mail address",
+    "TEXT": "To join or create a box or program, open the link sent to {{email}}."
   },
   "ACCOUNT": {
     "TITLE": "My Account",
     "MENU_INFO": "My information",
     "MENU_SETTINGS": "Settings",
     "MENU_UNITS": "Units",
-    "MENU_GYMS": "Boxes & programs"
+    "MENU_GYMS": "Boxes & programs",
+    "MENU_ATHLETE": "Athlete profile"
   },
   "PROFILE": {
     "TITLE": "My information",
     "SUCCESS_UPDATE": "Your profile has been updated successfully!",
-    "VERIFIED": "Verified"
+    "VERIFIED": "Verified",
+    "NOT_VERIFIED": "Not verified",
+    "NOT_VERIFIED_HINT": "Confirm your address to join a box or program.",
+    "RESEND": "Resend the link",
+    "RESEND_DONE": "Confirmation link sent. Check your spam folder too.",
+    "EMAIL_CHANGE_HINT": "A new address must be confirmed by e-mail."
+  },
+  "ATHLETE_PROFILE": {
+    "TITLE": "Athlete profile",
+    "SUBTITLE": "Everything is optional.",
+    "DIVISION": "Division",
+    "DIVISION_NONE": "Not set",
+    "DIVISION_HINT": "Highlights your division's load in WODs (e.g. 95/65 lb) and puts your next scores on the Men / Women leaderboards.",
+    "BIRTH_YEAR": "Birth year",
+    "BIRTH_YEAR_ERROR": "Between 1900 and {{max}}",
+    "HEIGHT": "Height",
+    "PRIVACY": "Your birth year, height and weight are private: only you see them, never on a leaderboard. Only your division is shared, with your scores.",
+    "SAVED": "Athlete profile saved.",
+    "WEIGHT_TITLE": "Body weight",
+    "WEIGHT_LATEST": "Latest: {{weight}} on {{date}}",
+    "WEIGHT": "Weight",
+    "WEIGHT_DATE": "Date",
+    "WEIGHT_ADD": "Add",
+    "WEIGHT_EMPTY": "No measure yet.",
+    "WEIGHT_HISTORY": "Weight history"
+  },
+  "DIVISION": {
+    "LABEL": "Division",
+    "ALL": "All",
+    "MEN": "Men",
+    "WOMEN": "Women"
   },
   "SETTINGS": {
     "TITLE": "Security",

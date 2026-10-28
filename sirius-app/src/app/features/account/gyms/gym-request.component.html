@@ -8,6 +8,8 @@
     <p class="mt-1 text-muted-foreground">{{ 'CREATE_GYM.INTRO' | translate }}</p>
   </header>
 
+  <app-email-verification-notice/>
+
   @if (pendingRequest(); as pending) {
     <div hlmAlert class="border-warning/40 text-warning" data-slot="pending-request">
       <ng-icon name="heroClock" aria-hidden="true"/>

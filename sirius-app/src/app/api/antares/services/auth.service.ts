@@ -4,7 +4,14 @@ import {Router} from '@angular/router';
 import {catchError, Observable, of, tap} from 'rxjs';
 import {environment} from '../../../../environments/environment';
 import {UserResponse} from '../models/user.model';
-import {AuthenticationRequest, RegisterRequest, TokenRefreshResponse} from '../models/auth.model';
+import {
+  AuthenticationRequest,
+  ForgotPasswordRequest,
+  RegisterRequest,
+  ResetPasswordRequest,
+  TokenRefreshResponse,
+  VerifyEmailRequest
+} from '../models/auth.model';
 
 @Injectable({providedIn: 'root'})
 export class AuthService {
@@ -59,6 +66,21 @@ export class AuthService {
         void this.router.navigate(['/auth/login']);
       })
     );
+  }
+
+  /** Asks for a reset link; the answer is the same whether or not the account exists. */
+  forgotPassword(payload: ForgotPasswordRequest): Observable<void> {
+    return this.http.post<void>(this.buildUrl('/auth/password/forgot'), payload);
+  }
+
+  /** Sets a new password with a reset token; every session of the account ends. */
+  resetPassword(payload: ResetPasswordRequest): Observable<void> {
+    return this.http.post<void>(this.buildUrl('/auth/password/reset'), payload);
+  }
+
+  /** Confirms the address with the token of a verification link (works signed out). */
+  verifyEmail(payload: VerifyEmailRequest): Observable<void> {
+    return this.http.post<void>(this.buildUrl('/auth/email/verify'), payload);
   }
 
   refreshToken(): Observable<TokenRefreshResponse> {

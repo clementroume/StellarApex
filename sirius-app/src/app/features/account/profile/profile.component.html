@@ -27,8 +27,20 @@
             <dt class="text-xs font-bold text-muted-foreground uppercase">{{ 'GLOBAL.EMAIL' | translate }}</dt>
             <dd class="flex items-center gap-2 text-lg">
               <span class="font-medium break-all">{{ user.email }}</span>
-              <span hlmBadge variant="outline" class="text-success border-success/40">{{ 'PROFILE.VERIFIED' | translate }}</span>
+              @if (user.emailVerified) {
+                <span hlmBadge variant="outline" class="text-success border-success/40">{{ 'PROFILE.VERIFIED' | translate }}</span>
+              } @else {
+                <span hlmBadge variant="outline" class="text-warning border-warning/40">{{ 'PROFILE.NOT_VERIFIED' | translate }}</span>
+              }
             </dd>
+            @if (!user.emailVerified) {
+              <dd class="flex flex-col sm:flex-row sm:items-center gap-2 text-sm text-muted-foreground">
+                <span>{{ 'PROFILE.NOT_VERIFIED_HINT' | translate }}</span>
+                <button hlmBtn variant="outline" size="sm" type="button" [disabled]="resending()" (click)="onResend()">
+                  <ng-icon name="heroEnvelope" aria-hidden="true"/>{{ 'PROFILE.RESEND' | translate }}
+                </button>
+              </dd>
+            }
           </div>
         </dl>
       } @else {
@@ -48,6 +60,7 @@
           </app-form-field>
 
           <app-form-field for="email" icon="heroEnvelope" [label]="'GLOBAL.EMAIL' | translate"
+                          [hint]="'PROFILE.EMAIL_CHANGE_HINT' | translate"
                           [error]="invalid('email') ? ('GLOBAL.ERROR_EMAIL' | translate) : null">
             <input hlmInputGroupInput id="email" formControlName="email" type="email" required autocomplete="email"
                    aria-describedby="email-message" [attr.aria-invalid]="invalid('email')"/>

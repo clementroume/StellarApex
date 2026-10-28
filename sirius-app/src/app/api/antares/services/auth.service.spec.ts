@@ -22,6 +22,7 @@ describe('AuthService', () => {
     firstName: 'John',
     lastName: 'Doe',
     email: 'john.doe@test.com',
+    emailVerified: true,
     platformRole: 'USER',
     locale: 'en',
     theme: 'light',
@@ -128,6 +129,27 @@ describe('AuthService', () => {
       service.updateCurrentUser({...dummyUser, id: 2});
 
       expect(service.currentUser()?.supportSession).toBeUndefined();
+    });
+  });
+
+  describe('account e-mails', () => {
+    it('should POST the forgot, reset and verify requests', () => {
+      service.forgotPassword({email: 'a@b.c'}).subscribe();
+      const forgot = httpMock.expectOne(`${environment.authUrl}/auth/password/forgot`);
+      expect(forgot.request.method).toBe('POST');
+      expect(forgot.request.body).toEqual({email: 'a@b.c'});
+      forgot.flush(null, {status: 202, statusText: 'Accepted'});
+
+      const reset = {token: 't', newPassword: 'Secret123', confirmationPassword: 'Secret123'};
+      service.resetPassword(reset).subscribe();
+      const resetReq = httpMock.expectOne(`${environment.authUrl}/auth/password/reset`);
+      expect(resetReq.request.body).toEqual(reset);
+      resetReq.flush(null, {status: 204, statusText: 'No Content'});
+
+      service.verifyEmail({token: 't'}).subscribe();
+      const verify = httpMock.expectOne(`${environment.authUrl}/auth/email/verify`);
+      expect(verify.request.body).toEqual({token: 't'});
+      verify.flush(null, {status: 204, statusText: 'No Content'});
     });
   });
 });

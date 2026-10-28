@@ -1,4 +1,4 @@
-import {ChangeDetectionStrategy, Component, inject, OnInit} from '@angular/core';
+import {ChangeDetectionStrategy, Component, inject, OnInit, signal} from '@angular/core';
 import {CommonModule} from '@angular/common';
 import {FormBuilder, FormGroup, ReactiveFormsModule, Validators} from '@angular/forms';
 import {AuthService} from '../../../api/antares/services/auth.service';
@@ -6,7 +6,7 @@ import {UserService} from '../../../api/antares/services/user.service';
 import {TranslatePipe, TranslateService} from '@ngx-translate/core';
 import {NotificationService} from '../../../core/services/notification.service';
 import {HttpErrorResponse} from '@angular/common/http';
-import {ProblemDetail} from '../../../core/models/problem-detail.model';
+import {ProblemDetail, problemDetailOf} from '../../../core/models/problem-detail.model';
 import {NgIcon} from '@ng-icons/core';
 import {HlmButton} from '@spartan-ng/helm/button';
 import {HlmBadge} from '@spartan-ng/helm/badge';
@@ -24,6 +24,8 @@ import {FormFieldComponent} from '../../../shared/component/form-field/form-fiel
 })
 export class ProfileComponent implements OnInit {
   public isEditing = false;
+  /** A verification e-mail is being requested. */
+  readonly resending = signal(false);
   public readonly profileForm: FormGroup;
 
   public readonly authService = inject(AuthService);
@@ -75,6 +77,21 @@ export class ProfileComponent implements OnInit {
         const problem: ProblemDetail = err.error;
         const message = problem?.detail || problem?.title || 'Une erreur est survenue';
         this.notificationService.showError(message);
+      }
+    });
+  }
+
+  /** Mails a new verification link to the current address. */
+  onResend(): void {
+    this.resending.set(true);
+    this.userService.resendVerification().subscribe({
+      next: () => {
+        this.resending.set(false);
+        this.notificationService.showSuccess(this.translate.instant('PROFILE.RESEND_DONE'));
+      },
+      error: (err: HttpErrorResponse) => {
+        this.resending.set(false);
+        this.notificationService.showError(problemDetailOf(err) ?? this.translate.instant('GLOBAL.ERROR_UNEXPECTED'));
       }
     });
   }

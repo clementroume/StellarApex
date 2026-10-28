@@ -17,7 +17,7 @@ describe('ProfileComponent', () => {
   let fixture: ComponentFixture<ProfileComponent>;
 
   const mockUser: UserResponse = {
-    id: 1, email: 'test@test.com', firstName: 'John', lastName: 'Doe',
+    id: 1, email: 'test@test.com', emailVerified: true, firstName: 'John', lastName: 'Doe',
     platformRole: 'USER', memberships: [], locale: 'en', theme: 'light',
     createdAt: ''
   };

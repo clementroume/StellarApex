@@ -1,0 +1,29 @@
+<section hlmCard class="w-full max-w-md">
+  <div hlmCardContent class="flex flex-col items-center gap-4 text-center" role="status">
+    @switch (state()) {
+      @case ('verifying') {
+        <p class="text-muted-foreground">{{ 'VERIFY_EMAIL.VERIFYING' | translate }}</p>
+      }
+      @case ('verified') {
+        <span class="text-success inline-flex" aria-hidden="true"><ng-icon name="heroCheckBadge" size="3rem"/></span>
+        <h1 class="text-2xl font-bold">{{ 'VERIFY_EMAIL.VERIFIED_TITLE' | translate }}</h1>
+        <p class="text-muted-foreground">{{ 'VERIFY_EMAIL.VERIFIED_TEXT' | translate }}</p>
+        @if (signedIn()) {
+          <a hlmBtn size="lg" class="h-11 w-full" routerLink="/my-account/gyms/join">{{ 'VERIFY_EMAIL.JOIN_GYM' | translate }}</a>
+          <a hlmBtn variant="link" routerLink="/today">{{ 'VERIFY_EMAIL.CONTINUE' | translate }}</a>
+        } @else {
+          <a hlmBtn size="lg" class="h-11 w-full" routerLink="/auth/login">{{ 'LOGIN.SIGN_IN' | translate }}</a>
+        }
+      }
+      @case ('failed') {
+        <span class="text-destructive inline-flex" aria-hidden="true"><ng-icon name="heroExclamationTriangle" size="3rem"/></span>
+        <h1 class="text-2xl font-bold">{{ 'VERIFY_EMAIL.FAILED_TITLE' | translate }}</h1>
+        <p class="text-muted-foreground">{{ error() ?? ('VERIFY_EMAIL.FAILED_TEXT' | translate) }}</p>
+        <p class="text-sm text-muted-foreground">{{ 'VERIFY_EMAIL.RESEND_HINT' | translate }}</p>
+        <a hlmBtn size="lg" class="h-11 w-full" [routerLink]="signedIn() ? '/my-account/profile' : '/auth/login'">
+          {{ (signedIn() ? 'VERIFY_EMAIL.TO_PROFILE' : 'LOGIN.SIGN_IN') | translate }}
+        </a>
+      }
+    }
+  </div>
+</section>

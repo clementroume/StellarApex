@@ -30,7 +30,7 @@ describe('ThemeService', () => {
   let userServiceSpy: MockedObject<UserService>;
 
   const mockUser: UserResponse = {
-    id: 1, email: 'test@test.com', firstName: 'Test', lastName: 'User',
+    id: 1, email: 'test@test.com', emailVerified: true, firstName: 'Test', lastName: 'User',
     platformRole: 'USER', memberships: [], locale: 'en', theme: 'dark',
     createdAt: ''
   };

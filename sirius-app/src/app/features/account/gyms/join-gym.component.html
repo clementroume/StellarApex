@@ -8,6 +8,8 @@
     <p class="mt-1 text-muted-foreground">{{ 'JOIN_GYM.SUBTITLE' | translate }}</p>
   </header>
 
+  <app-email-verification-notice/>
+
   @if (invitationNotFound()) {
     <div hlmAlert variant="destructive" class="mb-4">
       <ng-icon name="heroExclamationTriangle" aria-hidden="true"/>

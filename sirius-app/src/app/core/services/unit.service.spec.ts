@@ -16,7 +16,7 @@ describe('UnitService', () => {
   let userServiceSpy: MockedObject<UserService>;
 
   const user = (overrides: Partial<UserResponse> = {}): UserResponse => ({
-    id: 1, email: 'a@b.c', firstName: 'A', lastName: 'B', platformRole: 'USER', memberships: [],
+    id: 1, email: 'a@b.c', emailVerified: true, firstName: 'A', lastName: 'B', platformRole: 'USER', memberships: [],
     locale: 'fr', theme: 'dark', createdAt: '', ...overrides
   });
 
@@ -125,5 +125,33 @@ describe('UnitService', () => {
     expect(service.formatDistance(15, null, 'METERS')).toBe('49 ft');
     expect(service.formatDistance(60, 50, 'CENTIMETERS')).toBe('24/20 in');
     expect(service.formatDistance(24, 20, 'INCHES')).toBe('24/20 in');
+  });
+
+  it('should convert body weights and heights to the display unit and back', () => {
+    currentUser.set(user({unitSystem: 'METRIC'}));
+    expect(service.bodyWeightFromKg(78.46)).toBe(78.5);
+    expect(service.bodyWeightToKg(78.5)).toBe(78.5);
+    expect(service.heightFromCm(178)).toBe(178);
+    expect(service.heightUnit()).toBe('cm');
+
+    currentUser.set(user({unitSystem: 'IMPERIAL'}));
+    expect(service.bodyWeightFromKg(78.5)).toBe(173.1);
+    expect(service.bodyWeightToKg(173.1)).toBe(78.52);
+    expect(service.heightFromCm(178)).toBe(70);
+    expect(service.heightToCm(70)).toBe(178);
+    expect(service.heightUnit()).toBe('in');
+  });
+
+  it('should mark the value of the user division in a men/women pair', () => {
+    translate.use('fr');
+    currentUser.set(user({unitSystem: 'METRIC'}));
+
+    expect(service.loadPair(43, 30, 'KG', 'WOMEN')).toEqual({values: ['43', '30'], unit: 'kg', mine: 1});
+    expect(service.loadPair(43, 30, 'KG', 'MEN')).toEqual({values: ['43', '30'], unit: 'kg', mine: 0});
+    expect(service.loadPair(43, 30, 'KG', null)).toEqual({values: ['43', '30'], unit: 'kg', mine: null});
+    // A single load is everyone's: nothing to highlight
+    expect(service.loadPair(43, null, 'KG', 'WOMEN')).toEqual({values: ['43'], unit: 'kg', mine: null});
+    expect(service.loadPair(null, null, 'KG', 'MEN')).toBeNull();
+    expect(service.distancePair(24, 20, 'INCHES', 'WOMEN')).toEqual({values: ['60', '50'], unit: 'cm', mine: 1});
   });
 });
