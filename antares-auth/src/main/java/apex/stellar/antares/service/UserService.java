@@ -52,6 +52,7 @@ public class UserService {
   private final PasswordEncoder passwordEncoder;
   private final UserMapper userMapper;
   private final RefreshTokenService refreshTokenService;
+  private final EmailVerificationService emailVerificationService;
 
   /**
    * Retrieves the public profile of the authenticated user.
@@ -140,7 +141,8 @@ public class UserService {
    * Updates the core profile information (name, email) of a user.
    *
    * <p><b>Uniqueness Check:</b> Verifies that the new email address is not already taken by another
-   * user before applying updates.
+   * user before applying updates. A new address is unverified until confirmed through the link
+   * mailed to it.
    *
    * @param currentUser The user entity to update (provided by Security Context).
    * @param request The DTO with the new profile data.
@@ -148,17 +150,23 @@ public class UserService {
    * @throws DataConflictException If the new email address is already in use.
    */
   @Transactional
-  @CacheEvict(value = "users", key = "#currentUser.email")
+  @CacheEvict(value = "users", key = "#currentUser.email", beforeInvocation = true)
   public UserResponse updateProfile(User currentUser, ProfileUpdateRequest request) {
+    boolean emailChanged = !currentUser.getEmail().equals(request.email());
     // Check for email uniqueness only if the email is actually changing
-    if (!currentUser.getEmail().equals(request.email())
-        && userRepository.existsByEmail(request.email())) {
+    if (emailChanged && userRepository.existsByEmail(request.email())) {
       throw new DataConflictException("error.email.in.use", request.email());
     }
 
     userMapper.updateFromProfile(request, currentUser);
-
-    return userMapper.toUserResponse(userRepository.save(currentUser));
+    if (emailChanged) {
+      currentUser.setEmailVerified(false);
+    }
+    User saved = userRepository.save(currentUser);
+    if (emailChanged) {
+      emailVerificationService.sendVerification(saved);
+    }
+    return userMapper.toUserResponse(saved);
   }
 
   /**

@@ -32,6 +32,7 @@ class UserServiceTest {
   @Mock private UserMapper userMapper;
   @Mock private RefreshTokenService refreshTokenService;
 
+  @Mock private EmailVerificationService emailVerificationService;
   @InjectMocks private UserService userService;
 
   private User testUser;
@@ -72,16 +73,19 @@ class UserServiceTest {
 
     // Then
     verify(userRepository, never()).existsByEmail(any()); // Email didn't change
+    verify(emailVerificationService, never()).sendVerification(any());
     verify(userMapper).updateFromProfile(request, testUser);
     verify(userRepository).save(testUser);
   }
 
   @Test
-  @DisplayName("updateProfile: should check uniqueness when email changes")
+  @DisplayName("updateProfile: a new email is checked, unverified and mailed a verification link")
   void testUpdateProfile_withNewEmail_shouldCheckUniqueness() {
     // Given
     ProfileUpdateRequest request = new ProfileUpdateRequest("John", "Doe", "new@example.com");
+    testUser.setEmailVerified(true);
     when(userRepository.existsByEmail("new@example.com")).thenReturn(false);
+    when(userRepository.save(testUser)).thenReturn(testUser);
 
     // When
     userService.updateProfile(testUser, request);
@@ -90,6 +94,8 @@ class UserServiceTest {
     verify(userRepository).existsByEmail("new@example.com");
     verify(userMapper).updateFromProfile(request, testUser);
     verify(userRepository).save(testUser);
+    assertFalse(testUser.isEmailVerified());
+    verify(emailVerificationService).sendVerification(testUser);
   }
 
   @Test

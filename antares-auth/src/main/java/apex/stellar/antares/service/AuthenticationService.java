@@ -7,12 +7,16 @@ import apex.stellar.antares.dto.UserResponse;
 import apex.stellar.antares.exception.AccountLockedException;
 import apex.stellar.antares.exception.DataConflictException;
 import apex.stellar.antares.exception.ResourceNotFoundException;
+import apex.stellar.antares.exception.TooManyAttemptsException;
 import apex.stellar.antares.mapper.UserMapper;
 import apex.stellar.antares.model.PlatformRole;
 import apex.stellar.antares.model.User;
 import apex.stellar.antares.repository.jpa.UserRepository;
 import jakarta.servlet.http.HttpServletResponse;
+import java.time.Clock;
+import java.time.Duration;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -25,6 +29,8 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class AuthenticationService {
 
+  static final String REGISTRATION_KEY_PREFIX = "registrations_ip:";
+
   private final UserRepository repository;
   private final PasswordEncoder passwordEncoder;
   private final JwtService jwtService;
@@ -34,17 +40,42 @@ public class AuthenticationService {
   private final CookieService cookieService;
   private final LoginAttemptService loginAttemptService;
   private final SupportSessionService supportSessionService;
+  private final EmailVerificationService emailVerificationService;
+  private final SlidingWindowLimiter limiter;
+  private final Clock clock;
+
+  @Value("${application.security.registration.max-per-ip:10}")
+  private int maxRegistrationsPerIp;
+
+  @Value("${application.security.registration.window:PT1H}")
+  private Duration registrationWindow;
 
   /**
-   * Registers a new user and issues JWT tokens.
+   * Registers a new user, issues JWT tokens and mails an e-mail verification link.
+   *
+   * <p>Registrations are throttled per client IP (every attempt counts, conflicts included), so one
+   * client cannot multiply accounts to get around per-user limits.
    *
    * @param request The registration request containing user details.
+   * @param clientIp The client IP (see {@link ClientIpResolver}).
    * @param response The HTTP response to set cookies.
    * @return UserResponse containing the registered user's details.
    * @throws DataConflictException if the email is already in use.
+   * @throws TooManyAttemptsException if this IP registered too often recently.
    */
   @Transactional
-  public UserResponse register(RegisterRequest request, HttpServletResponse response) {
+  public UserResponse register(
+      RegisterRequest request, String clientIp, HttpServletResponse response) {
+
+    long now = clock.millis();
+    String throttleKey = REGISTRATION_KEY_PREFIX + clientIp;
+    long retryAfter =
+        limiter.retryAfterSeconds(throttleKey, maxRegistrationsPerIp, registrationWindow, now);
+    if (retryAfter > 0) {
+      throw new TooManyAttemptsException(
+          "error.registration.too.many", retryAfter, SlidingWindowLimiter.minutes(retryAfter));
+    }
+    limiter.record(throttleKey, registrationWindow, now);
 
     if (repository.findByEmail(request.email()).isPresent()) {
       throw new DataConflictException("error.email.in.use", request.email());
@@ -58,8 +89,10 @@ public class AuthenticationService {
                 .email(request.email())
                 .password(passwordEncoder.encode(request.password()))
                 .platformRole(PlatformRole.USER)
+                .emailVerified(false)
                 .build());
 
+    emailVerificationService.sendVerification(savedUser);
     issueTokensAndSetCookies(savedUser, response);
 
     return userMapper.toUserResponse(savedUser);

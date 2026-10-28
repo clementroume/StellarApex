@@ -633,6 +633,7 @@ class SupportSessionIT extends BaseIntegrationTest {
             .email(email)
             .password(passwordEncoder.encode(PASSWORD))
             .platformRole(role)
+            .emailVerified(true)
             .build());
   }
 }

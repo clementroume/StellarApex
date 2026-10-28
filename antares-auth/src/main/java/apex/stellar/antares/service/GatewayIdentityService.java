@@ -28,6 +28,8 @@ import org.springframework.transaction.annotation.Transactional;
  *       always sent, formatted {@code gymId:ROLE:PERM+PERM} and joined by {@code ,} (e.g. {@code
  *       12:COACH:WOD_WRITE+SCORE_VERIFY,15:ATHLETE:}); empty when there are none. Permissions are
  *       the effective ones (see {@link Membership#effectivePermissions()}).
+ *   <li>{@code X-Auth-User-Division}: the competition division ({@code MEN|WOMEN}), always sent,
+ *       empty when not chosen; Aldebaran copies it on the scores the user logs.
  *   <li>{@code X-Auth-Actor-Id}: the platform admin's id, only during a support session. The other
  *       headers then describe the supported (target) user, resolved upstream by the JWT filter.
  * </ul>
@@ -40,6 +42,7 @@ public class GatewayIdentityService {
   public static final String HEADER_AUTH_USER_ROLE = "X-Auth-User-Role";
   public static final String HEADER_AUTH_USER_LOCALE = "X-Auth-User-Locale";
   public static final String HEADER_AUTH_MEMBERSHIPS = "X-Auth-Memberships";
+  public static final String HEADER_AUTH_USER_DIVISION = "X-Auth-User-Division";
   public static final String HEADER_AUTH_ACTOR_ID = "X-Auth-Actor-Id";
   public static final String HEADER_INTERNAL_SECRET = "X-Internal-Secret";
 
@@ -82,6 +85,9 @@ public class GatewayIdentityService {
             .header(HEADER_AUTH_USER_ROLE, user.getPlatformRole().name())
             .header(HEADER_AUTH_USER_LOCALE, user.getLocale())
             .header(HEADER_AUTH_MEMBERSHIPS, memberships)
+            .header(
+                HEADER_AUTH_USER_DIVISION,
+                user.getDivision() == null ? "" : user.getDivision().name())
             .header(HEADER_INTERNAL_SECRET, internalSecret);
     if (actorId != null) {
       response.header(HEADER_AUTH_ACTOR_ID, String.valueOf(actorId));

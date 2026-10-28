@@ -12,6 +12,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import java.io.Serial;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -95,6 +96,30 @@ public class User implements UserDetails {
   @Builder.Default
   @Column(name = "public_leaderboard_name", nullable = false)
   private boolean publicLeaderboardName = false;
+
+  /** Whether the user confirmed the current email address through a mailed link. */
+  @Builder.Default
+  @Column(name = "email_verified", nullable = false)
+  private boolean emailVerified = false;
+
+  /** Last password change (reset or change); access tokens issued before it are refused. */
+  @Column(name = "password_changed_at")
+  private Instant passwordChangedAt;
+
+  // --- Athlete profile (all optional) ---
+
+  /** Competition division (men/women loads, separate leaderboards); null when not chosen. */
+  @Enumerated(EnumType.STRING)
+  @Column(length = 10)
+  private Division division;
+
+  /** Birth year, for age divisions; private. */
+  @Column(name = "birth_year")
+  private Integer birthYear;
+
+  /** Height in centimetres; private. */
+  @Column(name = "height_cm")
+  private Integer heightCm;
 
   @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
   @Builder.Default

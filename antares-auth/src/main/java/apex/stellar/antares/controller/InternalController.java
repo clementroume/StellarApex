@@ -3,6 +3,8 @@ package apex.stellar.antares.controller;
 import apex.stellar.antares.config.InternalSecretFilter;
 import apex.stellar.antares.dto.GymMemberCheckResponse;
 import apex.stellar.antares.dto.GymTypeResponse;
+import apex.stellar.antares.dto.UserDivisionResponse;
+import apex.stellar.antares.service.AthleteProfileService;
 import apex.stellar.antares.service.GymService;
 import io.swagger.v3.oas.annotations.Hidden;
 import lombok.RequiredArgsConstructor;
@@ -27,6 +29,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class InternalController {
 
   private final GymService gymService;
+  private final AthleteProfileService athleteProfileService;
 
   /**
    * Tells whether a gym is a virtual programming or a physical box. Used by Aldebaran to keep
@@ -52,5 +55,17 @@ public class InternalController {
   public ResponseEntity<GymMemberCheckResponse> isMember(
       @PathVariable Long gymId, @PathVariable Long userId) {
     return ResponseEntity.ok(new GymMemberCheckResponse(gymService.isUsableMember(gymId, userId)));
+  }
+
+  /**
+   * A user's competition division, nothing else. Used by Aldebaran when staff log a score for an
+   * athlete: the score takes the athlete's division, never the judge's.
+   *
+   * @param userId The ID of the user.
+   * @return {@code {"division": "MEN"|"WOMEN"|null}}, 404 for an unknown user.
+   */
+  @GetMapping("/users/{userId}/division")
+  public ResponseEntity<UserDivisionResponse> getDivision(@PathVariable Long userId) {
+    return ResponseEntity.ok(new UserDivisionResponse(athleteProfileService.getDivision(userId)));
   }
 }

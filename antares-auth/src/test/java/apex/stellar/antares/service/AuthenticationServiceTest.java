@@ -2,6 +2,7 @@ package apex.stellar.antares.service;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
@@ -13,11 +14,13 @@ import apex.stellar.antares.dto.UserResponse;
 import apex.stellar.antares.exception.AccountLockedException;
 import apex.stellar.antares.exception.DataConflictException;
 import apex.stellar.antares.exception.ResourceNotFoundException;
+import apex.stellar.antares.exception.TooManyAttemptsException;
 import apex.stellar.antares.mapper.UserMapper;
 import apex.stellar.antares.model.PlatformRole;
 import apex.stellar.antares.model.User;
 import apex.stellar.antares.repository.jpa.UserRepository;
 import jakarta.servlet.http.HttpServletResponse;
+import java.time.Clock;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -45,6 +48,9 @@ class AuthenticationServiceTest {
   @Mock private CookieService cookieService;
   @Mock private LoginAttemptService loginAttemptService;
   @Mock private SupportSessionService supportSessionService;
+  @Mock private EmailVerificationService emailVerificationService;
+  @Mock private SlidingWindowLimiter limiter;
+  @Mock private Clock clock;
   @Mock private HttpServletResponse httpServletResponse;
   @InjectMocks private AuthenticationService authenticationService;
 
@@ -67,16 +73,21 @@ class AuthenticationServiceTest {
             invocation -> {
               User user = invocation.getArgument(0);
               assertEquals(PlatformRole.USER, user.getPlatformRole());
+              assertFalse(user.isEmailVerified());
               return user;
             });
     when(jwtService.generateToken(any(User.class))).thenReturn("fakeAccessToken");
     when(refreshTokenService.createRefreshToken(any(User.class))).thenReturn("fakeRefreshToken");
 
     // When
-    authenticationService.register(request, httpServletResponse);
+    authenticationService.register(request, "203.0.113.7", httpServletResponse);
 
     // Then
     verify(userRepository).save(any(User.class));
+    verify(emailVerificationService).sendVerification(any(User.class));
+    verify(limiter)
+        .record(
+            eq(AuthenticationService.REGISTRATION_KEY_PREFIX + "203.0.113.7"), any(), anyLong());
     verify(cookieService)
         .addCookie(
             eq(jwtService.getAccessTokenCookieName()),
@@ -102,9 +113,31 @@ class AuthenticationServiceTest {
     // When & Then
     assertThrows(
         DataConflictException.class,
-        () -> authenticationService.register(request, httpServletResponse));
+        () -> authenticationService.register(request, "203.0.113.7", httpServletResponse));
 
     verify(userRepository, never()).save(any(User.class));
+  }
+
+  @Test
+  @DisplayName("register: too many registrations from one IP -> 429, nothing created")
+  void testRegister_whenThrottled_shouldRefuse() {
+    RegisterRequest request =
+        new RegisterRequest("Bot", "Farm", "bot.42@example.com", "password123");
+    when(limiter.retryAfterSeconds(
+            eq(AuthenticationService.REGISTRATION_KEY_PREFIX + "198.51.100.9"),
+            anyInt(),
+            any(),
+            anyLong()))
+        .thenReturn(1200L);
+
+    TooManyAttemptsException ex =
+        assertThrows(
+            TooManyAttemptsException.class,
+            () -> authenticationService.register(request, "198.51.100.9", httpServletResponse));
+
+    assertEquals(1200L, ex.getRetryAfterSeconds());
+    verify(userRepository, never()).save(any(User.class));
+    verify(emailVerificationService, never()).sendVerification(any());
   }
 
   @Test

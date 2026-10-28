@@ -139,6 +139,7 @@ public class ApplicationConfig {
                 .email(adminEmail)
                 .password(passwordEncoder.encode(adminPassword))
                 .platformRole(PlatformRole.ADMIN)
+                .emailVerified(true)
                 .locale("fr")
                 .theme("dark")
                 .build();

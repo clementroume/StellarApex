@@ -160,6 +160,29 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
   }
 
   /**
+   * Handles {@link EmailNotVerifiedException}: the action needs a verified e-mail address.
+   *
+   * @param ex The exception.
+   * @param request The current HTTP request.
+   * @param locale The locale for message translation.
+   * @return A {@link ResponseEntity} with status <b>403 Forbidden</b> and {@code code =
+   *     EMAIL_NOT_VERIFIED}.
+   */
+  @ExceptionHandler(EmailNotVerifiedException.class)
+  public ResponseEntity<@NonNull ProblemDetail> handleEmailNotVerified(
+      EmailNotVerifiedException ex, HttpServletRequest request, Locale locale) {
+    log.info("Unverified e-mail refused on {}", request.getRequestURI());
+    String message = getLocalizedMessage(ex.getMessage(), null, locale);
+    ResponseEntity<@NonNull ProblemDetail> response =
+        createProblemResponse(HttpStatus.FORBIDDEN, "Email Not Verified", message, request);
+    ProblemDetail body = response.getBody();
+    if (body != null) {
+      body.setProperty("code", "EMAIL_NOT_VERIFIED");
+    }
+    return response;
+  }
+
+  /**
    * Handles {@link AccountLockedException}.
    *
    * <p>Occurs when the user has exceeded the maximum number of login attempts.

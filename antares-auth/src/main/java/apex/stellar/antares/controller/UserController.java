@@ -1,6 +1,9 @@
 package apex.stellar.antares.controller;
 
 import apex.stellar.antares.config.SupportSessionAuthentication;
+import apex.stellar.antares.dto.AthleteProfileRequest;
+import apex.stellar.antares.dto.BodyWeightRequest;
+import apex.stellar.antares.dto.BodyWeightResponse;
 import apex.stellar.antares.dto.ChangePasswordRequest;
 import apex.stellar.antares.dto.DisplayNameResponse;
 import apex.stellar.antares.dto.DisplayNamesRequest;
@@ -8,7 +11,9 @@ import apex.stellar.antares.dto.PreferencesUpdateRequest;
 import apex.stellar.antares.dto.ProfileUpdateRequest;
 import apex.stellar.antares.dto.UserResponse;
 import apex.stellar.antares.model.User;
+import apex.stellar.antares.service.AthleteProfileService;
 import apex.stellar.antares.service.CookieService;
+import apex.stellar.antares.service.EmailVerificationService;
 import apex.stellar.antares.service.JwtService;
 import apex.stellar.antares.service.SupportSessionService;
 import apex.stellar.antares.service.UserService;
@@ -29,6 +34,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -53,6 +59,8 @@ public class UserController {
   private final SupportSessionService supportSessionService;
   private final CookieService cookieService;
   private final JwtService jwtService;
+  private final EmailVerificationService emailVerificationService;
+  private final AthleteProfileService athleteProfileService;
 
   /**
    * Retrieves the profile of the currently authenticated user.
@@ -147,6 +155,162 @@ public class UserController {
     if (authentication.getPrincipal() instanceof User currentUser) {
       return ResponseEntity.ok(
           withSupportSession(userService.updatePreferences(currentUser, request), authentication));
+    }
+    return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+  }
+
+  /**
+   * Replaces the authenticated user's athlete profile (division, birth year, height).
+   *
+   * @param request The profile; null clears a field.
+   * @param authentication The current user's authentication principal.
+   * @return The updated {@link UserResponse}.
+   */
+  @PutMapping("/me/athlete-profile")
+  @Operation(
+      summary = "Update the athlete profile",
+      description =
+          "Division (MEN, WOMEN: load highlighted, separate leaderboards; applies to the scores"
+              + " logged afterwards), birth year and height (private). All optional.")
+  @ApiResponses(
+      value = {
+        @ApiResponse(responseCode = "200", description = "Profile updated"),
+        @ApiResponse(
+            responseCode = "400",
+            description = "Validation error",
+            content = @Content(schema = @Schema(hidden = true))),
+        @ApiResponse(
+            responseCode = "401",
+            description = "Unauthorized",
+            content = @Content(schema = @Schema(hidden = true)))
+      })
+  public ResponseEntity<@NonNull UserResponse> updateAthleteProfile(
+      @Valid @RequestBody AthleteProfileRequest request, Authentication authentication) {
+
+    if (authentication.getPrincipal() instanceof User currentUser) {
+      return ResponseEntity.ok(
+          withSupportSession(
+              athleteProfileService.updateProfile(currentUser, request), authentication));
+    }
+    return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+  }
+
+  /**
+   * Lists the authenticated user's body weight measures (private).
+   *
+   * @param authentication The current user's authentication principal.
+   * @return The measures, most recent first.
+   */
+  @GetMapping("/me/body-weights")
+  @Operation(
+      summary = "Body weight history",
+      description = "The user's own measures (kg), most recent first, at most 100. Private.")
+  @ApiResponses(
+      value = {
+        @ApiResponse(responseCode = "200", description = "History"),
+        @ApiResponse(
+            responseCode = "401",
+            description = "Unauthorized",
+            content = @Content(schema = @Schema(hidden = true)))
+      })
+  public ResponseEntity<@NonNull List<BodyWeightResponse>> getBodyWeights(
+      Authentication authentication) {
+
+    if (authentication.getPrincipal() instanceof User currentUser) {
+      return ResponseEntity.ok(athleteProfileService.getBodyWeights(currentUser));
+    }
+    return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+  }
+
+  /**
+   * Records a body weight measure (one per day, a new one replaces it).
+   *
+   * @param request The measure.
+   * @param authentication The current user's authentication principal.
+   * @return The stored measure.
+   */
+  @PostMapping("/me/body-weights")
+  @Operation(
+      summary = "Record a body weight",
+      description = "Weight in kg, day defaults to today; a second measure the same day replaces it.")
+  @ApiResponses(
+      value = {
+        @ApiResponse(responseCode = "200", description = "Measure stored"),
+        @ApiResponse(
+            responseCode = "400",
+            description = "Validation error",
+            content = @Content(schema = @Schema(hidden = true))),
+        @ApiResponse(
+            responseCode = "401",
+            description = "Unauthorized",
+            content = @Content(schema = @Schema(hidden = true)))
+      })
+  public ResponseEntity<@NonNull BodyWeightResponse> recordBodyWeight(
+      @Valid @RequestBody BodyWeightRequest request, Authentication authentication) {
+
+    if (authentication.getPrincipal() instanceof User currentUser) {
+      return ResponseEntity.ok(athleteProfileService.recordBodyWeight(currentUser, request));
+    }
+    return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+  }
+
+  /**
+   * Deletes one of the authenticated user's body weight measures.
+   *
+   * @param id The measure.
+   * @param authentication The current user's authentication principal.
+   * @return 204 No Content.
+   */
+  @DeleteMapping("/me/body-weights/{id}")
+  @Operation(summary = "Delete a body weight", description = "Only the user's own measures.")
+  @ApiResponses(
+      value = {
+        @ApiResponse(responseCode = "204", description = "Measure deleted"),
+        @ApiResponse(
+            responseCode = "404",
+            description = "Unknown measure (or someone else's)",
+            content = @Content(schema = @Schema(hidden = true)))
+      })
+  public ResponseEntity<@NonNull Void> deleteBodyWeight(
+      @PathVariable Long id, Authentication authentication) {
+
+    if (authentication.getPrincipal() instanceof User currentUser) {
+      athleteProfileService.deleteBodyWeight(currentUser, id);
+      return ResponseEntity.noContent().build();
+    }
+    return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+  }
+
+  /**
+   * Mails a new e-mail verification link to the authenticated user (nothing when already
+   * verified).
+   *
+   * @param authentication The current user's authentication principal.
+   * @return 202 Accepted.
+   */
+  @PostMapping("/me/email/verification")
+  @Operation(
+      summary = "Resend the verification e-mail",
+      description =
+          "Mails a new verification link (48 h) to the current address; the previous link stops"
+              + " working. No-op when already verified. Throttled per user.")
+  @ApiResponses(
+      value = {
+        @ApiResponse(responseCode = "202", description = "Request accepted"),
+        @ApiResponse(
+            responseCode = "401",
+            description = "Unauthorized",
+            content = @Content(schema = @Schema(hidden = true))),
+        @ApiResponse(
+            responseCode = "429",
+            description = "Too many requests, Retry-After set",
+            content = @Content(schema = @Schema(hidden = true)))
+      })
+  public ResponseEntity<@NonNull Void> resendVerification(Authentication authentication) {
+
+    if (authentication.getPrincipal() instanceof User currentUser) {
+      emailVerificationService.resend(currentUser);
+      return ResponseEntity.accepted().build();
     }
     return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
   }

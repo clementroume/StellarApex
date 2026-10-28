@@ -11,6 +11,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.net.URI;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.Optional;
 import java.util.Set;
@@ -157,13 +159,30 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
           decodedJwt.getClaimAsString(JwtService.CLAIM_TYPE))) {
         return null;
       }
-      return (User) userDetailsService.loadUserByUsername(decodedJwt.getSubject());
+      User user = (User) userDetailsService.loadUserByUsername(decodedJwt.getSubject());
+      // Tokens issued before the last password change (reset) are no longer valid
+      if (issuedBeforePasswordChange(decodedJwt.getIssuedAt(), user.getPasswordChangedAt())) {
+        return null;
+      }
+      return user;
     } catch (JwtException e) {
       // JWT validation failed - the request will be treated as unauthenticated
       // This is normal for expired tokens or invalid signatures
       log.trace("JWT validation failed: {}", e.getMessage());
       return null;
     }
+  }
+
+  /**
+   * Whether a token was issued before the last password change. JWT {@code iat} has a one-second
+   * precision, so the change time is truncated to the second (a token issued in the same second
+   * as the change stays valid).
+   */
+  static boolean issuedBeforePasswordChange(Instant issuedAt, Instant passwordChangedAt) {
+    if (passwordChangedAt == null) {
+      return false;
+    }
+    return issuedAt == null || issuedAt.isBefore(passwordChangedAt.truncatedTo(ChronoUnit.SECONDS));
   }
 
   /** Returns the support token when present and applicable to this request, else {@code null}. */
