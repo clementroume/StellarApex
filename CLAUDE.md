@@ -9,7 +9,7 @@ Monorepo: one folder per service, each with its own build. Service-specific guid
 | `antares-auth`       | Antares   | Auth (JWT in HttpOnly cookies), users, gyms, memberships; Traefik forward-auth | Java 25, Spring Boot 4.1, PostgreSQL, Redis |
 | `aldebaran-training` | Aldebaran | Sport domain: muscles, movements, WODs, scores               | Java 25, Spring Boot 4.1, PostgreSQL   |
 | `bellatrix-swagger`  | Bellatrix | Swagger/OpenAPI aggregator                                    | Spring Boot                            |
-| `sirius-app`         | Sirius    | Frontend                                                      | Angular 22, Tailwind 4, DaisyUI 5, Vitest |
+| `sirius-app`         | Sirius    | Frontend                                                      | Angular 22, Tailwind 4, spartan/ui, Vitest |
 | `dynamic/`           | Altair    | Traefik dynamic config (routers, middlewares, forward-auth)   | Traefik 3                              |
 
 Infra: `docker-compose.yml` (Traefik `altair-proxy`, `castor-db` PostgreSQL 18, `pollux-cache` Redis 8),

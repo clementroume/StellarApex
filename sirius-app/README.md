@@ -1,12 +1,15 @@
 # Sirius (Frontend)
 
-Angular frontend of the StellarApex platform: movement and muscle catalog, WODs (list, detail, form),
-account pages and the admin support page. Available in French and English.
+Angular frontend of the StellarApex platform: navigation by spaces (Today, My training, My box,
+Catalogue, Admin), movement and muscle catalog, WODs (list, detail, form), scores, account pages and
+the admin support page. Mobile first, installable (PWA), available in French and English.
 
 ## Tech Stack
 
 * **Framework**: Angular 22 (standalone components, signals, OnPush)
-* **UI**: Tailwind CSS 4, DaisyUI 5, ng-icons (Heroicons, Huge Icons)
+* **UI**: Tailwind CSS 4, spartan/ui (`@spartan-ng/brain` primitives + helm styles copied in
+  `src/app/shared/ui`, on Angular CDK), ng-icons (Heroicons, Huge Icons, Lucide for helm)
+* **PWA**: Angular service worker (production build), `public/manifest.webmanifest`
 * **i18n**: ngx-translate (`src/assets/i18n/fr.json`, `en.json`)
 * **Tests**: Vitest (jsdom) through `ng test`
 * **Serving**: nginx (multi-stage `Dockerfile`, `nginx.conf`)
@@ -37,8 +40,27 @@ src/app/
 │   └── aldebaran/    # models + services for muscles, movements, WODs, scores
 ├── core/             # guards, interceptors, layout, cross-cutting services
 ├── features/         # one folder per feature (list / detail / form + routes), lazy-loaded
-└── shared/component/ # reusable list, detail and search components
+├── shared/component/ # app components: page template, form field, list group/item/state, detail, movement
+│                     # combobox, box/prog selector, palette picker, native select, coming soon...
+└── shared/ui/        # spartan helm code (imported as @spartan-ng/helm/<name>)
+src/palettes.css      # colour palettes × light/dark (--sa-* variables)
+src/spartan.css       # spartan tokens and Tailwind colours mapped to the palettes
 ```
+
+## Navigation
+
+* **Spaces** (`core/layout/spaces.service.ts`): Today (`/today`, home) · My training (`/training`:
+  journal of the user's scores, records and review to come) · My box (`/box`, members only: sessions
+  and leaderboards to come; members and settings for staff holding `MANAGE_MEMBERSHIPS` /
+  `MANAGE_SETTINGS`) · Catalogue (`/wods`, `/movements`, `/muscles`) · Admin (`/admin`, admins).
+  Desktop: spaces in the top bar, the space's pages as tabs below it. Mobile: bottom tab bar.
+* **Displayed box/prog** (`core/services/display-gym.service.ts`): selector in the top bar when the
+  user has several usable memberships; one box/prog or all, remembered on the device. A display
+  filter only (Today, journal): never sent to the APIs, rights stay per resource.
+* **Today**: today's session (placeholder until the planning lots), latest scores and PRs from
+  `GET /aldebaran/scores/me`.
+* **PWA**: installable (manifest, icons, service worker in production builds); API calls are never
+  cached; a toast offers to reload when a new version is ready.
 
 ## Rights in the UI
 

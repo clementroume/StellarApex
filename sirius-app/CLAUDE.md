@@ -1,6 +1,6 @@
 # Sirius (Angular frontend)
 
-Angular 22 standalone app, zoneless-friendly signals, Tailwind 4 + DaisyUI 5, ngx-translate, ng-icons,
+Angular 22 standalone app, zoneless-friendly signals, Tailwind 4 + spartan/ui, ngx-translate, ng-icons,
 Vitest (jsdom) through `ng test`. Commands: `npm test`, `npm run build`, `npm start` (see root `CLAUDE.md`).
 
 ## Layout
@@ -8,7 +8,8 @@ Vitest (jsdom) through `ng test`. Commands: `npm test`, `npm run build`, `npm st
 - `src/app/api/<service>/{models,services}`: one Angular service per backend resource, DTO interfaces
   mirroring the backend (`antares` = auth/users/gyms/memberships, `aldebaran` = muscles/movements/WODs/scores).
   URLs built from `environment.authUrl` (`/antares`) / `environment.trainingUrl` (`/aldebaran`).
-- `src/app/core`: guards, interceptors, layout (navbar, main-layout, support banner), cross-cutting
+- `src/app/core`: guards, interceptors, layout (navbar, bottom-nav, space-nav, `spaces.service`, main-layout,
+  support banner), cross-cutting
   services, shared models (`Slice<T>`, `ProblemDetail`).
 - `src/app/features/<feature>`: `<x>-list`, `<x>-detail`, `<x>-form` + `<feature>.routes.ts`, lazy-loaded
   from `app.routes.ts` under the authenticated `MainLayoutComponent`.
@@ -21,11 +22,15 @@ Vitest (jsdom) through `ng test`. Commands: `npm test`, `npm run build`, `npm st
 
 - New interactive widgets (combobox, select, dialog, sheet/drawer, menu, tabs, toast, date picker...)
   use spartan brain + helm, wrapped in `shared/component`; never hand-write ARIA/keyboard handling.
-- spartan and DaisyUI coexist while screens migrate (DaisyUI → spartan, screen by screen). The spartan
-  preset is NOT imported (it redefines DaisyUI's `primary`/`secondary`/`accent`/`border` and
-  `container`): `src/spartan.css` keeps its state variants and maps every spartan token to the palette
-  variables (`--sa-*`). In helm code, spartan's subtle `secondary`/`accent` colours are `muted` (in
-  DaisyUI they are the record yellow and brand orange); never use raw `var(--border)` (a width in DaisyUI).
+- No DaisyUI any more. The spartan preset is NOT imported: `src/spartan.css` keeps its state variants
+  and maps every Tailwind colour and spartan token to the palette variables (`--sa-*`). Brand colours
+  keep the app meaning (`primary`, `secondary` = records/PR yellow, `accent` = brand orange, with
+  `*-content` for text on them); in helm code, spartan's subtle `secondary`/`accent` are `muted`.
+- App pieces: `app-page` (page template), `app-form-field` (label + input group + error),
+  `appNativeSelect` (native select keeping `ngValue`), `app-list-group`, `app-section-divider`,
+  `app-coming-soon` / `SpacePlaceholderComponent` (route data), `field-group` and `switch` CSS
+  utilities. Toggle filters are buttons with `aria-pressed`; dialogs trap focus (CDK), close on Escape
+  and give focus back.
 - Add a component: `npm i -D @spartan-ng/cli@<brain version>`, `npx ng g @spartan-ng/cli:ui <name>`
   (reads `components.json`), then `npm uninstall @spartan-ng/cli` (it pulls Nx and audit warnings) and
   check the diff: the CLI rewrites `tsconfig.json` (restore its header comment),
@@ -35,8 +40,16 @@ Vitest (jsdom) through `ng test`. Commands: `npm test`, `npm run build`, `npm st
 
 - `ThemeService` sets `data-theme` (light/dark) and `data-palette` (`ocean` default, `chalk`, `volt`,
   `rig`; Antares preference `palette`) on `<html>`. Colours live only in `src/palettes.css` as
-  `--sa-*` variables; DaisyUI themes and the spartan bridge read them. Never hard-code a colour: use the
-  theme utilities (`bg-base-100`, `text-primary`, spartan `bg-muted`...).
+  `--sa-*` variables, read by `spartan.css`. Never hard-code a colour: use the theme utilities
+  (`bg-card`, `bg-background`, `text-muted-foreground`, `border`, `text-primary`, `bg-secondary/15`...).
+
+## Navigation
+
+- Spaces come from `core/layout/spaces.service.ts` (AccessService only): add a space or a space page
+  there, plus its lazy routes in `app.routes.ts` / `<feature>.routes.ts`. Staff pages also get
+  `gymPermissionGuard(permission)` (UI comfort, the backend decides).
+- The displayed box/prog (`DisplayGymService`) filters what a screen shows; never send it to an API.
+- Pages use `app-page`; features to come use `SpacePlaceholderComponent` with route data.
 
 ## Rights in the UI
 
@@ -60,7 +73,8 @@ Vitest (jsdom) through `ng test`. Commands: `npm test`, `npm run build`, `npm st
   `// --- STATE (SIGNALS & VARIABLES) ---`, `// --- COMPUTED STATE ---`, `// --- LIFECYCLE ---`,
   `// --- DATA FETCHING ---`, `// --- ACTIONS & EVENTS ---`, `// --- HELPERS ---`.
 - Templates in a separate `.html` (except small shared components), new control flow (`@if`, `@for`),
-  DaisyUI classes (`btn`, `card`, `badge`, `select select-bordered`...). Escape a literal `@` as `&#64;`.
+  spartan helm (`hlmBtn`, `hlmCard`, `hlmBadge`, `hlmInput`, `app-form-field`...). Escape a literal `@` as `&#64;`.
+- Dates are shown with `toLocaleDateString` in the language shown (no Angular locale data registered).
 - Every visible string goes through `| translate`; add keys to BOTH `src/assets/i18n/fr.json` and
   `en.json` (2-space JSON, keys grouped by feature: `GLOBAL`, `NAVBAR`, `MOVEMENT`, `WOD`, `ADMIN`...).
   Gym roles, statuses and permissions (label + description) are shared under `GYM.*`.
@@ -94,10 +108,9 @@ Vitest (jsdom) through `ng test`. Commands: `npm test`, `npm run build`, `npm st
 
 ## Known state
 
-- Production build warns that the initial bundle is over the 500 kB budget (`angular.json`): ~695 kB
-  during the DaisyUI → spartan migration (Tailwind generates the utilities of every helm file, ~280 kB
-  of CSS, of which DaisyUI ~150 kB). Helm in the shell brings `tailwind-merge` (~37 kB) into the
-  initial JS. Expected after DaisyUI removal: ~550 kB. Keep heavy brain modules out of the shell
+- Production build warns that the initial bundle is over the 500 kB budget (`angular.json`): ~580 kB
+  (137 kB transferred; 520 kB before lot 0). Tailwind generates the utilities of every helm file
+  (~145 kB of CSS) and helm in the shell brings `tailwind-merge` (~37 kB). Keep heavy brain modules out of the shell
   (sonner is loaded on first toast and its toaster is `@defer (on idle)`).
   `@spartan-ng/helm/utils` must not re-export `provideSpartanHlm` (it drags `@angular/cdk/overlay` in).
   The shell (navbar, bottom nav, layout) uses no overlay-based helm (select, dropdown, dialog, tooltip):
