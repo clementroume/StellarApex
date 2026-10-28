@@ -130,24 +130,48 @@ During a support session `GET /me` returns the target user with
 
 ### Gym Management (`/antares/gyms`)
 
-* `POST /`: Create a new Gym (tenant), with the creation token (`SECRET_ADMIN_TOKEN`).
-* `GET /`: List gyms. Non-admins see ACTIVE gyms only; an ADMIN can filter by `status`.
-* `POST /join`: Join a gym using an enrollment code.
-* `PUT /{id}/status`: [ADMIN] Approve, reject or suspend a gym.
-* `GET /{gymId}/settings`: [`MANAGE_SETTINGS`] Get gym settings.
+* `POST /` `{name, description, isProgramming}`: Request a gym. Any user; the gym is
+  `PENDING_APPROVAL` and the requester becomes its OWNER (box) or PROGRAMMER (program). 409 if the
+  name is taken (case-insensitive) or the user already has a request waiting for approval.
+* `GET /?search=&type=BOX|PROGRAM&page=&size=`: `Slice` of ACTIVE gyms by name (20 per page, max 50),
+  public view `{id, name, description, isProgramming}` only.
+* `GET /{id}`: Public view of an ACTIVE gym (e.g. invitation link `/join?gym=12&code=ABC`), else 404.
+* `PUT /{gymId}` `{name, description}`: [`MANAGE_SETTINGS`] Rename or describe the gym.
+* `POST /join` `{gymId, enrollmentCode}`: Join an ACTIVE gym (code compared ignoring case); returns the
+  user's `MembershipSummary`, PENDING or ACTIVE (auto-subscription). A former (INACTIVE) member is
+  reactivated as ATHLETE on the same membership. 400 wrong code (a malformed request, not a missing
+  right), 404 unknown or inactive gym, 409 already a member or BANNED.
+* `DELETE /{gymId}/membership/me`: Leave: ACTIVE becomes INACTIVE (history and scores kept), a PENDING
+  request is withdrawn (deleted). 409 for the OWNER/PROGRAMMER (transfer first) and for a banned user.
+* `PUT /{id}/status?status=`: [ADMIN] Approve (`ACTIVE`), reject (`REJECTED`) or suspend (`SUSPENDED`).
+* `GET /{gymId}/settings`: [`MANAGE_SETTINGS`] Name, description, type, status, enrollment code and
+  auto-subscription.
+* `PUT /{gymId}/settings` `{enrollmentCode, isAutoSubscription}`: [`MANAGE_SETTINGS`] Update them.
+* `POST /{gymId}/settings/enrollment-code`: [`MANAGE_SETTINGS`] New random code (former invitation
+  links stop working).
 * `GET /{gymId}/athletes`: [`SCORE_VERIFY`] Usable members of the gym (`{id, displayName}`, sorted by
   name), for the staff logging competition scores.
-* `PUT /{gymId}/settings`: [`MANAGE_SETTINGS`] Update gym settings.
 * `POST /{gymId}/transfer-ownership` `{membershipId}`: [gym OWNER/PROGRAMMER] Make an ACTIVE member
   the gym holder; the former holder becomes COACH (physical) or ATHLETE (virtual). Returns both
   memberships.
-* `DELETE /{id}`: [`MANAGE_SETTINGS`] Delete a gym.
+* `DELETE /{id}`: [gym OWNER/PROGRAMMER] Delete the gym and its memberships (also withdraws a
+  rejected request); a coach holding `MANAGE_SETTINGS` cannot.
 
 ### Membership Management (`/antares/memberships`)
 
-* `GET /`: [`MANAGE_MEMBERSHIPS`] List members of a gym.
-* `PUT /{id}`: [`MANAGE_MEMBERSHIPS`] Update a member's role, status, or permissions.
-* `DELETE /{id}`: [`MANAGE_MEMBERSHIPS`] Remove a member from a gym.
+* `GET /?gymId=&status=`: [`MANAGE_MEMBERSHIPS`] Members of a gym, PENDING first then ACTIVE, INACTIVE,
+  BANNED, by name, each with `createdAt` and the caller's `capabilities {canChangeStatus,
+  canChangeRole, canChangePermissions, canRemove, canBan, canBecomeHolder}`
+  (`MembershipService.capabilities`, the single rule also enforced by the two endpoints below).
+* `PUT /{id}` `{status, gymRole, permissions}`: [`MANAGE_MEMBERSHIPS`] Update a member. The
+  OWNER/PROGRAMMER and platform admins manage everyone else (roles and permissions on a physical box
+  only, bans); a COACH with `MANAGE_MEMBERSHIPS` changes the status of ATHLETES only, never to or from
+  BANNED; the holder's own membership never changes here.
+* `DELETE /{id}`: [`MANAGE_MEMBERSHIPS`] Refuse a PENDING request (deleted, the user may ask again) or
+  remove a member (INACTIVE, history kept). 409 for the OWNER/PROGRAMMER.
+
+A BANNED member keeps the membership row, which blocks any new request until the ban is lifted
+(status INACTIVE).
 
 Bracketed permissions are gym permissions; a platform ADMIN always passes.
 
@@ -174,7 +198,10 @@ without it the answer is a bare 404.
   or removes OWNER/PROGRAMMER (400); only `transfer-ownership` does. A partial unique index (V4)
   enforces one holder per gym.
 * A membership is sent to Aldebaran only when it is usable: status ACTIVE and gym ACTIVE (or role
-  OWNER/PROGRAMMER while the gym is pending approval).
+  OWNER/PROGRAMMER while the gym is pending approval); a suspended or rejected gym opens access to
+  nobody. `MembershipSummary.usable` tells Sirius which ones these are.
+* Inside Antares a membership grants its effective permissions only while ACTIVE
+  (`Membership.activePermissions()`): an INACTIVE coach manages nothing.
 
 ## Support Sessions
 

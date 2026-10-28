@@ -11,9 +11,14 @@ HttpOnly cookies, XSRF cookie `XSRF-TOKEN`). `./mvnw verify` runs unit tests and
   delegates to `service/GatewayIdentityService`, which builds the `X-Auth-*` headers (contract in the
   root `CLAUDE.md`). Any header change must be mirrored in `dynamic/routes.yml` and in Aldebaran's
   `SecurityConfig`.
-- Effective permissions: `model/Membership.effectivePermissions()` is the single rule (used by
-  `AntaresSecurityService.hasAccess`, the gateway headers and `MembershipMapper` →
-  `MembershipSummary.permissions`). `Membership.isUsable()` decides which memberships are sent.
+- Effective permissions: `model/Membership.effectivePermissions()` is the single rule; inside Antares
+  only an ACTIVE membership grants them (`activePermissions()`, used by
+  `AntaresSecurityService.hasAccess` and `MembershipSummary.permissions`). `Membership.isUsable()`
+  decides which memberships are sent to Aldebaran (`MembershipSummary.usable`).
+- Membership management: `MembershipService.capabilities` is the single rule (sent as
+  `MembershipResponse.capabilities`, enforced by `updateMembership` / `removeMembership`). Leaving or
+  removing sets INACTIVE (never delete a member with history); a refused or withdrawn PENDING request
+  is deleted; `joinGym` reactivates an INACTIVE row; BANNED blocks joining.
 - Gym-scoped endpoint security: `@PreAuthorize("@security.hasGymPermission(#gymId, 'MANAGE_SETTINGS')")`
   / `canManageMembership(...)` in `service/AntaresSecurityService` (platform ADMIN always passes).
 - Support sessions (admin acts as a real user): `service/SupportSessionService` + cookie
@@ -28,7 +33,9 @@ HttpOnly cookies, XSRF cookie `XSRF-TOKEN`). `./mvnw verify` runs unit tests and
   `X-Internal-Secret`, constant-time, 404 otherwise), excluded from the Traefik route. Never expose
   user data there beyond what a caller needs to enforce its own rule.
 - Gym holder: exactly one OWNER (physical) / PROGRAMMER (virtual) per gym (`Gym.holderRole`,
-  `Gym.allowsRole`, unique index V4); changed only by `MembershipService.transferOwnership`.
+  `Gym.allowsRole`, unique index V4); changed only by `MembershipService.transferOwnership`; transfer
+  and gym deletion are `@security.isGymHolder`. Gym creation is open (`PENDING_APPROVAL`, one waiting
+  request per user, no creation token); discovery `GET /gyms` returns `GymPublicResponse` only.
 - Bootstrap: the admin from `ApplicationConfig.adminUserInitializer`. `config/DevDataSeeder`
   (`dev` profile, temporary, TO BE REMOVED) seeds test accounts; Aldebaran relies on its names.
 

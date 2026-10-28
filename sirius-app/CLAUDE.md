@@ -56,8 +56,14 @@ Vitest (jsdom) through `ng test`. Commands: `npm test`, `npm run build`, `npm st
 - Use `core/services/access.service.ts` for every rights question: `isAdmin()`, `memberships()`,
   `hasGymPermission(gymId, p)`, `gymsWithPermission(p)`. Never test `currentUser().platformRole`
   directly in components.
-- For a specific resource, rely on backend-computed flags (e.g. `WodResponse.capabilities`) instead of
-  recomputing rules. Guard: `adminGuard`.
+- For a specific resource, rely on backend-computed flags (e.g. `WodResponse.capabilities`,
+  `MembershipResponse.capabilities`) instead of recomputing rules. Guard: `adminGuard`.
+- `AccessService.memberships()` = memberships with `usable` (computed by Antares). After joining,
+  leaving, creating, transferring or deleting a gym, call `UserService.refreshCurrentUser()`.
+- Staff pages pick the managed gym with `features/box/staff-gym.ts` (`staffGymSelection(permission)`:
+  follows `DisplayGymService` when allowed, `app-staff-gym-picker` when several).
+- Sensitive actions ask through `shared/component/confirm-dialog` (`app-confirm-dialog`, alert dialog,
+  extra fields projected, `confirmDisabled`). Backend errors: `problemDetailOf(err)`.
 - Admin support session: `core/services/support-session.service.ts` (start/end/expiry) and
   `core/layout/support-banner`. During a session `currentUser` IS the target (with `supportSession`),
   so rights follow automatically. `auth.interceptor` turns 401 `SUPPORT_SESSION_EXPIRED` into

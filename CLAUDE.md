@@ -46,7 +46,7 @@ Traefik strip client-forged values; any new header MUST be added there):
 - `X-Auth-User-Role`: platform role only (`ADMIN` | `USER`), never a gym role
 - `X-Auth-Memberships`: every usable membership, `gymId:ROLE:PERM+PERM` joined by `,`
   (e.g. `12:COACH:WOD_WRITE+SCORE_VERIFY,15:ATHLETE:`). Usable = membership ACTIVE and
-  (gym ACTIVE or role OWNER/PROGRAMMER)
+  (gym ACTIVE, or gym PENDING_APPROVAL and role OWNER/PROGRAMMER); `MembershipSummary.usable` tells Sirius
 - `X-Auth-Actor-Id`: admin id, only during a support session (the other headers then describe the
   target user)
 
@@ -55,7 +55,14 @@ all, COACH = granted ones, ATHLETE = none.
 
 Gym roles by type: physical gym = exactly 1 OWNER + COACH* + ATHLETE*; virtual gym (`isProgramming`)
 = exactly 1 PROGRAMMER + ATHLETE*. OWNER/PROGRAMMER change only through
-`POST /antares/gyms/{gymId}/transfer-ownership`.
+`POST /antares/gyms/{gymId}/transfer-ownership`; only they (or an admin) transfer or delete the gym.
+
+Gym lifecycle (Antares): any user requests a gym (`PENDING_APPROVAL`, one waiting request per user,
+admin approves / rejects / suspends). Members join an ACTIVE gym with its code (PENDING, or ACTIVE
+with auto-subscription), leave or are removed as INACTIVE (row, history and scores kept; joining
+again reactivates it), a refused request is deleted, BANNED blocks new requests. Membership management
+rules live in `MembershipService.capabilities` (holder/admin: everything on others; COACH with
+`MANAGE_MEMBERSHIPS`: status of athletes, no ban) and reach Sirius as `MembershipResponse.capabilities`.
 Permissions: `WOD_WRITE`, `SCORE_VERIFY`, `MANAGE_MEMBERSHIPS`, `MANAGE_SETTINGS`.
 
 Rights are evaluated on the gym of the resource (a user can belong to several gyms, e.g. a physical box
