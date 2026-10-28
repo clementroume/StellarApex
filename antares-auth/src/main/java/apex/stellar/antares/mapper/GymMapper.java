@@ -1,7 +1,9 @@
 package apex.stellar.antares.mapper;
 
+import apex.stellar.antares.dto.GymPublicResponse;
 import apex.stellar.antares.dto.GymRequest;
 import apex.stellar.antares.dto.GymResponse;
+import apex.stellar.antares.dto.GymSettingsResponse;
 import apex.stellar.antares.model.Gym;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
@@ -34,4 +36,22 @@ public interface GymMapper {
   @Mapping(target = "status", constant = "PENDING_APPROVAL")
   @Mapping(target = "isAutoSubscription", constant = "false")
   Gym toEntity(GymRequest request);
+
+  /** Converts a {@link Gym} entity to the public view used for discovery. */
+  default GymPublicResponse toPublicResponse(Gym gym) {
+    return new GymPublicResponse(
+        gym.getId(), gym.getName(), gym.getDescription(), gym.isProgramming());
+  }
+
+  /** Converts a {@link Gym} entity to the settings view of its staff. */
+  default GymSettingsResponse toSettingsResponse(Gym gym) {
+    return new GymSettingsResponse(
+        gym.getId(),
+        gym.getName(),
+        gym.getDescription(),
+        gym.isProgramming(),
+        gym.getStatus(),
+        gym.getEnrollmentCode(),
+        gym.isAutoSubscription());
+  }
 }

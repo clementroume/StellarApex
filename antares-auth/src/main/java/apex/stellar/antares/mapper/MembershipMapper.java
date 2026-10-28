@@ -1,5 +1,6 @@
 package apex.stellar.antares.mapper;
 
+import apex.stellar.antares.dto.MembershipCapabilities;
 import apex.stellar.antares.dto.MembershipResponse;
 import apex.stellar.antares.dto.MembershipSummary;
 import apex.stellar.antares.model.Membership;
@@ -19,18 +20,35 @@ import org.mapstruct.ReportingPolicy;
 public interface MembershipMapper {
 
   /**
-   * Converts a Membership entity to a MembershipResponse DTO.
+   * Converts a Membership entity to a MembershipResponse DTO with the current user's capabilities.
+   *
+   * @param membership the Membership entity to convert
+   * @param capabilities what the current user may do with it
+   * @return the converted MembershipResponse DTO
+   */
+  @Mapping(target = "id", source = "membership.id")
+  @Mapping(target = "user", source = "membership.user")
+  @Mapping(target = "gymRole", source = "membership.gymRole")
+  @Mapping(target = "status", source = "membership.status")
+  @Mapping(target = "permissions", source = "membership.permissions")
+  @Mapping(target = "createdAt", source = "membership.createdAt")
+  @Mapping(target = "capabilities", source = "capabilities")
+  MembershipResponse toResponse(Membership membership, MembershipCapabilities capabilities);
+
+  /**
+   * Converts a Membership entity to a MembershipResponse DTO without capabilities (null), for
+   * answers the client reloads anyway (e.g. after an ownership transfer).
    *
    * @param membership the Membership entity to convert
    * @return the converted MembershipResponse DTO
    */
-  @Mapping(target = "user", source = "user")
-  @Mapping(target = "gymRole", source = "gymRole")
-  MembershipResponse toResponse(Membership membership);
+  default MembershipResponse toResponse(Membership membership) {
+    return toResponse(membership, null);
+  }
 
   /**
    * Converts a Membership entity to a MembershipSummary DTO, including flattened gym details and
-   * the effective permissions (see {@link Membership#effectivePermissions()}).
+   * the permissions it grants (see {@link Membership#activePermissions()}: none unless ACTIVE).
    *
    * @param membership the Membership entity to convert
    * @return the converted MembershipSummary DTO
@@ -43,6 +61,7 @@ public interface MembershipMapper {
   @Mapping(target = "status", source = "status")
   @Mapping(
       target = "permissions",
-      expression = "java(List.copyOf(membership.effectivePermissions()))")
+      expression = "java(List.copyOf(membership.activePermissions()))")
+  @Mapping(target = "usable", expression = "java(membership.isUsable())")
   MembershipSummary toSummary(Membership membership);
 }

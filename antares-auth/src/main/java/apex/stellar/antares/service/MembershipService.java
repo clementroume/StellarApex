@@ -1,6 +1,7 @@
 package apex.stellar.antares.service;
 
 import apex.stellar.antares.dto.JoinGymRequest;
+import apex.stellar.antares.dto.MembershipCapabilities;
 import apex.stellar.antares.dto.MembershipResponse;
 import apex.stellar.antares.dto.MembershipSummary;
 import apex.stellar.antares.dto.MembershipUpdateRequest;
@@ -17,9 +18,14 @@ import apex.stellar.antares.model.PlatformRole;
 import apex.stellar.antares.model.User;
 import apex.stellar.antares.repository.jpa.GymRepository;
 import apex.stellar.antares.repository.jpa.MembershipRepository;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
+import java.util.Objects;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.AccessDeniedException;
@@ -42,6 +48,16 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 public class MembershipService {
+
+  /** Pending requests first, then ACTIVE, INACTIVE, BANNED; by last then first name. */
+  private static final Comparator<Membership> MEMBER_ORDER =
+      Comparator.comparing(Membership::getStatus)
+          .thenComparing(
+              m -> m.getUser().getLastName(),
+              Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER))
+          .thenComparing(
+              m -> m.getUser().getFirstName(),
+              Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER));
 
   private final MembershipRepository membershipRepository;
   private final GymRepository gymRepository;
@@ -72,6 +88,10 @@ public class MembershipService {
         // Cross-Tenant violation: Owner of Gym A cannot touch Gym B
         throw new AccessDeniedException("error.access.denied");
       }
+      // Lower roles cannot modify platform admins
+      if (target.getUser().getPlatformRole() == PlatformRole.ADMIN) {
+        throw new AccessDeniedException("error.access.denied");
+      }
     }
     return isGlobalAdmin;
   }
@@ -97,71 +117,171 @@ public class MembershipService {
   }
 
   /**
-   * Facilitates a user joining a specific Gym using a secure enrollment code.
+   * Lets a user join an ACTIVE gym with its enrollment code.
    *
-   * <p>This method enforces several checks:
-   *
-   * <ol>
-   *   <li>Verifies the Gym exists.
-   *   <li>Validates the provided enrollment code against the Gym's current code.
-   *   <li>Ensures the user is not already a member (Duplicate check).
-   * </ol>
+   * <ul>
+   *   <li>New member: an ATHLETE membership, PENDING (or ACTIVE with auto-subscription).
+   *   <li>Former member (INACTIVE): the same membership is reactivated the same way, as ATHLETE
+   *       without permissions, so history and scores stay attached to it.
+   *   <li>BANNED member: refused (409); PENDING or ACTIVE member: already a member (409).
+   * </ul>
    *
    * @param request The {@link JoinGymRequest} containing the target Gym ID and the enrollment code.
    * @param user The authenticated {@link User} attempting to join.
-   * @return A {@link MembershipResponse} detailing the newly created membership.
-   * @throws ResourceNotFoundException If the Gym with the specified ID does not exist.
-   * @throws AccessDeniedException If the provided enrollment code is invalid.
-   * @throws DataConflictException If the user already holds a membership in this Gym.
+   * @return The membership as the user sees it in their own list.
+   * @throws ResourceNotFoundException If the gym does not exist or is not ACTIVE.
+   * @throws BusinessRuleException If the enrollment code is wrong (400).
+   * @throws DataConflictException If the user is already a member, or banned.
    */
   @Transactional
-  public MembershipResponse joinGym(JoinGymRequest request, User user) {
+  public MembershipSummary joinGym(JoinGymRequest request, User user) {
     Gym gym =
         gymRepository
             .findById(request.gymId())
+            .filter(g -> g.getStatus() == Gym.GymStatus.ACTIVE)
             .orElseThrow(
                 () -> new ResourceNotFoundException("error.gym.not.found", request.gymId()));
 
-    // 1. Validate Enrollment Code
-    if (!gym.getEnrollmentCode().equals(request.enrollmentCode())) {
-      throw new AccessDeniedException("error.enrollment.code.invalid");
+    // 1. Validate Enrollment Code (case-insensitive, constant time)
+    if (!codeMatches(gym.getEnrollmentCode(), request.enrollmentCode())) {
+      throw new BusinessRuleException("error.enrollment.code.invalid");
     }
 
-    // 2. Check for existing membership (Performance optimized: existsBy... instead of findBy...)
-    if (membershipRepository.existsByUserIdAndGymId(user.getId(), gym.getId())) {
-      throw new DataConflictException("error.membership.exists");
-    }
+    MembershipStatus joinStatus =
+        gym.isAutoSubscription() ? MembershipStatus.ACTIVE : MembershipStatus.PENDING;
 
-    // 3. Create Membership
+    // 2. Existing membership: reactivate a former member, refuse the others
     Membership membership =
-        Membership.builder()
-            .user(user)
-            .gym(gym)
-            .gymRole(GymRole.ATHLETE)
-            .status(gym.isAutoSubscription() ? MembershipStatus.ACTIVE : MembershipStatus.PENDING)
-            .build();
+        membershipRepository.findByUserIdAndGymId(user.getId(), gym.getId()).orElse(null);
+    if (membership != null) {
+      switch (membership.getStatus()) {
+        case BANNED -> throw new DataConflictException("error.membership.banned");
+        case PENDING, ACTIVE -> throw new DataConflictException("error.membership.exists");
+        case INACTIVE -> {
+          membership.setGymRole(GymRole.ATHLETE);
+          membership.setPermissions(new HashSet<>());
+          membership.setStatus(joinStatus);
+        }
+      }
+    } else {
+      // 3. Create Membership
+      membership =
+          Membership.builder()
+              .user(user)
+              .gym(gym)
+              .gymRole(GymRole.ATHLETE)
+              .status(joinStatus)
+              .build();
+    }
 
-    return membershipMapper.toResponse(membershipRepository.save(membership));
+    return membershipMapper.toSummary(membershipRepository.save(membership));
+  }
+
+  /**
+   * Lets a member leave a gym. An ACTIVE membership becomes INACTIVE (history and scores are kept,
+   * joining again reactivates it); a PENDING request is withdrawn (deleted); leaving twice changes
+   * nothing.
+   *
+   * @param gymId The gym to leave.
+   * @param user The member.
+   * @throws ResourceNotFoundException If the user has no membership in this gym.
+   * @throws DataConflictException If the user holds the gym (transfer it first) or is banned.
+   */
+  @Transactional
+  public void leaveGym(Long gymId, User user) {
+    Membership membership =
+        membershipRepository
+            .findByUserIdAndGymId(user.getId(), gymId)
+            .orElseThrow(() -> new ResourceNotFoundException("error.membership.not.found"));
+    if (membership.getGymRole().isHolder()) {
+      throw new DataConflictException("error.membership.leave.holder");
+    }
+    switch (membership.getStatus()) {
+      case BANNED -> throw new DataConflictException("error.membership.banned");
+      case PENDING -> membershipRepository.delete(membership);
+      case ACTIVE -> {
+        membership.setStatus(MembershipStatus.INACTIVE);
+        membershipRepository.save(membership);
+      }
+      case INACTIVE -> {
+        // Already left
+      }
+    }
+    log.info("userId={} left gym {}", user.getId(), gymId);
   }
 
   /**
    * Retrieves a list of memberships for a specific Gym, optionally filtered by status.
    *
-   * <p>This method is typically used by Gym Owners or Coaches to view their member base.
+   * <p>Used by gym staff to manage their members: pending requests first, then ACTIVE, INACTIVE
+   * and BANNED members, each group by name; every entry carries what the requester may do with it.
    *
    * @param gymId The unique identifier of the Gym.
    * @param status An optional {@link MembershipStatus} filter. If null, all memberships are
    *     returned.
+   * @param requester The authenticated user listing the members.
    * @return A list of {@link MembershipResponse} objects matching the criteria.
    */
   @Transactional(readOnly = true)
-  public List<MembershipResponse> getMemberships(Long gymId, MembershipStatus status) {
+  public List<MembershipResponse> getMemberships(
+      Long gymId, MembershipStatus status, User requester) {
     List<Membership> memberships =
         (status != null)
             ? membershipRepository.findByGymIdAndStatus(gymId, status)
             : membershipRepository.findByGymId(gymId);
+    Membership requesterMembership = requesterMembership(requester, gymId);
 
-    return memberships.stream().map(membershipMapper::toResponse).toList();
+    return memberships.stream()
+        .sorted(MEMBER_ORDER)
+        .map(m -> membershipMapper.toResponse(m, capabilities(requester, requesterMembership, m)))
+        .toList();
+  }
+
+  /**
+   * Computes what a user may do with a membership. This is the single source of the membership
+   * management rules, enforced by {@link #updateMembership} and {@link #removeMembership} and sent
+   * to clients as {@link MembershipResponse#capabilities()}.
+   *
+   * <ul>
+   *   <li>Nobody but a platform admin acts on a platform admin's membership, nor outside their own
+   *       gym, nor without an ACTIVE membership there.
+   *   <li>The holder (OWNER/PROGRAMMER) and platform admins manage every other member: status,
+   *       role and permissions (physical box only: a virtual program has athletes only), removal,
+   *       ban, and ownership transfer to an ACTIVE member.
+   *   <li>A COACH with {@code MANAGE_MEMBERSHIPS} validates, refuses, deactivates or reactivates
+   *       ATHLETES only: no role, permission or ban change.
+   *   <li>The holder's own membership changes only through an ownership transfer.
+   * </ul>
+   *
+   * @param requester The user asking.
+   * @param requesterMembership The requester's membership in the target's gym (null if none).
+   * @param target The membership acted upon.
+   * @return The allowed actions.
+   */
+  public MembershipCapabilities capabilities(
+      User requester, Membership requesterMembership, Membership target) {
+    boolean admin = requester.getPlatformRole() == PlatformRole.ADMIN;
+    if (!admin) {
+      boolean sameGym =
+          requesterMembership != null
+              && requesterMembership.getStatus() == MembershipStatus.ACTIVE
+              && Objects.equals(requesterMembership.getGymId(), target.getGymId());
+      if (!sameGym || target.getUser().getPlatformRole() == PlatformRole.ADMIN) {
+        return MembershipCapabilities.NONE;
+      }
+    }
+    if (target.getGymRole().isHolder()) {
+      return MembershipCapabilities.NONE;
+    }
+    if (admin || requesterMembership.getGymRole().isHolder()) {
+      boolean physical = !target.getGym().isProgramming();
+      return new MembershipCapabilities(
+          true, physical, physical, true, true, target.getStatus() == MembershipStatus.ACTIVE);
+    }
+    boolean delegated =
+        requesterMembership.activePermissions().contains(Permission.MANAGE_MEMBERSHIPS)
+            && target.getGymRole() == GymRole.ATHLETE;
+    return new MembershipCapabilities(delegated, false, false, delegated, false, false);
   }
 
   /**
@@ -181,21 +301,17 @@ public class MembershipService {
   }
 
   /**
-   * Updates the status, role, and permissions of an existing membership.
-   *
-   * <p><b>Security Note:</b> This method implements a strict Role-Based Access Control (RBAC)
-   * hierarchy:
+   * Updates the status, role, and permissions of an existing membership, following {@link
+   * #capabilities}.
    *
    * <ul>
-   *   <li><b>Global Admin:</b> Can perform any update, including assigning the ADMIN role.
-   *   <li><b>Cross-Tenant Protection:</b> Requesters cannot modify memberships in gyms they do not
-   *       belong to.
-   *   <li><b>Coach:</b> Can only validate members (PENDING -> ACTIVE). Cannot change Roles or
-   *       Permissions.
-   *   <li><b>Owner/Programmer:</b> Can manage all aspects except assigning the Global ADMIN role.
+   *   <li><b>Cross-Tenant Protection:</b> requesters cannot modify memberships in gyms they do not
+   *       belong to; only platform admins modify a platform admin.
+   *   <li><b>Coach</b> ({@code MANAGE_MEMBERSHIPS}): status of Athletes only, never BANNED.
+   *   <li><b>Owner/Programmer, platform admin:</b> everything below.
    *   <li><b>Gym type:</b> the new role must exist in the gym type (physical: COACH/ATHLETE,
-   *       virtual: ATHLETE); OWNER/PROGRAMMER is never assigned here and the current holder's role
-   *       never changes here (see {@link #transferOwnership}).
+   *       virtual: ATHLETE); OWNER/PROGRAMMER is never assigned here and the current holder's
+   *       membership never changes here (see {@link #transferOwnership}).
    * </ul>
    *
    * @param targetMembershipId The ID of the membership to be updated.
@@ -207,7 +323,7 @@ public class MembershipService {
    * @throws ResourceNotFoundException If the target membership does not exist.
    * @throws AccessDeniedException If the requester lacks the necessary permissions or violates
    *     hierarchy rules.
-   * @throws BusinessRuleException If the role change breaks the gym-type role rules.
+   * @throws BusinessRuleException If the change breaks the gym-type or holder rules.
    */
   @Transactional
   public MembershipResponse updateMembership(
@@ -216,53 +332,101 @@ public class MembershipService {
       User requester,
       Membership requesterMembership) {
 
-    Membership target =
-        membershipRepository
-            .findById(targetMembershipId)
-            .orElseThrow(
-                () ->
-                    new ResourceNotFoundException(
-                        "error.membership.not.found", targetMembershipId));
+    Membership target = findMembership(targetMembershipId);
 
-    // --- 1. Validate Context (Tenant Security) ---
+    // --- 1. Validate Context (Tenant Security, platform admins untouchable) ---
     boolean isGlobalAdmin = validateTenantAccess(requester, requesterMembership, target);
+    boolean isHolder =
+        requesterMembership != null
+            && requesterMembership.getStatus() == MembershipStatus.ACTIVE
+            && requesterMembership.getGymRole().isHolder();
 
-    GymRole requesterRole =
-        requesterMembership != null ? requesterMembership.getGymRole() : GymRole.ATHLETE;
+    MembershipCapabilities caps = capabilities(requester, requesterMembership, target);
+    boolean statusChanged = request.status() != target.getStatus();
+    boolean roleChanged = request.gymRole() != target.getGymRole();
+    boolean permissionsChanged = !request.permissions().equals(target.getPermissions());
 
-    // --- 2. Global Admin Protection Logic (Updated) ---
-    // Prevent tampering: Lower roles cannot modify global Admins
-    if (target.getUser().getPlatformRole() == PlatformRole.ADMIN && !isGlobalAdmin) {
-      throw new AccessDeniedException("Cannot modify a Global Admin.");
-    }
-
-    // --- 3. Coach Logic (Delegated Administration) ---
-    if (!isGlobalAdmin && requesterRole == GymRole.COACH) {
-      // Must have the specific delegation permission
-      if (!requesterMembership.getPermissions().contains(Permission.MANAGE_MEMBERSHIPS)) {
-        throw new AccessDeniedException("Missing MANAGE_MEMBERSHIPS permission.");
+    // --- 2. Role and permissions: holder and platform admins only, within the gym-type rules ---
+    if (roleChanged || permissionsChanged) {
+      if (!isGlobalAdmin && !isHolder) {
+        throw new AccessDeniedException("error.access.denied");
       }
-      // Coaches can only manage Athletes (cannot manage Owners or other Coaches)
-      if (target.getGymRole() != GymRole.ATHLETE) {
-        throw new AccessDeniedException("Coaches can only manage Athletes.");
-      }
-      // Coaches are restricted to Status updates only (e.g., Validation)
-      if (request.gymRole() != target.getGymRole()
-          || !request.permissions().equals(target.getPermissions())) {
-        throw new AccessDeniedException("Coaches can only update Status.");
+      validateRoleChange(target, request.gymRole());
+      if (permissionsChanged && !caps.canChangePermissions()) {
+        throw new BusinessRuleException("error.membership.permissions.not.allowed");
       }
     }
 
-    // --- 4. Role Rules by Gym Type (holder only changes through transferOwnership) ---
-    validateRoleChange(target, request.gymRole());
+    // --- 3. Status: the holder never changes here; banning needs more than validating ---
+    if (statusChanged) {
+      if (target.getGymRole().isHolder()) {
+        throw new BusinessRuleException("error.membership.holder.status");
+      }
+      boolean banChange =
+          request.status() == MembershipStatus.BANNED
+              || target.getStatus() == MembershipStatus.BANNED;
+      if (banChange ? !caps.canBan() : !caps.canChangeStatus()) {
+        throw new AccessDeniedException("error.access.denied");
+      }
+    }
 
-    // --- 5. Apply Updates ---
-    // Owners/Programmers fall through here with full access (except the Admin checks above)
+    // --- 4. Apply Updates ---
     target.setStatus(request.status());
     target.setGymRole(request.gymRole());
-    target.setPermissions(request.permissions());
+    target.setPermissions(new HashSet<>(request.permissions()));
 
-    return membershipMapper.toResponse(membershipRepository.save(target));
+    Membership saved = membershipRepository.save(target);
+    return membershipMapper.toResponse(
+        saved, capabilities(requester, requesterMembership, saved));
+  }
+
+  /**
+   * Removes a member from a gym ({@link MembershipCapabilities#canRemove()}): a PENDING request is
+   * refused and deleted (the user may ask again), an ACTIVE member becomes INACTIVE (history and
+   * scores are kept). INACTIVE and BANNED memberships are left as they are.
+   *
+   * @param targetMembershipId The membership to remove.
+   * @param requester The authenticated user performing the action.
+   * @param requesterMembership The requester's membership in the same gym (null for a platform
+   *     admin without one).
+   * @throws ResourceNotFoundException If the membership does not exist.
+   * @throws DataConflictException If the target holds the gym (transfer it first).
+   * @throws AccessDeniedException If the requester may not remove this member.
+   */
+  @Transactional
+  public void removeMembership(
+      Long targetMembershipId, User requester, Membership requesterMembership) {
+    Membership target = findMembership(targetMembershipId);
+    validateTenantAccess(requester, requesterMembership, target);
+    if (target.getGymRole().isHolder()) {
+      throw new DataConflictException("error.membership.leave.holder");
+    }
+    if (!capabilities(requester, requesterMembership, target).canRemove()) {
+      throw new AccessDeniedException("error.access.denied");
+    }
+    switch (target.getStatus()) {
+      case PENDING -> membershipRepository.delete(target);
+      case ACTIVE -> {
+        target.setStatus(MembershipStatus.INACTIVE);
+        membershipRepository.save(target);
+      }
+      case INACTIVE, BANNED -> {
+        // Nothing to remove
+      }
+    }
+  }
+
+  /**
+   * Resolves the membership of a user in a gym, used as the requester context of the management
+   * rules.
+   *
+   * @param user The user.
+   * @param gymId The gym.
+   * @return The membership, or null if the user has none there.
+   */
+  @Transactional(readOnly = true)
+  public Membership requesterMembership(User user, Long gymId) {
+    return membershipRepository.findByUserIdAndGymId(user.getId(), gymId).orElse(null);
   }
 
   /**
@@ -318,17 +482,21 @@ public class MembershipService {
     return updated.stream().map(membershipMapper::toResponse).toList();
   }
 
-  /**
-   * Permanently deletes a membership from the system.
-   *
-   * @param id The unique identifier of the membership to delete.
-   * @throws ResourceNotFoundException If the membership does not exist.
-   */
-  @Transactional
-  public void deleteMembership(Long id) {
-    if (!membershipRepository.existsById(id)) {
-      throw new ResourceNotFoundException("error.membership.not.found", id);
+  // --- Helpers ---
+
+  private Membership findMembership(Long id) {
+    return membershipRepository
+        .findById(id)
+        .orElseThrow(() -> new ResourceNotFoundException("error.membership.not.found", id));
+  }
+
+  /** Compares enrollment codes ignoring case and surrounding spaces, in constant time. */
+  private static boolean codeMatches(String expected, String given) {
+    if (expected == null || given == null) {
+      return false;
     }
-    membershipRepository.deleteById(id);
+    return MessageDigest.isEqual(
+        expected.trim().toUpperCase(Locale.ROOT).getBytes(StandardCharsets.UTF_8),
+        given.trim().toUpperCase(Locale.ROOT).getBytes(StandardCharsets.UTF_8));
   }
 }

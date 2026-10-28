@@ -4,6 +4,9 @@ import apex.stellar.antares.model.Gym;
 import apex.stellar.antares.model.Gym.GymStatus;
 import java.util.List;
 import java.util.Optional;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -42,4 +45,38 @@ public interface GymRepository extends JpaRepository<Gym, Long> {
    * @return a list of matching gyms.
    */
   List<Gym> findByStatus(GymStatus status);
+
+  /**
+   * Checks whether another gym already uses a name, ignoring case.
+   *
+   * @param name the name to check.
+   * @param id the gym being renamed (excluded).
+   * @return {@code true} if another gym has this name.
+   */
+  boolean existsByNameIgnoreCaseAndIdNot(String name, Long id);
+
+  /**
+   * Checks whether a gym already uses a name, ignoring case.
+   *
+   * @param name the name to check.
+   * @return {@code true} if a gym has this name.
+   */
+  boolean existsByNameIgnoreCase(String name);
+
+  /**
+   * Searches gyms by name (case-insensitive {@code LIKE} pattern), type and status, ordered by
+   * name.
+   *
+   * @param pattern the lower-case {@code LIKE} pattern, with {@code \} as escape character.
+   * @param programming the type to keep ({@code true} virtual, {@code false} physical), or null.
+   * @param status the status to keep, or null for any.
+   * @param pageable the requested page.
+   * @return the matching gyms.
+   */
+  @Query(
+      "SELECT g FROM Gym g WHERE lower(g.name) LIKE :pattern ESCAPE '\\'"
+          + " AND (:programming IS NULL OR g.isProgramming = :programming)"
+          + " AND (:status IS NULL OR g.status = :status)"
+          + " ORDER BY lower(g.name), g.id")
+  Slice<Gym> search(String pattern, Boolean programming, GymStatus status, Pageable pageable);
 }

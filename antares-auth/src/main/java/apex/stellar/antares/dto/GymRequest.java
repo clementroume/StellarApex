@@ -3,30 +3,24 @@ package apex.stellar.antares.dto;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 
 /**
- * Data Transfer Object (DTO) for handling gym-related requests.
+ * Request to create a box or program. Any user may send one; the gym starts {@code
+ * PENDING_APPROVAL} until a platform admin approves it.
  *
- * <p>This record is designed for endpoints that require gym information, such as creating or
- * updating gym details. It includes validation annotations to ensure that the provided data meets
- * the specified requirements.
- *
- * @param name The name of the gym. This field is mandatory and cannot be blank.
- * @param description An optional description of the gym, providing additional context or details.
- * @param isProgramming Indicates whether the gym is associated with programming-related activities.
- *     This field is mandatory and cannot be null.
- * @param creationToken An anti-spam token used to validate the origin and legitimacy of the
- *     request. This field is mandatory and cannot be blank.
+ * @param name The unique name of the gym.
+ * @param description An optional description.
+ * @param isProgramming {@code true} for a virtual programming, {@code false} for a physical box.
  */
 public record GymRequest(
     @Schema(description = "Name of the Gym", example = "CrossFit Stellar")
         @NotBlank(message = "{validation.gym.name.required}")
+        @Size(max = 100, message = "{validation.gym.name.size}")
         String name,
     @Schema(description = "Short description of the facility", example = "The best box in town.")
+        @Size(max = 1000, message = "{validation.gym.description.size}")
         String description,
     @Schema(description = "Whether this gym provides programming tracks", example = "true")
         @NotNull(message = "{validation.gym.isProgramming.required}")
-        Boolean isProgramming,
-    @Schema(description = "Anti-spam token required for creation", example = "ANT-1234-SECURE")
-        @NotBlank(message = "{validation.gym.creationToken.required}")
-        String creationToken) {}
+        Boolean isProgramming) {}

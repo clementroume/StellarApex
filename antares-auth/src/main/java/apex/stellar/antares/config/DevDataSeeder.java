@@ -38,7 +38,7 @@ import org.springframework.transaction.annotation.Transactional;
  * <ul>
  *   <li>Spartacus CrossFit (physical, ACTIVE, code SPARTA): owner, coach (WOD_WRITE, SCORE_VERIFY,
  *       MANAGE_MEMBERSHIPS), neocoach (no permission), scorer (SCORE_VERIFY), hybrid (WOD_WRITE),
- *       athlete, multi, banned (BANNED).
+ *       athlete, multi, banned (BANNED), pending (PENDING request), former (INACTIVE, left).
  *   <li>Zeus Programming (virtual, ACTIVE, code OLYMPUS): programmer, active, pending (PENDING),
  *       multi, hybrid (athletes).
  *   <li>Pending Box (physical, PENDING_APPROVAL, code WAIT): wait@box.com (owner), athlete@box.com.
@@ -94,6 +94,10 @@ public class DevDataSeeder implements CommandLineRunner {
         createUser("athlete@sparta.com"), sparta, GymRole.ATHLETE, MembershipStatus.ACTIVE);
     addMembership(
         createUser("banned@sparta.com"), sparta, GymRole.ATHLETE, MembershipStatus.BANNED);
+    addMembership(
+        createUser("pending@sparta.com"), sparta, GymRole.ATHLETE, MembershipStatus.PENDING);
+    addMembership(
+        createUser("former@sparta.com"), sparta, GymRole.ATHLETE, MembershipStatus.INACTIVE);
 
     // 2. Zeus Programming (virtual)
     Gym zeus = createGym("Zeus Programming", "OLYMPUS", false, true, GymStatus.ACTIVE);

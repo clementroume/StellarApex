@@ -39,8 +39,8 @@ import org.springframework.test.util.ReflectionTestUtils;
 @ExtendWith(MockitoExtension.class)
 class DevDataSeederTest {
 
-  private static final int ACCOUNTS = 14;
-  private static final int MEMBERSHIPS = 15;
+  private static final int ACCOUNTS = 16;
+  private static final int MEMBERSHIPS = 17;
 
   @Mock private UserRepository userRepository;
   @Mock private GymRepository gymRepository;

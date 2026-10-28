@@ -19,9 +19,11 @@ import java.util.List;
  * @param gymStatus The status of the Gym itself (e.g., ACTIVE).
  * @param gymRole The role the user holds in this context.
  * @param status The user's membership status (e.g., ACTIVE, PENDING).
- * @param permissions The effective permissions in this gym (all for OWNER/PROGRAMMER, the assigned
- *     ones for COACH, none for ATHLETE).
+ * @param permissions The permissions granted in this gym (ACTIVE membership only: all for
+ *     OWNER/PROGRAMMER, the assigned ones for COACH, none for ATHLETE).
  * @param gymProgramming Whether the gym is a virtual programming (no competition there).
+ * @param usable Whether the membership opens access to the gym (see {@code Membership.isUsable}):
+ *     the memberships sent to Aldebaran, the only ones clients should offer gym features for.
  */
 @Schema(description = "Lightweight view of a membership for UI lists and menus.")
 public record MembershipSummary(
@@ -34,4 +36,6 @@ public record MembershipSummary(
     @Schema(description = "Effective permissions in this Gym", example = "[\"WOD_WRITE\"]")
         List<Permission> permissions,
     @Schema(description = "Virtual programming gym (not a physical box)", example = "false")
-        boolean gymProgramming) {}
+        boolean gymProgramming,
+    @Schema(description = "Membership opening access to the gym (sent to Aldebaran)", example = "true")
+        boolean usable) {}

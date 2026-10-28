@@ -12,12 +12,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import apex.stellar.antares.config.BaseIntegrationTest;
 import apex.stellar.antares.dto.GymRequest;
 import apex.stellar.antares.dto.GymSettingsRequest;
+import apex.stellar.antares.dto.GymUpdateRequest;
 import apex.stellar.antares.dto.JoinGymRequest;
 import apex.stellar.antares.model.Gym;
 import apex.stellar.antares.model.Gym.GymStatus;
 import apex.stellar.antares.model.GymRole;
 import apex.stellar.antares.model.Membership;
 import apex.stellar.antares.model.Membership.MembershipStatus;
+import apex.stellar.antares.model.Permission;
 import apex.stellar.antares.model.User;
 import apex.stellar.antares.repository.jpa.GymRepository;
 import apex.stellar.antares.repository.jpa.MembershipRepository;
@@ -63,7 +65,7 @@ class GymControllerIT extends BaseIntegrationTest {
   @DisplayName("Create Gym: Should succeed with valid token and assign OWNER role")
   void testCreateGym_Success() throws Exception {
     // Given
-    GymRequest request = new GymRequest("Iron Box", "Hardcore gym", false, "gym-creation-secret");
+    GymRequest request = new GymRequest("Iron Box", "Hardcore gym", false);
 
     // When
     mockMvc
@@ -90,7 +92,7 @@ class GymControllerIT extends BaseIntegrationTest {
   @DisplayName("Create Gym: Should succeed (Programming -> PROGRAMMER role)")
   void testCreateGym_AsProgrammer_Success() throws Exception {
     // Given: isProgramming = true to verify ROLE_PROGRAMMER
-    GymRequest request = new GymRequest("Zeus Prog", "Online coding", true, "gym-creation-secret");
+    GymRequest request = new GymRequest("Zeus Prog", "Online coding", true);
 
     // When
     mockMvc
@@ -113,7 +115,7 @@ class GymControllerIT extends BaseIntegrationTest {
   @DisplayName("Create Gym: Should return 400 Bad Request for invalid input")
   void testCreateGym_ValidationFailure() throws Exception {
     // Given: Invalid request (empty name)
-    GymRequest invalidRequest = new GymRequest("", "", false, "gym-creation-secret");
+    GymRequest invalidRequest = new GymRequest("", "", false);
 
     // When / Then
     mockMvc
@@ -130,7 +132,7 @@ class GymControllerIT extends BaseIntegrationTest {
   @DisplayName("Create Gym: Should return 409 Conflict if name exists")
   void testCreateGym_DuplicateName() throws Exception {
     // Given: Request with an existing name
-    GymRequest request = new GymRequest("Active Gym", "Desc", false, "gym-creation-secret");
+    GymRequest request = new GymRequest("Active Gym", "Desc", false);
 
     // When / Then
     mockMvc
@@ -144,20 +146,40 @@ class GymControllerIT extends BaseIntegrationTest {
   }
 
   @Test
-  @DisplayName("Create Gym: Should fail with Forbidden if token is invalid")
-  void testCreateGym_InvalidToken() throws Exception {
-    // Given
-    GymRequest request = new GymRequest("Spam Box", "Spam", true, "INVALID-TOKEN");
-
-    // When / Then
+  @DisplayName("Create Gym: open to any user, one request waiting for approval at a time")
+  void testCreateGym_OnePendingRequest() throws Exception {
+    // Given: a first request waits for approval
     mockMvc
         .perform(
             post("/antares/gyms")
                 .with(csrf())
                 .cookie(authCookies)
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(jsonMapper.writeValueAsString(request)))
-        .andExpect(status().isForbidden());
+                .content(jsonMapper.writeValueAsString(new GymRequest("First Box", null, false))))
+        .andExpect(status().isCreated());
+
+    // When / Then: a second one is refused
+    mockMvc
+        .perform(
+            post("/antares/gyms")
+                .with(csrf())
+                .cookie(authCookies)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(jsonMapper.writeValueAsString(new GymRequest("Second Box", null, true))))
+        .andExpect(status().isConflict());
+
+    // When the first one is approved, a new request is possible
+    Gym first = gymRepository.findByName("First Box").orElseThrow();
+    first.setStatus(GymStatus.ACTIVE);
+    gymRepository.save(first);
+    mockMvc
+        .perform(
+            post("/antares/gyms")
+                .with(csrf())
+                .cookie(authCookies)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(jsonMapper.writeValueAsString(new GymRequest("Second Box", null, true))))
+        .andExpect(status().isCreated());
   }
 
   @Test
@@ -183,7 +205,7 @@ class GymControllerIT extends BaseIntegrationTest {
   }
 
   @Test
-  @DisplayName("Join Gym: Should return 403 Forbidden for invalid code")
+  @DisplayName("Join Gym: Should return 400 Bad Request for invalid code")
   void testJoinGym_InvalidCode() throws Exception {
     // Given
     JoinGymRequest request = new JoinGymRequest(activeGym.getId(), "WRONG-CODE");
@@ -196,7 +218,60 @@ class GymControllerIT extends BaseIntegrationTest {
                 .cookie(authCookies)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(jsonMapper.writeValueAsString(request)))
-        .andExpect(status().isForbidden());
+        .andExpect(status().isBadRequest());
+  }
+
+  @Test
+  @DisplayName("Leave and join again: INACTIVE keeps the membership, joining reactivates it")
+  void testLeaveAndRejoin() throws Exception {
+    // Given: an ACTIVE coach
+    createMembership(testUser, activeGym, GymRole.COACH);
+    Long membershipId =
+        membershipRepository
+            .findByUserIdAndGymId(testUser.getId(), activeGym.getId())
+            .orElseThrow()
+            .getId();
+
+    // When: leaving
+    mockMvc
+        .perform(
+            delete("/antares/gyms/" + activeGym.getId() + "/membership/me")
+                .with(csrf())
+                .cookie(authCookies))
+        .andExpect(status().isNoContent());
+
+    // Then: same membership, INACTIVE, no access any more
+    Membership left = membershipRepository.findById(membershipId).orElseThrow();
+    assertThat(left.getStatus()).isEqualTo(MembershipStatus.INACTIVE);
+
+    // When: joining again, the same row comes back as a pending athlete
+    mockMvc
+        .perform(
+            post("/antares/gyms/join")
+                .with(csrf())
+                .cookie(authCookies)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    jsonMapper.writeValueAsString(
+                        new JoinGymRequest(activeGym.getId(), "code123"))))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.gymName").value("Active Gym"))
+        .andExpect(jsonPath("$.status").value("PENDING"));
+    Membership back = membershipRepository.findById(membershipId).orElseThrow();
+    assertThat(back.getGymRole()).isEqualTo(GymRole.ATHLETE);
+  }
+
+  @Test
+  @DisplayName("Leave: the owner must transfer the gym first (409)")
+  void testLeave_Holder() throws Exception {
+    createMembership(testUser, activeGym, GymRole.OWNER);
+
+    mockMvc
+        .perform(
+            delete("/antares/gyms/" + activeGym.getId() + "/membership/me")
+                .with(csrf())
+                .cookie(authCookies))
+        .andExpect(status().isConflict());
   }
 
   @Test
@@ -218,29 +293,100 @@ class GymControllerIT extends BaseIntegrationTest {
   }
 
   @Test
-  @DisplayName("List Gyms: Admin sees all statuses, User sees only ACTIVE")
-  void testListGyms_AdminVsUser() throws Exception {
+  @DisplayName("Search Gyms: ACTIVE gyms only, public view; admins search every status")
+  void testSearchGyms_UserVsAdmin() throws Exception {
     // Given
     gymRepository.save(
         Gym.builder().name("Pending Gym").status(GymStatus.PENDING_APPROVAL).build());
+    gymRepository.save(
+        Gym.builder().name("Active Program").isProgramming(true).status(GymStatus.ACTIVE).build());
 
-    // When: Regular User requests list -> Should see only Active Gym
+    // When: a user searches -> ACTIVE gyms, never the code
     mockMvc
-        .perform(get("/antares/gyms").cookie(authCookies)) // Uses persisted ATHLETE
+        .perform(get("/antares/gyms").param("search", "active").cookie(authCookies))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.length()").value(1))
-        .andExpect(jsonPath("$[0].name").value("Active Gym"));
+        .andExpect(jsonPath("$.content.length()").value(2))
+        .andExpect(jsonPath("$.content[0].name").value("Active Gym"))
+        .andExpect(jsonPath("$.content[0].enrollmentCode").doesNotExist())
+        .andExpect(jsonPath("$.content[0].isAutoSubscription").doesNotExist());
+    mockMvc
+        .perform(get("/antares/gyms").param("type", "PROGRAM").cookie(authCookies))
+        .andExpect(jsonPath("$.content.length()").value(1))
+        .andExpect(jsonPath("$.content[0].name").value("Active Program"));
+    mockMvc
+        .perform(get("/antares/admin/gyms").cookie(authCookies))
+        .andExpect(status().isForbidden());
 
-    // When: Admin requests a list with filter -> Should see Pending Gym
-    // Create Admin via Repo (Register API only creates USER)
+    // When: an admin looks at the approval queue
     createAdmin("admin@test.com", "password1234");
     Cookie[] adminCookies = login("admin@test.com", "password1234");
 
     mockMvc
-        .perform(get("/antares/gyms").param("status", "PENDING_APPROVAL").cookie(adminCookies))
+        .perform(
+            get("/antares/admin/gyms").param("status", "PENDING_APPROVAL").cookie(adminCookies))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.length()").value(1))
-        .andExpect(jsonPath("$[0].name").value("Pending Gym"));
+        .andExpect(jsonPath("$.content.length()").value(1))
+        .andExpect(jsonPath("$.content[0].name").value("Pending Gym"))
+        .andExpect(jsonPath("$.content[0].memberCount").value(0));
+  }
+
+  @Test
+  @DisplayName("Get Gym: public view of an ACTIVE gym only")
+  void testGetGym() throws Exception {
+    Gym pending =
+        gymRepository.save(
+            Gym.builder().name("Pending Gym").status(GymStatus.PENDING_APPROVAL).build());
+
+    mockMvc
+        .perform(get("/antares/gyms/" + activeGym.getId()).cookie(authCookies))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.name").value("Active Gym"))
+        .andExpect(jsonPath("$.enrollmentCode").doesNotExist());
+    mockMvc
+        .perform(get("/antares/gyms/" + pending.getId()).cookie(authCookies))
+        .andExpect(status().isNotFound());
+  }
+
+  @Test
+  @DisplayName("Update Gym and regenerate code: MANAGE_SETTINGS only")
+  void testUpdateGymAndCode() throws Exception {
+    createMembership(testUser, activeGym, GymRole.ATHLETE);
+    String body = jsonMapper.writeValueAsString(new GymUpdateRequest("Renamed Gym", "New desc"));
+
+    mockMvc
+        .perform(
+            put("/antares/gyms/" + activeGym.getId())
+                .with(csrf())
+                .cookie(authCookies)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(body))
+        .andExpect(status().isForbidden());
+
+    Membership m =
+        membershipRepository
+            .findByUserIdAndGymId(testUser.getId(), activeGym.getId())
+            .orElseThrow();
+    m.setGymRole(GymRole.OWNER);
+    membershipRepository.save(m);
+
+    mockMvc
+        .perform(
+            put("/antares/gyms/" + activeGym.getId())
+                .with(csrf())
+                .cookie(authCookies)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(body))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.name").value("Renamed Gym"))
+        .andExpect(jsonPath("$.description").value("New desc"));
+
+    mockMvc
+        .perform(
+            post("/antares/gyms/" + activeGym.getId() + "/settings/enrollment-code")
+                .with(csrf())
+                .cookie(authCookies))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.enrollmentCode").value(org.hamcrest.Matchers.not("CODE123")));
   }
 
   @Test
@@ -341,6 +487,23 @@ class GymControllerIT extends BaseIntegrationTest {
 
     // Then
     assertThat(gymRepository.existsById(activeGym.getId())).isFalse();
+  }
+
+  @Test
+  @DisplayName("Delete Gym: a coach holding MANAGE_SETTINGS cannot delete the gym")
+  void testDeleteGym_CoachWithSettings_Forbidden() throws Exception {
+    membershipRepository.save(
+        Membership.builder()
+            .user(testUser)
+            .gym(activeGym)
+            .gymRole(GymRole.COACH)
+            .status(MembershipStatus.ACTIVE)
+            .permissions(new java.util.HashSet<>(java.util.Set.of(Permission.MANAGE_SETTINGS)))
+            .build());
+
+    mockMvc
+        .perform(delete("/antares/gyms/" + activeGym.getId()).with(csrf()).cookie(authCookies))
+        .andExpect(status().isForbidden());
   }
 
   @Test

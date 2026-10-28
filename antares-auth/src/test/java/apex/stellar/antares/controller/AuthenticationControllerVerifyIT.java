@@ -196,9 +196,16 @@ class AuthenticationControllerVerifyIT extends BaseIntegrationTest {
                     true) // Ensure joining gives ACTIVE membership to isolate Gym Status check
                 .build());
 
-    // 2. User joins the pending gym and the active one
-    Cookie[] cookies = registerLoginAndJoin("athlete_p@test.com", pendingGym);
-    join(cookies, testGym);
+    // 2. User is an ACTIVE athlete of the pending gym (joining it is not possible any more, so
+    // the membership is stored directly) and joins the active one
+    Cookie[] cookies = registerLoginAndJoin("athlete_p@test.com", testGym);
+    membershipRepository.save(
+        Membership.builder()
+            .user(userRepository.findByEmail("athlete_p@test.com").orElseThrow())
+            .gym(pendingGym)
+            .gymRole(apex.stellar.antares.model.GymRole.ATHLETE)
+            .status(MembershipStatus.ACTIVE)
+            .build());
 
     // When / Then
     mockMvc
@@ -216,7 +223,7 @@ class AuthenticationControllerVerifyIT extends BaseIntegrationTest {
 
     // 2. Create Gym via API (Automatically makes user OWNER of a PENDING gym)
     GymRequest gymRequest =
-        new GymRequest("Pending Gym Owner", "Desc", false, "gym-creation-secret");
+        new GymRequest("Pending Gym Owner", "Desc", false);
     MvcResult result =
         mockMvc
             .perform(
@@ -242,6 +249,31 @@ class AuthenticationControllerVerifyIT extends BaseIntegrationTest {
                     gymResponse.id()
                         + ":OWNER:WOD_WRITE+SCORE_VERIFY+MANAGE_MEMBERSHIPS+MANAGE_SETTINGS"));
   }
+  @Test
+  @DisplayName("Verify API: a SUSPENDED Gym is usable by nobody, its Owner included")
+  void testVerifyApi_SuspendedGym_Owner_shouldBeExcluded() throws Exception {
+    Cookie[] cookies = registerAndLogin("owner_s@test.com", "password123");
+    Gym suspended =
+        gymRepository.save(
+            Gym.builder()
+                .name("Suspended Gym")
+                .status(GymStatus.SUSPENDED)
+                .enrollmentCode("SUSP")
+                .build());
+    membershipRepository.save(
+        Membership.builder()
+            .user(userRepository.findByEmail("owner_s@test.com").orElseThrow())
+            .gym(suspended)
+            .gymRole(apex.stellar.antares.model.GymRole.OWNER)
+            .status(MembershipStatus.ACTIVE)
+            .build());
+
+    mockMvc
+        .perform(get("/antares/auth/verify/api").cookie(cookies))
+        .andExpect(status().isOk())
+        .andExpect(header().string("X-Auth-Memberships", ""));
+  }
+
 
   @Test
   @DisplayName("Verify API: ADMIN member should keep ADMIN platform role")

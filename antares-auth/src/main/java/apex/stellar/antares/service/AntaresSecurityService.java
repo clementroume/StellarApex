@@ -41,6 +41,7 @@ public class AntaresSecurityService {
    *       gym).
    *   <li>Coaches must have the explicit permission in their list.
    *   <li>Athletes never hold any permission, even if one is stored.
+   *   <li>A membership that is not ACTIVE grants nothing.
    * </ul>
    *
    * @param gymId The ID of the gym context.
@@ -121,8 +122,9 @@ public class AntaresSecurityService {
 
   /** Evaluates if a membership grants the required permission. */
   private boolean hasAccess(Membership membership, Permission requiredPermission) {
-    // Single rule shared with the gateway headers and the DTOs (see Membership)
-    return membership.effectivePermissions().contains(requiredPermission);
+    // Single rule shared with the gateway headers and the DTOs (see Membership): only an ACTIVE
+    // membership grants its effective permissions
+    return membership.activePermissions().contains(requiredPermission);
   }
 
   /** Safely retrieves the authenticated User from the SecurityContext. */

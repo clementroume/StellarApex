@@ -225,7 +225,7 @@ class MembershipControllerIT extends BaseIntegrationTest {
   }
 
   @Test
-  @DisplayName("Delete Membership: Owner can delete member")
+  @DisplayName("Delete Membership: refusing a pending request deletes it")
   void testDeleteMembership_Success() throws Exception {
     // Given
     Cookie[] cookies = login("owner@test.com", "password1234");
@@ -239,6 +239,47 @@ class MembershipControllerIT extends BaseIntegrationTest {
 
     // Then
     assertThat(membershipRepository.existsById(target.getId())).isFalse();
+  }
+
+  @Test
+  @DisplayName("List Memberships: pending first, with the capabilities of the requester")
+  void testGetMemberships_Capabilities() throws Exception {
+    Cookie[] owner = login("owner@test.com", "password1234");
+    mockMvc
+        .perform(get("/antares/memberships").param("gymId", gym.getId().toString()).cookie(owner))
+        .andExpect(jsonPath("$[0].status").value("PENDING"))
+        .andExpect(jsonPath("$[0].capabilities.canChangeRole").value(true))
+        .andExpect(jsonPath("$[0].capabilities.canBecomeHolder").value(false));
+
+    Cookie[] coach = login("coach@test.com", "password1234");
+    mockMvc
+        .perform(get("/antares/memberships").param("gymId", gym.getId().toString()).cookie(coach))
+        .andExpect(jsonPath("$[0].capabilities.canChangeStatus").value(true))
+        .andExpect(jsonPath("$[0].capabilities.canChangeRole").value(false))
+        .andExpect(jsonPath("$[0].capabilities.canBan").value(false))
+        .andExpect(jsonPath("$[?(@.gymRole == 'OWNER')].capabilities.canRemove").value(false));
+  }
+
+  @Test
+  @DisplayName("Delete Membership: an active member becomes INACTIVE; a coach never removes the owner")
+  void testDeleteMembership_Deactivates() throws Exception {
+    Membership target =
+        membershipRepository.findByUserIdAndGymId(memberUser.getId(), gym.getId()).orElseThrow();
+    target.setStatus(MembershipStatus.ACTIVE);
+    membershipRepository.save(target);
+    Cookie[] coach = login("coach@test.com", "password1234");
+
+    mockMvc
+        .perform(delete("/antares/memberships/" + target.getId()).cookie(coach).with(csrf()))
+        .andExpect(status().isNoContent());
+    assertThat(membershipRepository.findById(target.getId()).orElseThrow().getStatus())
+        .isEqualTo(MembershipStatus.INACTIVE);
+
+    Membership owner =
+        membershipRepository.findHoldersByGymId(gym.getId()).getFirst();
+    mockMvc
+        .perform(delete("/antares/memberships/" + owner.getId()).cookie(coach).with(csrf()))
+        .andExpect(status().isConflict());
   }
 
   private User createUser(String username) throws Exception {

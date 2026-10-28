@@ -7,20 +7,21 @@ import static org.mockito.Mockito.*;
 import apex.stellar.antares.dto.GymRequest;
 import apex.stellar.antares.dto.GymResponse;
 import apex.stellar.antares.dto.GymSettingsRequest;
+import apex.stellar.antares.dto.GymUpdateRequest;
 import apex.stellar.antares.exception.DataConflictException;
 import apex.stellar.antares.exception.ResourceNotFoundException;
 import apex.stellar.antares.mapper.GymMapper;
+import apex.stellar.antares.mapper.UserMapper;
 import apex.stellar.antares.model.Gym;
 import apex.stellar.antares.model.Gym.GymStatus;
 import apex.stellar.antares.model.GymRole;
+import apex.stellar.antares.model.GymType;
 import apex.stellar.antares.model.Membership;
-import apex.stellar.antares.model.PlatformRole;
 import apex.stellar.antares.model.User;
 import apex.stellar.antares.repository.jpa.GymRepository;
 import apex.stellar.antares.repository.jpa.MembershipRepository;
 import java.util.List;
 import java.util.Optional;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -29,8 +30,8 @@ import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.security.access.AccessDeniedException;
-import org.springframework.test.util.ReflectionTestUtils;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.SliceImpl;
 
 @ExtendWith(MockitoExtension.class)
 class GymServiceTest {
@@ -38,26 +39,22 @@ class GymServiceTest {
   @Mock private GymRepository gymRepository;
   @Mock private MembershipRepository membershipRepository;
   @Mock private GymMapper gymMapper;
+  @Mock private UserMapper userMapper;
   @InjectMocks private GymService gymService;
 
   @Captor private ArgumentCaptor<Membership> membershipCaptor;
-
-  @BeforeEach
-  void setUp() {
-    // Inject the secret property
-    ReflectionTestUtils.setField(gymService, "creationSecret", "SECRET");
-  }
 
   @Test
   @DisplayName("createGym: Should succeed for Physical Box")
   void createGym_shouldSucceed_PhysicalBox() {
     // Given
-    GymRequest request = new GymRequest("Spartacus", "Desc", false, "SECRET");
+    GymRequest request = new GymRequest(" Spartacus ", "Desc", false);
     User user = new User();
+    user.setId(7L);
     Gym gym = new Gym();
     gym.setId(1L);
 
-    when(gymRepository.existsByName("Spartacus")).thenReturn(false);
+    when(gymRepository.existsByNameIgnoreCase("Spartacus")).thenReturn(false);
     when(gymMapper.toEntity(request)).thenReturn(gym);
     when(gymRepository.save(any(Gym.class))).thenReturn(gym);
     when(gymMapper.toResponse(gym)).thenReturn(mock(GymResponse.class));
@@ -67,6 +64,8 @@ class GymServiceTest {
 
     // Then
     assertEquals(GymStatus.PENDING_APPROVAL, gym.getStatus());
+    assertEquals("Spartacus", gym.getName());
+    assertEquals(8, gym.getEnrollmentCode().length());
 
     verify(membershipRepository).save(membershipCaptor.capture());
     Membership m = membershipCaptor.getValue();
@@ -75,39 +74,72 @@ class GymServiceTest {
   }
 
   @Test
+  @DisplayName("createGym: a virtual program makes its creator PROGRAMMER")
+  void createGym_shouldSucceed_Program() {
+    GymRequest request = new GymRequest("Zeus", null, true);
+    User user = new User();
+    user.setId(7L);
+    Gym gym = Gym.builder().id(2L).isProgramming(true).build();
+    when(gymMapper.toEntity(request)).thenReturn(gym);
+    when(gymRepository.save(any(Gym.class))).thenReturn(gym);
+
+    gymService.createGym(request, user);
+
+    verify(membershipRepository).save(membershipCaptor.capture());
+    assertEquals(GymRole.PROGRAMMER, membershipCaptor.getValue().getGymRole());
+  }
+
+  @Test
   @DisplayName("createGym: Should fail when name is duplicate")
   void createGym_shouldFail_DuplicateName() {
     // Given
-    GymRequest request = new GymRequest("Existing", "Desc", false, "SECRET");
+    GymRequest request = new GymRequest("Existing", "Desc", false);
     User user = new User();
-    when(gymRepository.existsByName("Existing")).thenReturn(true);
+    when(gymRepository.existsByNameIgnoreCase("Existing")).thenReturn(true);
 
     // When / Then
     assertThrows(DataConflictException.class, () -> gymService.createGym(request, user));
   }
 
   @Test
-  @DisplayName("createGym: Should fail when token is invalid")
-  void createGym_shouldFail_InvalidToken() {
-    // Given
-    GymRequest request = new GymRequest("A", "B", false, "WRONG");
+  @DisplayName("createGym: at most one request waiting for approval per user")
+  void createGym_shouldFail_PendingRequest() {
+    GymRequest request = new GymRequest("Another", "B", false);
     User user = new User();
+    user.setId(7L);
+    when(membershipRepository.existsPendingGymRequest(7L)).thenReturn(true);
 
-    // When / Then
-    assertThrows(AccessDeniedException.class, () -> gymService.createGym(request, user));
+    assertThrows(DataConflictException.class, () -> gymService.createGym(request, user));
+    verifyNoInteractions(gymRepository);
   }
 
   @Test
-  @DisplayName("createGym: Should fail without a configured secret, even with a blank token")
-  void createGym_shouldFail_BlankSecret() {
-    // Given
-    ReflectionTestUtils.setField(gymService, "creationSecret", "");
-    GymRequest request = new GymRequest("A", "B", false, "");
-    User user = new User();
+  @DisplayName("updateGym: renames, clears a blank description, refuses a taken name")
+  void updateGym() {
+    Gym gym = Gym.builder().id(1L).name("Old").description("Desc").build();
+    when(gymRepository.findById(1L)).thenReturn(Optional.of(gym));
+    when(gymRepository.save(gym)).thenReturn(gym);
 
-    // When / Then
-    assertThrows(AccessDeniedException.class, () -> gymService.createGym(request, user));
-    verifyNoInteractions(gymRepository);
+    gymService.updateGym(1L, new GymUpdateRequest(" New ", " "));
+    assertEquals("New", gym.getName());
+    assertNull(gym.getDescription());
+
+    when(gymRepository.existsByNameIgnoreCaseAndIdNot("Taken", 1L)).thenReturn(true);
+    GymUpdateRequest taken = new GymUpdateRequest("Taken", null);
+    assertThrows(DataConflictException.class, () -> gymService.updateGym(1L, taken));
+  }
+
+  @Test
+  @DisplayName("regenerateEnrollmentCode: replaces the code with a new random one")
+  void regenerateEnrollmentCode() {
+    Gym gym = Gym.builder().id(1L).enrollmentCode("OLD").build();
+    when(gymRepository.findById(1L)).thenReturn(Optional.of(gym));
+    when(gymRepository.save(gym)).thenReturn(gym);
+
+    gymService.regenerateEnrollmentCode(1L);
+
+    assertNotEquals("OLD", gym.getEnrollmentCode());
+    assertEquals(8, gym.getEnrollmentCode().length());
   }
 
   @Test
@@ -138,27 +170,23 @@ class GymServiceTest {
     when(gymRepository.findById(99L)).thenReturn(Optional.empty());
 
     // When / Then
-    GymSettingsRequest request = new GymSettingsRequest("C", true);
+    GymSettingsRequest request = new GymSettingsRequest("CODE", true);
     assertThrows(ResourceNotFoundException.class, () -> gymService.updateSettings(99L, request));
   }
 
   @Test
-  @DisplayName("getSettings: Should return settings")
+  @DisplayName("getSettings: Should map the gym to its settings view")
   void getSettings_ShouldReturnSettings() {
     // Given
     Gym gym = new Gym();
     gym.setId(1L);
-    gym.setEnrollmentCode("CODE");
-    gym.setAutoSubscription(true);
-
     when(gymRepository.findById(1L)).thenReturn(Optional.of(gym));
 
     // When
-    GymSettingsRequest result = gymService.getSettings(1L);
+    gymService.getSettings(1L);
 
     // Then
-    assertEquals("CODE", result.enrollmentCode());
-    assertTrue(result.isAutoSubscription());
+    verify(gymMapper).toSettingsResponse(gym);
   }
 
   @Test
@@ -172,33 +200,24 @@ class GymServiceTest {
   }
 
   @Test
-  @DisplayName("getAllGyms: Admin with filter should return filtered list")
-  void getAllGyms_AdminWithFilter() {
-    // Given
-    when(gymRepository.findByStatus(GymStatus.PENDING_APPROVAL)).thenReturn(List.of(new Gym()));
-    when(gymMapper.toResponse(any())).thenReturn(mock(GymResponse.class));
+  @DisplayName("searchActiveGyms: ACTIVE gyms only, escaped pattern, type filter, capped page")
+  void searchActiveGyms() {
+    when(gymRepository.search(any(), any(), any(), any()))
+        .thenReturn(new SliceImpl<>(List.of(new Gym())));
 
-    // When
-    List<GymResponse> result = gymService.getAllGyms(PlatformRole.ADMIN, GymStatus.PENDING_APPROVAL);
+    gymService.searchActiveGyms(" 50%_Box ", GymType.PROGRAM, PageRequest.of(0, 500));
 
-    // Then
-    assertEquals(1, result.size());
-    verify(gymRepository).findByStatus(GymStatus.PENDING_APPROVAL);
+    verify(gymRepository)
+        .search("%50\\%\\_box%", true, GymStatus.ACTIVE, PageRequest.of(0, 50));
   }
 
   @Test
-  @DisplayName("getAllGyms: User should only see ACTIVE gyms regardless of filter")
-  void getAllGyms_UserIgnoresFilter() {
-    // Given
-    when(gymRepository.findByStatus(GymStatus.ACTIVE)).thenReturn(List.of(new Gym()));
-    when(gymMapper.toResponse(any())).thenReturn(mock(GymResponse.class));
+  @DisplayName("getActiveGym: 404 for a gym that is not ACTIVE")
+  void getActiveGym_NotActive() {
+    when(gymRepository.findById(1L))
+        .thenReturn(Optional.of(Gym.builder().id(1L).status(GymStatus.PENDING_APPROVAL).build()));
 
-    // When
-    List<GymResponse> result = gymService.getAllGyms(PlatformRole.USER, GymStatus.PENDING_APPROVAL);
-
-    // Then
-    assertEquals(1, result.size());
-    verify(gymRepository).findByStatus(GymStatus.ACTIVE);
+    assertThrows(ResourceNotFoundException.class, () -> gymService.getActiveGym(1L));
   }
 
   @Test
