@@ -1,7 +1,8 @@
 # Sirius (Angular frontend)
 
 Angular 22 standalone app, zoneless-friendly signals, Tailwind 4 + spartan/ui, ngx-translate, ng-icons,
-Vitest (jsdom) through `ng test`. Commands: `npm test`, `npm run build`, `npm start` (see root `CLAUDE.md`).
+Vitest (jsdom) through `ng test`. Commands: `npm test`, `npm run build`, `npm start` (see root `CLAUDE.md`;
+the dev proxy targets the local Traefik `https://localhost` with `Host: stellar.apex`, Docker stack required).
 
 ## Layout
 

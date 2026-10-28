@@ -28,8 +28,9 @@ npm test            # unit tests (single run)
 npm run build       # production build (dist/sirius-app)
 ```
 
-`npm start` proxies `/antares` and `/aldebaran` to `https://stellar.apex` (`proxy.conf.json`) and
-rewrites the session cookies for `localhost`.
+`npm start` proxies `/antares` and `/aldebaran` to the local Traefik (`https://localhost` with
+`Host: stellar.apex`, `proxy.conf.json`; the Docker stack must run) and rewrites the session cookies
+for `localhost`, so the app on `http://localhost:4200` works with the dev seed accounts.
 
 ## Project Structure
 
