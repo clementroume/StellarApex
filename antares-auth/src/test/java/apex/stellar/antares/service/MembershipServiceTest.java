@@ -41,6 +41,7 @@ class MembershipServiceTest {
   @Mock private GymRepository gymRepository;
   @Mock private MembershipMapper membershipMapper;
   @Mock private EnrollmentAttemptService enrollmentAttemptService;
+  @Mock private EmailVerificationService emailVerificationService;
   @InjectMocks private MembershipService membershipService;
 
   @Captor private ArgumentCaptor<Membership> membershipCaptor;

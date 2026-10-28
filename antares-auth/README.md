@@ -88,20 +88,37 @@ docker compose logs -f antares-auth
 
 ### Authentication (`/antares/auth`)
 
-* `POST /register`: Register a new user.
+* `POST /register`: Register a new user (e-mail not verified yet: a verification link is mailed).
+  Optional `locale` (language shown at sign-up, `en` by default) for the account and its e-mails.
+  At most 10 registrations per client IP per sliding hour (429 + `Retry-After`).
+* `POST /password/forgot` (`{email}`): mails a single-use reset link (30 min). Always 202, whether
+  or not the account exists; 5 requests per client IP per hour (429), 3 mails per address per hour
+  (extra requests silently ignored).
+* `POST /password/reset` (`{token, newPassword, confirmationPassword}`): sets the new password,
+  deletes the refresh token, refuses access tokens issued before (`users.password_changed_at`),
+  unlocks the login and marks the address verified. 400 for an unknown, used or expired token.
+* `POST /email/verify` (`{token}`): confirms the address (link valid 48 h, works signed out).
 * `POST /login`: Authenticate and receive HttpOnly session cookies.
 * `POST /logout`: Invalidate session, end any active support session and clear cookies.
 * `POST /refresh-token`: Use the refresh token (cookie) to get a new access token.
 * `GET /verify/admin`: Forward Auth for admin-only services (e.g., Grafana, Traefik).
 * `GET /verify/api`: Forward Auth for backend API services (e.g., Aldebaran). Sends
-  `X-Auth-User-Role` (platform role) and `X-Auth-Memberships` (`gymId:ROLE:PERM+PERM,...`, usable
-  memberships with effective permissions). During a support session these describe the target
+  `X-Auth-User-Role` (platform role), `X-Auth-Memberships` (`gymId:ROLE:PERM+PERM,...`, usable
+  memberships with effective permissions) and `X-Auth-User-Division` (`MEN`, `WOMEN`, empty). During a support session these describe the target
   user, plus `X-Auth-Actor-Id` (the admin). See `GatewayIdentityService`.
 
 ### User (`/antares/users`)
 
 * `GET /me`: Get the profile of the currently authenticated user.
-* `PUT /me/profile`: Update the user's first name, last name, or email.
+* `PUT /me/profile`: Update the user's first name, last name, or email (a new email is unverified
+  and gets a verification link).
+* `POST /me/email/verification`: mails a new verification link (3 per user per hour, 429 beyond;
+  no-op when already verified).
+* `PUT /me/athlete-profile` (`{division, birthYear, heightCm}`, all optional, null clears): athlete
+  profile. The division (`MEN`, `WOMEN`) is shared with Aldebaran and copied on the scores logged
+  afterwards; birth year and height are private (returned to their owner only).
+* `GET|POST /me/body-weights`, `DELETE /me/body-weights/{id}`: private body weight history (kg, one
+  measure per day, a new one replaces it; at most 100 returned, most recent first).
 * `PATCH /me/preferences`: Update the user's locale (language), theme and unit system (`unitSystem`:
   `METRIC`, `IMPERIAL`, or null to follow the language). The preferences are replaced as a whole,
   except `publicLeaderboardName` (show the name on public leaderboards, off by default) and `palette`
@@ -110,7 +127,8 @@ docker compose logs -f antares-auth
   members of their gyms (usable memberships), users who opted in to public leaderboards; all for
   platform admins. Hidden users are left out (clients show them as anonymous).
   Refused during a support session.
-* `PUT /me/password`: Change the user's password (refused during a support session).
+* `PUT /me/password`: Change the user's password (refused during a support session). Other devices
+  are signed out (`passwordChangedAt`, refresh token replaced); this session gets fresh cookies.
 * `DELETE /me`: Delete the current user's account (refused during a support session).
 
 During a support session `GET /me` returns the target user with
@@ -118,9 +136,11 @@ During a support session `GET /me` returns the target user with
 
 ### Administration (`/antares/admin`, platform ADMIN)
 
-* `GET /users?search=&gymId=&role=&status=&page=&size=`: Paginated `Slice` (20 per page, max 50) of
-  users matching first name, last name or email (case-insensitive), ordered by last name, with
-  their memberships. The optional `gymId`, `role` and `status` must hold on the same membership.
+* `GET /users?search=&gymId=&role=&status=&withoutGym=&emailVerified=&page=&size=`: Paginated
+  `Slice` (20 per page, max 50) of users matching first name, last name or email (case-insensitive),
+  ordered by last name, with their memberships. The optional `gymId`, `role` and `status` must hold
+  on the same membership; `withoutGym=true` keeps the users without any ACTIVE membership (the gym
+  filters are then ignored); `emailVerified=false|true` keeps unverified / verified addresses.
 * `GET /users/lookup?ids=`: User summaries by ids (e.g. WOD authors in the admin WOD filters).
 * `GET /support-sessions/recent`: The last 5 users the admin acted as, latest first.
 * `POST /support-sessions` `{userId, reason}`: Start a support session (see below). 201
@@ -188,6 +208,23 @@ without it the answer is a bare 404.
 * `GET /gyms/{gymId}`: `{programming}`, whether the gym is a virtual programming (404 if unknown).
 * `GET /gyms/{gymId}/members/{userId}`: `{member}`, whether the user holds a usable membership in the
   gym (ACTIVE, and ACTIVE gym or OWNER/PROGRAMMER).
+* `GET /users/{userId}/division`: `{division}` only (404 if unknown), for a score staff log for an
+  athlete (the athlete's division, never the judge's).
+
+## Account E-mails
+
+`AccountMailService` sends HTML + text mails (Thymeleaf `templates/mail/account-action.html`, texts
+`mail.*` in `messages*.properties`, in the user's language) after commit and asynchronously, so an
+SMTP failure never fails a request (logged without address or link; the mail health check is off).
+SMTP comes from `MAIL_HOST`, `MAIL_PORT`, `MAIL_USERNAME`, `MAIL_PASSWORD`, `MAIL_SMTP_AUTH`,
+`MAIL_SMTP_STARTTLS`, `MAIL_FROM`; the defaults target the local Mailpit (`deneb-mail:1025`, UI on
+http://localhost:8025). Tokens (`AccountTokenService`): 256 random bits, SHA-256 hash in Redis with
+a TTL, single use (`GETDEL`), one per user and purpose, bound to the address they were sent to.
+
+An unverified account can sign in, log personal scores and edit its profile, but joining a gym or
+requesting one answers 403 `code=EMAIL_NOT_VERIFIED`. Accounts created before migration V8 (and the
+dev seed accounts) are verified. Per-IP throttles read the last `X-Forwarded-For` entry, appended by
+Traefik (`ClientIpResolver`).
 
 ## Roles and Permissions
 
@@ -230,7 +267,8 @@ admin exists (`ApplicationConfig`).
 **Temporary (to be removed):** with the `dev` profile (`SPRING_PROFILES_ACTIVE: dev` in the root
 `docker-compose.yml`), `DevDataSeeder` creates test gyms (Spartacus CrossFit, Zeus Programming,
 Pending Box) and accounts (`owner@sparta.com`, `coach@sparta.com`, `programmer@zeus.com`, ... see
-its Javadoc), all with the admin's default password; `free@athlete.com` shows its name on public
+its Javadoc), all with the admin's default password and a verified address; `free@athlete.com`
+shows its name on public leaderboards. Some get a division (set only while empty) for the division
 leaderboards. Aldebaran's dev seeders (WODs, scores) rely on these names.
 
 ## Database Migrations

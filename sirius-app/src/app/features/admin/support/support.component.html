@@ -28,6 +28,9 @@
           @if (user.platformRole === 'ADMIN') {
             <span hlmBadge class="bg-warning/15 text-warning">{{ 'ADMIN.SUPPORT.ADMIN_TARGET' | translate }}</span>
           }
+          @if (user.emailVerified === false) {
+            <span hlmBadge variant="outline" class="text-warning border-warning/40">{{ 'ADMIN.SUPPORT.UNVERIFIED' | translate }}</span>
+          }
           @for (m of user.memberships; track m.gymId) {
             <div class="flex flex-wrap gap-1 md:justify-end">
               <span hlmBadge variant="outline">
@@ -101,6 +104,15 @@
               [attr.aria-pressed]="statusFilter() === status"
                 (click)="onStatusChange(status)">{{ 'GYM.STATUS.' + status | translate }}</button>
       }
+    </div>
+    <div class="flex flex-wrap items-center gap-2" data-slot="account-filters">
+      <span class="text-sm font-semibold opacity-70 w-16">{{ 'ADMIN.SUPPORT.FILTER_ACCOUNT' | translate }}</span>
+      <button type="button" hlmBadge variant="outline" class="h-8 px-3 text-sm cursor-pointer aria-pressed:border-secondary aria-pressed:bg-secondary aria-pressed:text-secondary-content"
+              [attr.aria-pressed]="withoutGymFilter()"
+              (click)="onWithoutGymToggle()">{{ 'ADMIN.SUPPORT.WITHOUT_GYM' | translate }}</button>
+      <button type="button" hlmBadge variant="outline" class="h-8 px-3 text-sm cursor-pointer aria-pressed:border-secondary aria-pressed:bg-secondary aria-pressed:text-secondary-content"
+              [attr.aria-pressed]="unverifiedFilter()"
+              (click)="onUnverifiedToggle()">{{ 'ADMIN.SUPPORT.UNVERIFIED' | translate }}</button>
     </div>
   </div>
 

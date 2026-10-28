@@ -86,12 +86,28 @@ public class DevScoreSeeder {
   }
 
   /**
+   * Gives the scores without a division the division of their athlete in Antares (dev data only:
+   * real scores get theirs at logging), so division leaderboards can be tried at once. Runs at
+   * every start, before the "already seeded" check.
+   */
+  void classifyDivisions() {
+    int updated =
+        jdbcTemplate.update(
+            "UPDATE aldebaran.scores s SET division = u.division FROM antares.users u"
+                + " WHERE s.user_id = u.id AND s.division IS NULL AND u.division IS NOT NULL");
+    if (updated > 0) {
+      log.info("Dev score seeding: {} scores given their athlete's division", updated);
+    }
+  }
+
+  /**
    * Logs the test scores unless they already exist.
    *
    * @param spartaGymId ID of "Spartacus CrossFit".
    * @param zeusGymId ID of "Zeus Programming".
    */
   public void seed(Long spartaGymId, Long zeusGymId) {
+    classifyDivisions();
     Map<String, Long> users = new HashMap<>();
     for (String email : ACCOUNTS) {
       List<Long> ids =

@@ -4,6 +4,9 @@ import {MembershipSummary} from './membership.model';
 export type UnitSystem = 'METRIC' | 'IMPERIAL';
 
 export type PlatformRole = 'USER' | 'ADMIN';
+/** Competition division of the athlete profile: men's or women's loads, separate leaderboards. */
+export type Division = 'MEN' | 'WOMEN';
+export const DIVISIONS: Division[] = ['MEN', 'WOMEN'];
 export type Theme = 'light' | 'dark';
 /** UI colour palette, combined with the theme (ocean is the default). */
 export type Palette = 'ocean' | 'chalk' | 'volt' | 'rig';
@@ -22,6 +25,8 @@ export interface UserResponse {
   firstName: string;
   lastName: string;
   email: string;
+  // Address confirmed through the mailed link (needed to join or request a box/prog)
+  emailVerified: boolean;
   platformRole: PlatformRole;
   memberships: MembershipSummary[];
   locale: string;
@@ -31,6 +36,10 @@ export interface UserResponse {
   unitSystem?: UnitSystem | null;
   // Name shown on public leaderboards (members of the user's gyms always see it)
   publicLeaderboardName?: boolean;
+  // Athlete profile, all optional; birth year and height are private
+  division?: Division | null;
+  birthYear?: number | null;
+  heightCm?: number | null;
   createdAt: string;
   // Set when a platform admin is acting as this user through a support session
   supportSession?: SupportSessionInfo | null;
@@ -63,6 +72,26 @@ export interface PreferencesUpdateRequest {
   unitSystem?: UnitSystem | null;
   // Omitted (undefined) keeps the current choice
   publicLeaderboardName?: boolean;
+}
+
+/** Athlete profile; null clears a field. */
+export interface AthleteProfileRequest {
+  division: Division | null;
+  birthYear: number | null;
+  heightCm: number | null;
+}
+
+/** A body weight measure (private), always in kilograms. */
+export interface BodyWeightResponse {
+  id: number;
+  measuredOn: string;
+  weightKg: number;
+}
+
+export interface BodyWeightRequest {
+  weightKg: number;
+  // Today when omitted
+  measuredOn?: string | null;
 }
 
 /** "Clément R.": a name the current user may see (gym mates, opted-in users, themselves). */

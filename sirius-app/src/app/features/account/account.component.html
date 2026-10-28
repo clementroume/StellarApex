@@ -4,11 +4,11 @@
     <nav class="md:w-1/4" [attr.aria-label]="'ACCOUNT.TITLE' | translate">
       <ul class="flex md:flex-col gap-1 p-1 bg-card border rounded-xl">
         @for (item of menu; track item.link) {
-          <li class="flex-1 md:flex-none">
+          <li class="flex-1 min-w-0 md:flex-none">
             <a [routerLink]="item.link" routerLinkActive="bg-muted text-foreground font-semibold"
                ariaCurrentWhenActive="page"
                class="flex flex-col md:flex-row items-center justify-center md:justify-start gap-1 md:gap-2 h-14 md:h-11
-                      px-2 md:px-3 rounded-lg text-xs md:text-sm text-center
+                      px-1 md:px-3 rounded-lg text-xs md:text-sm text-center
                       text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
               <ng-icon [name]="item.icon" size="1.25rem" aria-hidden="true"/>
               {{ item.label | translate }}

@@ -62,6 +62,10 @@ export class SupportComponent implements OnInit {
   gymFilter = signal<number | null>(null);
   roleFilter = signal<GymRole | null>(null);
   statusFilter = signal<MembershipStatus | null>(null);
+  /** Accounts without any ACTIVE box/prog (the gym, role and status filters are then cleared). */
+  withoutGymFilter = signal<boolean>(false);
+  /** Accounts whose address is not verified yet. */
+  unverifiedFilter = signal<boolean>(false);
 
   readonly roles = SUPPORT_ROLES;
   readonly statuses = SUPPORT_STATUSES;
@@ -83,6 +87,7 @@ export class SupportComponent implements OnInit {
   hasFilters = computed(() =>
     this.searchQuery().trim().length >= USER_SEARCH_MIN_LENGTH
     || this.gymFilter() !== null || this.roleFilter() !== null || this.statusFilter() !== null
+    || this.withoutGymFilter() || this.unverifiedFilter()
   );
 
   // --- LIFECYCLE ---
@@ -135,7 +140,9 @@ export class SupportComponent implements OnInit {
       search: search.length >= USER_SEARCH_MIN_LENGTH ? search : undefined,
       gymId: this.gymFilter() ?? undefined,
       role: this.roleFilter() ?? undefined,
-      status: this.statusFilter() ?? undefined
+      status: this.statusFilter() ?? undefined,
+      withoutGym: this.withoutGymFilter() || undefined,
+      emailVerified: this.unverifiedFilter() ? false : undefined
     };
   }
 
@@ -148,18 +155,38 @@ export class SupportComponent implements OnInit {
 
   onGymChange(value: string): void {
     this.gymFilter.set(value ? Number(value) : null);
+    if (value) this.withoutGymFilter.set(false);
     this.loadUsers();
   }
 
   onRoleChange(role: GymRole | null): void {
     if (this.roleFilter() === role) return;
     this.roleFilter.set(role);
+    if (role) this.withoutGymFilter.set(false);
     this.loadUsers();
   }
 
   onStatusChange(status: MembershipStatus | null): void {
     if (this.statusFilter() === status) return;
     this.statusFilter.set(status);
+    if (status) this.withoutGymFilter.set(false);
+    this.loadUsers();
+  }
+
+  /** "Without box nor program" excludes the membership filters, which are cleared. */
+  onWithoutGymToggle(): void {
+    const on = !this.withoutGymFilter();
+    this.withoutGymFilter.set(on);
+    if (on) {
+      this.gymFilter.set(null);
+      this.roleFilter.set(null);
+      this.statusFilter.set(null);
+    }
+    this.loadUsers();
+  }
+
+  onUnverifiedToggle(): void {
+    this.unverifiedFilter.update(on => !on);
     this.loadUsers();
   }
 

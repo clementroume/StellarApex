@@ -4,6 +4,9 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
+import apex.stellar.aldebaran.client.AntaresClient;
+import apex.stellar.aldebaran.exception.AntaresUnavailableException;
+import apex.stellar.aldebaran.model.enums.Division;
 import apex.stellar.aldebaran.dto.ScoreComparisonResponse;
 import apex.stellar.aldebaran.dto.ScoreRequest;
 import apex.stellar.aldebaran.dto.ScoreResponse;
@@ -44,6 +47,7 @@ class ScoreServiceTest {
   @Mock private WodService wodService;
   @Mock private ScoreMapper scoreMapper;
   @Mock private SecurityService securityService;
+  @Mock private AntaresClient antaresClient;
   @InjectMocks private ScoreService scoreService;
 
   private Wod wodProxy;
@@ -135,7 +139,7 @@ class ScoreServiceTest {
         .thenReturn(Page.empty());
 
     Slice<ScoreResponse> result =
-        scoreService.getLeaderboard(1L, ScalingLevel.RX, null, false, pageable);
+        scoreService.getLeaderboard(1L, ScalingLevel.RX, null, false, null, pageable);
 
     assertNotNull(result);
   }
@@ -649,12 +653,13 @@ class ScoreServiceTest {
     mockWodDetailHit(ScoreType.TIME);
     // Athlete 7: PR 230 s done elsewhere, 270 s in gym 300; only the latter is returned
     Score inMyBox = verified(1L, 7L, 270, ScalingLevel.RX);
-    when(scoreRepository.findFilteredByWod(eq(1L), eq(true), eq(List.of(300L)), eq(false)))
+    when(scoreRepository.findFilteredByWod(
+            eq(1L), eq(true), eq(List.of(300L)), eq(false), isNull()))
         .thenReturn(List.of(inMyBox));
 
     Slice<ScoreResponse> result =
         scoreService.getLeaderboard(
-            1L, ScalingLevel.RX, List.of(300L), false, PageRequest.of(0, 20));
+            1L, ScalingLevel.RX, List.of(300L), false, null, PageRequest.of(0, 20));
 
     assertEquals(1, result.getNumberOfElements());
     verify(scoreMapper).toResponse(inMyBox);
@@ -683,12 +688,13 @@ class ScoreServiceTest {
     // Athlete 9: best verified score is ELITE, so not on the RX leaderboard
     Score rx9 = verified(4L, 9L, 250, ScalingLevel.RX);
     Score elite9 = verified(5L, 9L, 400, ScalingLevel.ELITE);
-    when(scoreRepository.findFilteredByWod(eq(1L), eq(true), eq(List.of(300L)), eq(true)))
+    when(scoreRepository.findFilteredByWod(
+            eq(1L), eq(true), eq(List.of(300L)), eq(true), isNull()))
         .thenReturn(List.of(slow7, only8, best7, rx9, elite9));
 
     Slice<ScoreResponse> result =
         scoreService.getLeaderboard(
-            1L, ScalingLevel.RX, List.of(300L), true, PageRequest.of(0, 20));
+            1L, ScalingLevel.RX, List.of(300L), true, null, PageRequest.of(0, 20));
 
     assertEquals(2, result.getNumberOfElements());
     assertFalse(result.hasNext());
@@ -706,13 +712,13 @@ class ScoreServiceTest {
     Score first = verified(1L, 7L, 290, ScalingLevel.RX);
     Score second = verified(2L, 8L, 300, ScalingLevel.RX);
     Score third = verified(3L, 9L, 310, ScalingLevel.RX);
-    when(scoreRepository.findFilteredByWod(eq(1L), eq(false), any(), eq(true)))
+    when(scoreRepository.findFilteredByWod(eq(1L), eq(false), any(), eq(true), isNull()))
         .thenReturn(List.of(third, first, second));
 
     Slice<ScoreResponse> page0 =
-        scoreService.getLeaderboard(1L, ScalingLevel.RX, null, true, PageRequest.of(0, 2));
+        scoreService.getLeaderboard(1L, ScalingLevel.RX, null, true, null, PageRequest.of(0, 2));
     Slice<ScoreResponse> page1 =
-        scoreService.getLeaderboard(1L, ScalingLevel.RX, null, true, PageRequest.of(1, 2));
+        scoreService.getLeaderboard(1L, ScalingLevel.RX, null, true, null, PageRequest.of(1, 2));
 
     assertEquals(2, page0.getNumberOfElements());
     assertTrue(page0.hasNext());
@@ -745,6 +751,101 @@ class ScoreServiceTest {
     assertEquals(coachId, entity.getLoggedBy());
     assertEquals(coachId, entity.getVerifiedBy());
     assertTrue(entity.isVerified());
+  }
+
+  @Test
+  @DisplayName("logScore: own score copies the logger's division and classifies older scores")
+  void testLogScore_CopiesOwnDivision() {
+    when(securityService.getCurrentUserId()).thenReturn(userId);
+    when(securityService.getCurrentUserDivision()).thenReturn(Division.WOMEN);
+    when(wodRepository.findById(1L)).thenReturn(Optional.of(wodProxy));
+    when(scoreMapper.toEntity(requestTime)).thenReturn(scoreEntityTime);
+    when(scoreRepository.save(scoreEntityTime)).thenReturn(scoreEntityTime);
+    when(scoreRepository.findByWodIdAndUserId(1L, userId)).thenReturn(List.of(scoreEntityTime));
+
+    scoreService.logScore(requestTime);
+
+    assertEquals(Division.WOMEN, scoreEntityTime.getDivision());
+    verify(scoreRepository).assignDivisionToUnclassified(userId, Division.WOMEN);
+    verifyNoInteractions(antaresClient);
+  }
+
+  @Test
+  @DisplayName("logScore: without a division, nothing is classified")
+  void testLogScore_NoDivision() {
+    when(securityService.getCurrentUserId()).thenReturn(userId);
+    when(wodRepository.findById(1L)).thenReturn(Optional.of(wodProxy));
+    when(scoreMapper.toEntity(requestTime)).thenReturn(scoreEntityTime);
+    when(scoreRepository.save(scoreEntityTime)).thenReturn(scoreEntityTime);
+    when(scoreRepository.findByWodIdAndUserId(1L, userId)).thenReturn(List.of(scoreEntityTime));
+
+    scoreService.logScore(requestTime);
+
+    assertNull(scoreEntityTime.getDivision());
+    verify(scoreRepository, never()).assignDivisionToUnclassified(any(), any());
+  }
+
+  @Test
+  @DisplayName("logScore: a judge logging for an athlete copies the athlete's division, not theirs")
+  void testLogScore_StaffUsesAthleteDivision() {
+    Long coachId = 2L;
+    Long athleteId = 99L;
+    Wod competition =
+        Wod.builder().id(1L).gymId(100L).competition(true).scoreType(ScoreType.TIME).build();
+    ScoreRequest request =
+        new ScoreRequest(
+            athleteId, LocalDate.now(), 1L, 5, 0, null, null, null, null, null, null, null, null,
+            ScalingLevel.RX, false, null, null, null, null);
+    Score entity = Score.builder().timeSeconds(300).scaling(ScalingLevel.RX).build();
+    when(securityService.getCurrentUserId()).thenReturn(coachId);
+    when(antaresClient.getUserDivision(athleteId)).thenReturn(Division.MEN);
+    when(wodRepository.findById(1L)).thenReturn(Optional.of(competition));
+    when(scoreMapper.toEntity(request)).thenReturn(entity);
+    when(scoreRepository.save(entity)).thenReturn(entity);
+    when(scoreRepository.findByWodIdAndUserId(1L, athleteId)).thenReturn(List.of(entity));
+
+    scoreService.logScore(request);
+
+    assertEquals(Division.MEN, entity.getDivision());
+    verify(securityService, never()).getCurrentUserDivision();
+    verify(scoreRepository).assignDivisionToUnclassified(athleteId, Division.MEN);
+  }
+
+  @Test
+  @DisplayName("logScore: Antares unreachable for the athlete's division -> 503, nothing saved")
+  void testLogScore_StaffDivisionUnavailable() {
+    Long athleteId = 99L;
+    Wod competition =
+        Wod.builder().id(1L).gymId(100L).competition(true).scoreType(ScoreType.TIME).build();
+    ScoreRequest request =
+        new ScoreRequest(
+            athleteId, LocalDate.now(), 1L, 5, 0, null, null, null, null, null, null, null, null,
+            ScalingLevel.RX, false, null, null, null, null);
+    when(securityService.getCurrentUserId()).thenReturn(2L);
+    when(wodRepository.findById(1L)).thenReturn(Optional.of(competition));
+    when(scoreMapper.toEntity(request)).thenReturn(Score.builder().build());
+    when(antaresClient.getUserDivision(athleteId))
+        .thenThrow(new AntaresUnavailableException("down", null));
+
+    assertThrows(AntaresUnavailableException.class, () -> scoreService.logScore(request));
+    verify(scoreRepository, never()).save(any());
+  }
+
+  @Test
+  @DisplayName("getLeaderboard division: only the scores logged in that division, best per athlete")
+  void testGetLeaderboard_Division() {
+    mockWodDetailHit(ScoreType.TIME);
+    Score women = verified(1L, 7L, 290, ScalingLevel.RX);
+    when(scoreRepository.findFilteredByWod(
+            eq(1L), eq(false), any(), eq(false), eq(Division.WOMEN)))
+        .thenReturn(List.of(women));
+
+    Slice<ScoreResponse> result =
+        scoreService.getLeaderboard(
+            1L, ScalingLevel.RX, null, false, Division.WOMEN, PageRequest.of(0, 20));
+
+    assertEquals(1, result.getNumberOfElements());
+    verify(scoreRepository, never()).findLeaderboard(any(), any(), any(Pageable.class));
   }
 
   @Test

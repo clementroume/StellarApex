@@ -1,0 +1,105 @@
+<div class="flex flex-col gap-6">
+  <section hlmCard>
+    <div hlmCardHeader>
+      <h2 hlmCardTitle class="flex items-center gap-2 text-xl">
+        <ng-icon name="heroTrophy" size="1.5rem" aria-hidden="true"/>
+        {{ 'ATHLETE_PROFILE.TITLE' | translate }}
+      </h2>
+      <p hlmCardDescription>{{ 'ATHLETE_PROFILE.SUBTITLE' | translate }}</p>
+    </div>
+
+    <form hlmCardContent class="flex flex-col gap-5" [formGroup]="profileForm" (ngSubmit)="saveProfile()">
+      <fieldset class="flex flex-col gap-2">
+        <legend class="text-sm font-medium mb-2">{{ 'ATHLETE_PROFILE.DIVISION' | translate }}</legend>
+        <div class="field-group" role="group">
+          <button type="button" hlmBtn variant="outline" class="aria-pressed:bg-muted aria-pressed:font-semibold"
+                  [attr.aria-pressed]="division() === null" (click)="onDivision(null)">
+            {{ 'ATHLETE_PROFILE.DIVISION_NONE' | translate }}
+          </button>
+          @for (d of divisions; track d) {
+            <button type="button" hlmBtn variant="outline" class="aria-pressed:bg-muted aria-pressed:font-semibold"
+                    [attr.aria-pressed]="division() === d" (click)="onDivision(d)">
+              {{ 'DIVISION.' + d | translate }}
+            </button>
+          }
+        </div>
+        <p class="text-xs text-muted-foreground">{{ 'ATHLETE_PROFILE.DIVISION_HINT' | translate }}</p>
+      </fieldset>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <app-form-field for="athlete-birth-year" icon="heroCalendarDays" [label]="'ATHLETE_PROFILE.BIRTH_YEAR' | translate"
+                        [error]="profileForm.controls.birthYear.invalid ? ('ATHLETE_PROFILE.BIRTH_YEAR_ERROR' | translate: {max: currentYear}) : null">
+          <input hlmInputGroupInput id="athlete-birth-year" formControlName="birthYear" type="number" inputmode="numeric"
+                 min="1900" [max]="currentYear" autocomplete="bday-year" aria-describedby="athlete-birth-year-message"
+                 [attr.aria-invalid]="profileForm.controls.birthYear.invalid"/>
+        </app-form-field>
+        <app-form-field for="athlete-height" icon="heroArrowUp"
+                        [label]="('ATHLETE_PROFILE.HEIGHT' | translate) + ' (' + units.heightUnit() + ')'">
+          <input hlmInputGroupInput id="athlete-height" formControlName="height" type="number" inputmode="numeric"
+                 min="1" aria-describedby="athlete-height-message"/>
+        </app-form-field>
+      </div>
+
+      <p class="flex items-start gap-2 text-sm text-muted-foreground" data-slot="privacy">
+        <ng-icon name="heroLockClosed" class="shrink-0 mt-0.5" aria-hidden="true"/>
+        {{ 'ATHLETE_PROFILE.PRIVACY' | translate }}
+      </p>
+
+      <button hlmBtn size="lg" type="submit" class="self-end"
+              [disabled]="profileForm.invalid || profileForm.pristine || savingProfile()">
+        {{ 'GLOBAL.SAVE' | translate }}
+      </button>
+    </form>
+  </section>
+
+  <section hlmCard>
+    <div hlmCardHeader>
+      <h2 hlmCardTitle class="flex items-center gap-2 text-xl">
+        <ng-icon name="heroScale" size="1.5rem" aria-hidden="true"/>
+        {{ 'ATHLETE_PROFILE.WEIGHT_TITLE' | translate }}
+      </h2>
+      @if (latest(); as last) {
+        <p hlmCardDescription>
+          {{ 'ATHLETE_PROFILE.WEIGHT_LATEST' | translate: {weight: units.formatBodyWeight(last.weightKg), date: date(last.measuredOn)} }}
+        </p>
+      }
+    </div>
+
+    <div hlmCardContent class="flex flex-col gap-4">
+      <form class="flex flex-col sm:flex-row sm:items-end gap-3" [formGroup]="weightForm" (ngSubmit)="addWeight()">
+        <app-form-field class="sm:flex-1" for="athlete-weight" icon="heroScale"
+                        [label]="('ATHLETE_PROFILE.WEIGHT' | translate) + ' (' + (units.massUnit() === 'KG' ? 'kg' : 'lb') + ')'">
+          <input hlmInputGroupInput id="athlete-weight" formControlName="weight" type="number" inputmode="decimal"
+                 step="0.1" min="1" aria-describedby="athlete-weight-message" required/>
+        </app-form-field>
+        <app-form-field class="sm:flex-1" for="athlete-weight-date" icon="heroCalendarDays"
+                        [label]="'ATHLETE_PROFILE.WEIGHT_DATE' | translate">
+          <input hlmInputGroupInput id="athlete-weight-date" formControlName="measuredOn" type="date"
+                 aria-describedby="athlete-weight-date-message" required/>
+        </app-form-field>
+        <button hlmBtn size="lg" type="submit" [disabled]="weightForm.invalid || savingWeight()">
+          <ng-icon name="heroPlus" aria-hidden="true"/>{{ 'ATHLETE_PROFILE.WEIGHT_ADD' | translate }}
+        </button>
+      </form>
+
+      @if (weights().length === 0) {
+        <p class="italic text-muted-foreground">{{ 'ATHLETE_PROFILE.WEIGHT_EMPTY' | translate }}</p>
+      } @else {
+        <ul class="flex flex-col divide-y divide-border" [attr.aria-label]="'ATHLETE_PROFILE.WEIGHT_HISTORY' | translate">
+          @for (measure of weights(); track measure.id) {
+            <li class="flex items-center justify-between gap-2 py-2">
+              <span class="text-muted-foreground">{{ date(measure.measuredOn) }}</span>
+              <span class="flex items-center gap-2">
+                <span class="font-semibold tabular-nums">{{ units.formatBodyWeight(measure.weightKg) }}</span>
+                <button hlmBtn variant="ghost" size="icon" type="button" class="text-destructive"
+                        (click)="deleteWeight(measure)" [attr.aria-label]="'GLOBAL.DELETE' | translate">
+                  <ng-icon name="heroTrash" aria-hidden="true"/>
+                </button>
+              </span>
+            </li>
+          }
+        </ul>
+      }
+    </div>
+  </section>
+</div>

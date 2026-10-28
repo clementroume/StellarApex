@@ -74,6 +74,17 @@ The backends enforce every rule; Sirius only adapts what it shows:
   explained in one sentence), former memberships, leave / withdraw a request; join a box or program
   (`gyms/join`: search by name and type, enrollment code; the invitation link `/join?gym=&code=`
   pre-fills both, after sign-in or sign-up if needed); request a new one (`gyms/new`, admin approval).
+* **Account e-mails** (`features/auth`): "forgot password" (`/auth/forgot-password`, same answer
+  for any address), reset (`/auth/reset-password#token=...`, then sign in again: every session ended)
+  and verification (`/auth/verify-email#token=...`, works signed out). Mailed links carry the token
+  in the URL fragment, read and removed from the address bar by `auth-token.ts`. An unverified
+  address (`UserResponse.emailVerified`) shows a badge and a resend button in My information and a
+  notice on the join / request pages (`shared/component/email-verification-notice`).
+* **Athlete profile** (`/my-account/athlete`): division (men/women), birth year, height, body weight
+  history, typed and shown in the user's unit system (stored in cm / kg); only the division is
+  shared. WOD detail: in a men/women pair, the value of the user's division is underlined and the
+  other muted (`UnitService.loadPair` / `distancePair`). Leaderboards: All / Men / Women filter
+  (all by default, as scores logged before a division was chosen have none).
 * **Sign-in / sign-up `returnUrl`**: kept between the two pages and checked by
   `features/auth/return-url.ts` (app paths, or http(s) URLs on the current host and its subdomains for
   the admin tools behind Traefik); anything else goes to `/today` (no open redirect).
@@ -89,7 +100,8 @@ The backends enforce every rule; Sirius only adapts what it shows:
   results); the create button follows the tab (gym WOD where the user programs, personal
   otherwise); on the "All" tab an admin can pick any gym or any athlete with personal WODs.
 * **Admin support session** (`/admin/support`, admins only): search a user (2 characters minimum),
-  filter by gym, role and membership status, page through results, or pick one of the 5 accounts
+  filter by gym, role and membership status, or by account (no box or program, e-mail not
+  verified, badge on each row), page through results, or pick one of the 5 accounts
   recently acted as; give a reason and act as them for 30 minutes
   (`core/services/support-session.service.ts`). A banner shows the target and
   the remaining time; password change and account deletion are hidden; language, theme and palette stay those of the admin's

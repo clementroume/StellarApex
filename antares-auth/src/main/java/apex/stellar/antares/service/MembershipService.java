@@ -7,6 +7,7 @@ import apex.stellar.antares.dto.MembershipSummary;
 import apex.stellar.antares.dto.MembershipUpdateRequest;
 import apex.stellar.antares.exception.BusinessRuleException;
 import apex.stellar.antares.exception.DataConflictException;
+import apex.stellar.antares.exception.EmailNotVerifiedException;
 import apex.stellar.antares.exception.ResourceNotFoundException;
 import apex.stellar.antares.exception.TooManyAttemptsException;
 import apex.stellar.antares.mapper.MembershipMapper;
@@ -64,6 +65,7 @@ public class MembershipService {
   private final GymRepository gymRepository;
   private final MembershipMapper membershipMapper;
   private final EnrollmentAttemptService enrollmentAttemptService;
+  private final EmailVerificationService emailVerificationService;
 
   /**
    * Helper method to validate the security context for membership updates.
@@ -136,9 +138,13 @@ public class MembershipService {
    *     EnrollmentAttemptService}.
    * @throws TooManyAttemptsException After too many wrong codes in a short time (429).
    * @throws DataConflictException If the user is already a member, or banned.
+   * @throws EmailNotVerifiedException If the user's address is not verified (403).
    */
   @Transactional
   public MembershipSummary joinGym(JoinGymRequest request, User user) {
+    // Only verified addresses may join (throwaway accounts would multiply code guesses)
+    emailVerificationService.requireVerified(user);
+
     // 0. Too many wrong codes recently: refuse before looking at this one
     enrollmentAttemptService.checkAllowed(user.getId());
 

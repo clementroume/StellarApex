@@ -4,6 +4,7 @@ import apex.stellar.antares.config.JwtProperties;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.scheduling.annotation.EnableAsync;
 
 /**
  * Main entry point for the Antares API Spring Boot application.
@@ -12,6 +13,7 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
  */
 @SpringBootApplication
 @EnableConfigurationProperties(JwtProperties.class)
+@EnableAsync
 @SuppressWarnings("java:S1118")
 public class AntaresAuth {
 

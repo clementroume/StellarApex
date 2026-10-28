@@ -3,6 +3,7 @@ package apex.stellar.aldebaran.config;
 import static org.springframework.security.config.Customizer.withDefaults;
 import static org.springframework.util.StringUtils.hasText;
 
+import apex.stellar.aldebaran.model.enums.Division;
 import apex.stellar.aldebaran.security.AldebaranUserPrincipal;
 import apex.stellar.aldebaran.security.GymAccess;
 import apex.stellar.aldebaran.security.SupportSessionAuditFilter;
@@ -101,6 +102,7 @@ public class SecurityConfig {
             "X-Auth-User-Id",
             "X-Auth-User-Role",
             "X-Auth-Memberships",
+            "X-Auth-User-Division",
             "X-Auth-Actor-Id"));
     configuration.setAllowCredentials(true);
 
@@ -121,6 +123,8 @@ public class SecurityConfig {
    *   <li>{@code X-Auth-Memberships}: usable memberships with effective permissions, as {@code
    *       gymId:ROLE:PERM+PERM} entries joined by {@code ,} (e.g. {@code
    *       12:COACH:WOD_WRITE+SCORE_VERIFY,15:ATHLETE:});
+   *   <li>{@code X-Auth-User-Division}: {@code MEN} or {@code WOMEN}, empty when not chosen
+   *       (optional; unknown values are ignored);
    *   <li>{@code X-Auth-Actor-Id}: the platform admin acting as this user through an audited support
    *       session (optional). The other headers then describe the target user, whose rights apply.
    * </ul>
@@ -135,6 +139,7 @@ public class SecurityConfig {
     static final String HEADER_USER_ROLE = "X-Auth-User-Role";
     static final String HEADER_MEMBERSHIPS = "X-Auth-Memberships";
     static final String HEADER_ACTOR_ID = "X-Auth-Actor-Id";
+    static final String HEADER_DIVISION = "X-Auth-User-Division";
 
     // Compared in constant time; an empty secret rejects every request
     private final byte[] internalSecret;
@@ -221,6 +226,7 @@ public class SecurityConfig {
                   .id(userId)
                   .platformRole(platformRole.trim())
                   .memberships(parseMemberships(request.getHeader(HEADER_MEMBERSHIPS)))
+                  .division(Division.parse(request.getHeader(HEADER_DIVISION)))
                   .actorId(actorId)
                   .build();
 

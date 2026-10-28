@@ -131,7 +131,7 @@ services:
     networks:
       - stellar-net
 
-  # ---6. CASTOR & POLLUX - DATABASE & CACHE ---
+  # --- 6. CASTOR & POLLUX - DATABASE & CACHE ---
   castor-db:
     image: postgres:18-alpine
     container_name: castor-db
@@ -149,6 +149,20 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - stellar-net
+
+  # --- 7. DENEB - LOCAL MAIL CATCHER (MAILPIT, DEVELOPMENT ONLY) ---
+  # Antares sends account e-mails (password reset, e-mail verification) here by default
+  # (MAIL_HOST=deneb-mail, port 1025). Nothing leaves the machine; read them on http://localhost:8025.
+  # In production, set MAIL_HOST / MAIL_PORT / MAIL_USERNAME / MAIL_PASSWORD / MAIL_SMTP_AUTH /
+  # MAIL_SMTP_STARTTLS / MAIL_FROM in .env to the chosen SMTP provider and drop this service.
+  deneb-mail:
+    image: axllent/mailpit:v1.27
+    container_name: deneb-mail
+    ports:
+      - "127.0.0.1:8025:8025" # Web UI, bound to localhost only.
+    restart: unless-stopped
     networks:
       - stellar-net
 

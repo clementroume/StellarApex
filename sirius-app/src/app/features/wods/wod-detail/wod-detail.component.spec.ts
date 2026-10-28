@@ -13,6 +13,8 @@ import {NotificationService} from '../../../core/services/notification.service';
 import {AccessService} from '../../../core/services/access.service';
 import {GymService} from '../../../api/antares/services/gym.service';
 import {UnitService} from '../../../core/services/unit.service';
+import {AuthService} from '../../../api/antares/services/auth.service';
+import {UserResponse} from '../../../api/antares/models/user.model';
 import {APP_ICONS} from '../../../app.config';
 import {WodResponse} from '../../../api/aldebaran/models/wod.model';
 import {ScoreService} from '../../../api/aldebaran/services/score.service';
@@ -50,8 +52,14 @@ describe('WodDetailComponent', () => {
     ...overrides
   });
 
-  // Unit conversion is tested in UnitService: "43/30 KG"
-  const pair = (v?: number | null, f?: number | null, u?: string | null) => v == null ? '' : `${v}${f ? '/' + f : ''} ${u}`;
+  // Unit conversion is tested in UnitService: "43/30 KG", the user's division value marked
+  const pair = (v?: number | null, f?: number | null, u?: string | null, division?: string | null) =>
+    v == null && f == null ? null : {
+      values: [v, f].filter(x => x != null).map(String),
+      unit: u ?? '',
+      mine: v != null && f != null && division ? (division === 'MEN' ? 0 : 1) : null
+    };
+  const currentUser = signal<Partial<UserResponse> | null>({division: null});
 
   const init = (wod: WodResponse = buildWod()) => {
     mockWodService.getWod.mockReturnValue(of(wod));
@@ -105,10 +113,13 @@ describe('WodDetailComponent', () => {
         {
           provide: UnitService,
           useValue: {
-            formatLoad: pair,
-            formatDistance: pair
+            formatDistance: (v?: number | null, f?: number | null, u?: string | null) =>
+              v == null ? '' : `${v}${f ? '/' + f : ''} ${u}`,
+            loadPair: pair,
+            distancePair: pair
           }
         },
+        {provide: AuthService, useValue: {currentUser}},
         {provide: NotificationService, useValue: mockNotificationService},
         {provide: Location, useValue: mockLocation},
         {provide: ScoreService, useValue: mockScoreService},
@@ -290,11 +301,26 @@ describe('WodDetailComponent', () => {
       init();
       const thruster = {...component.sortedMovements()[0], weightFemale: 30};
 
-      expect(component.measures(thruster)).toEqual(['43/30 KG']);
-      expect(component.measures({...thruster, weight: undefined, height: 24, heightFemale: 20, heightUnit: 'INCHES'}))
-        .toEqual(['24/20 INCHES']);
+      expect(component.measures(thruster)).toEqual([{values: ['43', '30'], unit: 'KG', mine: null}]);
+      expect(component.measures({...thruster, weight: undefined, weightFemale: undefined, height: 24, heightFemale: 20, heightUnit: 'INCHES'}))
+        .toEqual([{values: ['24', '20'], unit: 'INCHES', mine: null}]);
       expect(fixture.nativeElement.textContent).toContain('43 KG');
       expect(fixture.nativeElement.textContent).not.toContain('@');
+    });
+
+    it('should highlight the load of the user\'s division and mute the other one', () => {
+      currentUser.set({division: 'WOMEN'});
+      init(buildWod({
+        movements: [{id: 11, movement: movement(1, 'Thruster'), orderIndex: 1, repsScheme: '21-15-9',
+          weight: 43, weightFemale: 30, weightUnit: 'KG'}]
+      }));
+
+      const measure: HTMLElement = fixture.nativeElement.querySelector('[data-slot="measure"]');
+      expect(measure.textContent?.replace(/\s+/g, ' ').trim()).toBe('43/30 KG');
+      const [men, women] = Array.from(measure.querySelectorAll('span')) as HTMLElement[];
+      expect(women.className).toContain('underline');
+      expect(men.className).toContain('text-muted-foreground');
+      currentUser.set({division: null});
     });
 
     it('should list the variants and the texts in the user language', () => {

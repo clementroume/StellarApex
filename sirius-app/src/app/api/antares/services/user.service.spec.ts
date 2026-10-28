@@ -18,7 +18,7 @@ describe('UserService', () => {
 
   const base = environment.authUrl;
   const mockUser: UserResponse = {
-    id: 1, email: 'test@test.com', firstName: 'John', lastName: 'Doe',
+    id: 1, email: 'test@test.com', emailVerified: true, firstName: 'John', lastName: 'Doe',
     platformRole: 'USER', memberships: [], locale: 'en', theme: 'light',
     createdAt: ''
   };
@@ -105,5 +105,37 @@ describe('UserService', () => {
 
     expect(authServiceSpy.updateCurrentUser).toHaveBeenCalledWith(null);
     expect(navigateSpy).toHaveBeenCalledWith(['/auth/register']);
+  });
+
+  it('updateAthleteProfile should PUT and update auth state', () => {
+    const payload = {division: 'WOMEN' as const, birthYear: 1992, heightCm: 168};
+    service.updateAthleteProfile(payload).subscribe();
+    const req = httpMock.expectOne(`${base}/users/me/athlete-profile`);
+    expect(req.request.method).toBe('PUT');
+    expect(req.request.body).toEqual(payload);
+    req.flush(mockUser);
+    expect(authServiceSpy.updateCurrentUser).toHaveBeenCalledWith(mockUser);
+  });
+
+  it('should list, record and delete body weights', () => {
+    service.getBodyWeights().subscribe();
+    httpMock.expectOne(`${base}/users/me/body-weights`).flush([]);
+
+    service.recordBodyWeight({weightKg: 78.5, measuredOn: '2026-10-28'}).subscribe();
+    const post = httpMock.expectOne(`${base}/users/me/body-weights`);
+    expect(post.request.method).toBe('POST');
+    post.flush({id: 1, measuredOn: '2026-10-28', weightKg: 78.5});
+
+    service.deleteBodyWeight(1).subscribe();
+    const del = httpMock.expectOne(`${base}/users/me/body-weights/1`);
+    expect(del.request.method).toBe('DELETE');
+    del.flush(null);
+  });
+
+  it('resendVerification should POST to /users/me/email/verification', () => {
+    service.resendVerification().subscribe();
+    const req = httpMock.expectOne(`${base}/users/me/email/verification`);
+    expect(req.request.method).toBe('POST');
+    req.flush(null, {status: 202, statusText: 'Accepted'});
   });
 });

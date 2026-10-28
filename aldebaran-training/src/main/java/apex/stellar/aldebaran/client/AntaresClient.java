@@ -1,8 +1,10 @@
 package apex.stellar.aldebaran.client;
 
 import apex.stellar.aldebaran.exception.AntaresUnavailableException;
+import apex.stellar.aldebaran.model.enums.Division;
 import java.time.Duration;
 import lombok.extern.slf4j.Slf4j;
+import org.jspecify.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
@@ -104,6 +106,32 @@ public class AntaresClient {
     }
   }
 
+  /**
+   * Asks Antares for a user's competition division, e.g. for a score staff log for an athlete.
+   *
+   * @param userId The user.
+   * @return The division, or {@code null} when the user has not chosen one.
+   * @throws AntaresUnavailableException if Antares does not give a clear answer (unknown user
+   *     included).
+   */
+  public @Nullable Division getUserDivision(Long userId) {
+    try {
+      UserDivision answer =
+          restClient
+              .get()
+              .uri("/antares/internal/users/{userId}/division", userId)
+              .retrieve()
+              .body(UserDivision.class);
+      if (answer == null) {
+        throw new AntaresUnavailableException("Empty division answer from Antares", null);
+      }
+      return Division.parse(answer.division());
+    } catch (RestClientException e) {
+      log.warn("Antares division lookup failed (user {})", userId, e);
+      throw new AntaresUnavailableException("Antares division lookup failed", e);
+    }
+  }
+
   private static SimpleClientHttpRequestFactory requestFactory(Duration timeout) {
     SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
     factory.setConnectTimeout(timeout);
@@ -116,4 +144,7 @@ public class AntaresClient {
 
   /** Answer of {@code GET /antares/internal/gyms/{gymId}}. */
   record GymType(boolean programming) {}
+
+  /** Answer of {@code GET /antares/internal/users/{userId}/division}. */
+  record UserDivision(@Nullable String division) {}
 }

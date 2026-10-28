@@ -4,6 +4,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -17,8 +18,10 @@ import apex.stellar.aldebaran.model.entities.Score.ScalingLevel;
 import apex.stellar.aldebaran.model.entities.Wod;
 import apex.stellar.aldebaran.model.entities.Wod.ScoreType;
 import apex.stellar.aldebaran.model.entities.Wod.WodType;
+import apex.stellar.aldebaran.model.enums.Division;
 import apex.stellar.aldebaran.repository.ScoreRepository;
 import apex.stellar.aldebaran.repository.WodRepository;
+import jakarta.persistence.EntityManager;
 import java.time.LocalDate;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -43,6 +46,7 @@ class CompetitionScoreIT extends BaseIntegrationTest {
 
   @Autowired private ScoreRepository scoreRepository;
   @Autowired private WodRepository wodRepository;
+  @Autowired private EntityManager entityManager;
 
   private Wod open;
   private Wod competition;
@@ -86,6 +90,13 @@ class CompetitionScoreIT extends BaseIntegrationTest {
         new ScoreRequest(
             userId, LocalDate.now(), wodId, minutes, 0, null, null, null, null, null, null, null,
             null, ScalingLevel.RX, false, null, null, null, null));
+  }
+
+  private String scoreForGym(Long wodId, int minutes) throws Exception {
+    return objectMapper.writeValueAsString(
+        new ScoreRequest(
+            null, LocalDate.now(), wodId, minutes, 0, null, null, null, null, null, null, null,
+            null, ScalingLevel.RX, false, null, null, null, GYM));
   }
 
   private Score saveScore(long userId, boolean verified) {
@@ -149,6 +160,59 @@ class CompetitionScoreIT extends BaseIntegrationTest {
         .andExpect(jsonPath("$.verifiedBy").value(COACH))
         .andExpect(jsonPath("$.capabilities.canModify").value(true))
         .andExpect(jsonPath("$.capabilities.canVerify").value(true));
+  }
+
+  @Test
+  @DisplayName("Division: own score copies the header, a judge's score the athlete's division")
+  void divisionCopiedAtLogging() throws Exception {
+    when(antaresClient.isGymMember(GYM, ATHLETE)).thenReturn(true);
+    when(antaresClient.getUserDivision(ATHLETE)).thenReturn(Division.WOMEN);
+    // An older score of the athlete, logged before they chose a division
+    Score older = saveScore(ATHLETE, false);
+
+    // The judge (division MEN) logs for the athlete: the athlete's division is kept
+    mockMvc
+        .perform(
+            as(post("/aldebaran/scores"), COACH, COACH_MEMBERSHIPS)
+                .header("X-Auth-User-Division", "MEN")
+                .content(scoreFor(ATHLETE, competition.getId(), 9)))
+        .andExpect(status().isCreated())
+        .andExpect(jsonPath("$.division").value("WOMEN"));
+    entityManager.clear(); // the bulk update bypasses the persistence context
+    assertEquals(
+        Division.WOMEN, scoreRepository.findById(older.getId()).orElseThrow().getDivision());
+
+    // The judge's own score on the public WOD: their header
+    mockMvc
+        .perform(
+            as(post("/aldebaran/scores"), COACH, COACH_MEMBERSHIPS)
+                .header("X-Auth-User-Division", "MEN")
+                .content(scoreForGym(open.getId(), 8)))
+        .andExpect(status().isCreated())
+        .andExpect(jsonPath("$.division").value("MEN"));
+  }
+
+  @Test
+  @DisplayName("Leaderboard: the division filter keeps the scores logged in that division")
+  void leaderboardDivision() throws Exception {
+    Score women = saveScore(ATHLETE, true);
+    women.setDivision(Division.WOMEN);
+    scoreRepository.save(women);
+    Score men = saveScore(ATHLETE + 1, true);
+    men.setDivision(Division.MEN);
+    scoreRepository.save(men);
+    saveScore(ATHLETE + 2, true); // no division: only on the "all" leaderboard
+
+    String url = "/aldebaran/scores/leaderboard/" + competition.getId();
+    mockMvc
+        .perform(as(get(url), ATHLETE, ATHLETE_MEMBERSHIPS))
+        .andExpect(jsonPath("$.content.length()").value(3));
+    mockMvc
+        .perform(as(get(url), ATHLETE, ATHLETE_MEMBERSHIPS).param("division", "WOMEN"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.content.length()").value(1))
+        .andExpect(jsonPath("$.content[0].userId").value(ATHLETE))
+        .andExpect(jsonPath("$.content[0].division").value("WOMEN"));
   }
 
   @Test

@@ -11,6 +11,14 @@
                   (click)="onScalingChange(level)">{{ 'SCORE.SCALING.' + level | translate }}</button>
         }
       </div>
+      <div class="field-group" role="group" [attr.aria-label]="'DIVISION.LABEL' | translate" data-slot="division-filter">
+        <button type="button" hlmBtn variant="outline" size="sm" class="aria-pressed:bg-muted aria-pressed:font-semibold"
+                [attr.aria-pressed]="division() === null" (click)="onDivisionChange(null)">{{ 'DIVISION.ALL' | translate }}</button>
+        @for (d of divisions; track d) {
+          <button type="button" hlmBtn variant="outline" size="sm" class="aria-pressed:bg-muted aria-pressed:font-semibold"
+                  [attr.aria-pressed]="division() === d" (click)="onDivisionChange(d)">{{ 'DIVISION.' + d | translate }}</button>
+        }
+      </div>
       @if (isCompetition()) {
         <label class="flex items-center gap-2 cursor-pointer text-sm">
           <input id="leaderboard-verified" type="checkbox" class="size-4 accent-(--color-success)"

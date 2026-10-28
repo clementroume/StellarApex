@@ -53,13 +53,18 @@ public interface UserRepository extends JpaRepository<@NonNull User, @NonNull Lo
    * (case-insensitive, backslash as escape character), ordered by last name.
    *
    * <p>When {@code anyMembership} is false, only users holding at least one membership matching the
-   * optional gym, role and status filters are returned.
+   * optional gym, role and status filters are returned. With {@code withoutGym}, only users holding
+   * no membership in {@code activeStatus} (no box nor program yet) are returned; {@code
+   * emailVerified} keeps the verified (true) or unverified (false) addresses.
    *
    * @param pattern a lower-case LIKE pattern (e.g. {@code %doe%}).
    * @param anyMembership true to ignore the membership filters.
    * @param gymId the membership gym, or null.
    * @param role the membership role, or null.
    * @param status the membership status, or null.
+   * @param withoutGym true to keep users without any membership in {@code activeStatus}.
+   * @param activeStatus the status counting as "in a gym" (ACTIVE).
+   * @param emailVerified the address state to keep, or null for both.
    * @param pageable the requested page.
    * @return the matching user ids, in display order.
    */
@@ -72,6 +77,9 @@ public interface UserRepository extends JpaRepository<@NonNull User, @NonNull Lo
           + " AND (:gymId IS NULL OR m.gym.id = :gymId)"
           + " AND (:role IS NULL OR m.gymRole = :role)"
           + " AND (:status IS NULL OR m.status = :status)))"
+          + " AND (:withoutGym = false OR NOT EXISTS (SELECT 1 FROM Membership a WHERE a.user = u"
+          + " AND a.status = :activeStatus))"
+          + " AND (:emailVerified IS NULL OR u.emailVerified = :emailVerified)"
           + " ORDER BY u.lastName, u.firstName, u.id")
   Slice<Long> searchIds(
       String pattern,
@@ -79,6 +87,9 @@ public interface UserRepository extends JpaRepository<@NonNull User, @NonNull Lo
       Long gymId,
       GymRole role,
       MembershipStatus status,
+      boolean withoutGym,
+      MembershipStatus activeStatus,
+      Boolean emailVerified,
       Pageable pageable);
 
   /**

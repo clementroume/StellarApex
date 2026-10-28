@@ -16,6 +16,7 @@ import {UserService} from '../../../api/antares/services/user.service';
 import {NotificationService} from '../../../core/services/notification.service';
 import {problemDetailOf} from '../../../core/models/problem-detail.model';
 import {FormFieldComponent} from '../../../shared/component/form-field/form-field.component';
+import {EmailVerificationNoticeComponent} from '../../../shared/component/email-verification-notice/email-verification-notice.component';
 
 /**
  * Asks for a new box or program (D1): open to every user, approved by a platform admin, one request
@@ -25,7 +26,8 @@ import {FormFieldComponent} from '../../../shared/component/form-field/form-fiel
   selector: 'app-gym-request',
   standalone: true,
   imports: [ReactiveFormsModule, RouterLink, TranslatePipe, NgIcon, HlmAlertImports, HlmButton, HlmCardImports,
-    HlmInputGroupImports, HlmSpinner, HlmTextarea, HlmLabel, FormFieldComponent],
+    HlmInputGroupImports, HlmSpinner, HlmTextarea, HlmLabel, FormFieldComponent,
+    EmailVerificationNoticeComponent],
   templateUrl: './gym-request.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

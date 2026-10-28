@@ -5,6 +5,7 @@ import {NgIconComponent} from '@ng-icons/core';
 import {ScalingLevel, ScoreResponse} from '../../../../api/aldebaran/models/score.model';
 import {ScoreService} from '../../../../api/aldebaran/services/score.service';
 import {UserService} from '../../../../api/antares/services/user.service';
+import {Division, DIVISIONS} from '../../../../api/antares/models/user.model';
 import {AccessService} from '../../../../core/services/access.service';
 import {UnitService} from '../../../../core/services/unit.service';
 import {formatDuration} from '../../wod.utils';
@@ -49,6 +50,12 @@ export class ScoreLeaderboardComponent {
    * official ranking) and off for judges, who must see the scores waiting for their verification.
    */
   readonly verifiedOnlyChoice = signal<boolean | null>(null);
+  /**
+   * Division leaderboard (D37): scores logged in that division only; null = every score. Starts on
+   * every score, as scores logged before the athletes chose a division have none.
+   */
+  readonly divisions = DIVISIONS;
+  readonly division = signal<Division | null>(null);
   readonly rows = signal<ScoreResponse[]>([]);
   readonly names = signal<Record<number, string>>({});
   readonly hasMore = signal<boolean>(false);
@@ -77,6 +84,7 @@ export class ScoreLeaderboardComponent {
       this.scaling();
       this.gymIds();
       this.verifiedOnly();
+      this.division();
       if (wod) untracked(() => this.load(true));
     });
     // A logged, edited or deleted score may change the ranking
@@ -89,7 +97,8 @@ export class ScoreLeaderboardComponent {
     if (!wod) return;
     this.page = reset ? 0 : this.page + 1;
     this.isLoading.set(true);
-    this.scoreService.getLeaderboard(wod.id, this.scaling(), this.page, PAGE_SIZE, this.gymIds(), this.verifiedOnly()).subscribe({
+    this.scoreService.getLeaderboard(wod.id, this.scaling(), this.page, PAGE_SIZE, this.gymIds(), this.verifiedOnly(),
+      this.division()).subscribe({
       next: (slice) => {
         this.rows.set(reset ? slice.content : [...this.rows(), ...slice.content]);
         this.hasMore.set(!slice.last);
@@ -125,6 +134,10 @@ export class ScoreLeaderboardComponent {
 
   onMyProgsChange(checked: boolean): void {
     this.myProgs.set(checked);
+  }
+
+  onDivisionChange(division: Division | null): void {
+    this.division.set(division);
   }
 
   onVerifiedOnlyChange(checked: boolean): void {

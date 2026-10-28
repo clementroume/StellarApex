@@ -6,6 +6,7 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.lenient;
 
+import apex.stellar.antares.model.Division;
 import apex.stellar.antares.model.Gym;
 import apex.stellar.antares.model.Gym.GymStatus;
 import apex.stellar.antares.model.GymRole;
@@ -106,6 +107,25 @@ class DevDataSeederTest {
     assertThat(memberships).hasSize(MEMBERSHIPS);
     assertThat(membership("banned@sparta.com", "Spartacus CrossFit").getStatus())
         .isEqualTo(MembershipStatus.BANNED);
+    assertThat(account("athlete@sparta.com").getDivision()).isEqualTo(Division.WOMEN);
+    assertThat(account("owner@sparta.com").getDivision()).isEqualTo(Division.MEN);
+    assertThat(account("pending@sparta.com").getDivision()).isNull();
+    assertThat(users).allMatch(User::isEmailVerified);
+  }
+
+  @Test
+  @DisplayName("run: a division chosen in the application is kept")
+  void testRun_KeepsChosenDivision() {
+    User athlete = user("athlete@sparta.com");
+    athlete.setDivision(Division.MEN);
+
+    seeder.run();
+
+    assertThat(athlete.getDivision()).isEqualTo(Division.MEN);
+  }
+
+  private User account(String email) {
+    return users.stream().filter(u -> u.getEmail().equals(email)).findFirst().orElseThrow();
   }
 
   @Test
@@ -145,9 +165,12 @@ class DevDataSeederTest {
 
   // --- HELPERS ---
 
+  /** Saves like JPA: a new entity gets an id, an already stored one is updated in place. */
   private <T> T store(T entity, List<T> target) {
-    ReflectionTestUtils.setField(entity, "id", ids.incrementAndGet());
-    target.add(entity);
+    if (target.stream().noneMatch(stored -> stored == entity)) {
+      ReflectionTestUtils.setField(entity, "id", ids.incrementAndGet());
+      target.add(entity);
+    }
     return entity;
   }
 

@@ -43,6 +43,10 @@ resolving IDs from the `antares` schema with `JdbcTemplate`, then calls `config/
 - Competition WODs: `ScoreSecurity.canCreate` (staff logging), `canModify` (verified score locked for
   its athlete), `canVerify`; `WodSecurity.canJudge` feeds `WodCapabilities.canJudge`;
   `WodService.checkCompetition` (gym required, never public, `InvalidWodException` → 400).
+- Division: `AldebaranUserPrincipal.division` (`X-Auth-User-Division`); `ScoreService.logScore` copies
+  it on own scores, or `AntaresClient.getUserDivision` for a score logged for someone else (503 when
+  Antares fails, never the judge's division), then `assignDivisionToUnclassified`. Leaderboard filter
+  `division` goes through the in-memory filtered path (`findFilteredByWod`).
 - Support session: `X-Auth-Actor-Id` (nullable `actorId`) = the admin acting as the user; rights stay
   the user's. `security/SupportSessionAuditFilter` logs every non-GET request with an actor at INFO.
 

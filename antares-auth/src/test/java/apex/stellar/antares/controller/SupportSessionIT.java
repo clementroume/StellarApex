@@ -1,6 +1,7 @@
 package apex.stellar.antares.controller;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
@@ -531,6 +532,43 @@ class SupportSessionIT extends BaseIntegrationTest {
   }
 
   @Test
+  @DisplayName("Search: users without any ACTIVE box/prog, and unverified addresses")
+  void search_shouldFindUsersWithoutGymOrUnverified() throws Exception {
+    User banned = createUser("Ban", "Ned", "banned@test.com", PlatformRole.USER);
+    membershipRepository.save(
+        Membership.builder()
+            .user(banned)
+            .gym(gym)
+            .gymRole(GymRole.ATHLETE)
+            .status(MembershipStatus.BANNED)
+            .build());
+    User fresh = createUser("New", "Comer", "newcomer@test.com", PlatformRole.USER);
+    fresh.setEmailVerified(false);
+    userRepository.save(fresh);
+
+    // Jane (ACTIVE coach) is left out; a banned-only user has no box either; gym filters ignored
+    mockMvc
+        .perform(
+            get("/antares/admin/users")
+                .param("withoutGym", "true")
+                .param("role", "COACH")
+                .cookie(adminCookies))
+        .andExpect(
+            jsonPath("$.content[*].email")
+                .value(
+                    containsInAnyOrder("admin@test.com", "banned@test.com", "newcomer@test.com")));
+    mockMvc
+        .perform(
+            get("/antares/admin/users")
+                .param("withoutGym", "true")
+                .param("emailVerified", "false")
+                .cookie(adminCookies))
+        .andExpect(jsonPath("$.content.length()").value(1))
+        .andExpect(jsonPath("$.content[0].email").value("newcomer@test.com"))
+        .andExpect(jsonPath("$.content[0].emailVerified").value(false));
+  }
+
+  @Test
   @DisplayName("Lookup: Should resolve ids into summaries, ignoring unknown ids")
   void lookup_shouldResolveSummaries() throws Exception {
     mockMvc
@@ -633,6 +671,7 @@ class SupportSessionIT extends BaseIntegrationTest {
             .email(email)
             .password(passwordEncoder.encode(PASSWORD))
             .platformRole(role)
+            .emailVerified(true)
             .build());
   }
 }

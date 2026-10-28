@@ -1,6 +1,7 @@
 package apex.stellar.aldebaran.dto;
 
 import apex.stellar.aldebaran.model.entities.Score.ScalingLevel;
+import apex.stellar.aldebaran.model.enums.Division;
 import apex.stellar.aldebaran.model.enums.Unit;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -42,6 +43,8 @@ public record ScoreResponse(
     boolean timeCapped,
     Integer tiebreakSeconds,
     boolean personalRecord,
+    // Division of the athlete when the score was logged (null: not chosen)
+    Division division,
 
     // --- Comments and Scaling notes---
     String userComment,
@@ -90,6 +93,7 @@ public record ScoreResponse(
         timeCapped,
         tiebreakSeconds,
         personalRecord,
+        division,
         showNotes ? userComment : null,
         showNotes ? scalingNotes : null,
         loggedAt,

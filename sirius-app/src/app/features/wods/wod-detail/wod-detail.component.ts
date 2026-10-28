@@ -10,7 +10,8 @@ import {WodService} from '../../../api/aldebaran/services/wod.service';
 import {NotificationService} from '../../../core/services/notification.service';
 import {AccessService} from '../../../core/services/access.service';
 import {ProblemDetail} from '../../../core/models/problem-detail.model';
-import {UnitService} from '../../../core/services/unit.service';
+import {MeasurePair, UnitService} from '../../../core/services/unit.service';
+import {AuthService} from '../../../api/antares/services/auth.service';
 import {
   DetailAdminActionsComponent
 } from '../../../shared/component/detail/detail-admin-actions/detail-admin-actions.component';
@@ -57,6 +58,7 @@ export class WodDetailComponent {
   private readonly router = inject(Router);
   private readonly location = inject(Location);
   private readonly unitService = inject(UnitService);
+  private readonly authService = inject(AuthService);
   readonly scoresStore = inject(WodScoresStore);
 
   // --- STATE (SIGNALS) ---
@@ -274,12 +276,16 @@ export class WodDetailComponent {
     ].join(', ');
   }
 
-  /** Men's / women's load and height in the user's units, written after the movement: "61/43 kg", "60/50 cm". */
-  measures(wm: WodMovementResponse): string[] {
+  /**
+   * Men's / women's load and height in the user's units, written after the movement: "61/43 kg",
+   * "60/50 cm", the value of the user's division highlighted (D31).
+   */
+  measures(wm: WodMovementResponse): MeasurePair[] {
+    const division = this.authService.currentUser()?.division;
     return [
-      this.unitService.formatLoad(wm.weight, wm.weightFemale, wm.weightUnit),
-      this.unitService.formatDistance(wm.height, wm.heightFemale, wm.heightUnit)
-    ].filter(Boolean);
+      this.unitService.loadPair(wm.weight, wm.weightFemale, wm.weightUnit, division),
+      this.unitService.distancePair(wm.height, wm.heightFemale, wm.heightUnit, division)
+    ].filter((pair): pair is MeasurePair => pair != null);
   }
 
   movementNotes(wm: WodMovementResponse): string {

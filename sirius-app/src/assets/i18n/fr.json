@@ -59,25 +59,91 @@
     "TITLE": "Bon retour !",
     "SUBTITLE": "Connecte-toi pour accéder à ton journal de bord.",
     "SIGN_IN": "Se connecter",
-    "NO_ACCOUNT": "Pas encore de compte ? S'inscrire"
+    "NO_ACCOUNT": "Pas encore de compte ? S'inscrire",
+    "FORGOT_PASSWORD": "Mot de passe oublié ?"
   },
   "REGISTER": {
     "TITLE": "Rejoins Stellar Apex !",
     "SUBTITLE": "Crée ton compte pour commencer à enregistrer tes WODs.",
     "SIGN_UP": "S'inscrire",
-    "HAVE_ACCOUNT": "Déjà un compte ? Se connecter"
+    "HAVE_ACCOUNT": "Déjà un compte ? Se connecter",
+    "CHECK_EMAIL": "Compte créé ! Confirme ton adresse avec le lien envoyé à {{email}}."
+  },
+  "FORGOT_PASSWORD": {
+    "TITLE": "Mot de passe oublié",
+    "SUBTITLE": "Indique ton adresse e-mail : on t'envoie un lien pour choisir un nouveau mot de passe.",
+    "SUBMIT": "Envoyer le lien",
+    "SENT": "Si un compte existe pour {{email}}, un lien de réinitialisation vient d'y être envoyé.",
+    "SENT_HINT": "Le lien ne sert qu'une fois et expire dans 30 minutes. Pense à regarder tes spams.",
+    "BACK_TO_LOGIN": "Retour à la connexion"
+  },
+  "RESET_PASSWORD": {
+    "TITLE": "Nouveau mot de passe",
+    "SUBTITLE": "Choisis le nouveau mot de passe de ton compte.",
+    "NEW_PASSWORD": "Nouveau mot de passe",
+    "SUBMIT": "Changer le mot de passe",
+    "SIGN_OUT_HINT": "Tu seras déconnecté de tous tes appareils : reconnecte-toi ensuite avec ce mot de passe.",
+    "SUCCESS": "Mot de passe changé. Connecte-toi avec ton nouveau mot de passe.",
+    "INVALID_LINK": "Ce lien est incomplet ou invalide. Demande un nouveau lien de réinitialisation.",
+    "NEW_LINK": "Demander un nouveau lien"
+  },
+  "VERIFY_EMAIL": {
+    "VERIFYING": "Vérification de ton adresse…",
+    "VERIFIED_TITLE": "Adresse confirmée",
+    "VERIFIED_TEXT": "Merci ! Tu peux maintenant rejoindre ta box ou ta prog.",
+    "JOIN_GYM": "Rejoindre une box ou une prog",
+    "CONTINUE": "Continuer vers l'app",
+    "FAILED_TITLE": "Lien invalide",
+    "FAILED_TEXT": "Ce lien est invalide ou a expiré.",
+    "RESEND_HINT": "Depuis « Mes informations », tu peux recevoir un nouveau lien.",
+    "TO_PROFILE": "Aller à mes informations"
+  },
+  "EMAIL_VERIFICATION": {
+    "TITLE": "Confirme ton adresse e-mail",
+    "TEXT": "Pour rejoindre ou créer une box ou une prog, ouvre le lien envoyé à {{email}}."
   },
   "ACCOUNT": {
     "TITLE": "Mon Compte",
     "MENU_INFO": "Mes informations",
     "MENU_SETTINGS": "Paramètres",
     "MENU_UNITS": "Unités",
-    "MENU_GYMS": "Box & progs"
+    "MENU_GYMS": "Box & progs",
+    "MENU_ATHLETE": "Profil athlète"
   },
   "PROFILE": {
     "TITLE": "Mes informations",
     "SUCCESS_UPDATE": "Votre profil a été mis à jour avec succès !",
-    "VERIFIED": "Vérifié"
+    "VERIFIED": "Vérifié",
+    "NOT_VERIFIED": "Non vérifié",
+    "NOT_VERIFIED_HINT": "Confirme ton adresse pour rejoindre une box ou une prog.",
+    "RESEND": "Renvoyer le lien",
+    "RESEND_DONE": "Lien de confirmation envoyé. Pense à regarder tes spams.",
+    "EMAIL_CHANGE_HINT": "Une nouvelle adresse devra être confirmée par e-mail."
+  },
+  "ATHLETE_PROFILE": {
+    "TITLE": "Profil athlète",
+    "SUBTITLE": "Tout est facultatif.",
+    "DIVISION": "Division",
+    "DIVISION_NONE": "Non précisée",
+    "DIVISION_HINT": "Met en avant la charge de ta division dans les WODs (ex. 43/30 kg) et range tes prochains scores dans les classements Hommes / Femmes.",
+    "BIRTH_YEAR": "Année de naissance",
+    "BIRTH_YEAR_ERROR": "Entre 1900 et {{max}}",
+    "HEIGHT": "Taille",
+    "PRIVACY": "Ton année de naissance, ta taille et ton poids sont privés : toi seul les vois, jamais dans un classement. Seule ta division est partagée, avec tes scores.",
+    "SAVED": "Profil athlète enregistré.",
+    "WEIGHT_TITLE": "Poids de corps",
+    "WEIGHT_LATEST": "Dernière mesure : {{weight}} le {{date}}",
+    "WEIGHT": "Poids",
+    "WEIGHT_DATE": "Date",
+    "WEIGHT_ADD": "Ajouter",
+    "WEIGHT_EMPTY": "Aucune mesure pour l'instant.",
+    "WEIGHT_HISTORY": "Historique du poids"
+  },
+  "DIVISION": {
+    "LABEL": "Division",
+    "ALL": "Tous",
+    "MEN": "Hommes",
+    "WOMEN": "Femmes"
   },
   "SETTINGS": {
     "TITLE": "Sécurité",
@@ -725,7 +791,10 @@
       "FILTER_ROLE": "Rôle",
       "FILTER_STATUS": "Statut",
       "ALL": "Tous",
-      "LOAD_MORE": "Charger plus"
+      "LOAD_MORE": "Charger plus",
+      "FILTER_ACCOUNT": "Compte",
+      "WITHOUT_GYM": "Sans box ni prog",
+      "UNVERIFIED": "E-mail non vérifié"
     },
     "GYMS": {
       "TITLE": "Box & progs",

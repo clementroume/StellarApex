@@ -56,8 +56,12 @@
                       @if (variants(wm); as v) {
                         <span class="text-sm text-muted-foreground">({{ v }})</span>
                       }
-                      @for (measure of measures(wm); track measure) {
-                        <span class="font-semibold text-primary">{{ measure }}</span>
+                      @for (measure of measures(wm); track $index) {
+                        <span class="font-semibold text-primary" data-slot="measure">
+                          <!-- One line: whitespace between the values would show around the slash -->
+                          @for (value of measure.values; track $index; let i = $index) {@if (i > 0) {/}<span [class]="measure.mine === null ? '' : measure.mine === i ? 'underline decoration-2 underline-offset-4' : 'font-normal text-muted-foreground'">{{ value }}</span>}
+                          {{ measure.unit }}
+                        </span>
                       }
                     </div>
                     @if (movementNotes(wm); as n) {

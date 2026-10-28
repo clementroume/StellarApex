@@ -6,15 +6,21 @@ import static java.text.Normalizer.normalize;
 
 import apex.stellar.antares.config.SupportSessionAuthentication;
 import apex.stellar.antares.dto.AuthenticationRequest;
+import apex.stellar.antares.dto.ForgotPasswordRequest;
 import apex.stellar.antares.dto.RegisterRequest;
+import apex.stellar.antares.dto.ResetPasswordRequest;
 import apex.stellar.antares.dto.TokenRefreshResponse;
 import apex.stellar.antares.dto.UserResponse;
+import apex.stellar.antares.dto.VerifyEmailRequest;
 import apex.stellar.antares.exception.ResourceNotFoundException;
 import apex.stellar.antares.model.PlatformRole;
 import apex.stellar.antares.model.User;
 import apex.stellar.antares.service.AuthenticationService;
+import apex.stellar.antares.service.ClientIpResolver;
+import apex.stellar.antares.service.EmailVerificationService;
 import apex.stellar.antares.service.GatewayIdentityService;
 import apex.stellar.antares.service.JwtService;
+import apex.stellar.antares.service.PasswordResetService;
 import io.swagger.v3.oas.annotations.Hidden;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -64,6 +70,9 @@ public class AuthenticationController {
   private final AuthenticationService authenticationService;
   private final JwtService jwtService;
   private final GatewayIdentityService gatewayIdentityService;
+  private final PasswordResetService passwordResetService;
+  private final EmailVerificationService emailVerificationService;
+  private final ClientIpResolver clientIpResolver;
 
   @Value("${application.frontend.login.url}")
   private String loginBaseUrl;
@@ -78,7 +87,9 @@ public class AuthenticationController {
   @PostMapping("/register")
   @Operation(
       summary = "Register a new user",
-      description = "Creates a new user account and returns the public profile.")
+      description =
+          "Creates a new user account (e-mail not verified yet, a verification link is mailed) and"
+              + " returns the public profile. Throttled per client IP.")
   @SecurityRequirements()
   @ApiResponses(
       value = {
@@ -90,13 +101,110 @@ public class AuthenticationController {
         @ApiResponse(
             responseCode = "409",
             description = "Conflict - Email address is already in use",
+            content = @Content(schema = @Schema(hidden = true))),
+        @ApiResponse(
+            responseCode = "429",
+            description = "Too many registrations from this client, Retry-After set",
             content = @Content(schema = @Schema(hidden = true)))
       })
   public ResponseEntity<@NonNull UserResponse> register(
-      @Valid @RequestBody RegisterRequest request, HttpServletResponse response) {
+      @Valid @RequestBody RegisterRequest request,
+      HttpServletRequest httpRequest,
+      HttpServletResponse response) {
 
     return ResponseEntity.status(HttpStatus.CREATED)
-        .body(authenticationService.register(request, response));
+        .body(
+            authenticationService.register(
+                request, clientIpResolver.resolve(httpRequest), response));
+  }
+
+  /**
+   * Mails a password-reset link when the address belongs to an account. The answer is the same
+   * whether or not the account exists.
+   *
+   * @param request The account address.
+   * @param httpRequest The HTTP request, for the client IP.
+   * @return 202 Accepted.
+   */
+  @PostMapping("/password/forgot")
+  @Operation(
+      summary = "Request a password reset",
+      description =
+          "Mails a single-use reset link (30 min) if the address belongs to an account. Always 202,"
+              + " never reveals whether the account exists. Throttled per client IP.")
+  @SecurityRequirements()
+  @ApiResponses(
+      value = {
+        @ApiResponse(responseCode = "202", description = "Request accepted"),
+        @ApiResponse(
+            responseCode = "400",
+            description = "Validation error",
+            content = @Content(schema = @Schema(hidden = true))),
+        @ApiResponse(
+            responseCode = "429",
+            description = "Too many requests from this client, Retry-After set",
+            content = @Content(schema = @Schema(hidden = true)))
+      })
+  public ResponseEntity<@NonNull Void> forgotPassword(
+      @Valid @RequestBody ForgotPasswordRequest request, HttpServletRequest httpRequest) {
+
+    passwordResetService.requestReset(request.email(), clientIpResolver.resolve(httpRequest));
+    return ResponseEntity.accepted().build();
+  }
+
+  /**
+   * Sets a new password with the token of a reset link and ends every session of the account.
+   *
+   * @param request The token and the new password.
+   * @return 204 No Content.
+   */
+  @PostMapping("/password/reset")
+  @Operation(
+      summary = "Reset the password",
+      description =
+          "Sets a new password with a reset token (single use). Signs the account out everywhere:"
+              + " refresh token deleted, older access tokens refused. Also verifies the address.")
+  @SecurityRequirements()
+  @ApiResponses(
+      value = {
+        @ApiResponse(responseCode = "204", description = "Password changed"),
+        @ApiResponse(
+            responseCode = "400",
+            description = "Invalid or expired token, or passwords mismatch",
+            content = @Content(schema = @Schema(hidden = true)))
+      })
+  public ResponseEntity<@NonNull Void> resetPassword(
+      @Valid @RequestBody ResetPasswordRequest request) {
+
+    passwordResetService.resetPassword(request);
+    return ResponseEntity.noContent().build();
+  }
+
+  /**
+   * Confirms an e-mail address with the token of a verification link.
+   *
+   * @param request The token.
+   * @return 204 No Content.
+   */
+  @PostMapping("/email/verify")
+  @Operation(
+      summary = "Verify the e-mail address",
+      description =
+          "Confirms the account address with a verification token (single use, 48 h). Works signed"
+              + " out (link opened on another device).")
+  @SecurityRequirements()
+  @ApiResponses(
+      value = {
+        @ApiResponse(responseCode = "204", description = "Address verified"),
+        @ApiResponse(
+            responseCode = "400",
+            description = "Invalid or expired token",
+            content = @Content(schema = @Schema(hidden = true)))
+      })
+  public ResponseEntity<@NonNull Void> verifyEmail(@Valid @RequestBody VerifyEmailRequest request) {
+
+    emailVerificationService.verify(request.token());
+    return ResponseEntity.noContent().build();
   }
 
   /**

@@ -1,5 +1,7 @@
 package apex.stellar.aldebaran.security;
 
+import apex.stellar.aldebaran.model.enums.Division;
+import org.jspecify.annotations.Nullable;
 import java.util.Optional;
 import java.util.Set;
 import org.springframework.security.core.Authentication;
@@ -35,6 +37,15 @@ public class SecurityService {
         .map(AldebaranUserPrincipal::getId)
         .orElseThrow(
             () -> new IllegalStateException("Current user ID not found in security context"));
+  }
+
+  /**
+   * Retrieves the division of the currently authenticated user ({@code X-Auth-User-Division}).
+   *
+   * @return The division, or {@code null} when not chosen or not authenticated.
+   */
+  public @Nullable Division getCurrentUserDivision() {
+    return getPrincipal().map(AldebaranUserPrincipal::getDivision).orElse(null);
   }
 
   /**

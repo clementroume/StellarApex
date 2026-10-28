@@ -82,6 +82,10 @@ public class SecurityConfig {
                         "/antares/auth/register",
                         "/antares/auth/login",
                         "/antares/auth/refresh-token",
+                        // Anonymous, token-based flows: no ambient credential to protect
+                        "/antares/auth/password/forgot",
+                        "/antares/auth/password/reset",
+                        "/antares/auth/email/verify",
                         "/actuator/**"))
         .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
         .authorizeHttpRequests(

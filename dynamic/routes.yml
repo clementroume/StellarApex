@@ -26,6 +26,7 @@ http:
           - "X-Auth-User-Role"
           - "X-Auth-User-Locale"
           - "X-Auth-Memberships"
+          - "X-Auth-User-Division"
           - "X-Auth-Actor-Id"
           - "X-Internal-Secret"
 

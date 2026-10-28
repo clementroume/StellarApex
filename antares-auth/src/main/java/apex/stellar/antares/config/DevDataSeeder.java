@@ -1,5 +1,6 @@
 package apex.stellar.antares.config;
 
+import apex.stellar.antares.model.Division;
 import apex.stellar.antares.model.Gym;
 import apex.stellar.antares.model.Gym.GymStatus;
 import apex.stellar.antares.model.GymRole;
@@ -12,6 +13,7 @@ import apex.stellar.antares.repository.jpa.GymRepository;
 import apex.stellar.antares.repository.jpa.MembershipRepository;
 import apex.stellar.antares.repository.jpa.UserRepository;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -44,6 +46,9 @@ import org.springframework.transaction.annotation.Transactional;
  *   <li>Pending Box (physical, PENDING_APPROVAL, code WAIT): wait@box.com (owner), athlete@box.com.
  *   <li>free@athlete.com: no membership, name shown on public leaderboards.
  * </ul>
+ *
+ * <p>Divisions (only set while empty): WOMEN for coach, athlete, hybrid (Sparta) and active (Zeus),
+ * MEN for owner, scorer, multi, programmer and free; the others keep no division.
  */
 @Slf4j
 @Component
@@ -56,6 +61,18 @@ public class DevDataSeeder implements CommandLineRunner {
   private final GymRepository gymRepository;
   private final MembershipRepository membershipRepository;
   private final PasswordEncoder passwordEncoder;
+
+  private static final Map<String, Division> DEV_DIVISIONS =
+      Map.of(
+          "coach@sparta.com", Division.WOMEN,
+          "athlete@sparta.com", Division.WOMEN,
+          "hybrid@sparta.com", Division.WOMEN,
+          "active@zeus.com", Division.WOMEN,
+          "owner@sparta.com", Division.MEN,
+          "scorer@sparta.com", Division.MEN,
+          "multi@athlete.com", Division.MEN,
+          "programmer@zeus.com", Division.MEN,
+          "free@athlete.com", Division.MEN);
 
   @Value("${application.admin.default-password}")
   private String password;
@@ -123,7 +140,22 @@ public class DevDataSeeder implements CommandLineRunner {
     // 5. Independent user, visible by name on public leaderboards
     createUser("free@athlete.com", true);
 
+    // 6. Divisions for the division leaderboards, without overriding a choice made in the app
+    DEV_DIVISIONS.forEach(this::assignDivisionIfEmpty);
+
     log.info("DevDataSeeder: test accounts ready.");
+  }
+
+  /** Gives the account a division when it has none yet. */
+  private void assignDivisionIfEmpty(String email, Division division) {
+    userRepository
+        .findByEmail(email)
+        .filter(user -> user.getDivision() == null)
+        .ifPresent(
+            user -> {
+              user.setDivision(division);
+              userRepository.save(user);
+            });
   }
 
   /** Returns the account with this email, creating a USER named after its local part if missing. */
@@ -148,6 +180,7 @@ public class DevDataSeeder implements CommandLineRunner {
                       .firstName(email.split("@")[0])
                       .lastName("User")
                       .platformRole(PlatformRole.USER)
+                      .emailVerified(true)
                       .publicLeaderboardName(publicLeaderboardName)
                       .build());
             });

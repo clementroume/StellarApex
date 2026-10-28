@@ -173,6 +173,38 @@ class UserControllerIT extends BaseIntegrationTest {
   }
 
   @Test
+  @DisplayName("Change Password: other devices are signed out, this session gets fresh cookies")
+  void testChangePassword_signsOtherDevicesOut() throws Exception {
+    Cookie[] otherDevice = authCookies;
+    // JWT iat has a one-second precision: the other device's token must be strictly older
+    Thread.sleep(1100);
+    Cookie[] thisDevice = login(initialEmail, initialPassword);
+    String newPassword = "newStrongPassword123";
+
+    Cookie[] fresh =
+        mockMvc
+            .perform(
+                put("/antares/users/me/password")
+                    .cookie(thisDevice)
+                    .with(csrf())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(
+                        jsonMapper.writeValueAsString(
+                            new ChangePasswordRequest(initialPassword, newPassword, newPassword))))
+            .andExpect(status().isOk())
+            .andExpect(cookie().exists("stellar_access_token"))
+            .andExpect(cookie().exists("stellar_refresh_token"))
+            .andReturn()
+            .getResponse()
+            .getCookies();
+
+    mockMvc
+        .perform(get("/antares/users/me").cookie(otherDevice))
+        .andExpect(status().isUnauthorized());
+    mockMvc.perform(get("/antares/users/me").cookie(fresh)).andExpect(status().isOk());
+  }
+
+  @Test
   @DisplayName("Change Password: should succeed and invalidate old password")
   void testChangePassword_shouldSucceedAndInvalidateOldPassword() throws Exception {
     // Given

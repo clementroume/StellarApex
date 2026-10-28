@@ -4,6 +4,7 @@ import static apex.stellar.antares.service.GatewayIdentityService.*;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+import apex.stellar.antares.model.Division;
 import apex.stellar.antares.model.Gym;
 import apex.stellar.antares.model.Gym.GymStatus;
 import apex.stellar.antares.model.GymRole;
@@ -68,6 +69,14 @@ class GatewayIdentityServiceTest {
   // --- Standard flow ---
 
   @Test
+  @DisplayName("verify: the chosen division is sent")
+  void verify_Division_ShouldBeSent() {
+    user.setDivision(Division.WOMEN);
+
+    assertEquals("WOMEN", verify().getFirst(HEADER_AUTH_USER_DIVISION));
+  }
+
+  @Test
   @DisplayName("verify: No membership should send platform role and empty memberships")
   void verify_NoMembership_ShouldSendUserHeadersOnly() {
     HttpHeaders headers = verify();
@@ -77,6 +86,7 @@ class GatewayIdentityServiceTest {
     assertEquals("fr", headers.getFirst(HEADER_AUTH_USER_LOCALE));
     assertEquals(SECRET, headers.getFirst(HEADER_INTERNAL_SECRET));
     assertEquals("", headers.getFirst(HEADER_AUTH_MEMBERSHIPS));
+    assertEquals("", headers.getFirst(HEADER_AUTH_USER_DIVISION));
     assertFalse(headers.containsHeader(HEADER_AUTH_ACTOR_ID));
   }
 

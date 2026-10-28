@@ -1,10 +1,12 @@
 package apex.stellar.aldebaran.service;
 
+import apex.stellar.aldebaran.client.AntaresClient;
 import apex.stellar.aldebaran.dto.ScoreComparisonResponse;
 import apex.stellar.aldebaran.dto.ScoreReferenceData;
 import apex.stellar.aldebaran.dto.ScoreRequest;
 import apex.stellar.aldebaran.dto.ScoreResponse;
 import apex.stellar.aldebaran.dto.WodResponse;
+import apex.stellar.aldebaran.exception.AntaresUnavailableException;
 import apex.stellar.aldebaran.exception.InvalidScoreException;
 import apex.stellar.aldebaran.exception.ResourceNotFoundException;
 import apex.stellar.aldebaran.mapper.ScoreMapper;
@@ -12,6 +14,7 @@ import apex.stellar.aldebaran.model.entities.Score;
 import apex.stellar.aldebaran.model.entities.Score.ScalingLevel;
 import apex.stellar.aldebaran.model.entities.Wod;
 import apex.stellar.aldebaran.model.entities.Wod.ScoreType;
+import apex.stellar.aldebaran.model.enums.Division;
 import apex.stellar.aldebaran.repository.ScoreRepository;
 import apex.stellar.aldebaran.repository.WodRepository;
 import apex.stellar.aldebaran.security.SecurityService;
@@ -25,6 +28,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
+import org.jspecify.annotations.Nullable;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
@@ -49,6 +53,7 @@ public class ScoreService {
   private final ScoreMapper scoreMapper;
   private final SecurityService securityService;
   private final WodService wodService;
+  private final AntaresClient antaresClient;
 
   /**
    * Retrieves a paginated list of scores for the currently authenticated user.
@@ -99,6 +104,7 @@ public class ScoreService {
     newScore.setGymId(wod.getGymId() != null ? wod.getGymId() : request.gymId());
     newScore.setLoggedAt(LocalDateTime.now());
     newScore.setLoggedBy(currentUserId);
+    newScore.setDivision(divisionOf(targetUserId, currentUserId));
     if (wod.isCompetition() && !Objects.equals(targetUserId, currentUserId)) {
       newScore.setVerifiedBy(currentUserId);
       newScore.setVerifiedAt(LocalDateTime.now());
@@ -109,7 +115,25 @@ public class ScoreService {
 
     recalculatePrsForUser(wod, targetUserId);
 
+    if (savedScore.getDivision() != null) {
+      // Scores logged before the athlete chose a division join it now (after the PR update, which
+      // flushes first, so no loaded score writes its old null division back)
+      scoreRepository.assignDivisionToUnclassified(targetUserId, savedScore.getDivision());
+    }
+
     return scoreMapper.toResponse(savedScore);
+  }
+
+  /**
+   * Division copied on a new score: the logger's own ({@code X-Auth-User-Division}) for a score
+   * logged for themselves, else the athlete's, asked to Antares (never the judge's division).
+   *
+   * @throws AntaresUnavailableException if Antares cannot tell the athlete's division (503).
+   */
+  private @Nullable Division divisionOf(Long targetUserId, Long currentUserId) {
+    return Objects.equals(targetUserId, currentUserId)
+        ? securityService.getCurrentUserDivision()
+        : antaresClient.getUserDivision(targetUserId);
   }
 
   /**
@@ -224,7 +248,7 @@ public class ScoreService {
    * athlete whose best score is at that level, best first.
    *
    * <p>The filters apply before choosing each athlete's best score: with {@code gymIds} (e.g. the
-   * user's boxes or programs) and / or {@code verifiedOnly}, each athlete is ranked by their best
+   * user's boxes or programs), {@code verifiedOnly} and / or {@code division}, each athlete is ranked by their best
    * score among those kept (scaling tier first, as for a PR). It may differ from their PR, done in
    * another gym or not verified yet; athletes whose best kept score is at another level are left
    * out.
@@ -233,6 +257,7 @@ public class ScoreService {
    * @param scaling The scaling level (e.g., RX, Scaled).
    * @param gymIds The gyms to keep, or null / empty for every gym (worldwide).
    * @param verifiedOnly Whether to keep verified scores only (competition WODs).
+   * @param division The division to keep (scores copied with it at logging), or null for all.
    * @param pageable Pagination information.
    * @return A slice of ScoreResponse objects representing the leaderboard.
    */
@@ -242,6 +267,7 @@ public class ScoreService {
       ScalingLevel scaling,
       Collection<Long> gymIds,
       boolean verifiedOnly,
+      @Nullable Division division,
       Pageable pageable) {
     WodResponse wod = wodService.getWodDetail(wodId);
 
@@ -249,9 +275,9 @@ public class ScoreService {
     // A JPQL IN clause needs a non-empty collection, even when the filter is off
     Collection<Long> gyms = filterGyms ? gymIds : Set.of(-1L);
 
-    if (filterGyms || verifiedOnly) {
+    if (filterGyms || verifiedOnly || division != null) {
       return filteredLeaderboard(
-              wodId, wod.scoreType(), scaling, filterGyms, gyms, verifiedOnly, pageable)
+              wodId, wod.scoreType(), scaling, filterGyms, gyms, verifiedOnly, division, pageable)
           .map(scoreMapper::toResponse);
     }
 
@@ -278,10 +304,11 @@ public class ScoreService {
       boolean filterGyms,
       Collection<Long> gyms,
       boolean verifiedOnly,
+      @Nullable Division division,
       Pageable pageable) {
     Comparator<Score> best = ScoreRanking.bestFirst(type);
     Map<Long, Score> bestByAthlete = new HashMap<>();
-    for (Score score : scoreRepository.findFilteredByWod(wodId, filterGyms, gyms, verifiedOnly)) {
+    for (Score score : scoreRepository.findFilteredByWod(wodId, filterGyms, gyms, verifiedOnly, division)) {
       bestByAthlete.merge(score.getUserId(), score, (a, b) -> best.compare(a, b) <= 0 ? a : b);
     }
 

@@ -4,6 +4,7 @@ import {Observable} from 'rxjs';
 import {environment} from '../../../../environments/environment';
 import {ScoreComparisonResponse, ScoreReferenceData, ScoreRequest, ScoreResponse} from '../models/score.model';
 import {Slice} from '../../../core/models/pagination.model';
+import {Division} from '../../antares/models/user.model';
 
 
 @Injectable({providedIn: 'root'})
@@ -52,7 +53,8 @@ export class ScoreService {
     page: number = 0,
     size: number = 20,
     gymIds: number[] = [],
-    verifiedOnly: boolean = false
+    verifiedOnly: boolean = false,
+    division: Division | null = null
   ): Observable<Slice<ScoreResponse>> {
     let params = new HttpParams()
       .set('scaling', scaling)
@@ -64,6 +66,10 @@ export class ScoreService {
     }
     if (verifiedOnly) {
       params = params.set('verifiedOnly', true);
+    }
+    // Scores logged in this division only, else every score
+    if (division) {
+      params = params.set('division', division);
     }
 
     return this.http.get<Slice<ScoreResponse>>(this.buildUrl(`/leaderboard/${wodId}`), {params});

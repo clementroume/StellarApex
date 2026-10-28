@@ -9,6 +9,7 @@ import apex.stellar.antares.dto.GymSettingsRequest;
 import apex.stellar.antares.dto.GymSettingsResponse;
 import apex.stellar.antares.dto.GymUpdateRequest;
 import apex.stellar.antares.exception.DataConflictException;
+import apex.stellar.antares.exception.EmailNotVerifiedException;
 import apex.stellar.antares.exception.ResourceNotFoundException;
 import apex.stellar.antares.mapper.GymMapper;
 import apex.stellar.antares.mapper.UserMapper;
@@ -60,6 +61,7 @@ public class GymService {
   private final MembershipRepository membershipRepository;
   private final GymMapper gymMapper;
   private final UserMapper userMapper;
+  private final EmailVerificationService emailVerificationService;
 
   /**
    * Creates a gym creation request and makes the requester its holder.
@@ -73,9 +75,13 @@ public class GymService {
    * @param creator The {@link User} who is creating the gym and will be assigned as the owner.
    * @return A {@link GymResponse} object representing the newly created gym.
    * @throws DataConflictException If the user already has a pending request, or the name is taken.
+   * @throws EmailNotVerifiedException If the requester's address is not verified (403).
    */
   @Transactional
   public GymResponse createGym(GymRequest request, User creator) {
+    // 0. Only verified addresses may request a gym (no throwaway accounts)
+    emailVerificationService.requireVerified(creator);
+
     // 1. At most one request waiting for approval per user
     if (membershipRepository.existsPendingGymRequest(creator.getId())) {
       throw new DataConflictException("error.gym.request.pending");

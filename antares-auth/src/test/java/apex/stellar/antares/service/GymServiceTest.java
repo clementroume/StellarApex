@@ -40,6 +40,7 @@ class GymServiceTest {
   @Mock private MembershipRepository membershipRepository;
   @Mock private GymMapper gymMapper;
   @Mock private UserMapper userMapper;
+  @Mock private EmailVerificationService emailVerificationService;
   @InjectMocks private GymService gymService;
 
   @Captor private ArgumentCaptor<Membership> membershipCaptor;

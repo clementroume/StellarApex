@@ -22,6 +22,13 @@ export interface DisplayValue {
   unit: string;
 }
 
+/** Men's/women's values ready to print, `mine` = index of the user's division value (or null). */
+export interface MeasurePair {
+  values: string[];
+  unit: string;
+  mine: number | null;
+}
+
 /**
  * Display units (metric or imperial) for loads, distances and heights. Values stay stored in the unit
  * they were prescribed in; only the display is converted. Without an explicit choice, the system
@@ -53,6 +60,9 @@ export class UnitService {
 
   /** Unit code used by Aldebaran for the current display unit. */
   readonly massUnit = computed(() => this.unitSystem() === 'METRIC' ? 'KG' : 'LBS');
+
+  /** Unit label of heights typed by the user: "cm" or "in". */
+  readonly heightUnit = computed(() => this.unitSystem() === 'METRIC' ? 'cm' : 'in');
 
   // --- ACTIONS & EVENTS ---
   setUnitSystem(unitSystem: UnitSystem): void {
@@ -128,6 +138,61 @@ export class UnitService {
   formatDistance(value?: number | null, valueFemale?: number | null, unit?: string | null): string {
     const values = [value, valueFemale].filter((v): v is number => v != null);
     return values.length ? this.format(this.convertDistance(values, unit)) : '';
+  }
+
+  /** A body weight (stored in kg) in the display unit, 0.1 precision: 78.5 kg, 173.1 lb. */
+  bodyWeightFromKg(kg: number): number {
+    return Number((this.massUnit() === 'KG' ? kg : kg / LB_IN_KG).toFixed(1));
+  }
+
+  /** A body weight typed in the display unit, back to kilograms (0.01 kg, as Antares stores it). */
+  bodyWeightToKg(value: number): number {
+    return Number((this.massUnit() === 'KG' ? value : value * LB_IN_KG).toFixed(2));
+  }
+
+  /** "78.5 kg", "173.1 lb". */
+  formatBodyWeight(kg?: number | null): string {
+    return kg == null ? '' : this.format({values: [this.bodyWeightFromKg(kg)], unit: this.massUnit()});
+  }
+
+  /** A height (stored in cm) in the display unit: centimetres, or whole inches in imperial. */
+  heightFromCm(cm: number): number {
+    return this.unitSystem() === 'METRIC' ? cm : Math.round(cm / 2.54);
+  }
+
+  /** A height typed in the display unit, back to whole centimetres. */
+  heightToCm(value: number): number {
+    return this.unitSystem() === 'METRIC' ? Math.round(value) : Math.round(value * 2.54);
+  }
+
+  /**
+   * A men/women pair in the display unit, with the user's own value marked: Sirius highlights the
+   * load of the user's division (D31). `mine` is null without a division or without a pair.
+   */
+  pair(values: DisplayValue, division?: 'MEN' | 'WOMEN' | null): MeasurePair {
+    const lang = this.translate.currentLang() ?? this.translate.fallbackLang() ?? 'en';
+    const texts = values.values.map(v => v.toLocaleString(lang, {maximumFractionDigits: 2, useGrouping: false}));
+    const mine = texts.length === 2 && division ? (division === 'MEN' ? 0 : 1) : null;
+    return {values: texts, unit: LABELS[values.unit] ?? values.unit.toLowerCase(), mine};
+  }
+
+  /** Men's / women's load as a pair (see `pair`), or null without a load. */
+  loadPair(weight?: number | null, weightFemale?: number | null, unit?: string | null,
+           division?: 'MEN' | 'WOMEN' | null): MeasurePair | null {
+    if (weight == null && weightFemale == null) return null;
+    if (weight == null || weightFemale == null) {
+      return this.pair({values: [this.convertLoad((weight ?? weightFemale)!, unit)], unit: this.massUnit()});
+    }
+    return this.pair({values: [weight, weightFemale].map(v => this.convertLoad(v, unit)), unit: this.massUnit()},
+      division);
+  }
+
+  /** Men's / women's height (box, target) as a pair (see `pair`), or null without a height. */
+  distancePair(value?: number | null, valueFemale?: number | null, unit?: string | null,
+               division?: 'MEN' | 'WOMEN' | null): MeasurePair | null {
+    const values = [value, valueFemale].filter((v): v is number => v != null);
+    if (values.length === 0) return null;
+    return this.pair(this.convertDistance(values, unit), values.length === 2 ? division : null);
   }
 
   /** "43/30 kg": values joined with a slash, then the unit label; decimals as the language writes them ("1,6 km"). */

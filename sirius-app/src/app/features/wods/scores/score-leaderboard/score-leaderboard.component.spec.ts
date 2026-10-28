@@ -57,7 +57,7 @@ describe('ScoreLeaderboardComponent', () => {
   it('should rank the PRs, name the visible athletes and highlight the user', async () => {
     await init();
 
-    expect(scoreService.getLeaderboard).toHaveBeenCalledWith(7, 'RX', 0, 50, [], false);
+    expect(scoreService.getLeaderboard).toHaveBeenCalledWith(7, 'RX', 0, 50, [], false, null);
     expect(userService.getDisplayNames).toHaveBeenCalledWith([1, 2]);
     const rows = fixture.nativeElement.querySelectorAll('li') as NodeListOf<HTMLElement>;
     expect(rows.length).toBe(2);
@@ -72,11 +72,11 @@ describe('ScoreLeaderboardComponent', () => {
     await init();
     component.onScalingChange('SCALED');
     fixture.detectChanges();
-    expect(scoreService.getLeaderboard).toHaveBeenLastCalledWith(7, 'SCALED', 0, 50, [], false);
+    expect(scoreService.getLeaderboard).toHaveBeenLastCalledWith(7, 'SCALED', 0, 50, [], false, null);
 
     component.onMyBoxesChange(true);
     fixture.detectChanges();
-    expect(scoreService.getLeaderboard).toHaveBeenLastCalledWith(7, 'SCALED', 0, 50, [5], false);
+    expect(scoreService.getLeaderboard).toHaveBeenLastCalledWith(7, 'SCALED', 0, 50, [5], false, null);
 
     const calls = scoreService.getLeaderboard.mock.calls.length;
     changed$.next();
@@ -89,10 +89,10 @@ describe('ScoreLeaderboardComponent', () => {
     expect(fixture.nativeElement.textContent).toContain('SCORE.LEADERBOARD.MY_PROG');
     component.onMyProgsChange(true);
     fixture.detectChanges();
-    expect(scoreService.getLeaderboard).toHaveBeenLastCalledWith(7, 'RX', 0, 50, [8], false);
+    expect(scoreService.getLeaderboard).toHaveBeenLastCalledWith(7, 'RX', 0, 50, [8], false, null);
     component.onMyBoxesChange(true);
     fixture.detectChanges();
-    expect(scoreService.getLeaderboard).toHaveBeenLastCalledWith(7, 'RX', 0, 50, [5, 8], false);
+    expect(scoreService.getLeaderboard).toHaveBeenLastCalledWith(7, 'RX', 0, 50, [5, 8], false, null);
 
     TestBed.resetTestingModule();
     await init(42);
@@ -105,7 +105,7 @@ describe('ScoreLeaderboardComponent', () => {
     await init();
     expect(fixture.nativeElement.textContent).toContain('SCORE.LEADERBOARD.MORE');
     component.load(false);
-    expect(scoreService.getLeaderboard).toHaveBeenLastCalledWith(7, 'RX', 1, 50, [], false);
+    expect(scoreService.getLeaderboard).toHaveBeenLastCalledWith(7, 'RX', 1, 50, [], false, null);
   });
 
   it('should rank verified scores only by default on a competition WOD, and let judges verify', async () => {
@@ -114,7 +114,7 @@ describe('ScoreLeaderboardComponent', () => {
     scoreService.getLeaderboard.mockReturnValue(of({content: [judged, verified], last: true} as any));
     await init(5, true);
 
-    expect(scoreService.getLeaderboard).toHaveBeenLastCalledWith(7, 'RX', 0, 50, [], true);
+    expect(scoreService.getLeaderboard).toHaveBeenLastCalledWith(7, 'RX', 0, 50, [], true, null);
     const buttons = [...fixture.nativeElement.querySelectorAll('button')] as HTMLButtonElement[];
     buttons.find(b => b.textContent?.includes('SCORE.ACTIONS.VERIFY'))!.click();
     expect(setVerified).toHaveBeenCalledWith(judged, true);
@@ -124,7 +124,7 @@ describe('ScoreLeaderboardComponent', () => {
     filter.checked = false;
     filter.dispatchEvent(new Event('change'));
     fixture.detectChanges();
-    expect(scoreService.getLeaderboard).toHaveBeenLastCalledWith(7, 'RX', 0, 50, [], false);
+    expect(scoreService.getLeaderboard).toHaveBeenLastCalledWith(7, 'RX', 0, 50, [], false, null);
   });
 
   it('should show every score to a judge by default, so they see the scores to verify', async () => {
@@ -144,12 +144,28 @@ describe('ScoreLeaderboardComponent', () => {
     fixture = TestBed.createComponent(ScoreLeaderboardComponent);
     fixture.detectChanges();
 
-    expect(scoreService.getLeaderboard).toHaveBeenLastCalledWith(7, 'RX', 0, 50, [], false);
+    expect(scoreService.getLeaderboard).toHaveBeenLastCalledWith(7, 'RX', 0, 50, [], false, null);
     expect((fixture.nativeElement.querySelector('#leaderboard-verified') as HTMLInputElement).checked).toBe(false);
   });
 
   it('should not offer the verified filter outside competitions', async () => {
     await init();
     expect(fixture.nativeElement.querySelector('#leaderboard-verified')).toBeNull();
+  });
+
+  it('should filter on a division, every score by default', async () => {
+    await init();
+    const buttons = () => Array.from(fixture.nativeElement.querySelectorAll('[data-slot="division-filter"] button')) as HTMLButtonElement[];
+    expect(buttons().map(b => b.textContent?.trim())).toEqual(['DIVISION.ALL', 'DIVISION.MEN', 'DIVISION.WOMEN']);
+    expect(buttons()[0].getAttribute('aria-pressed')).toBe('true');
+
+    buttons()[2].click();
+    fixture.detectChanges();
+    expect(scoreService.getLeaderboard).toHaveBeenLastCalledWith(7, 'RX', 0, 50, [], false, 'WOMEN');
+    expect(buttons()[2].getAttribute('aria-pressed')).toBe('true');
+
+    buttons()[0].click();
+    fixture.detectChanges();
+    expect(scoreService.getLeaderboard).toHaveBeenLastCalledWith(7, 'RX', 0, 50, [], false, null);
   });
 });

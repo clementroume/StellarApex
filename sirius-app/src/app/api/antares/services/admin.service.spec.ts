@@ -28,6 +28,11 @@ describe('AdminService', () => {
     req.flush({content: []});
   });
 
+  it('searchUsers should send the account filters', () => {
+    service.searchUsers({withoutGym: true, emailVerified: false}).subscribe();
+    httpMock.expectOne(`${base}/users?page=0&size=20&withoutGym=true&emailVerified=false`).flush({content: []});
+  });
+
   it('searchUsers should omit empty filters', () => {
     service.searchUsers({search: ''}).subscribe();
     httpMock.expectOne(`${base}/users?page=0&size=20`).flush({content: []});

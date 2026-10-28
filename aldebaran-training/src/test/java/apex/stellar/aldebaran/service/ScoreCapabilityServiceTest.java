@@ -36,7 +36,7 @@ class ScoreCapabilityServiceTest {
         new WodSummaryResponse(1L, "Fran", null, null, null, null, null, null, null, 5L, gymId, true, false);
     return new ScoreResponse(
         10L, athleteId, LocalDate.now(), wod, null, 300, 5, 0, null, null, null, null, null, null, null,
-        null, null, ScalingLevel.RX, false, null, true, "felt good", "band", null, null, null, null, null);
+        null, null, ScalingLevel.RX, false, null, true, null, "felt good", "band", null, null, null, null, null);
   }
 
   @Test
