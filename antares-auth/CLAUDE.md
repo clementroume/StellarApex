@@ -18,7 +18,9 @@ HttpOnly cookies, XSRF cookie `XSRF-TOKEN`). `./mvnw verify` runs unit tests and
 - Membership management: `MembershipService.capabilities` is the single rule (sent as
   `MembershipResponse.capabilities`, enforced by `updateMembership` / `removeMembership`). Leaving or
   removing sets INACTIVE (never delete a member with history); a refused or withdrawn PENDING request
-  is deleted; `joinGym` reactivates an INACTIVE row; BANNED blocks joining.
+  is deleted; `joinGym` reactivates an INACTIVE row; BANNED blocks joining. Wrong enrollment codes go
+  through `EnrollmentAttemptService` (per-user Redis sliding window, 429 `TooManyAttemptsException`
+  with `Retry-After`); never reset it on success.
 - Gym-scoped endpoint security: `@PreAuthorize("@security.hasGymPermission(#gymId, 'MANAGE_SETTINGS')")`
   / `canManageMembership(...)` in `service/AntaresSecurityService` (platform ADMIN always passes).
 - Support sessions (admin acts as a real user): `service/SupportSessionService` + cookie

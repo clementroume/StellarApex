@@ -11,6 +11,7 @@ import {HlmButton} from '@spartan-ng/helm/button';
 import {HlmCardImports} from '@spartan-ng/helm/card';
 import {HlmInputGroupImports} from '@spartan-ng/helm/input-group';
 import {FormFieldComponent} from '../../../shared/component/form-field/form-field.component';
+import {DEFAULT_RETURN_URL, forwardableReturnUrl, resolveReturnUrl, ReturnTarget} from '../return-url';
 
 @Component({
   selector: 'app-login',
@@ -28,7 +29,10 @@ export class LoginComponent implements OnInit {
   private readonly fb = inject(FormBuilder);
   private readonly notificationService = inject(NotificationService);
 
-  private returnUrl = '/today';
+  /** Checked destination after sign-in (see resolveReturnUrl). */
+  private target: ReturnTarget = {kind: 'internal', url: DEFAULT_RETURN_URL};
+  /** App path handed to the sign-up page, so an invitation link survives creating an account. */
+  protected forwardReturnUrl: string | null = null;
 
   constructor(@Inject(DOCUMENT) private readonly document: Document) {
     this.loginForm = this.fb.group({
@@ -38,7 +42,9 @@ export class LoginComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.returnUrl = this.route.snapshot.queryParams['returnUrl'] || '/today';
+    const raw = this.route.snapshot.queryParams['returnUrl'];
+    this.target = resolveReturnUrl(raw, this.document.location.hostname);
+    this.forwardReturnUrl = forwardableReturnUrl(raw, this.document.location.hostname);
   }
 
   onSubmit(): void {
@@ -48,13 +54,11 @@ export class LoginComponent implements OnInit {
 
     this.authService.login(this.loginForm.value).subscribe({
       next: () => {
-        // Check if the returnUrl is an external absolute URL (starts with http)
-        if (this.returnUrl.startsWith('http')) {
-          // Native browser redirect for external domains (Admin, Traefik)
-          this.redirectToExternal(this.returnUrl);
+        if (this.target.kind === 'external') {
+          // Native browser redirect for the admin tools behind Traefik (subdomains of this host)
+          this.redirectToExternal(this.target.url);
         } else {
-          // Standard Angular routing for internal pages
-          void this.router.navigateByUrl(this.returnUrl);
+          void this.router.navigateByUrl(this.target.url);
         }
       },
       error: (err: HttpErrorResponse) => {

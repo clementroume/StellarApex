@@ -6,6 +6,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -219,6 +220,40 @@ class GymControllerIT extends BaseIntegrationTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(jsonMapper.writeValueAsString(request)))
         .andExpect(status().isBadRequest());
+  }
+
+  @Test
+  @DisplayName("Join Gym: after 5 wrong codes, 429 with Retry-After, even with the right code")
+  void testJoinGym_TooManyWrongCodes() throws Exception {
+    String wrong = jsonMapper.writeValueAsString(new JoinGymRequest(activeGym.getId(), "WRONG"));
+    for (int i = 0; i < 5; i++) {
+      mockMvc
+          .perform(
+              post("/antares/gyms/join")
+                  .with(csrf())
+                  .cookie(authCookies)
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .content(wrong))
+          .andExpect(status().isBadRequest());
+    }
+
+    mockMvc
+        .perform(
+            post("/antares/gyms/join")
+                .with(csrf())
+                .cookie(authCookies)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    jsonMapper.writeValueAsString(
+                        new JoinGymRequest(activeGym.getId(), "CODE123"))))
+        .andExpect(status().isTooManyRequests())
+        .andExpect(header().exists("Retry-After"))
+        .andExpect(jsonPath("$.retryAfter").isNumber())
+        .andExpect(
+            jsonPath("$.detail")
+                .value("Too many wrong enrollment codes. Try again in 15 minute(s)."));
+    assertThat(membershipRepository.existsByUserIdAndGymId(testUser.getId(), activeGym.getId()))
+        .isFalse();
   }
 
   @Test

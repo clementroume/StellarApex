@@ -63,6 +63,8 @@ the dev proxy targets the local Traefik `https://localhost` with `Host: stellar.
   leaving, creating, transferring or deleting a gym, call `UserService.refreshCurrentUser()`.
 - Staff pages pick the managed gym with `features/box/staff-gym.ts` (`staffGymSelection(permission)`:
   follows `DisplayGymService` when allowed, `app-staff-gym-picker` when several).
+- Redirects after sign-in/sign-up go through `features/auth/return-url.ts` (`resolveReturnUrl`): never
+  navigate to a raw `returnUrl`.
 - Sensitive actions ask through `shared/component/confirm-dialog` (`app-confirm-dialog`, alert dialog,
   extra fields projected, `confirmDisabled`). Backend errors: `problemDetailOf(err)`.
 - Admin support session: `core/services/support-session.service.ts` (start/end/expiry) and

@@ -8,6 +8,7 @@ import apex.stellar.antares.dto.MembershipUpdateRequest;
 import apex.stellar.antares.exception.BusinessRuleException;
 import apex.stellar.antares.exception.DataConflictException;
 import apex.stellar.antares.exception.ResourceNotFoundException;
+import apex.stellar.antares.exception.TooManyAttemptsException;
 import apex.stellar.antares.mapper.MembershipMapper;
 import apex.stellar.antares.model.Gym;
 import apex.stellar.antares.model.GymRole;
@@ -62,6 +63,7 @@ public class MembershipService {
   private final MembershipRepository membershipRepository;
   private final GymRepository gymRepository;
   private final MembershipMapper membershipMapper;
+  private final EnrollmentAttemptService enrollmentAttemptService;
 
   /**
    * Helper method to validate the security context for membership updates.
@@ -130,11 +132,16 @@ public class MembershipService {
    * @param user The authenticated {@link User} attempting to join.
    * @return The membership as the user sees it in their own list.
    * @throws ResourceNotFoundException If the gym does not exist or is not ACTIVE.
-   * @throws BusinessRuleException If the enrollment code is wrong (400).
+   * @throws BusinessRuleException If the enrollment code is wrong (400), counted by {@link
+   *     EnrollmentAttemptService}.
+   * @throws TooManyAttemptsException After too many wrong codes in a short time (429).
    * @throws DataConflictException If the user is already a member, or banned.
    */
   @Transactional
   public MembershipSummary joinGym(JoinGymRequest request, User user) {
+    // 0. Too many wrong codes recently: refuse before looking at this one
+    enrollmentAttemptService.checkAllowed(user.getId());
+
     Gym gym =
         gymRepository
             .findById(request.gymId())
@@ -144,6 +151,7 @@ public class MembershipService {
 
     // 1. Validate Enrollment Code (case-insensitive, constant time)
     if (!codeMatches(gym.getEnrollmentCode(), request.enrollmentCode())) {
+      enrollmentAttemptService.recordFailure(user.getId());
       throw new BusinessRuleException("error.enrollment.code.invalid");
     }
 

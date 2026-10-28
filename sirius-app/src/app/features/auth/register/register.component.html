@@ -45,7 +45,8 @@
         {{ 'REGISTER.SIGN_UP' | translate }}
       </button>
 
-      <a hlmBtn variant="link" class="self-start px-0" routerLink="/auth/login">{{ 'REGISTER.HAVE_ACCOUNT' | translate }}</a>
+      <a hlmBtn variant="link" class="self-start px-0" routerLink="/auth/login"
+         [queryParams]="forwardReturnUrl ? {returnUrl: forwardReturnUrl} : {}">{{ 'REGISTER.HAVE_ACCOUNT' | translate }}</a>
     </form>
   </section>
 </div>

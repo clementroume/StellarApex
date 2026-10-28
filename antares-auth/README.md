@@ -140,7 +140,10 @@ During a support session `GET /me` returns the target user with
 * `POST /join` `{gymId, enrollmentCode}`: Join an ACTIVE gym (code compared ignoring case); returns the
   user's `MembershipSummary`, PENDING or ACTIVE (auto-subscription). A former (INACTIVE) member is
   reactivated as ATHLETE on the same membership. 400 wrong code (a malformed request, not a missing
-  right), 404 unknown or inactive gym, 409 already a member or BANNED.
+  right), 404 unknown or inactive gym, 409 already a member or BANNED. Wrong codes are throttled per
+  user (`EnrollmentAttemptService`, Redis sliding window): after 5 wrong codes within 15 minutes
+  (`application.security.enrollment.*`), every join is refused with 429, a `Retry-After` header and
+  `retryAfter` (seconds) until the oldest one leaves the window; a successful join does not reset it.
 * `DELETE /{gymId}/membership/me`: Leave: ACTIVE becomes INACTIVE (history and scores kept), a PENDING
   request is withdrawn (deleted). 409 for the OWNER/PROGRAMMER (transfer first) and for a banned user.
 * `PUT /{id}/status?status=`: [ADMIN] Approve (`ACTIVE`), reject (`REJECTED`) or suspend (`SUSPENDED`).
