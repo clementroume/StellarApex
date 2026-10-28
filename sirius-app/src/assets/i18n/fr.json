@@ -30,7 +30,8 @@
     "NO_VIDEO": "Aucune vidéo",
     "CLEAR": "Effacer",
     "LOADING": "Chargement…",
-    "REQUIRED": "Ce champ est requis."
+    "REQUIRED": "Ce champ est requis.",
+    "COMING_SOON": "Bientôt disponible"
   },
   "NAVBAR": {
     "DASHBOARD": "Dashboard",
@@ -40,11 +41,15 @@
     "MOVEMENTS": "Mouvements",
     "MY_ACCOUNT": "Mon Compte",
     "LOG_OUT": "Se déconnecter",
-    "TOGGLE_THEME": "Basculer le thème"
-  },
-  "DASHBOARD": {
-    "TITLE": "Tableau de Bord",
-    "WELCOME": "Bienvenue sur Stellar Apex !"
+    "TOGGLE_THEME": "Basculer le thème",
+    "SPACES": {
+      "LABEL": "Espaces",
+      "TODAY": "Aujourd'hui",
+      "TRAINING": "Mon entraînement",
+      "BOX": "Ma box",
+      "CATALOG": "Catalogue",
+      "ADMIN": "Admin"
+    }
   },
   "LOGIN": {
     "TITLE": "Bon retour !",
@@ -773,6 +778,59 @@
       "ALL": "Toutes mes box/progs",
       "BOX": "Box",
       "PROG": "Prog"
+    }
+  },
+  "TODAY": {
+    "TITLE": "Aujourd'hui",
+    "GREETING": "Salut {{name}}, nous sommes le {{date}}.",
+    "LOG_SCORE": "Saisir un score",
+    "PR": "PR",
+    "SESSION": {
+      "TITLE": "Séance du jour",
+      "COMING": "La séance programmée par ta box ou ta prog s'affichera ici, avec « Séance faite » et la saisie de ton score.",
+      "SEE_WODS": "Voir les WODs"
+    },
+    "SCORES": {
+      "TITLE": "Derniers scores",
+      "EMPTY": "Aucun score pour l'instant : saisis ton premier WOD.",
+      "ERROR": "Impossible de charger tes scores."
+    },
+    "RECORDS": {
+      "TITLE": "Derniers PR",
+      "EMPTY": "Pas encore de PR : ça viendra !"
+    }
+  },
+  "TRAINING": {
+    "JOURNAL": {
+      "TITLE": "Journal",
+      "SUBTITLE": "Tous tes scores, du plus récent au plus ancien.",
+      "MORE": "Voir plus"
+    },
+    "RECORDS": {
+      "TITLE": "Records",
+      "COMING": "Tes records par mouvement (1RM, 3RM, max reps…) et leur progression arriveront ici."
+    },
+    "REVIEW": {
+      "TITLE": "Bilan",
+      "COMING": "Ton bilan (volume, sollicitation musculaire, répartition par modalité) arrivera ici."
+    }
+  },
+  "BOX": {
+    "SESSIONS": {
+      "TITLE": "Séances",
+      "COMING": "Les séances programmées par ta box ou ta prog arriveront ici."
+    },
+    "LEADERBOARDS": {
+      "TITLE": "Classements",
+      "COMING": "Les classements de ta box ou ta prog arriveront ici. En attendant, ils sont sur chaque WOD."
+    },
+    "MEMBERS": {
+      "TITLE": "Membres",
+      "COMING": "La gestion des membres (demandes, rôles, permissions) arrive au prochain lot."
+    },
+    "SETTINGS": {
+      "TITLE": "Réglages",
+      "COMING": "Les réglages de la box ou de la prog arrivent au prochain lot."
     }
   }
 }

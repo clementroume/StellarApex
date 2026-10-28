@@ -1,0 +1,84 @@
+<app-page [title]="'TODAY.TITLE' | translate"
+          [subtitle]="'TODAY.GREETING' | translate: {name: firstName(), date: todayLabel()}">
+  <a pageActions hlmBtn size="lg" routerLink="/wods">
+    <ng-icon name="heroPlus" aria-hidden="true"/>
+    {{ 'TODAY.LOG_SCORE' | translate }}
+  </a>
+
+  <div class="grid gap-4 md:gap-6 md:grid-cols-2">
+    <section hlmCard class="md:col-span-2">
+      <div hlmCardHeader>
+        <h2 hlmCardTitle class="flex items-center gap-2">
+          <ng-icon name="heroCalendarDays" class="text-primary" aria-hidden="true"/>
+          {{ 'TODAY.SESSION.TITLE' | translate }}
+          @if (displayGym.membership(); as gym) {
+            <span hlmBadge variant="secondary">{{ gym.gymName }}</span>
+          }
+        </h2>
+      </div>
+      <div hlmCardContent>
+        <app-coming-soon icon="heroCalendarDays" [description]="'TODAY.SESSION.COMING' | translate">
+          <a hlmBtn variant="outline" routerLink="/wods">{{ 'TODAY.SESSION.SEE_WODS' | translate }}</a>
+        </app-coming-soon>
+      </div>
+    </section>
+
+    <section hlmCard>
+      <div hlmCardHeader>
+        <h2 hlmCardTitle class="flex items-center gap-2">
+          <ng-icon name="heroClipboardDocumentList" class="text-primary" aria-hidden="true"/>
+          {{ 'TODAY.SCORES.TITLE' | translate }}
+        </h2>
+      </div>
+      <div hlmCardContent>
+        @if (isLoading()) {
+          <div class="flex flex-col gap-3" aria-hidden="true">
+            @for (i of [1, 2, 3]; track i) {
+              <div hlmSkeleton class="h-12 w-full"></div>
+            }
+          </div>
+        } @else if (hasError()) {
+          <p class="text-sm text-destructive">{{ 'TODAY.SCORES.ERROR' | translate }}</p>
+        } @else {
+          <ul class="divide-y">
+            @for (score of latestScores(); track score.id) {
+              <li>
+                <app-score-row [score]="score"/>
+              </li>
+            } @empty {
+              <li class="py-6 text-center text-sm text-muted-foreground">{{ 'TODAY.SCORES.EMPTY' | translate }}</li>
+            }
+          </ul>
+        }
+      </div>
+    </section>
+
+    <section hlmCard>
+      <div hlmCardHeader>
+        <h2 hlmCardTitle class="flex items-center gap-2">
+          <ng-icon name="heroTrophy" class="text-secondary" aria-hidden="true"/>
+          {{ 'TODAY.RECORDS.TITLE' | translate }}
+        </h2>
+      </div>
+      <div hlmCardContent>
+        @if (isLoading()) {
+          <div class="flex flex-col gap-3" aria-hidden="true">
+            @for (i of [1, 2]; track i) {
+              <div hlmSkeleton class="h-12 w-full"></div>
+            }
+          </div>
+        } @else {
+          <ul class="divide-y">
+            @for (score of latestRecords(); track score.id) {
+              <li>
+                <app-score-row [score]="score"/>
+              </li>
+            } @empty {
+              <li class="py-6 text-center text-sm text-muted-foreground">{{ 'TODAY.RECORDS.EMPTY' | translate }}</li>
+            }
+          </ul>
+        }
+      </div>
+    </section>
+  </div>
+</app-page>

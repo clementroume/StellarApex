@@ -29,7 +29,7 @@ export class LoginComponent implements OnInit {
   private readonly fb = inject(FormBuilder);
   private readonly notificationService = inject(NotificationService);
 
-  private returnUrl = '/dashboard';
+  private returnUrl = '/today';
 
   constructor(@Inject(DOCUMENT) private readonly document: Document) {
     this.loginForm = this.fb.group({
@@ -39,7 +39,7 @@ export class LoginComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.returnUrl = this.route.snapshot.queryParams['returnUrl'] || '/dashboard';
+    this.returnUrl = this.route.snapshot.queryParams['returnUrl'] || '/today';
   }
 
   onSubmit(): void {

@@ -55,7 +55,7 @@ describe('SupportSessionService', () => {
 
     expect(adminService.startSupportSession).toHaveBeenCalledWith({userId: 7, reason: 'Bug'});
     expect(authService.initCurrentUser).toHaveBeenCalled();
-    expect(router.navigate).toHaveBeenCalledWith(['/dashboard']);
+    expect(router.navigate).toHaveBeenCalledWith(['/today']);
   });
 
   it('should not reload the user when the session cannot start', () => {

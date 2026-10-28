@@ -43,6 +43,15 @@ import {
   heroXMark,
   heroCheckBadge,
   heroDocumentDuplicate,
+  heroHome,
+  heroBookOpen,
+  heroChartBar,
+  heroUsers,
+  heroCalendarDays,
+  heroClipboardDocumentList,
+  heroArrowTrendingUp,
+  heroCheckCircle,
+  heroAdjustmentsHorizontal,
 } from '@ng-icons/heroicons/outline';
 import {
   hugeBodyPartMuscle,
@@ -98,7 +107,8 @@ export const APP_ICONS = {
   heroXMark,
   heroTrophy,
   heroCheckBadge,
-  heroDocumentDuplicate
+  heroDocumentDuplicate,
+  heroHome, heroBookOpen, heroChartBar, heroUsers, heroCalendarDays, heroClipboardDocumentList, heroArrowTrendingUp, heroCheckCircle, heroAdjustmentsHorizontal
 };
 
 export const appConfig: ApplicationConfig = {

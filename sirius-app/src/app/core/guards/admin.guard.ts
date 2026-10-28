@@ -8,6 +8,6 @@ export const adminGuard: CanActivateFn = () => {
   }
 
   // Redirection silencieuse si un utilisateur malin tape l'URL à la main
-  void inject(Router).navigate(['/dashboard']);
+  void inject(Router).navigate(['/today']);
   return false;
 };

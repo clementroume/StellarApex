@@ -67,7 +67,7 @@ export class RegisterComponent {
 
     this.authService.register(registerPayload).subscribe({
       next: () => {
-        void this.router.navigate(['/dashboard']);
+        void this.router.navigate(['/today']);
       },
       error: (err: HttpErrorResponse) => {
         const problem: ProblemDetail = err.error;

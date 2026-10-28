@@ -30,7 +30,8 @@
     "NO_VIDEO": "No video",
     "CLEAR": "Clear",
     "LOADING": "Loading…",
-    "REQUIRED": "This field is required."
+    "REQUIRED": "This field is required.",
+    "COMING_SOON": "Coming soon"
   },
   "NAVBAR": {
     "DASHBOARD": "Dashboard",
@@ -40,11 +41,15 @@
     "MOVEMENTS": "Movement",
     "MY_ACCOUNT": "My Account",
     "LOG_OUT": "Log out",
-    "TOGGLE_THEME": "Toggle light/dark theme"
-  },
-  "DASHBOARD": {
-    "TITLE": "Dashboard",
-    "WELCOME": "Welcome to Stellar Apex!"
+    "TOGGLE_THEME": "Toggle light/dark theme",
+    "SPACES": {
+      "LABEL": "Spaces",
+      "TODAY": "Today",
+      "TRAINING": "My training",
+      "BOX": "My box",
+      "CATALOG": "Catalog",
+      "ADMIN": "Admin"
+    }
   },
   "LOGIN": {
     "TITLE": "Welcome back!",
@@ -773,6 +778,59 @@
       "ALL": "All my boxes/programs",
       "BOX": "Box",
       "PROG": "Program"
+    }
+  },
+  "TODAY": {
+    "TITLE": "Today",
+    "GREETING": "Hi {{name}}, today is {{date}}.",
+    "LOG_SCORE": "Log a score",
+    "PR": "PR",
+    "SESSION": {
+      "TITLE": "Today's session",
+      "COMING": "The session programmed by your box or program will show here, with \"Done\" and your score entry.",
+      "SEE_WODS": "See the WODs"
+    },
+    "SCORES": {
+      "TITLE": "Latest scores",
+      "EMPTY": "No score yet: log your first WOD.",
+      "ERROR": "Your scores could not be loaded."
+    },
+    "RECORDS": {
+      "TITLE": "Latest PRs",
+      "EMPTY": "No PR yet: it will come!"
+    }
+  },
+  "TRAINING": {
+    "JOURNAL": {
+      "TITLE": "Journal",
+      "SUBTITLE": "All your scores, newest first.",
+      "MORE": "Show more"
+    },
+    "RECORDS": {
+      "TITLE": "Records",
+      "COMING": "Your records per movement (1RM, 3RM, max reps…) and their progress will show here."
+    },
+    "REVIEW": {
+      "TITLE": "Review",
+      "COMING": "Your review (volume, muscle load, split by modality) will show here."
+    }
+  },
+  "BOX": {
+    "SESSIONS": {
+      "TITLE": "Sessions",
+      "COMING": "The sessions programmed by your box or program will show here."
+    },
+    "LEADERBOARDS": {
+      "TITLE": "Leaderboards",
+      "COMING": "Your box or program leaderboards will show here. Meanwhile, they are on each WOD."
+    },
+    "MEMBERS": {
+      "TITLE": "Members",
+      "COMING": "Member management (requests, roles, permissions) comes in the next lot."
+    },
+    "SETTINGS": {
+      "TITLE": "Settings",
+      "COMING": "Box and program settings come in the next lot."
     }
   }
 }

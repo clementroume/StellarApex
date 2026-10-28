@@ -1,5 +1,4 @@
 import {Routes} from '@angular/router';
-import {DashboardComponent} from './features/dashboard/dashboard.component';
 import {MainLayoutComponent} from './core/layout/main-layout/main-layout.component';
 import {authGuard} from './core/guards/auth.guard';
 
@@ -18,13 +17,24 @@ export const routes: Routes = [
     children: [
       {
         path: '',
-        redirectTo: 'dashboard',
+        redirectTo: 'today',
         pathMatch: 'full'
       },
+      // Spaces (D39): Today · My training · My box · Catalogue (wods, movements, muscles) · Admin
       {
-        path: 'dashboard',
-        component: DashboardComponent
+        path: 'today',
+        loadComponent: () => import('./features/today/today.component').then(c => c.TodayComponent)
       },
+      {
+        path: 'training',
+        loadChildren: () => import('./features/training/training.routes').then(r => r.TRAINING_ROUTES)
+      },
+      {
+        path: 'box',
+        loadChildren: () => import('./features/box/box.routes').then(r => r.BOX_ROUTES)
+      },
+      // Former home, kept for bookmarks
+      {path: 'dashboard', redirectTo: 'today'},
       {
         path: 'my-account',
         loadChildren: () => import('./features/account/account.routes').then(r => r.ACCOUNT_ROUTES)
@@ -51,6 +61,6 @@ export const routes: Routes = [
   // 3. CATCH-ALL FALLBACK
   {
     path: '**',
-    redirectTo: '/dashboard'
+    redirectTo: '/today'
   }
 ];
