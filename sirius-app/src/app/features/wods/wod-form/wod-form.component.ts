@@ -31,10 +31,17 @@ const minLengthArray = (min: number) => (control: AbstractControl): ValidationEr
 const gymRequiredForGymVisibility = (group: AbstractControl): ValidationErrors | null =>
   group.get('visibility')?.value === 'GYM' && group.get('gymId')?.value == null ? {gymRequired: true} : null;
 
+import {HlmSpinner} from '@spartan-ng/helm/spinner';
+import {NativeSelectDirective} from '../../../shared/component/native-select/native-select.directive';
+import {HlmBadge} from '@spartan-ng/helm/badge';
+import {HlmButton} from '@spartan-ng/helm/button';
+import {HlmCardImports} from '@spartan-ng/helm/card';
+import {HlmInput} from '@spartan-ng/helm/input';
+import {HlmTextarea} from '@spartan-ng/helm/textarea';
 @Component({
   selector: 'app-wod-form',
   standalone: true,
-  imports: [ReactiveFormsModule, RouterModule, TranslatePipe, NgIconComponent],
+  imports: [HlmTextarea, HlmInput, HlmCardImports, HlmButton, HlmBadge, NativeSelectDirective, HlmSpinner, ReactiveFormsModule, RouterModule, TranslatePipe, NgIconComponent],
   templateUrl: './wod-form.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

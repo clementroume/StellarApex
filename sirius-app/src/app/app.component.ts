@@ -4,6 +4,7 @@ import {TranslateService} from '@ngx-translate/core';
 import {AuthService} from './api/antares/services/auth.service';
 import {GlobalLoaderComponent} from './core/layout/global-loader/global-loader.component';
 import {NotificationComponent} from './core/layout/notification/notification.component';
+import {AppUpdateService} from './core/services/app-update.service';
 
 @Component({
   selector: 'app-root',
@@ -17,6 +18,7 @@ export class AppComponent {
   private readonly authService = inject(AuthService);
 
   constructor() {
+    inject(AppUpdateService).watch();
     this.translate.setFallbackLang('en');
     const browserLang = this.translate.getBrowserLang() ?? 'en';
     this.translate.use(new RegExp(/fr/).exec(browserLang) ? 'fr' : 'en');

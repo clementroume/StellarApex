@@ -1,64 +1,24 @@
-import {ComponentFixture, TestBed} from '@angular/core/testing';
+import {ComponentFixture, DeferBlockState, TestBed} from '@angular/core/testing';
+import {signal} from '@angular/core';
 import {NotificationComponent} from './notification.component';
-import {Notification, NotificationService} from '../../services/notification.service';
-import {signal, WritableSignal} from '@angular/core';
+import {ThemeService} from '../../services/theme.service';
 
 describe('NotificationComponent', () => {
-  let component: NotificationComponent;
   let fixture: ComponentFixture<NotificationComponent>;
-  let mockNotification: WritableSignal<Notification | null>;
 
   beforeEach(async () => {
-    mockNotification = signal<Notification | null>(null);
-
     await TestBed.configureTestingModule({
       imports: [NotificationComponent],
-      providers: [
-        {
-          provide: NotificationService,
-          useValue: {notification: mockNotification.asReadonly()}
-        }
-      ]
+      providers: [{provide: ThemeService, useValue: {currentTheme: signal('dark')}}]
     }).compileComponents();
 
     fixture = TestBed.createComponent(NotificationComponent);
-    component = fixture.componentInstance;
     fixture.detectChanges();
   });
 
-  it('should create', () => {
-    expect(component).toBeTruthy();
-  });
-
-  it('should not display an alert when notification is null', () => {
-    mockNotification.set(null);
-    fixture.detectChanges();
-
-    const alertElement = fixture.nativeElement.querySelector('.alert');
-
-    expect(alertElement).toBeNull();
-  });
-
-  it('should display a success alert for a success notification', () => {
-    mockNotification.set({message: 'Success!', type: 'success'});
-    fixture.detectChanges();
-
-    const alertElement = fixture.nativeElement.querySelector('.alert');
-
-    expect(alertElement).not.toBeNull();
-    expect(alertElement.classList).toContain('alert-success');
-    expect(alertElement.textContent).toContain('Success!');
-  });
-
-  it('should display an error alert for an error notification', () => {
-    // Arrange
-    mockNotification.set({message: 'Error!', type: 'error'});
-    fixture.detectChanges();
-
-    const alertElement = fixture.nativeElement.querySelector('.alert');
-
-    expect(alertElement).not.toBeNull();
-    expect(alertElement.classList).toContain('alert-error');
-    expect(alertElement.textContent).toContain('Error!');
+  it('should render the toaster once deferred content loads', async () => {
+    const [block] = await fixture.getDeferBlocks();
+    await block.render(DeferBlockState.Complete);
+    expect(fixture.nativeElement.querySelector('hlm-toaster')).not.toBeNull();
   });
 });

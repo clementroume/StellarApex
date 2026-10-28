@@ -16,10 +16,12 @@ import {DetailCardComponent} from '../../../shared/component/detail/detail-card/
 import {DetailHeaderComponent} from '../../../shared/component/detail/detail-header/detail-header.component';
 import {DetailStateComponent} from '../../../shared/component/detail/detail-state/detail-state.component';
 
+import {HlmBadge} from '@spartan-ng/helm/badge';
+import {HlmButton} from '@spartan-ng/helm/button';
 @Component({
   selector: 'app-movement-detail',
   standalone: true,
-  imports: [TranslatePipe, RouterModule, NgIconComponent, NgOptimizedImage, NgTemplateOutlet, DetailAdminActionsComponent, DetailCardComponent, DetailHeaderComponent, DetailStateComponent],
+  imports: [HlmButton, HlmBadge, TranslatePipe, RouterModule, NgIconComponent, NgOptimizedImage, NgTemplateOutlet, DetailAdminActionsComponent, DetailCardComponent, DetailHeaderComponent, DetailStateComponent],
   templateUrl: './movement-detail.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush
 })

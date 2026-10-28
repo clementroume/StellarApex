@@ -1,116 +1,117 @@
-<div class="card bg-base-100">
-  <div class="card-body gap-8">
-    <h2 class="card-title flex gap-2 mb-2">
-      <ng-icon name="heroCog8Tooth" class="text-2xl" color="var(--color-accent)"></ng-icon>
+<section hlmCard>
+  <div hlmCardHeader>
+    <h2 hlmCardTitle class="flex items-center gap-2 text-xl">
+      <ng-icon name="heroCog8Tooth" size="1.5rem" class="text-accent" aria-hidden="true"/>
       {{ 'SETTINGS.TITLE' | translate }}
     </h2>
+  </div>
 
+  <div hlmCardContent class="flex flex-col gap-6">
     @if (isSupportSession()) {
-      <div class="alert alert-warning alert-soft">
-        <ng-icon name="heroExclamationTriangle" size="1.5rem"></ng-icon>
-        <span>{{ 'ADMIN.SUPPORT.ACCOUNT_LOCKED' | translate }}</span>
+      <div hlmAlert class="border-warning/40 text-warning">
+        <ng-icon name="heroExclamationTriangle" aria-hidden="true"/>
+        <p hlmAlertDescription class="text-warning">{{ 'ADMIN.SUPPORT.ACCOUNT_LOCKED' | translate }}</p>
       </div>
     } @else {
-    <form (ngSubmit)="onSubmit()" [formGroup]="passwordForm">
-      <fieldset class="fieldset bg-base-200 border-base-300 rounded-box w-full border p-4">
-        <legend class="fieldset-legend">{{ 'SETTINGS.PASSWORD_SUBTITLE' | translate }}</legend>
+      <form (ngSubmit)="onSubmit()" [formGroup]="passwordForm">
+        <fieldset class="flex flex-col gap-4 rounded-lg border p-4">
+          <legend class="px-1 text-sm font-semibold">{{ 'SETTINGS.PASSWORD_SUBTITLE' | translate }}</legend>
 
-        <label class="fieldset-label" for="currentPassword">{{ 'SETTINGS.CURRENT_PASSWORD' | translate }}</label>
-        <div class="input validator w-full">
-          <ng-icon name="heroKey" class="opacity-50"></ng-icon>
-          <input id="currentPassword" [placeholder]="'SETTINGS.CURRENT_PASSWORD' | translate"
-                 formControlName="currentPassword" required
-                 type="password"/>
-        </div>
+          <app-form-field for="currentPassword" icon="heroKey" [label]="'SETTINGS.CURRENT_PASSWORD' | translate">
+            <input hlmInputGroupInput id="currentPassword" formControlName="currentPassword" type="password"
+                   autocomplete="current-password" required/>
+          </app-form-field>
 
-        <label class="fieldset-label mt-3" for="newPassword">{{ 'SETTINGS.NEW_PASSWORD' | translate }}</label>
-        <div class="input validator w-full">
-          <ng-icon name="heroKey" class="opacity-50"></ng-icon>
-          <input id="newPassword" [placeholder]="'SETTINGS.NEW_PASSWORD' | translate" formControlName="newPassword"
-                 minlength="8"
-                 pattern="(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{8,}" required type="password"/>
-        </div>
-        <p class="validator-hint hidden text-xs">{{ 'GLOBAL.ERROR_PASSWORD_RULES' | translate }}</p>
+          <app-form-field for="newPassword" icon="heroKey" [label]="'SETTINGS.NEW_PASSWORD' | translate"
+                          [hint]="'GLOBAL.ERROR_PASSWORD_RULES' | translate"
+                          [error]="invalid('newPassword') ? ('GLOBAL.ERROR_PASSWORD_RULES' | translate) : null">
+            <input hlmInputGroupInput id="newPassword" formControlName="newPassword" type="password"
+                   autocomplete="new-password" aria-describedby="newPassword-message"
+                   [attr.aria-invalid]="invalid('newPassword')" required/>
+          </app-form-field>
 
-        <label class="fieldset-label mt-3"
-               for="confirmationPassword">{{ 'GLOBAL.CONFIRM_PASSWORD' | translate }}</label>
-        <div class="input validator w-full">
-          <ng-icon name="heroKey" class="opacity-50"></ng-icon>
-          <input id="confirmationPassword" [placeholder]="'GLOBAL.CONFIRM_PASSWORD' | translate"
-                 formControlName="confirmationPassword" required
-                 type="password"/>
-        </div>
-        @if (passwordForm.errors?.['passwordsMismatch'] && passwordForm.get('confirmationPassword')?.touched) {
-          <p class="validator-hint text-error text-xs mt-1">{{ 'GLOBAL.PASSWORDS_MISMATCH' | translate }}</p>
-        }
+          <app-form-field for="confirmationPassword" icon="heroKey" [label]="'GLOBAL.CONFIRM_PASSWORD' | translate"
+                          [error]="passwordsMismatch() ? ('GLOBAL.PASSWORDS_MISMATCH' | translate) : null">
+            <input hlmInputGroupInput id="confirmationPassword" formControlName="confirmationPassword" type="password"
+                   autocomplete="new-password" aria-describedby="confirmationPassword-message"
+                   [attr.aria-invalid]="passwordsMismatch()" required/>
+          </app-form-field>
 
-        <div class="card-actions justify-end mt-4">
-          <button [disabled]="passwordForm.invalid" class="btn btn-primary"
-                  type="submit">{{ 'SETTINGS.CHANGE_PASSWORD_BTN' | translate }}
-          </button>
-        </div>
-      </fieldset>
-    </form>
+          <div class="flex justify-end">
+            <button hlmBtn size="lg" type="submit" [disabled]="passwordForm.invalid">
+              {{ 'SETTINGS.CHANGE_PASSWORD_BTN' | translate }}
+            </button>
+          </div>
+        </fieldset>
+      </form>
     }
 
-    <fieldset class="fieldset bg-base-200 border-base-300 rounded-box w-full border p-4 mt-6">
-      <legend class="fieldset-legend">{{ 'SETTINGS.LANGUAGE_TITLE' | translate }}</legend>
-
-      <label class="fieldset-label" for="languageSelect">{{ 'SETTINGS.LANGUAGE_LABEL' | translate }}</label>
-      <div class="join w-full">
-        <div class="btn btn-square join-item bg-base-100 border-base-300 cursor-default">
-          <ng-icon name="heroGlobeAlt" class="opacity-75" color="var(--color-accent)" size="2em"></ng-icon>
-        </div>
-        <select id="languageSelect" (change)="changeLanguage($event)" class="select join-item w-full bg-base-100">
-          <option [selected]="translate.currentLang() === 'en'" value="en">English</option>
-          <option [selected]="translate.currentLang() === 'fr'" value="fr">Français</option>
-        </select>
+    <fieldset class="flex flex-col gap-2 rounded-lg border p-4">
+      <legend class="px-1 text-sm font-semibold">{{ 'SETTINGS.LANGUAGE_TITLE' | translate }}</legend>
+      <label hlmLabel for="languageSelect">{{ 'SETTINGS.LANGUAGE_LABEL' | translate }}</label>
+      <div class="relative">
+        <ng-icon name="heroGlobeAlt" class="absolute left-3 top-1/2 -translate-y-1/2 z-10 text-accent pointer-events-none"
+                 aria-hidden="true"/>
+        <hlm-native-select selectId="languageSelect" class="w-full" selectClass="h-11 md:h-10 pl-9"
+                           [value]="translate.currentLang()" (valueChange)="changeLanguage($event)">
+          <option hlmNativeSelectOption value="en">English</option>
+          <option hlmNativeSelectOption value="fr">Français</option>
+        </hlm-native-select>
       </div>
     </fieldset>
 
-    <fieldset class="fieldset bg-base-200 border-base-300 rounded-box w-full border p-4">
-      <legend class="fieldset-legend">{{ 'SETTINGS.PRIVACY_TITLE' | translate }}</legend>
-      <label class="flex items-start gap-3 cursor-pointer">
-        <input id="public-leaderboard-name" type="checkbox" class="toggle toggle-primary mt-1"
-               [checked]="publicLeaderboardName()" [disabled]="isSupportSession()"
-               (change)="changePublicLeaderboardName($event)"/>
+    <fieldset class="flex flex-col gap-2 rounded-lg border p-4">
+      <legend class="px-1 text-sm font-semibold">{{ 'SETTINGS.APPEARANCE_TITLE' | translate }}</legend>
+      <p class="text-sm text-muted-foreground mb-2">{{ 'SETTINGS.PALETTE_HINT' | translate }}</p>
+      <app-palette-picker/>
+    </fieldset>
+
+    <fieldset class="flex flex-col gap-2 rounded-lg border p-4">
+      <legend class="px-1 text-sm font-semibold">{{ 'SETTINGS.PRIVACY_TITLE' | translate }}</legend>
+      <div class="flex items-start gap-3">
+        <hlm-switch class="mt-1" inputId="public-leaderboard-name" [checked]="publicLeaderboardName()"
+                    [disabled]="isSupportSession()" aria-describedby="public-leaderboard-name-hint"
+                    (checkedChange)="changePublicLeaderboardName($event)"/>
         <span class="flex flex-col gap-1">
-          <span>{{ 'SETTINGS.PUBLIC_LEADERBOARD_NAME' | translate }}</span>
-          <span class="text-sm text-base-content/70">{{ 'SETTINGS.PUBLIC_LEADERBOARD_NAME_HINT' | translate }}</span>
+          <label hlmLabel for="public-leaderboard-name">{{ 'SETTINGS.PUBLIC_LEADERBOARD_NAME' | translate }}</label>
+          <span id="public-leaderboard-name-hint" class="text-sm text-muted-foreground">
+            {{ 'SETTINGS.PUBLIC_LEADERBOARD_NAME_HINT' | translate }}
+          </span>
         </span>
-      </label>
+      </div>
     </fieldset>
 
     @if (!isSupportSession()) {
-    <fieldset class="fieldset bg-error/5 border-error/20 rounded-box w-full border p-4">
-      <legend class="fieldset-legend text-error font-bold flex gap-2 items-center">
-        <ng-icon name="heroExclamationTriangle" class="text-2xl"></ng-icon>
-        {{ 'SETTINGS.DANGER_ZONE_TITLE' | translate }}
-      </legend>
-      <div class="flex flex-col sm:flex-row justify-between items-center gap-4">
-        <span class="text-sm text-base-content/70">{{ 'SETTINGS.DELETE_MODAL_DESC' | translate }}</span>
-        <button (click)="openDeleteConfirmation()"
-                class="btn btn-error btn-sm text-white">{{ 'SETTINGS.DELETE_ACCOUNT_BTN' | translate }}
-        </button>
-      </div>
-    </fieldset>
+      <fieldset class="flex flex-col gap-3 rounded-lg border border-destructive/30 bg-destructive/5 p-4">
+        <legend class="px-1 text-sm font-semibold text-destructive flex items-center gap-2">
+          <ng-icon name="heroExclamationTriangle" size="1.25rem" aria-hidden="true"/>
+          {{ 'SETTINGS.DANGER_ZONE_TITLE' | translate }}
+        </legend>
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <span class="text-sm text-muted-foreground">{{ 'SETTINGS.DELETE_MODAL_DESC' | translate }}</span>
+          <button hlmBtn variant="destructive" (click)="openDeleteConfirmation()">
+            {{ 'SETTINGS.DELETE_ACCOUNT_BTN' | translate }}
+          </button>
+        </div>
+      </fieldset>
     }
   </div>
-</div>
+</section>
 
-<dialog #deleteModal class="modal">
-  <div class="modal-box">
-    <h3 class="font-bold text-lg text-error flex gap-2 items-center">
-      <ng-icon name="heroExclamationTriangle" class="text-2xl"></ng-icon>
-      {{ 'SETTINGS.DELETE_MODAL_TITLE' | translate }}
-    </h3>
-    <div class="modal-action">
-      <form class="flex gap-2" method="dialog">
-        <button (click)="closeDeleteConfirmation()" class="btn">{{ 'GLOBAL.CANCEL' | translate }}</button>
-        <button (click)="confirmDeleteAccount()"
-                class="btn btn-error text-white">{{ 'SETTINGS.DELETE_MODAL_CONFIRM' | translate }}
-        </button>
-      </form>
-    </div>
-  </div>
-</dialog>
+<hlm-alert-dialog [state]="deleteDialogState()" (closed)="closeDeleteConfirmation()">
+  <hlm-alert-dialog-content *hlmAlertDialogPortal>
+    <hlm-alert-dialog-header>
+      <h2 hlmAlertDialogTitle class="text-destructive flex items-center gap-2">
+        <ng-icon name="heroExclamationTriangle" size="1.25rem" aria-hidden="true"/>
+        {{ 'SETTINGS.DELETE_MODAL_TITLE' | translate }}
+      </h2>
+      <p hlmAlertDialogDescription>{{ 'SETTINGS.DELETE_MODAL_DESC' | translate }}</p>
+    </hlm-alert-dialog-header>
+    <hlm-alert-dialog-footer>
+      <button hlmAlertDialogCancel>{{ 'GLOBAL.CANCEL' | translate }}</button>
+      <button hlmAlertDialogAction variant="destructive" (click)="confirmDeleteAccount()">
+        {{ 'SETTINGS.DELETE_MODAL_CONFIRM' | translate }}
+      </button>
+    </hlm-alert-dialog-footer>
+  </hlm-alert-dialog-content>
+</hlm-alert-dialog>

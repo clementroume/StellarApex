@@ -27,21 +27,29 @@
     "DELETE_SUCCESS": "Élément supprimé avec succès.",
     "DELETE_ERROR": "Une erreur est survenue lors de la suppression.",
     "VIDEO": "Vidéo",
-    "NO_VIDEO": "Aucune vidéo"
+    "NO_VIDEO": "Aucune vidéo",
+    "CLEAR": "Effacer",
+    "LOADING": "Chargement…",
+    "REQUIRED": "Ce champ est requis.",
+    "COMING_SOON": "Bientôt disponible",
+    "UPDATE_READY": "Une nouvelle version de StellarApex est disponible.",
+    "RELOAD": "Recharger"
   },
   "NAVBAR": {
-    "DASHBOARD": "Dashboard",
     "WODS": "WODs",
     "MUSCLES": "Muscles",
-    "SUPPORT": "Support",
     "MOVEMENTS": "Mouvements",
     "MY_ACCOUNT": "Mon Compte",
     "LOG_OUT": "Se déconnecter",
-    "TOGGLE_THEME": "Basculer le thème"
-  },
-  "DASHBOARD": {
-    "TITLE": "Tableau de Bord",
-    "WELCOME": "Bienvenue sur Stellar Apex !"
+    "TOGGLE_THEME": "Basculer le thème",
+    "SPACES": {
+      "LABEL": "Espaces",
+      "TODAY": "Aujourd'hui",
+      "TRAINING": "Mon entraînement",
+      "BOX": "Ma box",
+      "CATALOG": "Catalogue",
+      "ADMIN": "Admin"
+    }
   },
   "LOGIN": {
     "TITLE": "Bon retour !",
@@ -68,7 +76,8 @@
       "TITLE": "Mes boxes et progs",
       "NO_PERMISSION": "Aucune permission particulière ici.",
       "NONE": "Tu n'es membre d'aucune box ni prog."
-    }
+    },
+    "VERIFIED": "Vérifié"
   },
   "SETTINGS": {
     "TITLE": "Sécurité",
@@ -89,7 +98,28 @@
     "PUBLIC_LEADERBOARD_NAME": "Afficher mon nom dans les classements publics",
     "PUBLIC_LEADERBOARD_NAME_HINT": "Les membres de tes boxes et progs voient toujours ton nom. Sinon, tu apparais comme athlète anonyme.",
     "PRIVACY_SAVED": "Réglage de confidentialité enregistré.",
-    "PRIVACY_ERROR": "Le réglage de confidentialité n'a pas pu être enregistré."
+    "PRIVACY_ERROR": "Le réglage de confidentialité n'a pas pu être enregistré.",
+    "APPEARANCE_TITLE": "Apparence",
+    "PALETTE_LABEL": "Palette de couleurs",
+    "PALETTE_HINT": "Choisis les couleurs de ton espace. Le mode clair/sombre se règle dans la barre de navigation.",
+    "PALETTES": {
+      "ocean": {
+        "NAME": "Océan",
+        "DESC": "Marine, cyan et orange"
+      },
+      "chalk": {
+        "NAME": "Craie et fonte",
+        "DESC": "Zinc et orange box"
+      },
+      "volt": {
+        "NAME": "Volt",
+        "DESC": "Anthracite et vert électrique"
+      },
+      "rig": {
+        "NAME": "Rig rouge",
+        "DESC": "Noir chaud, rouge et ambre"
+      }
+    }
   },
   "UNITS": {
     "TITLE": "Unités",
@@ -202,7 +232,8 @@
       "COACHING_CUES_FR": "Coaching Cues (FR)",
       "COACHING_CUES_EN": "Coaching Cues (EN)",
       "IMAGE_URL": "URL de l'image",
-      "VIDEO_URL": "URL de la vidéo (YouTube/Vimeo)"
+      "VIDEO_URL": "URL de la vidéo (YouTube/Vimeo)",
+      "MODALITY": "Modalité"
     },
     "PLACEHOLDERS": {
       "NAME": "Ex: Back Squat",
@@ -481,7 +512,8 @@
       "TIEBREAK_FR": "Tie-break (français)",
       "TIEBREAK_EN": "Tie-break (anglais)",
       "REPS_PER_ROUND": "Répétitions par tour (facultatif)",
-      "COMPETITION": "Compétition"
+      "COMPETITION": "Compétition",
+      "SCOPE": "Portée"
     },
     "PLACEHOLDERS": {
       "TITLE": "Ex : Fran",
@@ -732,6 +764,73 @@
         "LABEL": "Réglages",
         "DESCRIPTION": "Peut modifier les réglages de la box ou prog (code d'inscription, inscriptions automatiques)."
       }
+    }
+  },
+  "SHARED": {
+    "MOVEMENT_COMBOBOX": {
+      "LABEL": "Mouvement",
+      "PLACEHOLDER": "Rechercher un mouvement…",
+      "NO_RESULT": "Aucun mouvement trouvé",
+      "TOGGLE": "Afficher les mouvements"
+    },
+    "GYM_SELECTOR": {
+      "LABEL": "Box ou prog affichée",
+      "ALL": "Toutes mes box/progs",
+      "BOX": "Box",
+      "PROG": "Prog"
+    }
+  },
+  "TODAY": {
+    "TITLE": "Aujourd'hui",
+    "GREETING": "Salut {{name}}, nous sommes le {{date}}.",
+    "LOG_SCORE": "Saisir un score",
+    "PR": "PR",
+    "SESSION": {
+      "TITLE": "Séance du jour",
+      "COMING": "La séance programmée par ta box ou ta prog s'affichera ici, avec « Séance faite » et la saisie de ton score.",
+      "SEE_WODS": "Voir les WODs"
+    },
+    "SCORES": {
+      "TITLE": "Derniers scores",
+      "EMPTY": "Aucun score pour l'instant : saisis ton premier WOD.",
+      "ERROR": "Impossible de charger tes scores."
+    },
+    "RECORDS": {
+      "TITLE": "Derniers PR",
+      "EMPTY": "Pas encore de PR : ça viendra !"
+    }
+  },
+  "TRAINING": {
+    "JOURNAL": {
+      "TITLE": "Journal",
+      "SUBTITLE": "Tous tes scores, du plus récent au plus ancien.",
+      "MORE": "Voir plus"
+    },
+    "RECORDS": {
+      "TITLE": "Records",
+      "COMING": "Tes records par mouvement (1RM, 3RM, max reps…) et leur progression arriveront ici."
+    },
+    "REVIEW": {
+      "TITLE": "Bilan",
+      "COMING": "Ton bilan (volume, sollicitation musculaire, répartition par modalité) arrivera ici."
+    }
+  },
+  "BOX": {
+    "SESSIONS": {
+      "TITLE": "Séances",
+      "COMING": "Les séances programmées par ta box ou ta prog arriveront ici."
+    },
+    "LEADERBOARDS": {
+      "TITLE": "Classements",
+      "COMING": "Les classements de ta box ou ta prog arriveront ici. En attendant, ils sont sur chaque WOD."
+    },
+    "MEMBERS": {
+      "TITLE": "Membres",
+      "COMING": "La gestion des membres (demandes, rôles, permissions) arrive au prochain lot."
+    },
+    "SETTINGS": {
+      "TITLE": "Réglages",
+      "COMING": "Les réglages de la box ou de la prog arrivent au prochain lot."
     }
   }
 }

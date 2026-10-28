@@ -73,7 +73,7 @@ class UserControllerIT extends BaseIntegrationTest {
   void testUpdatePreferences_shouldSucceed() throws Exception {
     // Given
     PreferencesUpdateRequest preferencesRequest =
-        new PreferencesUpdateRequest("fr", "dark", "IMPERIAL", null);
+        new PreferencesUpdateRequest("fr", "dark", "volt", "IMPERIAL", null);
 
     // When
     mockMvc
@@ -87,6 +87,7 @@ class UserControllerIT extends BaseIntegrationTest {
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.locale").value("fr"))
         .andExpect(jsonPath("$.theme").value("dark"))
+        .andExpect(jsonPath("$.palette").value("volt"))
         .andExpect(jsonPath("$.unitSystem").value("IMPERIAL"));
 
     // Back to "follow the language"
@@ -97,9 +98,11 @@ class UserControllerIT extends BaseIntegrationTest {
                 .with(csrf())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(
-                    jsonMapper.writeValueAsString(new PreferencesUpdateRequest("fr", "dark", null, null))))
+                    jsonMapper.writeValueAsString(new PreferencesUpdateRequest("fr", "dark", null, null, null))))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.unitSystem").isEmpty());
+        .andExpect(jsonPath("$.unitSystem").isEmpty())
+        // An omitted palette keeps the current one
+        .andExpect(jsonPath("$.palette").value("volt"));
   }
 
   @Test
@@ -108,7 +111,8 @@ class UserControllerIT extends BaseIntegrationTest {
     mockMvc
         .perform(get("/antares/users/me").cookie(authCookies))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.publicLeaderboardName").value(false));
+        .andExpect(jsonPath("$.publicLeaderboardName").value(false))
+        .andExpect(jsonPath("$.palette").value("ocean"));
 
     mockMvc
         .perform(
@@ -118,7 +122,7 @@ class UserControllerIT extends BaseIntegrationTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(
                     jsonMapper.writeValueAsString(
-                        new PreferencesUpdateRequest("fr", "dark", null, true))))
+                        new PreferencesUpdateRequest("fr", "dark", null, null, true))))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.publicLeaderboardName").value(true));
 
@@ -130,7 +134,7 @@ class UserControllerIT extends BaseIntegrationTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(
                     jsonMapper.writeValueAsString(
-                        new PreferencesUpdateRequest("en", "light", null, null))))
+                        new PreferencesUpdateRequest("en", "light", null, null, null))))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.publicLeaderboardName").value(true));
   }
@@ -281,7 +285,7 @@ class UserControllerIT extends BaseIntegrationTest {
   void testUpdatePreferences_withInvalidData_shouldReturnBadRequest() throws Exception {
     // Given: A request with an invalid locale format
     PreferencesUpdateRequest invalidRequest =
-        new PreferencesUpdateRequest("invalid-locale", "dark", null, null);
+        new PreferencesUpdateRequest("invalid-locale", "dark", null, null, null);
 
     // When/Then
     mockMvc

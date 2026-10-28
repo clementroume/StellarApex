@@ -1,35 +1,27 @@
-<div class="hero-content flex-col lg:flex-row-reverse">
-  <div class="text-center lg:text-left lg:pl-10">
-    <h1 class="text-5xl font-bold">{{ 'LOGIN.TITLE' | translate }}</h1>
-    <p class="py-6">{{ 'LOGIN.SUBTITLE' | translate }}</p>
+<div class="w-full max-w-4xl flex flex-col lg:flex-row-reverse items-center gap-8 lg:gap-16">
+  <div class="text-center lg:text-left lg:flex-1">
+    <h1 class="text-4xl md:text-5xl font-bold">{{ 'LOGIN.TITLE' | translate }}</h1>
+    <p class="pt-4 text-muted-foreground">{{ 'LOGIN.SUBTITLE' | translate }}</p>
   </div>
 
-  <div class="card shrink-0 w-full max-w-sm shadow-2xl bg-base-100 border border-neutral">
-    <form (ngSubmit)="onSubmit()" [formGroup]="loginForm" class="card-body">
+  <section hlmCard class="w-full max-w-sm">
+    <form hlmCardContent class="flex flex-col gap-4" (ngSubmit)="onSubmit()" [formGroup]="loginForm">
+      <app-form-field for="login-email" icon="heroEnvelope" [label]="'GLOBAL.EMAIL' | translate"
+                      [error]="invalid('email') ? ('GLOBAL.ERROR_EMAIL' | translate) : null">
+        <input hlmInputGroupInput id="login-email" formControlName="email" type="email" autocomplete="email"
+               aria-describedby="login-email-message" [attr.aria-invalid]="invalid('email')" required/>
+      </app-form-field>
 
-      <div class="input validator w-full">
-        <ng-icon name="heroEnvelope" class="opacity-50"></ng-icon>
-        <input formControlName="email"
-               [placeholder]="'GLOBAL.EMAIL' | translate"
-               required type="email"/>
-      </div>
-      <div class="validator-hint hidden">{{ 'GLOBAL.ERROR_EMAIL' | translate }}</div>
+      <app-form-field for="login-password" icon="heroKey" [label]="'GLOBAL.PASSWORD' | translate">
+        <input hlmInputGroupInput id="login-password" formControlName="password" type="password"
+               autocomplete="current-password" required/>
+      </app-form-field>
 
-      <div class="input validator w-full mt-4">
-        <ng-icon name="heroKey" class="opacity-50"></ng-icon>
-        <input formControlName="password"
-               [placeholder]="'GLOBAL.PASSWORD' | translate"
-               required type="password"/>
-      </div>
+      <button hlmBtn size="lg" class="h-11 mt-2" type="submit" [disabled]="loginForm.invalid">
+        {{ 'LOGIN.SIGN_IN' | translate }}
+      </button>
 
-      <div class="form-control mt-6">
-        <button [disabled]="loginForm.invalid" class="btn btn-primary" type="submit">{{ 'LOGIN.SIGN_IN' | translate }}
-        </button>
-      </div>
-
-      <div class="label">
-        <a class="label-text-alt link link-hover" routerLink="/auth/register">{{ 'LOGIN.NO_ACCOUNT' | translate }}</a>
-      </div>
+      <a hlmBtn variant="link" class="self-start px-0" routerLink="/auth/register">{{ 'LOGIN.NO_ACCOUNT' | translate }}</a>
     </form>
-  </div>
+  </section>
 </div>

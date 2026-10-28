@@ -1,23 +1,23 @@
 import {ChangeDetectionStrategy, Component, input, output} from '@angular/core';
 import {NgIconComponent} from '@ng-icons/core';
 
+import {HlmInputGroupImports} from '@spartan-ng/helm/input-group';
 @Component({
   selector: 'app-search-input',
   standalone: true,
-  imports: [NgIconComponent],
+  imports: [NgIconComponent, HlmInputGroupImports],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="flex justify-center mb-8 w-full">
-      <div class="flex items-center w-full max-w-md">
-        <div
-          class="flex items-center w-full bg-base-100 h-10 rounded-lg px-4 gap-2 border border-neutral focus-within:ring-2 focus-within:ring-neutral/80">
-          <ng-icon name="heroMagnifyingGlass" class="opacity-70"></ng-icon>
-          <input type="text"
-                 class="bg-transparent w-full outline-none"
-                 [placeholder]="placeholder()"
-                 [value]="value()"
-                 (input)="onInput($event)"/>
+      <div hlmInputGroup class="w-full max-w-md h-11 md:h-10 bg-card">
+        <div hlmInputGroupAddon>
+          <ng-icon name="heroMagnifyingGlass" aria-hidden="true"/>
         </div>
+        <input hlmInputGroupInput type="search"
+               [placeholder]="placeholder()"
+               [attr.aria-label]="placeholder()"
+               [value]="value()"
+               (input)="onInput($event)"/>
       </div>
     </div>
   `

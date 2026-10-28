@@ -12,10 +12,12 @@ import {formatDuration} from '../../wod.utils';
  * The current user's scores on the WOD, newest first, with edit/delete when Aldebaran allows it (a
  * verified competition score is locked). Shows who verified a score, or logged it for the user.
  */
+import {HlmBadge} from '@spartan-ng/helm/badge';
+import {HlmButton} from '@spartan-ng/helm/button';
 @Component({
   selector: 'app-score-history',
   standalone: true,
-  imports: [TranslatePipe, NgIconComponent],
+  imports: [HlmButton, HlmBadge, TranslatePipe, NgIconComponent],
   templateUrl: './score-history.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush
 })

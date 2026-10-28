@@ -1,4 +1,4 @@
-import {ChangeDetectionStrategy, Component, computed, effect, inject, signal} from '@angular/core';
+import {ChangeDetectionStrategy, Component, computed, DestroyRef, DOCUMENT, effect, inject, signal} from '@angular/core';
 import {toSignal} from '@angular/core/rxjs-interop';
 import {FormBuilder, ReactiveFormsModule} from '@angular/forms';
 import {TranslatePipe, TranslateService} from '@ngx-translate/core';
@@ -27,10 +27,16 @@ function today(): string {
  * follow the WOD's score type; loads are typed in the user's unit and stored in kg by Aldebaran,
  * which also checks the value required by the score type and the right to log for someone else.
  */
+import {HlmSpinner} from '@spartan-ng/helm/spinner';
+import {NativeSelectDirective} from '../../../../shared/component/native-select/native-select.directive';
+import {HlmButton} from '@spartan-ng/helm/button';
+import {HlmInput} from '@spartan-ng/helm/input';
+import {HlmTextarea} from '@spartan-ng/helm/textarea';
+import {CdkTrapFocus} from '@angular/cdk/a11y';
 @Component({
   selector: 'app-score-form',
   standalone: true,
-  imports: [ReactiveFormsModule, TranslatePipe, NgIconComponent],
+  imports: [CdkTrapFocus, HlmTextarea, HlmInput, HlmButton, NativeSelectDirective, HlmSpinner, ReactiveFormsModule, TranslatePipe, NgIconComponent],
   templateUrl: './score-form.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
@@ -126,6 +132,9 @@ export class ScoreFormComponent {
 
   // --- LIFECYCLE ---
   constructor() {
+    // The dialog gives focus back to the button that opened it
+    const opener = inject(DOCUMENT).activeElement as HTMLElement | null;
+    inject(DestroyRef).onDestroy(() => opener?.focus());
     effect(() => {
       const editing = this.store.editing();
       if (editing && editing !== 'new') this.fill(editing);

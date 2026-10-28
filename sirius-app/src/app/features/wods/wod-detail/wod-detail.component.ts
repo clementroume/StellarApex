@@ -1,4 +1,4 @@
-import {ChangeDetectionStrategy, Component, computed, effect, inject, input, signal} from '@angular/core';
+import {ChangeDetectionStrategy, Component, computed, DOCUMENT, effect, inject, input, signal} from '@angular/core';
 import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
 import {TranslatePipe, TranslateService} from '@ngx-translate/core';
 import {Router, RouterModule} from '@angular/router';
@@ -33,16 +33,22 @@ const FORMAT_SCHEME = /^(amrap|emom|tabata|for time)\b/i;
 // Rep schemes that describe the structure rather than list the movement quantities
 const STRUCTURE_SCHEME = /round|tier|window|rm\b| x /i;
 
+import {HlmSpinner} from '@spartan-ng/helm/spinner';
+import {NativeSelectDirective} from '../../../shared/component/native-select/native-select.directive';
+import {HlmBadge} from '@spartan-ng/helm/badge';
+import {HlmButton} from '@spartan-ng/helm/button';
+import {CdkTrapFocus} from '@angular/cdk/a11y';
 @Component({
   selector: 'app-wod-detail',
   standalone: true,
-  imports: [TranslatePipe, RouterModule, NgIconComponent, DetailAdminActionsComponent, DetailCardComponent, DetailHeaderComponent, DetailStateComponent, ScoreBestComponent, ScoreHistoryComponent, ScoreFormComponent, ScoreLeaderboardComponent],
+  imports: [CdkTrapFocus, HlmButton, HlmBadge, NativeSelectDirective, HlmSpinner, TranslatePipe, RouterModule, NgIconComponent, DetailAdminActionsComponent, DetailCardComponent, DetailHeaderComponent, DetailStateComponent, ScoreBestComponent, ScoreHistoryComponent, ScoreFormComponent, ScoreLeaderboardComponent],
   providers: [WodScoresStore],
   templateUrl: './wod-detail.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class WodDetailComponent {
   // --- INJECTIONS ---
+  private readonly document = inject(DOCUMENT);
   id = input.required<string>();
   private readonly translate = inject(TranslateService);
   private readonly wodService = inject(WodService);
@@ -146,6 +152,8 @@ export class WodDetailComponent {
 
   closeCopy(): void {
     this.copyDraft.set(null);
+    // Give focus back to the button that opened the dialog
+    queueMicrotask(() => this.document.getElementById('copy-wod')?.focus());
   }
 
   onCopyGymChange(value: string): void {

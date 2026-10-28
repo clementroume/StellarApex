@@ -4,6 +4,7 @@ import {provideHttpClient, withXhr} from '@angular/common/http';
 import {provideHttpClientTesting} from '@angular/common/http/testing';
 import {provideTranslateService, TranslateService} from '@ngx-translate/core';
 import {AuthService} from './api/antares/services/auth.service';
+import {AppUpdateService} from './core/services/app-update.service';
 
 describe('AppComponent', () => {
   beforeEach(async () => {
@@ -14,7 +15,8 @@ describe('AppComponent', () => {
       providers: [
         provideHttpClient(withXhr()),
         provideHttpClientTesting(),
-        provideTranslateService()
+        provideTranslateService(),
+        {provide: AppUpdateService, useValue: {watch: () => undefined}}
       ]
     }).compileComponents();
   });

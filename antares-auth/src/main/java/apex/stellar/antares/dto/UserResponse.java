@@ -16,6 +16,7 @@ import java.util.List;
  * @param memberships List of gyms the user belongs to (Summary view).
  * @param locale User's preferred locale.
  * @param theme User's preferred theme.
+ * @param palette User's UI colour palette (ocean, chalk, volt, rig).
  * @param unitSystem Display unit for loads (METRIC, IMPERIAL), or null to follow the language.
  * @param publicLeaderboardName Whether the name is shown on public leaderboards.
  * @param createdAt Account creation timestamp.
@@ -30,6 +31,7 @@ public record UserResponse(
     @Schema(description = "List of associated Gyms") List<MembershipSummary> memberships,
     @Schema(description = "Preferred language", example = "en") String locale,
     @Schema(description = "UI Theme preference", example = "dark") String theme,
+    @Schema(description = "UI colour palette", example = "ocean") String palette,
     @Schema(
             description = "Display unit for loads, null follows the language",
             example = "METRIC",
@@ -50,7 +52,7 @@ public record UserResponse(
    */
   public UserResponse withSupportSession(SupportSessionInfo session) {
     return new UserResponse(
-        id, firstName, lastName, email, platformRole, memberships, locale, theme, unitSystem,
+        id, firstName, lastName, email, platformRole, memberships, locale, theme, palette, unitSystem,
         publicLeaderboardName, createdAt, session);
   }
 }

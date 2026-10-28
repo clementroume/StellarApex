@@ -19,10 +19,12 @@ export interface MuscleRow {
   isMember: boolean;
 }
 
+import {ListGroupComponent} from '../../../shared/component/list/list-group/list-group.component';
+import {HlmButton} from '@spartan-ng/helm/button';
 @Component({
   selector: 'app-muscle-list',
   standalone: true,
-  imports: [RouterModule, TranslatePipe, NgIcon, SearchInputComponent, ListStateComponent, ListItemComponent, ListGridComponent],
+  imports: [ListGroupComponent, HlmButton, RouterModule, TranslatePipe, NgIcon, SearchInputComponent, ListStateComponent, ListItemComponent, ListGridComponent],
   templateUrl: './muscle-list.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -148,9 +150,8 @@ export class MuscleListComponent implements OnInit {
     }
   }
 
-  onGroupToggle(group: string, event: Event): void {
-    const isChecked = (event.target as HTMLInputElement).checked;
-    this.muscleService.toggleGroupExpansion(group, isChecked);
+  onGroupToggle(group: string, isExpanded: boolean): void {
+    this.muscleService.toggleGroupExpansion(group, isExpanded);
   }
 
   exportCsv(): void {

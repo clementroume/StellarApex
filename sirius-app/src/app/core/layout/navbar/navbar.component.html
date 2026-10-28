@@ -1,114 +1,41 @@
-<div class="navbar bg-base-100 shadow-lg">
+<header class="sticky top-0 z-40 bg-card/95 backdrop-blur border-b supports-[backdrop-filter]:bg-card/80">
+  <div class="mx-auto flex h-14 max-w-7xl items-center gap-2 px-3 md:px-6">
+    <a routerLink="/today" class="text-lg md:text-xl font-bold tracking-tight shrink-0">StellarApex</a>
 
-  <div class="navbar-start w-auto md:hidden">
-    <div class="dropdown">
+    <!-- Spaces (desktop); mobile uses the bottom tab bar -->
+    <nav class="hidden md:flex items-center gap-1 ml-4" [attr.aria-label]="'NAVBAR.SPACES.LABEL' | translate">
+      @for (space of spacesService.spaces(); track space.key) {
+        <a [routerLink]="space.link"
+           class="flex items-center gap-2 h-9 px-3 rounded-md text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+           [class.bg-muted]="spacesService.current()?.key === space.key"
+           [class.text-foreground]="spacesService.current()?.key === space.key"
+           [attr.aria-current]="spacesService.current()?.key === space.key ? 'page' : null">
+          <ng-icon [name]="space.icon" size="1.1rem" aria-hidden="true"/>
+          {{ space.label | translate }}
+        </a>
+      }
+    </nav>
 
-      <button class="btn btn-ghost btn-circle" aria-label="Ouvrir le menu">
-        <ng-icon name="heroBars3" size="1.5em"></ng-icon>
+    <div class="ml-auto flex items-center gap-1">
+      @if (displayGym.hasChoice()) {
+        <app-gym-selector [value]="displayGym.gymId()" (valueChange)="displayGym.select($event)"/>
+      }
+
+      <button hlmBtn variant="ghost" size="icon" id="theme-toggle" type="button" (click)="themeService.toggleTheme()"
+              [attr.aria-label]="'NAVBAR.TOGGLE_THEME' | translate" [attr.aria-pressed]="themeService.currentTheme() === 'dark'">
+        <ng-icon [name]="themeService.currentTheme() === 'dark' ? 'heroSun' : 'heroMoon'" size="1.25rem" class="text-accent"
+                 aria-hidden="true"/>
       </button>
 
-      <ul class="menu menu-sm dropdown-content mt-3 z-1 p-2 shadow bg-base-100 rounded-box w-52">
-        <li>
-          <a routerLink="/dashboard" routerLinkActive="active">
-            <ng-icon name="hugeDashboardSpeed01" size="1.2em"></ng-icon>
-            {{ 'NAVBAR.DASHBOARD' | translate }}
-          </a>
-        </li>
-        <li>
-          <a routerLink="/wods" routerLinkActive="active">
-            <ng-icon name="hugeKettlebell" size="1.2em"></ng-icon>
-            {{ 'NAVBAR.WODS' | translate }}
-          </a>
-        </li>
-        <li>
-          <a routerLink="/movements" routerLinkActive="active">
-            <ng-icon name="hugeWorkoutStretching" size="1.2em"></ng-icon>
-            {{ 'NAVBAR.MOVEMENTS' | translate }}
-          </a>
-        </li>
-        <li>
-          <a routerLink="/muscles" routerLinkActive="active">
-            <ng-icon name="hugeBodyPartMuscle" size="1.2em"></ng-icon>
-            {{ 'NAVBAR.MUSCLES' | translate }}
-          </a>
-        </li>
-        @if (accessService.isAdmin()) {
-          <li>
-            <a routerLink="/admin/support" routerLinkActive="active">
-              <ng-icon name="heroLifebuoy" size="1.2em"></ng-icon>
-              {{ 'NAVBAR.SUPPORT' | translate }}
-            </a>
-          </li>
-        }
-      </ul>
+      <a hlmBtn variant="ghost" size="icon" routerLink="/my-account" routerLinkActive="bg-muted"
+         [attr.aria-label]="'NAVBAR.MY_ACCOUNT' | translate">
+        <ng-icon name="heroUser" size="1.25rem" aria-hidden="true"/>
+      </a>
 
+      <button hlmBtn variant="ghost" size="icon" type="button" class="text-destructive hover:text-destructive"
+              (click)="logout()" [attr.aria-label]="'NAVBAR.LOG_OUT' | translate">
+        <ng-icon name="heroArrowRightOnRectangle" size="1.25rem" aria-hidden="true"/>
+      </button>
     </div>
   </div>
-
-  <div class="navbar-start w-auto flex-1 md:flex-none ml-2 md:ml-0">
-    <div class="btn btn-ghost text-xl hover:bg-transparent cursor-default">StellarApex</div>
-  </div>
-
-  <div class="navbar-center hidden md:flex flex-1 ml-4">
-    <ul class="menu menu-horizontal px-1 gap-1.5">
-      <li>
-        <a routerLink="/dashboard" routerLinkActive="active">
-          <ng-icon name="hugeDashboardSpeed01" size="1.2em"></ng-icon>
-          {{ 'NAVBAR.DASHBOARD' | translate }}
-        </a>
-      </li>
-      <li>
-        <a routerLink="/wods" routerLinkActive="active">
-          <ng-icon name="hugeKettlebell" size="1.2em"></ng-icon>
-          {{ 'NAVBAR.WODS' | translate }}
-        </a>
-      </li>
-      <li>
-        <a routerLink="/movements" routerLinkActive="active">
-          <ng-icon name="hugeWorkoutStretching" size="1.2em"></ng-icon>
-          {{ 'NAVBAR.MOVEMENTS' | translate }}
-        </a>
-      </li>
-      <li>
-        <a routerLink="/muscles" routerLinkActive="active">
-          <ng-icon name="hugeBodyPartMuscle" size="1.2em"></ng-icon>
-          {{ 'NAVBAR.MUSCLES' | translate }}
-        </a>
-      </li>
-      @if (accessService.isAdmin()) {
-        <li>
-          <a routerLink="/admin/support" routerLinkActive="active">
-            <ng-icon name="heroLifebuoy" size="1.2em"></ng-icon>
-            {{ 'NAVBAR.SUPPORT' | translate }}
-          </a>
-        </li>
-      }
-    </ul>
-  </div>
-
-  <div class="navbar-end w-auto gap-1 pr-1">
-
-    <label class="btn btn-ghost btn-circle swap swap-rotate" for="theme-toggle"
-           [title]="'NAVBAR.TOGGLE_THEME' | translate">
-      <span class="sr-only">{{ 'NAVBAR.TOGGLE_THEME' | translate }}</span>
-      <input
-        (change)="themeService.toggleTheme()"
-        [checked]="themeService.currentTheme() === 'dark'"
-        id="theme-toggle"
-        type="checkbox"
-      />
-      <ng-icon name="heroMoon" class="swap-off" color="var(--color-accent)" size="1.5em"></ng-icon>
-      <ng-icon name="heroSun" class="swap-on" color="var(--color-accent)" size="1.5em"></ng-icon>
-    </label>
-
-    <a class="btn btn-ghost btn-circle" routerLink="/my-account" [title]="'NAVBAR.MY_ACCOUNT' | translate">
-      <ng-icon name="heroUser" size="1.5em"></ng-icon>
-    </a>
-
-    <a class="btn btn-ghost btn-circle text-error hover:bg-error/10 hover:text-error" (click)="logout()"
-       [title]="'NAVBAR.LOG_OUT' | translate">
-      <ng-icon name="heroArrowRightOnRectangle" size="1.5em"></ng-icon>
-    </a>
-
-  </div>
-</div>
+</header>

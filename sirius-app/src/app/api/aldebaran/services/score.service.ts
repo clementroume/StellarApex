@@ -1,5 +1,5 @@
 import {inject, Injectable} from '@angular/core';
-import {HttpClient, HttpParams} from '@angular/common/http';
+import {HttpClient, HttpContext, HttpParams} from '@angular/common/http';
 import {Observable} from 'rxjs';
 import {environment} from '../../../../environments/environment';
 import {ScoreComparisonResponse, ScoreReferenceData, ScoreRequest, ScoreResponse} from '../models/score.model';
@@ -10,7 +10,7 @@ import {Slice} from '../../../core/models/pagination.model';
 export class ScoreService {
   private readonly http = inject(HttpClient);
 
-  getMyScores(wodId?: number, page: number = 0, size: number = 20): Observable<Slice<ScoreResponse>> {
+  getMyScores(wodId?: number, page: number = 0, size: number = 20, context?: HttpContext): Observable<Slice<ScoreResponse>> {
     let params = new HttpParams()
       .set('page', page)
       .set('size', size);
@@ -19,7 +19,7 @@ export class ScoreService {
       params = params.set('wodId', wodId);
     }
 
-    return this.http.get<Slice<ScoreResponse>>(this.buildUrl('/me'), {params});
+    return this.http.get<Slice<ScoreResponse>>(this.buildUrl('/me'), {params, context});
   }
 
   logScore(request: ScoreRequest): Observable<ScoreResponse> {

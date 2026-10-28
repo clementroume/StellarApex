@@ -27,21 +27,29 @@
     "DELETE_SUCCESS": "Element deleted successfully.",
     "DELETE_ERROR": "An error occurred while deleting.",
     "VIDEO": "Video",
-    "NO_VIDEO": "No video"
+    "NO_VIDEO": "No video",
+    "CLEAR": "Clear",
+    "LOADING": "Loading…",
+    "REQUIRED": "This field is required.",
+    "COMING_SOON": "Coming soon",
+    "UPDATE_READY": "A new version of StellarApex is available.",
+    "RELOAD": "Reload"
   },
   "NAVBAR": {
-    "DASHBOARD": "Dashboard",
     "WODS": "WODs",
     "MUSCLES": "Muscles",
-    "SUPPORT": "Support",
     "MOVEMENTS": "Movement",
     "MY_ACCOUNT": "My Account",
     "LOG_OUT": "Log out",
-    "TOGGLE_THEME": "Toggle light/dark theme"
-  },
-  "DASHBOARD": {
-    "TITLE": "Dashboard",
-    "WELCOME": "Welcome to Stellar Apex!"
+    "TOGGLE_THEME": "Toggle light/dark theme",
+    "SPACES": {
+      "LABEL": "Spaces",
+      "TODAY": "Today",
+      "TRAINING": "My training",
+      "BOX": "My box",
+      "CATALOG": "Catalog",
+      "ADMIN": "Admin"
+    }
   },
   "LOGIN": {
     "TITLE": "Welcome back!",
@@ -68,7 +76,8 @@
       "TITLE": "My boxes and programs",
       "NO_PERMISSION": "No specific permission here.",
       "NONE": "You are not a member of any box or program."
-    }
+    },
+    "VERIFIED": "Verified"
   },
   "SETTINGS": {
     "TITLE": "Security",
@@ -89,7 +98,28 @@
     "PUBLIC_LEADERBOARD_NAME": "Show my name on public leaderboards",
     "PUBLIC_LEADERBOARD_NAME_HINT": "Members of your boxes and programs always see your name. Otherwise you appear as an anonymous athlete.",
     "PRIVACY_SAVED": "Privacy setting saved.",
-    "PRIVACY_ERROR": "The privacy setting could not be saved."
+    "PRIVACY_ERROR": "The privacy setting could not be saved.",
+    "APPEARANCE_TITLE": "Appearance",
+    "PALETTE_LABEL": "Colour palette",
+    "PALETTE_HINT": "Pick the colours of your space. Light/dark mode is in the navigation bar.",
+    "PALETTES": {
+      "ocean": {
+        "NAME": "Ocean",
+        "DESC": "Navy, cyan and orange"
+      },
+      "chalk": {
+        "NAME": "Chalk and iron",
+        "DESC": "Zinc and box orange"
+      },
+      "volt": {
+        "NAME": "Volt",
+        "DESC": "Charcoal and electric green"
+      },
+      "rig": {
+        "NAME": "Rig red",
+        "DESC": "Warm black, red and amber"
+      }
+    }
   },
   "UNITS": {
     "TITLE": "Units",
@@ -202,7 +232,8 @@
       "COACHING_CUES_FR": "Coaching Cues (FR)",
       "COACHING_CUES_EN": "Coaching Cues (EN)",
       "IMAGE_URL": "Image URL",
-      "VIDEO_URL": "Video URL (YouTube/Vimeo)"
+      "VIDEO_URL": "Video URL (YouTube/Vimeo)",
+      "MODALITY": "Modality"
     },
     "PLACEHOLDERS": {
       "NAME": "Ex: Back Squat",
@@ -481,7 +512,8 @@
       "TIEBREAK_FR": "Tiebreak (French)",
       "TIEBREAK_EN": "Tiebreak (English)",
       "REPS_PER_ROUND": "Reps per round (optional)",
-      "COMPETITION": "Competition"
+      "COMPETITION": "Competition",
+      "SCOPE": "Scope"
     },
     "PLACEHOLDERS": {
       "TITLE": "E.g. Fran",
@@ -732,6 +764,73 @@
         "LABEL": "Settings",
         "DESCRIPTION": "Can change the box or program settings (enrollment code, automatic registration)."
       }
+    }
+  },
+  "SHARED": {
+    "MOVEMENT_COMBOBOX": {
+      "LABEL": "Movement",
+      "PLACEHOLDER": "Search a movement…",
+      "NO_RESULT": "No movement found",
+      "TOGGLE": "Show movements"
+    },
+    "GYM_SELECTOR": {
+      "LABEL": "Displayed box or program",
+      "ALL": "All my boxes/programs",
+      "BOX": "Box",
+      "PROG": "Program"
+    }
+  },
+  "TODAY": {
+    "TITLE": "Today",
+    "GREETING": "Hi {{name}}, today is {{date}}.",
+    "LOG_SCORE": "Log a score",
+    "PR": "PR",
+    "SESSION": {
+      "TITLE": "Today's session",
+      "COMING": "The session programmed by your box or program will show here, with \"Done\" and your score entry.",
+      "SEE_WODS": "See the WODs"
+    },
+    "SCORES": {
+      "TITLE": "Latest scores",
+      "EMPTY": "No score yet: log your first WOD.",
+      "ERROR": "Your scores could not be loaded."
+    },
+    "RECORDS": {
+      "TITLE": "Latest PRs",
+      "EMPTY": "No PR yet: it will come!"
+    }
+  },
+  "TRAINING": {
+    "JOURNAL": {
+      "TITLE": "Journal",
+      "SUBTITLE": "All your scores, newest first.",
+      "MORE": "Show more"
+    },
+    "RECORDS": {
+      "TITLE": "Records",
+      "COMING": "Your records per movement (1RM, 3RM, max reps…) and their progress will show here."
+    },
+    "REVIEW": {
+      "TITLE": "Review",
+      "COMING": "Your review (volume, muscle load, split by modality) will show here."
+    }
+  },
+  "BOX": {
+    "SESSIONS": {
+      "TITLE": "Sessions",
+      "COMING": "The sessions programmed by your box or program will show here."
+    },
+    "LEADERBOARDS": {
+      "TITLE": "Leaderboards",
+      "COMING": "Your box or program leaderboards will show here. Meanwhile, they are on each WOD."
+    },
+    "MEMBERS": {
+      "TITLE": "Members",
+      "COMING": "Member management (requests, roles, permissions) comes in the next lot."
+    },
+    "SETTINGS": {
+      "TITLE": "Settings",
+      "COMING": "Box and program settings come in the next lot."
     }
   }
 }

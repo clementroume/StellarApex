@@ -1,0 +1,208 @@
+/*
+ * spartan/ui (D42) wiring, imported by styles.css. Brain primitives come from npm, helm styles are
+ * copied in src/app/shared/ui. The spartan preset is not imported (its `container` and colour mapping
+ * differ): this file keeps its state variants and maps every token to the palette variables of
+ * palettes.css. Brand colours keep the app's meaning: primary, secondary = records (PR), accent = brand
+ * orange; helm code therefore uses `muted` where spartan uses a subtle secondary/accent.
+ */
+@import "@angular/cdk/overlay-prebuilt.css";
+@import "tw-animate-css";
+
+/* The light/dark theme is data-theme on <html> (ThemeService), not a .dark class. */
+@custom-variant dark (&:where([data-theme=dark], [data-theme=dark] *));
+
+/* State variants from @spartan-ng/brain/hlm-tailwind-preset.css */
+@custom-variant data-open {
+	&:where([data-state='open']),
+	&:where([data-open]:not([data-open='false'])) {
+		@slot;
+	}
+}
+@custom-variant data-closed {
+	&:where([data-state='closed']),
+	&:where([data-closed]:not([data-closed='false'])) {
+		@slot;
+	}
+}
+@custom-variant data-checked {
+	&:where([data-state='checked']),
+	&:where([data-checked]:not([data-checked='false'])) {
+		@slot;
+	}
+}
+@custom-variant data-unchecked {
+	&:where([data-state='unchecked']),
+	&:where([data-unchecked]:not([data-unchecked='false'])) {
+		@slot;
+	}
+}
+@custom-variant data-selected {
+	&:where([data-selected='true']) {
+		@slot;
+	}
+}
+@custom-variant data-disabled {
+	&:where([data-disabled='true']),
+	&:where([data-disabled]:not([data-disabled='false'])) {
+		@slot;
+	}
+}
+@custom-variant data-active {
+	&:where([data-state='active']),
+	&:where([data-active]:not([data-active='false'])) {
+		@slot;
+	}
+}
+@custom-variant data-horizontal {
+	&:where([data-orientation='horizontal']) {
+		@slot;
+	}
+}
+@custom-variant data-vertical {
+	&:where([data-orientation='vertical']) {
+		@slot;
+	}
+}
+
+@utility no-scrollbar {
+	-ms-overflow-style: none;
+	scrollbar-width: none;
+
+	&::-webkit-scrollbar {
+		display: none;
+	}
+}
+
+@theme inline {
+  /* Brand and status colours (text on them: *-content) */
+  --color-primary: var(--sa-primary);
+  --color-primary-content: var(--sa-primary-content);
+  --color-secondary: var(--sa-secondary);
+  --color-secondary-content: var(--sa-secondary-content);
+  --color-accent: var(--sa-accent);
+  --color-accent-content: var(--sa-accent-content);
+  --color-neutral: var(--sa-neutral);
+  --color-neutral-content: var(--sa-neutral-content);
+  --color-info: var(--sa-info);
+  --color-info-content: var(--sa-info-content);
+  --color-success: var(--sa-success);
+  --color-success-content: var(--sa-success-content);
+  --color-warning: var(--sa-warning);
+  --color-warning-content: var(--sa-warning-content);
+  --color-error: var(--sa-error);
+  --color-error-content: var(--sa-error-content);
+
+  /* spartan tokens */
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border-color);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --animate-indeterminate: indeterminate 1.5s ease-in-out infinite;
+
+  @keyframes indeterminate {
+    0% { transform: translateX(-100%) scaleX(0.5); }
+    100% { transform: translateX(100%) scaleX(0.5); }
+  }
+}
+
+/* Spartan token values (named --border-color to keep --border free). */
+:root {
+  --radius: 0.5rem;
+  --background: var(--sa-base-200);
+  --foreground: var(--sa-base-content);
+  --card: var(--sa-base-100);
+  --card-foreground: var(--sa-base-content);
+  --popover: var(--sa-base-100);
+  --popover-foreground: var(--sa-base-content);
+  --primary-foreground: var(--sa-primary-content);
+  --muted: color-mix(in oklab, var(--sa-base-300) 60%, var(--sa-base-100));
+  --muted-foreground: color-mix(in oklab, var(--sa-base-content) 65%, transparent);
+  --destructive: var(--sa-error);
+  --border-color: var(--sa-base-300);
+  --input: var(--sa-base-300);
+  --ring: var(--sa-primary);
+  --sidebar: var(--sa-base-100);
+  --sidebar-foreground: var(--sa-base-content);
+  --sidebar-primary: var(--sa-primary);
+  --sidebar-primary-foreground: var(--sa-primary-content);
+  --sidebar-accent: var(--muted);
+  --sidebar-accent-foreground: var(--sa-base-content);
+  --sidebar-border: var(--sa-base-300);
+  --sidebar-ring: var(--sa-primary);
+}
+
+@layer base {
+  /* Spartan default: borders use the border token instead of Tailwind 4's currentColor. */
+  *, ::after, ::before, ::backdrop, ::file-selector-button {
+    border-color: var(--color-border);
+  }
+
+  :root {
+    color-scheme: dark;
+  }
+
+  :root[data-theme=light] {
+    color-scheme: light;
+  }
+
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    -webkit-tap-highlight-color: transparent;
+  }
+}
+
+/* Controls joined side by side (e.g. men/women load + unit): shared borders, outer corners only. */
+@utility field-group {
+  display: flex;
+  & > * { border-radius: 0; }
+  & > *:not(:first-child) { margin-inline-start: -1px; }
+  & > *:first-child { border-start-start-radius: var(--radius-md); border-end-start-radius: var(--radius-md); }
+  & > *:last-child { border-start-end-radius: var(--radius-md); border-end-end-radius: var(--radius-md); }
+  & > *:focus-visible { position: relative; z-index: 1; }
+}
+
+/* Native checkbox drawn as a spartan switch (keeps formControlName / change bindings); add role="switch". */
+@utility switch {
+  appearance: none;
+  flex-shrink: 0;
+  position: relative;
+  width: 2.25rem;
+  height: 1.25rem;
+  border-radius: 9999px;
+  background: var(--color-input);
+  cursor: pointer;
+  transition: background-color 150ms;
+  &::before {
+    content: "";
+    position: absolute;
+    top: 0.125rem;
+    left: 0.125rem;
+    width: 1rem;
+    height: 1rem;
+    border-radius: 9999px;
+    background: var(--color-background);
+    transition: transform 150ms;
+  }
+  &:checked { background: var(--color-primary); }
+  &:checked::before { transform: translateX(1rem); }
+  &:focus-visible { outline: 2px solid var(--color-ring); outline-offset: 2px; }
+  &:disabled { cursor: not-allowed; opacity: 0.5; }
+}

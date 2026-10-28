@@ -23,10 +23,17 @@ export const USER_PAGE_SIZE = 20;
 export const SUPPORT_ROLES: GymRole[] = ['OWNER', 'PROGRAMMER', 'COACH', 'ATHLETE'];
 export const SUPPORT_STATUSES: MembershipStatus[] = ['ACTIVE', 'PENDING', 'INACTIVE', 'BANNED'];
 
+import {HlmSpinner} from '@spartan-ng/helm/spinner';
+import {NativeSelectDirective} from '../../../shared/component/native-select/native-select.directive';
+import {HlmAlertImports} from '@spartan-ng/helm/alert';
+import {HlmBadge} from '@spartan-ng/helm/badge';
+import {HlmButton} from '@spartan-ng/helm/button';
+import {HlmCardImports} from '@spartan-ng/helm/card';
+import {HlmTextarea} from '@spartan-ng/helm/textarea';
 @Component({
   selector: 'app-support',
   standalone: true,
-  imports: [ReactiveFormsModule, NgTemplateOutlet, TranslatePipe, NgIcon, SearchInputComponent],
+  imports: [HlmTextarea, HlmCardImports, HlmButton, HlmBadge, HlmAlertImports, NativeSelectDirective, HlmSpinner, ReactiveFormsModule, NgTemplateOutlet, TranslatePipe, NgIcon, SearchInputComponent],
   templateUrl: './support.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {'(document:keydown.escape)': 'clearSelection()'}

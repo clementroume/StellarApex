@@ -21,10 +21,11 @@ const PAGE_SIZE = 50;
  * On a competition WOD only verified scores are ranked by default; judges verify, correct or delete
  * scores from here (`ScoreResponse.capabilities`, computed by Aldebaran).
  */
+import {HlmButton} from '@spartan-ng/helm/button';
 @Component({
   selector: 'app-score-leaderboard',
   standalone: true,
-  imports: [TranslatePipe, NgIconComponent],
+  imports: [HlmButton, TranslatePipe, NgIconComponent],
   templateUrl: './score-leaderboard.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush
 })

@@ -1,58 +1,51 @@
-<div class="hero-content flex-col lg:flex-row-reverse">
-  <div class="text-center lg:text-left lg:pl-10">
-    <h1 class="text-5xl font-bold">{{ 'REGISTER.TITLE' | translate }}</h1>
-    <p class="py-6">{{ 'REGISTER.SUBTITLE' | translate }}</p>
+<div class="w-full max-w-4xl flex flex-col lg:flex-row-reverse items-center gap-8 lg:gap-16">
+  <div class="text-center lg:text-left lg:flex-1">
+    <h1 class="text-4xl md:text-5xl font-bold">{{ 'REGISTER.TITLE' | translate }}</h1>
+    <p class="pt-4 text-muted-foreground">{{ 'REGISTER.SUBTITLE' | translate }}</p>
   </div>
 
-  <div class="card shrink-0 w-full max-w-sm shadow-2xl bg-base-100">
-    <form (ngSubmit)="onSubmit()" [formGroup]="registerForm" class="card-body">
+  <section hlmCard class="w-full max-w-sm">
+    <form hlmCardContent class="flex flex-col gap-4" (ngSubmit)="onSubmit()" [formGroup]="registerForm">
+      <app-form-field for="register-first-name" icon="heroUser" [label]="'GLOBAL.FIRST_NAME' | translate"
+                      [error]="invalid('firstName') ? ('GLOBAL.REQUIRED' | translate) : null">
+        <input hlmInputGroupInput id="register-first-name" formControlName="firstName" type="text" maxlength="50"
+               autocomplete="given-name" aria-describedby="register-first-name-message"
+               [placeholder]="'GLOBAL.FIRST_NAME_PH' | translate" [attr.aria-invalid]="invalid('firstName')" required/>
+      </app-form-field>
 
-      <div class="input validator w-full">
-        <ng-icon name="heroUser" class="opacity-50"></ng-icon>
-        <input [placeholder]="'GLOBAL.FIRST_NAME_PH' | translate"
-               formControlName="firstName" maxlength="50" required type="text"/>
-      </div>
+      <app-form-field for="register-last-name" icon="heroUser" [label]="'GLOBAL.LAST_NAME' | translate"
+                      [error]="invalid('lastName') ? ('GLOBAL.REQUIRED' | translate) : null">
+        <input hlmInputGroupInput id="register-last-name" formControlName="lastName" type="text" maxlength="50"
+               autocomplete="family-name" aria-describedby="register-last-name-message"
+               [placeholder]="'GLOBAL.LAST_NAME_PH' | translate" [attr.aria-invalid]="invalid('lastName')" required/>
+      </app-form-field>
 
-      <div class="input validator w-full mt-4">
-        <ng-icon name="heroUser" class="opacity-50"></ng-icon>
-        <input [placeholder]="'GLOBAL.LAST_NAME_PH' | translate"
-               formControlName="lastName" maxlength="50" required type="text"/>
-      </div>
+      <app-form-field for="register-email" icon="heroEnvelope" [label]="'GLOBAL.EMAIL' | translate"
+                      [error]="invalid('email') ? ('GLOBAL.ERROR_EMAIL' | translate) : null">
+        <input hlmInputGroupInput id="register-email" formControlName="email" type="email" autocomplete="email"
+               aria-describedby="register-email-message" [attr.aria-invalid]="invalid('email')" required/>
+      </app-form-field>
 
-      <div class="input validator w-full mt-4">
-        <ng-icon name="heroEnvelope" class="opacity-50"></ng-icon>
-        <input formControlName="email"
-               [placeholder]="'GLOBAL.EMAIL' | translate"
-               required type="email"/>
-      </div>
-      <div class="validator-hint hidden">{{ 'GLOBAL.ERROR_EMAIL' | translate }}</div>
+      <app-form-field for="register-password" icon="heroKey" [label]="'GLOBAL.PASSWORD' | translate"
+                      [hint]="'GLOBAL.ERROR_PASSWORD_RULES' | translate"
+                      [error]="invalid('password') ? ('GLOBAL.ERROR_PASSWORD_RULES' | translate) : null">
+        <input hlmInputGroupInput id="register-password" formControlName="password" type="password"
+               autocomplete="new-password" aria-describedby="register-password-message"
+               [attr.aria-invalid]="invalid('password')" required/>
+      </app-form-field>
 
-      <div class="input validator w-full mt-4">
-        <ng-icon name="heroKey" class="opacity-50"></ng-icon>
-        <input formControlName="password" minlength="8" pattern="(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{8,}"
-               [placeholder]="'GLOBAL.PASSWORD' | translate"
-               required type="password"/>
-      </div>
-      <p class="validator-hint hidden text-xs">{{ 'GLOBAL.ERROR_PASSWORD_RULES' | translate }}</p>
+      <app-form-field for="register-confirmation" icon="heroKey" [label]="'GLOBAL.CONFIRM_PASSWORD' | translate"
+                      [error]="passwordsMismatch() ? ('GLOBAL.PASSWORDS_MISMATCH' | translate) : null">
+        <input hlmInputGroupInput id="register-confirmation" formControlName="confirmationPassword" type="password"
+               autocomplete="new-password" aria-describedby="register-confirmation-message"
+               [attr.aria-invalid]="passwordsMismatch()" required/>
+      </app-form-field>
 
-      <div class="input validator w-full mt-4">
-        <ng-icon name="heroKey" class="opacity-50"></ng-icon>
-        <input [placeholder]="'GLOBAL.CONFIRM_PASSWORD' | translate"
-               formControlName="confirmationPassword" required type="password"/>
-      </div>
-      @if (registerForm.errors?.['passwordsMismatch'] && registerForm.get('confirmationPassword')?.touched) {
-        <p class="validator-hint text-error text-xs mt-1">{{ 'GLOBAL.PASSWORDS_MISMATCH' | translate }}</p>
-      }
+      <button hlmBtn size="lg" class="h-11 mt-2" type="submit" [disabled]="registerForm.invalid">
+        {{ 'REGISTER.SIGN_UP' | translate }}
+      </button>
 
-      <div class="form-control mt-6">
-        <button [disabled]="registerForm.invalid" class="btn btn-primary"
-                type="submit">{{ 'REGISTER.SIGN_UP' | translate }}
-        </button>
-      </div>
-
-      <div class="label">
-        <a class="label-text-alt link link-hover" routerLink="/auth/login">{{ 'REGISTER.HAVE_ACCOUNT' | translate }}</a>
-      </div>
+      <a hlmBtn variant="link" class="self-start px-0" routerLink="/auth/login">{{ 'REGISTER.HAVE_ACCOUNT' | translate }}</a>
     </form>
-  </div>
+  </section>
 </div>

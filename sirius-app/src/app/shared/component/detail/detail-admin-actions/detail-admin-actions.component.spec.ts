@@ -35,7 +35,7 @@ describe('DetailAdminActionsComponent', () => {
 
   it('should emit delete event on button click', () => {
     vi.spyOn(component.delete, 'emit');
-    const deleteBtn = fixture.nativeElement.querySelector('button.btn-error');
+    const deleteBtn = fixture.nativeElement.querySelector('button');
     deleteBtn.click();
     expect(component.delete.emit).toHaveBeenCalled();
   });

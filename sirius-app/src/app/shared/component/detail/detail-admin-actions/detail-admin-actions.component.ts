@@ -3,19 +3,20 @@ import {RouterModule} from '@angular/router';
 import {TranslatePipe} from '@ngx-translate/core';
 import {NgIcon} from '@ng-icons/core';
 
+import {HlmButton} from '@spartan-ng/helm/button';
 @Component({
   selector: 'app-detail-admin-actions',
   standalone: true,
-  imports: [RouterModule, TranslatePipe, NgIcon],
+  imports: [RouterModule, TranslatePipe, NgIcon, HlmButton],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="pt-8 flex flex-col md:flex-row justify-end gap-4">
-      <button class="btn btn-outline btn-error min-w-36" (click)="delete.emit()">
-        <ng-icon name="heroTrash" size="1.5rem"></ng-icon>
+    <div class="pt-8 flex flex-col md:flex-row justify-end gap-3">
+      <button hlmBtn variant="destructive" size="lg" class="min-w-36" (click)="delete.emit()">
+        <ng-icon name="heroTrash" aria-hidden="true"/>
         {{ 'GLOBAL.DELETE' | translate }}
       </button>
-      <a [routerLink]="editLink()" class="btn btn-secondary min-w-36">
-        <ng-icon name="heroPencilSquare" size="1.5rem"></ng-icon>
+      <a hlmBtn size="lg" class="min-w-36" [routerLink]="editLink()">
+        <ng-icon name="heroPencilSquare" aria-hidden="true"/>
         {{ 'GLOBAL.EDIT' | translate }}
       </a>
     </div>

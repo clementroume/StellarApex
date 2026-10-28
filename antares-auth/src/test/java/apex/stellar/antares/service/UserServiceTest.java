@@ -108,7 +108,7 @@ class UserServiceTest {
   @DisplayName("updatePreferences: should update and save")
   void testUpdatePreferences_shouldUpdateAndSave() {
     // Given
-    PreferencesUpdateRequest request = new PreferencesUpdateRequest("fr", "dark", null, null);
+    PreferencesUpdateRequest request = new PreferencesUpdateRequest("fr", "dark", null, null, null);
     when(userRepository.save(testUser)).thenReturn(testUser);
     when(userMapper.toUserResponse(testUser)).thenReturn(mock(UserResponse.class));
 

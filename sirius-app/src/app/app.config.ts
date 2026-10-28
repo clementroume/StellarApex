@@ -1,4 +1,5 @@
-import {ApplicationConfig} from '@angular/core';
+import {ApplicationConfig, isDevMode} from '@angular/core';
+import {provideServiceWorker} from '@angular/service-worker';
 import {provideRouter, withComponentInputBinding, withViewTransitions} from '@angular/router';
 import {provideHttpClient, withInterceptors, withXhr, withXsrfConfiguration} from '@angular/common/http';
 
@@ -14,7 +15,6 @@ import {
   heroArrowLeft,
   heroArrowRightOnRectangle,
   heroArrowUp,
-  heroBars3,
   heroBuildingOffice,
   heroChevronDown,
   heroChevronRight,
@@ -43,13 +43,21 @@ import {
   heroXMark,
   heroCheckBadge,
   heroDocumentDuplicate,
+  heroHome,
+  heroBookOpen,
+  heroChartBar,
+  heroUsers,
+  heroCalendarDays,
+  heroClipboardDocumentList,
+  heroArrowTrendingUp,
+  heroCheckCircle,
+  heroAdjustmentsHorizontal,
 } from '@ng-icons/heroicons/outline';
 import {
   hugeBodyPartMuscle,
   hugeBodyPartSixPack,
   hugeCardiogram02,
   hugeCircleArrowLeft02,
-  hugeDashboardSpeed01,
   hugeDumbbell01,
   hugeGymnastic,
   hugeKettlebell,
@@ -79,9 +87,7 @@ export const APP_ICONS = {
   hugeWorkoutStretching,
   heroVideoCamera,
   heroPlay,
-  heroBars3,
   heroArrowRightOnRectangle,
-  hugeDashboardSpeed01,
   hugeCircleArrowLeft02,
   heroDocumentArrowDown,
   hugeGymnastic,
@@ -98,7 +104,8 @@ export const APP_ICONS = {
   heroXMark,
   heroTrophy,
   heroCheckBadge,
-  heroDocumentDuplicate
+  heroDocumentDuplicate,
+  heroHome, heroBookOpen, heroChartBar, heroUsers, heroCalendarDays, heroClipboardDocumentList, heroArrowTrendingUp, heroCheckCircle, heroAdjustmentsHorizontal
 };
 
 export const appConfig: ApplicationConfig = {
@@ -137,6 +144,12 @@ export const appConfig: ApplicationConfig = {
     }),
 
     // 4. GLOBAL ICON IMPORT
-    provideIcons(APP_ICONS)
+    provideIcons(APP_ICONS),
+
+    // 5. PWA (D40): installable, app shell cached; API calls always go to the network (ngsw-config.json)
+    provideServiceWorker('ngsw-worker.js', {
+      enabled: !isDevMode(),
+      registrationStrategy: 'registerWhenStable:30000'
+    })
   ],
 };

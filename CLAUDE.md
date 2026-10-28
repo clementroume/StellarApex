@@ -9,7 +9,7 @@ Monorepo: one folder per service, each with its own build. Service-specific guid
 | `antares-auth`       | Antares   | Auth (JWT in HttpOnly cookies), users, gyms, memberships; Traefik forward-auth | Java 25, Spring Boot 4.1, PostgreSQL, Redis |
 | `aldebaran-training` | Aldebaran | Sport domain: muscles, movements, WODs, scores               | Java 25, Spring Boot 4.1, PostgreSQL   |
 | `bellatrix-swagger`  | Bellatrix | Swagger/OpenAPI aggregator                                    | Spring Boot                            |
-| `sirius-app`         | Sirius    | Frontend                                                      | Angular 22, Tailwind 4, DaisyUI 5, Vitest |
+| `sirius-app`         | Sirius    | Frontend                                                      | Angular 22, Tailwind 4, spartan/ui, Vitest |
 | `dynamic/`           | Altair    | Traefik dynamic config (routers, middlewares, forward-auth)   | Traefik 3                              |
 
 Infra: `docker-compose.yml` (Traefik `altair-proxy`, `castor-db` PostgreSQL 18, `pollux-cache` Redis 8),
@@ -97,8 +97,8 @@ Admin support session: a platform admin acts as a real (non-admin) user from Sir
 refreshable `support_token` cookie (admin cookies untouched), records it in `support_sessions`, and
 resolves requests as the target; writes are allowed and audited (`X-Auth-Actor-Id`). Expiry → 401
 ProblemDetail `code=SUPPORT_SESSION_EXPIRED`, never a silent fallback to admin; password change,
-account deletion and preference (language/theme/unit system) updates → 403 `SUPPORT_SESSION_FORBIDDEN`;
-Sirius keeps the admin's language/theme/unit on screen. `/users/me` carries `supportSession` while active.
+account deletion and preference (language/theme/palette/unit system) updates → 403 `SUPPORT_SESSION_FORBIDDEN`;
+Sirius keeps the admin's language/theme/palette/unit on screen. `/users/me` carries `supportSession` while active.
 
 Temporary dev data (`dev` Spring profile, set in `docker-compose.yml`, to be removed like the CSV
 export): test gyms "Spartacus CrossFit" (physical), "Zeus Programming" (virtual), "Pending Box" and

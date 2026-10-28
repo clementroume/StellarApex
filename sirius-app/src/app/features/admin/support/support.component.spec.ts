@@ -142,7 +142,7 @@ describe('SupportComponent', () => {
     fixture.detectChanges();
 
     expect(component.selectedUser()).toBe(athlete);
-    const selected = fixture.nativeElement.querySelector('button[aria-pressed="true"]');
+    const selected = fixture.nativeElement.querySelector('[data-slot="support-user"][aria-pressed="true"]');
     expect(selected.classList).toContain('ring-2');
     expect(selected.textContent).toContain('athlete@sparta.com');
   });

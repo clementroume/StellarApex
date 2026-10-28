@@ -31,6 +31,6 @@ describe('adminGuard', () => {
 
   it('should block a regular user (or an admin acting as one) and redirect', () => {
     expect(executeGuard({} as any, {} as any)).toBe(false);
-    expect(mockRouter.navigate).toHaveBeenCalledWith(['/dashboard']);
+    expect(mockRouter.navigate).toHaveBeenCalledWith(['/today']);
   });
 });

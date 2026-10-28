@@ -32,7 +32,7 @@ export class SupportSessionService {
   start(userId: number, reason: string): Observable<void> {
     return this.adminService.startSupportSession({userId, reason}).pipe(
       switchMap(() => this.authService.initCurrentUser()),
-      tap(() => void this.router.navigate(['/dashboard'])),
+      tap(() => void this.router.navigate(['/today'])),
       map(() => undefined)
     );
   }

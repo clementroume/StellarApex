@@ -2,6 +2,7 @@ import {ComponentFixture, TestBed} from '@angular/core/testing';
 import {GlobalLoaderComponent} from './global-loader.component';
 import {LoadingService} from '../../services/loading.service';
 import {signal, WritableSignal} from '@angular/core';
+import {provideTranslateService} from '@ngx-translate/core';
 
 describe('GlobalLoaderComponent', () => {
   let component: GlobalLoaderComponent;
@@ -14,6 +15,7 @@ describe('GlobalLoaderComponent', () => {
     await TestBed.configureTestingModule({
       imports: [GlobalLoaderComponent],
       providers: [
+        provideTranslateService(),
         {
           provide: LoadingService,
           useValue: {isLoading: mockIsLoading.asReadonly()}
@@ -33,14 +35,14 @@ describe('GlobalLoaderComponent', () => {
   it('should not display the loader when isLoading is false', () => {
     mockIsLoading.set(false);
     fixture.detectChanges();
-    const loaderElement = fixture.nativeElement.querySelector('.progress');
+    const loaderElement = fixture.nativeElement.querySelector('[role="progressbar"]');
     expect(loaderElement).toBeNull();
   });
 
   it('should display the loader when isLoading is true', () => {
     mockIsLoading.set(true);
     fixture.detectChanges();
-    const loaderElement = fixture.nativeElement.querySelector('.progress');
+    const loaderElement = fixture.nativeElement.querySelector('[role="progressbar"]');
     expect(loaderElement).not.toBeNull();
   });
 });

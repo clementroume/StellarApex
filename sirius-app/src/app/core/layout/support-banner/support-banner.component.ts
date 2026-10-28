@@ -1,6 +1,7 @@
 import {ChangeDetectionStrategy, Component, computed, DestroyRef, effect, inject, signal} from '@angular/core';
 import {TranslatePipe} from '@ngx-translate/core';
 import {NgIcon} from '@ng-icons/core';
+import {HlmButton} from '@spartan-ng/helm/button';
 import {AuthService} from '../../../api/antares/services/auth.service';
 import {SupportSessionService} from '../../services/support-session.service';
 import {formatDuration} from '../../../features/wods/wod.utils';
@@ -8,7 +9,7 @@ import {formatDuration} from '../../../features/wods/wod.utils';
 @Component({
   selector: 'app-support-banner',
   standalone: true,
-  imports: [TranslatePipe, NgIcon],
+  imports: [TranslatePipe, NgIcon, HlmButton],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (supportSessionService.session(); as session) {
@@ -18,7 +19,8 @@ import {formatDuration} from '../../../features/wods/wod.utils';
           {{ 'ADMIN.SUPPORT.BANNER' | translate: {name: targetName(), actor: session.actor.firstName + ' ' + session.actor.lastName} }}
         </span>
         <span class="opacity-80">{{ 'ADMIN.SUPPORT.REMAINING' | translate: {time: remaining()} }}</span>
-        <button type="button" class="btn btn-xs" [disabled]="isEnding()" (click)="end()">
+        <button hlmBtn type="button" size="xs" variant="outline" class="bg-transparent border-current"
+                [disabled]="isEnding()" (click)="end()">
           {{ 'ADMIN.SUPPORT.END' | translate }}
         </button>
       </div>

@@ -9,7 +9,7 @@ frontend, and an infrastructure stack with reverse proxy, databases, and monitor
 | Component     | Technology                             |
 |---------------|----------------------------------------|
 | Backend       | Java 25, Spring Boot 4.1                               |
-| Frontend      | Angular 22, TypeScript, Tailwind CSS 4, DaisyUI 5      |
+| Frontend      | Angular 22, TypeScript, Tailwind CSS 4, spartan/ui     |
 | Database      | PostgreSQL 18 (Flyway migrations)                      |
 | Cache         | Redis 8                                                |
 | Reverse Proxy | Traefik 3.7                                            |
@@ -34,7 +34,7 @@ frontend, and an infrastructure stack with reverse proxy, databases, and monitor
 
 ### Frontend
 
-- **Sirius** (`sirius-app`): Angular 22 application with Tailwind CSS 4 and DaisyUI 5 (FR/EN)
+- **Sirius** (`sirius-app`): Angular 22 PWA with Tailwind CSS 4 and spartan/ui, mobile first, navigation by spaces (FR/EN)
     - Movements, muscles and WODs (list, detail, form) with UI adapted to the user's rights
     - Admin support page (`/admin/support`) to act as a user
 

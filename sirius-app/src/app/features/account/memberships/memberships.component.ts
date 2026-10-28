@@ -1,6 +1,8 @@
 import {ChangeDetectionStrategy, Component, computed, inject} from '@angular/core';
 import {TranslatePipe} from '@ngx-translate/core';
 import {NgIcon} from '@ng-icons/core';
+import {HlmBadge} from '@spartan-ng/helm/badge';
+import {HlmCardImports} from '@spartan-ng/helm/card';
 import {AuthService} from '../../../api/antares/services/auth.service';
 
 /**
@@ -12,26 +14,27 @@ import {AuthService} from '../../../api/antares/services/auth.service';
 @Component({
   selector: 'app-memberships',
   standalone: true,
-  imports: [TranslatePipe, NgIcon],
+  imports: [TranslatePipe, NgIcon, HlmBadge, HlmCardImports],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="card bg-base-100">
-      <div class="card-body">
-        <h2 class="card-title flex gap-2 mb-2">
-          <ng-icon name="heroBuildingOffice" class="text-2xl"></ng-icon>
+    <section hlmCard>
+      <div hlmCardHeader>
+        <h2 hlmCardTitle class="flex items-center gap-2 text-xl">
+          <ng-icon name="heroBuildingOffice" size="1.5rem" aria-hidden="true"/>
           {{ 'PROFILE.GYMS.TITLE' | translate }}
         </h2>
-
+      </div>
+      <div hlmCardContent class="flex flex-col gap-3">
         @for (m of memberships(); track m.gymId) {
-          <div class="border border-base-300 rounded-box p-4 flex flex-col gap-3">
+          <div class="border rounded-lg p-4 flex flex-col gap-3">
             <div class="flex flex-wrap items-center gap-2">
               <span class="font-semibold text-lg">{{ m.gymName }}</span>
-              <span class="badge badge-primary badge-soft">{{ 'GYM.ROLES.' + m.gymRole | translate }}</span>
+              <span hlmBadge class="bg-primary/15 text-primary">{{ 'GYM.ROLES.' + m.gymRole | translate }}</span>
               @if (m.status !== 'ACTIVE') {
-                <span class="badge badge-warning badge-soft">{{ 'GYM.STATUS.' + m.status | translate }}</span>
+                <span hlmBadge class="bg-warning/15 text-warning">{{ 'GYM.STATUS.' + m.status | translate }}</span>
               }
               @if (m.gymStatus !== 'ACTIVE') {
-                <span class="badge badge-ghost">{{ 'GYM.GYM_STATUS.' + m.gymStatus | translate }}</span>
+                <span hlmBadge variant="secondary">{{ 'GYM.GYM_STATUS.' + m.gymStatus | translate }}</span>
               }
             </div>
 
@@ -39,22 +42,22 @@ import {AuthService} from '../../../api/antares/services/auth.service';
               <ul class="flex flex-col gap-2">
                 @for (permission of m.permissions; track permission) {
                   <li class="flex items-start gap-2">
-                    <span class="badge badge-secondary badge-soft shrink-0">
+                    <span hlmBadge class="shrink-0 bg-secondary/15 text-secondary">
                       {{ 'GYM.PERMISSIONS.' + permission + '.LABEL' | translate }}
                     </span>
-                    <span class="text-sm opacity-80">{{ 'GYM.PERMISSIONS.' + permission + '.DESCRIPTION' | translate }}</span>
+                    <span class="text-sm text-muted-foreground">{{ 'GYM.PERMISSIONS.' + permission + '.DESCRIPTION' | translate }}</span>
                   </li>
                 }
               </ul>
             } @else {
-              <p class="text-sm opacity-70">{{ 'PROFILE.GYMS.NO_PERMISSION' | translate }}</p>
+              <p class="text-sm text-muted-foreground">{{ 'PROFILE.GYMS.NO_PERMISSION' | translate }}</p>
             }
           </div>
         } @empty {
-          <p class="opacity-70">{{ 'PROFILE.GYMS.NONE' | translate }}</p>
+          <p class="text-muted-foreground">{{ 'PROFILE.GYMS.NONE' | translate }}</p>
         }
       </div>
-    </div>
+    </section>
   `
 })
 export class MembershipsComponent {

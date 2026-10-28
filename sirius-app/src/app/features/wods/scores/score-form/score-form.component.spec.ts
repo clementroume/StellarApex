@@ -149,7 +149,8 @@ describe('ScoreFormComponent', () => {
 
   it('should close without saving', () => {
     init('NONE');
-    (fixture.nativeElement.querySelector('.modal-action .btn-ghost') as HTMLButtonElement).click();
+    (Array.from(fixture.nativeElement.querySelectorAll('button') as NodeListOf<HTMLButtonElement>)
+      .find(b => b.textContent?.trim() === 'GLOBAL.CANCEL')!).click();
     expect(store.close).toHaveBeenCalled();
     expect(component.isValueMissing()).toBe(false);
   });
