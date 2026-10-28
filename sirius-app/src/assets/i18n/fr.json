@@ -36,10 +36,8 @@
     "RELOAD": "Recharger"
   },
   "NAVBAR": {
-    "DASHBOARD": "Dashboard",
     "WODS": "WODs",
     "MUSCLES": "Muscles",
-    "SUPPORT": "Support",
     "MOVEMENTS": "Mouvements",
     "MY_ACCOUNT": "Mon Compte",
     "LOG_OUT": "Se déconnecter",
