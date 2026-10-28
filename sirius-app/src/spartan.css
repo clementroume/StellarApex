@@ -128,3 +128,10 @@
   --sidebar-border: var(--sa-base-300);
   --sidebar-ring: var(--sa-primary);
 }
+
+/* Spartan default: borders use the border token instead of Tailwind 4's currentColor. */
+@layer base {
+  *, ::after, ::before, ::backdrop, ::file-selector-button {
+    border-color: var(--color-border);
+  }
+}

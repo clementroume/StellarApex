@@ -1,6 +1,7 @@
 import {ChangeDetectionStrategy, Component, inject} from '@angular/core';
 import {TranslatePipe} from '@ngx-translate/core';
 import {NgIcon} from '@ng-icons/core';
+import {HlmCardImports} from '@spartan-ng/helm/card';
 import {UnitService} from '../../../core/services/unit.service';
 import {UnitSystem} from '../../../api/antares/models/user.model';
 
@@ -8,7 +9,7 @@ import {UnitSystem} from '../../../api/antares/models/user.model';
 @Component({
   selector: 'app-units',
   standalone: true,
-  imports: [TranslatePipe, NgIcon],
+  imports: [TranslatePipe, NgIcon, HlmCardImports],
   templateUrl: './units.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

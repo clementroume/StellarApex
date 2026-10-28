@@ -99,3 +99,4 @@ Vitest (jsdom) through `ng test`. Commands: `npm test`, `npm run build`, `npm st
   of CSS, of which DaisyUI ~150 kB). Helm in the shell brings `tailwind-merge` (~37 kB) into the
   initial JS. Expected after DaisyUI removal: ~550 kB. Keep heavy brain modules out of the shell
   (sonner is loaded on first toast and its toaster is `@defer (on idle)`).
+  `@spartan-ng/helm/utils` must not re-export `provideSpartanHlm` (it drags `@angular/cdk/overlay` in).

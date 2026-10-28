@@ -71,7 +71,8 @@
       "TITLE": "Mes boxes et progs",
       "NO_PERMISSION": "Aucune permission particulière ici.",
       "NONE": "Tu n'es membre d'aucune box ni prog."
-    }
+    },
+    "VERIFIED": "Vérifié"
   },
   "SETTINGS": {
     "TITLE": "Sécurité",

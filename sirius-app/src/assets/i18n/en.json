@@ -71,7 +71,8 @@
       "TITLE": "My boxes and programs",
       "NO_PERMISSION": "No specific permission here.",
       "NONE": "You are not a member of any box or program."
-    }
+    },
+    "VERIFIED": "Verified"
   },
   "SETTINGS": {
     "TITLE": "Security",

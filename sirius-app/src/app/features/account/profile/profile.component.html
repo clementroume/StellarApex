@@ -1,84 +1,70 @@
-<div class="card bg-base-100">
-  <div class="card-body">
-    <div class="flex justify-between items-center mb-4">
-      <h2 class="card-title flex gap-2">
-        <ng-icon name="heroUser" class="text-2xl"></ng-icon>
-        {{ 'PROFILE.TITLE' | translate }}
-      </h2>
-      @if (!isEditing) {
-        <button (click)="enterEditMode()" [title]="'GLOBAL.EDIT' | translate"
-                class="btn btn-ghost btn-sm btn-square">
-          <ng-icon name="heroPencilSquare" class="text-2xl"></ng-icon>
-        </button>
-      }
-    </div>
+<section hlmCard>
+  <div hlmCardHeader class="flex flex-row items-center justify-between">
+    <h2 hlmCardTitle class="flex items-center gap-2 text-xl">
+      <ng-icon name="heroUser" size="1.5rem" aria-hidden="true"/>
+      {{ 'PROFILE.TITLE' | translate }}
+    </h2>
+    @if (!isEditing) {
+      <button hlmBtn variant="ghost" size="icon" (click)="enterEditMode()" [attr.aria-label]="'GLOBAL.EDIT' | translate">
+        <ng-icon name="heroPencilSquare" size="1.25rem" aria-hidden="true"/>
+      </button>
+    }
+  </div>
 
+  <div hlmCardContent>
     @if (authService.currentUser(); as user) {
       @if (!isEditing) {
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <dl class="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div class="flex flex-col gap-1">
-            <span class="text-xs font-bold text-base-content/50 uppercase">{{ 'GLOBAL.FIRST_NAME' | translate }}</span>
-            <span class="font-medium text-lg">{{ user.firstName }}</span>
+            <dt class="text-xs font-bold text-muted-foreground uppercase">{{ 'GLOBAL.FIRST_NAME' | translate }}</dt>
+            <dd class="font-medium text-lg">{{ user.firstName }}</dd>
           </div>
           <div class="flex flex-col gap-1">
-            <span class="text-xs font-bold text-base-content/50 uppercase">{{ 'GLOBAL.LAST_NAME' | translate }}</span>
-            <span class="font-medium text-lg">{{ user.lastName }}</span>
+            <dt class="text-xs font-bold text-muted-foreground uppercase">{{ 'GLOBAL.LAST_NAME' | translate }}</dt>
+            <dd class="font-medium text-lg">{{ user.lastName }}</dd>
           </div>
           <div class="flex flex-col gap-1 md:col-span-2">
-            <span class="text-xs font-bold text-base-content/50 uppercase">{{ 'GLOBAL.EMAIL' | translate }}</span>
-            <div class="flex items-center gap-2 text-lg">
-              <span class="font-medium">{{ user.email }}</span>
-              <div class="badge badge-success badge-xs badge-outline">Verified</div>
-            </div>
+            <dt class="text-xs font-bold text-muted-foreground uppercase">{{ 'GLOBAL.EMAIL' | translate }}</dt>
+            <dd class="flex items-center gap-2 text-lg">
+              <span class="font-medium break-all">{{ user.email }}</span>
+              <span hlmBadge variant="outline" class="text-success border-success/40">{{ 'PROFILE.VERIFIED' | translate }}</span>
+            </dd>
           </div>
-        </div>
-      }
+        </dl>
+      } @else {
+        <form class="flex flex-col gap-4" (ngSubmit)="onSubmit()" [formGroup]="profileForm">
+          <app-form-field for="firstName" icon="heroUser" [label]="'GLOBAL.FIRST_NAME' | translate"
+                          [error]="invalid('firstName') ? ('GLOBAL.ERROR_MAX_50' | translate) : null">
+            <input hlmInputGroupInput id="firstName" formControlName="firstName" type="text" maxlength="50" required
+                   autocomplete="given-name" aria-describedby="firstName-message"
+                   [placeholder]="'GLOBAL.FIRST_NAME_PH' | translate" [attr.aria-invalid]="invalid('firstName')"/>
+          </app-form-field>
 
-      @if (isEditing) {
-        <form (ngSubmit)="onSubmit()" [formGroup]="profileForm">
-          <fieldset class="fieldset bg-base-200/50 border-base-300 rounded-box w-full border p-4">
-            <legend class="fieldset-legend">{{ 'ACCOUNT.MENU_INFO' | translate }}</legend>
+          <app-form-field for="lastName" icon="heroUser" [label]="'GLOBAL.LAST_NAME' | translate"
+                          [error]="invalid('lastName') ? ('GLOBAL.ERROR_MAX_50' | translate) : null">
+            <input hlmInputGroupInput id="lastName" formControlName="lastName" type="text" maxlength="50" required
+                   autocomplete="family-name" aria-describedby="lastName-message"
+                   [placeholder]="'GLOBAL.LAST_NAME_PH' | translate" [attr.aria-invalid]="invalid('lastName')"/>
+          </app-form-field>
 
-            <label class="fieldset-label" for="firstName">{{ 'GLOBAL.FIRST_NAME' | translate }}</label>
-            <div class="input validator w-full">
-              <ng-icon name="heroUser" class="text-xl"></ng-icon>
-              <input id="firstName" [placeholder]="'GLOBAL.FIRST_NAME_PH' | translate" formControlName="firstName"
-                     maxlength="50"
-                     required type="text"/>
-            </div>
-            <p class="validator-hint hidden">{{ 'GLOBAL.ERROR_MAX_50' | translate }}</p>
+          <app-form-field for="email" icon="heroEnvelope" [label]="'GLOBAL.EMAIL' | translate"
+                          [error]="invalid('email') ? ('GLOBAL.ERROR_EMAIL' | translate) : null">
+            <input hlmInputGroupInput id="email" formControlName="email" type="email" required autocomplete="email"
+                   aria-describedby="email-message" [attr.aria-invalid]="invalid('email')"/>
+          </app-form-field>
 
-            <label class="fieldset-label mt-3" for="lastName">{{ 'GLOBAL.LAST_NAME' | translate }}</label>
-            <div class="input validator w-full">
-              <ng-icon name="heroUser" class="text-xl"></ng-icon>
-              <input id="lastName" [placeholder]="'GLOBAL.LAST_NAME_PH' | translate" formControlName="lastName"
-                     maxlength="50"
-                     required type="text"/>
-            </div>
-            <p class="validator-hint hidden">{{ 'GLOBAL.ERROR_MAX_50' | translate }}</p>
-
-            <label class="fieldset-label mt-3" for="email">{{ 'GLOBAL.EMAIL' | translate }}</label>
-            <div class="input validator w-full">
-              <ng-icon name="heroEnvelope" class="text-xl"></ng-icon>
-              <input id="email" formControlName="email" required type="email"
-                     [placeholder]="'GLOBAL.EMAIL' | translate"/>
-            </div>
-            <div class="validator-hint hidden">{{ 'GLOBAL.ERROR_EMAIL' | translate }}</div>
-
-            <div class="card-actions justify-end mt-6">
-              <button (click)="onCancel()" class="btn btn-ghost" type="button">{{ 'GLOBAL.CANCEL' | translate }}
-              </button>
-              <button [disabled]="profileForm.invalid || profileForm.pristine" class="btn btn-primary"
-                      type="submit">{{ 'GLOBAL.SAVE' | translate }}
-              </button>
-            </div>
-          </fieldset>
+          <div class="flex flex-col-reverse sm:flex-row justify-end gap-2 mt-2">
+            <button hlmBtn variant="ghost" size="lg" type="button" (click)="onCancel()">{{ 'GLOBAL.CANCEL' | translate }}</button>
+            <button hlmBtn size="lg" type="submit" [disabled]="profileForm.invalid || profileForm.pristine">
+              {{ 'GLOBAL.SAVE' | translate }}
+            </button>
+          </div>
         </form>
       }
     }
   </div>
-</div>
+</section>
 
-<div class="mt-8">
+<div class="mt-6 md:mt-8">
   <app-memberships></app-memberships>
 </div>

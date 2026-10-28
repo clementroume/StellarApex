@@ -65,13 +65,6 @@ describe('SettingsComponent', () => {
     translateService.use('en');
 
     fixture.detectChanges();
-
-    component.deleteModal = {
-      nativeElement: {
-        showModal: vi.fn().mockName("HTMLDialogElement.showModal"),
-        close: vi.fn().mockName("HTMLDialogElement.close")
-      } as any
-    };
   });
 
   it('should create', () => {
@@ -119,7 +112,7 @@ describe('SettingsComponent', () => {
   describe('Delete Account', () => {
     it('should open the confirmation modal', () => {
       component.openDeleteConfirmation();
-      expect(component.deleteModal.nativeElement.showModal).toHaveBeenCalled();
+      expect(component.deleteDialogState()).toBe('open');
     });
 
     it('should call deleteAccount service on confirmation and close modal on success', () => {
@@ -128,7 +121,7 @@ describe('SettingsComponent', () => {
       component.confirmDeleteAccount();
 
       expect(userServiceSpy.deleteAccount).toHaveBeenCalled();
-      expect(component.deleteModal.nativeElement.close).toHaveBeenCalled();
+      expect(component.deleteDialogState()).toBe('closed');
       expect(notificationServiceSpy.showSuccess).toHaveBeenCalledWith('SETTINGS.SUCCESS_DELETE');
     });
 
@@ -141,7 +134,7 @@ describe('SettingsComponent', () => {
 
       component.confirmDeleteAccount();
 
-      expect(component.deleteModal.nativeElement.close).toHaveBeenCalled();
+      expect(component.deleteDialogState()).toBe('closed');
       expect(notificationServiceSpy.showError).toHaveBeenCalledWith('Deletion failed');
     });
   });
@@ -165,7 +158,7 @@ describe('SettingsComponent', () => {
       supportSession: {id: 1, actor: {id: 1, firstName: 'Ad', lastName: 'Min'}, reason: 'Bug', expiresAt: ''}
     } as UserResponse);
 
-    component.changeLanguage({target: {value: 'fr'}} as unknown as Event);
+    component.changeLanguage('fr');
 
     expect(translateService.currentLang()).toBe('fr');
     expect(userServiceSpy.updatePreferences).not.toHaveBeenCalled();
@@ -174,8 +167,27 @@ describe('SettingsComponent', () => {
   it('should save the language outside a support session', () => {
     userServiceSpy.updatePreferences.mockReturnValue(of({} as UserResponse));
 
-    component.changeLanguage({target: {value: 'fr'}} as unknown as Event);
+    component.changeLanguage('fr');
 
     expect(userServiceSpy.updatePreferences).toHaveBeenCalledWith({locale: 'fr', theme: 'light', unitSystem: null});
+  });
+
+  it('should save the leaderboard name consent', () => {
+    userServiceSpy.updatePreferences.mockReturnValue(of({} as UserResponse));
+
+    component.changePublicLeaderboardName(true);
+
+    expect(component.publicLeaderboardName()).toBe(true);
+    expect(userServiceSpy.updatePreferences).toHaveBeenCalledWith(
+      {locale: 'en', theme: 'light', unitSystem: null, publicLeaderboardName: true});
+  });
+
+  it('should revert the leaderboard name switch when saving fails', () => {
+    userServiceSpy.updatePreferences.mockReturnValue(throwError(() => new HttpErrorResponse({status: 500})));
+
+    component.changePublicLeaderboardName(true);
+
+    expect(component.publicLeaderboardName()).toBe(false);
+    expect(notificationServiceSpy.showError).toHaveBeenCalledWith('SETTINGS.PRIVACY_ERROR');
   });
 });

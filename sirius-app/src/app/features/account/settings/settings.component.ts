@@ -1,4 +1,4 @@
-import {ChangeDetectionStrategy, Component, computed, ElementRef, inject, ViewChild} from '@angular/core';
+import {ChangeDetectionStrategy, Component, computed, inject, linkedSignal, signal} from '@angular/core';
 import {CommonModule} from '@angular/common';
 import {
   AbstractControl,
@@ -18,6 +18,16 @@ import {PreferencesUpdateRequest} from '../../../api/antares/models/user.model';
 import {ProblemDetail} from '../../../core/models/problem-detail.model';
 import {NgIcon} from '@ng-icons/core';
 import {PalettePickerComponent} from '../../../shared/component/palette-picker/palette-picker.component';
+import {FormFieldComponent} from '../../../shared/component/form-field/form-field.component';
+import {HlmButton} from '@spartan-ng/helm/button';
+import {HlmCardImports} from '@spartan-ng/helm/card';
+import {HlmAlertImports} from '@spartan-ng/helm/alert';
+import {HlmAlertDialogImports} from '@spartan-ng/helm/alert-dialog';
+import {HlmInputGroupImports} from '@spartan-ng/helm/input-group';
+import {HlmLabel} from '@spartan-ng/helm/label';
+import {HlmNativeSelectImports} from '@spartan-ng/helm/native-select';
+import {HlmSwitchImports} from '@spartan-ng/helm/switch';
+import {BrnDialogState} from '@spartan-ng/brain/dialog';
 
 export const passwordMatchValidator: ValidatorFn = (control: AbstractControl): ValidationErrors | null => {
   const newPassword = control.get('newPassword');
@@ -28,14 +38,17 @@ export const passwordMatchValidator: ValidatorFn = (control: AbstractControl): V
 @Component({
   selector: 'app-settings',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, TranslatePipe, NgIcon, PalettePickerComponent],
+  imports: [CommonModule, ReactiveFormsModule, TranslatePipe, NgIcon, PalettePickerComponent, FormFieldComponent, HlmButton,
+    HlmCardImports, HlmAlertImports, HlmAlertDialogImports, HlmInputGroupImports, HlmLabel, HlmNativeSelectImports,
+    HlmSwitchImports],
   templateUrl: './settings.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class SettingsComponent {
   public readonly passwordForm: FormGroup;
   public readonly translate = inject(TranslateService);
-  @ViewChild('deleteModal') deleteModal!: ElementRef<HTMLDialogElement>;
+  /** Account deletion confirmation (spartan alert dialog). */
+  readonly deleteDialogState = signal<BrnDialogState>('closed');
   private readonly authService = inject(AuthService);
   private readonly userService = inject(UserService);
   private readonly fb = inject(FormBuilder);
@@ -43,7 +56,8 @@ export class SettingsComponent {
 
   /** Antares refuses password changes and account deletion during an admin support session. */
   readonly isSupportSession = computed(() => !!this.authService.currentUser()?.supportSession);
-  readonly publicLeaderboardName = computed(() => !!this.authService.currentUser()?.publicLeaderboardName);
+  /** Shown at once on toggle, reverted if Antares refuses the change. */
+  readonly publicLeaderboardName = linkedSignal(() => !!this.authService.currentUser()?.publicLeaderboardName);
 
   constructor() {
     this.passwordForm = this.fb.group({
@@ -73,8 +87,8 @@ export class SettingsComponent {
     });
   }
 
-  changeLanguage(event: Event): void {
-    const lang = (event.target as HTMLSelectElement).value;
+  changeLanguage(lang: string | null | undefined): void {
+    if (!lang) return;
     this.translate.use(lang);
 
     const currentUser = this.authService.currentUser();
@@ -97,10 +111,10 @@ export class SettingsComponent {
   }
 
   /** Consent to show the name on public leaderboards (gym mates always see it). */
-  changePublicLeaderboardName(event: Event): void {
+  changePublicLeaderboardName(checked: boolean): void {
     const currentUser = this.authService.currentUser();
     if (!currentUser || currentUser.supportSession) return;
-    const checked = (event.target as HTMLInputElement).checked;
+    this.publicLeaderboardName.set(checked);
     this.userService.updatePreferences({
       locale: currentUser.locale,
       theme: currentUser.theme,
@@ -109,18 +123,18 @@ export class SettingsComponent {
     }).subscribe({
       next: () => this.notificationService.showSuccess(this.translate.instant('SETTINGS.PRIVACY_SAVED')),
       error: () => {
-        (event.target as HTMLInputElement).checked = !checked;
+        this.publicLeaderboardName.set(!checked);
         this.notificationService.showError(this.translate.instant('SETTINGS.PRIVACY_ERROR'));
       }
     });
   }
 
   openDeleteConfirmation(): void {
-    this.deleteModal.nativeElement.showModal();
+    this.deleteDialogState.set('open');
   }
 
   closeDeleteConfirmation(): void {
-    this.deleteModal.nativeElement.close();
+    this.deleteDialogState.set('closed');
   }
 
   confirmDeleteAccount(): void {
@@ -139,5 +153,15 @@ export class SettingsComponent {
         this.notificationService.showError(message);
       }
     });
+  }
+
+  /** A control's error is shown once the user has left it. */
+  protected invalid(name: string): boolean {
+    const control = this.passwordForm.get(name);
+    return !!control && control.invalid && control.touched;
+  }
+
+  protected passwordsMismatch(): boolean {
+    return !!this.passwordForm.errors?.['passwordsMismatch'] && !!this.passwordForm.get('confirmationPassword')?.touched;
   }
 }

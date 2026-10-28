@@ -11,4 +11,10 @@ import {NgIcon} from '@ng-icons/core';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AccountComponent {
+  // --- STATE (SIGNALS & VARIABLES) ---
+  protected readonly menu = [
+    {link: 'profile', icon: 'heroUser', label: 'ACCOUNT.MENU_INFO'},
+    {link: 'units', icon: 'heroScale', label: 'ACCOUNT.MENU_UNITS'},
+    {link: 'settings', icon: 'heroCog8Tooth', label: 'ACCOUNT.MENU_SETTINGS'},
+  ];
 }

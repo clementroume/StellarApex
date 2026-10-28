@@ -9,11 +9,17 @@ import {HttpErrorResponse} from '@angular/common/http';
 import {ProblemDetail} from '../../../core/models/problem-detail.model';
 import {NgIcon} from '@ng-icons/core';
 import {MembershipsComponent} from '../memberships/memberships.component';
+import {HlmButton} from '@spartan-ng/helm/button';
+import {HlmBadge} from '@spartan-ng/helm/badge';
+import {HlmCardImports} from '@spartan-ng/helm/card';
+import {HlmInputGroupImports} from '@spartan-ng/helm/input-group';
+import {FormFieldComponent} from '../../../shared/component/form-field/form-field.component';
 
 @Component({
   selector: 'app-profile',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, TranslatePipe, NgIcon, MembershipsComponent],
+  imports: [CommonModule, ReactiveFormsModule, TranslatePipe, NgIcon, MembershipsComponent, HlmButton, HlmBadge,
+    HlmCardImports, HlmInputGroupImports, FormFieldComponent],
   templateUrl: './profile.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -72,5 +78,11 @@ export class ProfileComponent implements OnInit {
         this.notificationService.showError(message);
       }
     });
+  }
+
+  /** A control's error is shown once the user has left it. */
+  protected invalid(name: string): boolean {
+    const control = this.profileForm.get(name);
+    return !!control && control.invalid && control.touched;
   }
 }
