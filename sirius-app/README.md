@@ -73,7 +73,10 @@ The backends enforce every rule; Sirius only adapts what it shows:
 * **My boxes & programs** (`/my-account/gyms`): memberships with role, status and permissions (each
   explained in one sentence), former memberships, leave / withdraw a request; join a box or program
   (`gyms/join`: search by name and type, enrollment code; the invitation link `/join?gym=&code=`
-  pre-fills both, after sign-in if needed); request a new one (`gyms/new`, admin approval).
+  pre-fills both, after sign-in or sign-up if needed); request a new one (`gyms/new`, admin approval).
+* **Sign-in / sign-up `returnUrl`**: kept between the two pages and checked by
+  `features/auth/return-url.ts` (app paths, or http(s) URLs on the current host and its subdomains for
+  the admin tools behind Traefik); anything else goes to `/today` (no open redirect).
 * **My box › Members / Settings** (staff with `MANAGE_MEMBERSHIPS` / `MANAGE_SETTINGS`): the managed
   box/prog follows the displayed one when allowed (picker when several). Members: pending requests
   first, status and role filters, validate / refuse / remove / ban / role and permissions as

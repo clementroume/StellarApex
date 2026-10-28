@@ -15,6 +15,7 @@ describe('RegisterComponent', () => {
   let component: RegisterComponent;
   let fixture: ComponentFixture<RegisterComponent>;
   let authServiceSpy: MockedObject<AuthService>;
+  let navigateByUrl: ReturnType<typeof vi.spyOn>;
 
   beforeEach(async () => {
     authServiceSpy = {
@@ -38,7 +39,7 @@ describe('RegisterComponent', () => {
     component = fixture.componentInstance;
     fixture.detectChanges();
     const router = TestBed.inject(Router);
-    vi.spyOn(router, 'navigate').mockResolvedValue(true);
+    navigateByUrl = vi.spyOn(router, 'navigateByUrl').mockResolvedValue(true);
   });
 
   it('should create', () => {
@@ -81,5 +82,19 @@ describe('RegisterComponent', () => {
       email: 'john.doe@example.com',
       password: 'Password123'
     });
+    expect(navigateByUrl).toHaveBeenCalledWith('/today');
+  });
+
+  it('should go back to the invitation link after signing up', () => {
+    (component as any).target = {kind: 'internal', url: '/my-account/gyms/join?gym=4&code=X'};
+    const form = component.registerForm;
+    form.setValue({
+      firstName: 'John', lastName: 'Doe', email: 'john.doe@example.com',
+      password: 'Password123', confirmationPassword: 'Password123'
+    });
+
+    component.onSubmit();
+
+    expect(navigateByUrl).toHaveBeenCalledWith('/my-account/gyms/join?gym=4&code=X');
   });
 });

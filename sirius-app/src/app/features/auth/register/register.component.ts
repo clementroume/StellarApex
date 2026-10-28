@@ -1,4 +1,4 @@
-import {ChangeDetectionStrategy, Component, inject} from '@angular/core';
+import {ChangeDetectionStrategy, Component, DOCUMENT, inject} from '@angular/core';
 import {CommonModule} from '@angular/common';
 import {
   AbstractControl,
@@ -9,7 +9,7 @@ import {
   ValidatorFn,
   Validators
 } from '@angular/forms';
-import {Router, RouterModule} from '@angular/router';
+import {ActivatedRoute, Router, RouterModule} from '@angular/router';
 import {AuthService} from '../../../api/antares/services/auth.service';
 import {TranslatePipe} from '@ngx-translate/core';
 import {NotificationService} from '../../../core/services/notification.service';
@@ -19,6 +19,7 @@ import {HlmButton} from '@spartan-ng/helm/button';
 import {HlmCardImports} from '@spartan-ng/helm/card';
 import {HlmInputGroupImports} from '@spartan-ng/helm/input-group';
 import {FormFieldComponent} from '../../../shared/component/form-field/form-field.component';
+import {forwardableReturnUrl, resolveReturnUrl} from '../return-url';
 
 export const passwordMatchValidator: ValidatorFn = (control: AbstractControl): ValidationErrors | null => {
   const password = control.get('password');
@@ -40,8 +41,17 @@ export class RegisterComponent {
   public readonly registerForm: FormGroup;
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
   private readonly fb = inject(FormBuilder);
   private readonly notificationService = inject(NotificationService);
+  private readonly document = inject(DOCUMENT);
+
+  /** Checked destination after sign-up (e.g. the join step of an invitation link). */
+  private readonly target = resolveReturnUrl(
+    this.route.snapshot.queryParams['returnUrl'], this.document.location.hostname);
+  /** App path handed back to the sign-in page. */
+  protected readonly forwardReturnUrl = forwardableReturnUrl(
+    this.route.snapshot.queryParams['returnUrl'], this.document.location.hostname);
 
   constructor() {
     this.registerForm = this.fb.group({
@@ -66,7 +76,11 @@ export class RegisterComponent {
 
     this.authService.register(registerPayload).subscribe({
       next: () => {
-        void this.router.navigate(['/today']);
+        if (this.target.kind === 'external') {
+          this.redirectToExternal(this.target.url);
+        } else {
+          void this.router.navigateByUrl(this.target.url);
+        }
       },
       error: (err: HttpErrorResponse) => {
         const problem: ProblemDetail = err.error;
@@ -84,5 +98,9 @@ export class RegisterComponent {
 
   protected passwordsMismatch(): boolean {
     return !!this.registerForm.errors?.['passwordsMismatch'] && !!this.registerForm.get('confirmationPassword')?.touched;
+  }
+
+  public redirectToExternal(url: string): void {
+    this.document.location.href = url;
   }
 }

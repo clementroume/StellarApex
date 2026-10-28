@@ -21,7 +21,8 @@
         {{ 'LOGIN.SIGN_IN' | translate }}
       </button>
 
-      <a hlmBtn variant="link" class="self-start px-0" routerLink="/auth/register">{{ 'LOGIN.NO_ACCOUNT' | translate }}</a>
+      <a hlmBtn variant="link" class="self-start px-0" routerLink="/auth/register"
+         [queryParams]="forwardReturnUrl ? {returnUrl: forwardReturnUrl} : {}">{{ 'LOGIN.NO_ACCOUNT' | translate }}</a>
     </form>
   </section>
 </div>

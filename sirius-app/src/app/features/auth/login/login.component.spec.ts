@@ -4,7 +4,7 @@ import {ComponentFixture, TestBed} from '@angular/core/testing';
 import {LoginComponent} from './login.component';
 import {provideHttpClient, withXhr} from '@angular/common/http';
 import {provideHttpClientTesting} from '@angular/common/http/testing';
-import {provideRouter} from '@angular/router';
+import {provideRouter, Router} from '@angular/router';
 import {provideTranslateService} from '@ngx-translate/core';
 import {AuthService} from '../../../api/antares/services/auth.service';
 import {of} from 'rxjs';
@@ -60,13 +60,34 @@ describe('LoginComponent', () => {
     expect(component.loginForm.valid).toBe(true);
   });
 
-  it('should call redirectToExternal when returnUrl starts with http', () => {
+  it('should redirect the browser to a checked external target (admin tools behind Traefik)', () => {
     component.loginForm.controls['email'].setValue('test@test.com');
     component.loginForm.controls['password'].setValue('password');
-    (component as any).returnUrl = 'https://external-site.com';
+    (component as any).target = {kind: 'external', url: 'https://docs.stellar.apex/'};
 
     component.onSubmit();
 
-    expect(component.redirectToExternal).toHaveBeenCalledWith('https://external-site.com');
+    expect(component.redirectToExternal).toHaveBeenCalledWith('https://docs.stellar.apex/');
+  });
+
+  it('should go to the app path of the returnUrl, query string included', () => {
+    const navigateByUrl = vi.spyOn(TestBed.inject(Router), 'navigateByUrl').mockResolvedValue(true);
+    component.loginForm.controls['email'].setValue('test@test.com');
+    component.loginForm.controls['password'].setValue('password');
+    (component as any).target = {kind: 'internal', url: '/my-account/gyms/join?gym=4&code=X'};
+
+    component.onSubmit();
+
+    expect(navigateByUrl).toHaveBeenCalledWith('/my-account/gyms/join?gym=4&code=X');
+    expect(component.redirectToExternal).not.toHaveBeenCalled();
+  });
+
+  it('should hand the returnUrl to the sign-up link', () => {
+    (component as any).forwardReturnUrl = '/join?gym=4&code=X';
+    fixture.changeDetectorRef.markForCheck();
+    fixture.detectChanges();
+
+    const link: HTMLAnchorElement = fixture.nativeElement.querySelector('a[href^="/auth/register"]');
+    expect(decodeURIComponent(link.getAttribute('href')!)).toBe('/auth/register?returnUrl=/join?gym=4&code=X');
   });
 });
