@@ -178,6 +178,32 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
   }
 
   /**
+   * Handles {@link TooManyAttemptsException} (e.g. too many wrong enrollment codes).
+   *
+   * @param ex The exception with the time to wait.
+   * @param request The current HTTP request.
+   * @param locale The locale for message translation.
+   * @return A {@link ResponseEntity} with status <b>429 Too Many Requests</b>, a {@code
+   *     Retry-After} header and a {@code retryAfter} property (seconds).
+   */
+  @ExceptionHandler(TooManyAttemptsException.class)
+  public ResponseEntity<@NonNull ProblemDetail> handleTooManyAttempts(
+      TooManyAttemptsException ex, HttpServletRequest request, Locale locale) {
+    log.warn(
+        "Too many attempts on {}: retry in {}s", request.getRequestURI(), ex.getRetryAfterSeconds());
+    String message = getLocalizedMessage(ex.getMessageKey(), ex.getArgs(), locale);
+    ResponseEntity<@NonNull ProblemDetail> response =
+        createProblemResponse(HttpStatus.TOO_MANY_REQUESTS, "Too Many Attempts", message, request);
+    ProblemDetail body = response.getBody();
+    if (body != null) {
+      body.setProperty("retryAfter", ex.getRetryAfterSeconds());
+    }
+    return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+        .header(HttpHeaders.RETRY_AFTER, String.valueOf(ex.getRetryAfterSeconds()))
+        .body(body);
+  }
+
+  /**
    * Customizes the handling of {@link MethodArgumentNotValidException} (Validation errors).
    *
    * <p>Aggregates all field errors into a single string for the 'detail' field of the

@@ -13,6 +13,7 @@ import apex.stellar.antares.dto.MembershipUpdateRequest;
 import apex.stellar.antares.exception.BusinessRuleException;
 import apex.stellar.antares.exception.DataConflictException;
 import apex.stellar.antares.exception.ResourceNotFoundException;
+import apex.stellar.antares.exception.TooManyAttemptsException;
 import apex.stellar.antares.mapper.MembershipMapper;
 import apex.stellar.antares.model.*;
 import apex.stellar.antares.model.GymRole;
@@ -39,6 +40,7 @@ class MembershipServiceTest {
   @Mock private MembershipRepository membershipRepository;
   @Mock private GymRepository gymRepository;
   @Mock private MembershipMapper membershipMapper;
+  @Mock private EnrollmentAttemptService enrollmentAttemptService;
   @InjectMocks private MembershipService membershipService;
 
   @Captor private ArgumentCaptor<Membership> membershipCaptor;
@@ -139,6 +141,27 @@ class MembershipServiceTest {
     BusinessRuleException ex =
         assertThrows(BusinessRuleException.class, () -> membershipService.joinGym(request, user));
     assertEquals("error.enrollment.code.invalid", ex.getMessageKey());
+    verify(enrollmentAttemptService).recordFailure(10L);
+  }
+
+  @Test
+  @DisplayName("joinGym: a right code is not counted; too many wrong codes refuse before any check")
+  void joinGym_Throttling() {
+    when(gymRepository.findById(1L)).thenReturn(Optional.of(activeGym(false)));
+    when(membershipRepository.findByUserIdAndGymId(10L, 1L)).thenReturn(Optional.empty());
+    when(membershipRepository.save(any(Membership.class))).thenAnswer(i -> i.getArgument(0));
+    User user = user(10L);
+
+    membershipService.joinGym(new JoinGymRequest(1L, "CODE"), user);
+    verify(enrollmentAttemptService).checkAllowed(10L);
+    verify(enrollmentAttemptService, never()).recordFailure(any());
+
+    doThrow(new TooManyAttemptsException("error.enrollment.too.many", 60, 1))
+        .when(enrollmentAttemptService)
+        .checkAllowed(10L);
+    JoinGymRequest request = new JoinGymRequest(1L, "CODE");
+    assertThrows(TooManyAttemptsException.class, () -> membershipService.joinGym(request, user));
+    verify(gymRepository, times(1)).findById(1L);
   }
 
   @Test
