@@ -16,6 +16,10 @@ import {NotificationService} from '../../../core/services/notification.service';
 import {HttpErrorResponse} from '@angular/common/http';
 import {ProblemDetail} from '../../../core/models/problem-detail.model';
 import {NgIcon} from '@ng-icons/core';
+import {HlmButton} from '@spartan-ng/helm/button';
+import {HlmCardImports} from '@spartan-ng/helm/card';
+import {HlmInputGroupImports} from '@spartan-ng/helm/input-group';
+import {FormFieldComponent} from '../../../shared/component/form-field/form-field.component';
 
 export const passwordMatchValidator: ValidatorFn = (control: AbstractControl): ValidationErrors | null => {
   const password = control.get('password');
@@ -28,7 +32,8 @@ export const passwordMatchValidator: ValidatorFn = (control: AbstractControl): V
 @Component({
   selector: 'app-register',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterModule, TranslatePipe, NgIcon],
+  imports: [CommonModule, ReactiveFormsModule, RouterModule, TranslatePipe, NgIcon, HlmButton, HlmCardImports,
+    HlmInputGroupImports, FormFieldComponent],
   templateUrl: './register.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -70,5 +75,15 @@ export class RegisterComponent {
         this.notificationService.showError(message);
       }
     });
+  }
+
+  /** A control's error is shown once the user has left it. */
+  protected invalid(name: string): boolean {
+    const control = this.registerForm.get(name);
+    return !!control && control.invalid && control.touched;
+  }
+
+  protected passwordsMismatch(): boolean {
+    return !!this.registerForm.errors?.['passwordsMismatch'] && !!this.registerForm.get('confirmationPassword')?.touched;
   }
 }

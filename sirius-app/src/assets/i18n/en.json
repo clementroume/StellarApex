@@ -29,7 +29,8 @@
     "VIDEO": "Video",
     "NO_VIDEO": "No video",
     "CLEAR": "Clear",
-    "LOADING": "Loading…"
+    "LOADING": "Loading…",
+    "REQUIRED": "This field is required."
   },
   "NAVBAR": {
     "DASHBOARD": "Dashboard",

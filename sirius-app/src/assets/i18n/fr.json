@@ -29,7 +29,8 @@
     "VIDEO": "Vidéo",
     "NO_VIDEO": "Aucune vidéo",
     "CLEAR": "Effacer",
-    "LOADING": "Chargement…"
+    "LOADING": "Chargement…",
+    "REQUIRED": "Ce champ est requis."
   },
   "NAVBAR": {
     "DASHBOARD": "Dashboard",
