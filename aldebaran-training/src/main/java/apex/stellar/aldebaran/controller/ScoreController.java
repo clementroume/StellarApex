@@ -5,6 +5,7 @@ import apex.stellar.aldebaran.dto.ScoreReferenceData;
 import apex.stellar.aldebaran.dto.ScoreRequest;
 import apex.stellar.aldebaran.dto.ScoreResponse;
 import apex.stellar.aldebaran.model.entities.Score.ScalingLevel;
+import apex.stellar.aldebaran.model.enums.Division;
 import apex.stellar.aldebaran.security.AldebaranUserPrincipal;
 import apex.stellar.aldebaran.security.ScoreSecurity;
 import apex.stellar.aldebaran.service.ScoreCapabilityService;
@@ -197,6 +198,7 @@ public class ScoreController {
    * @param gymIds Optional gyms (all among the user's gyms, 403 otherwise): only the scores
    *     performed there, e.g. "my box(es)" or "my program(s)"; worldwide when absent.
    * @param verifiedOnly Only verified scores (competition WODs); default false.
+   * @param division Only the scores logged in this division (MEN, WOMEN); every score when absent.
    * @param pageable Pagination info.
    * @param principal The authenticated user.
    * @return A page of top scores.
@@ -209,12 +211,13 @@ public class ScoreController {
       @RequestParam(defaultValue = "RX") ScalingLevel scaling,
       @RequestParam(required = false) List<Long> gymIds,
       @RequestParam(defaultValue = "false") boolean verifiedOnly,
+      @RequestParam(required = false) Division division,
       @PageableDefault(size = 20) Pageable pageable,
       @AuthenticationPrincipal AldebaranUserPrincipal principal) {
 
     return ResponseEntity.ok(
         scoreService
-            .getLeaderboard(id, scaling, gymIds, verifiedOnly, pageable)
+            .getLeaderboard(id, scaling, gymIds, verifiedOnly, division, pageable)
             .map(score -> scoreCapabilityService.forViewer(score, principal)));
   }
 

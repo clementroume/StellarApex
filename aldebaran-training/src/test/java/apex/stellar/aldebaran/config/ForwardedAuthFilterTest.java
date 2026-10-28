@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import apex.stellar.aldebaran.config.SecurityConfig.ForwardedAuthFilter;
+import apex.stellar.aldebaran.model.enums.Division;
 import apex.stellar.aldebaran.security.AldebaranUserPrincipal;
 import apex.stellar.aldebaran.security.GymAccess;
 import java.util.List;
@@ -129,5 +130,22 @@ class ForwardedAuthFilterTest {
     request.addHeader("X-Auth-Actor-Id", "admin");
 
     assertNull(filterAndGetPrincipal(request));
+  }
+
+  @Test
+  @DisplayName("Division header: MEN / WOMEN parsed, blank or unknown values ignored")
+  void shouldParseDivision() throws Exception {
+    MockHttpServletRequest women = baseRequest();
+    women.addHeader("X-Auth-User-Role", "USER");
+    women.addHeader("X-Auth-User-Division", "WOMEN");
+    assertEquals(Division.WOMEN, filterAndGetPrincipal(women).getDivision());
+
+    for (String value : new String[] {"", "OTHER", "men"}) {
+      SecurityContextHolder.clearContext();
+      MockHttpServletRequest request = baseRequest();
+      request.addHeader("X-Auth-User-Role", "USER");
+      request.addHeader("X-Auth-User-Division", value);
+      assertNull(filterAndGetPrincipal(request).getDivision(), value);
+    }
   }
 }

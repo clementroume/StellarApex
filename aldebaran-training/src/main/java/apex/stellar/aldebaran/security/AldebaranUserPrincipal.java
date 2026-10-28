@@ -1,5 +1,6 @@
 package apex.stellar.aldebaran.security;
 
+import apex.stellar.aldebaran.model.enums.Division;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -42,6 +43,12 @@ public class AldebaranUserPrincipal implements UserDetails {
    * on a single "current" gym.
    */
   @Builder.Default private Map<Long, GymAccess> memberships = Map.of();
+
+  /**
+   * The user's competition division ({@code X-Auth-User-Division}), or {@code null} when not chosen.
+   * Copied on each score the user logs for themselves.
+   */
+  @Nullable private Division division;
 
   /**
    * The platform admin acting as this user through an audited support session ({@code

@@ -1,5 +1,7 @@
 package apex.stellar.aldebaran.repository;
 
+import apex.stellar.aldebaran.model.enums.Division;
+import org.springframework.data.jpa.repository.Modifying;
 import apex.stellar.aldebaran.model.entities.Score;
 import apex.stellar.aldebaran.model.entities.Score.ScalingLevel;
 import jakarta.persistence.LockModeType;
@@ -86,14 +88,32 @@ public interface ScoreRepository extends JpaRepository<Score, Long> {
    * @param filterGyms Whether to keep the scores performed in {@code gymIds} only.
    * @param gymIds The gyms to keep (never empty, so that the JPQL {@code IN} stays valid).
    * @param verifiedOnly Whether to keep verified scores only.
+   * @param division The division to keep, or null for every score (unclassified ones included).
    * @return The scores of the WOD kept by the filters.
    */
   @Query(
       "SELECT s FROM Score s WHERE s.wod.id = :wodId"
           + " AND (:filterGyms = false OR s.gymId IN :gymIds)"
-          + " AND (:verifiedOnly = false OR s.verifiedAt IS NOT NULL)")
+          + " AND (:verifiedOnly = false OR s.verifiedAt IS NOT NULL)"
+          + " AND (:division IS NULL OR s.division = :division)")
   List<Score> findFilteredByWod(
-      Long wodId, boolean filterGyms, Collection<Long> gymIds, boolean verifiedOnly);
+      Long wodId,
+      boolean filterGyms,
+      Collection<Long> gymIds,
+      boolean verifiedOnly,
+      Division division);
+
+  /**
+   * Gives a division to the athlete's scores logged before they chose one.
+   *
+   * @param userId The athlete.
+   * @param division The athlete's division.
+   * @return The number of scores updated.
+   */
+  @Modifying(flushAutomatically = true)
+  @Query(
+      "UPDATE Score s SET s.division = :division WHERE s.userId = :userId AND s.division IS NULL")
+  int assignDivisionToUnclassified(Long userId, Division division);
 
   /**
    * Retrieves every Personal Record for a WOD and scaling level, for rank comparison (the ordering

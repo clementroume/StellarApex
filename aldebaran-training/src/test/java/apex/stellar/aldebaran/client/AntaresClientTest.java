@@ -1,6 +1,8 @@
 package apex.stellar.aldebaran.client;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.header;
@@ -9,6 +11,7 @@ import static org.springframework.test.web.client.response.MockRestResponseCreat
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess;
 
 import apex.stellar.aldebaran.exception.AntaresUnavailableException;
+import apex.stellar.aldebaran.model.enums.Division;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -68,5 +71,26 @@ class AntaresClientTest {
 
     assertTrue(client.isProgrammingGym(100L));
     assertThrows(AntaresUnavailableException.class, () -> client.isProgrammingGym(101L));
+  }
+
+  @Test
+  @DisplayName("getUserDivision: MEN / WOMEN / none, an unknown user is an error")
+  void getUserDivision() {
+    server
+        .expect(requestTo("http://antares/antares/internal/users/7/division"))
+        .andExpect(header("X-Internal-Secret", "s3cret"))
+        .andRespond(withSuccess("{\"division\":\"WOMEN\"}", MediaType.APPLICATION_JSON));
+    server
+        .expect(requestTo("http://antares/antares/internal/users/8/division"))
+        .andRespond(withSuccess("{\"division\":null}", MediaType.APPLICATION_JSON));
+    server
+        .expect(requestTo("http://antares/antares/internal/users/9/division"))
+        .andRespond(
+            org.springframework.test.web.client.response.MockRestResponseCreators
+                .withResourceNotFound());
+
+    assertEquals(Division.WOMEN, client.getUserDivision(7L));
+    assertNull(client.getUserDivision(8L));
+    assertThrows(AntaresUnavailableException.class, () -> client.getUserDivision(9L));
   }
 }

@@ -1,5 +1,6 @@
 package apex.stellar.aldebaran.model.entities;
 
+import apex.stellar.aldebaran.model.enums.Division;
 import apex.stellar.aldebaran.model.enums.Unit;
 import apex.stellar.aldebaran.validation.ValidScore;
 import jakarta.persistence.Column;
@@ -141,6 +142,14 @@ public class Score {
 
   @Column(name = "scaling_notes", columnDefinition = "TEXT")
   private String scalingNotes;
+
+  /**
+   * Division of the athlete when the score was logged (null: not chosen yet). Copied at logging,
+   * never from the request body.
+   */
+  @Enumerated(EnumType.STRING)
+  @Column(length = 10)
+  private Division division;
 
   // --- Audit ---
   @CreatedDate
