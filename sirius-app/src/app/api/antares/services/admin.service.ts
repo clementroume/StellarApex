@@ -13,6 +13,10 @@ export interface UserSearchFilters {
   gymId?: number;
   role?: GymRole;
   status?: MembershipStatus;
+  // Users without any ACTIVE box/prog (gym, role and status then ignored by Antares)
+  withoutGym?: boolean;
+  // true: verified addresses only, false: unverified only
+  emailVerified?: boolean;
 }
 
 @Injectable({providedIn: 'root'})
@@ -25,6 +29,8 @@ export class AdminService {
     if (filters.gymId) params = params.set('gymId', filters.gymId);
     if (filters.role) params = params.set('role', filters.role);
     if (filters.status) params = params.set('status', filters.status);
+    if (filters.withoutGym) params = params.set('withoutGym', true);
+    if (filters.emailVerified != null) params = params.set('emailVerified', filters.emailVerified);
     return this.http.get<Slice<UserResponse>>(this.buildUrl('/users'), {params});
   }
 

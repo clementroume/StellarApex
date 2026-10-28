@@ -100,7 +100,8 @@ The backends enforce every rule; Sirius only adapts what it shows:
   results); the create button follows the tab (gym WOD where the user programs, personal
   otherwise); on the "All" tab an admin can pick any gym or any athlete with personal WODs.
 * **Admin support session** (`/admin/support`, admins only): search a user (2 characters minimum),
-  filter by gym, role and membership status, page through results, or pick one of the 5 accounts
+  filter by gym, role and membership status, or by account (no box or program, e-mail not
+  verified, badge on each row), page through results, or pick one of the 5 accounts
   recently acted as; give a reason and act as them for 30 minutes
   (`core/services/support-session.service.ts`). A banner shows the target and
   the remaining time; password change and account deletion are hidden; language, theme and palette stay those of the admin's

@@ -8,6 +8,8 @@ export interface RegisterRequest {
   lastName: string;
   email: string;
   password: string;
+  // Language shown at sign-up: language of the account and of its e-mails (en when omitted)
+  locale?: string;
 }
 
 export interface ChangePasswordRequest {

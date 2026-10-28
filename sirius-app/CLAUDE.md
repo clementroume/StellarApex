@@ -100,8 +100,8 @@ the dev proxy targets the local Traefik `https://localhost` with `Host: stellar.
   fragment: read it with `features/auth/auth-token.ts` (`readLinkToken`, also removes it from history).
   Unverified users (`UserResponse.emailVerified`): `app-email-verification-notice` on pages whose
   action Antares refuses with 403 `EMAIL_NOT_VERIFIED`.
-- `ng-icon`'s host style beats `text-*` utilities set on the icon itself: colour it through a parent
-  or its `color` input (existing icons with `class="text-…"` on the icon stay uncoloured).
+- ng-icons styles its host in a cascade layer `ng-icon`, declared first in `styles.css` (`@layer
+  ng-icon;` before Tailwind) so `text-*` utilities on an icon win; keep that line first.
 - Loads, distances and heights are shown through `core/services/unit.service.ts` (`formatLoad`,
   `formatDistance`: user's metric/imperial choice, men/women pairs "43/29 kg"); never print a stored unit.
   Lifted loads in scores use `formatScoreLoad` / `convertScoreLoad` (0.5 kg / 1 lb precision).

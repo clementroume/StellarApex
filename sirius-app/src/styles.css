@@ -1,6 +1,13 @@
 /**
  * Main stylesheet: Tailwind, the colour palettes (palettes.css) and the spartan/ui wiring (spartan.css).
  */
+/*
+ * ng-icons puts its host style (`color: var(--ng-icon__color, currentColor)`) in a cascade layer
+ * `ng-icon`, created after Tailwind's layers, so it beat the utilities put on an icon
+ * (`<ng-icon class="text-primary">` stayed uncoloured). Declaring it first makes it the weakest.
+ */
+@layer ng-icon;
 @import "tailwindcss";
 @import "./palettes.css";
 @import "./spartan.css";
+

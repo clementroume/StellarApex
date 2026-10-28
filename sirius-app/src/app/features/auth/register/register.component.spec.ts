@@ -5,7 +5,7 @@ import {RegisterComponent} from './register.component';
 import {provideHttpClient, withXhr} from '@angular/common/http';
 import {provideHttpClientTesting} from '@angular/common/http/testing';
 import {provideRouter, Router} from '@angular/router';
-import {provideTranslateService} from '@ngx-translate/core';
+import {provideTranslateService, TranslateService} from '@ngx-translate/core';
 import {AuthService} from '../../../api/antares/services/auth.service';
 import {of} from 'rxjs';
 import {provideIcons} from '@ng-icons/core';
@@ -96,5 +96,17 @@ describe('RegisterComponent', () => {
     component.onSubmit();
 
     expect(navigateByUrl).toHaveBeenCalledWith('/my-account/gyms/join?gym=4&code=X');
+  });
+
+  it('should create the account in the language shown', () => {
+    TestBed.inject(TranslateService).use('fr');
+    component.registerForm.setValue({
+      firstName: 'Léa', lastName: 'Martin', email: 'lea@example.com',
+      password: 'Password123', confirmationPassword: 'Password123'
+    });
+
+    component.onSubmit();
+
+    expect(authServiceSpy.register).toHaveBeenCalledWith(expect.objectContaining({locale: 'fr'}));
   });
 });

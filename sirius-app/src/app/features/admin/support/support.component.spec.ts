@@ -111,6 +111,22 @@ describe('SupportComponent', () => {
     expect(lastSearch()[0]).toMatchObject({gymId: undefined, role: 'COACH'});
   });
 
+  it('should find accounts without box nor program and unverified ones', () => {
+    component.onGymChange('1');
+    component.onRoleChange('COACH');
+
+    component.onWithoutGymToggle();
+    expect(lastSearch()[0]).toMatchObject({withoutGym: true, gymId: undefined, role: undefined});
+
+    component.onUnverifiedToggle();
+    expect(lastSearch()[0]).toMatchObject({withoutGym: true, emailVerified: false});
+
+    // A membership filter turns "without box nor program" off
+    component.onStatusChange('ACTIVE');
+    expect(lastSearch()[0]).toMatchObject({withoutGym: undefined, status: 'ACTIVE', emailVerified: false});
+    expect(component.hasFilters()).toBe(true);
+  });
+
   it('should hide the recent targets once a filter is active', () => {
     component.onRoleChange('ATHLETE');
     fixture.detectChanges();

@@ -73,7 +73,10 @@ export class RegisterComponent {
       return;
     }
 
-    const {confirmationPassword, ...registerPayload} = this.registerForm.value;
+    const {confirmationPassword, ...form} = this.registerForm.value;
+    // The account (and its verification e-mail) starts in the language shown
+    const lang = this.translate.currentLang() ?? this.translate.fallbackLang();
+    const registerPayload = {...form, ...(lang ? {locale: lang} : {})};
 
     this.authService.register(registerPayload).subscribe({
       next: () => {

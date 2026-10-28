@@ -791,7 +791,10 @@
       "FILTER_ROLE": "Role",
       "FILTER_STATUS": "Status",
       "ALL": "All",
-      "LOAD_MORE": "Load more"
+      "LOAD_MORE": "Load more",
+      "FILTER_ACCOUNT": "Account",
+      "WITHOUT_GYM": "No box or program",
+      "UNVERIFIED": "E-mail not verified"
     },
     "GYMS": {
       "TITLE": "Boxes & programs",

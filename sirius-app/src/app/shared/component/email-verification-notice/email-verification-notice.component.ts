@@ -20,8 +20,8 @@ import {problemDetailOf} from '../../../core/models/problem-detail.model';
   template: `
     @if (unverified()) {
       <div hlmAlert class="mb-4 border-warning/40" data-slot="email-verification-notice">
-        <!-- ng-icon's host style wins over text-* utilities: colour through its input -->
-        <ng-icon name="heroEnvelope" color="var(--color-warning)" aria-hidden="true"/>
+        <!-- The alert forces its icon to text-current: inline colour -->
+        <ng-icon name="heroEnvelope" style="color: var(--color-warning)" aria-hidden="true"/>
         <p hlmAlertTitle>{{ 'EMAIL_VERIFICATION.TITLE' | translate }}</p>
         <div hlmAlertDescription class="flex flex-col gap-2">
           <p>{{ 'EMAIL_VERIFICATION.TEXT' | translate: {email: email()} }}</p>

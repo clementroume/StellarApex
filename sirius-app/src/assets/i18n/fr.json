@@ -791,7 +791,10 @@
       "FILTER_ROLE": "Rôle",
       "FILTER_STATUS": "Statut",
       "ALL": "Tous",
-      "LOAD_MORE": "Charger plus"
+      "LOAD_MORE": "Charger plus",
+      "FILTER_ACCOUNT": "Compte",
+      "WITHOUT_GYM": "Sans box ni prog",
+      "UNVERIFIED": "E-mail non vérifié"
     },
     "GYMS": {
       "TITLE": "Box & progs",
