@@ -21,10 +21,11 @@ Vitest (jsdom) through `ng test`. Commands: `npm test`, `npm run build`, `npm st
 
 - New interactive widgets (combobox, select, dialog, sheet/drawer, menu, tabs, toast, date picker...)
   use spartan brain + helm, wrapped in `shared/component`; never hand-write ARIA/keyboard handling.
-- spartan and DaisyUI coexist while screens migrate. The spartan preset is NOT imported (it redefines
-  DaisyUI's `primary`/`secondary`/`accent`/`border` and `container`): `styles.css` declares only the
-  non-colliding tokens (`popover`, `muted`, `input`, `ring`, `foreground`...) bridged to DaisyUI theme
-  variables. In helm code, use `bg-muted` instead of `bg-accent` (DaisyUI accent is the brand orange).
+- spartan and DaisyUI coexist while screens migrate (DaisyUI → spartan, screen by screen). The spartan
+  preset is NOT imported (it redefines DaisyUI's `primary`/`secondary`/`accent`/`border` and
+  `container`): `src/spartan.css` keeps its state variants and maps every spartan token to the palette
+  variables (`--sa-*`). In helm code, spartan's subtle `secondary`/`accent` colours are `muted` (in
+  DaisyUI they are the record yellow and brand orange); never use raw `var(--border)` (a width in DaisyUI).
 - Add a component: `npm i -D @spartan-ng/cli@<brain version>`, `npx ng g @spartan-ng/cli:ui <name>`
   (reads `components.json`), then `npm uninstall @spartan-ng/cli` (it pulls Nx and audit warnings) and
   check the diff: the CLI rewrites `tsconfig.json` (restore its header comment),
@@ -92,5 +93,6 @@ Vitest (jsdom) through `ng test`. Commands: `npm test`, `npm run build`, `npm st
 
 ## Known state
 
-- Production build warns that the initial bundle is over the 500 kB budget (`angular.json`): ~552 kB,
-  of which ~30 kB of CSS since spartan (helm utilities, CDK overlay, tw-animate); DaisyUI removal will offset it.
+- Production build warns that the initial bundle is over the 500 kB budget (`angular.json`): ~644 kB
+  during the DaisyUI → spartan migration (Tailwind generates the utilities of every helm file, ~283 kB
+  of CSS). Measured without DaisyUI: ~492 kB, back under budget once the migration ends.

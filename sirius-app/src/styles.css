@@ -3,6 +3,7 @@
  */
 @import "tailwindcss";
 @import "./palettes.css";
+@import "./spartan.css";
 
 @plugin "daisyui" {
 }
@@ -75,43 +76,4 @@
   --border: 1px;
   --depth: 0;
   --noise: 1;
-}
-
-/*
- * spartan/ui (D42): brain primitives + helm styles copied in src/app/shared/ui, next to DaisyUI
- * while screens migrate. The full spartan preset is not imported: its @theme redefines primary/secondary/accent/border
- * (border is a width in DaisyUI, a colour in spartan) and its `container` utility adds padding to
- * existing pages. Only non-colliding tokens are declared here, bridged to the DaisyUI theme variables
- * so spartan components follow the light/dark DaisyUI themes.
- */
-@import "@angular/cdk/overlay-prebuilt.css";
-@import "tw-animate-css";
-
-@custom-variant dark (&:where([data-theme=dark], [data-theme=dark] *));
-@custom-variant data-open { &:where([data-state='open']), &:where([data-open]:not([data-open='false'])) { @slot; } }
-@custom-variant data-closed { &:where([data-state='closed']), &:where([data-closed]:not([data-closed='false'])) { @slot; } }
-@custom-variant data-disabled { &:where([data-disabled='true']), &:where([data-disabled]:not([data-disabled='false'])) { @slot; } }
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-popover: var(--popover);
-  --color-popover-foreground: var(--popover-foreground);
-  --color-muted: var(--muted);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-input: var(--input);
-  --color-ring: var(--ring);
-  --color-destructive: var(--destructive);
-}
-
-:root {
-  --background: var(--color-base-100);
-  --foreground: var(--color-base-content);
-  --popover: var(--color-base-100);
-  --popover-foreground: var(--color-base-content);
-  --muted: var(--color-base-200);
-  --muted-foreground: color-mix(in oklab, var(--color-base-content) 60%, transparent);
-  --input: var(--color-base-300);
-  --ring: var(--color-primary);
-  --destructive: var(--color-error);
 }
