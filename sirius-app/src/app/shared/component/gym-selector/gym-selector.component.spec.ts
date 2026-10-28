@@ -1,7 +1,6 @@
 import {ComponentFixture, TestBed} from '@angular/core/testing';
 import {signal} from '@angular/core';
 import {provideTranslateService} from '@ngx-translate/core';
-import {vi} from 'vitest';
 import {GymSelectorComponent} from './gym-selector.component';
 import {AccessService} from '../../../core/services/access.service';
 import {MembershipSummary} from '../../../api/antares/models/membership.model';
@@ -14,14 +13,12 @@ describe('GymSelectorComponent', () => {
     {gymId: 4, gymName: 'Test Box', gymStatus: 'ACTIVE', gymRole: 'ATHLETE', status: 'ACTIVE', permissions: [], gymProgramming: false},
     {gymId: 7, gymName: 'Test Prog', gymStatus: 'ACTIVE', gymRole: 'ATHLETE', status: 'ACTIVE', permissions: [], gymProgramming: true},
   ];
+  const select = (): HTMLSelectElement => fixture.nativeElement.querySelector('select');
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [GymSelectorComponent],
-      providers: [
-        provideTranslateService(),
-        {provide: AccessService, useValue: {memberships: signal(memberships)}}
-      ]
+      providers: [provideTranslateService(), {provide: AccessService, useValue: {memberships: signal(memberships)}}]
     }).compileComponents();
 
     fixture = TestBed.createComponent(GymSelectorComponent);
@@ -29,30 +26,24 @@ describe('GymSelectorComponent', () => {
     fixture.detectChanges();
   });
 
-  it('should link a visually hidden label to the trigger button', () => {
-    const trigger: HTMLButtonElement = fixture.nativeElement.querySelector('button[role="combobox"]');
+  it('should label the select and offer all then each box/prog', () => {
     const label: HTMLLabelElement = fixture.nativeElement.querySelector('label.sr-only');
-    expect(label.htmlFor).toBe(trigger.id);
-    expect(label.textContent?.trim()).toBe('SHARED.GYM_SELECTOR.LABEL');
+    expect(label.htmlFor).toBe(select().id);
+    expect(Array.from(select().options).map(o => o.textContent?.trim()))
+      .toEqual(['SHARED.GYM_SELECTOR.ALL', 'Test Box · SHARED.GYM_SELECTOR.BOX', 'Test Prog · SHARED.GYM_SELECTOR.PROG']);
   });
 
-  it('should show "all" when no gym is selected and the gym name otherwise', () => {
-    const toLabel = (component as any).toLabel;
-    expect(toLabel((component as any).selected())).toBe('SHARED.GYM_SELECTOR.ALL');
-
+  it('should select the bound gym and map "all" back to null', () => {
     fixture.componentRef.setInput('value', 7);
-    expect(toLabel((component as any).selected())).toBe('Test Prog');
-  });
+    fixture.detectChanges();
+    expect(select().value).toBe('7');
 
-  it('should map the "all" option back to null', () => {
-    const emitted = vi.fn();
-    component.value.subscribe(emitted);
-
-    (component as any).onChange(4);
-    expect(component.value()).toBe(4);
-
-    (component as any).onChange((component as any).ALL);
+    select().value = '0';
+    select().dispatchEvent(new Event('change'));
     expect(component.value()).toBeNull();
-    expect(emitted).toHaveBeenLastCalledWith(null);
+
+    select().value = '4';
+    select().dispatchEvent(new Event('change'));
+    expect(component.value()).toBe(4);
   });
 });

@@ -100,3 +100,5 @@ Vitest (jsdom) through `ng test`. Commands: `npm test`, `npm run build`, `npm st
   initial JS. Expected after DaisyUI removal: ~550 kB. Keep heavy brain modules out of the shell
   (sonner is loaded on first toast and its toaster is `@defer (on idle)`).
   `@spartan-ng/helm/utils` must not re-export `provideSpartanHlm` (it drags `@angular/cdk/overlay` in).
+  The shell (navbar, bottom nav, layout) uses no overlay-based helm (select, dropdown, dialog, tooltip):
+  native controls or `@defer`, or the CDK overlay and brain modules land in the initial bundle (~+175 kB).
