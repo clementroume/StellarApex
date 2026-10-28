@@ -48,6 +48,7 @@ tmp/
 out-tsc/
 bazel-out/
 .angular/
+.nx/
 **/.angular/cache
 .sass-cache/
 

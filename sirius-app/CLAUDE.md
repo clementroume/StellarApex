@@ -12,7 +12,23 @@ Vitest (jsdom) through `ng test`. Commands: `npm test`, `npm run build`, `npm st
   services, shared models (`Slice<T>`, `ProblemDetail`).
 - `src/app/features/<feature>`: `<x>-list`, `<x>-detail`, `<x>-form` + `<feature>.routes.ts`, lazy-loaded
   from `app.routes.ts` under the authenticated `MainLayoutComponent`.
-- `src/app/shared/component`: reusable `list-*`, `detail-*`, `search-input` components (inline templates).
+- `src/app/shared/component`: reusable `list-*`, `detail-*`, `search-input`, `movement-combobox`,
+  `gym-selector` components (inline templates).
+- `src/app/shared/ui`: spartan/ui helm code (styles copied from the spartan CLI, ours to edit), imported as
+  `@spartan-ng/helm/<name>` (`tsconfig.json` paths) on top of `@spartan-ng/brain` (pinned version).
+
+## UI primitives (D42: spartan/ui)
+
+- New interactive widgets (combobox, select, dialog, sheet/drawer, menu, tabs, toast, date picker...)
+  use spartan brain + helm, wrapped in `shared/component`; never hand-write ARIA/keyboard handling.
+- spartan and DaisyUI coexist while screens migrate. The spartan preset is NOT imported (it redefines
+  DaisyUI's `primary`/`secondary`/`accent`/`border` and `container`): `styles.css` declares only the
+  non-colliding tokens (`popover`, `muted`, `input`, `ring`, `foreground`...) bridged to DaisyUI theme
+  variables. In helm code, use `bg-muted` instead of `bg-accent` (DaisyUI accent is the brand orange).
+- Add a component: `npm i -D @spartan-ng/cli@<brain version>`, `npx ng g @spartan-ng/cli:ui <name>`
+  (reads `components.json`), then `npm uninstall @spartan-ng/cli` (it pulls Nx and audit warnings) and
+  check the diff: the CLI rewrites `tsconfig.json` (restore its header comment),
+  installs lucide icons (keep `@ng-icons/lucide` on the `@ng-icons/core` major) and leaves `.nx/` (ignored).
 
 ## Rights in the UI
 
@@ -69,4 +85,5 @@ Vitest (jsdom) through `ng test`. Commands: `npm test`, `npm run build`, `npm st
 
 ## Known state
 
-- Production build warns that the initial bundle is slightly over the 500 kB budget (`angular.json`).
+- Production build warns that the initial bundle is over the 500 kB budget (`angular.json`): ~552 kB,
+  of which ~30 kB of CSS since spartan (helm utilities, CDK overlay, tw-animate); DaisyUI removal will offset it.

@@ -27,7 +27,8 @@
     "DELETE_SUCCESS": "Element deleted successfully.",
     "DELETE_ERROR": "An error occurred while deleting.",
     "VIDEO": "Video",
-    "NO_VIDEO": "No video"
+    "NO_VIDEO": "No video",
+    "CLEAR": "Clear"
   },
   "NAVBAR": {
     "DASHBOARD": "Dashboard",
@@ -732,6 +733,20 @@
         "LABEL": "Settings",
         "DESCRIPTION": "Can change the box or program settings (enrollment code, automatic registration)."
       }
+    }
+  },
+  "SHARED": {
+    "MOVEMENT_COMBOBOX": {
+      "LABEL": "Movement",
+      "PLACEHOLDER": "Search a movement…",
+      "NO_RESULT": "No movement found",
+      "TOGGLE": "Show movements"
+    },
+    "GYM_SELECTOR": {
+      "LABEL": "Displayed box or program",
+      "ALL": "All my boxes/programs",
+      "BOX": "Box",
+      "PROG": "Program"
     }
   }
 }

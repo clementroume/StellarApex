@@ -27,7 +27,8 @@
     "DELETE_SUCCESS": "Élément supprimé avec succès.",
     "DELETE_ERROR": "Une erreur est survenue lors de la suppression.",
     "VIDEO": "Vidéo",
-    "NO_VIDEO": "Aucune vidéo"
+    "NO_VIDEO": "Aucune vidéo",
+    "CLEAR": "Effacer"
   },
   "NAVBAR": {
     "DASHBOARD": "Dashboard",
@@ -732,6 +733,20 @@
         "LABEL": "Réglages",
         "DESCRIPTION": "Peut modifier les réglages de la box ou prog (code d'inscription, inscriptions automatiques)."
       }
+    }
+  },
+  "SHARED": {
+    "MOVEMENT_COMBOBOX": {
+      "LABEL": "Mouvement",
+      "PLACEHOLDER": "Rechercher un mouvement…",
+      "NO_RESULT": "Aucun mouvement trouvé",
+      "TOGGLE": "Afficher les mouvements"
+    },
+    "GYM_SELECTOR": {
+      "LABEL": "Box ou prog affichée",
+      "ALL": "Toutes mes box/progs",
+      "BOX": "Box",
+      "PROG": "Prog"
     }
   }
 }
