@@ -17,20 +17,15 @@
     [emptySearchMessage]="'MOVEMENT.MESSAGES.EMPTY_LIST_SEARCH' | translate: {name: searchQuery()}">
 
     <div class="flex justify-center mb-10 w-full px-2 sm:px-0">
-      <div role="tablist" class="tabs tabs-box grid grid-cols-2 md:grid-cols-4 gap-2 w-full max-w-4xl p-1">
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-2 w-full max-w-4xl" role="group"
+           [attr.aria-label]="'MOVEMENT.FIELDS.MODALITY' | translate">
         @for (modality of modalityKeys(); track modality) {
-          <a role="tab"
-             class="tab h-10 flex items-center justify-center gap-1 sm:gap-2 rounded w-full border border-neutral bg-base-100 "
-             [class.tab-active]="activeTab() === modality"
-             [class.text-white]="activeTab() != modality"
-             [class.text-secondary]="activeTab() === modality"
-             [class.border-secondary]="activeTab() === modality"
-             (click)="activeTab.set(modality)">
-
-            <ng-icon [name]="getModalityIcon(modality)" size="1.5rem" color="var(--color-neutral)"></ng-icon>
-
+          <button hlmBtn variant="outline" type="button"
+                  class="h-11 w-full gap-2 aria-pressed:border-secondary aria-pressed:text-secondary aria-pressed:bg-secondary/10"
+                  [attr.aria-pressed]="activeTab() === modality" (click)="activeTab.set(modality)">
+            <ng-icon [name]="getModalityIcon(modality)" size="1.5rem" aria-hidden="true"></ng-icon>
             <span class="truncate text-sm">{{ 'MOVEMENT.MODALITIES.' + modality | translate }}</span>
-          </a>
+          </button>
         }
       </div>
     </div>
@@ -38,31 +33,18 @@
     <app-list-grid [items]="populatedCategories()">
 
       <ng-template let-category>
-        <div class="collapse collapse-arrow bg-base-100 border border-neutral">
-
-          <input type="checkbox"
-                 [checked]="expandedCategories().has(category)"
-                 (change)="onCategoryToggle(category, $event)"/>
-
-          <div class="collapse-title text-xl font-medium flex items-center gap-3">
-            {{ 'MOVEMENT.CATEGORIES.' + category | translate }}
-            <div class="badge badge-soft badge-accent">{{ movementsByCategory().get(category)?.length }}</div>
-          </div>
-
-          <div class="collapse-content p-0">
-            <ul class="divide-y divide-base-200">
-              @for (movement of movementsByCategory().get(category); track movement.id) {
-                <app-list-item
-                  [title]="movement.name"
-                  [badge]="movement.nameAbbreviation"
-                  [imageUrl]="movement.imageUrl"
-                  [link]="['/movements', movement.id]">
-                </app-list-item>
-              }
-            </ul>
-          </div>
-
-        </div>
+        <app-list-group [title]="'MOVEMENT.CATEGORIES.' + category | translate"
+                        [count]="movementsByCategory().get(category)?.length ?? 0"
+                        [expanded]="expandedCategories().has(category)" (expandedChange)="onCategoryToggle(category, $event)">
+          @for (movement of movementsByCategory().get(category); track movement.id) {
+            <app-list-item
+              [title]="movement.name"
+              [badge]="movement.nameAbbreviation"
+              [imageUrl]="movement.imageUrl"
+              [link]="['/movements', movement.id]">
+            </app-list-item>
+          }
+        </app-list-group>
       </ng-template>
 
     </app-list-grid>
@@ -70,15 +52,13 @@
 
   @if (isAdmin()) {
     <div class="pt-8 flex flex-col md:flex-row justify-end gap-4">
-      <button class="btn btn-outline btn-secondary min-w-36"
-              (click)="exportCsv()"
-              [disabled]="isExporting()">
-        <ng-icon name="heroDocumentArrowDown" size="1.5rem"></ng-icon>
+      <button hlmBtn variant="outline" size="lg" class="min-w-36" (click)="exportCsv()" [disabled]="isExporting()">
+        <ng-icon name="heroDocumentArrowDown" aria-hidden="true"></ng-icon>
         {{ isExporting() ? '...' : ('EXPORT.EXPORT_CSV' | translate) }}
       </button>
 
-      <a routerLink="/movements/new" class="btn btn-secondary min-w-36">
-        <ng-icon name="heroPlus" size="1.5rem"></ng-icon>
+      <a hlmBtn size="lg" routerLink="/movements/new" class="min-w-36">
+        <ng-icon name="heroPlus" aria-hidden="true"></ng-icon>
         {{ 'MOVEMENT.ACTIONS.ADD' | translate }}
       </a>
     </div>

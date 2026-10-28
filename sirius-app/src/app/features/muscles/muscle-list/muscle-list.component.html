@@ -19,33 +19,20 @@
     <app-list-grid [items]="populatedGroups()">
 
       <ng-template let-group>
-        <div class="collapse collapse-arrow bg-base-100 border border-neutral">
-
-          <input type="checkbox"
-                 [checked]="expandedGroups().has(group)"
-                 (change)="onGroupToggle(group, $event)"/>
-
-          <div class="collapse-title text-xl font-medium flex items-center gap-3">
-            {{ 'MUSCLE.GROUPS.' + group | translate }}
-            <div class="badge badge-soft badge-accent">{{ groupedMuscles().get(group)?.length }}</div>
-          </div>
-
-          <div class="collapse-content p-0">
-            <ul class="divide-y divide-base-200">
-              @for (row of groupedMuscles().get(group); track row.muscle.id) {
-                <app-list-item
-                  [class]="row.isMember ? 'block pl-8 border-l-4 border-base-200' : 'block'"
-                  [title]="getLocalizedName(row.muscle) || row.muscle.medicalName"
-                  [subtitle]="getLocalizedName(row.muscle) !== row.muscle.medicalName ? row.muscle.medicalName : undefined"
-                  [badge]="groupBadge(row.muscle)"
-                  [imageUrl]="row.muscle.imageUrl"
-                  [link]="['/muscles', row.muscle.id]">
-                </app-list-item>
-              }
-            </ul>
-          </div>
-
-        </div>
+        <app-list-group [title]="'MUSCLE.GROUPS.' + group | translate"
+                        [count]="groupedMuscles().get(group)?.length ?? 0"
+                        [expanded]="expandedGroups().has(group)" (expandedChange)="onGroupToggle(group, $event)">
+          @for (row of groupedMuscles().get(group); track row.muscle.id) {
+            <app-list-item
+              [class]="row.isMember ? 'block pl-8 border-l-4 border-muted' : 'block'"
+              [title]="getLocalizedName(row.muscle) || row.muscle.medicalName"
+              [subtitle]="getLocalizedName(row.muscle) !== row.muscle.medicalName ? row.muscle.medicalName : undefined"
+              [badge]="groupBadge(row.muscle)"
+              [imageUrl]="row.muscle.imageUrl"
+              [link]="['/muscles', row.muscle.id]">
+            </app-list-item>
+          }
+        </app-list-group>
       </ng-template>
 
     </app-list-grid>
@@ -53,15 +40,13 @@
 
   @if (isAdmin()) {
     <div class="pt-8 flex flex-col md:flex-row justify-end gap-4">
-      <button class="btn btn-outline btn-secondary min-w-36"
-              (click)="exportCsv()"
-              [disabled]="isExporting()">
-        <ng-icon name="heroDocumentArrowDown"></ng-icon>
+      <button hlmBtn variant="outline" size="lg" class="min-w-36" (click)="exportCsv()" [disabled]="isExporting()">
+        <ng-icon name="heroDocumentArrowDown" aria-hidden="true"></ng-icon>
         {{ isExporting() ? '...' : ('EXPORT.EXPORT_CSV' | translate) }}
       </button>
 
-      <a routerLink="/muscles/new" class="btn btn-secondary min-w-36">
-        <ng-icon name="heroPlus"></ng-icon>
+      <a hlmBtn size="lg" routerLink="/muscles/new" class="min-w-36">
+        <ng-icon name="heroPlus" aria-hidden="true"></ng-icon>
         {{ 'MUSCLE.ACTIONS.ADD' | translate }}
       </a>
     </div>

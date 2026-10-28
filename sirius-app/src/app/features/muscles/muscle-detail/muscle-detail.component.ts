@@ -15,10 +15,11 @@ import {DetailCardComponent} from '../../../shared/component/detail/detail-card/
 import {DetailHeaderComponent} from '../../../shared/component/detail/detail-header/detail-header.component';
 import {DetailStateComponent} from '../../../shared/component/detail/detail-state/detail-state.component';
 
+import {HlmBadge} from '@spartan-ng/helm/badge';
 @Component({
   selector: 'app-muscle-detail',
   standalone: true,
-  imports: [TranslatePipe, RouterModule, NgIconComponent, NgOptimizedImage, DetailAdminActionsComponent, DetailCardComponent, DetailHeaderComponent, DetailStateComponent],
+  imports: [HlmBadge, TranslatePipe, RouterModule, NgIconComponent, NgOptimizedImage, DetailAdminActionsComponent, DetailCardComponent, DetailHeaderComponent, DetailStateComponent],
   templateUrl: './muscle-detail.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush
 })

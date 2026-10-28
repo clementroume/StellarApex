@@ -15,10 +15,12 @@ import {ListStateComponent} from '../../../shared/component/list/list-state/list
 import {ListItemComponent} from '../../../shared/component/list/list-item/list-item.component';
 import {ListGridComponent} from '../../../shared/component/list/list-grid/list-grid.component';
 
+import {ListGroupComponent} from '../../../shared/component/list/list-group/list-group.component';
+import {HlmButton} from '@spartan-ng/helm/button';
 @Component({
   selector: 'app-movement-list',
   standalone: true,
-  imports: [CommonModule, RouterModule, TranslatePipe, FormsModule, NgIcon, SearchInputComponent, ListStateComponent, ListItemComponent, ListGridComponent],
+  imports: [ListGroupComponent, HlmButton, CommonModule, RouterModule, TranslatePipe, FormsModule, NgIcon, SearchInputComponent, ListStateComponent, ListItemComponent, ListGridComponent],
   templateUrl: './movement-list.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -138,9 +140,8 @@ export class MovementListComponent implements OnInit {
     }
   }
 
-  onCategoryToggle(category: string, event: Event): void {
-    const isChecked = (event.target as HTMLInputElement).checked;
-    this.movementService.toggleCategoryExpansion(category, isChecked);
+  onCategoryToggle(category: string, isExpanded: boolean): void {
+    this.movementService.toggleCategoryExpansion(category, isExpanded);
   }
 
   exportCsv(): void {

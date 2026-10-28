@@ -227,7 +227,8 @@
       "COACHING_CUES_FR": "Coaching Cues (FR)",
       "COACHING_CUES_EN": "Coaching Cues (EN)",
       "IMAGE_URL": "URL de l'image",
-      "VIDEO_URL": "URL de la vidéo (YouTube/Vimeo)"
+      "VIDEO_URL": "URL de la vidéo (YouTube/Vimeo)",
+      "MODALITY": "Modalité"
     },
     "PLACEHOLDERS": {
       "NAME": "Ex: Back Squat",

@@ -10,10 +10,17 @@ import {MuscleRequest, MuscleResponse} from '../../../api/aldebaran/models/muscl
 import {ProblemDetail} from '../../../core/models/problem-detail.model';
 import {NgIcon} from '@ng-icons/core';
 
+import {SectionDividerComponent} from '../../../shared/component/section-divider/section-divider.component';
+import {HlmSpinner} from '@spartan-ng/helm/spinner';
+import {NativeSelectDirective} from '../../../shared/component/native-select/native-select.directive';
+import {HlmButton} from '@spartan-ng/helm/button';
+import {HlmInput} from '@spartan-ng/helm/input';
+import {HlmLabel} from '@spartan-ng/helm/label';
+import {HlmTextarea} from '@spartan-ng/helm/textarea';
 @Component({
   selector: 'app-muscle-form',
   standalone: true,
-  imports: [ReactiveFormsModule, RouterModule, TranslatePipe, NgIcon],
+  imports: [HlmTextarea, HlmLabel, HlmInput, HlmButton, NativeSelectDirective, HlmSpinner, SectionDividerComponent, ReactiveFormsModule, RouterModule, TranslatePipe, NgIcon],
   templateUrl: './muscle-form.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
