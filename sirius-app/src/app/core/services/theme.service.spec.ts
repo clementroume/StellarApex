@@ -5,7 +5,7 @@ import {ThemeService} from './theme.service';
 import {AuthService} from '../../api/antares/services/auth.service';
 import {UserService} from '../../api/antares/services/user.service';
 import {signal} from '@angular/core';
-import {of} from 'rxjs';
+import {of, throwError} from 'rxjs';
 import {UserResponse} from '../../api/antares/models/user.model';
 import {provideHttpClient, withXhr} from '@angular/common/http';
 import {provideHttpClientTesting} from '@angular/common/http/testing';
@@ -62,6 +62,7 @@ describe('ThemeService', () => {
   afterEach(() => {
     localStorage.clear();
     document.documentElement.removeAttribute('data-theme');
+    document.documentElement.removeAttribute('data-palette');
   });
 
   describe('with default initialization', () => {
@@ -139,6 +140,67 @@ describe('ThemeService', () => {
 
     it('should initialize with the theme from localStorage', () => {
       expect(service.currentTheme()).toBe('dark');
+    });
+  });
+  describe('palette', () => {
+    const supportSession = {id: 1, actor: {id: 9, firstName: 'Ad', lastName: 'Min'}, reason: 'Bug', expiresAt: ''};
+
+    beforeEach(() => configureTestBed());
+
+    it('should default to ocean and set data-palette on <html>', () => {
+      TestBed.tick();
+      expect(service.currentPalette()).toBe('ocean');
+      expect(document.documentElement.dataset['palette']).toBe('ocean');
+    });
+
+    it("should apply the user's palette", () => {
+      (authServiceSpy.currentUser as any).set({...mockUser, palette: 'volt'});
+      TestBed.tick();
+      expect(service.currentPalette()).toBe('volt');
+      expect(document.documentElement.dataset['palette']).toBe('volt');
+    });
+
+    it('should save the palette with the other preferences unchanged', () => {
+      (authServiceSpy.currentUser as any).set({...mockUser, unitSystem: 'IMPERIAL'});
+      userServiceSpy.updatePreferences.mockReturnValue(of({} as UserResponse));
+
+      service.setPalette('chalk');
+
+      expect(service.currentPalette()).toBe('chalk');
+      expect(userServiceSpy.updatePreferences).toHaveBeenCalledWith({
+        locale: 'en', theme: 'dark', unitSystem: 'IMPERIAL', palette: 'chalk'
+      });
+    });
+
+    it('should revert the palette when saving fails', () => {
+      (authServiceSpy.currentUser as any).set(mockUser);
+      userServiceSpy.updatePreferences.mockReturnValue(throwError(() => new Error('500')));
+
+      service.setPalette('rig');
+
+      expect(service.currentPalette()).toBe('ocean');
+    });
+
+    it("should keep the admin's palette during a support session and never save", () => {
+      (authServiceSpy.currentUser as any).set({...mockUser, palette: 'rig', supportSession});
+      TestBed.tick();
+      expect(service.currentPalette()).toBe('ocean');
+
+      service.setPalette('volt');
+
+      expect(service.currentPalette()).toBe('volt');
+      expect(userServiceSpy.updatePreferences).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('with an unknown stored palette', () => {
+    beforeEach(() => {
+      localStorage.setItem('palette', 'pink');
+      configureTestBed();
+    });
+
+    it('should fall back to ocean', () => {
+      expect(service.currentPalette()).toBe('ocean');
     });
   });
 });

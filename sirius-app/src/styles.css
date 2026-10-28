@@ -2,35 +2,37 @@
  * Main stylesheet for the application.
  */
 @import "tailwindcss";
+@import "./palettes.css";
 
 @plugin "daisyui" {
 }
 
+/* Colours come from palettes.css (ThemeService sets data-palette + data-theme). */
 @plugin "daisyui/theme" {
   name: "light";
   default: false;
   prefersdark: false;
   color-scheme: "light";
-  --color-base-100: oklch(100% 0 0);
-  --color-base-200: oklch(96% 0.007 247.896);
-  --color-base-300: oklch(92% 0.013 255.508);
-  --color-base-content: #02283C;
-  --color-primary: #219EBC;
-  --color-primary-content: oklch(0% 0 0);
-  --color-secondary: #FFB703;
-  --color-secondary-content: oklch(12% 0.042 264.695);
-  --color-accent: #FB8500;
-  --color-accent-content: oklch(100% 0 0);
-  --color-neutral: #8ECAE6;
-  --color-neutral-content: oklch(0% 0 0);
-  --color-info: #219EBC;
-  --color-info-content: oklch(0% 0 0);
-  --color-success: #21ba73;
-  --color-success-content: oklch(0% 0 0);
-  --color-warning: #FFB703;
-  --color-warning-content: oklch(0% 0 0);
-  --color-error: #ba4021;
-  --color-error-content: oklch(100% 0 0);
+  --color-base-100: var(--sa-base-100);
+  --color-base-200: var(--sa-base-200);
+  --color-base-300: var(--sa-base-300);
+  --color-base-content: var(--sa-base-content);
+  --color-primary: var(--sa-primary);
+  --color-primary-content: var(--sa-primary-content);
+  --color-secondary: var(--sa-secondary);
+  --color-secondary-content: var(--sa-secondary-content);
+  --color-accent: var(--sa-accent);
+  --color-accent-content: var(--sa-accent-content);
+  --color-neutral: var(--sa-neutral);
+  --color-neutral-content: var(--sa-neutral-content);
+  --color-info: var(--sa-info);
+  --color-info-content: var(--sa-info-content);
+  --color-success: var(--sa-success);
+  --color-success-content: var(--sa-success-content);
+  --color-warning: var(--sa-warning);
+  --color-warning-content: var(--sa-warning-content);
+  --color-error: var(--sa-error);
+  --color-error-content: var(--sa-error-content);
   --radius-selector: 2rem;
   --radius-field: 0.25rem;
   --radius-box: 0.5rem;
@@ -45,26 +47,26 @@
   default: true;
   prefersdark: true;
   color-scheme: "dark";
-  --color-base-100: #02283C;
-  --color-base-200: #023047;
-  --color-base-300: #034363;
-  --color-base-content: oklch(100% 0 0);
-  --color-primary: #219EBC;
-  --color-primary-content: oklch(0% 0 0);
-  --color-secondary: #FFB703;
-  --color-secondary-content: oklch(12% 0.042 264.695);
-  --color-accent: #FB8500;
-  --color-accent-content: oklch(100% 0 0);
-  --color-neutral: #8ECAE6;
-  --color-neutral-content: oklch(0% 0 0);
-  --color-info: #219EBC;
-  --color-info-content: oklch(0% 0 0);
-  --color-success: #21ba73;
-  --color-success-content: oklch(0% 0 0);
-  --color-warning: #FFB703;
-  --color-warning-content: oklch(0% 0 0);
-  --color-error: #ba4021;
-  --color-error-content: oklch(100% 0 0);
+  --color-base-100: var(--sa-base-100);
+  --color-base-200: var(--sa-base-200);
+  --color-base-300: var(--sa-base-300);
+  --color-base-content: var(--sa-base-content);
+  --color-primary: var(--sa-primary);
+  --color-primary-content: var(--sa-primary-content);
+  --color-secondary: var(--sa-secondary);
+  --color-secondary-content: var(--sa-secondary-content);
+  --color-accent: var(--sa-accent);
+  --color-accent-content: var(--sa-accent-content);
+  --color-neutral: var(--sa-neutral);
+  --color-neutral-content: var(--sa-neutral-content);
+  --color-info: var(--sa-info);
+  --color-info-content: var(--sa-info-content);
+  --color-success: var(--sa-success);
+  --color-success-content: var(--sa-success-content);
+  --color-warning: var(--sa-warning);
+  --color-warning-content: var(--sa-warning-content);
+  --color-error: var(--sa-error);
+  --color-error-content: var(--sa-error-content);
   --radius-selector: 2rem;
   --radius-field: 0.25rem;
   --radius-box: 0.5rem;

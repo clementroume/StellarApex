@@ -66,5 +66,6 @@ public interface UserMapper {
   @Mapping(
       target = "publicLeaderboardName",
       nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
+  @Mapping(target = "palette", nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
   void updateFromPreferences(PreferencesUpdateRequest dto, @MappingTarget User user);
 }

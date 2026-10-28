@@ -30,6 +30,13 @@ Vitest (jsdom) through `ng test`. Commands: `npm test`, `npm run build`, `npm st
   check the diff: the CLI rewrites `tsconfig.json` (restore its header comment),
   installs lucide icons (keep `@ng-icons/lucide` on the `@ng-icons/core` major) and leaves `.nx/` (ignored).
 
+## Theme and palettes
+
+- `ThemeService` sets `data-theme` (light/dark) and `data-palette` (`ocean` default, `chalk`, `volt`,
+  `rig`; Antares preference `palette`) on `<html>`. Colours live only in `src/palettes.css` as
+  `--sa-*` variables; DaisyUI themes and the spartan bridge read them. Never hard-code a colour: use the
+  theme utilities (`bg-base-100`, `text-primary`, spartan `bg-muted`...).
+
 ## Rights in the UI
 
 - Use `core/services/access.service.ts` for every rights question: `isAdmin()`, `memberships()`,

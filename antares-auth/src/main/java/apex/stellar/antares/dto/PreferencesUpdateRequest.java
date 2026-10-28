@@ -12,6 +12,7 @@ import jakarta.validation.constraints.Pattern;
  *
  * @param locale The user's preferred locale (e.g., "en" or "en-US").
  * @param theme The user's preferred theme ("light" or "dark").
+ * @param palette UI colour palette (ocean, chalk, volt, rig); null keeps it.
  * @param unitSystem Display unit for loads (METRIC, IMPERIAL), or null to follow the language.
  * @param publicLeaderboardName Whether to show the name on public leaderboards; null keeps it.
  */
@@ -27,6 +28,13 @@ public record PreferencesUpdateRequest(
         @NotBlank(message = "{validation.theme.required}")
         @Pattern(regexp = "^(light|dark)$", message = "{validation.theme.pattern}")
         String theme,
+    @Schema(
+            description = "UI colour palette, combined with the theme; null keeps it",
+            example = "ocean",
+            nullable = true,
+            allowableValues = {"ocean", "chalk", "volt", "rig"})
+        @Pattern(regexp = "^(ocean|chalk|volt|rig)$", message = "{validation.palette.pattern}")
+        String palette,
     @Schema(
             description = "Display unit for loads; null follows the language (fr: kg)",
             example = "METRIC",

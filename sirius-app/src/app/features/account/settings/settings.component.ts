@@ -17,6 +17,7 @@ import {HttpErrorResponse} from '@angular/common/http';
 import {PreferencesUpdateRequest} from '../../../api/antares/models/user.model';
 import {ProblemDetail} from '../../../core/models/problem-detail.model';
 import {NgIcon} from '@ng-icons/core';
+import {PalettePickerComponent} from '../../../shared/component/palette-picker/palette-picker.component';
 
 export const passwordMatchValidator: ValidatorFn = (control: AbstractControl): ValidationErrors | null => {
   const newPassword = control.get('newPassword');
@@ -27,7 +28,7 @@ export const passwordMatchValidator: ValidatorFn = (control: AbstractControl): V
 @Component({
   selector: 'app-settings',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, TranslatePipe, NgIcon],
+  imports: [CommonModule, ReactiveFormsModule, TranslatePipe, NgIcon, PalettePickerComponent],
   templateUrl: './settings.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

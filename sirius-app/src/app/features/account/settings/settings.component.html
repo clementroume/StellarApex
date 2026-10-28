@@ -69,6 +69,12 @@
     </fieldset>
 
     <fieldset class="fieldset bg-base-200 border-base-300 rounded-box w-full border p-4">
+      <legend class="fieldset-legend">{{ 'SETTINGS.APPEARANCE_TITLE' | translate }}</legend>
+      <p class="text-sm text-base-content/70 mb-2">{{ 'SETTINGS.PALETTE_HINT' | translate }}</p>
+      <app-palette-picker/>
+    </fieldset>
+
+    <fieldset class="fieldset bg-base-200 border-base-300 rounded-box w-full border p-4">
       <legend class="fieldset-legend">{{ 'SETTINGS.PRIVACY_TITLE' | translate }}</legend>
       <label class="flex items-start gap-3 cursor-pointer">
         <input id="public-leaderboard-name" type="checkbox" class="toggle toggle-primary mt-1"

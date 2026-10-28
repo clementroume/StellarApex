@@ -97,8 +97,8 @@ Admin support session: a platform admin acts as a real (non-admin) user from Sir
 refreshable `support_token` cookie (admin cookies untouched), records it in `support_sessions`, and
 resolves requests as the target; writes are allowed and audited (`X-Auth-Actor-Id`). Expiry → 401
 ProblemDetail `code=SUPPORT_SESSION_EXPIRED`, never a silent fallback to admin; password change,
-account deletion and preference (language/theme/unit system) updates → 403 `SUPPORT_SESSION_FORBIDDEN`;
-Sirius keeps the admin's language/theme/unit on screen. `/users/me` carries `supportSession` while active.
+account deletion and preference (language/theme/palette/unit system) updates → 403 `SUPPORT_SESSION_FORBIDDEN`;
+Sirius keeps the admin's language/theme/palette/unit on screen. `/users/me` carries `supportSession` while active.
 
 Temporary dev data (`dev` Spring profile, set in `docker-compose.yml`, to be removed like the CSV
 export): test gyms "Spartacus CrossFit" (physical), "Zeus Programming" (virtual), "Pending Box" and

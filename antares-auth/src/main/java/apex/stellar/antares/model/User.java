@@ -82,6 +82,11 @@ public class User implements UserDetails {
   @Column(nullable = false, length = 20)
   private String theme = "light";
 
+  /** UI colour palette (ocean, chalk, volt, rig), combined with the light/dark theme. */
+  @Builder.Default
+  @Column(nullable = false, length = 20)
+  private String palette = "ocean";
+
   /** Display unit for loads: METRIC (kg) or IMPERIAL (lb); null follows the language. */
   @Column(name = "unit_system", length = 10)
   private String unitSystem;

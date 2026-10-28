@@ -56,7 +56,7 @@ The backends enforce every rule; Sirius only adapts what it shows:
   filter by gym, role and membership status, page through results, or pick one of the 5 accounts
   recently acted as; give a reason and act as them for 30 minutes
   (`core/services/support-session.service.ts`). A banner shows the target and
-  the remaining time; password change and account deletion are hidden; language and theme stay those of the admin's
+  the remaining time; password change and account deletion are hidden; language, theme and palette stay those of the admin's
   screen and are never saved to the user's account; when the session expires the
   app reloads the admin identity instead of refreshing tokens.
 
@@ -87,6 +87,9 @@ The backends enforce every rule; Sirius only adapts what it shows:
   leaderboard shows every score to judges (to verify them) and verified scores only to the others by
   default, with a "Verified" badge and Verify / Withdraw / edit / delete buttons when the backend
   allows them; the history shows "Verified by" / "Logged by".
+* **Palettes**: My account → Settings → Appearance offers four colour palettes (Ocean by default,
+  Chalk and iron, Volt, Rig red), each in light and dark, saved in the account (`palette`). Defined in
+  `src/palettes.css` (`data-palette` + `data-theme` on `<html>`, `core/services/theme.service.ts`).
 * **Units**: a "Units" tab in My account (metric or imperial, `core/services/unit.service.ts`), saved
   in the account (`unitSystem`); without a choice it follows the language (French: metric). Values are
   converted for display only, rounded as gyms write them: loads (95 lb = 43 kg), heights (24/20 in =

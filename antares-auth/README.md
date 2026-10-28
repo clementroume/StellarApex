@@ -104,8 +104,8 @@ docker compose logs -f antares-auth
 * `PUT /me/profile`: Update the user's first name, last name, or email.
 * `PATCH /me/preferences`: Update the user's locale (language), theme and unit system (`unitSystem`:
   `METRIC`, `IMPERIAL`, or null to follow the language). The preferences are replaced as a whole,
-  except `publicLeaderboardName` (show the name on public leaderboards, off by default), kept when
-  omitted. Refused during a support session.
+  except `publicLeaderboardName` (show the name on public leaderboards, off by default) and `palette`
+  (UI colours: `ocean` by default, `chalk`, `volt`, `rig`), kept when omitted. Refused during a support session.
 * `POST /display-names` (`{userIds}`, at most 100): "First L." names the caller may see: themselves,
   members of their gyms (usable memberships), users who opted in to public leaderboards; all for
   platform admins. Hidden users are left out (clients show them as anonymous).

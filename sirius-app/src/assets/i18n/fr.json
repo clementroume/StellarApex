@@ -90,7 +90,28 @@
     "PUBLIC_LEADERBOARD_NAME": "Afficher mon nom dans les classements publics",
     "PUBLIC_LEADERBOARD_NAME_HINT": "Les membres de tes boxes et progs voient toujours ton nom. Sinon, tu apparais comme athlète anonyme.",
     "PRIVACY_SAVED": "Réglage de confidentialité enregistré.",
-    "PRIVACY_ERROR": "Le réglage de confidentialité n'a pas pu être enregistré."
+    "PRIVACY_ERROR": "Le réglage de confidentialité n'a pas pu être enregistré.",
+    "APPEARANCE_TITLE": "Apparence",
+    "PALETTE_LABEL": "Palette de couleurs",
+    "PALETTE_HINT": "Choisis les couleurs de ton espace. Le mode clair/sombre se règle dans la barre de navigation.",
+    "PALETTES": {
+      "ocean": {
+        "NAME": "Océan",
+        "DESC": "Marine, cyan et orange"
+      },
+      "chalk": {
+        "NAME": "Craie et fonte",
+        "DESC": "Zinc et orange box"
+      },
+      "volt": {
+        "NAME": "Volt",
+        "DESC": "Anthracite et vert électrique"
+      },
+      "rig": {
+        "NAME": "Rig rouge",
+        "DESC": "Noir chaud, rouge et ambre"
+      }
+    }
   },
   "UNITS": {
     "TITLE": "Unités",

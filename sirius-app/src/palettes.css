@@ -1,0 +1,197 @@
+/*
+ * Colour palettes (user preference `palette`, Antares) × theme (light/dark), set by ThemeService as
+ * `data-palette` / `data-theme` on <html>. Ocean is the default and keeps the historical colours.
+ * DaisyUI themes (styles.css) and the spartan bridge read these --sa-* variables, so every screen
+ * follows the palette. Names follow DaisyUI semantics until DaisyUI is removed:
+ * base-200 = page, base-100 = card, base-300 = border/raised, secondary = records (PR).
+ * Selectors also match nested elements (palette previews): there, use the --sa-* variables directly,
+ * DaisyUI's --color-* are resolved on <html>.
+ */
+
+/* --- Ocean (default) --- */
+:root, [data-palette=ocean] {
+  --sa-base-100: #02283C;
+  --sa-base-200: #023047;
+  --sa-base-300: #034363;
+  --sa-base-content: oklch(100% 0 0);
+  --sa-primary: #219EBC;
+  --sa-primary-content: oklch(0% 0 0);
+  --sa-secondary: #FFB703;
+  --sa-secondary-content: oklch(12% 0.042 264.695);
+  --sa-accent: #FB8500;
+  --sa-accent-content: oklch(100% 0 0);
+  --sa-neutral: #8ECAE6;
+  --sa-neutral-content: oklch(0% 0 0);
+  --sa-info: #219EBC;
+  --sa-info-content: oklch(0% 0 0);
+  --sa-success: #21ba73;
+  --sa-success-content: oklch(0% 0 0);
+  --sa-warning: #FFB703;
+  --sa-warning-content: oklch(0% 0 0);
+  --sa-error: #ba4021;
+  --sa-error-content: oklch(100% 0 0);
+}
+
+:root[data-theme=light], [data-palette=ocean][data-theme=light] {
+  --sa-base-100: oklch(100% 0 0);
+  --sa-base-200: oklch(96% 0.007 247.896);
+  --sa-base-300: oklch(92% 0.013 255.508);
+  --sa-base-content: #02283C;
+  --sa-primary: #219EBC;
+  --sa-primary-content: oklch(0% 0 0);
+  --sa-secondary: #FFB703;
+  --sa-secondary-content: oklch(12% 0.042 264.695);
+  --sa-accent: #FB8500;
+  --sa-accent-content: oklch(100% 0 0);
+  --sa-neutral: #8ECAE6;
+  --sa-neutral-content: oklch(0% 0 0);
+  --sa-info: #219EBC;
+  --sa-info-content: oklch(0% 0 0);
+  --sa-success: #21ba73;
+  --sa-success-content: oklch(0% 0 0);
+  --sa-warning: #FFB703;
+  --sa-warning-content: oklch(0% 0 0);
+  --sa-error: #ba4021;
+  --sa-error-content: oklch(100% 0 0);
+}
+
+/* --- Chalk and iron: zinc neutrals, one box orange --- */
+[data-palette=chalk] {
+  --sa-base-100: #232326;
+  --sa-base-200: #161618;
+  --sa-base-300: #34343A;
+  --sa-base-content: #F4F4F5;
+  --sa-primary: #F97316;
+  --sa-primary-content: #2A1000;
+  --sa-secondary: #FACC15;
+  --sa-secondary-content: #2A2200;
+  --sa-accent: #FDBA74;
+  --sa-accent-content: #2A1000;
+  --sa-neutral: #3F3F46;
+  --sa-neutral-content: #F4F4F5;
+  --sa-info: #38BDF8;
+  --sa-info-content: #04202E;
+  --sa-success: #22C55E;
+  --sa-success-content: #052E16;
+  --sa-warning: #FACC15;
+  --sa-warning-content: #2A2200;
+  --sa-error: #EF4444;
+  --sa-error-content: #FFFFFF;
+}
+
+[data-palette=chalk][data-theme=light] {
+  --sa-base-100: #FFFFFF;
+  --sa-base-200: #F4F4F5;
+  --sa-base-300: #E4E4E7;
+  --sa-base-content: #18181B;
+  --sa-primary: #C2410C;
+  --sa-primary-content: #FFFFFF;
+  --sa-secondary: #EAB308;
+  --sa-secondary-content: #1C1500;
+  --sa-accent: #EA580C;
+  --sa-accent-content: #FFFFFF;
+  --sa-neutral: #D4D4D8;
+  --sa-neutral-content: #18181B;
+  --sa-info: #0284C7;
+  --sa-info-content: #FFFFFF;
+  --sa-success: #16A34A;
+  --sa-success-content: #FFFFFF;
+  --sa-warning: #CA8A04;
+  --sa-warning-content: #FFFFFF;
+  --sa-error: #DC2626;
+  --sa-error-content: #FFFFFF;
+}
+
+/* --- Volt: charcoal, electric green --- */
+[data-palette=volt] {
+  --sa-base-100: #1A1F27;
+  --sa-base-200: #0E1116;
+  --sa-base-300: #2A313C;
+  --sa-base-content: #EEF2F6;
+  --sa-primary: #C6F432;
+  --sa-primary-content: #1A2300;
+  --sa-secondary: #FDE047;
+  --sa-secondary-content: #2A2200;
+  --sa-accent: #38BDF8;
+  --sa-accent-content: #04202E;
+  --sa-neutral: #334155;
+  --sa-neutral-content: #EEF2F6;
+  --sa-info: #38BDF8;
+  --sa-info-content: #04202E;
+  --sa-success: #4ADE80;
+  --sa-success-content: #052E16;
+  --sa-warning: #FBBF24;
+  --sa-warning-content: #2A1900;
+  --sa-error: #F87171;
+  --sa-error-content: #2A0A0A;
+}
+
+[data-palette=volt][data-theme=light] {
+  --sa-base-100: #FFFFFF;
+  --sa-base-200: #F5F7F9;
+  --sa-base-300: #DDE3EA;
+  --sa-base-content: #111827;
+  --sa-primary: #4D7C0F;
+  --sa-primary-content: #FFFFFF;
+  --sa-secondary: #CA8A04;
+  --sa-secondary-content: #FFFFFF;
+  --sa-accent: #0369A1;
+  --sa-accent-content: #FFFFFF;
+  --sa-neutral: #CBD5E1;
+  --sa-neutral-content: #111827;
+  --sa-info: #0369A1;
+  --sa-info-content: #FFFFFF;
+  --sa-success: #15803D;
+  --sa-success-content: #FFFFFF;
+  --sa-warning: #B45309;
+  --sa-warning-content: #FFFFFF;
+  --sa-error: #B91C1C;
+  --sa-error-content: #FFFFFF;
+}
+
+/* --- Rig red: warm black, red, amber (errors in a distinct coral) --- */
+[data-palette=rig] {
+  --sa-base-100: #221B1E;
+  --sa-base-200: #141012;
+  --sa-base-300: #3A2E33;
+  --sa-base-content: #F7F1F2;
+  --sa-primary: #F43F5E;
+  --sa-primary-content: #2C0610;
+  --sa-secondary: #FCD34D;
+  --sa-secondary-content: #2A1900;
+  --sa-accent: #F59E0B;
+  --sa-accent-content: #2A1900;
+  --sa-neutral: #4A3B41;
+  --sa-neutral-content: #F7F1F2;
+  --sa-info: #60A5FA;
+  --sa-info-content: #04162E;
+  --sa-success: #34D399;
+  --sa-success-content: #022C22;
+  --sa-warning: #FBBF24;
+  --sa-warning-content: #2A1900;
+  --sa-error: #FB7A4B;
+  --sa-error-content: #2A0E00;
+}
+
+[data-palette=rig][data-theme=light] {
+  --sa-base-100: #FFFFFF;
+  --sa-base-200: #FAF7F7;
+  --sa-base-300: #EADFE1;
+  --sa-base-content: #1C1416;
+  --sa-primary: #BE123C;
+  --sa-primary-content: #FFFFFF;
+  --sa-secondary: #D97706;
+  --sa-secondary-content: #FFFFFF;
+  --sa-accent: #B45309;
+  --sa-accent-content: #FFFFFF;
+  --sa-neutral: #E5D5D9;
+  --sa-neutral-content: #1C1416;
+  --sa-info: #1D4ED8;
+  --sa-info-content: #FFFFFF;
+  --sa-success: #047857;
+  --sa-success-content: #FFFFFF;
+  --sa-warning: #B45309;
+  --sa-warning-content: #FFFFFF;
+  --sa-error: #C2410C;
+  --sa-error-content: #FFFFFF;
+}

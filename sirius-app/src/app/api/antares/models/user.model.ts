@@ -5,6 +5,9 @@ export type UnitSystem = 'METRIC' | 'IMPERIAL';
 
 export type PlatformRole = 'USER' | 'ADMIN';
 export type Theme = 'light' | 'dark';
+/** UI colour palette, combined with the theme (ocean is the default). */
+export type Palette = 'ocean' | 'chalk' | 'volt' | 'rig';
+export const PALETTES: Palette[] = ['ocean', 'chalk', 'volt', 'rig'];
 
 export interface UserSummary {
   id: number;
@@ -23,6 +26,7 @@ export interface UserResponse {
   memberships: MembershipSummary[];
   locale: string;
   theme: Theme;
+  palette?: Palette;
   // Display unit for loads; null follows the language (fr: kg)
   unitSystem?: UnitSystem | null;
   // Name shown on public leaderboards (members of the user's gyms always see it)
@@ -54,6 +58,8 @@ export interface ProfileUpdateRequest {
 export interface PreferencesUpdateRequest {
   locale: string;
   theme: Theme;
+  // Omitted (undefined) keeps the current palette
+  palette?: Palette;
   unitSystem?: UnitSystem | null;
   // Omitted (undefined) keeps the current choice
   publicLeaderboardName?: boolean;
