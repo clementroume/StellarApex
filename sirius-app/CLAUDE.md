@@ -108,7 +108,7 @@ Vitest (jsdom) through `ng test`. Commands: `npm test`, `npm run build`, `npm st
 
 ## Known state
 
-- Production build warns that the initial bundle is over the 500 kB budget (`angular.json`): ~580 kB
+- Initial bundle budget (`angular.json`): warning at 600 kB (raised from 500 kB in lot 0): ~580 kB
   (137 kB transferred; 520 kB before lot 0). Tailwind generates the utilities of every helm file
   (~145 kB of CSS) and helm in the shell brings `tailwind-merge` (~37 kB). Keep heavy brain modules out of the shell
   (sonner is loaded on first toast and its toaster is `@defer (on idle)`).
