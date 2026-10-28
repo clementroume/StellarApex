@@ -54,7 +54,7 @@ export class LoginComponent implements OnInit {
           this.redirectToExternal(this.returnUrl);
         } else {
           // Standard Angular routing for internal pages
-          void this.router.navigate([this.returnUrl]);
+          void this.router.navigateByUrl(this.returnUrl);
         }
       },
       error: (err: HttpErrorResponse) => {

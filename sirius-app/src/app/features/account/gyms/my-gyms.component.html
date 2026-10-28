@@ -1,0 +1,128 @@
+<section>
+  <header class="mb-4 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+    <div>
+      <h2 class="text-2xl font-bold">{{ 'MY_GYMS.TITLE' | translate }}</h2>
+      <p class="mt-1 text-muted-foreground">{{ 'MY_GYMS.SUBTITLE' | translate }}</p>
+    </div>
+    <div class="flex flex-col sm:flex-row gap-2">
+      <a hlmBtn routerLink="join" class="h-11 md:h-10">
+        <ng-icon name="heroUserPlus" size="1.1rem" aria-hidden="true"/>
+        {{ 'MY_GYMS.JOIN' | translate }}
+      </a>
+      <a hlmBtn variant="outline" routerLink="new" class="h-11 md:h-10">
+        <ng-icon name="heroPlus" size="1.1rem" aria-hidden="true"/>
+        {{ 'MY_GYMS.CREATE' | translate }}
+      </a>
+    </div>
+  </header>
+
+  <ul class="flex flex-col gap-3">
+    @for (m of current(); track m.gymId) {
+      <li hlmCard data-slot="my-gym">
+        <div hlmCardContent class="flex flex-col gap-3">
+          <div class="flex flex-wrap items-center gap-2">
+            <span class="font-semibold text-lg">{{ m.gymName }}</span>
+            <span hlmBadge variant="outline">{{ (m.gymProgramming ? 'GYM.TYPE.PROGRAM' : 'GYM.TYPE.BOX') | translate }}</span>
+            <span hlmBadge class="bg-primary/15 text-primary">{{ 'GYM.ROLES.' + m.gymRole | translate }}</span>
+            @if (m.status !== 'ACTIVE') {
+              <span hlmBadge class="bg-warning/15 text-warning">{{ 'GYM.STATUS.' + m.status | translate }}</span>
+            }
+            @if (m.gymStatus !== 'ACTIVE') {
+              <span hlmBadge variant="secondary">{{ 'GYM.GYM_STATUS.' + m.gymStatus | translate }}</span>
+            }
+          </div>
+
+          @if (m.status === 'PENDING') {
+            <p class="text-sm text-muted-foreground">{{ 'MY_GYMS.PENDING_HINT' | translate }}</p>
+          } @else if (m.status === 'BANNED') {
+            <p class="text-sm text-muted-foreground">{{ 'MY_GYMS.BANNED_HINT' | translate }}</p>
+          } @else if (m.gymStatus === 'PENDING_APPROVAL') {
+            <p class="text-sm text-muted-foreground">{{ 'MY_GYMS.PENDING_APPROVAL_HINT' | translate }}</p>
+          } @else if (m.gymStatus === 'REJECTED') {
+            <p class="text-sm text-muted-foreground">{{ 'MY_GYMS.REJECTED_HINT' | translate }}</p>
+          } @else if (m.gymStatus === 'SUSPENDED') {
+            <p class="text-sm text-muted-foreground">{{ 'MY_GYMS.SUSPENDED_HINT' | translate }}</p>
+          }
+
+          @if (m.usable) {
+            @if (m.permissions.length > 0) {
+              <ul class="flex flex-col gap-2">
+                @for (permission of m.permissions; track permission) {
+                  <li class="flex items-start gap-2">
+                    <span hlmBadge class="shrink-0 bg-secondary/15 text-secondary">
+                      {{ 'GYM.PERMISSIONS.' + permission + '.LABEL' | translate }}
+                    </span>
+                    <span class="text-sm text-muted-foreground">{{ 'GYM.PERMISSIONS.' + permission + '.DESCRIPTION' | translate }}</span>
+                  </li>
+                }
+              </ul>
+            } @else {
+              <p class="text-sm text-muted-foreground">{{ 'MY_GYMS.NO_PERMISSION' | translate }}</p>
+            }
+          }
+
+          <div class="flex flex-col sm:flex-row sm:flex-wrap gap-2 empty:hidden">
+            @if (isHolder(m)) {
+              @if (m.gymStatus === 'REJECTED') {
+                <button type="button" hlmBtn variant="outline" class="h-11 md:h-9 text-destructive" (click)="ask('deleteRequest', m)">
+                  <ng-icon name="heroTrash" size="1rem" aria-hidden="true"/>
+                  {{ 'MY_GYMS.DELETE_REQUEST' | translate }}
+                </button>
+              } @else if (m.usable) {
+                <a hlmBtn variant="outline" class="h-11 md:h-9" routerLink="/box/settings">
+                  <ng-icon name="heroAdjustmentsHorizontal" size="1rem" aria-hidden="true"/>
+                  {{ 'MY_GYMS.MANAGE' | translate }}
+                </a>
+              }
+            } @else if (m.status === 'ACTIVE') {
+              <button type="button" hlmBtn variant="outline" class="h-11 md:h-9" (click)="ask('leave', m)">
+                <ng-icon name="heroArrowRightOnRectangle" size="1rem" aria-hidden="true"/>
+                {{ 'MY_GYMS.LEAVE' | translate }}
+              </button>
+            } @else if (m.status === 'PENDING') {
+              <button type="button" hlmBtn variant="outline" class="h-11 md:h-9" (click)="ask('withdraw', m)">
+                <ng-icon name="heroXMark" size="1rem" aria-hidden="true"/>
+                {{ 'MY_GYMS.WITHDRAW' | translate }}
+              </button>
+            }
+          </div>
+          @if (isHolder(m) && m.gymStatus !== 'REJECTED') {
+            <p class="text-xs text-muted-foreground">{{ 'MY_GYMS.HOLDER_HINT' | translate }}</p>
+          }
+        </div>
+      </li>
+    } @empty {
+      <li hlmCard>
+        <p hlmCardContent class="text-muted-foreground">{{ 'MY_GYMS.NONE' | translate }}</p>
+      </li>
+    }
+  </ul>
+
+  @if (former().length > 0) {
+    <h3 class="text-lg font-semibold mt-8 mb-2">{{ 'MY_GYMS.HISTORY' | translate }}</h3>
+    <ul class="bg-card border rounded-xl divide-y">
+      @for (m of former(); track m.gymId) {
+        <li class="p-4 flex flex-wrap items-center justify-between gap-2" data-slot="former-gym">
+          <span class="flex flex-wrap items-center gap-2">
+            <span class="font-medium">{{ m.gymName }}</span>
+            <span hlmBadge variant="outline">{{ (m.gymProgramming ? 'GYM.TYPE.PROGRAM' : 'GYM.TYPE.BOX') | translate }}</span>
+          </span>
+          @if (m.gymStatus === 'ACTIVE') {
+            <a hlmBtn variant="ghost" class="h-11 md:h-9" routerLink="join" [queryParams]="{gym: m.gymId}">
+              {{ 'MY_GYMS.REJOIN' | translate }}
+            </a>
+          }
+        </li>
+      }
+    </ul>
+  }
+</section>
+
+@if (pendingAction(); as action) {
+  <app-confirm-dialog [open]="true" [destructive]="action.kind !== 'withdraw'"
+                      [title]="dialogKeys(action.kind).title | translate: {name: action.membership.gymName}"
+                      [description]="dialogKeys(action.kind).description | translate"
+                      [confirmLabel]="dialogKeys(action.kind).confirm | translate"
+                      [confirmDisabled]="isWorking()"
+                      (confirmed)="confirm()" (closed)="cancel()"/>
+}

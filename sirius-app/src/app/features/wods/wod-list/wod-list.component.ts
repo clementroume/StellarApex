@@ -9,7 +9,6 @@ import {WodFacetFilters, WodListFilters, WodService} from '../../../api/aldebara
 import {WodScope, WodSummaryResponse} from '../../../api/aldebaran/models/wod.model';
 import {AccessService} from '../../../core/services/access.service';
 import {ExporterService} from '../../../api/aldebaran/services/exporter.service';
-import {GymService} from '../../../api/antares/services/gym.service';
 import {AdminService} from '../../../api/antares/services/admin.service';
 import {UserSummary} from '../../../api/antares/models/user.model';
 import {BYPASS_LOADER} from '../../../core/interceptors/loading.interceptor';
@@ -40,6 +39,9 @@ import {HlmSpinner} from '@spartan-ng/helm/spinner';
 import {NativeSelectDirective} from '../../../shared/component/native-select/native-select.directive';
 import {HlmBadge} from '@spartan-ng/helm/badge';
 import {HlmButton} from '@spartan-ng/helm/button';
+/** Gym names shown to admins in the WOD list (Antares caps a page at 50). */
+const ADMIN_GYM_PAGE_SIZE = 50;
+
 @Component({
   selector: 'app-wod-list',
   standalone: true,
@@ -53,7 +55,6 @@ export class WodListComponent implements OnInit {
   private readonly translate = inject(TranslateService);
   private readonly accessService = inject(AccessService);
   private readonly exporterService = inject(ExporterService);
-  private readonly gymService = inject(GymService);
   private readonly adminService = inject(AdminService);
   private readonly destroyRef = inject(DestroyRef);
 
@@ -145,7 +146,8 @@ export class WodListComponent implements OnInit {
       .subscribe(() => this.reload());
 
     if (this.isAdmin()) {
-      this.gymService.getGyms().subscribe(gyms => this.gymNames.set(new Map(gyms.map(g => [g.id, g.name]))));
+      this.adminService.searchGyms('', null, 0, ADMIN_GYM_PAGE_SIZE)
+        .subscribe(slice => this.gymNames.set(new Map(slice.content.map(g => [g.id, g.name]))));
     }
     this.reload();
   }

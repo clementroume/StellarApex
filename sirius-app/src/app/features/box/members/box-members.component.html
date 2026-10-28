@@ -1,0 +1,184 @@
+<app-page [title]="'BOX.MEMBERS.TITLE' | translate" [subtitle]="'BOX.MEMBERS.SUBTITLE' | translate">
+  @if (canInvite()) {
+    <a pageActions hlmBtn variant="outline" routerLink="/box/settings" class="h-11 md:h-10">
+      <ng-icon name="heroUserPlus" size="1.1rem" aria-hidden="true"/>
+      {{ 'BOX.MEMBERS.INVITE' | translate }}
+    </a>
+  }
+
+  <!-- One member row, with the actions its capabilities allow -->
+  <ng-template #memberRow let-m>
+    <li class="p-4 flex flex-col gap-3" data-slot="member">
+      <div class="flex flex-col md:flex-row md:items-center gap-2 md:justify-between">
+        <div class="min-w-0">
+          <p class="flex flex-wrap items-center gap-2 font-semibold">
+            {{ fullName(m) }}
+            @if (m.user.id === userId()) {
+              <span hlmBadge variant="outline">{{ 'BOX.MEMBERS.YOU' | translate }}</span>
+            }
+          </p>
+          <p class="text-sm text-muted-foreground truncate">{{ m.user.email }}</p>
+          <p class="text-xs text-muted-foreground">{{ 'BOX.MEMBERS.SINCE' | translate: {date: formatDate(m.createdAt)} }}</p>
+        </div>
+        <div class="flex flex-wrap gap-1 md:justify-end">
+          <span hlmBadge class="bg-primary/15 text-primary">{{ 'GYM.ROLES.' + m.gymRole | translate }}</span>
+          @if (m.status !== 'ACTIVE') {
+            <span hlmBadge class="bg-warning/15 text-warning">{{ 'GYM.STATUS.' + m.status | translate }}</span>
+          }
+          @if (m.gymRole === 'COACH') {
+            @for (permission of m.permissions; track permission) {
+              <span hlmBadge class="bg-secondary/15 text-secondary" [title]="'GYM.PERMISSIONS.' + permission + '.DESCRIPTION' | translate">
+                {{ 'GYM.PERMISSIONS.' + permission + '.LABEL' | translate }}
+              </span>
+            }
+          }
+        </div>
+      </div>
+
+      @if (m.capabilities; as caps) {
+        @if (editingId() === m.id) {
+          <div class="flex flex-col gap-3 rounded-lg border p-3" data-slot="member-editor">
+            @if (caps.canChangeRole) {
+              <label class="flex flex-col gap-1.5 md:w-64">
+                <span class="text-sm font-medium">{{ 'BOX.MEMBERS.ROLE' | translate }}</span>
+                <select appNativeSelect (change)="onEditRole($any($event.target).value)">
+                  @for (role of editableRoles(); track role) {
+                    <option [value]="role" [selected]="role === editRole()">{{ 'GYM.ROLES.' + role | translate }}</option>
+                  }
+                </select>
+              </label>
+            }
+            @if (caps.canChangePermissions) {
+              <fieldset class="flex flex-col gap-2" [disabled]="editRole() !== 'COACH'">
+                <legend class="text-sm font-medium mb-1">{{ 'BOX.MEMBERS.PERMISSIONS' | translate }}</legend>
+                @if (editRole() !== 'COACH') {
+                  <p class="text-xs text-muted-foreground">{{ 'BOX.MEMBERS.PERMISSIONS_COACH_ONLY' | translate }}</p>
+                }
+                @for (permission of permissions; track permission) {
+                  <label class="flex items-start gap-3 min-h-11 md:min-h-0 cursor-pointer has-[:disabled]:opacity-50">
+                    <input type="checkbox" class="mt-1 size-4 accent-primary"
+                           [checked]="editPermissions().includes(permission)"
+                           (change)="togglePermission(permission, $any($event.target).checked)"/>
+                    <span class="flex flex-col">
+                      <span class="text-sm font-medium">{{ 'GYM.PERMISSIONS.' + permission + '.LABEL' | translate }}</span>
+                      <span class="text-xs text-muted-foreground">{{ 'GYM.PERMISSIONS.' + permission + '.DESCRIPTION' | translate }}</span>
+                    </span>
+                  </label>
+                }
+              </fieldset>
+            }
+            <div class="flex flex-col sm:flex-row gap-2 sm:justify-end">
+              <button type="button" hlmBtn variant="ghost" class="h-11 md:h-9" (click)="cancelEdit()">{{ 'GLOBAL.CANCEL' | translate }}</button>
+              <button type="button" hlmBtn class="h-11 md:h-9" [disabled]="busyId() === m.id" (click)="saveEdit(m)">
+                {{ 'GLOBAL.SAVE' | translate }}
+              </button>
+            </div>
+          </div>
+        } @else {
+          <div class="flex flex-col sm:flex-row sm:flex-wrap gap-2 empty:hidden">
+            @if (m.status === 'PENDING') {
+              @if (caps.canChangeStatus) {
+                <button type="button" hlmBtn class="h-11 md:h-9" [disabled]="busyId() === m.id" (click)="setStatus(m, 'ACTIVE')">
+                  <ng-icon name="heroCheck" size="1rem" aria-hidden="true"/>
+                  {{ 'BOX.MEMBERS.VALIDATE' | translate }}
+                </button>
+              }
+              @if (caps.canRemove) {
+                <button type="button" hlmBtn variant="outline" class="h-11 md:h-9" [disabled]="busyId() === m.id" (click)="ask('refuse', m)">
+                  <ng-icon name="heroXMark" size="1rem" aria-hidden="true"/>
+                  {{ 'BOX.MEMBERS.REFUSE' | translate }}
+                </button>
+              }
+            }
+            @if (m.status === 'INACTIVE' && caps.canChangeStatus) {
+              <button type="button" hlmBtn variant="outline" class="h-11 md:h-9" [disabled]="busyId() === m.id" (click)="setStatus(m, 'ACTIVE')">
+                <ng-icon name="heroArrowPath" size="1rem" aria-hidden="true"/>
+                {{ 'BOX.MEMBERS.REACTIVATE' | translate }}
+              </button>
+            }
+            @if (m.status === 'ACTIVE' && (caps.canChangeRole || caps.canChangePermissions)) {
+              <button type="button" hlmBtn variant="outline" class="h-11 md:h-9" (click)="startEdit(m)">
+                <ng-icon name="heroPencilSquare" size="1rem" aria-hidden="true"/>
+                {{ 'BOX.MEMBERS.EDIT' | translate }}
+              </button>
+            }
+            @if (m.status === 'ACTIVE' && caps.canRemove) {
+              <button type="button" hlmBtn variant="outline" class="h-11 md:h-9" [disabled]="busyId() === m.id" (click)="ask('remove', m)">
+                <ng-icon name="heroUserMinus" size="1rem" aria-hidden="true"/>
+                {{ 'BOX.MEMBERS.REMOVE' | translate }}
+              </button>
+            }
+            @if (m.status === 'BANNED') {
+              @if (caps.canBan) {
+                <button type="button" hlmBtn variant="outline" class="h-11 md:h-9" [disabled]="busyId() === m.id" (click)="setStatus(m, 'INACTIVE')">
+                  {{ 'BOX.MEMBERS.UNBAN' | translate }}
+                </button>
+              }
+            } @else if (m.status !== 'PENDING' && caps.canBan) {
+              <button type="button" hlmBtn variant="ghost" class="h-11 md:h-9 text-destructive" [disabled]="busyId() === m.id" (click)="ask('ban', m)">
+                <ng-icon name="heroNoSymbol" size="1rem" aria-hidden="true"/>
+                {{ 'BOX.MEMBERS.BAN' | translate }}
+              </button>
+            }
+          </div>
+        }
+      }
+    </li>
+  </ng-template>
+
+  <div class="flex flex-col gap-3 mb-6">
+    <app-staff-gym-picker [candidates]="staffGym.candidates()" [value]="staffGym.gymId()" (valueChange)="staffGym.select($event)"/>
+    <div class="flex flex-wrap items-center gap-2" role="group" [attr.aria-label]="'BOX.MEMBERS.FILTER_STATUS' | translate">
+      <button type="button" hlmBadge variant="outline"
+              class="h-9 px-3 text-sm cursor-pointer aria-pressed:border-secondary aria-pressed:bg-secondary aria-pressed:text-secondary-content"
+              [attr.aria-pressed]="statusFilter() === null" (click)="onStatusFilter(null)">{{ 'BOX.MEMBERS.ALL' | translate }}</button>
+      @for (status of statuses; track status) {
+        <button type="button" hlmBadge variant="outline"
+                class="h-9 px-3 text-sm cursor-pointer aria-pressed:border-secondary aria-pressed:bg-secondary aria-pressed:text-secondary-content"
+                [attr.aria-pressed]="statusFilter() === status" (click)="onStatusFilter(status)">{{ 'GYM.STATUS.' + status | translate }}</button>
+      }
+    </div>
+    <label class="flex flex-col gap-1.5 md:w-64">
+      <span class="text-sm font-medium">{{ 'BOX.MEMBERS.FILTER_ROLE' | translate }}</span>
+      <select appNativeSelect (change)="onRoleFilter($any($event.target).value)">
+        <option value="" [selected]="roleFilter() === null">{{ 'BOX.MEMBERS.ALL' | translate }}</option>
+        @for (role of roles(); track role) {
+          <option [value]="role" [selected]="roleFilter() === role">{{ 'GYM.ROLES.' + role | translate }}</option>
+        }
+      </select>
+    </label>
+  </div>
+
+  @if (isLoading() && members().length === 0) {
+    <div class="flex justify-center p-8"><hlm-spinner/></div>
+  } @else {
+    @if (pending().length > 0) {
+      <h2 class="text-lg font-semibold mb-2 flex items-center gap-2">
+        {{ 'BOX.MEMBERS.PENDING' | translate }}
+        <span hlmBadge class="bg-accent/15 text-accent">{{ pending().length }}</span>
+      </h2>
+      <ul class="bg-card border rounded-xl divide-y mb-6" data-slot="pending-members">
+        @for (m of pending(); track m.id) {
+          <ng-container *ngTemplateOutlet="memberRow; context: {$implicit: m}"></ng-container>
+        }
+      </ul>
+    }
+    <ul class="bg-card border rounded-xl divide-y" data-slot="members">
+      @for (m of others(); track m.id) {
+        <ng-container *ngTemplateOutlet="memberRow; context: {$implicit: m}"></ng-container>
+      } @empty {
+        @if (pending().length === 0) {
+          <li class="p-8 text-center text-muted-foreground">{{ 'BOX.MEMBERS.NONE' | translate }}</li>
+        }
+      }
+    </ul>
+  }
+</app-page>
+
+@if (pendingAction(); as action) {
+  <app-confirm-dialog [open]="true" [destructive]="true"
+                      [title]="dialogKeys(action.kind).title | translate: {name: fullName(action.member)}"
+                      [description]="dialogKeys(action.kind).description | translate: {name: fullName(action.member)}"
+                      [confirmLabel]="dialogKeys(action.kind).confirm | translate"
+                      (confirmed)="confirmAction()" (closed)="cancelAction()"/>
+}

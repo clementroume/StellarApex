@@ -2,7 +2,7 @@ import {Routes} from '@angular/router';
 import {SpacePlaceholderComponent} from '../../shared/component/coming-soon/space-placeholder.component';
 import {gymPermissionGuard} from '../../core/guards/gym-permission.guard';
 
-/** My box: athlete pages, then staff pages opened by permission (lot A fills them). */
+/** My box: athlete pages, then staff pages opened by permission. */
 export const BOX_ROUTES: Routes = [
   {path: '', redirectTo: 'sessions', pathMatch: 'full'},
   {
@@ -14,11 +14,11 @@ export const BOX_ROUTES: Routes = [
     data: {titleKey: 'BOX.LEADERBOARDS.TITLE', descriptionKey: 'BOX.LEADERBOARDS.COMING', icon: 'heroChartBar'}
   },
   {
-    path: 'members', component: SpacePlaceholderComponent, canActivate: [gymPermissionGuard('MANAGE_MEMBERSHIPS')],
-    data: {titleKey: 'BOX.MEMBERS.TITLE', descriptionKey: 'BOX.MEMBERS.COMING', icon: 'heroUsers'}
+    path: 'members', canActivate: [gymPermissionGuard('MANAGE_MEMBERSHIPS')],
+    loadComponent: () => import('./members/box-members.component').then(c => c.BoxMembersComponent)
   },
   {
-    path: 'settings', component: SpacePlaceholderComponent, canActivate: [gymPermissionGuard('MANAGE_SETTINGS')],
-    data: {titleKey: 'BOX.SETTINGS.TITLE', descriptionKey: 'BOX.SETTINGS.COMING', icon: 'heroAdjustmentsHorizontal'}
+    path: 'settings', canActivate: [gymPermissionGuard('MANAGE_SETTINGS')],
+    loadComponent: () => import('./settings/box-settings.component').then(c => c.BoxSettingsComponent)
   },
 ];

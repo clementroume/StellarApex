@@ -5,12 +5,11 @@ import {HttpErrorResponse} from '@angular/common/http';
 import {NgTemplateOutlet} from '@angular/common';
 import {TranslatePipe, TranslateService} from '@ngx-translate/core';
 import {NgIcon} from '@ng-icons/core';
-import {BehaviorSubject, debounceTime, distinctUntilChanged, forkJoin, skip} from 'rxjs';
+import {BehaviorSubject, debounceTime, distinctUntilChanged, skip} from 'rxjs';
 import {AdminService, UserSearchFilters} from '../../../api/antares/services/admin.service';
-import {GymService} from '../../../api/antares/services/gym.service';
 import {UserResponse} from '../../../api/antares/models/user.model';
 import {GymRole, MembershipStatus} from '../../../api/antares/models/membership.model';
-import {GymResponse} from '../../../api/antares/models/gym.model';
+import {AdminGymResponse} from '../../../api/antares/models/gym.model';
 import {SupportSessionService} from '../../../core/services/support-session.service';
 import {NotificationService} from '../../../core/services/notification.service';
 import {ProblemDetail} from '../../../core/models/problem-detail.model';
@@ -19,6 +18,8 @@ import {SearchInputComponent} from '../../../shared/component/search-input/searc
 export const USER_SEARCH_DEBOUNCE_MS = 300;
 export const USER_SEARCH_MIN_LENGTH = 2;
 export const USER_PAGE_SIZE = 20;
+/** Gyms offered in the gym filter, every status, by name (Antares caps a page at 50). */
+const GYM_FILTER_SIZE = 50;
 
 export const SUPPORT_ROLES: GymRole[] = ['OWNER', 'PROGRAMMER', 'COACH', 'ATHLETE'];
 export const SUPPORT_STATUSES: MembershipStatus[] = ['ACTIVE', 'PENDING', 'INACTIVE', 'BANNED'];
@@ -42,7 +43,6 @@ export class SupportComponent implements OnInit {
   // --- INJECTIONS ---
   private readonly fb = inject(FormBuilder);
   private readonly adminService = inject(AdminService);
-  private readonly gymService = inject(GymService);
   private readonly supportSessionService = inject(SupportSessionService);
   private readonly notificationService = inject(NotificationService);
   private readonly translate = inject(TranslateService);
@@ -51,7 +51,7 @@ export class SupportComponent implements OnInit {
   // --- STATE (SIGNALS & VARIABLES) ---
   users = signal<UserResponse[]>([]);
   recentUsers = signal<UserResponse[]>([]);
-  gyms = signal<GymResponse[]>([]);
+  gyms = signal<AdminGymResponse[]>([]);
   hasMore = signal<boolean>(false);
   isSearching = signal<boolean>(false);
   isLoadingMore = signal<boolean>(false);
@@ -91,10 +91,7 @@ export class SupportComponent implements OnInit {
       .pipe(debounceTime(USER_SEARCH_DEBOUNCE_MS), distinctUntilChanged(), skip(1), takeUntilDestroyed(this.destroyRef))
       .subscribe(() => this.loadUsers());
 
-    forkJoin({active: this.gymService.getGyms(), pending: this.gymService.getGyms('PENDING_APPROVAL')})
-      .subscribe(({active, pending}) =>
-        this.gyms.set([...active, ...pending].sort((a, b) => a.name.localeCompare(b.name)))
-      );
+    this.adminService.searchGyms('', null, 0, GYM_FILTER_SIZE).subscribe(slice => this.gyms.set(slice.content));
     this.adminService.getRecentSupportTargets().subscribe(users => this.recentUsers.set(users));
     this.loadUsers();
   }

@@ -5,7 +5,7 @@ import {AccessService} from './access.service';
 import {MembershipSummary} from '../../api/antares/models/membership.model';
 
 const membership = (gymId: number): MembershipSummary => ({
-  gymId, gymName: 'Gym ' + gymId, gymStatus: 'ACTIVE', gymRole: 'ATHLETE', status: 'ACTIVE', permissions: [], gymProgramming: false
+  gymId, gymName: 'Gym ' + gymId, gymStatus: 'ACTIVE', gymRole: 'ATHLETE', status: 'ACTIVE', permissions: [], gymProgramming: false, usable: true
 });
 
 describe('DisplayGymService', () => {

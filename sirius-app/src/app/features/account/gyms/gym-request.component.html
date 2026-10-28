@@ -1,0 +1,55 @@
+<section>
+  <header class="mb-4">
+    <a hlmBtn variant="ghost" size="sm" routerLink=".." class="-ml-2 mb-2">
+      <ng-icon name="heroArrowLeft" size="1rem" aria-hidden="true"/>
+      {{ 'GLOBAL.BACK' | translate }}
+    </a>
+    <h2 class="text-2xl font-bold">{{ 'CREATE_GYM.TITLE' | translate }}</h2>
+    <p class="mt-1 text-muted-foreground">{{ 'CREATE_GYM.INTRO' | translate }}</p>
+  </header>
+
+  @if (pendingRequest(); as pending) {
+    <div hlmAlert class="border-warning/40 text-warning" data-slot="pending-request">
+      <ng-icon name="heroClock" aria-hidden="true"/>
+      <p hlmAlertDescription class="text-warning">{{ 'CREATE_GYM.PENDING_EXISTS' | translate: {name: pending.gymName} }}</p>
+    </div>
+  } @else {
+    <form hlmCard [formGroup]="form" (ngSubmit)="submit()">
+      <div hlmCardContent class="flex flex-col gap-5">
+        <fieldset class="flex flex-col gap-2">
+          <legend class="text-sm font-medium mb-2">{{ 'CREATE_GYM.TYPE' | translate }}</legend>
+          <div class="grid gap-2 sm:grid-cols-2">
+            @for (option of [false, true]; track option) {
+              <label class="flex items-start gap-3 rounded-lg border p-3 cursor-pointer has-[:checked]:border-primary has-[:checked]:bg-primary/5">
+                <input type="radio" name="gym-type" class="mt-1 accent-primary" [checked]="form.controls.isProgramming.value === option"
+                       (change)="setType(option)"/>
+                <span class="flex flex-col">
+                  <span class="font-semibold">{{ (option ? 'GYM.TYPE.PROGRAM' : 'GYM.TYPE.BOX') | translate }}</span>
+                  <span class="text-sm text-muted-foreground">{{ (option ? 'CREATE_GYM.TYPE_PROGRAM_DESC' : 'CREATE_GYM.TYPE_BOX_DESC') | translate }}</span>
+                </span>
+              </label>
+            }
+          </div>
+        </fieldset>
+
+        <app-form-field for="gym-name" [label]="'CREATE_GYM.NAME' | translate" icon="heroBuildingOffice" [error]="nameError()">
+          <input hlmInputGroupInput id="gym-name" formControlName="name" maxlength="100" autocomplete="off"
+                 [placeholder]="'CREATE_GYM.NAME_PH' | translate" aria-describedby="gym-name-message"/>
+        </app-form-field>
+
+        <div class="flex flex-col gap-1.5">
+          <label hlmLabel for="gym-description">{{ 'CREATE_GYM.DESCRIPTION' | translate }}</label>
+          <textarea hlmTextarea id="gym-description" formControlName="description" rows="3" maxlength="1000"
+                    [placeholder]="'CREATE_GYM.DESCRIPTION_PH' | translate"></textarea>
+        </div>
+
+        <button type="submit" hlmBtn class="h-11 md:h-10 sm:self-end" [disabled]="isSending()">
+          @if (isSending()) {
+            <hlm-spinner/>
+          }
+          {{ 'CREATE_GYM.SUBMIT' | translate }}
+        </button>
+      </div>
+    </form>
+  }
+</section>

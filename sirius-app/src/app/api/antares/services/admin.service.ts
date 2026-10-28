@@ -5,6 +5,7 @@ import {environment} from '../../../../environments/environment';
 import {UserResponse, UserSummary} from '../models/user.model';
 import {GymRole, MembershipStatus} from '../models/membership.model';
 import {Slice} from '../../../core/models/pagination.model';
+import {AdminGymResponse, GymStatus} from '../models/gym.model';
 import {SupportSessionRequest, SupportSessionResponse} from '../models/support.model';
 
 export interface UserSearchFilters {
@@ -25,6 +26,14 @@ export class AdminService {
     if (filters.role) params = params.set('role', filters.role);
     if (filters.status) params = params.set('status', filters.status);
     return this.http.get<Slice<UserResponse>>(this.buildUrl('/users'), {params});
+  }
+
+  /** Every box/prog, any status (approval queue, suspension), with its owner/programmer. */
+  searchGyms(search = '', status: GymStatus | null = null, page = 0, size = 20): Observable<Slice<AdminGymResponse>> {
+    let params = new HttpParams().set('page', page).set('size', size);
+    if (search) params = params.set('search', search);
+    if (status) params = params.set('status', status);
+    return this.http.get<Slice<AdminGymResponse>>(this.buildUrl('/gyms'), {params});
   }
 
   lookupUsers(ids: number[]): Observable<UserSummary[]> {

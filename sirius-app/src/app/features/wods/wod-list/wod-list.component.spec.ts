@@ -10,7 +10,6 @@ import {WOD_PAGE_SIZE, WOD_SEARCH_DEBOUNCE_MS, WodListComponent} from './wod-lis
 import {WodService} from '../../../api/aldebaran/services/wod.service';
 import {AccessService} from '../../../core/services/access.service';
 import {ExporterService} from '../../../api/aldebaran/services/exporter.service';
-import {GymService} from '../../../api/antares/services/gym.service';
 import {AdminService} from '../../../api/antares/services/admin.service';
 import {BYPASS_LOADER} from '../../../core/interceptors/loading.interceptor';
 import {APP_ICONS} from '../../../app.config';
@@ -25,7 +24,6 @@ describe('WodListComponent', () => {
   let memberships: WritableSignal<MembershipSummary[]>;
   let isAdmin: WritableSignal<boolean>;
   let mockExporterService: any;
-  let mockGymService: any;
   let mockAdminService: any;
   let writableGymIds: number[];
 
@@ -33,8 +31,8 @@ describe('WodListComponent', () => {
   const cindy: WodSummaryResponse = {id: 2, title: 'Cindy', wodType: 'AMRAP', scoreType: 'ROUNDS_REPS', isPublic: true, competition: false, createdAt: ''};
   const grace: WodSummaryResponse = {id: 3, title: 'Grace', wodType: 'FOR_TIME', scoreType: 'TIME', authorId: 1, isPublic: false, competition: false, createdAt: ''};
 
-  const box: MembershipSummary = {gymId: 5, gymName: 'Box', gymStatus: 'ACTIVE', gymRole: 'ATHLETE', status: 'ACTIVE', permissions: [], gymProgramming: false};
-  const zeus: MembershipSummary = {gymId: 7, gymName: 'Zeus', gymStatus: 'ACTIVE', gymRole: 'ATHLETE', status: 'ACTIVE', permissions: [], gymProgramming: false};
+  const box: MembershipSummary = {gymId: 5, gymName: 'Box', gymStatus: 'ACTIVE', gymRole: 'ATHLETE', status: 'ACTIVE', permissions: [], gymProgramming: false, usable: true};
+  const zeus: MembershipSummary = {gymId: 7, gymName: 'Zeus', gymStatus: 'ACTIVE', gymRole: 'ATHLETE', status: 'ACTIVE', permissions: [], gymProgramming: false, usable: true};
 
   const slice = (content: WodSummaryResponse[], last: boolean, number = 0): Slice<WodSummaryResponse> => ({
     content, last, first: number === 0, size: WOD_PAGE_SIZE, number, numberOfElements: content.length, empty: content.length === 0
@@ -55,7 +53,6 @@ describe('WodListComponent', () => {
           useValue: {memberships, isAdmin, hasGymPermission: (gymId: number) => writableGymIds.includes(gymId)}
         },
         {provide: ExporterService, useValue: mockExporterService},
-        {provide: GymService, useValue: mockGymService},
         {provide: AdminService, useValue: mockAdminService}
       ]
     }).compileComponents();
@@ -82,8 +79,8 @@ describe('WodListComponent', () => {
     memberships = signal([box, zeus]);
     isAdmin = signal(false);
     writableGymIds = [];
-    mockGymService = {getGyms: vi.fn().mockReturnValue(of([{id: 5, name: 'Box'}, {id: 9, name: 'Atlas'}]))};
     mockAdminService = {
+      searchGyms: vi.fn().mockReturnValue(of({content: [{id: 5, name: 'Box'}, {id: 9, name: 'Atlas'}], last: true})),
       lookupUsers: vi.fn().mockReturnValue(of([{id: 77, firstName: 'Ann', lastName: 'Thlete', email: 'ann@x.com'}]))
     };
     mockExporterService = {
@@ -319,7 +316,7 @@ describe('WodListComponent', () => {
 
   it('should not query admin data for regular users', async () => {
     await create();
-    expect(mockGymService.getGyms).not.toHaveBeenCalled();
+    expect(mockAdminService.searchGyms).not.toHaveBeenCalled();
     expect(mockAdminService.lookupUsers).not.toHaveBeenCalled();
   });
 });

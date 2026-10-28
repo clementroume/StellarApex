@@ -33,7 +33,11 @@
     "REQUIRED": "This field is required.",
     "COMING_SOON": "Coming soon",
     "UPDATE_READY": "A new version of StellarApex is available.",
-    "RELOAD": "Reload"
+    "RELOAD": "Reload",
+    "CONFIRM": "Confirm",
+    "COPY": "Copy",
+    "COPIED": "Copied to the clipboard.",
+    "LOAD_MORE": "Load more"
   },
   "NAVBAR": {
     "WODS": "WODs",
@@ -67,16 +71,12 @@
     "TITLE": "My Account",
     "MENU_INFO": "My information",
     "MENU_SETTINGS": "Settings",
-    "MENU_UNITS": "Units"
+    "MENU_UNITS": "Units",
+    "MENU_GYMS": "Boxes & programs"
   },
   "PROFILE": {
     "TITLE": "My information",
     "SUCCESS_UPDATE": "Your profile has been updated successfully!",
-    "GYMS": {
-      "TITLE": "My boxes and programs",
-      "NO_PERMISSION": "No specific permission here.",
-      "NONE": "You are not a member of any box or program."
-    },
     "VERIFIED": "Verified"
   },
   "SETTINGS": {
@@ -726,6 +726,26 @@
       "FILTER_STATUS": "Status",
       "ALL": "All",
       "LOAD_MORE": "Load more"
+    },
+    "GYMS": {
+      "TITLE": "Boxes & programs",
+      "INTRO": "Approve creation requests, suspend or reactivate a box or program.",
+      "SEARCH": "Search by name…",
+      "ALL": "All",
+      "NO_RESULT": "No box or program.",
+      "HOLDER": "Holder",
+      "NO_HOLDER": "No holder",
+      "MEMBERS": "{{count}} active member(s)",
+      "REQUESTED": "Requested on {{date}}",
+      "APPROVE": "Approve",
+      "REJECT": "Reject",
+      "SUSPEND": "Suspend",
+      "REACTIVATE": "Reactivate",
+      "STATUS_CHANGED": "{{name}}: {{status}}.",
+      "REJECT_TITLE": "Reject the request \"{{name}}\"?",
+      "REJECT_DESC": "The requester will see the request rejected and can delete it to make a new one.",
+      "SUSPEND_TITLE": "Suspend {{name}}?",
+      "SUSPEND_DESC": "Its members, Owner or Programmer included, lose access until it is reactivated."
     }
   },
   "GYM": {
@@ -764,6 +784,10 @@
         "LABEL": "Settings",
         "DESCRIPTION": "Can change the box or program settings (enrollment code, automatic registration)."
       }
+    },
+    "TYPE": {
+      "BOX": "Box",
+      "PROGRAM": "Program"
     }
   },
   "SHARED": {
@@ -826,11 +850,132 @@
     },
     "MEMBERS": {
       "TITLE": "Members",
-      "COMING": "Member management (requests, roles, permissions) comes in the next lot."
+      "SUBTITLE": "Requests, roles and permissions of your members.",
+      "PENDING": "Pending requests",
+      "FILTER_STATUS": "Status",
+      "FILTER_ROLE": "Role",
+      "ALL": "All",
+      "NONE": "No member matches.",
+      "YOU": "You",
+      "SINCE": "Since {{date}}",
+      "VALIDATE": "Approve",
+      "REFUSE": "Refuse",
+      "REMOVE": "Remove",
+      "BAN": "Ban",
+      "UNBAN": "Lift the ban",
+      "REACTIVATE": "Reactivate",
+      "EDIT": "Role and permissions",
+      "ROLE": "Role",
+      "PERMISSIONS": "Permissions",
+      "PERMISSIONS_COACH_ONLY": "Permissions only apply to Coaches.",
+      "UPDATED": "{{name}} updated.",
+      "REFUSED": "{{name}}'s request refused.",
+      "REMOVED": "{{name}} removed from the box or program.",
+      "REFUSE_TITLE": "Refuse {{name}}'s request?",
+      "REFUSE_DESC": "The request is deleted: {{name}} can ask again.",
+      "REMOVE_TITLE": "Remove {{name}}?",
+      "REMOVE_DESC": "{{name}} becomes inactive: history and scores are kept, and they can come back with the code.",
+      "BAN_TITLE": "Ban {{name}}?",
+      "BAN_DESC": "{{name}} loses access and can't ask to join again, unless you lift the ban.",
+      "INVITE": "Invite members"
     },
     "SETTINGS": {
       "TITLE": "Settings",
-      "COMING": "Box and program settings come in the next lot."
-    }
+      "SUBTITLE": "Identity, enrollment and danger zone.",
+      "PENDING_APPROVAL": "Waiting for approval by a StellarApex admin: the box or program does not show in searches yet.",
+      "IDENTITY": "Identity",
+      "SAVED": "Settings saved.",
+      "ENROLLMENT": "Enrollment",
+      "CODE": "Enrollment code",
+      "CODE_EDIT_HINT": "4 to 50 characters, case-insensitive.",
+      "REGENERATE": "New code",
+      "REGENERATE_TITLE": "Generate a new code?",
+      "REGENERATE_DESC": "The former code and the invitation links already shared will stop working.",
+      "REGENERATED": "New code generated.",
+      "INVITE_LINK": "Invitation link",
+      "INVITE_HINT": "Pre-fills the box or program and the code: share it with your athletes.",
+      "AUTO": "Automatic enrollment",
+      "AUTO_DESC": "New members are active at once, without staff approval.",
+      "DANGER": "Danger zone",
+      "TRANSFER": "Transfer",
+      "TRANSFER_TITLE_BOX": "Transfer the box",
+      "TRANSFER_TITLE_PROG": "Transfer the program",
+      "TRANSFER_DESC_BOX": "The new Owner gets every right; you become a Coach without permission.",
+      "TRANSFER_DESC_PROG": "The new Programmer gets every right; you become an Athlete.",
+      "TRANSFER_TO": "Active member",
+      "TRANSFER_PICK": "Choose a member",
+      "TRANSFER_NONE": "No active member can receive it.",
+      "TRANSFER_CONFIRM": "Transfer {{gym}} to {{name}}?",
+      "TRANSFERRED": "{{gym}} transferred to {{name}}.",
+      "DELETE": "Delete permanently",
+      "DELETE_DESC": "Deletes the box or program and all its memberships. This cannot be undone.",
+      "DELETE_TITLE": "Delete {{name}}?",
+      "DELETE_CONFIRM_LABEL": "Type \"{{name}}\" to confirm",
+      "DELETED": "{{name}} deleted."
+    },
+    "STAFF_GYM": "Managed box or program"
+  },
+  "MY_GYMS": {
+    "TITLE": "My boxes & programs",
+    "SUBTITLE": "Your memberships, requests and permissions.",
+    "JOIN": "Join",
+    "CREATE": "Create a box or program",
+    "NONE": "You are not a member of any box or program yet. Join your coach's one with its enrollment code.",
+    "HISTORY": "Former memberships",
+    "LEFT_ON": "Left on {{date}}",
+    "REJOIN": "Come back",
+    "NO_PERMISSION": "No specific permission here.",
+    "MANAGE": "Manage",
+    "LEAVE": "Leave",
+    "LEAVE_TITLE": "Leave {{name}}?",
+    "LEAVE_DESC": "Your history and scores are kept. You can come back with the enrollment code.",
+    "LEFT": "You left {{name}}.",
+    "WITHDRAW": "Cancel request",
+    "WITHDRAW_TITLE": "Cancel your request for {{name}}?",
+    "WITHDRAW_DESC": "You can ask again later.",
+    "WITHDRAWN": "Request cancelled.",
+    "PENDING_HINT": "Your request is waiting for the staff's approval.",
+    "BANNED_HINT": "You can't join this box or program any more.",
+    "HOLDER_HINT": "To leave, first transfer the box or program to a member (My box › Settings).",
+    "PENDING_APPROVAL_HINT": "Waiting for approval by a StellarApex admin. You can already prepare the settings.",
+    "REJECTED_HINT": "Your request was rejected. Delete it to make a new one.",
+    "SUSPENDED_HINT": "Suspended by a StellarApex admin: its members have no access to it any more.",
+    "DELETE_REQUEST": "Delete request",
+    "DELETE_REQUEST_TITLE": "Delete the request \"{{name}}\"?",
+    "DELETE_REQUEST_DESC": "The name becomes available for a new request.",
+    "REQUEST_DELETED": "Request deleted."
+  },
+  "JOIN_GYM": {
+    "TITLE": "Join a box or program",
+    "SUBTITLE": "Find it by name, then enter the enrollment code given by the staff.",
+    "SEARCH": "Search by name…",
+    "ALL": "All",
+    "NO_RESULT": "No box or program found.",
+    "MEMBER": "Already a member",
+    "SELECTED": "Chosen box or program",
+    "CHANGE": "Change",
+    "CODE": "Enrollment code",
+    "CODE_HINT": "Given by your box or program, or included in its invitation link.",
+    "SUBMIT": "Join",
+    "JOINED": "Welcome to {{name}}!",
+    "REQUESTED": "Request sent to {{name}}: it is waiting for the staff's approval.",
+    "INVITATION": "You were invited to join this box or program.",
+    "INVITATION_NOT_FOUND": "Invalid invitation link: this box or program is not available."
+  },
+  "CREATE_GYM": {
+    "TITLE": "Create a box or program",
+    "INTRO": "A StellarApex admin approves every request. You become its Owner (box) or Programmer (program) and can prepare the settings in the meantime.",
+    "TYPE": "Type",
+    "TYPE_BOX_DESC": "A physical box: one Owner, Coaches and Athletes.",
+    "TYPE_PROGRAM_DESC": "Remote programming: one Programmer and Athletes.",
+    "NAME": "Name",
+    "NAME_PH": "E.g. CrossFit Stellar",
+    "DESCRIPTION": "Description",
+    "DESCRIPTION_PH": "A few words to recognise it",
+    "SUBMIT": "Send the request",
+    "SENT": "Request sent: a StellarApex admin will review it.",
+    "PENDING_EXISTS": "You already have a request waiting for approval ({{name}}): one at a time.",
+    "ERROR_NAME_MAX": "100 characters maximum.",
+    "ERROR_DESCRIPTION_MAX": "1000 characters maximum."
   }
 }

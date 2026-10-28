@@ -1,4 +1,5 @@
-import {Routes} from '@angular/router';
+import {Router, Routes} from '@angular/router';
+import {inject} from '@angular/core';
 import {MainLayoutComponent} from './core/layout/main-layout/main-layout.component';
 import {authGuard} from './core/guards/auth.guard';
 
@@ -32,6 +33,11 @@ export const routes: Routes = [
       {
         path: 'box',
         loadChildren: () => import('./features/box/box.routes').then(r => r.BOX_ROUTES)
+      },
+      // Invitation link of a box/prog (`/join?gym=12&code=ABC`), after sign-in if needed
+      {
+        path: 'join',
+        redirectTo: ({queryParams}) => inject(Router).createUrlTree(['/my-account/gyms/join'], {queryParams})
       },
       // Former home, kept for bookmarks
       {path: 'dashboard', redirectTo: 'today'},

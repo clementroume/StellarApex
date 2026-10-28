@@ -11,10 +11,12 @@ export interface MembershipSummary {
   gymStatus: GymStatus;
   gymRole: GymRole;
   status: MembershipStatus;
-  // Effective permissions (OWNER/PROGRAMMER: all, COACH: granted ones, ATHLETE: none)
+  // Granted permissions, ACTIVE memberships only (OWNER/PROGRAMMER: all, COACH: granted ones, ATHLETE: none)
   permissions: Permission[];
   // Virtual programming (no competitions, no WOD copies), as opposed to a physical box
   gymProgramming: boolean;
+  // Opens access to the gym (Antares Membership.isUsable): the memberships sent to Aldebaran
+  usable: boolean;
 }
 
 export interface MembershipUpdateRequest {
@@ -23,10 +25,23 @@ export interface MembershipUpdateRequest {
   permissions: Permission[];
 }
 
+/** What the current user may do with a membership, computed by Antares (never recomputed here). */
+export interface MembershipCapabilities {
+  canChangeStatus: boolean;
+  canChangeRole: boolean;
+  canChangePermissions: boolean;
+  canRemove: boolean;
+  canBan: boolean;
+  canBecomeHolder: boolean;
+}
+
 export interface MembershipResponse {
   id: number;
   user: UserSummary;
   gymRole: GymRole;
   status: MembershipStatus;
   permissions: Permission[];
+  createdAt: string;
+  // Null in answers the client reloads anyway (e.g. after an ownership transfer)
+  capabilities: MembershipCapabilities | null;
 }

@@ -25,7 +25,12 @@ describe('MembershipService', () => {
     },
     gymRole: 'ATHLETE', // ou 'COACH' / 'OWNER'
     status: 'PENDING',
-    permissions: []
+    permissions: [],
+    createdAt: '2026-10-28T10:00:00',
+    capabilities: {
+      canChangeStatus: true, canChangeRole: false, canChangePermissions: false,
+      canRemove: true, canBan: false, canBecomeHolder: false
+    }
   };
 
   beforeEach(() => {

@@ -17,7 +17,7 @@ describe('SpacesService', () => {
 
   const membership = (permissions: Permission[]): MembershipSummary => ({
     gymId: 4, gymName: 'Test Box', gymStatus: 'ACTIVE', gymRole: permissions.length ? 'COACH' : 'ATHLETE',
-    status: 'ACTIVE', permissions, gymProgramming: false
+    status: 'ACTIVE', permissions, gymProgramming: false, usable: true
   });
 
   beforeEach(() => {

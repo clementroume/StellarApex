@@ -70,8 +70,11 @@ export class SpacesService {
     });
     if (this.accessService.isAdmin()) {
       spaces.push({
-        key: 'admin', link: '/admin/support', label: 'NAVBAR.SPACES.ADMIN', icon: 'heroLifebuoy', paths: ['/admin'],
-        children: []
+        key: 'admin', link: '/admin/gyms', label: 'NAVBAR.SPACES.ADMIN', icon: 'heroLifebuoy', paths: ['/admin'],
+        children: [
+          {link: '/admin/gyms', label: 'ADMIN.GYMS.TITLE', icon: 'heroBuildingOffice'},
+          {link: '/admin/support', label: 'ADMIN.SUPPORT.TITLE', icon: 'heroLifebuoy'},
+        ]
       });
     }
     return spaces;

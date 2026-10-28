@@ -18,6 +18,11 @@ export class UserService {
     return this.http.get<UserResponse>(this.buildUrl('/me'));
   }
 
+  /** Reloads the current user (e.g. after joining or leaving a gym, whose memberships drive the UI rights). */
+  refreshCurrentUser(): Observable<UserResponse> {
+    return this.getProfile().pipe(tap(user => this.authService.updateCurrentUser(user)));
+  }
+
   updateProfile(payload: ProfileUpdateRequest): Observable<UserResponse> {
     return this.http.put<UserResponse>(this.buildUrl('/me/profile'), payload).pipe(
       tap(user => this.authService.updateCurrentUser(user))
