@@ -507,7 +507,8 @@
       "TIEBREAK_FR": "Tie-break (français)",
       "TIEBREAK_EN": "Tie-break (anglais)",
       "REPS_PER_ROUND": "Répétitions par tour (facultatif)",
-      "COMPETITION": "Compétition"
+      "COMPETITION": "Compétition",
+      "SCOPE": "Portée"
     },
     "PLACEHOLDERS": {
       "TITLE": "Ex : Fran",

@@ -36,10 +36,14 @@ export interface WodCreateTarget {
   queryParams: Params;
 }
 
+import {HlmSpinner} from '@spartan-ng/helm/spinner';
+import {NativeSelectDirective} from '../../../shared/component/native-select/native-select.directive';
+import {HlmBadge} from '@spartan-ng/helm/badge';
+import {HlmButton} from '@spartan-ng/helm/button';
 @Component({
   selector: 'app-wod-list',
   standalone: true,
-  imports: [RouterModule, TranslatePipe, NgIcon, SearchInputComponent, ListStateComponent, ListItemComponent],
+  imports: [HlmButton, HlmBadge, NativeSelectDirective, HlmSpinner, RouterModule, TranslatePipe, NgIcon, SearchInputComponent, ListStateComponent, ListItemComponent],
   templateUrl: './wod-list.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

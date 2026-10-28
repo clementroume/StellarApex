@@ -1,23 +1,25 @@
-<div class="modal modal-open" role="dialog" aria-modal="true" aria-labelledby="score-form-title">
-  <form [formGroup]="form" (ngSubmit)="onSubmit()" class="modal-box flex flex-col gap-4">
+<div class="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4" role="dialog" aria-modal="true"
+     aria-labelledby="score-form-title" (keydown.escape)="store.close()">
+  <form [formGroup]="form" (ngSubmit)="onSubmit()" cdkTrapFocus [cdkTrapFocusAutoCapture]="true"
+        class="relative z-10 w-full sm:max-w-lg max-h-[90dvh] overflow-y-auto bg-popover text-popover-foreground border rounded-t-2xl sm:rounded-xl shadow-lg p-6 flex flex-col gap-4">
     <div class="flex items-center justify-between gap-2">
       <h3 id="score-form-title" class="text-lg font-bold">
         {{ (isEdit() ? 'SCORE.TITLES.EDIT' : 'SCORE.TITLES.LOG') | translate }}
       </h3>
-      <button type="button" class="btn btn-ghost btn-sm btn-circle" (click)="store.close()"
+      <button type="button" hlmBtn variant="ghost" size="sm" (click)="store.close()"
               [attr.aria-label]="'GLOBAL.CLOSE' | translate">
         <ng-icon name="heroXMark"></ng-icon>
       </button>
     </div>
 
     <div class="grid grid-cols-2 gap-4">
-      <label class="form-control w-full">
-        <div class="label"><span class="label-text">{{ 'SCORE.FIELDS.DATE' | translate }}</span></div>
-        <input type="date" formControlName="date" [max]="maxDate" class="input input-bordered w-full"/>
+      <label class="flex flex-col gap-1.5 w-full">
+        <span class="text-sm font-medium">{{ 'SCORE.FIELDS.DATE' | translate }}</span>
+        <input type="date" formControlName="date" [max]="maxDate" hlmInput class="h-11 md:h-10"/>
       </label>
-      <label class="form-control w-full">
-        <div class="label"><span class="label-text">{{ 'SCORE.FIELDS.SCALING' | translate }}</span></div>
-        <select formControlName="scaling" class="select select-bordered w-full">
+      <label class="flex flex-col gap-1.5 w-full">
+        <span class="text-sm font-medium">{{ 'SCORE.FIELDS.SCALING' | translate }}</span>
+        <select formControlName="scaling" appNativeSelect class="w-full">
           @for (level of scalingLevels; track level) {
             <option [value]="level">{{ 'SCORE.SCALING.' + level | translate }}</option>
           }
@@ -26,98 +28,98 @@
     </div>
 
     @if (canChooseAthlete()) {
-      <label class="form-control w-full">
-        <div class="label"><span class="label-text">{{ 'SCORE.FIELDS.ATHLETE' | translate }}</span></div>
-        <select id="score-athlete" formControlName="athleteId" class="select select-bordered w-full">
+      <label class="flex flex-col gap-1.5 w-full">
+        <span class="text-sm font-medium">{{ 'SCORE.FIELDS.ATHLETE' | translate }}</span>
+        <select id="score-athlete" formControlName="athleteId" appNativeSelect class="w-full">
           <option [ngValue]="null">{{ 'SCORE.FIELDS.ME' | translate }}</option>
           @for (athlete of athletes(); track athlete.id) {
             <option [ngValue]="athlete.id">{{ athlete.displayName }}</option>
           }
         </select>
-        <div class="label"><span class="label-text-alt opacity-70">{{ 'SCORE.MESSAGES.ATHLETE_HINT' | translate }}</span></div>
+        <div class="label"><span class="text-xs text-muted-foreground">{{ 'SCORE.MESSAGES.ATHLETE_HINT' | translate }}</span></div>
       </label>
     }
 
     @if (showGymChoice()) {
-      <label class="form-control w-full">
-        <div class="label"><span class="label-text">{{ 'SCORE.FIELDS.GYM' | translate }}</span></div>
-        <select id="score-gym" formControlName="gymId" class="select select-bordered w-full">
+      <label class="flex flex-col gap-1.5 w-full">
+        <span class="text-sm font-medium">{{ 'SCORE.FIELDS.GYM' | translate }}</span>
+        <select id="score-gym" formControlName="gymId" appNativeSelect class="w-full">
           <option [ngValue]="null">{{ 'SCORE.FIELDS.NO_GYM' | translate }}</option>
           @for (gym of gymChoices(); track gym.gymId) {
             <option [ngValue]="gym.gymId">{{ gym.gymName }}</option>
           }
         </select>
-        <div class="label"><span class="label-text-alt opacity-70">{{ 'SCORE.MESSAGES.GYM_HINT' | translate }}</span></div>
+        <div class="label"><span class="text-xs text-muted-foreground">{{ 'SCORE.MESSAGES.GYM_HINT' | translate }}</span></div>
       </label>
     }
 
     @switch (scoreType()) {
       @case ('TIME') {
         <label class="flex items-center gap-3 cursor-pointer">
-          <input type="checkbox" formControlName="timeCapped" class="checkbox checkbox-secondary"/>
+          <input type="checkbox" formControlName="timeCapped" class="size-5 accent-(--color-secondary)"/>
           <span>{{ 'SCORE.FIELDS.TIME_CAPPED' | translate }}@if (timeCap()) { ({{ timeCap() }})}</span>
         </label>
         @if (timeCapped()) {
-          <label class="form-control w-full">
-            <div class="label"><span class="label-text">{{ 'SCORE.FIELDS.REPS_AT_CAP' | translate }}</span></div>
-            <input type="number" min="0" formControlName="reps" class="input input-bordered w-full"/>
+          <label class="flex flex-col gap-1.5 w-full">
+            <span class="text-sm font-medium">{{ 'SCORE.FIELDS.REPS_AT_CAP' | translate }}</span>
+            <input type="number" min="0" formControlName="reps" hlmInput class="h-11 md:h-10"/>
           </label>
         } @else {
           <div class="grid grid-cols-2 gap-4">
-            <label class="form-control w-full">
-              <div class="label"><span class="label-text">{{ 'SCORE.FIELDS.MINUTES' | translate }}</span></div>
-              <input type="number" min="0" formControlName="minutes" class="input input-bordered w-full"/>
+            <label class="flex flex-col gap-1.5 w-full">
+              <span class="text-sm font-medium">{{ 'SCORE.FIELDS.MINUTES' | translate }}</span>
+              <input type="number" min="0" formControlName="minutes" hlmInput class="h-11 md:h-10"/>
             </label>
-            <label class="form-control w-full">
-              <div class="label"><span class="label-text">{{ 'SCORE.FIELDS.SECONDS' | translate }}</span></div>
-              <input type="number" min="0" max="59" formControlName="seconds" class="input input-bordered w-full"/>
+            <label class="flex flex-col gap-1.5 w-full">
+              <span class="text-sm font-medium">{{ 'SCORE.FIELDS.SECONDS' | translate }}</span>
+              <input type="number" min="0" max="59" formControlName="seconds" hlmInput class="h-11 md:h-10"/>
             </label>
           </div>
         }
       }
       @case ('ROUNDS') {
-        <label class="form-control w-full">
+        <label class="flex flex-col gap-1.5 w-full">
           <div class="label justify-between">
-            <span class="label-text">{{ 'SCORE.FIELDS.ROUNDS_ON_MINUTE' | translate }}</span>
+            <span class="text-sm font-medium">{{ 'SCORE.FIELDS.ROUNDS_ON_MINUTE' | translate }}</span>
             @if (maxRounds(); as max) {
-              <span class="label-text-alt">{{ 'SCORE.FIELDS.MAX' | translate: {max: max} }}</span>
+              <span class="text-xs text-muted-foreground">{{ 'SCORE.FIELDS.MAX' | translate: {max: max} }}</span>
             }
           </div>
-          <input type="number" min="0" [max]="maxRounds()" formControlName="rounds" class="input input-bordered w-full"/>
-          <div class="label"><span class="label-text-alt opacity-70">{{ 'SCORE.MESSAGES.ROUNDS_HINT' | translate }}</span></div>
+          <input type="number" min="0" [max]="maxRounds()" formControlName="rounds" hlmInput class="h-11 md:h-10"/>
+          <div class="label"><span class="text-xs text-muted-foreground">{{ 'SCORE.MESSAGES.ROUNDS_HINT' | translate }}</span></div>
         </label>
       }
       @case ('REPS') {
         @if (repsPerRound(); as perRound) {
           <div class="flex flex-wrap items-center justify-between gap-2">
-            <div class="join" role="group" [attr.aria-label]="'SCORE.FIELDS.ENTRY' | translate">
-              <button type="button" class="btn btn-sm join-item" [class.btn-active]="byRounds()"
+            <div class="field-group" role="group" [attr.aria-label]="'SCORE.FIELDS.ENTRY' | translate">
+              <button type="button" hlmBtn variant="outline" size="sm" class="aria-pressed:bg-muted aria-pressed:font-semibold" [attr.aria-pressed]="byRounds()"
                       (click)="setRepsEntry('ROUNDS')">{{ 'SCORE.ENTRY.ROUNDS' | translate }}</button>
-              <button type="button" class="btn btn-sm join-item" [class.btn-active]="!byRounds()"
+              <button type="button" hlmBtn variant="outline" size="sm" class="aria-pressed:bg-muted aria-pressed:font-semibold" [attr.aria-pressed]="!byRounds()"
                       (click)="setRepsEntry('TOTAL')">{{ 'SCORE.ENTRY.TOTAL' | translate }}</button>
             </div>
-            <span class="text-sm opacity-70">{{ 'SCORE.REPS_PER_ROUND' | translate: {reps: perRound} }}</span>
+            <span class="text-sm text-muted-foreground">{{ 'SCORE.REPS_PER_ROUND' | translate: {reps: perRound} }}</span>
           </div>
         }
         @if (byRounds()) {
           <div class="grid grid-cols-2 gap-4">
-            <label class="form-control w-full">
-              <div class="label"><span class="label-text">{{ 'SCORE.FIELDS.ROUNDS' | translate }}</span></div>
-              <input type="number" min="0" formControlName="rounds" class="input input-bordered w-full"/>
+            <label class="flex flex-col gap-1.5 w-full">
+              <span class="text-sm font-medium">{{ 'SCORE.FIELDS.ROUNDS' | translate }}</span>
+              <input type="number" min="0" formControlName="rounds" hlmInput class="h-11 md:h-10"/>
             </label>
-            <label class="form-control w-full">
-              <div class="label"><span class="label-text">{{ 'SCORE.FIELDS.EXTRA_REPS' | translate }}</span></div>
-              <input type="number" min="0" formControlName="reps" class="input input-bordered w-full"/>
+            <label class="flex flex-col gap-1.5 w-full">
+              <span class="text-sm font-medium">{{ 'SCORE.FIELDS.EXTRA_REPS' | translate }}</span>
+              <input type="number" min="0" formControlName="reps" hlmInput class="h-11 md:h-10"/>
             </label>
           </div>
         } @else {
-          <label class="form-control w-full">
-            <div class="label"><span class="label-text">{{ 'SCORE.FIELDS.TOTAL_REPS' | translate }}</span></div>
-            <input type="number" min="0" formControlName="reps" class="input input-bordered w-full"/>
+          <label class="flex flex-col gap-1.5 w-full">
+            <span class="text-sm font-medium">{{ 'SCORE.FIELDS.TOTAL_REPS' | translate }}</span>
+            <input type="number" min="0" formControlName="reps" hlmInput class="h-11 md:h-10"/>
           </label>
         }
         @if (conversion(); as c) {
-          <p id="reps-conversion" class="text-sm opacity-70">
+          <p id="reps-conversion" class="text-sm text-muted-foreground">
             @if (c.total != null) {
               = {{ 'SCORE.DISPLAY.REPS' | translate: {reps: c.total} }}
             } @else if (c.reps) {
@@ -129,32 +131,32 @@
         }
       }
       @case ('WEIGHT') {
-        <label class="form-control w-full">
-          <div class="label"><span class="label-text">{{ 'SCORE.FIELDS.MAX_WEIGHT' | translate }} ({{ massUnitLabel() }})</span></div>
-          <input type="number" min="0" step="0.5" formControlName="load" class="input input-bordered w-full"/>
+        <label class="flex flex-col gap-1.5 w-full">
+          <span class="text-sm font-medium">{{ 'SCORE.FIELDS.MAX_WEIGHT' | translate }} ({{ massUnitLabel() }})</span>
+          <input type="number" min="0" step="0.5" formControlName="load" hlmInput class="h-11 md:h-10"/>
         </label>
       }
       @case ('LOAD') {
-        <label class="form-control w-full">
-          <div class="label"><span class="label-text">{{ 'SCORE.FIELDS.TOTAL_LOAD' | translate }} ({{ massUnitLabel() }})</span></div>
-          <input type="number" min="0" step="0.5" formControlName="load" class="input input-bordered w-full"/>
+        <label class="flex flex-col gap-1.5 w-full">
+          <span class="text-sm font-medium">{{ 'SCORE.FIELDS.TOTAL_LOAD' | translate }} ({{ massUnitLabel() }})</span>
+          <input type="number" min="0" step="0.5" formControlName="load" hlmInput class="h-11 md:h-10"/>
         </label>
       }
       @case ('CALORIES') {
-        <label class="form-control w-full">
-          <div class="label"><span class="label-text">{{ 'SCORE.FIELDS.CALORIES' | translate }}</span></div>
-          <input type="number" min="0" formControlName="calories" class="input input-bordered w-full"/>
+        <label class="flex flex-col gap-1.5 w-full">
+          <span class="text-sm font-medium">{{ 'SCORE.FIELDS.CALORIES' | translate }}</span>
+          <input type="number" min="0" formControlName="calories" hlmInput class="h-11 md:h-10"/>
         </label>
       }
       @case ('DISTANCE') {
         <div class="grid grid-cols-2 gap-4">
-          <label class="form-control w-full">
-            <div class="label"><span class="label-text">{{ 'SCORE.FIELDS.DISTANCE' | translate }}</span></div>
-            <input type="number" min="0" step="any" formControlName="distance" class="input input-bordered w-full"/>
+          <label class="flex flex-col gap-1.5 w-full">
+            <span class="text-sm font-medium">{{ 'SCORE.FIELDS.DISTANCE' | translate }}</span>
+            <input type="number" min="0" step="any" formControlName="distance" hlmInput class="h-11 md:h-10"/>
           </label>
-          <label class="form-control w-full">
-            <div class="label"><span class="label-text">{{ 'SCORE.FIELDS.UNIT' | translate }}</span></div>
-            <select formControlName="distanceUnit" class="select select-bordered w-full">
+          <label class="flex flex-col gap-1.5 w-full">
+            <span class="text-sm font-medium">{{ 'SCORE.FIELDS.UNIT' | translate }}</span>
+            <select formControlName="distanceUnit" appNativeSelect class="w-full">
               @for (unit of distanceUnits; track unit) {
                 <option [value]="unit">{{ 'WOD.UNITS.' + unit | translate }}</option>
               }
@@ -163,23 +165,23 @@
         </div>
       }
       @default {
-        <p class="text-sm opacity-70">{{ 'SCORE.MESSAGES.DONE_HINT' | translate }}</p>
+        <p class="text-sm text-muted-foreground">{{ 'SCORE.MESSAGES.DONE_HINT' | translate }}</p>
       }
     }
 
     @if (showTiebreak()) {
-      <details id="tiebreak" class="collapse collapse-arrow border border-base-300 rounded-box" [open]="hasTiebreak()">
-        <summary class="collapse-title text-sm font-semibold">{{ 'SCORE.FIELDS.TIEBREAK_OPTIONAL' | translate }}</summary>
-        <div class="collapse-content flex flex-col gap-2">
-          <p class="text-sm opacity-70">{{ tiebreakRule() }}</p>
+      <details id="tiebreak" class="group border border-border rounded-xl" [open]="hasTiebreak()">
+        <summary class="cursor-pointer select-none px-4 py-3 marker:text-muted-foreground text-sm font-semibold">{{ 'SCORE.FIELDS.TIEBREAK_OPTIONAL' | translate }}</summary>
+        <div class="px-4 pb-4 flex flex-col gap-2">
+          <p class="text-sm text-muted-foreground">{{ tiebreakRule() }}</p>
           <div class="grid grid-cols-2 gap-4">
-            <label class="form-control w-full">
-              <div class="label"><span class="label-text">{{ 'SCORE.FIELDS.MINUTES' | translate }}</span></div>
-              <input type="number" min="0" formControlName="tiebreakMinutes" class="input input-bordered w-full"/>
+            <label class="flex flex-col gap-1.5 w-full">
+              <span class="text-sm font-medium">{{ 'SCORE.FIELDS.MINUTES' | translate }}</span>
+              <input type="number" min="0" formControlName="tiebreakMinutes" hlmInput class="h-11 md:h-10"/>
             </label>
-            <label class="form-control w-full">
-              <div class="label"><span class="label-text">{{ 'SCORE.FIELDS.SECONDS' | translate }}</span></div>
-              <input type="number" min="0" max="59" formControlName="tiebreakSeconds" class="input input-bordered w-full"/>
+            <label class="flex flex-col gap-1.5 w-full">
+              <span class="text-sm font-medium">{{ 'SCORE.FIELDS.SECONDS' | translate }}</span>
+              <input type="number" min="0" max="59" formControlName="tiebreakSeconds" hlmInput class="h-11 md:h-10"/>
             </label>
           </div>
         </div>
@@ -187,26 +189,26 @@
     }
 
     @if (!isRx()) {
-      <label class="form-control w-full">
-        <div class="label"><span class="label-text">{{ 'SCORE.FIELDS.SCALING_NOTES' | translate }}</span></div>
-        <textarea formControlName="scalingNotes" rows="2" maxlength="4000" class="textarea textarea-bordered w-full"
+      <label class="flex flex-col gap-1.5 w-full">
+        <span class="text-sm font-medium">{{ 'SCORE.FIELDS.SCALING_NOTES' | translate }}</span>
+        <textarea formControlName="scalingNotes" rows="2" maxlength="4000" hlmTextarea class="w-full"
                   [placeholder]="'SCORE.PLACEHOLDERS.SCALING_NOTES' | translate"></textarea>
       </label>
     }
-    <label class="form-control w-full">
-      <div class="label"><span class="label-text">{{ 'SCORE.FIELDS.COMMENT' | translate }}</span></div>
-      <textarea formControlName="userComment" rows="2" maxlength="4000" class="textarea textarea-bordered w-full"></textarea>
+    <label class="flex flex-col gap-1.5 w-full">
+      <span class="text-sm font-medium">{{ 'SCORE.FIELDS.COMMENT' | translate }}</span>
+      <textarea formControlName="userComment" rows="2" maxlength="4000" hlmTextarea class="w-full"></textarea>
     </label>
 
-    <div class="modal-action">
-      <button type="button" class="btn btn-ghost" (click)="store.close()">{{ 'GLOBAL.CANCEL' | translate }}</button>
-      <button type="submit" class="btn btn-primary" [disabled]="valueMissing() || store.isSaving()">
+    <div class="flex flex-col-reverse sm:flex-row justify-end gap-2 pt-2">
+      <button type="button" hlmBtn variant="ghost" size="lg" (click)="store.close()">{{ 'GLOBAL.CANCEL' | translate }}</button>
+      <button type="submit" hlmBtn size="lg" [disabled]="valueMissing() || store.isSaving()">
         @if (store.isSaving()) {
-          <span class="loading loading-spinner loading-sm"></span>
+          <hlm-spinner/>
         }
         {{ 'GLOBAL.SAVE' | translate }}
       </button>
     </div>
   </form>
-  <div class="modal-backdrop" (click)="store.close()"></div>
+  <div class="absolute inset-0 bg-black/50" aria-hidden="true" (click)="store.close()"></div>
 </div>

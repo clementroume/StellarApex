@@ -5,10 +5,12 @@ import {WodScoresStore} from '../wod-scores.store';
 import {formatScore} from '../score.utils';
 
 /** Summary of the user's scores on the WOD: personal record, its rank and the number of attempts. */
+import {HlmBadge} from '@spartan-ng/helm/badge';
+import {HlmSpinner} from '@spartan-ng/helm/spinner';
 @Component({
   selector: 'app-score-best',
   standalone: true,
-  imports: [TranslatePipe],
+  imports: [HlmSpinner, HlmBadge, TranslatePipe],
   templateUrl: './score-best.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush
 })

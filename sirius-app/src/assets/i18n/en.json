@@ -507,7 +507,8 @@
       "TIEBREAK_FR": "Tiebreak (French)",
       "TIEBREAK_EN": "Tiebreak (English)",
       "REPS_PER_ROUND": "Reps per round (optional)",
-      "COMPETITION": "Competition"
+      "COMPETITION": "Competition",
+      "SCOPE": "Scope"
     },
     "PLACEHOLDERS": {
       "TITLE": "E.g. Fran",

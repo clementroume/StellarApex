@@ -4,12 +4,12 @@
 
     <div skeleton class="animate-pulse">
       <div class="flex items-center gap-4 mb-8">
-        <div class="w-12 h-12 rounded-full bg-base-300 shrink-0"></div>
-        <div class="h-10 bg-base-300 rounded w-1/3"></div>
+        <div class="w-12 h-12 rounded-full bg-muted shrink-0"></div>
+        <div class="h-10 bg-muted rounded w-1/3"></div>
       </div>
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-6">
-        <div class="w-full h-96 bg-base-300 rounded-box"></div>
-        <div class="w-full h-96 bg-base-300 rounded-box"></div>
+        <div class="w-full h-96 bg-muted rounded-xl"></div>
+        <div class="w-full h-96 bg-muted rounded-xl"></div>
       </div>
     </div>
 
@@ -18,11 +18,11 @@
 
       <app-detail-header [title]="w.title" [subtitle]="w.sourceWodId ? (gymName() ?? undefined) : undefined" (back)="goBack()">
         @if (w.sourceWodId) {
-          <a id="source-wod" [routerLink]="['/wods', w.sourceWodId]" class="link link-hover text-sm flex items-center gap-1">
+          <a id="source-wod" [routerLink]="['/wods', w.sourceWodId]" class="hover:underline text-sm flex items-center gap-1">
             <ng-icon name="heroDocumentDuplicate"></ng-icon>{{ 'WOD.MESSAGES.COPIED_FROM' | translate }}
           </a>
         } @else if (canCopy()) {
-          <button type="button" id="copy-wod" class="btn btn-outline btn-sm" (click)="openCopy(w)">
+          <button type="button" id="copy-wod" hlmBtn variant="outline" size="sm" (click)="openCopy(w)">
             <ng-icon name="heroDocumentDuplicate"></ng-icon>
             {{ 'WOD.ACTIONS.COPY' | translate }}
           </button>
@@ -37,14 +37,14 @@
             <div class="flex flex-wrap items-baseline justify-between gap-2">
               <p id="format-line" class="text-2xl font-bold">{{ formatLine(w) }}</p>
               @if (timeCapLabel(w); as cap) {
-                <span class="badge badge-accent badge-soft badge-lg">{{ cap }}</span>
+                <span hlmBadge class="bg-accent/15 text-accent h-7 px-3 text-sm">{{ cap }}</span>
               }
             </div>
             @if (repSchemeLine(w); as scheme) {
               <p class="text-xl font-bold">{{ scheme }}</p>
             }
             @if (sortedMovements().length > 0) {
-              <ul class="flex flex-col divide-y divide-base-200">
+              <ul class="flex flex-col divide-y divide-border">
                 @for (wm of sortedMovements(); track wm.id) {
                   <li class="py-2 flex flex-col gap-1">
                     <div class="flex flex-wrap items-baseline gap-x-2 text-base md:text-lg">
@@ -54,17 +54,17 @@
                       <a [routerLink]="['/movements', wm.movement.id]"
                          class="font-semibold hover:text-primary transition-colors">{{ wm.movement.name }}</a>
                       @if (variants(wm); as v) {
-                        <span class="text-sm text-base-content/70">({{ v }})</span>
+                        <span class="text-sm text-muted-foreground">({{ v }})</span>
                       }
                       @for (measure of measures(wm); track measure) {
                         <span class="font-semibold text-primary">{{ measure }}</span>
                       }
                     </div>
                     @if (movementNotes(wm); as n) {
-                      <p class="text-sm text-base-content/70 whitespace-pre-line">{{ n }}</p>
+                      <p class="text-sm text-muted-foreground whitespace-pre-line">{{ n }}</p>
                     }
                     @if (scaling(wm); as sc) {
-                      <p class="text-sm opacity-70 whitespace-pre-line">
+                      <p class="text-sm text-muted-foreground whitespace-pre-line">
                         <span class="font-semibold">{{ 'WOD.FIELDS.SCALING' | translate }} :</span> {{ sc }}
                       </p>
                     }
@@ -72,46 +72,46 @@
                 }
               </ul>
             } @else {
-              <p class="italic opacity-80">{{ 'WOD.MESSAGES.NO_MOVEMENTS' | translate }}</p>
+              <p class="italic text-muted-foreground">{{ 'WOD.MESSAGES.NO_MOVEMENTS' | translate }}</p>
             }
           </div>
 
-          <div class="flex flex-col gap-6 border-t border-base-200 pt-6">
+          <div class="flex flex-col gap-6 border-t border-border pt-6">
             <div class="flex flex-wrap gap-2">
               @switch (visibility()) {
                 @case ('PUBLIC') {
-                  <div class="badge badge-success badge-soft badge-lg gap-1">
+                  <div hlmBadge class="bg-success/15 text-success h-7 px-3 text-sm gap-1">
                     <ng-icon name="heroGlobeAlt"></ng-icon>
                     {{ 'WOD.VISIBILITY.PUBLIC' | translate }}
                   </div>
                 }
                 @case ('GYM') {
-                  <div class="badge badge-info badge-soft badge-lg gap-1">
+                  <div hlmBadge class="bg-info/15 text-info h-7 px-3 text-sm gap-1">
                     <ng-icon name="heroBuildingOffice"></ng-icon>
                     {{ gymName() ?? ('WOD.VISIBILITY.GYM' | translate) }}
                   </div>
                 }
                 @case ('PRIVATE') {
-                  <div class="badge badge-neutral badge-soft badge-lg gap-1">
+                  <div hlmBadge variant="outline" class="gap-1">
                     <ng-icon name="heroLockClosed"></ng-icon>
                     {{ 'WOD.VISIBILITY.PRIVATE' | translate }}
                   </div>
                 }
               }
               @if (w.competition) {
-                <div id="competition-badge" class="badge badge-warning badge-soft badge-lg gap-1" [title]="'WOD.MESSAGES.COMPETITION_HINT' | translate">
+                <div id="competition-badge" hlmBadge class="bg-warning/15 text-warning h-7 px-3 text-sm gap-1" [title]="'WOD.MESSAGES.COMPETITION_HINT' | translate">
                   <ng-icon name="heroTrophy"></ng-icon>
                   {{ 'WOD.FIELDS.COMPETITION' | translate }}
                 </div>
               }
               @if (w.category) {
-                <div class="badge badge-secondary badge-soft badge-lg">{{ 'WOD.CATEGORIES.' + w.category | translate }}</div>
+                <div hlmBadge class="bg-secondary/15 text-secondary h-7 px-3 text-sm">{{ 'WOD.CATEGORIES.' + w.category | translate }}</div>
               }
               @for (modality of w.modalities; track modality) {
-                <div class="badge badge-primary badge-soft badge-lg">{{ 'MOVEMENT.MODALITIES.' + modality | translate }}</div>
+                <div hlmBadge class="bg-primary/15 text-primary h-7 px-3 text-sm">{{ 'MOVEMENT.MODALITIES.' + modality | translate }}</div>
               }
               @if (isLocked()) {
-                <div class="badge badge-warning badge-soft badge-lg gap-1" [title]="'WOD.MESSAGES.LOCKED' | translate">
+                <div hlmBadge class="bg-warning/15 text-warning h-7 px-3 text-sm gap-1" [title]="'WOD.MESSAGES.LOCKED' | translate">
                   <ng-icon name="heroExclamationTriangle"></ng-icon>
                   {{ 'WOD.MESSAGES.LOCKED_BADGE' | translate }}
                 </div>
@@ -119,26 +119,26 @@
             </div>
 
             <dl class="text-sm md:text-base">
-              <dt class="font-semibold text-base-content/70">{{ 'WOD.FIELDS.SCORE_TYPE' | translate }}</dt>
+              <dt class="font-semibold text-muted-foreground">{{ 'WOD.FIELDS.SCORE_TYPE' | translate }}</dt>
               <dd>{{ 'WOD.SCORE_TYPES.' + w.scoreType | translate }}</dd>
             </dl>
 
 
             @if (description()) {
               <div>
-                <h4 class="text-sm font-semibold text-base-content/70 mb-2">{{ 'GLOBAL.DESCRIPTION' | translate }}</h4>
+                <h4 class="text-sm font-semibold text-muted-foreground mb-2">{{ 'GLOBAL.DESCRIPTION' | translate }}</h4>
                 <p class="leading-relaxed text-sm md:text-base whitespace-pre-line">{{ description() }}</p>
               </div>
             }
             @if (notes()) {
               <div>
-                <h4 class="text-sm font-semibold text-base-content/70 mb-2">{{ 'WOD.FIELDS.NOTES' | translate }}</h4>
+                <h4 class="text-sm font-semibold text-muted-foreground mb-2">{{ 'WOD.FIELDS.NOTES' | translate }}</h4>
                 <p class="leading-relaxed text-sm md:text-base whitespace-pre-line">{{ notes() }}</p>
               </div>
             }
             @if (tiebreak()) {
               <div id="tiebreak">
-                <h4 class="text-sm font-semibold text-base-content/70 mb-2">{{ 'WOD.FIELDS.TIEBREAK' | translate }}</h4>
+                <h4 class="text-sm font-semibold text-muted-foreground mb-2">{{ 'WOD.FIELDS.TIEBREAK' | translate }}</h4>
                 <p class="leading-relaxed text-sm md:text-base whitespace-pre-line">{{ tiebreak() }}</p>
               </div>
             }
@@ -147,9 +147,9 @@
 
         <!-- Scores: personal summary, leaderboard, own history -->
         <app-detail-card gapClass="gap-6">
-          <div class="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-base-200">
+          <div class="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-border">
             <h3 class="font-semibold text-lg">{{ 'SCORE.TITLE' | translate }}</h3>
-            <button type="button" id="log-score" class="btn btn-primary btn-sm" (click)="scoresStore.openNew()">
+            <button type="button" id="log-score" hlmBtn size="sm" (click)="scoresStore.openNew()">
               <ng-icon name="heroPlus"></ng-icon>
               {{ 'SCORE.ACTIONS.LOG' | translate }}
             </button>
@@ -157,11 +157,11 @@
           <app-score-best id="best-score" class="block"></app-score-best>
           <app-score-leaderboard class="block"></app-score-leaderboard>
           @if (scoresStore.scores().length > 0) {
-            <details id="score-history" class="collapse collapse-arrow border border-base-200 rounded-box">
-              <summary class="collapse-title text-sm font-semibold text-base-content/70">
+            <details id="score-history" class="group border border-border rounded-xl">
+              <summary class="cursor-pointer select-none px-4 py-3 marker:text-muted-foreground text-sm font-semibold text-muted-foreground">
                 {{ 'SCORE.HISTORY' | translate }} ({{ scoresStore.scores().length }})
               </summary>
-              <div class="collapse-content">
+              <div class="px-4 pb-4">
                 <app-score-history class="block"></app-score-history>
               </div>
             </details>
@@ -170,37 +170,39 @@
       </div>
 
       @if (copyDraft(); as draft) {
-        <div class="modal modal-open" role="dialog" aria-modal="true" aria-labelledby="copy-title">
-          <div class="modal-box flex flex-col gap-4">
+        <div class="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4" role="dialog" aria-modal="true"
+     aria-labelledby="copy-title" (keydown.escape)="closeCopy()">
+          <div cdkTrapFocus [cdkTrapFocusAutoCapture]="true"
+        class="relative z-10 w-full sm:max-w-lg max-h-[90dvh] overflow-y-auto bg-popover text-popover-foreground border rounded-t-2xl sm:rounded-xl shadow-lg p-6 flex flex-col gap-4">
             <h3 id="copy-title" class="text-lg font-bold">{{ 'WOD.TITLES.COPY' | translate }}</h3>
-            <p class="text-sm opacity-70">{{ 'WOD.MESSAGES.COPY_HINT' | translate }}</p>
-            <label class="form-control w-full">
-              <div class="label"><span class="label-text">{{ 'WOD.FIELDS.GYM' | translate }}</span></div>
-              <select id="copy-gym" class="select select-bordered w-full" (change)="onCopyGymChange($any($event.target).value)">
+            <p class="text-sm text-muted-foreground">{{ 'WOD.MESSAGES.COPY_HINT' | translate }}</p>
+            <label class="flex flex-col gap-1.5 w-full">
+              <span class="text-sm font-medium">{{ 'WOD.FIELDS.GYM' | translate }}</span>
+              <select id="copy-gym" appNativeSelect class="w-full" (change)="onCopyGymChange($any($event.target).value)">
                 @for (gym of copyTargets(); track gym.gymId) {
                   <option [value]="gym.gymId" [selected]="gym.gymId === draft.gymId">{{ gym.gymName }}</option>
                 }
               </select>
             </label>
             <label class="flex items-start gap-3 cursor-pointer">
-              <input id="copy-competition" type="checkbox" class="toggle toggle-warning mt-0.5" [checked]="draft.competition"
+              <input id="copy-competition" type="checkbox" role="switch" class="switch mt-0.5" [checked]="draft.competition"
                      (change)="onCopyCompetitionChange($any($event.target).checked)"/>
               <span class="flex flex-col">
                 <span class="flex items-center gap-2"><ng-icon name="heroTrophy"></ng-icon>{{ 'WOD.FIELDS.COMPETITION' | translate }}</span>
-                <span class="text-sm opacity-70">{{ 'WOD.MESSAGES.COMPETITION_HINT' | translate }}</span>
+                <span class="text-sm text-muted-foreground">{{ 'WOD.MESSAGES.COMPETITION_HINT' | translate }}</span>
               </span>
             </label>
-            <div class="modal-action">
-              <button type="button" class="btn btn-ghost" (click)="closeCopy()">{{ 'GLOBAL.CANCEL' | translate }}</button>
-              <button type="button" id="copy-confirm" class="btn btn-primary" [disabled]="isCopying()" (click)="onCopy(w)">
+            <div class="flex flex-col-reverse sm:flex-row justify-end gap-2 pt-2">
+              <button type="button" hlmBtn variant="ghost" size="lg" (click)="closeCopy()">{{ 'GLOBAL.CANCEL' | translate }}</button>
+              <button type="button" id="copy-confirm" hlmBtn size="lg" [disabled]="isCopying()" (click)="onCopy(w)">
                 @if (isCopying()) {
-                  <span class="loading loading-spinner loading-sm"></span>
+                  <hlm-spinner/>
                 }
                 {{ 'WOD.ACTIONS.COPY' | translate }}
               </button>
             </div>
           </div>
-          <div class="modal-backdrop" (click)="closeCopy()"></div>
+          <div class="absolute inset-0 bg-black/50" aria-hidden="true" (click)="closeCopy()"></div>
         </div>
       }
 

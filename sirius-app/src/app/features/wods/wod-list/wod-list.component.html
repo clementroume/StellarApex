@@ -4,19 +4,16 @@
   </div>
 
   <div class="flex justify-center mb-6 w-full px-2 sm:px-0">
-    <div role="tablist" class="tabs tabs-box flex flex-wrap justify-center gap-2 w-full max-w-4xl p-1">
+    <div class="flex flex-wrap justify-center gap-2 w-full max-w-4xl" role="group" [attr.aria-label]="'WOD.FIELDS.SCOPE' | translate">
       @for (tab of scopeTabs(); track tab.key) {
-        <a role="tab"
-           class="tab h-10 flex items-center justify-center gap-2 rounded border border-neutral bg-base-100"
-           [class.tab-active]="activeScopeTab().key === tab.key"
-           [class.text-secondary]="activeScopeTab().key === tab.key"
-           [class.border-secondary]="activeScopeTab().key === tab.key"
-           (click)="onScopeChange(tab.key)">
+        <button hlmBtn variant="outline" type="button"
+                class="h-10 gap-2 aria-pressed:border-secondary aria-pressed:text-secondary aria-pressed:bg-secondary/10"
+                [attr.aria-pressed]="activeScopeTab().key === tab.key" (click)="onScopeChange(tab.key)">
           @if (tab.gymId !== undefined) {
-            <ng-icon name="heroBuildingOffice" size="1.2rem"></ng-icon>
+            <ng-icon name="heroBuildingOffice" size="1.2rem" aria-hidden="true"></ng-icon>
           }
           <span class="truncate text-sm">{{ tab.translate ? (tab.label | translate) : tab.label }}</span>
-        </a>
+        </button>
       }
     </div>
   </div>
@@ -25,7 +22,7 @@
     <div class="flex flex-col md:flex-row justify-center gap-4 mb-6">
       <label class="flex items-center gap-2">
         <ng-icon name="heroBuildingOffice" size="1.2rem" class="text-secondary"></ng-icon>
-        <select class="select select-bordered w-full md:w-64"
+        <select appNativeSelect class="w-full md:w-64"
                 [attr.aria-label]="'WOD.ADMIN_FILTERS.GYM' | translate"
                 (change)="onAdminGymChange($any($event.target).value)">
           <option value="" [selected]="adminGymId() === null">{{ 'WOD.ADMIN_FILTERS.ALL_GYMS' | translate }}</option>
@@ -36,7 +33,7 @@
       </label>
       <label class="flex items-center gap-2">
         <ng-icon name="heroUser" size="1.2rem" class="text-secondary"></ng-icon>
-        <select class="select select-bordered w-full md:w-64"
+        <select appNativeSelect class="w-full md:w-64"
                 [attr.aria-label]="'WOD.ADMIN_FILTERS.ATHLETE' | translate"
                 (change)="onAdminAuthorChange($any($event.target).value)">
           <option value="" [selected]="adminAuthorId() === null">{{ 'WOD.ADMIN_FILTERS.ALL_ATHLETES' | translate }}</option>
@@ -59,16 +56,14 @@
   <div class="flex flex-col items-center gap-2 mb-8">
     @if (categories().length > 0) {
       <div class="flex flex-wrap justify-center gap-2" role="group" [attr.aria-label]="'WOD.FIELDS.CATEGORY' | translate">
-        <button type="button" class="badge badge-lg cursor-pointer"
-                [class.badge-primary]="categoryFilter() === ''"
-                [class.badge-outline]="categoryFilter() !== ''"
+        <button type="button" hlmBadge variant="outline" class="h-8 px-3 text-sm cursor-pointer aria-pressed:border-primary aria-pressed:bg-primary aria-pressed:text-primary-content"
+              [attr.aria-pressed]="categoryFilter() === ''"
                 (click)="onCategoryChange('')">
           {{ 'WOD.ACTIONS.ALL_CATEGORIES' | translate }}
         </button>
         @for (category of categories(); track category) {
-          <button type="button" class="badge badge-lg cursor-pointer"
-                  [class.badge-primary]="categoryFilter() === category"
-                  [class.badge-outline]="categoryFilter() !== category"
+          <button type="button" hlmBadge variant="outline" class="h-8 px-3 text-sm cursor-pointer aria-pressed:border-primary aria-pressed:bg-primary aria-pressed:text-primary-content"
+              [attr.aria-pressed]="categoryFilter() === category"
                   (click)="onCategoryChange(category)">
             {{ 'WOD.CATEGORIES.' + category | translate }}
           </button>
@@ -76,16 +71,14 @@
       </div>
     }
     <div class="flex flex-wrap justify-center gap-2" role="group" [attr.aria-label]="'WOD.FIELDS.FORMAT' | translate">
-      <button type="button" class="badge badge-lg cursor-pointer"
-              [class.badge-secondary]="typeFilter() === ''"
-              [class.badge-outline]="typeFilter() !== ''"
+      <button type="button" hlmBadge variant="outline" class="h-8 px-3 text-sm cursor-pointer aria-pressed:border-secondary aria-pressed:bg-secondary aria-pressed:text-secondary-content"
+              [attr.aria-pressed]="typeFilter() === ''"
               (click)="onTypeChange('')">
         {{ 'WOD.ACTIONS.ALL_FORMATS' | translate }}
       </button>
       @for (type of wodTypes(); track type) {
-        <button type="button" class="badge badge-lg cursor-pointer"
-                [class.badge-secondary]="typeFilter() === type"
-                [class.badge-outline]="typeFilter() !== type"
+        <button type="button" hlmBadge variant="outline" class="h-8 px-3 text-sm cursor-pointer aria-pressed:border-secondary aria-pressed:bg-secondary aria-pressed:text-secondary-content"
+              [attr.aria-pressed]="typeFilter() === type"
                 (click)="onTypeChange(type)">
           {{ 'WOD.WOD_TYPES.' + type | translate }}
         </button>
@@ -100,8 +93,8 @@
     [emptyMessage]="'WOD.MESSAGES.EMPTY_LIST' | translate"
     [emptySearchMessage]="'WOD.MESSAGES.EMPTY_LIST_SEARCH' | translate">
 
-    <div class="bg-base-100 border border-neutral rounded-box">
-      <ul class="divide-y divide-base-200">
+    <div class="bg-card border border-border rounded-xl">
+      <ul class="divide-y divide-border">
         @for (wod of wods(); track wod.id) {
           <app-list-item
             [title]="wod.title"
@@ -119,11 +112,11 @@
 
     @if (hasMore()) {
       <div class="flex justify-center mt-6">
-        <button type="button" class="btn btn-outline btn-secondary min-w-36"
+        <button type="button" hlmBtn variant="outline" size="lg" class="min-w-36"
                 [disabled]="isLoadingMore()"
                 (click)="loadMore()">
           @if (isLoadingMore()) {
-            <span class="loading loading-spinner"></span>
+            <hlm-spinner/>
           }
           {{ 'WOD.ACTIONS.LOAD_MORE' | translate }}
         </button>
@@ -133,14 +126,14 @@
 
   <div class="pt-8 flex flex-col md:flex-row justify-end gap-4">
     @if (isAdmin()) {
-      <button class="btn btn-outline btn-secondary min-w-36"
+      <button hlmBtn variant="outline" size="lg" class="min-w-36"
               (click)="exportCsv()"
               [disabled]="isExporting()">
         <ng-icon name="heroDocumentArrowDown" size="1.5rem"></ng-icon>
         {{ isExporting() ? '...' : ('EXPORT.EXPORT_CSV' | translate) }}
       </button>
     }
-    <a routerLink="/wods/new" [queryParams]="createTarget().queryParams" class="btn btn-secondary min-w-36">
+    <a routerLink="/wods/new" [queryParams]="createTarget().queryParams" hlmBtn size="lg" class="min-w-36">
       <ng-icon name="heroPlus" size="1.5rem"></ng-icon>
       {{ createTarget().labelKey | translate: {gym: createTarget().gymName} }}
     </a>

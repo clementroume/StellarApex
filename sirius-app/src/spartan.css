@@ -135,3 +135,41 @@
     border-color: var(--color-border);
   }
 }
+
+/* Controls joined side by side (e.g. men/women load + unit): shared borders, outer corners only. */
+@utility field-group {
+  display: flex;
+  & > * { border-radius: 0; }
+  & > *:not(:first-child) { margin-inline-start: -1px; }
+  & > *:first-child { border-start-start-radius: var(--radius-md); border-end-start-radius: var(--radius-md); }
+  & > *:last-child { border-start-end-radius: var(--radius-md); border-end-end-radius: var(--radius-md); }
+  & > *:focus-visible { position: relative; z-index: 1; }
+}
+
+/* Native checkbox drawn as a spartan switch (keeps formControlName / change bindings); add role="switch". */
+@utility switch {
+  appearance: none;
+  flex-shrink: 0;
+  position: relative;
+  width: 2.25rem;
+  height: 1.25rem;
+  border-radius: 9999px;
+  background: var(--color-input);
+  cursor: pointer;
+  transition: background-color 150ms;
+  &::before {
+    content: "";
+    position: absolute;
+    top: 0.125rem;
+    left: 0.125rem;
+    width: 1rem;
+    height: 1rem;
+    border-radius: 9999px;
+    background: var(--color-background);
+    transition: transform 150ms;
+  }
+  &:checked { background: var(--color-primary); }
+  &:checked::before { transform: translateX(1rem); }
+  &:focus-visible { outline: 2px solid var(--color-ring); outline-offset: 2px; }
+  &:disabled { cursor: not-allowed; opacity: 0.5; }
+}
