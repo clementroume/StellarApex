@@ -5,12 +5,12 @@
   <!-- One user row, shared by the recent and search lists -->
   <ng-template #userRow let-user>
     <li>
-      <button type="button"
-              class="w-full text-left p-4 flex flex-col md:flex-row md:items-center gap-2 transition-colors hover:bg-base-200/50 disabled:cursor-not-allowed rounded-box"
+      <button type="button" data-slot="support-user"
+              class="w-full text-left p-4 flex flex-col md:flex-row md:items-center gap-2 transition-colors hover:bg-muted/50 disabled:cursor-not-allowed rounded-xl"
               [class.ring-2]="selectedUser()?.id === user.id"
               [class.ring-inset]="selectedUser()?.id === user.id"
-              [class.ring-secondary]="selectedUser()?.id === user.id"
-              [class.bg-base-200]="selectedUser()?.id === user.id"
+              [class.ring-primary]="selectedUser()?.id === user.id"
+              [class.bg-muted]="selectedUser()?.id === user.id"
               [class.opacity-50]="user.platformRole === 'ADMIN'"
               [disabled]="user.platformRole === 'ADMIN'"
               [attr.aria-pressed]="selectedUser()?.id === user.id"
@@ -26,24 +26,24 @@
         </div>
         <div class="flex flex-col gap-1 md:items-end">
           @if (user.platformRole === 'ADMIN') {
-            <span class="badge badge-warning badge-soft">{{ 'ADMIN.SUPPORT.ADMIN_TARGET' | translate }}</span>
+            <span hlmBadge class="bg-warning/15 text-warning">{{ 'ADMIN.SUPPORT.ADMIN_TARGET' | translate }}</span>
           }
           @for (m of user.memberships; track m.gymId) {
             <div class="flex flex-wrap gap-1 md:justify-end">
-              <span class="badge badge-outline">
+              <span hlmBadge variant="outline">
                 {{ m.gymName }} · {{ 'GYM.ROLES.' + m.gymRole | translate }}
                 @if (m.status !== 'ACTIVE') {
                   · {{ 'GYM.STATUS.' + m.status | translate }}
                 }
               </span>
               @for (permission of m.permissions; track permission) {
-                <span class="badge badge-secondary badge-soft badge-sm" [title]="'GYM.PERMISSIONS.' + permission + '.DESCRIPTION' | translate">
+                <span hlmBadge class="bg-secondary/15 text-secondary" [title]="'GYM.PERMISSIONS.' + permission + '.DESCRIPTION' | translate">
                   {{ 'GYM.PERMISSIONS.' + permission + '.LABEL' | translate }}
                 </span>
               }
             </div>
           } @empty {
-            <span class="badge badge-ghost">{{ 'ADMIN.SUPPORT.NO_MEMBERSHIP' | translate }}</span>
+            <span hlmBadge variant="secondary">{{ 'ADMIN.SUPPORT.NO_MEMBERSHIP' | translate }}</span>
           }
         </div>
       </button>
@@ -52,7 +52,7 @@
 
   @if (!hasFilters() && recentUsers().length > 0) {
     <h2 class="text-lg font-semibold mb-2">{{ 'ADMIN.SUPPORT.RECENT' | translate }}</h2>
-    <ul class="bg-base-100 border border-neutral rounded-box divide-y divide-base-200 mb-8">
+    <ul class="bg-card border border-border rounded-xl divide-y divide-border mb-8">
       @for (user of recentUsers(); track user.id) {
         <ng-container *ngTemplateOutlet="userRow; context: {$implicit: user}"></ng-container>
       }
@@ -71,7 +71,7 @@
   <div class="flex flex-col gap-3 mb-6">
     <label class="flex items-center gap-2">
       <ng-icon name="heroBuildingOffice" size="1.2rem" class="text-secondary"></ng-icon>
-      <select class="select select-bordered w-full md:w-80"
+      <select appNativeSelect class="w-full md:w-80"
               [attr.aria-label]="'ADMIN.SUPPORT.FILTER_GYM' | translate"
               (change)="onGymChange($any($event.target).value)">
         <option value="" [selected]="gymFilter() === null">{{ 'ADMIN.SUPPORT.ALL_GYMS' | translate }}</option>
@@ -82,35 +82,35 @@
     </label>
     <div class="flex flex-wrap items-center gap-2">
       <span class="text-sm font-semibold opacity-70 w-16">{{ 'ADMIN.SUPPORT.FILTER_ROLE' | translate }}</span>
-      <button type="button" class="badge badge-lg cursor-pointer"
-              [class.badge-secondary]="roleFilter() === null" [class.badge-outline]="roleFilter() !== null"
+      <button type="button" hlmBadge variant="outline" class="h-8 px-3 text-sm cursor-pointer aria-pressed:border-secondary aria-pressed:bg-secondary aria-pressed:text-secondary-content"
+              [attr.aria-pressed]="roleFilter() === null"
               (click)="onRoleChange(null)">{{ 'ADMIN.SUPPORT.ALL' | translate }}</button>
       @for (role of roles; track role) {
-        <button type="button" class="badge badge-lg cursor-pointer"
-                [class.badge-secondary]="roleFilter() === role" [class.badge-outline]="roleFilter() !== role"
+        <button type="button" hlmBadge variant="outline" class="h-8 px-3 text-sm cursor-pointer aria-pressed:border-secondary aria-pressed:bg-secondary aria-pressed:text-secondary-content"
+              [attr.aria-pressed]="roleFilter() === role"
                 (click)="onRoleChange(role)">{{ 'GYM.ROLES.' + role | translate }}</button>
       }
     </div>
     <div class="flex flex-wrap items-center gap-2">
       <span class="text-sm font-semibold opacity-70 w-16">{{ 'ADMIN.SUPPORT.FILTER_STATUS' | translate }}</span>
-      <button type="button" class="badge badge-lg cursor-pointer"
-              [class.badge-secondary]="statusFilter() === null" [class.badge-outline]="statusFilter() !== null"
+      <button type="button" hlmBadge variant="outline" class="h-8 px-3 text-sm cursor-pointer aria-pressed:border-secondary aria-pressed:bg-secondary aria-pressed:text-secondary-content"
+              [attr.aria-pressed]="statusFilter() === null"
               (click)="onStatusChange(null)">{{ 'ADMIN.SUPPORT.ALL' | translate }}</button>
       @for (status of statuses; track status) {
-        <button type="button" class="badge badge-lg cursor-pointer"
-                [class.badge-secondary]="statusFilter() === status" [class.badge-outline]="statusFilter() !== status"
+        <button type="button" hlmBadge variant="outline" class="h-8 px-3 text-sm cursor-pointer aria-pressed:border-secondary aria-pressed:bg-secondary aria-pressed:text-secondary-content"
+              [attr.aria-pressed]="statusFilter() === status"
                 (click)="onStatusChange(status)">{{ 'GYM.STATUS.' + status | translate }}</button>
       }
     </div>
   </div>
 
-  <div class="bg-base-100 border border-neutral rounded-box mb-4">
+  <div class="bg-card border border-border rounded-xl mb-4">
     @if (isSearching() && users().length === 0) {
       <div class="flex justify-center p-8">
-        <span class="loading loading-spinner loading-lg text-primary"></span>
+        <hlm-spinner/>
       </div>
     } @else {
-      <ul class="divide-y divide-base-200">
+      <ul class="divide-y divide-border">
         @for (user of users(); track user.id) {
           <ng-container *ngTemplateOutlet="userRow; context: {$implicit: user}"></ng-container>
         } @empty {
@@ -122,9 +122,9 @@
 
   @if (hasMore()) {
     <div class="flex justify-center mb-8">
-      <button type="button" class="btn btn-outline btn-secondary min-w-36" [disabled]="isLoadingMore()" (click)="loadMore()">
+      <button type="button" hlmBtn variant="outline" size="lg" class="min-w-36" [disabled]="isLoadingMore()" (click)="loadMore()">
         @if (isLoadingMore()) {
-          <span class="loading loading-spinner"></span>
+          <hlm-spinner/>
         }
         {{ 'ADMIN.SUPPORT.LOAD_MORE' | translate }}
       </button>
@@ -132,30 +132,30 @@
   }
 
   @if (selectedUser(); as user) {
-    <form [formGroup]="reasonForm" (ngSubmit)="startSession()" class="card bg-base-100 shadow-xl sticky bottom-4">
-      <div class="card-body gap-4">
+    <form [formGroup]="reasonForm" (ngSubmit)="startSession()" hlmCard class="sticky bottom-4 shadow-lg">
+      <div hlmCardContent class="flex flex-col gap-4">
         <div class="flex items-start justify-between gap-4">
-          <h2 class="card-title">{{ 'ADMIN.SUPPORT.ACT_AS' | translate: {name: user.firstName + ' ' + user.lastName} }}</h2>
-          <button type="button" class="btn btn-ghost btn-sm btn-circle"
+          <h2 hlmCardTitle class="text-lg flex items-center gap-2">{{ 'ADMIN.SUPPORT.ACT_AS' | translate: {name: user.firstName + ' ' + user.lastName} }}</h2>
+          <button type="button" hlmBtn variant="ghost" size="icon-sm" class="rounded-full"
                   [attr.aria-label]="'GLOBAL.CLOSE' | translate" [title]="'GLOBAL.CLOSE' | translate"
                   (click)="clearSelection()">
             <ng-icon name="heroXMark" size="1.25rem"></ng-icon>
           </button>
         </div>
-        <label class="form-control w-full">
-          <div class="label"><span class="label-text">{{ 'ADMIN.SUPPORT.REASON' | translate }} *</span></div>
-          <textarea formControlName="reason" class="textarea textarea-bordered h-24 w-full"
+        <label class="flex flex-col gap-1.5 w-full">
+          <span class="text-sm font-medium">{{ 'ADMIN.SUPPORT.REASON' | translate }} *</span>
+          <textarea formControlName="reason" hlmTextarea class="h-24 w-full"
                     [placeholder]="'ADMIN.SUPPORT.REASON_PH' | translate"></textarea>
         </label>
-        <div class="alert alert-warning alert-soft">
+        <div hlmAlert class="border-warning/40 bg-warning/10 text-warning">
           <ng-icon name="heroExclamationTriangle" size="1.5rem"></ng-icon>
           <span>{{ 'ADMIN.SUPPORT.WARNING' | translate }}</span>
         </div>
         <div class="flex justify-end gap-2">
-          <button type="button" class="btn btn-ghost" (click)="clearSelection()">{{ 'GLOBAL.CANCEL' | translate }}</button>
-          <button type="submit" class="btn btn-secondary min-w-36" [disabled]="reasonForm.invalid || isStarting()">
+          <button type="button" hlmBtn variant="ghost" size="lg" (click)="clearSelection()">{{ 'GLOBAL.CANCEL' | translate }}</button>
+          <button type="submit" hlmBtn size="lg" class="min-w-36" [disabled]="reasonForm.invalid || isStarting()">
             @if (isStarting()) {
-              <span class="loading loading-spinner"></span>
+              <hlm-spinner/>
             }
             {{ 'ADMIN.SUPPORT.START' | translate }}
           </button>
