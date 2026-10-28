@@ -96,9 +96,17 @@ the dev proxy targets the local Traefik `https://localhost` with `Host: stellar.
 - Errors: show `ProblemDetail.detail` from the backend when present (already localized), else a
   translated fallback; 409 = conflict/locked, 403 = forbidden.
 - Wrap every `localStorage` / `sessionStorage` access in try/catch.
+- Account e-mail links (`/auth/reset-password`, `/auth/verify-email`) carry the token in the URL
+  fragment: read it with `features/auth/auth-token.ts` (`readLinkToken`, also removes it from history).
+  Unverified users (`UserResponse.emailVerified`): `app-email-verification-notice` on pages whose
+  action Antares refuses with 403 `EMAIL_NOT_VERIFIED`.
+- `ng-icon`'s host style beats `text-*` utilities set on the icon itself: colour it through a parent
+  or its `color` input (existing icons with `class="text-…"` on the icon stay uncoloured).
 - Loads, distances and heights are shown through `core/services/unit.service.ts` (`formatLoad`,
   `formatDistance`: user's metric/imperial choice, men/women pairs "43/29 kg"); never print a stored unit.
   Lifted loads in scores use `formatScoreLoad` / `convertScoreLoad` (0.5 kg / 1 lb precision).
+  Men/women pairs with the user's division highlighted: `loadPair` / `distancePair` (`MeasurePair.mine`);
+  body weights / heights of the athlete profile: `bodyWeightFromKg` / `heightFromCm` and back.
 - Competition WODs: `WodResponse.capabilities.canJudge` decides the athlete selector of the score form
   (`GymService.getAthletes`); per-score buttons follow `ScoreCapabilities.canModify/canVerify`;
   `WodScoresStore.setVerified`. The copy dialog lives in the WOD detail (`WodService.copyWod`).

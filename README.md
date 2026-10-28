@@ -58,6 +58,8 @@ frontend, and an infrastructure stack with reverse proxy, databases, and monitor
     - Rate limiting
 - **Castor** (`castor-db`): PostgreSQL database
 - **Pollux** (`pollux-cache`): Redis cache
+- **Deneb** (`deneb-mail`): Mailpit, local development only. Catches the account e-mails sent by
+  Antares (password reset, e-mail verification); web UI on http://localhost:8025
 
 ### Observability (The "Vega" Suite)
 
@@ -106,6 +108,16 @@ ADMIN_FIRSTNAME=
 ADMIN_LASTNAME=
 ADMIN_EMAIL=
 ADMIN_PASSWORD=
+
+# === MAIL (optional locally: defaults send to the Mailpit container deneb-mail:1025) ===
+# Generic SMTP, provider chosen at deployment (an EU-hosted one for the GDPR)
+MAIL_HOST=
+MAIL_PORT=
+MAIL_USERNAME=
+MAIL_PASSWORD=
+MAIL_SMTP_AUTH=true
+MAIL_SMTP_STARTTLS=true
+MAIL_FROM="StellarApex <no-reply@your-domain>"
 ```
 
 ### 2. Generate Local Certificates
@@ -192,11 +204,21 @@ the same commands for each service whose files changed.
     - `X-Auth-User-Role`: platform role (`ADMIN` or `USER`)
     - `X-Auth-Memberships`: every usable gym membership with its effective permissions
       (`gymId:ROLE:PERM+PERM,...`)
+    - `X-Auth-User-Division`: competition division (`MEN`, `WOMEN`, empty when not chosen),
+      copied by Aldebaran on each score the user logs
     - `X-Auth-Actor-Id`: the admin's id during a support session
     - `X-Internal-Secret`: proves the headers come from Antares
 
 Traefik only forwards the headers listed in `dynamic/routes.yml`, which also overwrites any value
 forged by a client.
+
+### Account e-mails
+
+Antares mails single-use links (token hashed in Redis, sent in the URL fragment `#token=`):
+password reset (30 min; the answer never tells whether the account exists; every session ends
+after the reset) and e-mail verification (48 h). An unverified account can sign in and log
+personal scores, but cannot join or request a box/program. Registrations and reset requests are
+throttled per client IP, verification resends per user (429 with `Retry-After`).
 
 ### Protected Resources
 
@@ -264,9 +286,11 @@ The "Vega" suite provides a complete observability stack:
 3. **Use strong database passwords**
 4. **Enable HTTPS-only cookies** in production
 5. **Configure appropriate rate limits**
-6. **Set up log aggregation** (ELK, Loki, etc.)
-7. **Implement backup strategy** for databases
-8. **Use secrets management** (Vault, AWS Secrets Manager)
+6. **Configure the SMTP provider** (`MAIL_*` in `.env`), disable link and open tracking on its side,
+   and remove the `deneb-mail` (Mailpit) service
+7. **Set up log aggregation** (ELK, Loki, etc.)
+8. **Implement backup strategy** for databases
+9. **Use secrets management** (Vault, AWS Secrets Manager)
 
 ## Project Structure
 

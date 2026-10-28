@@ -76,6 +76,8 @@ request and forwards these headers, checked with `X-Internal-Secret`:
 * `X-Auth-User-Role`: platform role (`ADMIN` or `USER`)
 * `X-Auth-Memberships`: usable gym memberships with effective permissions, e.g.
   `12:COACH:WOD_WRITE+SCORE_VERIFY,15:ATHLETE:`
+* `X-Auth-User-Division`: `MEN`, `WOMEN` or empty (athlete profile in Antares), copied on the
+  scores the user logs
 * `X-Auth-Actor-Id`: set when a platform admin acts as this user through an audited support
   session. The other headers then describe the target user, whose rights apply unchanged; every
   non-GET request is logged at INFO (actor, user, method, path, status) by
@@ -185,10 +187,15 @@ Rules live in `security/WodSecurity` and `security/ScoreSecurity`, used from `@P
 * `GET /{id}/compare`: rank and percentile of a score among the other athletes' PRs at its level.
 * `GET /leaderboard/{id}`: leaderboard of a WOD (`scaling`, default `RX`): each athlete's PR at that
   level; optional `gymIds` (comma-separated, all among the caller's gyms, 403 otherwise) keeps the
-  scores performed there (e.g. the caller's boxes, or programs) and `verifiedOnly=true` the
-  verified ones. Filters apply before choosing each athlete's best score: an athlete is ranked by
+  scores performed there (e.g. the caller's boxes, or programs), `verifiedOnly=true` the
+  verified ones and `division` (`MEN`, `WOMEN`) the scores logged in that division. Filters apply before choosing each athlete's best score: an athlete is ranked by
   their best kept score, which may not be their PR (done in another gym, or not verified yet).
   Filtered leaderboards are ranked in memory in `ScoreService`, the worldwide one in the database.
+* Division (V10, `scores.division`): copied at logging from `X-Auth-User-Division` for one's own
+  score; for a score staff log for an athlete, the athlete's, read from Antares
+  (`GET /antares/internal/users/{id}/division`, 503 if unavailable), never the judge's. A score logged
+  with a division also classifies the athlete's older scores without one. A division change applies
+  to the scores logged afterwards; scores without a division only appear on the "all" leaderboard.
 * `POST /{id}/verify`, `DELETE /{id}/verify`: verify a competition score or withdraw the verification
   (rules above; 400 outside a competition WOD).
   Responses carry user IDs only: clients resolve names with Antares `POST /users/display-names`.
@@ -230,7 +237,8 @@ the Antares test gyms "Spartacus CrossFit" (author `owner@sparta.com`) and "Zeus
 already has WODs. `config/DevScoreSeeder` then logs about 80 scores for the test accounts (gym WODs,
 Fran, Chelsea, Cindy, Grace, Murph, Open 25.1/25.2, CrossFit Total; several levels and gyms, some
 repeated attempts) so histories and leaderboards can be checked; skipped if `owner@sparta.com`
-already has scores, so an existing database gets them on the next start.
+already has scores, so an existing database gets them on the next start. At every start it also
+gives the scores without a division their athlete's Antares division (dev data only).
 
 ## API Documentation
 

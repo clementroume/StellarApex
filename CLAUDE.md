@@ -47,6 +47,10 @@ Traefik strip client-forged values; any new header MUST be added there):
 - `X-Auth-Memberships`: every usable membership, `gymId:ROLE:PERM+PERM` joined by `,`
   (e.g. `12:COACH:WOD_WRITE+SCORE_VERIFY,15:ATHLETE:`). Usable = membership ACTIVE and
   (gym ACTIVE, or gym PENDING_APPROVAL and role OWNER/PROGRAMMER); `MembershipSummary.usable` tells Sirius
+- `X-Auth-User-Division`: `MEN` | `WOMEN` | empty (athlete profile); Aldebaran copies it on each score
+  the user logs (`scores.division`); a score staff log for an athlete takes the athlete's division
+  from Antares `GET /antares/internal/users/{id}/division`, never the judge's. A division change applies
+  to the next scores (older null-division scores are classified at the athlete's next score)
 - `X-Auth-Actor-Id`: admin id, only during a support session (the other headers then describe the
   target user)
 
@@ -105,8 +109,17 @@ Admin support session: a platform admin acts as a real (non-admin) user from Sir
 refreshable `support_token` cookie (admin cookies untouched), records it in `support_sessions`, and
 resolves requests as the target; writes are allowed and audited (`X-Auth-Actor-Id`). Expiry → 401
 ProblemDetail `code=SUPPORT_SESSION_EXPIRED`, never a silent fallback to admin; password change,
-account deletion and preference (language/theme/palette/unit system) updates → 403 `SUPPORT_SESSION_FORBIDDEN`;
+account deletion and preference (language/theme/palette/unit system) updates → 403 `SUPPORT_SESSION_FORBIDDEN`
+(athlete profile and body weights stay editable, audited);
 Sirius keeps the admin's language/theme/palette/unit on screen. `/users/me` carries `supportSession` while active.
+
+Account (lot H): Antares mails single-use links (password reset 30 min, e-mail verification 48 h;
+hashed tokens in Redis, sent in the URL fragment) over generic SMTP (`MAIL_*` env vars, local Mailpit
+`deneb-mail`, UI http://localhost:8025). An unverified address cannot join or request a gym (403
+`EMAIL_NOT_VERIFIED`); registrations and reset requests are throttled per client IP (last
+`X-Forwarded-For` entry, set by Traefik). A password reset ends every session (refresh token deleted,
+older access tokens refused). Athlete profile (division, birth year, height, body weights): only the
+division is shared; the rest is private to its owner, never on a leaderboard.
 
 Temporary dev data (`dev` Spring profile, set in `docker-compose.yml`, to be removed like the CSV
 export): test gyms "Spartacus CrossFit" (physical), "Zeus Programming" (virtual), "Pending Box" and

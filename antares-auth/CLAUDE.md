@@ -38,6 +38,16 @@ HttpOnly cookies, XSRF cookie `XSRF-TOKEN`). `./mvnw verify` runs unit tests and
   `Gym.allowsRole`, unique index V4); changed only by `MembershipService.transferOwnership`; transfer
   and gym deletion are `@security.isGymHolder`. Gym creation is open (`PENDING_APPROVAL`, one waiting
   request per user, no creation token); discovery `GET /gyms` returns `GymPublicResponse` only.
+- Account e-mails: `AccountTokenService` (Redis, hashed single-use tokens bound to the address) +
+  `AccountMailService` (`AccountMail` events sent after commit, `@Async`, Thymeleaf template, texts
+  `mail.*`; never log addresses or links). `PasswordResetService` (no account enumeration, throttled,
+  sets `passwordChangedAt`: `JwtAuthenticationFilter` refuses older access tokens) and
+  `EmailVerificationService.requireVerified` (call it before any action that throwaway accounts could
+  abuse: join, gym request). Throttles share `SlidingWindowLimiter`; per-IP ones use
+  `ClientIpResolver` (last `X-Forwarded-For` entry). ITs mock `JavaMailSender` (`BaseIntegrationTest`;
+  `register()` marks the account verified, `registerUnverified()` does not).
+- Athlete profile: `AthleteProfileService` (division shared through `X-Auth-User-Division` and the
+  internal `GET /internal/users/{id}/division`; birth year, height, `body_weights` private).
 - Bootstrap: the admin from `ApplicationConfig.adminUserInitializer`. `config/DevDataSeeder`
   (`dev` profile, temporary, TO BE REMOVED) seeds test accounts; Aldebaran relies on its names.
 
