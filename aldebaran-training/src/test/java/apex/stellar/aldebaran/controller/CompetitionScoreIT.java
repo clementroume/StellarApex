@@ -109,6 +109,7 @@ class CompetitionScoreIT extends BaseIntegrationTest {
             .timeSeconds(600)
             .scaling(ScalingLevel.RX)
             .personalRecord(true)
+            .verificationRequested(true)
             .verifiedBy(verified ? COACH : null)
             .verifiedAt(verified ? java.time.LocalDateTime.now() : null)
             .build());

@@ -38,4 +38,57 @@ public record WodMovementRequest(
     @Size(max = 4000, message = "{validation.wod.notes.size}") String notesEn,
     @Size(max = 4000, message = "{validation.wod.notes.size}") String notesFr,
     @Size(max = 4000, message = "{validation.wod.scaling.size}") String scalingOptionsEn,
-    @Size(max = 4000, message = "{validation.wod.scaling.size}") String scalingOptionsFr) {}
+    @Size(max = 4000, message = "{validation.wod.scaling.size}") String scalingOptionsFr,
+
+    // --- Sets (strength / skill work), optional ---
+    @Min(value = 1, message = "{validation.wod.sets.min}") Integer sets) {
+
+  /** Movement prescribed without a number of sets. */
+  @SuppressWarnings("java:S107") // Mirrors the record components
+  public WodMovementRequest(
+      Long movementId,
+      Integer orderIndex,
+      String repsScheme,
+      Double weight,
+      Double weightFemale,
+      Unit weightUnit,
+      Integer durationSeconds,
+      Unit durationDisplayUnit,
+      Double distance,
+      Unit distanceUnit,
+      Integer calories,
+      Integer caloriesFemale,
+      Double height,
+      Double heightFemale,
+      Unit heightUnit,
+      Set<String> equipment,
+      Set<String> techniques,
+      String notesEn,
+      String notesFr,
+      String scalingOptionsEn,
+      String scalingOptionsFr) {
+    this(
+        movementId,
+        orderIndex,
+        repsScheme,
+        weight,
+        weightFemale,
+        weightUnit,
+        durationSeconds,
+        durationDisplayUnit,
+        distance,
+        distanceUnit,
+        calories,
+        caloriesFemale,
+        height,
+        heightFemale,
+        heightUnit,
+        equipment,
+        techniques,
+        notesEn,
+        notesFr,
+        scalingOptionsEn,
+        scalingOptionsFr,
+        null);
+  }
+}

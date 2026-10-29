@@ -29,6 +29,7 @@ public class WodSecurity {
 
   private final SecurityService securityService;
   private final WodService wodService;
+  private final SessionSecurity sessionSecurity;
 
   /**
    * Determines whether the authenticated user is authorized to read the specified WOD (Workout of
@@ -53,6 +54,11 @@ public class WodSecurity {
     }
 
     WodResponse wod = wodService.getWodDetail(wodId);
+
+    // 0. Session WOD: read with the content of its session (visibility policy)
+    if (!wod.standalone()) {
+      return sessionSecurity.canReadWodContent(wodId, principal);
+    }
 
     // 1. Public: Open to everyone
     if (wod.isPublic()) {
@@ -103,6 +109,18 @@ public class WodSecurity {
     return wod.competition()
         && (securityService.isAdmin(principal)
             || securityService.hasGymPermission(principal, wod.gymId(), SCORE_VERIFY));
+  }
+
+  /**
+   * Evaluates if the authenticated user judges the competition WOD (verification queue).
+   *
+   * @param wodId The WOD.
+   * @param principal The authenticated user context.
+   * @return {@code true} if allowed (404 for an unknown WOD).
+   */
+  @Transactional(readOnly = true)
+  public boolean canJudge(Long wodId, AldebaranUserPrincipal principal) {
+    return canJudge(wodService.getWodDetail(wodId), principal);
   }
 
   /**

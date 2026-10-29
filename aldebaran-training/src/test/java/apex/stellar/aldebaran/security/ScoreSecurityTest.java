@@ -35,6 +35,7 @@ class ScoreSecurityTest {
   @Mock private ScoreRepository scoreRepository;
   @Mock private WodRepository wodRepository;
   @Mock private AntaresClient antaresClient;
+  @Mock private SessionSecurity sessionSecurity;
   @Spy private SecurityService securityService;
   @InjectMocks private ScoreSecurity scoreSecurity;
 
@@ -570,11 +571,11 @@ class ScoreSecurityTest {
     Wod competition = competitionWod(100L);
     Wod regular = Wod.builder().id(2L).gymId(100L).build();
     when(scoreRepository.findById(10L))
-        .thenReturn(Optional.of(Score.builder().id(10L).userId(99L).gymId(100L).wod(competition).build()));
+        .thenReturn(Optional.of(Score.builder().id(10L).userId(99L).gymId(100L).wod(competition).verificationRequested(true).build()));
     when(scoreRepository.findById(11L))
-        .thenReturn(Optional.of(Score.builder().id(11L).userId(2L).gymId(100L).wod(competition).build()));
+        .thenReturn(Optional.of(Score.builder().id(11L).userId(2L).gymId(100L).wod(competition).verificationRequested(true).build()));
     when(scoreRepository.findById(12L))
-        .thenReturn(Optional.of(Score.builder().id(12L).userId(99L).gymId(100L).wod(regular).build()));
+        .thenReturn(Optional.of(Score.builder().id(12L).userId(99L).gymId(100L).wod(regular).verificationRequested(true).build()));
 
     assertTrue(scoreSecurity.canVerify(10L, coach));
     assertFalse(scoreSecurity.canVerify(10L, athlete), "No SCORE_VERIFY");

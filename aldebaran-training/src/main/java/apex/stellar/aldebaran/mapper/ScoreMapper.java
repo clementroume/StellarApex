@@ -2,8 +2,10 @@ package apex.stellar.aldebaran.mapper;
 
 import apex.stellar.aldebaran.dto.ScoreRequest;
 import apex.stellar.aldebaran.dto.ScoreResponse;
+import apex.stellar.aldebaran.dto.ScoreSetResponse;
 import apex.stellar.aldebaran.model.entities.Score;
 import apex.stellar.aldebaran.model.enums.Unit;
+import java.util.List;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
@@ -49,6 +51,7 @@ public interface ScoreMapper {
   @Mapping(target = "totalDistance", source = "score", qualifiedByName = "mapDistanceToDisplay")
   @Mapping(target = "weightUnit", source = "weightDisplayUnit")
   @Mapping(target = "distanceUnit", source = "distanceDisplayUnit")
+  @Mapping(target = "sets", source = "score", qualifiedByName = "mapSetsToDisplay")
   ScoreResponse toResponse(Score score);
 
   // -------------------------------------------------------------------------
@@ -67,6 +70,9 @@ public interface ScoreMapper {
   @Mapping(target = "loggedAt", ignore = true)
   @Mapping(target = "personalRecord", ignore = true)
   @Mapping(target = "division", ignore = true)
+  @Mapping(target = "sets", ignore = true) // Converted and checked by ScoreService
+  @Mapping(target = "sessionLogId", ignore = true) // Checked by ScoreService
+  @Mapping(target = "verificationRequested", ignore = true) // Competition WODs only
   @Mapping(target = "timeSeconds", source = "request", qualifiedByName = "calculateTotalSeconds")
   @Mapping(target = "timeDisplayUnit", source = "request", qualifiedByName = "inferTimeDisplayUnit")
   @Mapping(target = "maxWeightKg", source = "request", qualifiedByName = "normalizeMaxWeight")
@@ -92,6 +98,9 @@ public interface ScoreMapper {
   @Mapping(target = "loggedAt", ignore = true)
   @Mapping(target = "personalRecord", ignore = true)
   @Mapping(target = "division", ignore = true)
+  @Mapping(target = "sets", ignore = true) // Converted and checked by ScoreService
+  @Mapping(target = "sessionLogId", ignore = true) // Checked by ScoreService
+  @Mapping(target = "verificationRequested", ignore = true) // Competition WODs only
   @Mapping(target = "timeSeconds", source = "request", qualifiedByName = "calculateTotalSeconds")
   @Mapping(target = "timeDisplayUnit", source = "request", qualifiedByName = "inferTimeDisplayUnit")
   @Mapping(target = "maxWeightKg", source = "request", qualifiedByName = "normalizeMaxWeight")
@@ -263,5 +272,22 @@ public interface ScoreMapper {
       return null;
     }
     return s.getDistanceDisplayUnit().fromBase(s.getTotalDistanceMeters());
+  }
+
+  @SuppressWarnings("unused")
+  @Named("mapSetsToDisplay")
+  default List<ScoreSetResponse> mapSetsToDisplay(Score s) {
+    if (s.getSets() == null) {
+      return List.of();
+    }
+    Unit unit = s.getWeightDisplayUnit() != null ? s.getWeightDisplayUnit() : Unit.KG;
+    return s.getSets().stream()
+        .map(
+            set ->
+                new ScoreSetResponse(
+                    set.getReps(),
+                    set.getWeightKg() != null ? unit.fromBase(set.getWeightKg()) : null,
+                    set.isCompleted()))
+        .toList();
   }
 }

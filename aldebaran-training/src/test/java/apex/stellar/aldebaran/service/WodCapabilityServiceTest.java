@@ -2,6 +2,7 @@ package apex.stellar.aldebaran.service;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import apex.stellar.aldebaran.dto.WodCapabilities;
@@ -10,6 +11,7 @@ import apex.stellar.aldebaran.repository.ScoreRepository;
 import apex.stellar.aldebaran.security.AldebaranUserPrincipal;
 import apex.stellar.aldebaran.security.GymAccess;
 import apex.stellar.aldebaran.security.SecurityService;
+import apex.stellar.aldebaran.security.SessionSecurity;
 import apex.stellar.aldebaran.security.WodSecurity;
 import java.util.List;
 import java.util.Map;
@@ -32,13 +34,13 @@ class WodCapabilityServiceTest {
   @BeforeEach
   void setUp() {
     // Real security rules (no mocks) to test the end-to-end capability computation
-    WodSecurity wodSecurity = new WodSecurity(new SecurityService(), wodService);
+    WodSecurity wodSecurity = new WodSecurity(new SecurityService(), wodService, mock(SessionSecurity.class));
     capabilityService = new WodCapabilityService(wodSecurity, scoreRepository);
   }
 
   private static WodResponse gymWod(Long gymId) {
     return new WodResponse(
-        10L, "Fran", null, null, null, 50L, gymId, false, false, null, null, null, null, null, null, null, null, null, null, null, null, Set.of(),
+        10L, "Fran", null, null, null, 50L, gymId, false, false, null, true, null, null, null, null, null, null, null, null, null, null, null, Set.of(),
         List.of(), null, null, null);
   }
 
@@ -118,7 +120,7 @@ class WodCapabilityServiceTest {
     WodResponse regular = gymWod(101L);
     WodResponse competition =
         new WodResponse(
-            10L, "26.1", null, null, null, 50L, 101L, false, true, 7L, null, null, null, null, null,
+            10L, "26.1", null, null, null, 50L, 101L, false, true, 7L, true, null, null, null, null, null,
             null, null, null, null, null, null, Set.of(), List.of(), null, null, null);
 
     assertTrue(

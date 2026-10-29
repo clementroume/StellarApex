@@ -34,4 +34,7 @@ public record WodMovementResponse(
     String notesEn,
     String notesFr,
     String scalingOptionsEn,
-    String scalingOptionsFr) {}
+    String scalingOptionsFr,
+
+    // --- Sets (strength / skill work), or null ---
+    Integer sets) {}

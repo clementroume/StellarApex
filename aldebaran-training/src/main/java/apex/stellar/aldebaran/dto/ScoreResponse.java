@@ -5,6 +5,7 @@ import apex.stellar.aldebaran.model.enums.Division;
 import apex.stellar.aldebaran.model.enums.Unit;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 
 /** DTO representing a logged score. */
 public record ScoreResponse(
@@ -58,6 +59,12 @@ public record ScoreResponse(
     // --- Verification (competition WODs), null while not verified ---
     Long verifiedBy,
     LocalDateTime verifiedAt,
+    // Submitted to the judges of a competition WOD
+    boolean verificationRequested,
+
+    // --- Session: journal the score belongs to, and strength sets (display unit) ---
+    Long sessionLogId,
+    List<ScoreSetResponse> sets,
 
     // --- Per-user rights (computed per request) ---
     ScoreCapabilities capabilities) {
@@ -100,6 +107,9 @@ public record ScoreResponse(
         loggedBy,
         verifiedBy,
         verifiedAt,
+        verificationRequested,
+        sessionLogId,
+        sets,
         capabilities);
   }
 }

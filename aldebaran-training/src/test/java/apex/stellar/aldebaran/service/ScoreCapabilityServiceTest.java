@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import apex.stellar.aldebaran.client.AntaresClient;
 import apex.stellar.aldebaran.dto.ScoreResponse;
 import apex.stellar.aldebaran.dto.WodSummaryResponse;
 import apex.stellar.aldebaran.model.entities.Score.ScalingLevel;
@@ -12,8 +13,8 @@ import apex.stellar.aldebaran.repository.ScoreRepository;
 import apex.stellar.aldebaran.repository.WodRepository;
 import apex.stellar.aldebaran.security.AldebaranUserPrincipal;
 import apex.stellar.aldebaran.security.ScoreSecurity;
-import apex.stellar.aldebaran.client.AntaresClient;
 import apex.stellar.aldebaran.security.SecurityService;
+import apex.stellar.aldebaran.security.SessionSecurity;
 import apex.stellar.aldebaran.security.TestPrincipals;
 import java.time.LocalDate;
 import java.util.List;
@@ -28,7 +29,8 @@ class ScoreCapabilityServiceTest {
           Mockito.mock(ScoreRepository.class),
           Mockito.mock(WodRepository.class),
           new SecurityService(),
-          Mockito.mock(AntaresClient.class));
+          Mockito.mock(AntaresClient.class),
+          Mockito.mock(SessionSecurity.class));
   private final ScoreCapabilityService service = new ScoreCapabilityService(scoreSecurity);
 
   private static ScoreResponse score(Long athleteId, Long gymId) {
@@ -36,7 +38,7 @@ class ScoreCapabilityServiceTest {
         new WodSummaryResponse(1L, "Fran", null, null, null, null, null, null, null, 5L, gymId, true, false);
     return new ScoreResponse(
         10L, athleteId, LocalDate.now(), wod, null, 300, 5, 0, null, null, null, null, null, null, null,
-        null, null, ScalingLevel.RX, false, null, true, null, "felt good", "band", null, null, null, null, null);
+        null, null, ScalingLevel.RX, false, null, true, null, "felt good", "band", null, null, null, null, false, null, List.of(), null);
   }
 
   @Test

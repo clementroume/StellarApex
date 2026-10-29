@@ -87,7 +87,9 @@ and a virtual programming); there is no "active gym" in requests.
   only place scores are
   verified: `SCORE_VERIFY` staff of the gym log scores for its members (logged = verified at once;
   Antares confirms the membership through its internal API, 503 if unavailable, never authorized by
-  default) and verify/unverify scores (`POST|DELETE /scores/{id}/verify`), never their own. A verified
+  default) and verify/unverify the scores athletes submitted (`verificationRequested`; others stay plain
+  scores; `POST|DELETE /scores/{id}/verify`, queue `GET /scores/verification-queue/{wodId}`), never
+  their own. A verified
   score is locked for its athlete, staff included. Leaderboard filters (`gymIds`, `verifiedOnly`)
   apply before each athlete's best score is chosen, so a PR done elsewhere or not verified never
   hides a kept score (Sirius defaults `verifiedOnly` off for judges so they see the scores to
@@ -95,6 +97,19 @@ and a virtual programming); there is no "active gym" in requests.
   for someone else elsewhere: admin only. `POST /wods/{id}/copy {gymId, competition}` copies a readable
   WOD (e.g. a public Open WOD) into a physical gym (`WOD_WRITE`), private, with `sourceWodId`; scores and
   leaderboards stay per WOD (a copy's scores never reach the public WOD).
+- Sessions (lot B, Aldebaran `sessions`): a session is dated (WOD session = a day, several slots;
+  specialty = a week) and holds ordered blocks: Skill + WOD required for a WOD session, optional
+  Warm-up / Cool Down (text), Accessory, Finisher. A scored block owns a WOD (`standalone = false`,
+  hidden from WOD lists, edited only through its session) or borrows a standalone WOD (scores join
+  its leaderboard). Frame (date, type, discipline, block kinds and themes): members of the gym. Content:
+  staff of any role (Owner/Programmer/Coach) always; athletes per the session's policy (`ADVANCE`,
+  `DAY_OF`, `AFTER`, `AFTER_PARTICIPANTS`, `PARTICIPANTS_ONLY`; a program only `ADVANCE`/`DAY_OF`;
+  default in Aldebaran `gym_session_settings`, gym time zone). Hidden content is null in responses,
+  and session WODs and their leaderboards are 403. Write: `WOD_WRITE`; personal session (`gymId =
+  null`): author only. "Séance faite" creates the athlete's journal (`session_logs`, participant);
+  a journal locks the session (409), visibility stays editable. Competition block (physical box):
+  the block's WOD is a box competition WOD (the Open is copied), athletes submit their score to the
+  judges. `SessionResponse.capabilities {canModify, locked, contentVisible, canLog}`.
 - Internal API: Antares `/antares/internal/**` (membership check, gym type; Aldebaran → `http://antares-auth:8080`,
   `X-Internal-Secret`, 404 without it, excluded from the Traefik `/antares` route). Aldebaran calls it
   through `client/AntaresClient` only.

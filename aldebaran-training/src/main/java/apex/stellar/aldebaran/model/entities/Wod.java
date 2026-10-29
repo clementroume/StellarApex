@@ -97,6 +97,14 @@ public class Wod {
   @Builder.Default
   private boolean competition = false;
 
+  /**
+   * Standalone WOD (listed, scored on its own), or the WOD of one session block (false): hidden from
+   * WOD lists, read and edited through its session.
+   */
+  @Column(name = "standalone", nullable = false)
+  @Builder.Default
+  private boolean standalone = true;
+
   /** WOD this one was copied from (e.g. a public Open WOD copied for a gym competition). */
   @Column(name = "source_wod_id")
   private Long sourceWodId;

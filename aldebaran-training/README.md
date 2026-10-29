@@ -101,15 +101,56 @@ of them:
   tells the gym type): staff holding
   `SCORE_VERIFY` in the WOD's gym log scores for the gym's members (`userId`; Antares confirms the
   membership through its internal API with `X-Internal-Secret`, `client/AntaresClient`; 503 if
-  Antares does not answer, never authorized by default). Such a score is verified at once. They also
-  verify other athletes' scores or withdraw the verification (never on their own score). A verified
+  Antares does not answer, never authorized by default). Such a score is submitted and verified at
+  once. An athlete chooses to submit their own score (`verificationRequested`); only submitted
+  scores are verified (others are plain scores). Staff verify them or withdraw the verification
+  (never on their own score). A verified
   score is locked for its athlete (staff included); the staff can still correct it. Every score
   records who logged it (`loggedBy`) and who verified it (`verifiedBy`, `verifiedAt`). Scores are
   verified on competition WODs only.
+* **Sessions** (lot B, below): frame read by the members of the session's gym, content per the
+  session's visibility policy (staff of any role always), written with `WOD_WRITE`; personal
+  sessions by their author only.
 * **Muscles / movements**: read by everyone, written (and exported to CSV) by platform ADMIN only.
 * A platform ADMIN can do everything.
 
-Rules live in `security/WodSecurity` and `security/ScoreSecurity`, used from `@PreAuthorize`.
+Rules live in `security/WodSecurity`, `security/ScoreSecurity` and `security/SessionSecurity`, used
+from `@PreAuthorize`.
+
+## Sessions (lot B)
+
+A session (`sessions`, V11) is an ordered container of blocks (`session_blocks`) proposed on a day
+(`type = WOD`, run in several slots) or a week (`type = SPECIALTY`, `date` = its Monday, `endDate` its
+Sunday); the same blocks at two dates are two sessions. Disciplines: `CROSSFIT`, `WEIGHTLIFTING`,
+`STRENGTH`, `GYMNASTICS`, `ENDURANCE`, `HYROX`, `MOBILITY`, `BODYBUILDING`, `STRONGMAN`, `OTHER`.
+
+* Blocks: `WARM_UP` / `COOL_DOWN` are FR/EN text; `SKILL` (skill or strength), `WOD`, `ACCESSORY`,
+  `FINISHER` carry a WOD, either created for the session (`wods.standalone = false`: hidden from WOD
+  lists, read and edited through its session only) or borrowed from the standalone WODs (Fran: scores
+  join Fran's leaderboard). A WOD session needs a `SKILL` and a `WOD` block; a specialty or a personal
+  session at least one block with a WOD. Each block has an optional `label`, a thematic summary
+  (`themeEn/Fr`, shown in advance), `optional` (offered on top), `plannedMinutes` and a `stimulus`
+  (derived when omitted: `SessionService.deriveStimulus`).
+* Competition block (`competition`, physical box only): the block's WOD becomes a competition WOD of
+  the box (a borrowed public WOD such as the Open is copied). A competition WOD cannot be borrowed as
+  is.
+* Visibility of the content (frame = date, type, discipline, block kinds and themes, always shown to
+  members): `ADVANCE` (instant chosen before the session), `DAY_OF` (instant on a day of the session),
+  `AFTER` (day after the last day, 00:00), `AFTER_PARTICIPANTS` (`AFTER`, and each participant from
+  their journal), `PARTICIPANTS_ONLY`. A program only uses `ADVANCE` / `DAY_OF`. `contentVisibleFrom`
+  is computed with the gym's time zone. Staff (Owner, Programmer, Coach) always read the content;
+  hidden content is null in responses and session WODs and their leaderboards answer 403.
+* Gym settings (`gym_session_settings`): `defaultVisibility` (built-in: `AFTER_PARTICIPANTS` for a
+  box, `ADVANCE` for a program, read from Antares) and `timeZone` (default `Europe/Paris`).
+* Journal (V12, `session_logs` + `session_log_blocks`): "Séance faite" creates the athlete's journal
+  (one per session, on one of its days, never in the future) with every block checked; blocks can be
+  unchecked; `source` `MANUAL` (`PLANNING` reserved for the planning service). A score on a session
+  WOD joins the athlete's journal (created when missing, e.g. by a judge); a borrowed WOD's score
+  joins it with `sessionLogId`. A journal makes its athlete a participant and **locks** the session
+  (409 on update and delete; visibility stays editable); it cannot be deleted while scores are linked.
+* Strength sets (`score_sets`): `sets [{reps, weight, completed}]` on `WEIGHT`, `LOAD` and `NONE`
+  scores; the heaviest complete set becomes `maxWeight` (PR and leaderboard unchanged), the sum of
+  reps × load of complete sets `totalLoad`. `wod_movements.sets` is the prescribed number of sets.
 
 ## Catalog Model
 
@@ -159,7 +200,8 @@ Rules live in `security/WodSecurity` and `security/ScoreSecurity`, used from `@P
 * `POST /{id}/copy` `{gymId, competition}`: copy a readable WOD into a physical gym (`WOD_WRITE` there;
   400 for a virtual programming) or as a personal WOD (`gymId` null), e.g. a public Open WOD copied as a gym competition WOD. The copy is
   private, owned by the caller, keeps `sourceWodId` and has its own scores and leaderboard.
-* `POST /`, `PUT /{id}`, `DELETE /{id}`: manage a WOD (rules above).
+* `POST /`, `PUT /{id}`, `DELETE /{id}`: manage a WOD (rules above). A session WOD answers 400
+  (edited through its session); a WOD borrowed by a session block cannot be deleted (409).
 * `GET /reference-data`: WOD formats, categories, score types and unit groups.
 
 ### Scores (`/aldebaran/scores`)
@@ -196,10 +238,27 @@ Rules live in `security/WodSecurity` and `security/ScoreSecurity`, used from `@P
   (`GET /antares/internal/users/{id}/division`, 503 if unavailable), never the judge's. A score logged
   with a division also classifies the athlete's older scores without one. A division change applies
   to the scores logged afterwards; scores without a division only appear on the "all" leaderboard.
-* `POST /{id}/verify`, `DELETE /{id}/verify`: verify a competition score or withdraw the verification
-  (rules above; 400 outside a competition WOD).
+* `POST /{id}/verify`, `DELETE /{id}/verify`: verify a submitted competition score or withdraw the
+  verification (rules above; 400 outside a competition WOD or for a score not submitted).
+* `GET /verification-queue/{wodId}`: submitted scores of a competition WOD not verified yet, oldest
+  first (judges: `SCORE_VERIFY` in its gym).
+* Session fields: `sessionLogId` (journal), `sets` (strength sets), `verificationRequested`.
   Responses carry user IDs only: clients resolve names with Antares `POST /users/display-names`.
 * `GET /reference-data`: scaling levels.
+
+### Sessions (`/aldebaran/sessions`, `/aldebaran/session-logs`, `/aldebaran/gyms/{gymId}/session-settings`)
+
+* `GET /sessions`: frames of the readable sessions by date (`scope` `ALL` / `MINE` / `GYM`, `gymId`,
+  `from`, `to`: a specialty covers its week, `type`), with `contentVisible` and `loggedByMe`.
+* `GET /sessions/{id}`: frame, content when visible, `capabilities {canModify, locked, contentVisible,
+  canLog}` and `myLog`.
+* `POST /sessions`, `PUT /sessions/{id}` (blocks merged by `id`; an owned WOD left behind is deleted),
+  `DELETE /sessions/{id}` (deletes its owned WODs), `PUT /sessions/{id}/visibility`.
+* `POST /sessions/{id}/logs` `{date?, gymId?}`: "Séance faite". `GET /session-logs/me` (`from`, `to`),
+  `PUT /session-logs/{id}/blocks/{blockId}` `{done}`, `DELETE /session-logs/{id}`.
+* `GET` / `PUT /gyms/{gymId}/session-settings` `{defaultVisibility, timeZone}`: members read,
+  `MANAGE_SETTINGS` writes.
+* `GET /sessions/reference-data`: types, disciplines, block kinds, stimuli, visibility policies.
 
 ### Export (`/aldebaran/export`) — temporary, development only
 

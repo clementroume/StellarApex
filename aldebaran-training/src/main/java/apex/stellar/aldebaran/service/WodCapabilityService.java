@@ -31,7 +31,8 @@ public class WodCapabilityService {
    */
   @Transactional(readOnly = true)
   public WodResponse withCapabilities(WodResponse wod, AldebaranUserPrincipal principal) {
-    boolean canModify = wodSecurity.canModify(wod, principal);
+    // A session WOD is edited through its session
+    boolean canModify = wod.standalone() && wodSecurity.canModify(wod, principal);
     boolean locked = scoreRepository.existsByWodId(wod.id());
     boolean canJudge = wodSecurity.canJudge(wod, principal);
     return wod.withCapabilities(new WodCapabilities(canModify, locked, canJudge));

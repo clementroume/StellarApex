@@ -1,7 +1,8 @@
 # Aldebaran (training API)
 
 Spring Boot 4.1 / Java 25 service, base path `/aldebaran`, port 8081, schema `aldebaran` (Flyway).
-Domain: muscles, movements, WODs (`Wod` + `WodMovement`) and scores.
+Domain: muscles, movements, WODs (`Wod` + `WodMovement`), scores and sessions (`Session` +
+`SessionBlock`, journal `SessionLog`, lot B; model and rules in `README.md` § Sessions).
 Dev-only catalog backup (temporary, git-ignored CSVs, see root `CLAUDE.md`): `controller/Exporter`
 (admin only) writes `src/main/resources/{muscles,movements,wods,wod_movements}.csv` through the source
 volume mounted in `docker-compose.yml`; `config/DataSeeder` reloads them into empty tables (WODs:
@@ -29,7 +30,15 @@ resolving IDs from the `antares` schema with `JdbcTemplate`, then calls `config/
   `@scoreSecurity...`). Convention: when the resource does not exist, return `true` so the service
   throws the proper 404 instead of a 403.
 - List filters live in one JPQL constant, `WodRepository.SECURE_FILTERS`, shared by the list and the
-  `GET /wods/facets` queries: change it once.
+  `GET /wods/facets` queries: change it once. It keeps `standalone` WODs only (session WODs are read
+  through their session).
+- Sessions: `security/SessionSecurity` (frame = gym members; content = staff of any role, or per
+  `VisibilityPolicy` / participation; `canReadWodContent` gates session WODs in `WodSecurity.canRead`
+  and `ScoreSecurity.canCreate`). Time-based rules use the `Clock` bean (`config/ClockConfig`, UTC)
+  and the gym's zone (`SessionSettingsService.zoneOf`). Session WODs are created / updated / deleted
+  only through `WodService.*SessionWod` from `SessionService`. A journal locks its session
+  (`WodLockedException` → 409). PostgreSQL cannot type a null date parameter: pass
+  `SessionRepository.NO_START` / `NO_END` instead of null.
 - Per-user flags for the UI (`WodCapabilities`, `ScoreCapabilities`) are computed by
   `service/WodCapabilityService` / `ScoreCapabilityService` per request, never inside cached methods
   (`WodService.getWodDetail` is `@Cacheable`). `ScoreCapabilityService.forViewer` also hides others'
@@ -41,7 +50,7 @@ resolving IDs from the `antares` schema with `JdbcTemplate`, then calls `config/
   `AntaresUnavailableException` (503): never authorize by default. ITs mock it in
   `BaseIntegrationTest` (`antaresClient`).
 - Competition WODs: `ScoreSecurity.canCreate` (staff logging), `canModify` (verified score locked for
-  its athlete), `canVerify`; `WodSecurity.canJudge` feeds `WodCapabilities.canJudge`;
+  its athlete), `canVerify` (submitted scores only: `Score.verificationRequested`); `WodSecurity.canJudge` feeds `WodCapabilities.canJudge`;
   `WodService.checkCompetition` (gym required, never public, `InvalidWodException` → 400).
 - Division: `AldebaranUserPrincipal.division` (`X-Auth-User-Division`); `ScoreService.logScore` copies
   it on own scores, or `AntaresClient.getUserDivision` for a score logged for someone else (503 when

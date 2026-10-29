@@ -25,6 +25,8 @@ public record WodResponse(
     boolean competition,
     // WOD this one was copied from, if any
     Long sourceWodId,
+    // false for the WOD of a session block (read and edited through its session)
+    boolean standalone,
 
     // --- Description and Notes (EN / FR) ---
     String descriptionEn,
@@ -70,6 +72,7 @@ public record WodResponse(
         isPublic,
         competition,
         sourceWodId,
+        standalone,
         descriptionEn,
         descriptionFr,
         notesEn,

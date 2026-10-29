@@ -5,13 +5,14 @@ import static apex.stellar.aldebaran.config.RedisCacheConfig.CACHE_WODS;
 import apex.stellar.aldebaran.client.AntaresClient;
 import apex.stellar.aldebaran.dto.MovementResponse;
 import apex.stellar.aldebaran.dto.WodCopyRequest;
-import apex.stellar.aldebaran.dto.WodMovementRequest;
-import apex.stellar.aldebaran.dto.WodReferenceData;
 import apex.stellar.aldebaran.dto.WodFacetsResponse;
+import apex.stellar.aldebaran.dto.WodMovementRequest;
 import apex.stellar.aldebaran.dto.WodMovementResponse;
+import apex.stellar.aldebaran.dto.WodReferenceData;
 import apex.stellar.aldebaran.dto.WodRequest;
 import apex.stellar.aldebaran.dto.WodResponse;
 import apex.stellar.aldebaran.dto.WodSummaryResponse;
+import apex.stellar.aldebaran.exception.DataConflictException;
 import apex.stellar.aldebaran.exception.InvalidWodException;
 import apex.stellar.aldebaran.exception.ResourceNotFoundException;
 import apex.stellar.aldebaran.exception.WodLockedException;
@@ -27,6 +28,7 @@ import apex.stellar.aldebaran.model.enums.Unit;
 import apex.stellar.aldebaran.model.enums.WodScope;
 import apex.stellar.aldebaran.repository.MovementRepository;
 import apex.stellar.aldebaran.repository.ScoreRepository;
+import apex.stellar.aldebaran.repository.SessionBlockRepository;
 import apex.stellar.aldebaran.repository.WodRepository;
 import apex.stellar.aldebaran.repository.projection.WodSummary;
 import apex.stellar.aldebaran.security.SecurityService;
@@ -76,6 +78,7 @@ public class WodService {
   private final WodMapper wodMapper;
   private final SecurityService securityService;
   private final AntaresClient antaresClient;
+  private final SessionBlockRepository sessionBlockRepository;
 
   /**
    * Retrieves a paginated list of WOD summaries based on filters.
@@ -233,7 +236,7 @@ public class WodService {
    */
   @Transactional
   public WodResponse createWod(WodRequest request) {
-    return wodMapper.toResponse(create(request, null));
+    return wodMapper.toResponse(create(request, null, true));
   }
 
   /**
@@ -281,9 +284,63 @@ public class WodService {
             source.repScheme(),
             source.movements().stream().map(WodService::toMovementRequest).toList());
 
-    Wod saved = create(copy, id);
+    Wod saved = create(copy, id, true);
     log.info("Copied WOD id={} into WOD id={} (gym {})", id, saved.getId(), saved.getGymId());
     return wodMapper.toResponse(saved);
+  }
+
+  /**
+   * Creates the WOD of a session block ({@code standalone = false}): hidden from WOD lists, read
+   * and edited through its session. The caller sets its gym, visibility and competition flag.
+   *
+   * @param request The WOD definition.
+   * @return The saved entity.
+   */
+  @Transactional
+  public Wod createSessionWod(WodRequest request) {
+    return create(request, null, false);
+  }
+
+  /**
+   * Copies a standalone WOD (e.g. the public Open WOD) as the competition WOD of a session block of
+   * a physical box.
+   *
+   * @param sourceId The WOD to copy.
+   * @param gymId The box.
+   * @return The saved copy ({@code standalone = false}, competition).
+   * @throws InvalidWodException if the gym is a virtual program.
+   */
+  @Transactional
+  public Wod copySessionWod(Long sourceId, Long gymId) {
+    WodResponse copy = copyWod(sourceId, new WodCopyRequest(gymId, true));
+    Wod saved = wodRepository.getReferenceById(copy.id());
+    saved.setStandalone(false);
+    return saved;
+  }
+
+  /**
+   * Updates the WOD of a session block. Its session is not locked, so the WOD has no scores.
+   *
+   * @param id The session WOD.
+   * @param request The WOD definition (ownership set by the caller).
+   * @return The saved entity.
+   */
+  @Transactional
+  @CacheEvict(value = CACHE_WODS, key = "#id")
+  public Wod updateSessionWod(Long id, WodRequest request) {
+    return update(id, request);
+  }
+
+  /**
+   * Deletes the WOD of a session block, once no block points at it any more.
+   *
+   * @param id The session WOD.
+   */
+  @Transactional
+  @CacheEvict(value = CACHE_WODS, key = "#id")
+  public void deleteSessionWod(Long id) {
+    wodRepository.deleteById(id);
+    log.info("Deleted session WOD id={}", id);
   }
 
   private static WodMovementRequest toMovementRequest(WodMovementResponse wm) {
@@ -308,7 +365,8 @@ public class WodService {
         wm.notesEn(),
         wm.notesFr(),
         wm.scalingOptionsEn(),
-        wm.scalingOptionsFr());
+        wm.scalingOptionsFr(),
+        wm.sets());
   }
 
   /**
@@ -316,15 +374,17 @@ public class WodService {
    *
    * @param request The WOD definition.
    * @param sourceWodId The WOD it was copied from, or null.
+   * @param standalone False for the WOD of a session block.
    * @return The saved entity.
    */
-  private Wod create(WodRequest request, Long sourceWodId) {
+  private Wod create(WodRequest request, Long sourceWodId, boolean standalone) {
     Long authorId = securityService.getCurrentUserId();
 
     // 1. Build Entity
     Wod wod = wodMapper.toEntity(request);
     wod.setAuthorId(authorId);
     wod.setSourceWodId(sourceWodId);
+    wod.setStandalone(standalone);
     checkCompetition(wod);
 
     // Ensure collections are initialized
@@ -409,6 +469,7 @@ public class WodService {
    * @param request The update payload.
    * @return The updated WOD details.
    * @throws WodLockedException if the WOD has linked scores.
+   * @throws InvalidWodException for the WOD of a session block (edited through its session).
    */
   @Transactional
   @CacheEvict(value = CACHE_WODS, key = "#id")
@@ -417,7 +478,27 @@ public class WodService {
     if (scoreRepository.existsByWodId(id)) {
       throw new WodLockedException("error.wod.locked", id);
     }
+    checkStandalone(id);
+    return wodMapper.toResponse(update(id, request));
+  }
 
+  /**
+   * The WOD of a session block is edited and deleted through its session only.
+   *
+   * @param id The WOD ID.
+   * @throws InvalidWodException for a session WOD.
+   */
+  private void checkStandalone(Long id) {
+    wodRepository
+        .findById(id)
+        .filter(w -> !w.isStandalone())
+        .ifPresent(
+            w -> {
+              throw new InvalidWodException("error.wod.session.owned");
+            });
+  }
+
+  private Wod update(Long id, WodRequest request) {
     // 2. Fetch Existing Data (with movements to allow merging)
     Wod existingWod =
         wodRepository
@@ -435,7 +516,7 @@ public class WodService {
     Wod savedWod = wodRepository.save(existingWod);
     log.info("Updated WOD id={}", savedWod.getId());
 
-    return wodMapper.toResponse(savedWod);
+    return savedWod;
   }
 
   /**
@@ -453,6 +534,10 @@ public class WodService {
 
     if (scoreRepository.existsByWodId(id)) {
       throw new WodLockedException("error.wod.locked", id);
+    }
+    checkStandalone(id);
+    if (sessionBlockRepository.existsByWodId(id)) {
+      throw new DataConflictException("error.wod.used.by.session", id);
     }
 
     wodRepository.deleteById(id);
@@ -571,6 +656,7 @@ public class WodService {
     target.setScalingOptionsEn(temp.getScalingOptionsEn());
     target.setScalingOptionsFr(temp.getScalingOptionsFr());
     target.setOrderIndex(temp.getOrderIndex());
+    target.setSets(temp.getSets());
 
     target.getEquipment().clear();
     if (temp.getEquipment() != null) {

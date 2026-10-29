@@ -1,15 +1,16 @@
 package apex.stellar.aldebaran.security;
 
-import apex.stellar.aldebaran.dto.WodCopyRequest;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import apex.stellar.aldebaran.dto.WodCopyRequest;
 import apex.stellar.aldebaran.dto.WodRequest;
 import apex.stellar.aldebaran.dto.WodResponse;
 import apex.stellar.aldebaran.exception.ResourceNotFoundException;
@@ -32,6 +33,7 @@ class WodSecurityTest {
   @Spy private SecurityService securityService;
   @InjectMocks private WodSecurity wodSecurity;
   @Mock private WodService wodService;
+  @Mock private SessionSecurity sessionSecurity;
 
   // --- canRead Checks ---
 
@@ -65,6 +67,7 @@ class WodSecurityTest {
     AldebaranUserPrincipal user =
         TestPrincipals.of(2L, null, "USER", Collections.emptyList());
     WodResponse publicWod = mock(WodResponse.class);
+    lenient().when(publicWod.standalone()).thenReturn(true);
 
     when(securityService.isAdmin(user)).thenReturn(false);
     when(publicWod.isPublic()).thenReturn(true);
@@ -81,6 +84,7 @@ class WodSecurityTest {
     AldebaranUserPrincipal user =
         TestPrincipals.of(2L, 100L, "ATHLETE", Collections.emptyList());
     WodResponse gymWod = mock(WodResponse.class);
+    lenient().when(gymWod.standalone()).thenReturn(true);
 
     when(securityService.isAdmin(user)).thenReturn(false);
     when(gymWod.isPublic()).thenReturn(false);
@@ -98,6 +102,7 @@ class WodSecurityTest {
     AldebaranUserPrincipal user =
         TestPrincipals.of(2L, 200L, "ATHLETE", Collections.emptyList());
     WodResponse gymWod = mock(WodResponse.class);
+    lenient().when(gymWod.standalone()).thenReturn(true);
 
     when(securityService.isAdmin(user)).thenReturn(false);
     when(gymWod.isPublic()).thenReturn(false);
@@ -115,6 +120,7 @@ class WodSecurityTest {
     AldebaranUserPrincipal author =
         TestPrincipals.of(2L, 100L, "ATHLETE", Collections.emptyList());
     WodResponse privateWod = mock(WodResponse.class);
+    lenient().when(privateWod.standalone()).thenReturn(true);
 
     when(securityService.isAdmin(author)).thenReturn(false);
     when(privateWod.isPublic()).thenReturn(false);
@@ -133,6 +139,7 @@ class WodSecurityTest {
     AldebaranUserPrincipal otherUser =
         TestPrincipals.of(3L, 100L, "ATHLETE", Collections.emptyList());
     WodResponse privateWod = mock(WodResponse.class);
+    lenient().when(privateWod.standalone()).thenReturn(true);
 
     when(securityService.isAdmin(otherUser)).thenReturn(false);
     when(privateWod.isPublic()).thenReturn(false);
@@ -353,6 +360,7 @@ class WodSecurityTest {
     AldebaranUserPrincipal owner =
         TestPrincipals.of(2L, 100L, "OWNER", Collections.emptyList());
     WodResponse gymWod = mock(WodResponse.class);
+    lenient().when(gymWod.standalone()).thenReturn(true);
     when(gymWod.gymId()).thenReturn(100L);
 
     when(securityService.isAdmin(owner)).thenReturn(false);
@@ -369,6 +377,7 @@ class WodSecurityTest {
     AldebaranUserPrincipal programmer =
         TestPrincipals.of(3L, 100L, "PROGRAMMER", Collections.emptyList());
     WodResponse gymWod = mock(WodResponse.class);
+    lenient().when(gymWod.standalone()).thenReturn(true);
     when(gymWod.gymId()).thenReturn(100L);
 
     when(securityService.isAdmin(programmer)).thenReturn(false);
@@ -385,6 +394,7 @@ class WodSecurityTest {
     AldebaranUserPrincipal coach =
         TestPrincipals.of(4L, 100L, "COACH", List.of("WOD_WRITE"));
     WodResponse gymWod = mock(WodResponse.class);
+    lenient().when(gymWod.standalone()).thenReturn(true);
     when(gymWod.gymId()).thenReturn(100L);
 
     when(securityService.isAdmin(coach)).thenReturn(false);
@@ -401,6 +411,7 @@ class WodSecurityTest {
     AldebaranUserPrincipal user =
         TestPrincipals.of(5L, 100L, "ATHLETE", Collections.emptyList());
     WodResponse gymWod = mock(WodResponse.class);
+    lenient().when(gymWod.standalone()).thenReturn(true);
     when(gymWod.gymId()).thenReturn(100L);
 
     when(securityService.isAdmin(user)).thenReturn(false);
@@ -417,6 +428,7 @@ class WodSecurityTest {
     AldebaranUserPrincipal owner =
         TestPrincipals.of(2L, 200L, "OWNER", Collections.emptyList());
     WodResponse gymWod = mock(WodResponse.class);
+    lenient().when(gymWod.standalone()).thenReturn(true);
     when(gymWod.gymId()).thenReturn(100L);
 
     when(securityService.isAdmin(owner)).thenReturn(false);
@@ -433,6 +445,7 @@ class WodSecurityTest {
     AldebaranUserPrincipal owner =
         TestPrincipals.of(3L, 300L, "PROGRAMMER", Collections.emptyList());
     WodResponse gymWod = mock(WodResponse.class);
+    lenient().when(gymWod.standalone()).thenReturn(true);
     when(gymWod.gymId()).thenReturn(100L);
 
     when(securityService.isAdmin(owner)).thenReturn(false);
@@ -449,6 +462,7 @@ class WodSecurityTest {
     AldebaranUserPrincipal author =
         TestPrincipals.of(2L, 100L, "USER", Collections.emptyList());
     WodResponse privateWod = mock(WodResponse.class);
+    lenient().when(privateWod.standalone()).thenReturn(true);
     when(privateWod.gymId()).thenReturn(null);
     when(privateWod.authorId()).thenReturn(2L);
 
@@ -466,6 +480,7 @@ class WodSecurityTest {
     AldebaranUserPrincipal otherUser =
         TestPrincipals.of(3L, 100L, "ATHLETE", Collections.emptyList());
     WodResponse privateWod = mock(WodResponse.class);
+    lenient().when(privateWod.standalone()).thenReturn(true);
     when(privateWod.gymId()).thenReturn(null);
     when(privateWod.authorId()).thenReturn(2L);
 
@@ -490,6 +505,7 @@ class WodSecurityTest {
 
   private static WodResponse privateGymWod(Long gymId) {
     WodResponse wod = mock(WodResponse.class);
+    lenient().when(wod.standalone()).thenReturn(true);
     when(wod.isPublic()).thenReturn(false);
     when(wod.gymId()).thenReturn(gymId);
     return wod;
@@ -557,8 +573,10 @@ class WodSecurityTest {
   void canModify_PerGymPermission() {
     AldebaranUserPrincipal coach = coachInAAthleteInB();
     WodResponse wodA = mock(WodResponse.class);
+    lenient().when(wodA.standalone()).thenReturn(true);
     when(wodA.gymId()).thenReturn(100L);
     WodResponse wodB = mock(WodResponse.class);
+    lenient().when(wodB.standalone()).thenReturn(true);
     when(wodB.gymId()).thenReturn(300L);
 
     assertTrue(wodSecurity.canModify(wodA, coach));

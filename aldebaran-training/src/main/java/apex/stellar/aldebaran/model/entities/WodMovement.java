@@ -65,6 +65,11 @@ public class WodMovement {
   private Integer orderIndex;
 
   // --- Prescription ---
+  /** Prescribed number of sets (strength / skill work), or null. */
+  @Column(name = "sets")
+  @Min(1)
+  private Integer sets;
+
   @Column(name = "reps_scheme", length = 50)
   @Size(max = 50)
   private String repsScheme;
