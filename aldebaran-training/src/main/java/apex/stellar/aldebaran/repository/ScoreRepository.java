@@ -1,9 +1,8 @@
 package apex.stellar.aldebaran.repository;
 
-import apex.stellar.aldebaran.model.enums.Division;
-import org.springframework.data.jpa.repository.Modifying;
 import apex.stellar.aldebaran.model.entities.Score;
 import apex.stellar.aldebaran.model.entities.Score.ScalingLevel;
+import apex.stellar.aldebaran.model.enums.Division;
 import jakarta.persistence.LockModeType;
 import java.util.Collection;
 import java.util.List;
@@ -12,6 +11,7 @@ import org.springframework.data.domain.Slice;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
@@ -124,4 +124,34 @@ public interface ScoreRepository extends JpaRepository<Score, Long> {
    * @return The PR scores of every athlete at that level.
    */
   List<Score> findByWodIdAndScalingAndPersonalRecordTrue(Long wodId, ScalingLevel scaling);
+
+  /**
+   * Checks whether scores are linked to the session journal.
+   *
+   * @param sessionLogId The journal ID.
+   * @return true if at least one score is linked.
+   */
+  boolean existsBySessionLogId(Long sessionLogId);
+
+  /**
+   * Retrieves the scores linked to the given session journals.
+   *
+   * @param sessionLogIds The journal IDs.
+   * @return The scores, with their WOD.
+   */
+  @EntityGraph(attributePaths = {"wod"})
+  List<Score> findBySessionLogIdIn(Collection<Long> sessionLogIds);
+
+  /**
+   * Scores of a competition WOD submitted for verification and not verified yet (judge queue),
+   * oldest first.
+   *
+   * @param wodId The WOD ID.
+   * @return The scores waiting for a judge.
+   */
+  @EntityGraph(attributePaths = {"wod"})
+  @Query(
+      "SELECT s FROM Score s WHERE s.wod.id = :wodId AND s.verificationRequested = true"
+          + " AND s.verifiedAt IS NULL ORDER BY s.loggedAt, s.id")
+  List<Score> findVerificationQueue(Long wodId);
 }

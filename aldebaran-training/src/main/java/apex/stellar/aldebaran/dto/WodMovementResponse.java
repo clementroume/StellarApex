@@ -1,5 +1,6 @@
 package apex.stellar.aldebaran.dto;
 
+import apex.stellar.aldebaran.model.entities.WodMovement.Segment;
 import apex.stellar.aldebaran.model.enums.Unit;
 import java.util.Set;
 
@@ -34,4 +35,10 @@ public record WodMovementResponse(
     String notesEn,
     String notesFr,
     String scalingOptionsEn,
-    String scalingOptionsFr) {}
+    String scalingOptionsFr,
+
+    // --- Sets (strength / skill work), or null ---
+    Integer sets,
+
+    // --- Part of the WOD: BUY_IN, MAIN or BUY_OUT ---
+    Segment segment) {}

@@ -19,6 +19,7 @@ import apex.stellar.aldebaran.model.enums.Unit;
 import apex.stellar.aldebaran.repository.ScoreRepository;
 import apex.stellar.aldebaran.repository.WodRepository;
 import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -670,7 +671,7 @@ class ScoreControllerIT extends BaseIntegrationTest {
     ScoreRequest request =
         new ScoreRequest(
             null,
-            LocalDate.now().plusDays(1), // Future
+            LocalDate.now(ZoneOffset.UTC).plusDays(2), // Future in every time zone
             fran.getId(),
             10,
             0,

@@ -12,11 +12,13 @@
       </button>
     </div>
 
-    <div class="grid grid-cols-2 gap-4">
-      <label class="flex flex-col gap-1.5 w-full">
-        <span class="text-sm font-medium">{{ 'SCORE.FIELDS.DATE' | translate }}</span>
-        <input type="date" formControlName="date" [max]="maxDate" hlmInput class="h-11 md:h-10"/>
-      </label>
+    <div class="grid gap-4" [class.grid-cols-2]="!inSession()">
+      @if (!inSession()) {
+        <label class="flex flex-col gap-1.5 w-full">
+          <span class="text-sm font-medium">{{ 'SCORE.FIELDS.DATE' | translate }}</span>
+          <input type="date" formControlName="date" [max]="maxDate" hlmInput class="h-11 md:h-10"/>
+        </label>
+      }
       <label class="flex flex-col gap-1.5 w-full">
         <span class="text-sm font-medium">{{ 'SCORE.FIELDS.SCALING' | translate }}</span>
         <select formControlName="scaling" appNativeSelect class="w-full">
@@ -131,16 +133,20 @@
         }
       }
       @case ('WEIGHT') {
+        @if (!useSets()) {
         <label class="flex flex-col gap-1.5 w-full">
           <span class="text-sm font-medium">{{ 'SCORE.FIELDS.MAX_WEIGHT' | translate }} ({{ massUnitLabel() }})</span>
           <input type="number" min="0" step="0.5" formControlName="load" hlmInput class="h-11 md:h-10"/>
         </label>
+        }
       }
       @case ('LOAD') {
+        @if (!useSets()) {
         <label class="flex flex-col gap-1.5 w-full">
           <span class="text-sm font-medium">{{ 'SCORE.FIELDS.TOTAL_LOAD' | translate }} ({{ massUnitLabel() }})</span>
           <input type="number" min="0" step="0.5" formControlName="load" hlmInput class="h-11 md:h-10"/>
         </label>
+        }
       }
       @case ('CALORIES') {
         <label class="flex flex-col gap-1.5 w-full">
@@ -167,6 +173,54 @@
       @default {
         <p class="text-sm text-muted-foreground">{{ 'SCORE.MESSAGES.DONE_HINT' | translate }}</p>
       }
+    }
+
+    @if (canUseSets()) {
+      <section id="score-sets" class="flex flex-col gap-2" [attr.aria-label]="'SCORE.SETS.TITLE' | translate">
+        @if (useSets()) {
+          <div class="flex items-center justify-between gap-2">
+            <span class="text-sm font-medium">{{ 'SCORE.SETS.TITLE' | translate }} ({{ massUnitLabel() }})</span>
+            @if (setsValue(); as value) {
+              <span class="text-sm text-muted-foreground">
+                {{ (scoreType() === 'LOAD' ? 'SCORE.SETS.VOLUME' : 'SCORE.SETS.BEST') | translate: {value: value, unit: massUnitLabel()} }}
+              </span>
+            }
+          </div>
+          <ol formArrayName="sets" class="flex flex-col gap-2">
+            @for (row of form.controls.sets.controls; track row; let i = $index) {
+              <li [formGroupName]="i" class="grid grid-cols-[2rem_1fr_1fr_auto_auto] items-center gap-2">
+                <span class="text-sm text-muted-foreground text-center">{{ i + 1 }}</span>
+                <input type="number" min="0" inputmode="numeric" formControlName="reps" hlmInput class="h-11 md:h-10"
+                       [attr.aria-label]="'SCORE.SETS.REPS' | translate: {n: i + 1}" [placeholder]="'SCORE.SETS.REPS_SHORT' | translate"/>
+                <input type="number" min="0" step="0.5" inputmode="decimal" formControlName="weight" hlmInput class="h-11 md:h-10"
+                       [attr.aria-label]="'SCORE.SETS.WEIGHT' | translate: {n: i + 1}" [placeholder]="massUnitLabel()"/>
+                <label class="flex items-center gap-1 text-xs cursor-pointer" [title]="'SCORE.SETS.COMPLETED_HINT' | translate">
+                  <input type="checkbox" formControlName="completed" class="size-5 accent-(--color-secondary)"/>
+                  <span class="sr-only sm:not-sr-only">{{ 'SCORE.SETS.COMPLETED' | translate }}</span>
+                </label>
+                <button type="button" hlmBtn variant="ghost" size="sm" (click)="removeSet(i)"
+                        [attr.aria-label]="'SCORE.SETS.REMOVE' | translate: {n: i + 1}">
+                  <ng-icon name="heroXMark"></ng-icon>
+                </button>
+              </li>
+            }
+          </ol>
+        }
+        <button type="button" id="add-set" hlmBtn variant="outline" size="sm" class="self-start" (click)="addSet()">
+          <ng-icon name="heroPlus"></ng-icon>
+          {{ (useSets() ? 'SCORE.SETS.ADD' : 'SCORE.SETS.START') | translate }}
+        </button>
+      </section>
+    }
+
+    @if (canSubmit()) {
+      <label id="verification-requested" class="flex items-start gap-3 cursor-pointer">
+        <input type="checkbox" formControlName="verificationRequested" class="size-5 mt-0.5 accent-(--color-secondary)"/>
+        <span class="flex flex-col">
+          <span>{{ 'SCORE.FIELDS.SUBMIT' | translate }}</span>
+          <span class="text-xs text-muted-foreground">{{ 'SCORE.MESSAGES.SUBMIT_HINT' | translate }}</span>
+        </span>
+      </label>
     }
 
     @if (showTiebreak()) {

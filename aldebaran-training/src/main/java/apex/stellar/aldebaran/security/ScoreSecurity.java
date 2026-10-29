@@ -23,12 +23,14 @@ import org.springframework.transaction.annotation.Transactional;
  *
  * <ul>
  *   <li><b>Participation (Self):</b> Athletes can log scores for Public WODs, the WODs of any of
- *       their member Gyms, or their Private WODs.
+ *       their member Gyms, or their Private WODs; a session WOD once its session's content is shown
+ *       to them.
  *   <li><b>Moderation (Staff):</b> users holding SCORE_VERIFY in the score's gym can correct or
  *       delete the scores performed there (errors, cheating).
  *   <li><b>Competition (Staff):</b> on a competition WOD, users holding SCORE_VERIFY in its gym
- *       log scores for the gym's members (membership confirmed by Antares) and verify scores
- *       (never their own). A verified score is locked for its athlete, staff included.
+ *       log scores for the gym's members (membership confirmed by Antares) and verify the scores
+ *       submitted for verification (never their own). A verified score is locked for its athlete,
+ *       staff included.
  *   <li><b>Logging for someone else</b> anywhere else: admins only.
  * </ul>
  *
@@ -45,6 +47,7 @@ public class ScoreSecurity {
   private final WodRepository wodRepository;
   private final SecurityService securityService;
   private final AntaresClient antaresClient;
+  private final SessionSecurity sessionSecurity;
 
   /**
    * Evaluates if the authenticated user is authorized to view a specific score.
@@ -118,6 +121,10 @@ public class ScoreSecurity {
                 if (wod.getGymId() == null && !canUseGym(request.gymId(), principal)) {
                   return false;
                 }
+                // 0. Session WOD: its session's content must be shown to the athlete
+                if (!wod.isStandalone()) {
+                  return sessionSecurity.canReadWodContent(wod.getId(), principal);
+                }
                 // 1. Public: Open to all
                 if (wod.isPublic()) {
                   return true;
@@ -189,7 +196,10 @@ public class ScoreSecurity {
         .map(
             score ->
                 canVerify(
-                    score.getUserId(), gymOf(score), score.getWod().isCompetition(), principal))
+                    score.getUserId(),
+                    gymOf(score),
+                    score.getWod().isCompetition() && score.isVerificationRequested(),
+                    principal))
         .orElse(true); // Allow service to handle 404
   }
 
@@ -202,7 +212,11 @@ public class ScoreSecurity {
    * @return {@code true} if authorized.
    */
   public boolean canVerify(ScoreResponse score, AldebaranUserPrincipal principal) {
-    return canVerify(score.userId(), gymOf(score), score.wodSummary().competition(), principal);
+    return canVerify(
+        score.userId(),
+        gymOf(score),
+        score.wodSummary().competition() && score.verificationRequested(),
+        principal);
   }
 
   /**
@@ -253,12 +267,12 @@ public class ScoreSecurity {
   }
 
   private boolean canVerify(
-      Long athleteId, Long gymId, boolean competition, AldebaranUserPrincipal principal) {
+      Long athleteId, Long gymId, boolean submitted, AldebaranUserPrincipal principal) {
     if (securityService.isAdmin(principal)) {
       return true;
     }
-    // Judging: competition WODs only, by the gym's staff, never on one's own score
-    return competition
+    // Judging: scores submitted on competition WODs only, by the gym's staff, never one's own
+    return submitted
         && !Objects.equals(athleteId, principal.getId())
         && securityService.hasGymPermission(principal, gymId, SCORE_VERIFY);
   }

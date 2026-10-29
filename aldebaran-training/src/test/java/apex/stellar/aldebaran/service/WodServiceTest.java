@@ -1,21 +1,20 @@
 package apex.stellar.aldebaran.service;
 
-import apex.stellar.aldebaran.client.AntaresClient;
-import org.mockito.ArgumentCaptor;
-import apex.stellar.aldebaran.exception.InvalidWodException;
-import apex.stellar.aldebaran.dto.WodMovementResponse;
-import apex.stellar.aldebaran.dto.WodCopyRequest;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.Mockito.*;
 
+import apex.stellar.aldebaran.client.AntaresClient;
 import apex.stellar.aldebaran.dto.MovementResponse;
-import apex.stellar.aldebaran.dto.WodMovementRequest;
-import apex.stellar.aldebaran.dto.WodRequest;
+import apex.stellar.aldebaran.dto.WodCopyRequest;
 import apex.stellar.aldebaran.dto.WodFacetsResponse;
+import apex.stellar.aldebaran.dto.WodMovementRequest;
+import apex.stellar.aldebaran.dto.WodMovementResponse;
+import apex.stellar.aldebaran.dto.WodRequest;
 import apex.stellar.aldebaran.dto.WodResponse;
 import apex.stellar.aldebaran.dto.WodSummaryResponse;
+import apex.stellar.aldebaran.exception.InvalidWodException;
 import apex.stellar.aldebaran.exception.InvalidWodMovementException;
 import apex.stellar.aldebaran.exception.ResourceNotFoundException;
 import apex.stellar.aldebaran.exception.WodLockedException;
@@ -33,6 +32,7 @@ import apex.stellar.aldebaran.model.enums.Technique;
 import apex.stellar.aldebaran.model.enums.WodScope;
 import apex.stellar.aldebaran.repository.MovementRepository;
 import apex.stellar.aldebaran.repository.ScoreRepository;
+import apex.stellar.aldebaran.repository.SessionBlockRepository;
 import apex.stellar.aldebaran.repository.WodRepository;
 import apex.stellar.aldebaran.repository.projection.WodSummary;
 import apex.stellar.aldebaran.security.SecurityService;
@@ -44,6 +44,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -61,6 +62,7 @@ class WodServiceTest {
   @Mock private WodMapper wodMapper;
   @Mock private SecurityService securityService;
   @Mock private AntaresClient antaresClient;
+  @Mock private SessionBlockRepository sessionBlockRepository;
 
   @InjectMocks private WodService wodService;
 
@@ -640,7 +642,7 @@ class WodServiceTest {
     WodMovementResponse sourceMovement =
         new WodMovementResponse(
             3L, movementDto, 1, "21-15-9", 43.0, 29.0, null, null, null, null, null, null, null,
-            null, null, null, Set.of(), Set.of(), null, null, null, null);
+            null, null, null, Set.of(), Set.of(), null, null, null, null, null, null);
     WodResponse sourceDto = mock(WodResponse.class);
     when(sourceDto.title()).thenReturn("26.1");
     when(sourceDto.movements()).thenReturn(List.of(sourceMovement));

@@ -26,6 +26,7 @@ import {FormFieldComponent} from '../../../shared/component/form-field/form-fiel
 import {ConfirmDialogComponent} from '../../../shared/component/confirm-dialog/confirm-dialog.component';
 import {NativeSelectDirective} from '../../../shared/component/native-select/native-select.directive';
 import {StaffGymPickerComponent, staffGymSelection} from '../staff-gym';
+import {SessionSettingsCardComponent} from '../../sessions/session-settings/session-settings-card.component';
 
 /** Sensitive action waiting for confirmation. */
 type SettingsDialog = 'regenerate' | 'transfer' | 'delete';
@@ -40,7 +41,7 @@ type SettingsDialog = 'regenerate' | 'transfer' | 'delete';
   standalone: true,
   imports: [ReactiveFormsModule, TranslatePipe, NgIcon, HlmAlertImports, HlmButton, HlmCardImports, HlmInputGroupImports,
     HlmInput, HlmLabel, HlmSpinner, HlmSwitchImports, HlmTextarea, PageComponent, FormFieldComponent, ConfirmDialogComponent,
-    NativeSelectDirective, StaffGymPickerComponent],
+    NativeSelectDirective, StaffGymPickerComponent, SessionSettingsCardComponent],
   templateUrl: './box-settings.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

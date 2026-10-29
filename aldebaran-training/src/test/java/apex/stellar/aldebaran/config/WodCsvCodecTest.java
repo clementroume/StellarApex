@@ -166,6 +166,14 @@ class WodCsvCodecTest {
             .notesFr("En mémoire, avec une virgule")
             .tiebreakEn("Time after the last full set, with a comma")
             .tiebreakFr("Temps après la dernière série complète")
+            .rounds(3)
+            .restSeconds(120)
+            .workSeconds(20)
+            .ladderStart(3)
+            .ladderStep(3)
+            .vestWeight(20.0)
+            .vestWeightFemale(14.0)
+            .vestWeightUnit(Unit.LBS)
             .isPublic(true)
             .build();
     wod.getMovements()
@@ -175,6 +183,8 @@ class WodCsvCodecTest {
                 .movement(PULL_UP)
                 .orderIndex(2)
                 .repsScheme("42")
+                .sets(5)
+                .segment(WodMovement.Segment.BUY_OUT)
                 .weight(null)
                 .weightUnit(null)
                 .distanceUnit(null)
@@ -237,6 +247,14 @@ class WodCsvCodecTest {
     assertEquals(expected.getTiebreakEn(), actual.getTiebreakEn());
     assertEquals(expected.getTiebreakFr(), actual.getTiebreakFr());
     assertEquals(expected.isPublic(), actual.isPublic());
+    assertEquals(expected.getRounds(), actual.getRounds());
+    assertEquals(expected.getRestSeconds(), actual.getRestSeconds());
+    assertEquals(expected.getWorkSeconds(), actual.getWorkSeconds());
+    assertEquals(expected.getLadderStart(), actual.getLadderStart());
+    assertEquals(expected.getLadderStep(), actual.getLadderStep());
+    assertEquals(expected.getVestWeight(), actual.getVestWeight());
+    assertEquals(expected.getVestWeightFemale(), actual.getVestWeightFemale());
+    assertEquals(expected.getVestWeightUnit(), actual.getVestWeightUnit());
 
     List<WodMovement> sorted =
         expected.getMovements().stream()
@@ -267,6 +285,8 @@ class WodCsvCodecTest {
       assertEquals(e.getScalingOptionsFr(), a.getScalingOptionsFr());
       assertEquals(e.getEquipment(), a.getEquipment());
       assertEquals(e.getTechniques(), a.getTechniques());
+      assertEquals(e.getSets(), a.getSets());
+      assertEquals(e.getSegment(), a.getSegment());
     }
   }
 }

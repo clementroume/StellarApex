@@ -46,6 +46,7 @@ frontend, and an infrastructure stack with reverse proxy, databases, and monitor
     - Forward Auth for Traefik: identity, platform role and gym memberships sent to Aldebaran
 - **Aldebaran** (`aldebaran-training`): Training domain
     - Muscle and movement catalog, WODs, scores and leaderboards
+    - Daily sessions (blocks, visibility policies, journal, strength sets, competition blocks)
     - Per-gym authorization evaluated on each resource, WOD capabilities for the UI
     - Shared PostgreSQL instance (own schema) and Redis cache with Antares
 

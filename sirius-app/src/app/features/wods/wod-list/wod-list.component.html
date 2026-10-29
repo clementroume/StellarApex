@@ -1,51 +1,8 @@
 <div class="container mx-auto pb-12">
   <div class="mt-8 mb-6 text-center md:text-left">
     <h1 class="text-3xl font-bold">{{ 'WOD.TITLE' | translate }}</h1>
+    <p class="mt-1 text-muted-foreground">{{ 'WOD.CATALOGUE_SUBTITLE' | translate }}</p>
   </div>
-
-  <div class="flex justify-center mb-6 w-full px-2 sm:px-0">
-    <div class="flex flex-wrap justify-center gap-2 w-full max-w-4xl" role="group" [attr.aria-label]="'WOD.FIELDS.SCOPE' | translate">
-      @for (tab of scopeTabs(); track tab.key) {
-        <button hlmBtn variant="outline" type="button"
-                class="h-10 gap-2 aria-pressed:border-secondary aria-pressed:text-secondary aria-pressed:bg-secondary/10"
-                [attr.aria-pressed]="activeScopeTab().key === tab.key" (click)="onScopeChange(tab.key)">
-          @if (tab.gymId !== undefined) {
-            <ng-icon name="heroBuildingOffice" size="1.2rem" aria-hidden="true"></ng-icon>
-          }
-          <span class="truncate text-sm">{{ tab.translate ? (tab.label | translate) : tab.label }}</span>
-        </button>
-      }
-    </div>
-  </div>
-
-  @if (showAdminFilters()) {
-    <div class="flex flex-col md:flex-row justify-center gap-4 mb-6">
-      <label class="flex items-center gap-2">
-        <ng-icon name="heroBuildingOffice" size="1.2rem" class="text-secondary"></ng-icon>
-        <select appNativeSelect class="w-full md:w-64"
-                [attr.aria-label]="'WOD.ADMIN_FILTERS.GYM' | translate"
-                (change)="onAdminGymChange($any($event.target).value)">
-          <option value="" [selected]="adminGymId() === null">{{ 'WOD.ADMIN_FILTERS.ALL_GYMS' | translate }}</option>
-          @for (gym of adminGyms(); track gym.id) {
-            <option [value]="gym.id" [selected]="adminGymId() === gym.id">{{ gym.name }}</option>
-          }
-        </select>
-      </label>
-      <label class="flex items-center gap-2">
-        <ng-icon name="heroUser" size="1.2rem" class="text-secondary"></ng-icon>
-        <select appNativeSelect class="w-full md:w-64"
-                [attr.aria-label]="'WOD.ADMIN_FILTERS.ATHLETE' | translate"
-                (change)="onAdminAuthorChange($any($event.target).value)">
-          <option value="" [selected]="adminAuthorId() === null">{{ 'WOD.ADMIN_FILTERS.ALL_ATHLETES' | translate }}</option>
-          @for (author of adminAuthors(); track author.id) {
-            <option [value]="author.id" [selected]="adminAuthorId() === author.id">
-              {{ author.firstName }} {{ author.lastName }} ({{ author.email }})
-            </option>
-          }
-        </select>
-      </label>
-    </div>
-  }
 
   <app-search-input
     [placeholder]="'WOD.ACTIONS.SEARCH' | translate"
@@ -99,11 +56,9 @@
           <app-list-item
             [title]="wod.title"
             [badge]="typeLabel(wod)"
-            [subtitle]="(wod.repScheme ? wod.repScheme + ' · ' : '')
-              + (wod.timeCapSeconds ? ('WOD.FIELDS.TIME_CAP_SHORT' | translate) + ' ' + formatTimeCap(wod.timeCapSeconds) + ' · ' : '')
-              + (wod.isPublic ? ('WOD.VISIBILITY.PUBLIC' | translate)
-                : wod.gymId ? (gymName(wod.gymId) ?? ('WOD.VISIBILITY.GYM' | translate))
-                : ('WOD.VISIBILITY.PRIVATE' | translate))"
+            [subtitle]="(wod.repScheme ?? '')
+              + (wod.repScheme && wod.timeCapSeconds ? ' · ' : '')
+              + (wod.timeCapSeconds ? ('WOD.FIELDS.TIME_CAP_SHORT' | translate) + ' ' + formatTimeCap(wod.timeCapSeconds) : '')"
             [link]="['/wods', wod.id]">
           </app-list-item>
         }
@@ -132,10 +87,10 @@
         <ng-icon name="heroDocumentArrowDown" size="1.5rem"></ng-icon>
         {{ isExporting() ? '...' : ('EXPORT.EXPORT_CSV' | translate) }}
       </button>
+      <a routerLink="/wods/new" hlmBtn size="lg" class="min-w-36">
+        <ng-icon name="heroPlus" size="1.5rem"></ng-icon>
+        {{ 'WOD.ACTIONS.ADD_PUBLIC' | translate }}
+      </a>
     }
-    <a routerLink="/wods/new" [queryParams]="createTarget().queryParams" hlmBtn size="lg" class="min-w-36">
-      <ng-icon name="heroPlus" size="1.5rem"></ng-icon>
-      {{ createTarget().labelKey | translate: {gym: createTarget().gymName} }}
-    </a>
   </div>
 </div>

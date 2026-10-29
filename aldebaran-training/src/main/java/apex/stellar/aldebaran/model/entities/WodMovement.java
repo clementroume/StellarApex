@@ -64,7 +64,18 @@ public class WodMovement {
   @NotNull
   private Integer orderIndex;
 
+  /** Part of the WOD the movement belongs to: buy-in, rounds (MAIN) or buy-out. */
+  @Enumerated(EnumType.STRING)
+  @Column(name = "segment", nullable = false, length = 10)
+  @Builder.Default
+  private Segment segment = Segment.MAIN;
+
   // --- Prescription ---
+  /** Prescribed number of sets (strength / skill work), or null. */
+  @Column(name = "sets")
+  @Min(1)
+  private Integer sets;
+
   @Column(name = "reps_scheme", length = 50)
   @Size(max = 50)
   private String repsScheme;
@@ -206,5 +217,12 @@ public class WodMovement {
   @Override
   public int hashCode() {
     return getClass().hashCode();
+  }
+
+  /** Part of a WOD: before the rounds (buy-in), the rounds themselves, after them (buy-out). */
+  public enum Segment {
+    BUY_IN,
+    MAIN,
+    BUY_OUT
   }
 }

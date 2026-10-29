@@ -5,12 +5,11 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 import apex.stellar.aldebaran.client.AntaresClient;
-import apex.stellar.aldebaran.exception.AntaresUnavailableException;
-import apex.stellar.aldebaran.model.enums.Division;
 import apex.stellar.aldebaran.dto.ScoreComparisonResponse;
 import apex.stellar.aldebaran.dto.ScoreRequest;
 import apex.stellar.aldebaran.dto.ScoreResponse;
 import apex.stellar.aldebaran.dto.WodResponse;
+import apex.stellar.aldebaran.exception.AntaresUnavailableException;
 import apex.stellar.aldebaran.exception.InvalidScoreException;
 import apex.stellar.aldebaran.exception.ResourceNotFoundException;
 import apex.stellar.aldebaran.mapper.ScoreMapper;
@@ -18,7 +17,10 @@ import apex.stellar.aldebaran.model.entities.Score;
 import apex.stellar.aldebaran.model.entities.Score.ScalingLevel;
 import apex.stellar.aldebaran.model.entities.Wod;
 import apex.stellar.aldebaran.model.entities.Wod.ScoreType;
+import apex.stellar.aldebaran.model.enums.Division;
 import apex.stellar.aldebaran.repository.ScoreRepository;
+import apex.stellar.aldebaran.repository.SessionBlockRepository;
+import apex.stellar.aldebaran.repository.SessionLogRepository;
 import apex.stellar.aldebaran.repository.WodRepository;
 import apex.stellar.aldebaran.security.SecurityService;
 import java.time.LocalDate;
@@ -48,6 +50,9 @@ class ScoreServiceTest {
   @Mock private ScoreMapper scoreMapper;
   @Mock private SecurityService securityService;
   @Mock private AntaresClient antaresClient;
+  @Mock private SessionLogRepository sessionLogRepository;
+  @Mock private SessionBlockRepository sessionBlockRepository;
+  @Mock private SessionLogService sessionLogService;
   @InjectMocks private ScoreService scoreService;
 
   private Wod wodProxy;
@@ -869,6 +874,7 @@ class ScoreServiceTest {
   @DisplayName("setVerified: verifies then withdraws the verification of a competition score")
   void testSetVerified() {
     wodProxy.setCompetition(true);
+    scoreEntityTime.setVerificationRequested(true);
     when(securityService.getCurrentUserId()).thenReturn(2L);
     when(scoreRepository.findById(50L)).thenReturn(Optional.of(scoreEntityTime));
     when(scoreRepository.save(scoreEntityTime)).thenReturn(scoreEntityTime);

@@ -86,7 +86,8 @@ public interface WodRepository extends JpaRepository<Wod, Long> {
    * Shared filters of the secure list and facet queries.
    *
    * <p><b>Security clause:</b> admin OR public OR authored by the user OR owned by one of the
-   * user's member gyms.
+   * user's member gyms. Session WODs ({@code standalone = false}) are never listed: they are read
+   * through their session.
    *
    * <p><b>Scopes:</b>
    *
@@ -104,7 +105,8 @@ public interface WodRepository extends JpaRepository<Wod, Long> {
    */
   String SECURE_FILTERS =
       """
-      (:isAdmin = true
+      w.standalone = true
+      AND (:isAdmin = true
          OR w.isPublic = true
          OR w.authorId = :userId
          OR w.gymId IN :memberGymIds)

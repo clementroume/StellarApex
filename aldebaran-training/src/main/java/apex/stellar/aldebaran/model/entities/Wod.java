@@ -1,5 +1,7 @@
 package apex.stellar.aldebaran.model.entities;
 
+import apex.stellar.aldebaran.model.enums.Unit;
+import jakarta.validation.constraints.DecimalMin;
 import apex.stellar.aldebaran.model.enums.Category.Modality;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.CollectionTable;
@@ -97,6 +99,14 @@ public class Wod {
   @Builder.Default
   private boolean competition = false;
 
+  /**
+   * Standalone WOD (listed, scored on its own), or the WOD of one session block (false): hidden from
+   * WOD lists, read and edited through its session.
+   */
+  @Column(name = "standalone", nullable = false)
+  @Builder.Default
+  private boolean standalone = true;
+
   /** WOD this one was copied from (e.g. a public Open WOD copied for a gym competition). */
   @Column(name = "source_wod_id")
   private Long sourceWodId;
@@ -137,6 +147,44 @@ public class Wod {
   @Column(name = "emom_interval")
   @Min(0)
   private Integer emomInterval;
+
+  /** Rounds of a "rounds for time" (Helen: 3), or null. */
+  @Column(name = "rounds")
+  @Min(1)
+  private Integer rounds;
+
+  /** Rest between rounds or intervals, in seconds (Barbara: 180), or null. */
+  @Column(name = "rest_seconds")
+  @Min(0)
+  private Integer restSeconds;
+
+  /** Work time of an interval, in seconds (Tabata: 20), or null. */
+  @Column(name = "work_seconds")
+  @Min(1)
+  private Integer workSeconds;
+
+  /** Ascending ladder (3-6-9...): reps of the first rung, or null. */
+  @Column(name = "ladder_start")
+  @Min(1)
+  private Integer ladderStart;
+
+  /** Ascending ladder: reps added at each rung, or null. */
+  @Column(name = "ladder_step")
+  @Min(1)
+  private Integer ladderStep;
+
+  /** Weight vest worn for the whole WOD (Murph), men's and women's, in {@code vestWeightUnit}. */
+  @Column(name = "vest_weight")
+  @DecimalMin("0.0")
+  private Double vestWeight;
+
+  @Column(name = "vest_weight_female")
+  @DecimalMin("0.0")
+  private Double vestWeightFemale;
+
+  @Enumerated(EnumType.STRING)
+  @Column(name = "vest_weight_unit", length = 10)
+  private Unit vestWeightUnit;
 
   @Column(name = "emom_rounds")
   @Min(0)
@@ -192,10 +240,16 @@ public class Wod {
   public enum WodType {
     // --- Conditioning ---
     FOR_TIME,
+    // Long list of movements done once (Angie, Murph)
+    CHIPPER,
+    // Descending (21-15-9, rep_scheme) or ascending (ladder_start, ladder_step) reps
+    LADDER,
     AMRAP,
     EMOM,
     TABATA,
     INTERVALS,
+    // One more rep every minute until failure
+    DEATH_BY,
     // --- Training Focus ---
     STRENGTH,
     SKILL,
@@ -212,7 +266,6 @@ public class Wod {
     GIRLS,
     HERO,
     BENCHMARK,
-    CUSTOM_BENCHMARK,
     // --- Official competitions ---
     OPEN,
     QUARTERFINALS,

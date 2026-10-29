@@ -492,6 +492,42 @@ class WodControllerIT extends BaseIntegrationTest {
   }
 
   @Test
+  @DisplayName("POST /wods: structure fields and buy-in / buy-out segments are saved")
+  void testCreateWod_StructureAndSegments() throws Exception {
+    String body =
+        """
+        {"title": "Murph", "wodType": "CHIPPER", "scoreType": "TIME", "isPublic": false,
+         "competition": false, "authorId": 20,
+         "rounds": 20, "restSeconds": 0, "vestWeight": 20, "vestWeightFemale": 14,
+         "vestWeightUnit": "LBS",
+         "movements": [
+           {"movementId": %d, "orderIndex": 1, "distance": 1600, "distanceUnit": "METERS",
+            "segment": "BUY_IN"},
+           {"movementId": %d, "orderIndex": 2, "repsScheme": "5"},
+           {"movementId": %d, "orderIndex": 3, "distance": 1600, "distanceUnit": "METERS",
+            "segment": "BUY_OUT"}]}
+        """
+            .formatted(pullUp.getId(), pullUp.getId(), pullUp.getId());
+    mockMvc
+        .perform(
+            post("/aldebaran/wods")
+                .with(csrf())
+                .header("X-Auth-User-Id", "20")
+                .header("X-Auth-User-Role", "USER")
+                .header("X-Internal-Secret", "test-internal-secret")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(body))
+        .andExpect(status().isCreated())
+        .andExpect(jsonPath("$.wodType").value("CHIPPER"))
+        .andExpect(jsonPath("$.rounds").value(20))
+        .andExpect(jsonPath("$.vestWeight").value(20.0))
+        .andExpect(jsonPath("$.vestWeightUnit").value("LBS"))
+        .andExpect(jsonPath("$.movements[0].segment").value("BUY_IN"))
+        .andExpect(jsonPath("$.movements[1].segment").value("MAIN"))
+        .andExpect(jsonPath("$.movements[2].segment").value("BUY_OUT"));
+  }
+
+  @Test
   @DisplayName("POST /wods: Personal WOD creation should be allowed for any User")
   void testCreateWod_Personal_Success() throws Exception {
     WodRequest request =

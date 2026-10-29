@@ -1,0 +1,94 @@
+<article class="flex flex-col gap-4 rounded-xl border bg-card p-4 md:p-6" [attr.aria-labelledby]="'block-' + block().id">
+  <header class="flex flex-wrap items-start justify-between gap-3">
+    <div class="min-w-0 flex flex-col gap-1">
+      <h2 [id]="'block-' + block().id" class="text-lg font-bold flex flex-wrap items-baseline gap-2">
+        {{ 'SESSION.KINDS.' + block().kind | translate }}
+        @if (block().optional) {
+          <span class="text-sm font-normal text-muted-foreground">({{ 'SESSION.OPTIONAL' | translate }})</span>
+        }
+      </h2>
+      @if (theme()) {
+        <p class="text-muted-foreground">{{ theme() }}</p>
+      }
+      <div class="flex flex-wrap gap-1">
+        @if (block().competition) {
+          <span hlmBadge class="bg-warning/15 text-warning gap-1"><ng-icon name="heroTrophy" aria-hidden="true"/>{{ 'WOD.FIELDS.COMPETITION' | translate }}</span>
+        }
+        @if (block().stimulus) {
+          <span hlmBadge variant="secondary">{{ 'SESSION.STIMULI.' + block().stimulus | translate }}</span>
+        }
+        @if (block().plannedMinutes) {
+          <span hlmBadge variant="outline" class="gap-1"><ng-icon name="heroClock" aria-hidden="true"/>{{ 'SESSION.MINUTES' | translate: {count: block().plannedMinutes} }}</span>
+        }
+      </div>
+    </div>
+    @if (log()) {
+      <label class="flex items-center gap-2 cursor-pointer select-none">
+        <input type="checkbox" class="size-6 accent-(--color-success)" [checked]="done()" (change)="toggleDone($event)"
+               [attr.aria-label]="'SESSION.BLOCK_DONE' | translate: {kind: ('SESSION.KINDS.' + block().kind | translate)}"/>
+        <span class="text-sm">{{ 'SESSION.BLOCK_DONE_SHORT' | translate }}</span>
+      </label>
+    }
+  </header>
+
+  @if (isText()) {
+    @if (text()) {
+      <p class="whitespace-pre-line leading-relaxed">{{ text() }}</p>
+    }
+  } @else if (block().wod; as w) {
+    <div class="flex flex-col gap-2">
+      @if (w.title) {
+        <p class="text-sm text-muted-foreground flex flex-wrap items-center gap-2">
+          <span class="font-semibold text-foreground">{{ w.title }}</span>
+          @if (block().borrowed) {
+            <span hlmBadge variant="outline">{{ 'SESSION.BORROWED' | translate }}</span>
+          }
+          <a [routerLink]="['/wods', w.id]" class="text-primary hover:underline">{{ 'SESSION.LEADERBOARD' | translate }}</a>
+        </p>
+      }
+      <app-wod-whiteboard [wod]="w"/>
+    </div>
+
+    <section class="flex flex-col gap-3 border-t pt-4" [attr.aria-label]="'SCORE.TITLE' | translate">
+      <div class="flex flex-wrap items-center justify-between gap-2">
+        <h3 class="font-semibold">{{ 'SESSION.MY_SCORE' | translate }}</h3>
+        @if (canLogScore()) {
+          <button type="button" hlmBtn size="sm" class="log-score" (click)="store.openNew()">
+            <ng-icon name="heroPlus" aria-hidden="true"/>{{ 'SCORE.ACTIONS.LOG' | translate }}
+          </button>
+        }
+      </div>
+      @if (!canLogScore()) {
+        <p class="text-sm text-muted-foreground">{{ 'SESSION.MESSAGES.LOG_FIRST' | translate }}</p>
+      }
+      @if (wod()) {
+        <app-score-history class="block"/>
+      }
+    </section>
+
+    @if (canJudge()) {
+      <section class="flex flex-col gap-2 border-t pt-4 verification-queue" [attr.aria-label]="'SESSION.QUEUE.TITLE' | translate">
+        <h3 class="font-semibold">{{ 'SESSION.QUEUE.TITLE' | translate }}</h3>
+        <ul class="divide-y">
+          @for (score of queue(); track score.id) {
+            <li class="py-2 flex flex-wrap items-center justify-between gap-2">
+              <span><span class="font-medium">{{ athleteName(score) }}</span> · <span class="tabular-nums">{{ scoreValue(score) }}</span>
+                · {{ 'SCORE.SCALING.' + score.scaling | translate }}</span>
+              @if (score.capabilities?.canVerify) {
+                <button type="button" hlmBtn variant="outline" size="sm" (click)="verify(score)">
+                  <ng-icon name="heroCheckBadge" aria-hidden="true"/>{{ 'SCORE.ACTIONS.VERIFY' | translate }}
+                </button>
+              }
+            </li>
+          } @empty {
+            <li class="py-2 text-sm text-muted-foreground">{{ 'SESSION.QUEUE.EMPTY' | translate }}</li>
+          }
+        </ul>
+      </section>
+    }
+  }
+
+  @if (store.editing()) {
+    <app-score-form/>
+  }
+</article>

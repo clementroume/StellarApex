@@ -142,6 +142,45 @@
           </div>
         }
 
+        <!-- Structure of the quick editor, kept when an admin edits a public WOD -->
+        <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+          <label class="flex flex-col gap-1.5 w-full">
+            <span class="text-sm font-medium">{{ 'WOD.QUICK.ROUNDS' | translate }}</span>
+            <input type="number" min="1" id="wod-rounds" formControlName="rounds" hlmInput class="h-11 md:h-10"/>
+          </label>
+          <label class="flex flex-col gap-1.5 w-full">
+            <span class="text-sm font-medium">{{ 'WOD.QUICK.WORK' | translate }}</span>
+            <input type="number" min="1" formControlName="workSeconds" hlmInput class="h-11 md:h-10"/>
+          </label>
+          <label class="flex flex-col gap-1.5 w-full">
+            <span class="text-sm font-medium">{{ 'WOD.QUICK.REST' | translate }}</span>
+            <input type="number" min="0" formControlName="restSeconds" hlmInput class="h-11 md:h-10"/>
+          </label>
+          <label class="flex flex-col gap-1.5 w-full">
+            <span class="text-sm font-medium">{{ 'WOD.QUICK.LADDER_START' | translate }}</span>
+            <input type="number" min="1" formControlName="ladderStart" hlmInput class="h-11 md:h-10"/>
+          </label>
+          <label class="flex flex-col gap-1.5 w-full">
+            <span class="text-sm font-medium">{{ 'WOD.QUICK.LADDER_STEP' | translate }}</span>
+            <input type="number" min="1" formControlName="ladderStep" hlmInput class="h-11 md:h-10"/>
+          </label>
+        </div>
+        <div class="flex flex-col gap-1.5">
+          <span class="text-sm font-medium">{{ 'WOD.QUICK.VEST' | translate }}</span>
+          <div class="flex items-center gap-2">
+            <input type="number" min="0" step="0.5" id="wod-vest" formControlName="vestWeight" hlmInput class="h-11 md:h-10 w-24"
+                   [attr.aria-label]="'WOD.QUICK.MEN' | translate"/>
+            <span aria-hidden="true">/</span>
+            <input type="number" min="0" step="0.5" formControlName="vestWeightFemale" hlmInput class="h-11 md:h-10 w-24"
+                   [attr.aria-label]="'WOD.QUICK.WOMEN' | translate"/>
+            <select formControlName="vestWeightUnit" appNativeSelect class="w-24" [attr.aria-label]="'WOD.QUICK.VEST' | translate">
+              @for (u of massUnits(); track u) {
+                <option [value]="u">{{ u }}</option>
+              }
+            </select>
+          </div>
+        </div>
+
         @if (isEmom) {
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
             <label class="flex flex-col gap-1.5 w-full">
@@ -200,29 +239,21 @@
           <p class="text-center text-muted-foreground py-4">{{ 'WOD.MESSAGES.MOVEMENTS_REQUIRED' | translate }}</p>
         }
 
-        <datalist id="wod-movement-options">
-          @for (m of availableMovements(); track m.id) {
-            <option [value]="m.name">{{ m.nameAbbreviation ?? '' }}</option>
-          }
-        </datalist>
-
         <div formArrayName="movements" class="flex flex-col gap-4">
           @for (movementCtrl of movementsFormArray.controls; track movementCtrl; let i = $index; let first = $first; let last = $last) {
 
             <div [formGroupName]="i" class="flex flex-col gap-4 bg-muted p-4 rounded-xl">
               <div class="flex flex-col sm:flex-row gap-4 items-end">
                 <span hlmBadge class="bg-secondary text-secondary-content self-center sm:self-end sm:mb-3">{{ i + 1 }}</span>
-                <label class="flex flex-col gap-1.5 w-full">
-                  <span class="text-sm font-medium">{{ 'WOD.FIELDS.MOVEMENT' | translate }} *</span>
-                  <input type="text" formControlName="movementQuery" list="wod-movement-options" autocomplete="off"
-                         hlmInput class="h-11 md:h-10"
-                         [attr.aria-invalid]="movementCtrl.get('movementQuery')?.value && movementCtrl.get('movementId')?.invalid"
-                         [placeholder]="'WOD.PLACEHOLDERS.MOVEMENT_SEARCH' | translate"
-                         (input)="onMovementQuery(i)"/>
-                  @if (movementCtrl.get('movementQuery')?.value && movementCtrl.get('movementId')?.invalid) {
-                    <p class="text-sm text-destructive">{{ 'WOD.MESSAGES.MOVEMENT_UNKNOWN' | translate }}</p>
+                <div class="flex flex-col gap-1.5 w-full">
+                  <span class="text-sm font-medium" aria-hidden="true">{{ 'WOD.FIELDS.MOVEMENT' | translate }} *</span>
+                  <app-movement-combobox [movements]="availableMovements()" [label]="'WOD.FIELDS.MOVEMENT' | translate"
+                                         [value]="movementCtrl.get('movementId')?.value"
+                                         (valueChange)="onMovementChange(i, $event)"/>
+                  @if (movementCtrl.get('movementId')?.touched && movementCtrl.get('movementId')?.invalid) {
+                    <p class="text-sm text-destructive">{{ 'WOD.MESSAGES.MOVEMENT_REQUIRED' | translate }}</p>
                   }
-                </label>
+                </div>
                 <div class="flex gap-2">
                   <button type="button" hlmBtn variant="ghost" size="icon-lg" [disabled]="first"
                           [attr.aria-label]="'WOD.ACTIONS.MOVE_UP' | translate" (click)="moveMovement(i, -1)">
@@ -260,6 +291,19 @@
               }
 
               <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                <label class="flex flex-col gap-1.5 w-full">
+                  <span class="text-sm font-medium">{{ 'WOD.QUICK.SEGMENT' | translate }}</span>
+                  <select formControlName="segment" appNativeSelect>
+                    @for (s of segments; track s) {
+                      <option [value]="s">{{ 'WOD.SEGMENTS.' + s | translate }}</option>
+                    }
+                  </select>
+                </label>
+                <label class="flex flex-col gap-1.5 w-full">
+                  <span class="text-sm font-medium">{{ 'WOD.FIELDS.SETS' | translate }}</span>
+                  <input type="number" min="1" inputmode="numeric" formControlName="sets" hlmInput class="h-11 md:h-10"
+                         [placeholder]="'WOD.PLACEHOLDERS.SETS' | translate"/>
+                </label>
                 <label class="flex flex-col gap-1.5 w-full">
                   <span class="text-sm font-medium">{{ 'WOD.FIELDS.REPS' | translate }}</span>
                   <input type="text" formControlName="repsScheme" hlmInput class="h-11 md:h-10"

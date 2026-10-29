@@ -1,7 +1,8 @@
 # Sirius (Frontend)
 
 Angular frontend of the StellarApex platform: navigation by spaces (Today, My training, My box,
-Catalogue, Admin), movement and muscle catalog, WODs (list, detail, form), scores, account pages,
+Catalogue, Admin), daily sessions (week planning, staff session form, "Séance faite", journal),
+movement and muscle catalog, WODs (list, detail, form), scores, account pages,
 box/prog memberships and management, and the admin pages (boxes & programs, support). Mobile first, installable (PWA), available in French and English.
 
 ## Tech Stack
@@ -51,15 +52,38 @@ src/spartan.css       # spartan tokens and Tailwind colours mapped to the palett
 ## Navigation
 
 * **Spaces** (`core/layout/spaces.service.ts`): Today (`/today`, home) · My training (`/training`:
-  journal of the user's scores, records and review to come) · My box (`/box`, members only: sessions
-  and leaderboards to come; members and settings for staff holding `MANAGE_MEMBERSHIPS` /
+  journal of the sessions done and of the scores, personal sessions, records and review to come) ·
+  My box (`/box`, members only: sessions, leaderboards to come; members and settings for staff holding `MANAGE_MEMBERSHIPS` /
   `MANAGE_SETTINGS`) · Catalogue (`/wods`, `/movements`, `/muscles`) · Admin (`/admin`, admins).
   Desktop: spaces in the top bar, the space's pages as tabs below it. Mobile: bottom tab bar.
 * **Displayed box/prog** (`core/services/display-gym.service.ts`): selector in the top bar when the
   user has several usable memberships; one box/prog or all, remembered on the device. A display
   filter only (Today, journal): never sent to the APIs, rights stay per resource.
-* **Today**: today's session (placeholder until the planning lots), latest scores and PRs from
-  `GET /aldebaran/scores/me`.
+* **Today**: today's sessions of the displayed box/prog and personal ones (`GET /aldebaran/sessions`
+  for today: WOD of the day, specialties of the week) with "Séance faite", then the latest scores and
+  PRs from `GET /aldebaran/scores/me`.
+* **Sessions** (`features/sessions`): My box › Sessions is the week of the displayed box/prog (one
+  row per day, specialties apart; frames with block themes; Owner/Programmer/Coach with `WOD_WRITE`
+  get "New session"). The session page shows the frame, then the content when its visibility policy
+  opens it (`SessionResponse.capabilities`): "Séance faite" (journal, every block ticked, untick what
+  was skipped), per-block scores (score form with sets and "Submit for verification" on a competition
+  block), the judge's queue of submitted scores, and for staff edit / delete (until someone logged it)
+  and the visibility dialog. The session form (staff and personal) stays light: type and day,
+  visibility on one line, title and coach's word folded; Skill and WOD blocks from the start (not
+  removable in a WOD session), warm-up always first, cool down always last (text only), accessory /
+  finisher optional; blocks are lettered A, B, C from their order and carry a theme shown in advance.
+  Each block's WOD is written with the quick WOD editor or borrowed (a standalone WOD; "Program in a
+  session" on a WOD page prefills it, as a competition block for an official one). Session settings
+  (default policy, time zone) sit in My box › Settings.
+* **Quick WOD editor** (`features/wods/wod-quick-form`, session blocks and My training › My WODs):
+  format chips (For Time, Rounds, Chipper, Ladder, AMRAP, EMOM / intervals, Tabata, Death by,
+  Strength, Skill) with the usual score type (changeable) and only the structure fields of the
+  format (rounds and rest, descending values or ascending start + step, every X minutes with optional
+  work / rest, Tabata 8 × 20 s / 10 s, Death by start + step, strength sets `5x5` / `5-5-3-3-1`); no
+  free rep scheme. Each movement line has a measure (reps, max, distance, calories, time, picked from
+  the movement: run → distance, rower → calories, plank → time), the load / height its category needs
+  (other measures, equipment and technique folded) and, on Rounds and AMRAP, a buy-in / buy-out part. Weight vest
+  and notes (writer's language) are folded options; title generated when empty. The full WOD form stays for admins writing public WODs.
 * **PWA**: installable (manifest, icons, service worker in production builds); API calls are never
   cached; a toast offers to reload when a new version is ready.
 
@@ -96,9 +120,9 @@ The backends enforce every rule; Sirius only adapts what it shows:
   zone (transfer to a member Antares marks `canBecomeHolder`, deletion after typing the name).
 * **Admin › Boxes & programs** (`/admin/gyms`): approval queue by default, search, approve, reject,
   suspend, reactivate, with the requester and the active member count.
-* **WOD list**: type filters come from `GET /aldebaran/wods/facets` (only types that return
-  results); the create button follows the tab (gym WOD where the user programs, personal
-  otherwise); on the "All" tab an admin can pick any gym or any athlete with personal WODs.
+* **WOD catalogue** (`/wods`): public WODs only (Girls, Hero, CrossFit benchmarks, Open...), category
+  and format filters from `GET /aldebaran/wods/facets`; admins create them. Personal WODs live in My
+  training › My WODs (`/training/wods`, quick editor).
 * **Admin support session** (`/admin/support`, admins only): search a user (2 characters minimum),
   filter by gym, role and membership status, or by account (no box or program, e-mail not
   verified, badge on each row), page through results, or pick one of the 5 accounts
@@ -128,9 +152,9 @@ The backends enforce every rule; Sirius only adapts what it shows:
   collapsed tiebreak time. The WOD form proposes the usual score type of the chosen format.
 * **Competitions**: the WOD form has a "Competition" toggle for physical gym WODs (never for a virtual
   programming, `MembershipSummary.gymProgramming`; a competition WOD is never public); the copy
-  targets are physical gyms only, and an original WOD offers "Copy to my gym" in its title bar to users who program a gym (copy of an
-  Open WOD checked as competition by default). A copy shows its gym next to its title and a link to
-  its original on the right, and cannot be copied again. On a competition WOD the judge
+  targets are physical gyms only. A WOD page offers "Program in a session" to users who program a box or
+  a program (an Open WOD becomes a competition block of the box, copied by Aldebaran). A copy shows its
+  gym next to its title and a link to its original on the right. On a competition WOD the judge
   (`capabilities.canJudge`) picks the athlete when logging a score (gym members from Antares); the
   leaderboard shows every score to judges (to verify them) and verified scores only to the others by
   default, with a "Verified" badge and Verify / Withdraw / edit / delete buttons when the backend
@@ -144,7 +168,8 @@ The backends enforce every rule; Sirius only adapts what it shows:
   60/50 cm, 10/9 ft = 3/2.7 m) and distances (metric converts every imperial distance; imperial keeps
   runs and rows in m/km and converts only distances under 100 m to feet).
 
-* **WOD form**: the movement is picked in a search box (name, abbreviation shown in the suggestions).
+* **WOD form**: the movement is picked in a combobox (spartan/ui, name or abbreviation); each movement
+  can prescribe a number of sets (shown as "5 x 5" on the whiteboard).
   The movement's allowed equipment and techniques then appear as toggle chips (loaded from
   `GET /aldebaran/movements/{id}`); changing the movement clears them. Aldebaran rejects any other
   value.

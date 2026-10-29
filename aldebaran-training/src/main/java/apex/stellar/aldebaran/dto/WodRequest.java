@@ -3,7 +3,9 @@ package apex.stellar.aldebaran.dto;
 import apex.stellar.aldebaran.model.entities.Wod.ScoreType;
 import apex.stellar.aldebaran.model.entities.Wod.WodCategory;
 import apex.stellar.aldebaran.model.entities.Wod.WodType;
+import apex.stellar.aldebaran.model.enums.Unit;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
@@ -46,4 +48,61 @@ public record WodRequest(
     @Min(value = 0, message = "{validation.wod.emom.min}") Integer emomRounds,
     @Size(max = 100, message = "{validation.wod.repScheme.size}") String repScheme,
     @NotEmpty(message = "{validation.wod.movements.empty}") @Valid
-        List<WodMovementRequest> movements) {}
+        List<WodMovementRequest> movements,
+
+    // --- Structure of the quick editor (rounds, rest, intervals, ascending ladder, vest) ---
+    @Min(value = 1, message = "{validation.wod.rounds.min}") Integer rounds,
+    @Min(value = 0, message = "{validation.value.positive}") Integer restSeconds,
+    @Min(value = 1, message = "{validation.wod.rounds.min}") Integer workSeconds,
+    @Min(value = 1, message = "{validation.wod.rounds.min}") Integer ladderStart,
+    @Min(value = 1, message = "{validation.wod.rounds.min}") Integer ladderStep,
+    @DecimalMin(value = "0.0", message = "{validation.value.positive}") Double vestWeight,
+    @DecimalMin(value = "0.0", message = "{validation.value.positive}") Double vestWeightFemale,
+    Unit vestWeightUnit) {
+
+  /** WOD without the structure fields of the quick editor. */
+  @SuppressWarnings("java:S107") // Mirrors the record components
+  public WodRequest(
+      String title,
+      WodType wodType,
+      WodCategory category,
+      ScoreType scoreType,
+      Long authorId,
+      Long gymId,
+      boolean isPublic,
+      boolean competition,
+      String descriptionEn,
+      String descriptionFr,
+      String notesEn,
+      String notesFr,
+      String tiebreakEn,
+      String tiebreakFr,
+      Integer timeCapSeconds,
+      Integer repsPerRound,
+      Integer emomInterval,
+      Integer emomRounds,
+      String repScheme,
+      List<WodMovementRequest> movements) {
+    this(
+        title, wodType, category, scoreType, authorId, gymId, isPublic, competition, descriptionEn,
+        descriptionFr, notesEn, notesFr, tiebreakEn, tiebreakFr, timeCapSeconds, repsPerRound,
+        emomInterval, emomRounds, repScheme, movements, null, null, null, null, null, null, null,
+        null);
+  }
+
+  /**
+   * Returns a copy of this request owned by a gym (author resolved by the service), never public.
+   *
+   * @param gymId The owning gym.
+   * @param competitionWod Whether the copy is a competition WOD.
+   * @param movementList The movements of the copy.
+   * @return The new request.
+   */
+  public WodRequest ownedBy(Long gymId, boolean competitionWod, List<WodMovementRequest> movementList) {
+    return new WodRequest(
+        title, wodType, category, scoreType, null, gymId, false, competitionWod, descriptionEn,
+        descriptionFr, notesEn, notesFr, tiebreakEn, tiebreakFr, timeCapSeconds, repsPerRound,
+        emomInterval, emomRounds, repScheme, movementList, rounds, restSeconds, workSeconds,
+        ladderStart, ladderStep, vestWeight, vestWeightFemale, vestWeightUnit);
+  }
+}

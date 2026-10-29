@@ -174,6 +174,25 @@ public class ScoreController {
   }
 
   /**
+   * Retrieves the scores of a competition WOD submitted for verification and not verified yet
+   * (judge queue), oldest first.
+   *
+   * @param wodId The competition WOD.
+   * @param principal The authenticated user (SCORE_VERIFY in the WOD's gym).
+   * @return The scores waiting for a judge.
+   */
+  @GetMapping("/verification-queue/{wodId}")
+  @PreAuthorize("@wodSecurity.canJudge(#wodId, principal)")
+  public ResponseEntity<List<ScoreResponse>> getVerificationQueue(
+      @PathVariable Long wodId, @AuthenticationPrincipal AldebaranUserPrincipal principal) {
+
+    return ResponseEntity.ok(
+        scoreService.getVerificationQueue(wodId).stream()
+            .map(score -> scoreCapabilityService.forViewer(score, principal))
+            .toList());
+  }
+
+  /**
    * Calculates the rank and percentile of a specific score against the Personal Records of the
    * other athletes at the same scaling level.
    *

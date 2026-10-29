@@ -515,7 +515,9 @@
       "ALL_CATEGORIES": "All categories",
       "ALL_FORMATS": "All formats",
       "USE_REPS_PER_ROUND": "Use {{reps}} (from the movements)",
-      "COPY": "Copy to my box"
+      "COPY": "Copy to my box",
+      "PROGRAM": "Program in a session",
+      "ADD_PUBLIC": "New public WOD"
     },
     "SCOPES": {
       "ALL": "All",
@@ -579,7 +581,8 @@
       "TIEBREAK_EN": "Tiebreak (English)",
       "REPS_PER_ROUND": "Reps per round (optional)",
       "COMPETITION": "Competition",
-      "SCOPE": "Scope"
+      "SCOPE": "Scope",
+      "SETS": "Sets"
     },
     "PLACEHOLDERS": {
       "TITLE": "E.g. Fran",
@@ -588,7 +591,8 @@
       "NOTES": "Instructions for the coach or athlete...",
       "REPS": "E.g. 21-15-9",
       "MOVEMENT_SEARCH": "Search by name or abbreviation (e.g. HSPU)",
-      "TIEBREAK": "Only for competition WODs, e.g. \"Time after the last full set of wall walks\""
+      "TIEBREAK": "Only for competition WODs, e.g. \"Time after the last full set of wall walks\"",
+      "SETS": "e.g. 5"
     },
     "VISIBILITY": {
       "PUBLIC": "Public",
@@ -612,7 +616,8 @@
       "COPY_HINT": "The copy is private to the box and has its own leaderboard, independent of the original WOD.",
       "COPIED": "WOD copied",
       "COPY_ERROR": "Unable to copy the WOD",
-      "COPIED_FROM": "Copied from the original WOD"
+      "COPIED_FROM": "Copied from the original WOD",
+      "MOVEMENT_REQUIRED": "Pick a movement from the catalogue."
     },
     "WOD_TYPES": {
       "FOR_TIME": "For Time",
@@ -623,13 +628,15 @@
       "STRENGTH": "Strength",
       "SKILL": "Skill",
       "ACCESSORY": "Accessory",
-      "CUSTOM": "Custom"
+      "CUSTOM": "Custom",
+      "CHIPPER": "Chipper",
+      "LADDER": "Ladder",
+      "DEATH_BY": "Death by"
     },
     "CATEGORIES": {
       "GIRLS": "Girls",
       "HERO": "Hero",
       "BENCHMARK": "CrossFit Benchmark",
-      "CUSTOM_BENCHMARK": "Box Benchmark",
       "OPEN": "Open",
       "QUARTERFINALS": "Quarterfinals",
       "SEMIFINALS": "Semifinals",
@@ -665,6 +672,80 @@
     },
     "HINTS": {
       "REPS_PER_ROUND": "For an AMRAP with a fixed round: scores are total reps, also shown as rounds + reps. Leave empty for ladders or chippers."
+    },
+    "QUICK": {
+      "ROUNDS": "Rounds",
+      "EVERY": "Every (min)",
+      "DURATION": "Duration (min)",
+      "TIME_CAP": "Time cap (min)",
+      "LADDER_HINT": "Reps shared by every movement",
+      "SETS_HINT": "{{sets}} sets of {{reps}}",
+      "SCORE": "Score",
+      "REPS": "Reps",
+      "LOAD": "Load M/W",
+      "HEIGHT": "Height M/W",
+      "DISTANCE": "Distance",
+      "CALORIES": "Calories M/W",
+      "MEN": "Men",
+      "WOMEN": "Women",
+      "REMOVE": "Remove movement {{n}}",
+      "TITLE": "Title (optional)",
+      "NOTES": "Notes / scaling",
+      "NOTES_PLACEHOLDER": "Instructions, scaling options…",
+      "FORMATS": {
+        "FOR_TIME": "For Time",
+        "ROUNDS": "Rounds",
+        "CHIPPER": "Chipper",
+        "LADDER": "Ladder",
+        "AMRAP": "AMRAP",
+        "EMOM": "EMOM / Intervals",
+        "TABATA": "Tabata",
+        "DEATH_BY": "Death by",
+        "STRENGTH": "Strength",
+        "SKILL": "Skill"
+      },
+      "N_ROUNDS": "{{count}} rounds",
+      "REST_BETWEEN": "Rest between rounds (s)",
+      "WORK": "Work (s)",
+      "REST": "Rest (s)",
+      "WORK_REST": "+ work / rest",
+      "NO_WORK_REST": "no work / rest",
+      "LADDER_DIRECTION": "Ladder direction",
+      "LADDER_DOWN": "Descending",
+      "LADDER_UP": "Ascending",
+      "LADDER_VALUES": "Ladder reps",
+      "LADDER_START": "Start",
+      "LADDER_STEP": "Step",
+      "DEATH_START": "Reps 1st minute",
+      "DEATH_STEP": "+ per minute",
+      "SETS": "Sets",
+      "SETS_PLACEHOLDER": "5x5, 5-5-3-3-1, build to a 1RM…",
+      "MEASURE": "Measure",
+      "MEASURES": {
+        "REPS": "Reps",
+        "MAX": "Max reps",
+        "DISTANCE": "Distance",
+        "CALORIES": "Calories",
+        "TIME": "Time"
+      },
+      "TIME_S": "Time (s)",
+      "LOAD_HEIGHT": "load / height",
+      "SEGMENT": "Part of the WOD",
+      "VEST": "Weight vest M/W",
+      "EQUIPMENT": "Equipment",
+      "TECHNIQUE": "Technique"
+    },
+    "CATALOGUE_SUBTITLE": "The reference WODs: Girls, Hero, benchmarks, Open… Program them in a session of your box.",
+    "SEGMENTS": {
+      "BUY_IN": "Buy-in",
+      "MAIN": "In the rounds",
+      "BUY_OUT": "Buy-out"
+    },
+    "BOARD": {
+      "ROUNDS_FOR_TIME": "{{count}} rounds for time",
+      "DEATH_BY": "{{start}} rep(s) the 1st minute, +{{step}} each minute",
+      "REST": "Rest {{rest}} between rounds",
+      "VEST": "Vest"
     }
   },
   "SCORE": {
@@ -711,7 +792,8 @@
       "GYM": "Box / program",
       "NO_GYM": "None",
       "ATHLETE": "Athlete",
-      "ME": "Me"
+      "ME": "Me",
+      "SUBMIT": "Submit for verification"
     },
     "PLACEHOLDERS": {
       "SCALING_NOTES": "e.g. 35 kg thrusters, banded pull-ups"
@@ -740,7 +822,8 @@
       "GYM_HINT": "Where you did this WOD: your score then appears on that box or program's leaderboard and its coaches can check it.",
       "ATHLETE_HINT": "A score logged for an athlete is verified at once.",
       "VERIFIED": "Score verified",
-      "UNVERIFIED": "Verification withdrawn"
+      "UNVERIFIED": "Verification withdrawn",
+      "SUBMIT_HINT": "A judge of the box verifies your score for the competition leaderboard. Unticked, it is a regular score."
     },
     "TIEBREAK_SHORT": "TB {{time}}",
     "ENTRY": {
@@ -763,7 +846,22 @@
     "VERIFIED": "Verified",
     "VERIFIED_BY": "Verified by {{name}}",
     "LOGGED_BY": "Logged by {{name}}",
-    "STAFF": "the staff"
+    "STAFF": "the staff",
+    "SETS": {
+      "TITLE": "Sets",
+      "START": "Enter set by set",
+      "ADD": "Add a set",
+      "REPS": "Reps of set {{n}}",
+      "REPS_SHORT": "Reps",
+      "WEIGHT": "Load of set {{n}}",
+      "COMPLETED": "Made",
+      "COMPLETED_HINT": "Untick a missed set: it does not count as the performance.",
+      "REMOVE": "Remove set {{n}}",
+      "BEST": "Best set: {{value}} {{unit}}",
+      "VOLUME": "Volume: {{value}} {{unit}}",
+      "SUMMARY": "{{count}} sets"
+    },
+    "SUBMITTED": "Submitted for verification"
   },
   "ADMIN": {
     "SUPPORT": {
@@ -880,8 +978,11 @@
     "PR": "PR",
     "SESSION": {
       "TITLE": "Today's session",
-      "COMING": "The session programmed by your box or program will show here, with \"Done\" and your score entry.",
-      "SEE_WODS": "See the WODs"
+      "OPEN": "Open the session",
+      "LOG_SCORE": "Log my scores",
+      "EMPTY": "No session today for your box or program.",
+      "SEE_WEEK": "See the week",
+      "PERSONAL": "Create a personal session"
     },
     "SCORES": {
       "TITLE": "Latest scores",
@@ -896,8 +997,9 @@
   "TRAINING": {
     "JOURNAL": {
       "TITLE": "Journal",
-      "SUBTITLE": "All your scores, newest first.",
-      "MORE": "Show more"
+      "SUBTITLE": "The sessions you did and all your scores, newest first.",
+      "MORE": "Show more",
+      "SCORES": "Scores"
     },
     "RECORDS": {
       "TITLE": "Records",
@@ -906,12 +1008,18 @@
     "REVIEW": {
       "TITLE": "Review",
       "COMING": "Your review (volume, muscle load, split by modality) will show here."
+    },
+    "WODS": {
+      "TITLE": "My WODs",
+      "SUBTITLE": "Your personal WODs, visible to you only.",
+      "NEW": "New WOD",
+      "EDIT": "Edit the WOD",
+      "EMPTY": "No personal WOD yet."
     }
   },
   "BOX": {
     "SESSIONS": {
-      "TITLE": "Sessions",
-      "COMING": "The sessions programmed by your box or program will show here."
+      "TITLE": "Sessions"
     },
     "LEADERBOARDS": {
       "TITLE": "Leaderboards",
@@ -1046,5 +1154,186 @@
     "PENDING_EXISTS": "You already have a request waiting for approval ({{name}}): one at a time.",
     "ERROR_NAME_MAX": "100 characters maximum.",
     "ERROR_DESCRIPTION_MAX": "1000 characters maximum."
+  },
+  "SESSION": {
+    "WEEK_OF": "Week of {{from}} to {{to}}",
+    "DONE": "Done",
+    "HIDDEN": "Content hidden",
+    "HIDDEN_HINT": "The content shows up per the visibility rule chosen by the staff.",
+    "HIDDEN_TITLE": "Content not visible yet",
+    "OPENS_AT": "Visible on {{date}}.",
+    "OPTIONAL": "optional",
+    "BORROWED": "Existing WOD",
+    "LEADERBOARD": "Leaderboard",
+    "MY_SCORE": "My score",
+    "MINUTES": "{{count}} min",
+    "BLOCK_DONE": "{{kind}} done",
+    "BLOCK_DONE_SHORT": "Done",
+    "PERSONAL": "Personal session",
+    "LOCKED": "Locked",
+    "LOGGED_ON": "Session done on {{date}}",
+    "LANG_FR": "French",
+    "LANG_EN": "English",
+    "DELETE_TITLE": "Delete the session?",
+    "DELETE_DESC": "The session and the WODs written for it are deleted; borrowed WODs stay in the catalogue.",
+    "UNLOG_TITLE": "Undo \"Session done\"?",
+    "UNLOG_DESC": "Your journal of this session is deleted.",
+    "VISIBILITY_DESC": "When the box's athletes see the content of the blocks. Staff always see everything.",
+    "TYPES": {
+      "WOD": "WOD session",
+      "SPECIALTY": "Specialty"
+    },
+    "DISCIPLINES": {
+      "CROSSFIT": "CrossFit",
+      "WEIGHTLIFTING": "Weightlifting",
+      "STRENGTH": "Strength",
+      "GYMNASTICS": "Gymnastics",
+      "ENDURANCE": "Endurance",
+      "HYROX": "Hyrox",
+      "MOBILITY": "Mobility",
+      "BODYBUILDING": "Body / Core",
+      "STRONGMAN": "Strongman",
+      "OTHER": "Other"
+    },
+    "KINDS": {
+      "WARM_UP": "Warm-up",
+      "SKILL": "Skill",
+      "WOD": "WOD",
+      "ACCESSORY": "Accessory",
+      "FINISHER": "Finisher",
+      "COOL_DOWN": "Cool down"
+    },
+    "STIMULI": {
+      "STRENGTH": "Strength",
+      "POWER": "Power",
+      "SKILL": "Skill",
+      "AEROBIC": "Aerobic",
+      "THRESHOLD": "Threshold",
+      "ANAEROBIC": "Anaerobic",
+      "MIXED": "Mixed (metcon)",
+      "MOBILITY": "Mobility"
+    },
+    "POLICIES": {
+      "ADVANCE": {
+        "LABEL": "In advance",
+        "HINT": "The whole box sees the content at the chosen time, before the day of the session.",
+        "HIDDEN": ""
+      },
+      "DAY_OF": {
+        "LABEL": "On the day",
+        "HINT": "The whole box sees the content on the day of the session (a day of its week for a specialty), at the chosen time.",
+        "HIDDEN": ""
+      },
+      "AFTER": {
+        "LABEL": "The day after",
+        "HINT": "The whole box sees the content the day after the session (the next Monday for a specialty).",
+        "HIDDEN": ""
+      },
+      "AFTER_PARTICIPANTS": {
+        "LABEL": "Participants, then the day after",
+        "HINT": "Each athlete sees the content from their \"Session done\", the whole box the day after.",
+        "HIDDEN": "Tap \"Session done\" to see the content, or wait until {{date}}."
+      },
+      "PARTICIPANTS_ONLY": {
+        "LABEL": "Participants only",
+        "HINT": "Only the athletes who did the session see its content.",
+        "HIDDEN": "The content is for the athletes who did the session: tap \"Session done\" to see it."
+      },
+      "DEFAULT_OF": "Box setting ({{policy}})"
+    },
+    "ACTIONS": {
+      "NEW": "New session",
+      "NEW_PERSONAL": "Personal session",
+      "VISIBILITY": "Visibility",
+      "LOG": "Session done",
+      "UNLOG": "Undo",
+      "MOVE_UP": "Move block {{n}} up",
+      "MOVE_DOWN": "Move block {{n}} down",
+      "REMOVE_BLOCK": "Remove block {{n}}"
+    },
+    "FIELDS": {
+      "TYPE": "Session type",
+      "DATE": "Day",
+      "WEEK": "Week (any day of it)",
+      "DISCIPLINE": "Discipline",
+      "TITLE": "Title",
+      "DESCRIPTION": "Description",
+      "VISIBILITY": "Content visibility",
+      "VISIBLE_AT": "Visible from",
+      "THEME": "Theme",
+      "TEXT": "Text"
+    },
+    "PLACEHOLDERS": {
+      "TITLE": "e.g. Games WOD (optional)",
+      "DESCRIPTION": "Coach's word, general instructions…",
+      "TEXT": "e.g. 2 rounds: 10 air squats, 10 PVC pass-throughs…",
+      "BORROW": "Search a WOD (Fran, Murph…)",
+      "THEME_SKILL": "e.g. 5RM Thruster",
+      "THEME_WOD": "e.g. AMRAP Zone 3",
+      "THEME_ACCESSORY": "e.g. Core",
+      "THEME_FINISHER": "e.g. Burpees"
+    },
+    "FORM": {
+      "NEW": "New session",
+      "NEW_PERSONAL": "New personal session",
+      "EDIT": "Edit the session",
+      "BLOCKS": "Blocks",
+      "THEME_HINT": "shown in advance to the whole box",
+      "WOD_OWN": "WOD written for the session",
+      "CHANGE_WOD": "Change",
+      "WRITE_WOD": "Write the WOD",
+      "BORROW_WOD": "Take an existing WOD",
+      "COMPETITION_HINT": "For the Open: the WOD becomes a competition WOD of the box; each athlete chooses to submit their score to the judges.",
+      "ADD_BLOCK": "Add a block",
+      "NO_WOD": "No WOD found.",
+      "WOD_DONE": "Use this WOD",
+      "CHANGE": "change",
+      "MORE": "Title or coach's word",
+      "COMPETITION": "Competition (Open)"
+    },
+    "MESSAGES": {
+      "LOAD_ERROR": "Could not load the sessions.",
+      "FORBIDDEN": "You cannot access this session.",
+      "NOT_FOUND": "Session not found.",
+      "LOGGED": "Session done, well done!",
+      "UNLOGGED": "Session journal deleted.",
+      "SAVE_ERROR": "Could not save the session.",
+      "VISIBILITY_SAVED": "Visibility saved.",
+      "LOCKED": "Athletes did the session: its blocks can no longer change, only its visibility.",
+      "LOGGED_HINT": "Untick a block you skipped and log your scores block by block.",
+      "LOG_HINT": "Every block is ticked: you can untick the ones you skipped.",
+      "NOT_YET": "\"Session done\" opens on the day of the session.",
+      "LOG_FIRST": "Tap \"Session done\" first to link your score to this session.",
+      "WOD_MISSING": "Block {{n}} has no WOD: write it or take an existing one.",
+      "CREATED": "Session created.",
+      "UPDATED": "Session updated."
+    },
+    "WEEK": {
+      "SUBTITLE": "The sessions of your box or program, day by day.",
+      "NAV": "Week shown",
+      "PREVIOUS": "Previous week",
+      "NEXT": "Next week",
+      "THIS_WEEK": "Back to this week",
+      "SPECIALTIES": "Specialties of the week",
+      "EMPTY_DAY": "No session."
+    },
+    "QUEUE": {
+      "TITLE": "Scores to verify",
+      "EMPTY": "No submitted score waiting."
+    },
+    "SETTINGS": {
+      "TITLE": "Sessions",
+      "DESC": "Default visibility rule of new sessions and time zone of the box.",
+      "DEFAULT": "Default visibility",
+      "TIME_ZONE": "Time zone",
+      "TIME_ZONE_HINT": "Places \"on the day at 6 pm\" and \"the day after\" in time (e.g. Europe/Paris).",
+      "SAVED": "Session settings saved."
+    },
+    "JOURNAL": {
+      "TITLE": "Sessions",
+      "BLOCKS": "{{done}}/{{total}} blocks",
+      "SCORES": "{{count}} score(s)",
+      "EMPTY": "No session done yet."
+    }
   }
 }

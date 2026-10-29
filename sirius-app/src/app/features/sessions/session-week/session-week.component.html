@@ -1,0 +1,58 @@
+<app-page [title]="'BOX.SESSIONS.TITLE' | translate" [subtitle]="'SESSION.WEEK.SUBTITLE' | translate">
+  @if (canCreate()) {
+    <a pageActions hlmBtn size="lg" routerLink="/box/sessions/new" [queryParams]="{date: monday() > today ? monday() : today}">
+      <ng-icon name="heroPlus" aria-hidden="true"/>
+      {{ 'SESSION.ACTIONS.NEW' | translate }}
+    </a>
+  }
+
+  <nav class="mb-4 flex items-center justify-between gap-2" [attr.aria-label]="'SESSION.WEEK.NAV' | translate">
+    <button type="button" hlmBtn variant="outline" size="icon-lg" (click)="shiftWeek(-1)"
+            [attr.aria-label]="'SESSION.WEEK.PREVIOUS' | translate">
+      <ng-icon name="heroChevronLeft"/>
+    </button>
+    <div class="flex flex-col items-center">
+      <span id="week-label" class="font-semibold">{{ weekLabel() }}</span>
+      @if (!isCurrentWeek()) {
+        <button type="button" class="text-sm text-primary hover:underline" (click)="thisWeek()">{{ 'SESSION.WEEK.THIS_WEEK' | translate }}</button>
+      }
+    </div>
+    <button type="button" hlmBtn variant="outline" size="icon-lg" (click)="shiftWeek(1)"
+            [attr.aria-label]="'SESSION.WEEK.NEXT' | translate">
+      <ng-icon name="heroChevronRight"/>
+    </button>
+  </nav>
+
+  @if (isLoading()) {
+    <div class="flex justify-center py-10"><hlm-spinner class="text-2xl text-primary" [aria-label]="'GLOBAL.LOADING' | translate"/></div>
+  } @else if (hasError()) {
+    <p class="text-sm text-destructive">{{ 'SESSION.MESSAGES.LOAD_ERROR' | translate }}</p>
+  } @else {
+    @if (specialties().length > 0) {
+      <section class="mb-6 flex flex-col gap-3" aria-labelledby="specialties-title">
+        <h2 id="specialties-title" class="text-lg font-semibold">{{ 'SESSION.WEEK.SPECIALTIES' | translate }}</h2>
+        <div class="grid gap-3 md:grid-cols-2">
+          @for (session of specialties(); track session.id) {
+            <app-session-card [session]="session" [showDate]="false"/>
+          }
+        </div>
+      </section>
+    }
+
+    <ol class="flex flex-col gap-4">
+      @for (d of days(); track d.day) {
+        <li class="flex flex-col gap-2" [attr.aria-current]="d.isToday ? 'date' : null">
+          <h2 class="text-sm font-semibold uppercase tracking-wide first-letter:uppercase"
+              [class.text-primary]="d.isToday" [class.text-muted-foreground]="!d.isToday">
+            {{ d.label }}
+          </h2>
+          @for (session of d.sessions; track session.id) {
+            <app-session-card [session]="session" [showDate]="false"/>
+          } @empty {
+            <p class="text-sm text-muted-foreground italic">{{ 'SESSION.WEEK.EMPTY_DAY' | translate }}</p>
+          }
+        </li>
+      }
+    </ol>
+  }
+</app-page>

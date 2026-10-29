@@ -3,12 +3,14 @@ package apex.stellar.aldebaran.dto;
 import apex.stellar.aldebaran.model.entities.Score.ScalingLevel;
 import apex.stellar.aldebaran.model.enums.Unit;
 import apex.stellar.aldebaran.validation.ValidScoreRequest;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.PastOrPresent;
 import jakarta.validation.constraints.Size;
 import java.time.LocalDate;
+import java.util.List;
 
 /** DTO for logging a new workout performance. */
 @ValidScoreRequest
@@ -51,4 +53,62 @@ public record ScoreRequest(
     @Size(max = 4000, message = "{validation.score.scalingNotes.size}") String scalingNotes,
 
     // --- Gym where it was performed (public or personal WOD only; a gym WOD uses its gym) ---
-    Long gymId) {}
+    Long gymId,
+
+    // --- Session: journal of the session the score belongs to (optional for a session WOD:
+    // the athlete's journal is found or created) ---
+    Long sessionLogId,
+
+    // --- Strength sets, set by set (WEIGHT / LOAD / NONE scores), in weightUnit ---
+    @Valid @Size(max = 50, message = "{validation.score.sets.size}") List<ScoreSetRequest> sets,
+
+    // --- Competition WOD: submit the score to the judges ---
+    boolean verificationRequested) {
+
+  /** Score outside a session, without sets nor verification request. */
+  @SuppressWarnings("java:S107") // Mirrors the record components
+  public ScoreRequest(
+      Long userId,
+      LocalDate date,
+      Long wodId,
+      Integer timeMinutes,
+      Integer timeSeconds,
+      Integer rounds,
+      Integer reps,
+      Double maxWeight,
+      Double totalLoad,
+      Unit weightUnit,
+      Double totalDistance,
+      Unit distanceUnit,
+      Integer totalCalories,
+      ScalingLevel scaling,
+      boolean timeCapped,
+      Integer tiebreakSeconds,
+      String userComment,
+      String scalingNotes,
+      Long gymId) {
+    this(
+        userId,
+        date,
+        wodId,
+        timeMinutes,
+        timeSeconds,
+        rounds,
+        reps,
+        maxWeight,
+        totalLoad,
+        weightUnit,
+        totalDistance,
+        distanceUnit,
+        totalCalories,
+        scaling,
+        timeCapped,
+        tiebreakSeconds,
+        userComment,
+        scalingNotes,
+        gymId,
+        null,
+        null,
+        false);
+  }
+}

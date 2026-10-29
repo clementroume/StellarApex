@@ -88,6 +88,11 @@
         </div>
       </form>
 
+      <!-- Sessions: default visibility policy and time zone (Aldebaran) -->
+      @if (staffGym.membership(); as m) {
+        <app-session-settings-card [gymId]="m.gymId" [programming]="m.gymProgramming"/>
+      }
+
       <!-- Danger zone: holder (or platform admin) only -->
       @if (isHolder()) {
         <section hlmCard class="border-destructive/40" data-slot="danger-zone">

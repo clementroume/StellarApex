@@ -6,8 +6,20 @@ import {gymPermissionGuard} from '../../core/guards/gym-permission.guard';
 export const BOX_ROUTES: Routes = [
   {path: '', redirectTo: 'sessions', pathMatch: 'full'},
   {
-    path: 'sessions', component: SpacePlaceholderComponent,
-    data: {titleKey: 'BOX.SESSIONS.TITLE', descriptionKey: 'BOX.SESSIONS.COMING', icon: 'heroCalendarDays'}
+    path: 'sessions',
+    loadComponent: () => import('../sessions/session-week/session-week.component').then(c => c.SessionWeekComponent)
+  },
+  {
+    path: 'sessions/new', canActivate: [gymPermissionGuard('WOD_WRITE')],
+    loadComponent: () => import('../sessions/session-form/session-form.component').then(c => c.SessionFormComponent)
+  },
+  {
+    path: 'sessions/:id',
+    loadComponent: () => import('../sessions/session-detail/session-detail.component').then(c => c.SessionDetailComponent)
+  },
+  {
+    path: 'sessions/:id/edit', canActivate: [gymPermissionGuard('WOD_WRITE')],
+    loadComponent: () => import('../sessions/session-form/session-form.component').then(c => c.SessionFormComponent)
   },
   {
     path: 'leaderboards', component: SpacePlaceholderComponent,

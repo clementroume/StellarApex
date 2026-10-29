@@ -1,0 +1,69 @@
+@let w = wod();
+<div id="whiteboard" class="flex flex-col gap-2">
+  <div class="flex flex-wrap items-baseline justify-between gap-2">
+    <p id="format-line" class="text-2xl font-bold">{{ formatLine(w) }}</p>
+    @if (timeCapLabel(w); as cap) {
+      <span hlmBadge class="bg-accent/15 text-accent h-7 px-3 text-sm">{{ cap }}</span>
+    }
+  </div>
+  @if (repSchemeLine(w); as scheme) {
+    <p class="text-xl font-bold">{{ scheme }}</p>
+  }
+  @if (structureLine(w); as structure) {
+    <p id="structure-line" class="text-xl font-bold">{{ structure }}</p>
+  }
+  @if (restLabel(w) || vest(w)) {
+    <div class="flex flex-wrap gap-2">
+      @if (restLabel(w); as rest) {
+        <span hlmBadge variant="outline" id="rest-badge" class="h-7 px-3 text-sm">{{ rest }}</span>
+      }
+      @if (vest(w); as v) {
+        <span hlmBadge variant="outline" id="vest-badge" class="h-7 px-3 text-sm">
+          {{ 'WOD.BOARD.VEST' | translate }} {{ v.values.join('/') }} {{ v.unit }}
+        </span>
+      }
+    </div>
+  }
+  @if (sortedMovements().length > 0) {
+    @for (part of segments(); track part.segment) {
+    @if (part.segment !== 'MAIN') {
+      <p class="text-sm font-semibold uppercase tracking-wide text-muted-foreground pt-1" [attr.data-segment]="part.segment">
+        {{ 'WOD.SEGMENTS.' + part.segment | translate }}
+      </p>
+    }
+    <ul class="flex flex-col divide-y divide-border">
+      @for (wm of part.movements; track wm.id) {
+        <li class="py-2 flex flex-col gap-1">
+          <div class="flex flex-wrap items-baseline gap-x-2 text-base md:text-lg">
+            @if (quantity(wm, w); as qty) {
+              <span class="font-bold">{{ qty }}</span>
+            }
+            <a [routerLink]="['/movements', wm.movement.id]"
+               class="font-semibold hover:text-primary transition-colors">{{ wm.movement.name }}</a>
+            @if (variants(wm); as v) {
+              <span class="text-sm text-muted-foreground">({{ v }})</span>
+            }
+            @for (measure of measures(wm); track $index) {
+              <span class="font-semibold text-primary" data-slot="measure">
+                <!-- One line: whitespace between the values would show around the slash -->
+                @for (value of measure.values; track $index; let i = $index) {@if (i > 0) {/}<span [class]="measure.mine === null ? '' : measure.mine === i ? 'underline decoration-2 underline-offset-4' : 'font-normal text-muted-foreground'">{{ value }}</span>}
+                {{ measure.unit }}
+              </span>
+            }
+          </div>
+          @if (movementNotes(wm); as n) {
+            <p class="text-sm text-muted-foreground whitespace-pre-line">{{ n }}</p>
+          }
+          @if (scaling(wm); as sc) {
+            <p class="text-sm text-muted-foreground whitespace-pre-line">
+              <span class="font-semibold">{{ 'WOD.FIELDS.SCALING' | translate }} :</span> {{ sc }}
+            </p>
+          }
+        </li>
+      }
+    </ul>
+    }
+  } @else {
+    <p class="italic text-muted-foreground">{{ 'WOD.MESSAGES.NO_MOVEMENTS' | translate }}</p>
+  }
+</div>

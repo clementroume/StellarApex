@@ -36,6 +36,7 @@ describe('ScoreFormComponent', () => {
     store = {
       wod, editing,
       isSaving: signal(false),
+      sessionLogId: signal(null),
       save: vi.fn().mockName('WodScoresStore.save'),
       close: vi.fn().mockName('WodScoresStore.close')
     };
@@ -231,5 +232,46 @@ describe('ScoreFormComponent', () => {
     component.form.patchValue({reps: 100});
     component.onSubmit();
     expect(store.save).toHaveBeenLastCalledWith(expect.objectContaining({gymId: 5}));
+  });
+
+  it('should enter a strength score set by set, the best complete set as performance', () => {
+    init('WEIGHT', 'new', {movements: [{id: 1, orderIndex: 1, repsScheme: '5', sets: 3, movement: {id: 1, name: 'Back Squat'}}]});
+    (fixture.nativeElement.querySelector('#add-set') as HTMLButtonElement).click();
+    fixture.detectChanges();
+
+    expect(component.form.controls.sets.length).toBe(3);
+    expect(component.form.controls.sets.at(0).getRawValue().reps).toBe(5);
+    component.form.controls.sets.at(0).patchValue({weight: 100});
+    component.form.controls.sets.at(1).patchValue({weight: 110});
+    component.form.controls.sets.at(2).patchValue({weight: 120, completed: false});
+    expect(component.setsValue()).toBe(110);
+    expect(component.valueMissing()).toBe(false);
+
+    component.onSubmit();
+    expect(store.save).toHaveBeenCalledWith(expect.objectContaining({
+      sets: [{reps: 5, weight: 100, completed: true}, {reps: 5, weight: 110, completed: true}, {reps: 5, weight: 120, completed: false}],
+      weightUnit: 'KG'
+    }));
+    expect(store.save.mock.lastCall[0].maxWeight).toBeUndefined();
+  });
+
+  it('should let an athlete submit a competition score, never on another WOD', () => {
+    init('TIME', 'new', {gymId: 5, competition: true, capabilities: {canModify: false, locked: false, canJudge: false}});
+    const box = fixture.nativeElement.querySelector('#verification-requested input') as HTMLInputElement;
+    box.click();
+    component.form.patchValue({minutes: 8});
+    component.onSubmit();
+    expect(store.save).toHaveBeenLastCalledWith(expect.objectContaining({verificationRequested: true}));
+
+    init('TIME');
+    expect(fixture.nativeElement.querySelector('#verification-requested')).toBeNull();
+  });
+
+  it('should hide the date and the gym inside a session journal', () => {
+    store.sessionLogId.set(12);
+    init('REPS');
+    expect(fixture.nativeElement.querySelector('input[type=date]')).toBeNull();
+    expect(fixture.nativeElement.querySelector('#score-gym')).toBeNull();
+    store.sessionLogId.set(null);
   });
 });

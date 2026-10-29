@@ -3,7 +3,9 @@ package apex.stellar.aldebaran.model.entities;
 import apex.stellar.aldebaran.model.enums.Division;
 import apex.stellar.aldebaran.model.enums.Unit;
 import apex.stellar.aldebaran.validation.ValidScore;
+import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
+import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EntityListeners;
 import jakarta.persistence.EnumType;
@@ -14,6 +16,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OrderColumn;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.DecimalMin;
@@ -21,6 +24,8 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -28,6 +33,7 @@ import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
+import org.hibernate.annotations.BatchSize;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
@@ -151,6 +157,20 @@ public class Score {
   @Column(length = 10)
   private Division division;
 
+  // --- Session ---
+  /** Journal of the session the score was done in, or null for a score outside a session. */
+  @Column(name = "session_log_id")
+  private Long sessionLogId;
+
+  /** Sets of a strength block, set by set; the best complete set is the performance. */
+  @ElementCollection(fetch = FetchType.LAZY)
+  @CollectionTable(name = "score_sets", joinColumns = @JoinColumn(name = "score_id"))
+  @OrderColumn(name = "set_index")
+  @BatchSize(size = 50)
+  @Builder.Default
+  @ToString.Exclude
+  private List<ScoreSet> sets = new ArrayList<>();
+
   // --- Audit ---
   @CreatedDate
   @Column(name = "logged_at", nullable = false, updatable = false)
@@ -161,6 +181,11 @@ public class Score {
   private Long loggedBy;
 
   // --- Verification (competition WODs) ---
+  /** The athlete submits the score for verification (staff logging submits it too). */
+  @Column(name = "verification_requested", nullable = false)
+  @Builder.Default
+  private boolean verificationRequested = false;
+
   /** Staff member who verified the score, or null while it is not verified. */
   @Column(name = "verified_by")
   private Long verifiedBy;

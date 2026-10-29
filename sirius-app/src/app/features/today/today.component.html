@@ -17,9 +17,33 @@
         </h2>
       </div>
       <div hlmCardContent>
-        <app-coming-soon icon="heroCalendarDays" [description]="'TODAY.SESSION.COMING' | translate">
-          <a hlmBtn variant="outline" routerLink="/wods">{{ 'TODAY.SESSION.SEE_WODS' | translate }}</a>
-        </app-coming-soon>
+        @if (sessionsLoading()) {
+          <div hlmSkeleton class="h-24 w-full" aria-hidden="true"></div>
+        } @else {
+          <div class="grid gap-3 md:grid-cols-2">
+            @for (session of todaySessions(); track session.id) {
+              <app-session-card [session]="session" [showDate]="session.type === 'SPECIALTY'">
+                <a cardActions hlmBtn variant="outline" size="sm" [routerLink]="sessionLink(session)">
+                  {{ (session.loggedByMe ? 'TODAY.SESSION.LOG_SCORE' : 'TODAY.SESSION.OPEN') | translate }}
+                </a>
+                @if (!session.loggedByMe) {
+                  <button cardActions type="button" hlmBtn size="sm" class="today-log" [disabled]="loggingId() === session.id"
+                          (click)="logSession(session)">
+                    <ng-icon name="heroCheckCircle" aria-hidden="true"/>{{ 'SESSION.ACTIONS.LOG' | translate }}
+                  </button>
+                }
+              </app-session-card>
+            } @empty {
+              <div class="md:col-span-2 flex flex-col items-center gap-3 py-6 text-center">
+                <p class="text-sm text-muted-foreground">{{ 'TODAY.SESSION.EMPTY' | translate }}</p>
+                <div class="flex flex-wrap justify-center gap-2">
+                  <a hlmBtn variant="outline" routerLink="/box/sessions">{{ 'TODAY.SESSION.SEE_WEEK' | translate }}</a>
+                  <a hlmBtn variant="ghost" routerLink="/training/sessions/new">{{ 'TODAY.SESSION.PERSONAL' | translate }}</a>
+                </div>
+              </div>
+            }
+          </div>
+        }
       </div>
     </section>
 

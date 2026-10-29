@@ -1,9 +1,9 @@
 package apex.stellar.aldebaran.security;
 
 import apex.stellar.aldebaran.model.enums.Division;
-import org.jspecify.annotations.Nullable;
 import java.util.Optional;
 import java.util.Set;
+import org.jspecify.annotations.Nullable;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -23,6 +23,8 @@ public class SecurityService {
 
   /** Permission to log and correct scores of other athletes in a gym. */
   public static final String SCORE_VERIFY = "SCORE_VERIFY";
+
+  public static final String MANAGE_SETTINGS = "MANAGE_SETTINGS";
 
   private static final String ADMIN = "ADMIN";
 

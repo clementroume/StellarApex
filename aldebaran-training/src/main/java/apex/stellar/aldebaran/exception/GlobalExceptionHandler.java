@@ -143,6 +143,23 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
   }
 
   /**
+   * Handles {@link InvalidSessionException} when a session breaks one of its rules (composition,
+   * visibility, journal). Returns 400 Bad Request.
+   */
+  @ApiResponse(
+      responseCode = "400",
+      description = "Invalid session (e.g. WOD session without a Skill block, policy not allowed)",
+      content = @Content(schema = @Schema(implementation = ProblemDetail.class)))
+  @ExceptionHandler(InvalidSessionException.class)
+  public ResponseEntity<@NonNull ProblemDetail> handleInvalidSession(
+      InvalidSessionException ex, HttpServletRequest request, Locale locale) {
+
+    log.warn("Invalid session: {}", ex.getMessage());
+    String message = getLocalizedMessage(ex.getMessageKey(), ex.getArgs(), locale);
+    return createProblemResponse(HttpStatus.BAD_REQUEST, "Invalid Session", message, request);
+  }
+
+  /**
    * Handles {@link AntaresUnavailableException} when Antares cannot confirm a fact needed to
    * authorize the request. The request is refused: 503 Service Unavailable.
    */

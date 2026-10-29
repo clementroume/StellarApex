@@ -5,6 +5,7 @@ import apex.stellar.aldebaran.dto.ScoreComparisonResponse;
 import apex.stellar.aldebaran.dto.ScoreReferenceData;
 import apex.stellar.aldebaran.dto.ScoreRequest;
 import apex.stellar.aldebaran.dto.ScoreResponse;
+import apex.stellar.aldebaran.dto.ScoreSetRequest;
 import apex.stellar.aldebaran.dto.WodResponse;
 import apex.stellar.aldebaran.exception.AntaresUnavailableException;
 import apex.stellar.aldebaran.exception.InvalidScoreException;
@@ -12,10 +13,16 @@ import apex.stellar.aldebaran.exception.ResourceNotFoundException;
 import apex.stellar.aldebaran.mapper.ScoreMapper;
 import apex.stellar.aldebaran.model.entities.Score;
 import apex.stellar.aldebaran.model.entities.Score.ScalingLevel;
+import apex.stellar.aldebaran.model.entities.ScoreSet;
+import apex.stellar.aldebaran.model.entities.Session;
+import apex.stellar.aldebaran.model.entities.SessionLog;
 import apex.stellar.aldebaran.model.entities.Wod;
 import apex.stellar.aldebaran.model.entities.Wod.ScoreType;
 import apex.stellar.aldebaran.model.enums.Division;
+import apex.stellar.aldebaran.model.enums.Unit;
 import apex.stellar.aldebaran.repository.ScoreRepository;
+import apex.stellar.aldebaran.repository.SessionBlockRepository;
+import apex.stellar.aldebaran.repository.SessionLogRepository;
 import apex.stellar.aldebaran.repository.WodRepository;
 import apex.stellar.aldebaran.security.SecurityService;
 import java.time.LocalDateTime;
@@ -54,6 +61,9 @@ public class ScoreService {
   private final SecurityService securityService;
   private final WodService wodService;
   private final AntaresClient antaresClient;
+  private final SessionLogRepository sessionLogRepository;
+  private final SessionBlockRepository sessionBlockRepository;
+  private final SessionLogService sessionLogService;
 
   /**
    * Retrieves a paginated list of scores for the currently authenticated user.
@@ -105,10 +115,15 @@ public class ScoreService {
     newScore.setLoggedAt(LocalDateTime.now());
     newScore.setLoggedBy(currentUserId);
     newScore.setDivision(divisionOf(targetUserId, currentUserId));
-    if (wod.isCompetition() && !Objects.equals(targetUserId, currentUserId)) {
+    boolean judged = wod.isCompetition() && !Objects.equals(targetUserId, currentUserId);
+    newScore.setVerificationRequested(
+        wod.isCompetition() && (judged || request.verificationRequested()));
+    if (judged) {
       newScore.setVerifiedBy(currentUserId);
       newScore.setVerifiedAt(LocalDateTime.now());
     }
+    attachToSession(newScore, wod, request.sessionLogId(), targetUserId, currentUserId);
+    applySets(newScore, request, wod);
     normalizeAndCheck(newScore, wod);
 
     Score savedScore = scoreRepository.save(newScore);
@@ -159,6 +174,24 @@ public class ScoreService {
 
     scoreMapper.updateEntity(request, existingScore);
     existingScore.setGymId(wod.getGymId() != null ? wod.getGymId() : request.gymId());
+    if (wod.isCompetition() && !existingScore.isVerified()) {
+      existingScore.setVerificationRequested(
+          request.verificationRequested()
+              || !Objects.equals(existingScore.getLoggedBy(), existingScore.getUserId()));
+    }
+    if (existingScore.getSessionLogId() != null) {
+      // A score stays in its journal: same day and gym as the journal
+      sessionLogRepository
+          .findById(existingScore.getSessionLogId())
+          .ifPresent(
+              journal -> {
+                existingScore.setDate(journal.getDate());
+                if (wod.getGymId() == null) {
+                  existingScore.setGymId(journal.getGymId());
+                }
+              });
+    }
+    applySets(existingScore, request, wod);
     normalizeAndCheck(existingScore, wod);
 
     Score savedScore = scoreRepository.save(existingScore);
@@ -205,6 +238,9 @@ public class ScoreService {
             .orElseThrow(() -> new ResourceNotFoundException(ERROR_SCORE_NOT_FOUND, scoreId));
     if (!score.getWod().isCompetition()) {
       throw new InvalidScoreException("error.score.verify.not.competition");
+    }
+    if (verified && !score.isVerificationRequested()) {
+      throw new InvalidScoreException("error.score.verify.not.requested");
     }
 
     score.setVerifiedBy(verified ? securityService.getCurrentUserId() : null);
@@ -326,6 +362,109 @@ public class ScoreService {
     int from = (int) Math.min(pageable.getOffset(), ranked.size());
     int to = Math.min(from + pageable.getPageSize(), ranked.size());
     return new SliceImpl<>(ranked.subList(from, to), pageable, to < ranked.size());
+  }
+
+  /**
+   * Retrieves the scores of a competition WOD submitted for verification and not verified yet
+   * (judge queue), oldest first.
+   *
+   * @param wodId The competition WOD.
+   * @return The scores waiting for a judge.
+   */
+  @Transactional(readOnly = true)
+  public List<ScoreResponse> getVerificationQueue(Long wodId) {
+    wodService.getWodDetail(wodId); // 404 for an unknown WOD
+    return scoreRepository.findVerificationQueue(wodId).stream()
+        .map(scoreMapper::toResponse)
+        .toList();
+  }
+
+  /**
+   * Links a score to the athlete's journal of a session. With {@code sessionLogId}, the journal
+   * must be the athlete's and its session must contain the WOD. Without it, a score on a session
+   * WOD joins the athlete's journal of that session, created when missing ("Séance faite" implied,
+   * e.g. a judge logging a competition score). The score takes the journal's day and gym.
+   *
+   * @throws InvalidScoreException if the journal is another athlete's or its session lacks the WOD.
+   */
+  private void attachToSession(
+      Score score, Wod wod, Long sessionLogId, Long targetUserId, Long currentUserId) {
+    SessionLog journal;
+    if (sessionLogId != null) {
+      journal =
+          sessionLogRepository
+              .findById(sessionLogId)
+              .orElseThrow(
+                  () -> new ResourceNotFoundException("error.session.log.not.found", sessionLogId));
+      if (!Objects.equals(journal.getUserId(), targetUserId)
+          || !sessionBlockRepository.existsBySessionIdAndWodId(
+              journal.getSession().getId(), wod.getId())) {
+        throw new InvalidScoreException("error.score.session.log.mismatch", sessionLogId);
+      }
+    } else if (!wod.isStandalone()) {
+      Session session =
+          sessionBlockRepository
+              .findSessionOwningWod(wod.getId())
+              .orElseThrow(
+                  () -> new ResourceNotFoundException("error.session.not.found", wod.getId()));
+      journal =
+          sessionLogService.findOrCreate(
+              session, targetUserId, score.getDate(), session.getGymId(), currentUserId);
+    } else {
+      return;
+    }
+    score.setSessionLogId(journal.getId());
+    score.setDate(journal.getDate());
+    if (wod.getGymId() == null) {
+      score.setGymId(journal.getGymId());
+    }
+  }
+
+  /**
+   * Replaces the sets of a strength score (D14) and derives its performance from them: the
+   * heaviest complete set for a WEIGHT score (PR and leaderboard unchanged), the sum of reps × load
+   * of the complete sets for a LOAD score.
+   *
+   * @throws InvalidScoreException if the WOD is not scored by load (or NONE), or a load has no
+   *     unit.
+   */
+  private void applySets(Score score, ScoreRequest request, Wod wod) {
+    score.getSets().clear();
+    if (request.sets() == null || request.sets().isEmpty()) {
+      return;
+    }
+    ScoreType type = wod.getScoreType();
+    if (type != ScoreType.WEIGHT && type != ScoreType.LOAD && type != ScoreType.NONE) {
+      throw new InvalidScoreException("error.score.sets.type");
+    }
+    Unit unit = request.weightUnit();
+    boolean anyWeight = request.sets().stream().anyMatch(set -> set.weight() != null);
+    if (anyWeight && unit == null) {
+      throw new InvalidScoreException("error.score.sets.unit.required");
+    }
+    for (ScoreSetRequest set : request.sets()) {
+      score
+          .getSets()
+          .add(
+              ScoreSet.builder()
+                  .reps(set.reps())
+                  .weightKg(set.weight() != null ? unit.toBase(set.weight()) : null)
+                  .completed(set.completed() == null || set.completed())
+                  .build());
+    }
+    if (unit != null) {
+      score.setWeightDisplayUnit(unit);
+    }
+    List<ScoreSet> complete =
+        score.getSets().stream()
+            .filter(set -> set.isCompleted() && set.getReps() > 0 && set.getWeightKg() != null)
+            .toList();
+    if (type == ScoreType.WEIGHT && !complete.isEmpty()) {
+      score.setMaxWeightKg(complete.stream().mapToDouble(ScoreSet::getWeightKg).max().orElseThrow());
+    } else if (type == ScoreType.LOAD && !complete.isEmpty()) {
+      score.setTotalLoadKg(
+          complete.stream().mapToDouble(set -> set.getReps() * set.getWeightKg()).sum());
+    }
   }
 
   /** Retrieves reference data for WOD Score forms. */

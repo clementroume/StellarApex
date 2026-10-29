@@ -43,6 +43,11 @@ export class ScoreService {
     return this.http.delete<ScoreResponse>(this.buildUrl(`/${id}/verify`));
   }
 
+  /** Submitted scores of a competition WOD not verified yet, oldest first (judges). */
+  getVerificationQueue(wodId: number): Observable<ScoreResponse[]> {
+    return this.http.get<ScoreResponse[]>(this.buildUrl(`/verification-queue/${wodId}`));
+  }
+
   compareScore(id: number): Observable<ScoreComparisonResponse> {
     return this.http.get<ScoreComparisonResponse>(this.buildUrl(`/${id}/compare`));
   }

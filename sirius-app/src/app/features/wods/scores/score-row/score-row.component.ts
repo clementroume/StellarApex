@@ -20,6 +20,9 @@ import {formatScore} from '../score.utils';
         <span class="block text-xs text-muted-foreground">
           {{ date() }}
           · {{ 'SCORE.SCALING.' + score().scaling | translate }}
+          @if (score().sets?.length) {
+            · {{ 'SCORE.SETS.SUMMARY' | translate: {count: score().sets?.length} }}
+          }
         </span>
       </span>
       <span class="flex items-center gap-2 shrink-0">
