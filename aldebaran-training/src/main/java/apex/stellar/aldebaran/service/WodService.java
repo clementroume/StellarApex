@@ -263,26 +263,38 @@ public class WodService {
 
     WodRequest copy =
         new WodRequest(
-            source.title(),
-            source.wodType(),
-            source.category(),
-            source.scoreType(),
-            null,
-            request.gymId(),
-            false,
-            request.competition(),
-            source.descriptionEn(),
-            source.descriptionFr(),
-            source.notesEn(),
-            source.notesFr(),
-            source.tiebreakEn(),
-            source.tiebreakFr(),
-            source.timeCapSeconds(),
-            source.repsPerRound(),
-            source.emomInterval(),
-            source.emomRounds(),
-            source.repScheme(),
-            source.movements().stream().map(WodService::toMovementRequest).toList());
+                source.title(),
+                source.wodType(),
+                source.category(),
+                source.scoreType(),
+                null,
+                null,
+                false,
+                false,
+                source.descriptionEn(),
+                source.descriptionFr(),
+                source.notesEn(),
+                source.notesFr(),
+                source.tiebreakEn(),
+                source.tiebreakFr(),
+                source.timeCapSeconds(),
+                source.repsPerRound(),
+                source.emomInterval(),
+                source.emomRounds(),
+                source.repScheme(),
+                List.of(),
+                source.rounds(),
+                source.restSeconds(),
+                source.workSeconds(),
+                source.ladderStart(),
+                source.ladderStep(),
+                source.vestWeight(),
+                source.vestWeightFemale(),
+                source.vestWeightUnit())
+            .ownedBy(
+                request.gymId(),
+                request.competition(),
+                source.movements().stream().map(WodService::toMovementRequest).toList());
 
     Wod saved = create(copy, id, true);
     log.info("Copied WOD id={} into WOD id={} (gym {})", id, saved.getId(), saved.getGymId());
@@ -366,7 +378,8 @@ public class WodService {
         wm.notesFr(),
         wm.scalingOptionsEn(),
         wm.scalingOptionsFr(),
-        wm.sets());
+        wm.sets(),
+        wm.segment());
   }
 
   /**

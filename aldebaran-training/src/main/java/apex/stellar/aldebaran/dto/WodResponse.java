@@ -4,6 +4,7 @@ import apex.stellar.aldebaran.model.entities.Wod.ScoreType;
 import apex.stellar.aldebaran.model.entities.Wod.WodCategory;
 import apex.stellar.aldebaran.model.entities.Wod.WodType;
 import apex.stellar.aldebaran.model.enums.Category.Modality;
+import apex.stellar.aldebaran.model.enums.Unit;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Set;
@@ -44,6 +45,14 @@ public record WodResponse(
     Integer emomInterval,
     Integer emomRounds,
     String repScheme,
+    Integer rounds,
+    Integer restSeconds,
+    Integer workSeconds,
+    Integer ladderStart,
+    Integer ladderStep,
+    Double vestWeight,
+    Double vestWeightFemale,
+    Unit vestWeightUnit,
     Set<Modality> modalities,
     List<WodMovementResponse> movements,
 
@@ -84,6 +93,14 @@ public record WodResponse(
         emomInterval,
         emomRounds,
         repScheme,
+        rounds,
+        restSeconds,
+        workSeconds,
+        ladderStart,
+        ladderStep,
+        vestWeight,
+        vestWeightFemale,
+        vestWeightUnit,
         modalities,
         movements,
         createdAt,

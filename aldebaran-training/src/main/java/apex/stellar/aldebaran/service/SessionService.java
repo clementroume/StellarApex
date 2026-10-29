@@ -453,27 +453,7 @@ public class SessionService {
 
   /** The WOD of a block belongs to the session's gym, is never public, competition as asked. */
   private static WodRequest ownedBy(WodRequest wod, Long gymId, boolean competition) {
-    return new WodRequest(
-        wod.title(),
-        wod.wodType(),
-        wod.category(),
-        wod.scoreType(),
-        null,
-        gymId,
-        false,
-        competition,
-        wod.descriptionEn(),
-        wod.descriptionFr(),
-        wod.notesEn(),
-        wod.notesFr(),
-        wod.tiebreakEn(),
-        wod.tiebreakFr(),
-        wod.timeCapSeconds(),
-        wod.repsPerRound(),
-        wod.emomInterval(),
-        wod.emomRounds(),
-        wod.repScheme(),
-        wod.movements());
+    return wod.ownedBy(gymId, competition, wod.movements());
   }
 
   /**

@@ -26,12 +26,15 @@ public interface SessionRepository extends JpaRepository<Session, Long> {
   /**
    * Retrieves the sessions whose frame the user reads, with optional combinable filters.
    *
-   * <p><b>Security clause:</b> admin OR personal session of the user OR session of one of the
-   * user's gyms (any role: the frame of a gym session is known in advance; its content is filtered
-   * per session by the service).
+   * <p><b>Security clause:</b> personal session of the user OR session of one of the user's gyms
+   * (any role: the frame of a gym session is known in advance; its content is filtered per session
+   * by the service). A platform admin lists another gym's sessions only when asking for that gym
+   * ({@code gymId}): lists stay those of the admin's own gyms (Today, week, journal), the admin
+   * bypass serving support on a chosen gym or session.
    *
-   * <p><b>Scopes:</b> {@code ALL} everything readable, {@code MINE} the user's personal sessions,
-   * {@code GYM} the sessions of the member gyms (admins: any gym), narrowed to {@code gymId}.
+   * <p><b>Scopes:</b> {@code ALL} everything listed, {@code MINE} the user's personal sessions,
+   * {@code GYM} the sessions of the member gyms (admins: the requested gym too), narrowed to
+   * {@code gymId}.
    *
    * <p>{@code from} / {@code to} keep the sessions proposed on at least one day of the range (a
    * specialty covers its whole week); never null ({@link #NO_START} / {@link #NO_END}).
@@ -41,16 +44,16 @@ public interface SessionRepository extends JpaRepository<Session, Long> {
   @Query(
       """
       SELECT s FROM Session s WHERE
-      (:isAdmin = true
-         OR (s.gymId IS NULL AND s.authorId = :userId)
-         OR s.gymId IN :memberGymIds)
+      ((s.gymId IS NULL AND s.authorId = :userId)
+         OR s.gymId IN :memberGymIds
+         OR (:isAdmin = true AND s.gymId = :gymId))
       AND s.endDate >= :from
       AND s.date <= :to
       AND (:type IS NULL OR s.type = :type)
       AND (:scope = 'ALL'
          OR (:scope = 'MINE' AND s.gymId IS NULL AND s.authorId = :userId)
          OR (:scope = 'GYM'
-             AND (s.gymId IN :memberGymIds OR (:isAdmin = true AND s.gymId IS NOT NULL))
+             AND s.gymId IS NOT NULL
              AND (:gymId IS NULL OR s.gymId = :gymId)))
       """)
   Slice<Session> findSecure(

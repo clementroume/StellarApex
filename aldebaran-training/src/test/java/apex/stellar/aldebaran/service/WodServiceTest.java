@@ -642,7 +642,7 @@ class WodServiceTest {
     WodMovementResponse sourceMovement =
         new WodMovementResponse(
             3L, movementDto, 1, "21-15-9", 43.0, 29.0, null, null, null, null, null, null, null,
-            null, null, null, Set.of(), Set.of(), null, null, null, null, null);
+            null, null, null, Set.of(), Set.of(), null, null, null, null, null, null);
     WodResponse sourceDto = mock(WodResponse.class);
     when(sourceDto.title()).thenReturn("26.1");
     when(sourceDto.movements()).thenReturn(List.of(sourceMovement));

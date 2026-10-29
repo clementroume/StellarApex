@@ -652,4 +652,36 @@ class SessionControllerIT extends BaseIntegrationTest {
             OWNER_MEMBERSHIPS);
     assertEquals("PARTICIPANTS_ONLY", session.get("visibilityPolicy").asString());
   }
+
+  @Test
+  @DisplayName("Admin lists: only the admin's own gyms, another gym on request; direct read allowed")
+  void adminLists() throws Exception {
+    createBoxSession(VisibilityPolicy.AFTER);
+    JsonNode other =
+        create(
+            new SessionRequest(
+                SessionType.SPECIALTY, Discipline.STRENGTH, today, "Mine", null, null, null, null,
+                null, List.of(skill())),
+            ATHLETE,
+            ATHLETE_MEMBERSHIPS);
+
+    // Admin member of another gym: neither the box's sessions nor others' personal ones
+    MockHttpServletRequestBuilder adminList =
+        get("/aldebaran/sessions")
+            .header("X-Auth-User-Id", "9")
+            .header("X-Auth-User-Role", "ADMIN")
+            .header("X-Auth-Memberships", "555:OWNER:WOD_WRITE")
+            .header("X-Internal-Secret", "test-internal-secret");
+    mockMvc.perform(adminList).andExpect(jsonPath("$.content", hasSize(0)));
+    mockMvc
+        .perform(adminList.param("scope", "GYM").param("gymId", String.valueOf(BOX)))
+        .andExpect(jsonPath("$.content", hasSize(1)));
+    mockMvc
+        .perform(
+            get("/aldebaran/sessions/" + other.get("id").asLong())
+                .header("X-Auth-User-Id", "9")
+                .header("X-Auth-User-Role", "ADMIN")
+                .header("X-Internal-Secret", "test-internal-secret"))
+        .andExpect(status().isOk());
+  }
 }

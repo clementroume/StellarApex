@@ -6,6 +6,7 @@ import apex.stellar.aldebaran.model.entities.Wod.ScoreType;
 import apex.stellar.aldebaran.model.entities.Wod.WodCategory;
 import apex.stellar.aldebaran.model.entities.Wod.WodType;
 import apex.stellar.aldebaran.model.entities.WodMovement;
+import apex.stellar.aldebaran.model.entities.WodMovement.Segment;
 import apex.stellar.aldebaran.model.enums.Unit;
 import java.io.IOException;
 import java.io.Reader;
@@ -59,7 +60,16 @@ public final class WodCsvCodec {
     // Optional trailing columns (official tiebreak, reps of a fixed AMRAP round)
     "tiebreak_en",
     "tiebreak_fr",
-    "reps_per_round"
+    "reps_per_round",
+    // Structure of the quick editor (rounds, rest, intervals, ascending ladder, weight vest)
+    "rounds",
+    "rest_seconds",
+    "work_seconds",
+    "ladder_start",
+    "ladder_step",
+    "vest_weight",
+    "vest_weight_female",
+    "vest_weight_unit"
   };
 
   static final String[] WOD_MOVEMENT_HEADERS = {
@@ -85,7 +95,10 @@ public final class WodCsvCodec {
     "calories_female",
     "height",
     "height_female",
-    "height_unit"
+    "height_unit",
+    // Sets of strength work, part of the WOD (BUY_IN / MAIN / BUY_OUT, blank = MAIN)
+    "sets",
+    "segment"
   };
 
   /** Separator of the equipment / technique lists (free text, so not a comma). */
@@ -130,6 +143,14 @@ public final class WodCsvCodec {
               .tiebreakEn(text(row, "tiebreak_en"))
               .tiebreakFr(text(row, "tiebreak_fr"))
               .repsPerRound(integer(row, "reps_per_round"))
+              .rounds(integer(row, "rounds"))
+              .restSeconds(integer(row, "rest_seconds"))
+              .workSeconds(integer(row, "work_seconds"))
+              .ladderStart(integer(row, "ladder_start"))
+              .ladderStep(integer(row, "ladder_step"))
+              .vestWeight(decimal(row, "vest_weight"))
+              .vestWeightFemale(decimal(row, "vest_weight_female"))
+              .vestWeightUnit(unit(row, "vest_weight_unit"))
               .isPublic(true)
               .authorId(null)
               .gymId(null)
@@ -182,6 +203,8 @@ public final class WodCsvCodec {
               .heightUnit(unit(row, "height_unit"))
               .equipment(list(row, "equipment"))
               .techniques(list(row, "techniques"))
+              .sets(integer(row, "sets"))
+              .segment(segment(row))
               .build();
       wodMovement.checkVariantsAllowed(
           movement.getName(), movement.getEquipment(), movement.getTechniques());
@@ -225,7 +248,15 @@ public final class WodCsvCodec {
             w.getNotesFr(),
             w.getTiebreakEn(),
             w.getTiebreakFr(),
-            w.getRepsPerRound());
+            w.getRepsPerRound(),
+            w.getRounds(),
+            w.getRestSeconds(),
+            w.getWorkSeconds(),
+            w.getLadderStart(),
+            w.getLadderStep(),
+            w.getVestWeight(),
+            w.getVestWeightFemale(),
+            name(w.getVestWeightUnit()));
 
         List<WodMovement> movements = new ArrayList<>(w.getMovements());
         movements.sort(Comparator.comparing(WodMovement::getOrderIndex));
@@ -252,7 +283,9 @@ public final class WodCsvCodec {
               wm.getCaloriesFemale(),
               wm.getHeight(),
               wm.getHeightFemale(),
-              name(wm.getHeightUnit()));
+              name(wm.getHeightUnit()),
+              wm.getSets(),
+              wm.getSegment() == Segment.MAIN ? null : wm.getSegment().name());
         }
       }
     }
@@ -308,6 +341,12 @@ public final class WodCsvCodec {
     return "ROUNDS_REPS".equals(value) ? ScoreType.REPS : ScoreType.valueOf(value);
   }
 
+  /** Part of the WOD; blank (or a file without the column) means the rounds. */
+  private static Segment segment(CSVRecord row) {
+    String value = text(row, "segment");
+    return value == null ? Segment.MAIN : Segment.valueOf(value.trim().toUpperCase());
+  }
+
   private static Integer integer(CSVRecord row, String header) {
     String value = text(row, header);
     return value == null ? null : Integer.valueOf(value.trim());
@@ -320,7 +359,12 @@ public final class WodCsvCodec {
 
   private static WodCategory category(CSVRecord row) {
     String value = text(row, "category");
-    return value == null ? null : WodCategory.valueOf(value.trim().toUpperCase());
+    if (value == null) {
+      return null;
+    }
+    String name = value.trim().toUpperCase();
+    // The former "box benchmark" category no longer exists (V13)
+    return "CUSTOM_BENCHMARK".equals(name) ? null : WodCategory.valueOf(name);
   }
 
   private static Unit unit(CSVRecord row, String header) {
