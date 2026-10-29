@@ -38,7 +38,9 @@ resolving IDs from the `antares` schema with `JdbcTemplate`, then calls `config/
   and `ScoreSecurity.canCreate`). Time-based rules use the `Clock` bean (`config/ClockConfig`, UTC)
   and the gym's zone (`SessionSettingsService.zoneOf`). Session WODs are created / updated / deleted
   only through `WodService.*SessionWod` from `SessionService`. A journal locks its session
-  (`WodLockedException` → 409). PostgreSQL cannot type a null date parameter: pass
+  (`WodLockedException` → 409). `@PastOrPresent` dates (scores, journals) are checked against the
+  application clock shifted to UTC+14 (`config/ValidationClockConfig`): clients send the athlete's local
+  day, the server runs in UTC. PostgreSQL cannot type a null date parameter: pass
   `SessionRepository.NO_START` / `NO_END` instead of null.
 - Per-user flags for the UI (`WodCapabilities`, `ScoreCapabilities`) are computed by
   `service/WodCapabilityService` / `ScoreCapabilityService` per request, never inside cached methods
