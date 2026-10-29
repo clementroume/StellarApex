@@ -10,29 +10,22 @@ import {WOD_PAGE_SIZE, WOD_SEARCH_DEBOUNCE_MS, WodListComponent} from './wod-lis
 import {WodService} from '../../../api/aldebaran/services/wod.service';
 import {AccessService} from '../../../core/services/access.service';
 import {ExporterService} from '../../../api/aldebaran/services/exporter.service';
-import {AdminService} from '../../../api/antares/services/admin.service';
 import {BYPASS_LOADER} from '../../../core/interceptors/loading.interceptor';
 import {APP_ICONS} from '../../../app.config';
 import {WodSummaryResponse} from '../../../api/aldebaran/models/wod.model';
-import {MembershipSummary} from '../../../api/antares/models/membership.model';
 import {Slice} from '../../../core/models/pagination.model';
 
 describe('WodListComponent', () => {
   let component: WodListComponent;
   let fixture: ComponentFixture<WodListComponent>;
   let mockWodService: any;
-  let memberships: WritableSignal<MembershipSummary[]>;
   let isAdmin: WritableSignal<boolean>;
   let mockExporterService: any;
-  let mockAdminService: any;
-  let writableGymIds: number[];
 
   const fran: WodSummaryResponse = {id: 1, title: 'Fran', wodType: 'FOR_TIME', scoreType: 'TIME', repScheme: '21-15-9', timeCapSeconds: 600, gymId: 5, isPublic: false, competition: false, createdAt: ''};
   const cindy: WodSummaryResponse = {id: 2, title: 'Cindy', wodType: 'AMRAP', scoreType: 'ROUNDS_REPS', isPublic: true, competition: false, createdAt: ''};
   const grace: WodSummaryResponse = {id: 3, title: 'Grace', wodType: 'FOR_TIME', scoreType: 'TIME', authorId: 1, isPublic: false, competition: false, createdAt: ''};
 
-  const box: MembershipSummary = {gymId: 5, gymName: 'Box', gymStatus: 'ACTIVE', gymRole: 'ATHLETE', status: 'ACTIVE', permissions: [], gymProgramming: false, usable: true};
-  const zeus: MembershipSummary = {gymId: 7, gymName: 'Zeus', gymStatus: 'ACTIVE', gymRole: 'ATHLETE', status: 'ACTIVE', permissions: [], gymProgramming: false, usable: true};
 
   const slice = (content: WodSummaryResponse[], last: boolean, number = 0): Slice<WodSummaryResponse> => ({
     content, last, first: number === 0, size: WOD_PAGE_SIZE, number, numberOfElements: content.length, empty: content.length === 0
@@ -50,10 +43,9 @@ describe('WodListComponent', () => {
         {provide: WodService, useValue: mockWodService},
         {
           provide: AccessService,
-          useValue: {memberships, isAdmin, hasGymPermission: (gymId: number) => writableGymIds.includes(gymId)}
+          useValue: {isAdmin}
         },
-        {provide: ExporterService, useValue: mockExporterService},
-        {provide: AdminService, useValue: mockAdminService}
+        {provide: ExporterService, useValue: mockExporterService}
       ]
     }).compileComponents();
 
@@ -69,20 +61,11 @@ describe('WodListComponent', () => {
       refreshNeeded$: new Subject<void>(),
       savedSearchQuery: signal(''),
       savedTypeFilter: signal(''),
-      savedCategoryFilter: signal(''),
-      savedScopeTab: signal(''),
-      savedAdminGymId: signal<number | null>(null),
-      savedAdminAuthorId: signal<number | null>(null)
+      savedCategoryFilter: signal('')
     };
     mockWodService.getWods.mockReturnValue(of(slice([fran, cindy], false)));
     mockWodService.getFacets.mockReturnValue(of({wodTypes: ['AMRAP', 'FOR_TIME'], gymIds: [5, 9], authorIds: [77]}));
-    memberships = signal([box, zeus]);
     isAdmin = signal(false);
-    writableGymIds = [];
-    mockAdminService = {
-      searchGyms: vi.fn().mockReturnValue(of({content: [{id: 5, name: 'Box'}, {id: 9, name: 'Atlas'}], last: true})),
-      lookupUsers: vi.fn().mockReturnValue(of([{id: 77, firstName: 'Ann', lastName: 'Thlete', email: 'ann@x.com'}]))
-    };
     mockExporterService = {
       exportWods: vi.fn().mockName('ExporterService.exportWods').mockReturnValue(of('ok')),
       executeCsvExport: vi.fn().mockName('ExporterService.executeCsvExport')
@@ -93,49 +76,17 @@ describe('WodListComponent', () => {
     vi.useRealTimers();
   });
 
-  describe('with gym memberships', () => {
-    beforeEach(async () => create());
-
-    it('should load the first page of the first gym, bypassing the global loader', () => {
-      expect(component.wodTypes()).toEqual(['AMRAP', 'FOR_TIME']);
-      expect(mockWodService.getFacets).toHaveBeenCalledWith({scope: 'GYM', gymId: 5, search: undefined}, expect.anything());
-      const args = mockWodService.getWods.mock.lastCall as any[];
-      expect(args[0]).toEqual({search: undefined, type: undefined, scope: 'GYM', gymId: 5});
-      expect(args.slice(1, 3)).toEqual([0, WOD_PAGE_SIZE]);
-      expect((args[3] as HttpContext).get(BYPASS_LOADER)).toBe(true);
-      expect(component.wods()).toEqual([fran, cindy]);
-      expect(component.hasMore()).toBe(true);
+  describe('public catalogue', () => {
+    beforeEach(async () => {
+      await create();
     });
 
-    it('should expose one tab per gym between "All" and the personal/public tabs', () => {
-      expect(component.scopeTabs().map(t => t.key)).toEqual(['ALL', 'GYM:5', 'GYM:7', 'MINE', 'PUBLIC']);
-      expect(component.scopeTabs()[1]).toMatchObject({label: 'Box', translate: false, gymId: 5});
-    });
-
-    it('should render WODs with their visibility', () => {
-      const text = fixture.nativeElement.textContent;
-      expect(text).toContain('Fran');
-      expect(text).toContain('Box');
-      expect(text).toContain('WOD.VISIBILITY.PUBLIC');
-    });
-
-    it('should reload with the selected scope and remember it', () => {
-      component.onScopeChange('GYM:7');
-      expect(lastFilters()).toMatchObject({scope: 'GYM', gymId: 7});
-      expect(mockWodService.savedScopeTab()).toBe('GYM:7');
-
-      component.onScopeChange('MINE');
-      expect(lastFilters()).toMatchObject({scope: 'MINE'});
-      expect(lastFilters().gymId).toBeUndefined();
-
-      component.onScopeChange('PUBLIC');
+    it('should load the first page of the public WODs, bypassing the global loader', () => {
       expect(lastFilters()).toMatchObject({scope: 'PUBLIC'});
-    });
-
-    it('should not reload when selecting the current scope', () => {
-      mockWodService.getWods.mockClear();
-      component.onScopeChange('GYM:5');
-      expect(mockWodService.getWods).not.toHaveBeenCalled();
+      const context = (mockWodService.getWods.mock.lastCall as any[])[3] as HttpContext;
+      expect(context.get(BYPASS_LOADER)).toBe(true);
+      expect(mockWodService.getFacets.mock.lastCall[0]).toMatchObject({scope: 'PUBLIC'});
+      expect(component.wods()).toEqual([fran, cindy]);
     });
 
     it('should append the next page on loadMore and stop when the last page is reached', () => {
@@ -202,26 +153,20 @@ describe('WodListComponent', () => {
     });
   });
 
-  describe('without membership', () => {
-    beforeEach(async () => {
-      memberships.set([]);
+  describe('dynamic WOD types', () => {
+    it('should drop a selected type that the new filters no longer return', async () => {
       await create();
+      component.onTypeChange('AMRAP');
+      mockWodService.getFacets.mockReturnValue(of({wodTypes: ['HERO'], gymIds: [], authorIds: []}));
+      mockWodService.getWods.mockClear();
+
+      component.onSearchChange('x');
+      component.reload();
+
+      expect(component.wodTypes()).toEqual(['HERO']);
+      expect(component.typeFilter()).toBe('');
+      expect(lastFilters().type).toBeUndefined();
     });
-
-    it('should default to all WODs', () => {
-      expect(component.scopeTabs().map(t => t.key)).toEqual(['ALL', 'MINE', 'PUBLIC']);
-      expect(lastFilters()).toMatchObject({scope: 'ALL'});
-      expect(lastFilters().gymId).toBeUndefined();
-    });
-  });
-
-  it('should restore a remembered scope tab and fall back when it no longer exists', async () => {
-    mockWodService.savedScopeTab.set('GYM:99');
-    await create();
-    expect(component.activeScopeTab().key).toBe('GYM:5');
-
-    mockWodService.savedScopeTab.set('PUBLIC');
-    expect(component.activeScopeTab().key).toBe('PUBLIC');
   });
 
   describe('CSV export', () => {
@@ -244,79 +189,11 @@ describe('WodListComponent', () => {
     });
   });
 
-  describe('dynamic WOD types', () => {
-    it('should drop a selected type that the new filters no longer return', async () => {
-      await create();
-      component.onTypeChange('AMRAP');
-      mockWodService.getFacets.mockReturnValue(of({wodTypes: ['HERO'], gymIds: [], authorIds: []}));
-      mockWodService.getWods.mockClear();
-
-      component.onScopeChange('PUBLIC');
-
-      expect(component.wodTypes()).toEqual(['HERO']);
-      expect(component.typeFilter()).toBe('');
-      expect(lastFilters()).toMatchObject({scope: 'PUBLIC'});
-      expect(lastFilters().type).toBeUndefined();
-    });
-  });
-
-  describe('contextual create button', () => {
-    it('should create a gym WOD on a gym tab where the user programs WODs', async () => {
-      writableGymIds = [5];
-      await create();
-      expect(component.createTarget()).toEqual({labelKey: 'WOD.ACTIONS.ADD_FOR_GYM', gymName: 'Box', queryParams: {gymId: 5}});
-    });
-
-    it('should create a personal WOD on a gym tab without programming rights and on "Mine"', async () => {
-      await create();
-      expect(component.createTarget()).toEqual({labelKey: 'WOD.ACTIONS.ADD_PERSONAL', queryParams: {visibility: 'PRIVATE'}});
-
-      component.onScopeChange('MINE');
-      expect(component.createTarget().labelKey).toBe('WOD.ACTIONS.ADD_PERSONAL');
-
-      component.onScopeChange('ALL');
-      expect(component.createTarget()).toEqual({labelKey: 'WOD.ACTIONS.ADD', queryParams: {}});
-    });
-  });
-
-  describe('admin selectors', () => {
-    beforeEach(async () => {
-      isAdmin.set(true);
-      memberships.set([]);
-      await create();
-    });
-
-    it('should offer every gym and athlete from the facets, with their names', () => {
-      expect(component.showAdminFilters()).toBe(true);
-      expect(component.adminGyms()).toEqual([{id: 9, name: 'Atlas'}, {id: 5, name: 'Box'}]);
-      expect(mockAdminService.lookupUsers).toHaveBeenCalledWith([77]);
-      expect(component.adminAuthors().map(a => a.id)).toEqual([77]);
-      expect(fixture.nativeElement.textContent).toContain('Ann Thlete');
-    });
-
-    it('should list a gym or an athlete, never both', () => {
-      component.onAdminGymChange('9');
-      expect(lastFilters()).toMatchObject({scope: 'GYM', gymId: 9});
-
-      component.onAdminAuthorChange('77');
-      expect(component.adminGymId()).toBeNull();
-      expect(lastFilters()).toMatchObject({scope: 'ALL', authorId: 77});
-      expect(lastFilters().gymId).toBeUndefined();
-
-      component.onAdminAuthorChange('');
-      expect(lastFilters()).toMatchObject({scope: 'ALL'});
-      expect(lastFilters().authorId).toBeUndefined();
-    });
-
-    it('should hide the selectors outside the "All" tab', () => {
-      component.onScopeChange('PUBLIC');
-      expect(component.showAdminFilters()).toBe(false);
-    });
-  });
-
-  it('should not query admin data for regular users', async () => {
+  it('should let only admins create a public WOD', async () => {
     await create();
-    expect(mockAdminService.searchGyms).not.toHaveBeenCalled();
-    expect(mockAdminService.lookupUsers).not.toHaveBeenCalled();
+    expect(fixture.nativeElement.textContent).not.toContain('WOD.ACTIONS.ADD_PUBLIC');
+    isAdmin.set(true);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).toContain('WOD.ACTIONS.ADD_PUBLIC');
   });
 });

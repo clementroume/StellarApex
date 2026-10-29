@@ -1,0 +1,138 @@
+@if (isLoading()) {
+  <div class="flex justify-center py-16"><hlm-spinner class="text-3xl text-primary" [aria-label]="'GLOBAL.LOADING' | translate"/></div>
+} @else if (session(); as s) {
+  <app-page [title]="heading()" [subtitle]="dateLabel()">
+    @if (s.capabilities.canModify) {
+      @if (!s.capabilities.locked) {
+        <a pageActions hlmBtn variant="outline" size="lg" id="edit-session" [routerLink]="editLink()">
+          <ng-icon name="heroPencilSquare" aria-hidden="true"/>{{ 'GLOBAL.EDIT' | translate }}
+        </a>
+      }
+      @if (s.visibilityPolicy) {
+        <button pageActions type="button" hlmBtn variant="outline" size="lg" id="edit-visibility" (click)="openVisibility()">
+          <ng-icon name="heroEye" aria-hidden="true"/>{{ 'SESSION.ACTIONS.VISIBILITY' | translate }}
+        </button>
+      }
+      @if (!s.capabilities.locked) {
+        <button pageActions type="button" hlmBtn variant="destructive" size="lg" id="delete-session" (click)="confirmDelete.set(true)">
+          <ng-icon name="heroTrash" aria-hidden="true"/>{{ 'GLOBAL.DELETE' | translate }}
+        </button>
+      }
+    }
+
+    <div class="mb-6 flex flex-wrap items-center gap-2">
+      <span hlmBadge variant="secondary">{{ 'SESSION.DISCIPLINES.' + s.discipline | translate }}</span>
+      @if (gymName(); as name) {
+        <span hlmBadge class="bg-info/15 text-info gap-1"><ng-icon name="heroBuildingOffice" aria-hidden="true"/>{{ name }}</span>
+      } @else if (s.gymId == null) {
+        <span hlmBadge variant="outline" class="gap-1"><ng-icon name="heroLockClosed" aria-hidden="true"/>{{ 'SESSION.PERSONAL' | translate }}</span>
+      }
+      @if (s.visibilityPolicy && s.capabilities.canModify) {
+        <span hlmBadge variant="outline" id="visibility-badge">{{ 'SESSION.POLICIES.' + s.visibilityPolicy + '.LABEL' | translate }}</span>
+      }
+      @if (s.capabilities.locked && s.capabilities.canModify) {
+        <span hlmBadge class="bg-warning/15 text-warning gap-1" [title]="'SESSION.MESSAGES.LOCKED' | translate">
+          <ng-icon name="heroLockClosed" aria-hidden="true"/>{{ 'SESSION.LOCKED' | translate }}
+        </span>
+      }
+    </div>
+
+    <!-- Journal: "Séance faite" or the user's journal -->
+    <section class="mb-6 rounded-xl border p-4 flex flex-col gap-3" [class.bg-success/10]="log()" aria-live="polite">
+      @if (log(); as l) {
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <p class="flex items-center gap-2 font-semibold text-success">
+            <ng-icon name="heroCheckCircle" size="1.5rem" aria-hidden="true"/>
+            {{ 'SESSION.LOGGED_ON' | translate: {date: loggedOn()} }}
+          </p>
+          @if (l.scores.length === 0) {
+            <button type="button" hlmBtn variant="ghost" size="sm" id="unlog" (click)="confirmUnlog.set(true)">{{ 'SESSION.ACTIONS.UNLOG' | translate }}</button>
+          }
+        </div>
+        <p class="text-sm text-muted-foreground">{{ 'SESSION.MESSAGES.LOGGED_HINT' | translate }}</p>
+      } @else if (s.capabilities.canLog) {
+        <button type="button" hlmBtn size="lg" id="log-session" class="w-full sm:w-auto sm:self-start h-14 text-base"
+                [disabled]="isLogging()" (click)="logSession()">
+          @if (isLogging()) {
+            <hlm-spinner/>
+          } @else {
+            <ng-icon name="heroCheckCircle" size="1.5rem" aria-hidden="true"/>
+          }
+          {{ 'SESSION.ACTIONS.LOG' | translate }}
+        </button>
+        <p class="text-sm text-muted-foreground">{{ 'SESSION.MESSAGES.LOG_HINT' | translate }}</p>
+      } @else {
+        <p class="text-sm text-muted-foreground">{{ 'SESSION.MESSAGES.NOT_YET' | translate }}</p>
+      }
+    </section>
+
+    @if (!s.capabilities.contentVisible) {
+      <section id="content-hidden" class="mb-6 rounded-xl border border-dashed p-6 flex flex-col items-center gap-2 text-center">
+        <ng-icon name="heroLockClosed" size="2rem" class="text-muted-foreground" aria-hidden="true"/>
+        <p class="font-semibold">{{ 'SESSION.HIDDEN_TITLE' | translate }}</p>
+        <p class="text-sm text-muted-foreground">
+          @if (s.visibilityPolicy === 'PARTICIPANTS_ONLY' || (s.visibilityPolicy === 'AFTER_PARTICIPANTS' && !log())) {
+            {{ 'SESSION.POLICIES.' + s.visibilityPolicy + '.HIDDEN' | translate: {date: opensAt()} }}
+          } @else if (opensAt(); as at) {
+            {{ 'SESSION.OPENS_AT' | translate: {date: at} }}
+          }
+        </p>
+      </section>
+    }
+
+    @if (description()) {
+      <p class="mb-6 whitespace-pre-line leading-relaxed">{{ description() }}</p>
+    }
+
+    <ol class="flex flex-col gap-4">
+      @for (block of s.blocks; track block.id) {
+        <li>
+          @if (s.capabilities.contentVisible) {
+            <app-session-block [block]="block" [log]="log()" (scoresChanged)="reload()"
+                               (doneChange)="setBlockDone(block.id, $event)"/>
+          } @else {
+            <div class="rounded-xl border bg-card p-4 flex flex-col gap-1" [class.text-muted-foreground]="block.optional">
+              <span class="font-semibold">{{ 'SESSION.KINDS.' + block.kind | translate }}
+                @if (block.optional) { <span class="text-sm font-normal">({{ 'SESSION.OPTIONAL' | translate }})</span> }
+              </span>
+              @if (block.themeFr || block.themeEn) {
+                <span class="text-sm">{{ (lang() === 'fr' ? (block.themeFr || block.themeEn) : (block.themeEn || block.themeFr)) }}</span>
+              }
+            </div>
+          }
+        </li>
+      }
+    </ol>
+  </app-page>
+
+  <app-confirm-dialog [open]="confirmDelete()" [destructive]="true"
+                      [title]="'SESSION.DELETE_TITLE' | translate" [description]="'SESSION.DELETE_DESC' | translate"
+                      [confirmLabel]="'GLOBAL.DELETE' | translate"
+                      (confirmed)="deleteSession()" (closed)="confirmDelete.set(false)"/>
+  <app-confirm-dialog [open]="confirmUnlog()" [title]="'SESSION.UNLOG_TITLE' | translate"
+                      [description]="'SESSION.UNLOG_DESC' | translate"
+                      (confirmed)="unlog()" (closed)="confirmUnlog.set(false)"/>
+  <app-confirm-dialog [open]="visibilityDraft() !== null" [title]="'SESSION.ACTIONS.VISIBILITY' | translate"
+                      [description]="'SESSION.VISIBILITY_DESC' | translate" [confirmLabel]="'GLOBAL.SAVE' | translate"
+                      (confirmed)="saveVisibility()" (closed)="visibilityDraft.set(null)">
+    @if (visibilityDraft(); as d) {
+      <div class="flex flex-col gap-3 py-2">
+        <label class="flex flex-col gap-1.5">
+          <span class="text-sm font-medium">{{ 'SESSION.FIELDS.VISIBILITY' | translate }}</span>
+          <select appNativeSelect id="visibility-policy" [ngModel]="d.policy" (ngModelChange)="setDraftPolicy($event)">
+            @for (p of policies(); track p) {
+              <option [value]="p">{{ 'SESSION.POLICIES.' + p + '.LABEL' | translate }}</option>
+            }
+          </select>
+          <span class="text-xs text-muted-foreground">{{ 'SESSION.POLICIES.' + d.policy + '.HINT' | translate }}</span>
+        </label>
+        @if (isTimed(d.policy)) {
+          <label class="flex flex-col gap-1.5">
+            <span class="text-sm font-medium">{{ 'SESSION.FIELDS.VISIBLE_AT' | translate }}</span>
+            <input type="datetime-local" hlmInput class="h-11 md:h-10" [ngModel]="d.at" (ngModelChange)="setDraftAt($event)"/>
+          </label>
+        }
+      </div>
+    }
+  </app-confirm-dialog>
+}

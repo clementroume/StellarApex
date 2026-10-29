@@ -1,9 +1,9 @@
 import {ChangeDetectionStrategy, Component, computed, DestroyRef, DOCUMENT, effect, inject, signal} from '@angular/core';
 import {toSignal} from '@angular/core/rxjs-interop';
-import {FormBuilder, ReactiveFormsModule} from '@angular/forms';
+import {FormBuilder, FormControl, FormGroup, ReactiveFormsModule} from '@angular/forms';
 import {TranslatePipe, TranslateService} from '@ngx-translate/core';
 import {NgIconComponent} from '@ng-icons/core';
-import {ScalingLevel, ScoreRequest, ScoreResponse} from '../../../../api/aldebaran/models/score.model';
+import {ScalingLevel, ScoreRequest, ScoreResponse, ScoreSet} from '../../../../api/aldebaran/models/score.model';
 import {UnitService} from '../../../../core/services/unit.service';
 import {AccessService} from '../../../../core/services/access.service';
 import {GymService} from '../../../../api/antares/services/gym.service';
@@ -11,6 +11,16 @@ import {DisplayName} from '../../../../api/antares/models/user.model';
 import {WodScoresStore} from '../wod-scores.store';
 import {SCALING_LEVELS, splitRounds} from '../score.utils';
 import {formatTimeCapShort, localizedText} from '../../wod.utils';
+
+/** Score types that can be entered set by set (strength work, D14). */
+const SET_SCORE_TYPES = ['WEIGHT', 'LOAD', 'NONE'];
+
+/** One set row of the form: reps, load in the user's unit, done or failed. */
+type SetForm = FormGroup<{
+  reps: FormControl<number | null>;
+  weight: FormControl<number | null>;
+  completed: FormControl<boolean>;
+}>;
 
 /** Units offered for a distance score (stored in meters by Aldebaran). */
 const DISTANCE_UNITS = ['METERS', 'KILOMETERS', 'MILES'];
@@ -77,7 +87,11 @@ export class ScoreFormComponent {
     // Athlete of a new competition score logged by its judge; null = the current user
     athleteId: [null as number | null],
     scalingNotes: [''],
-    userComment: ['']
+    userComment: [''],
+    // Competition WOD: the athlete submits the score to the judges
+    verificationRequested: [false],
+    // Strength sets, set by set (load in the user's unit)
+    sets: this.fb.nonNullable.array<SetForm>([])
   });
 
   // Form value as a signal, so that OnPush follows programmatic changes too (prefill)
@@ -93,13 +107,34 @@ export class ScoreFormComponent {
   });
   readonly scoreType = computed(() => this.store.wod()?.scoreType ?? 'NONE');
   readonly isEdit = computed(() => this.store.editing() !== 'new');
+  /** Logged within a session journal: its day and gym apply. */
+  readonly inSession = computed(() => this.store.sessionLogId() != null);
+  /** Set-by-set entry is offered for loads (and NONE, e.g. accessories). */
+  readonly canUseSets = computed(() => SET_SCORE_TYPES.includes(this.scoreType()));
+  readonly setRows = computed(() => (this.formValue().sets ?? []) as Partial<ScoreSet>[]);
+  readonly useSets = computed(() => this.setRows().length > 0);
+  /** Performance derived from the sets, as Aldebaran computes it (best complete set, or volume). */
+  readonly setsValue = computed(() => {
+    const done = this.setRows().filter(r => r.completed !== false && (r.reps ?? 0) > 0 && r.weight != null);
+    if (done.length === 0) return null;
+    return this.scoreType() === 'LOAD'
+      ? done.reduce((sum, r) => sum + (r.reps ?? 0) * (r.weight ?? 0), 0)
+      : Math.max(...done.map(r => r.weight ?? 0));
+  });
+  /** An athlete may submit their own score on a competition WOD (a judge's score is verified at once). */
+  readonly canSubmit = computed(() => {
+    if (!this.store.wod()?.competition || this.formValue().athleteId != null) return false;
+    const editing = this.store.editing();
+    return editing === 'new' || !editing?.verifiedAt;
+  });
   /** The judge of a competition WOD logs a new score for one of its gym's members. */
   readonly canChooseAthlete = computed(() => !this.isEdit() && !!this.store.wod()?.capabilities?.canJudge);
   readonly myId = computed(() => this.accessService.userId());
   readonly massUnitLabel = computed(() => this.unitService.massUnit() === 'KG' ? 'kg' : 'lb');
   readonly timeCap = computed(() => formatTimeCapShort(this.store.wod()?.timeCapSeconds));
   /** A gym WOD is always scored in its gym; a public or personal WOD in one of the user's gyms. */
-  readonly gymChoices = computed(() => this.store.wod()?.gymId != null ? [] : this.accessService.memberships());
+  readonly gymChoices = computed(() =>
+    this.store.wod()?.gymId != null || this.inSession() ? [] : this.accessService.memberships());
   /** The gym is only asked to members of several gyms; a single gym is used automatically. */
   readonly showGymChoice = computed(() => this.gymChoices().length > 1);
 
@@ -169,6 +204,24 @@ export class ScoreFormComponent {
     this.repsEntry.set(mode);
   }
 
+  /** Starts set-by-set entry with the prescribed sets (e.g. 5 x 5), or adds one more set. */
+  addSet(): void {
+    const sets = this.form.controls.sets;
+    if (sets.length === 0) {
+      const movement = this.store.wod()?.movements?.[0];
+      const reps = Number(movement?.repsScheme);
+      const count = Math.min(Math.max(movement?.sets ?? 1, 1), 20);
+      for (let i = 0; i < count; i++) sets.push(this.setGroup({reps: Number.isInteger(reps) ? reps : null}));
+    } else {
+      const last = sets.at(sets.length - 1).getRawValue();
+      sets.push(this.setGroup({reps: last.reps, weight: last.weight}));
+    }
+  }
+
+  removeSet(index: number): void {
+    this.form.controls.sets.removeAt(index);
+  }
+
   onSubmit(): void {
     const wod = this.store.wod();
     if (!wod || this.isValueMissing() || this.store.isSaving()) return;
@@ -190,7 +243,7 @@ export class ScoreFormComponent {
         return this.byRounds() ? v.rounds == null && v.reps == null : v.reps == null;
       case 'WEIGHT':
       case 'LOAD':
-        return !v.load;
+        return this.useSets() ? this.setsValue() == null : !v.load;
       case 'CALORIES':
         return v.calories == null;
       case 'DISTANCE':
@@ -220,7 +273,27 @@ export class ScoreFormComponent {
       gymId: score.gymId ?? null,
       athleteId: null,
       scalingNotes: score.scalingNotes ?? '',
-      userComment: score.userComment ?? ''
+      userComment: score.userComment ?? '',
+      verificationRequested: !!score.verificationRequested,
+      sets: []
+    });
+    const sets = this.form.controls.sets;
+    sets.clear();
+    for (const set of score.sets ?? []) {
+      sets.push(this.setGroup({
+        reps: set.reps,
+        weight: set.weight != null ? this.unitService.convertScoreLoad(set.weight, score.weightUnit) : null,
+        completed: set.completed
+      }));
+    }
+  }
+
+  /** One set row: reps, load (user's unit), done or failed. */
+  private setGroup(value: {reps?: number | null; weight?: number | null; completed?: boolean} = {}): SetForm {
+    return new FormGroup({
+      reps: new FormControl<number | null>(value.reps ?? null),
+      weight: new FormControl<number | null>(value.weight ?? null),
+      completed: new FormControl<boolean>(value.completed ?? true, {nonNullable: true})
     });
   }
 
@@ -238,8 +311,16 @@ export class ScoreFormComponent {
       gymId: this.gymChoices().length > 0 ? v.gymId : null,
       tiebreakSeconds: this.showTiebreak() && tiebreak > 0 ? tiebreak : undefined,
       scalingNotes: v.scaling === 'RX' ? undefined : v.scalingNotes.trim() || undefined,
-      userComment: v.userComment.trim() || undefined
+      userComment: v.userComment.trim() || undefined,
+      verificationRequested: this.canSubmit() && v.verificationRequested
     };
+    if (this.useSets()) {
+      // Aldebaran derives the performance from the sets (best complete set, or volume)
+      const sets: ScoreSet[] = v.sets
+        .filter(r => r.reps != null)
+        .map(r => ({reps: r.reps as number, weight: r.weight, completed: r.completed}));
+      return {...request, sets, weightUnit: this.unitService.massUnit()};
+    }
     switch (type) {
       case 'TIME':
         return capped

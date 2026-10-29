@@ -8,7 +8,7 @@ export type ScalingLevel = 'RX' | 'SCALED' | 'ELITE' | 'CUSTOM';
 export interface ScoreCapabilities {
   // Update/delete: the athlete until the score is verified, the gym's SCORE_VERIFY staff, admins
   canModify: boolean;
-  // Verify or withdraw the verification: SCORE_VERIFY staff of a competition WOD's gym (not on their own score)
+  // Verify or withdraw the verification: SCORE_VERIFY staff of a competition WOD's gym, submitted scores only (not their own)
   canVerify: boolean;
 }
 
@@ -43,6 +43,19 @@ export interface ScoreRequest {
   scalingNotes?: string;
   // --- Gym where it was performed (public or personal WOD; a gym WOD uses its own gym) ---
   gymId?: number | null;
+  // --- Session: the athlete's journal (optional for a session WOD, found or created) ---
+  sessionLogId?: number | null;
+  // --- Strength sets, set by set, in weightUnit (WEIGHT / LOAD / NONE scores) ---
+  sets?: ScoreSet[];
+  // --- Competition WOD: submit the score to the judges ---
+  verificationRequested?: boolean;
+}
+
+/** One set of a strength score; a failed set is kept with completed = false. */
+export interface ScoreSet {
+  reps: number;
+  weight?: number | null;
+  completed: boolean;
 }
 
 export interface ScoreResponse {
@@ -87,6 +100,11 @@ export interface ScoreResponse {
   // --- Verification (competition WODs), absent while not verified ---
   verifiedBy?: number | null;
   verifiedAt?: string | null;
+  // Submitted to the judges of a competition WOD
+  verificationRequested?: boolean;
+  // --- Session journal and strength sets (weights in weightUnit) ---
+  sessionLogId?: number | null;
+  sets?: ScoreSet[];
   // --- Per-user rights (computed per request) ---
   capabilities?: ScoreCapabilities;
 }

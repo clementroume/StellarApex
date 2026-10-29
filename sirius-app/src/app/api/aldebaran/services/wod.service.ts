@@ -92,9 +92,4 @@ export class WodService {
   public readonly savedSearchQuery = signal<string>('');
   public readonly savedTypeFilter = signal<string>('');
   public readonly savedCategoryFilter = signal<string>('');
-  // Scope tab key ('ALL', 'MINE', 'PUBLIC' or 'GYM:<id>'), empty until the user picks one
-  public readonly savedScopeTab = signal<string>('');
-  // Admin selectors of the "All" tab (mutually exclusive)
-  public readonly savedAdminGymId = signal<number | null>(null);
-  public readonly savedAdminAuthorId = signal<number | null>(null);
 }

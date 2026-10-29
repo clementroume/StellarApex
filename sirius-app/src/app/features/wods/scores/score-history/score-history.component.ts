@@ -65,6 +65,14 @@ export class ScoreHistoryComponent {
     return wod ? formatScore(score, wod, this.unitService, (k, p) => this.translate.instant(k, p)) : '';
   }
 
+  /** Sets of a strength score: "5 x 100 kg · 5 x 110 kg · (3 x 120 kg)", a missed set in brackets. */
+  setsLine(score: ScoreResponse): string {
+    return (score.sets ?? []).map(set => {
+      const load = set.weight != null ? ` x ${this.unitService.formatScoreLoad(set.weight, score.weightUnit)}` : '';
+      return set.completed ? `${set.reps}${load}` : `(${set.reps}${load})`;
+    }).join(' · ');
+  }
+
   duration(seconds: number): string {
     return formatDuration(seconds);
   }

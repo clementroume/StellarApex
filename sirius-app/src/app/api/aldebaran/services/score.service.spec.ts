@@ -152,4 +152,9 @@ describe('ScoreService', () => {
     expect(unverify.request.method).toBe('DELETE');
     unverify.flush(mockScoreResponse);
   });
+
+  it('getVerificationQueue should GET the submitted scores of a competition WOD', () => {
+    service.getVerificationQueue(7).subscribe(scores => expect(scores).toEqual([mockScoreResponse]));
+    httpMock.expectOne(`${base}/scores/verification-queue/7`).flush([mockScoreResponse]);
+  });
 });

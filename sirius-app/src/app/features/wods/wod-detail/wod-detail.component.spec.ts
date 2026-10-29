@@ -135,8 +135,8 @@ describe('WodDetailComponent', () => {
     init();
     expect(mockWodService.getWod).toHaveBeenCalledWith(1);
     expect(component.wod()?.title).toBe('Fran');
-    expect(component.sortedMovements().map(m => m.movement.name)).toEqual(['Thruster', 'Pull-up']);
-    expect(fixture.nativeElement.textContent).toContain('Thruster');
+    const text: string = fixture.nativeElement.textContent;
+    expect(text.indexOf('Thruster')).toBeLessThan(text.indexOf('Pull-up'));
   });
 
   it('should notify and go back when the WOD cannot be loaded', () => {
@@ -239,36 +239,6 @@ describe('WodDetailComponent', () => {
   });
 
   describe('whiteboard', () => {
-    it('should write the format with its duration, and the time cap only when it is not the duration', () => {
-      init();
-      const amrap = buildWod({wodType: 'AMRAP', timeCapSeconds: 1200});
-
-      expect(component.formatLine(amrap)).toBe('WOD.WOD_TYPES.AMRAP WOD.FIELDS.DURATION_MINUTES');
-      expect(component.timeCapLabel(amrap)).toBe('');
-      expect(component.formatLine({...amrap, timeCapSeconds: 425})).toBe("WOD.WOD_TYPES.AMRAP 7'05");
-      expect(component.formatLine(buildWod())).toBe('WOD.WOD_TYPES.FOR_TIME');
-      expect(component.timeCapLabel(buildWod())).toBe("WOD.FIELDS.TIME_CAP 10'");
-      expect(component.timeCapLabel(buildWod({timeCapSeconds: undefined}))).toBe('');
-      expect(component.formatLine(buildWod({wodType: 'EMOM', emomInterval: 60, emomRounds: 10})))
-        .toBe('WOD.WOD_TYPES.EMOM WOD.FIELDS.DURATION_MINUTES');
-      expect(component.formatLine(buildWod({wodType: 'EMOM', emomInterval: 120, emomRounds: 5})))
-        .toBe('WOD.WOD_TYPES.EMOM 5 x 2:00');
-    });
-
-    it('should write the rep scheme only when neither the format nor the movements already say it', () => {
-      init();
-      const fran = buildWod({repScheme: '21-15-9'});
-
-      expect(component.repSchemeLine(fran)).toBe('21-15-9');
-      expect(component.repSchemeLine(buildWod({repScheme: '5 rounds'}))).toBe('5 rounds');
-      expect(component.repSchemeLine(buildWod({wodType: 'AMRAP', repScheme: 'AMRAP 20 min'}))).toBe('');
-      expect(component.repSchemeLine(buildWod({repScheme: 'For time'}))).toBe('');
-      expect(component.repSchemeLine(buildWod({repScheme: '30 reps'}))).toBe('');
-      expect(component.repSchemeLine(buildWod({repScheme: '1 mile / 100 / 200 / 300 / 1 mile'}))).toBe('');
-      expect(component.formatLine(buildWod({wodType: 'TABATA', repScheme: 'Tabata x 4'}))).toBe('Tabata x 4');
-      expect(component.formatLine(buildWod({repScheme: 'For time'}))).toBe('WOD.WOD_TYPES.FOR_TIME');
-    });
-
     it('should show each information once: title alone, category and format in their own box', () => {
       init(buildWod({category: 'GIRLS', descriptionEn: 'Classic couplet'}));
       const text: string = fixture.nativeElement.textContent;
@@ -280,32 +250,6 @@ describe('WodDetailComponent', () => {
       expect(text).not.toContain('WOD.SECTIONS.MOVEMENTS');
       expect(text).toContain('Classic couplet');
       expect(fixture.nativeElement.querySelector('#best-score')).toBeTruthy();
-    });
-
-    it('should omit the reps that repeat the rep scheme and write the other quantities first', () => {
-      const wod = buildWod({repScheme: '21-15-9'});
-      init(wod);
-
-      expect(component.quantity({...wod.movements[0]}, wod)).toBe('');
-      expect(component.quantity({...wod.movements[0], repsScheme: '50'}, wod)).toBe('50');
-      expect(component.quantity({...wod.movements[0], repsScheme: 'max'}, wod)).toBe('Max');
-      expect(component.quantity({...wod.movements[0], repsScheme: undefined, calories: 60}, wod)).toBe('60 cal');
-      expect(component.quantity({...wod.movements[0], repsScheme: undefined, calories: 14, caloriesFemale: 12}, wod))
-        .toBe('14/12 cal');
-      expect(component.quantity({...wod.movements[0], repsScheme: undefined, distance: 400, distanceUnit: 'METERS'}, wod))
-        .toBe('400 METERS');
-      expect(component.quantity({...wod.movements[0], repsScheme: undefined, durationSeconds: 60}, wod)).toBe('1:00');
-    });
-
-    it('should write the men/women load and height after the movement, without "@"', () => {
-      init();
-      const thruster = {...component.sortedMovements()[0], weightFemale: 30};
-
-      expect(component.measures(thruster)).toEqual([{values: ['43', '30'], unit: 'KG', mine: null}]);
-      expect(component.measures({...thruster, weight: undefined, weightFemale: undefined, height: 24, heightFemale: 20, heightUnit: 'INCHES'}))
-        .toEqual([{values: ['24', '20'], unit: 'INCHES', mine: null}]);
-      expect(fixture.nativeElement.textContent).toContain('43 KG');
-      expect(fixture.nativeElement.textContent).not.toContain('@');
     });
 
     it('should highlight the load of the user\'s division and mute the other one', () => {
@@ -323,36 +267,12 @@ describe('WodDetailComponent', () => {
       currentUser.set({division: null});
     });
 
-    it('should list the variants and the texts in the user language', () => {
-      init();
-      const thruster = {
-        ...component.sortedMovements()[0],
-        equipment: ['BARBELL'],
-        techniques: ['TOUCH_AND_GO'],
-        notesEn: 'Squat below parallel',
-        notesFr: 'Squat sous la parallèle',
-        scalingOptionsEn: 'Lighter barbell'
-      };
-
-      expect(component.variants(thruster)).toBe('MOVEMENT.EQUIPMENT.BARBELL, MOVEMENT.TECHNIQUES.TOUCH_AND_GO');
-      // No language loaded in tests: English, with the French text as fallback when English is missing
-      expect(component.movementNotes(thruster)).toBe('Squat below parallel');
-      expect(component.movementNotes({...thruster, notesEn: undefined})).toBe('Squat sous la parallèle');
-      expect(component.scaling(thruster)).toBe('Lighter barbell');
-    });
-
     it('should show the official tiebreak only when the WOD has one', () => {
       init();
       expect(fixture.nativeElement.querySelector('#tiebreak')).toBeNull();
 
       init(buildWod({tiebreakEn: 'Time after the last full set'}));
       expect(fixture.nativeElement.querySelector('#tiebreak').textContent).toContain('Time after the last full set');
-    });
-
-    it('should not number the movements on the board', () => {
-      init();
-      const board: HTMLElement = fixture.nativeElement;
-      expect(board.querySelector('.badge-secondary')).toBeNull();
     });
   });
 
@@ -391,60 +311,27 @@ describe('WodDetailComponent', () => {
     });
   });
 
-  describe('competition and copy', () => {
-    it('should flag a competition copy: gym next to the title, link to the original, no copy button', () => {
-      writableGyms.mockReturnValue([{gymId: 5, gymName: 'Box'}]);
-      init(buildWod({gymId: 5, competition: true, sourceWodId: 3}));
-
+  describe('competition and programming', () => {
+    it('should flag a competition copy: gym next to the title, link to the original, nothing to program', () => {
+      writableGyms.mockReturnValue([{gymId: 5, gymName: 'Box', gymProgramming: false}]);
+      init(buildWod({gymId: 5, competition: true, sourceWodId: 77}));
+      expect(fixture.nativeElement.querySelector('#source-wod').getAttribute('href')).toBe('/wods/77');
+      expect(fixture.nativeElement.querySelector('#program-wod')).toBeNull();
       expect(fixture.nativeElement.querySelector('#competition-badge')).toBeTruthy();
-      const header: HTMLElement = fixture.nativeElement.querySelector('app-detail-header');
-      expect(header.querySelector('h1')?.textContent).toContain('(Box)');
-      expect(header.querySelector('#source-wod')?.getAttribute('href')).toBe('/wods/3');
-      expect(fixture.nativeElement.querySelector('#copy-wod')).toBeNull();
     });
 
-    it('should offer the copy in the title bar, only to users programming a gym', () => {
-      init();
-      expect(fixture.nativeElement.querySelector('#copy-wod')).toBeNull();
+    it('should offer to program a WOD in a session to users programming a box or a program', () => {
+      init(buildWod({isPublic: true}));
+      expect(fixture.nativeElement.querySelector('#program-wod')).toBeNull();
 
-      writableGyms.mockReturnValue([{gymId: 5, gymName: 'Box'}]);
-      init();
-      expect(fixture.nativeElement.querySelector('app-detail-header #copy-wod')).toBeTruthy();
+      writableGyms.mockReturnValue([{gymId: 6, gymName: 'Zeus', gymProgramming: true}]);
+      init(buildWod({isPublic: true}));
+      expect(fixture.nativeElement.querySelector('#program-wod').getAttribute('href')).toBe('/box/sessions/new?borrow=1');
     });
 
-    it('should copy an Open WOD as a competition WOD of the gym, then open the copy', () => {
-      writableGyms.mockReturnValue([{gymId: 5, gymName: 'Box'}]);
-      mockWodService.copyWod.mockReturnValue(of(buildWod({id: 42, gymId: 5, competition: true})));
-      const navigate = vi.spyOn(router, 'navigate').mockResolvedValue(true);
-      init(buildWod({isPublic: true, category: 'OPEN'}));
-
-      (fixture.nativeElement.querySelector('#copy-wod') as HTMLButtonElement).click();
-      fixture.detectChanges();
-      expect(component.copyDraft()).toEqual({gymId: 5, competition: true});
-
-      (fixture.nativeElement.querySelector('#copy-confirm') as HTMLButtonElement).click();
-
-      expect(mockWodService.copyWod).toHaveBeenCalledWith(1, {gymId: 5, competition: true});
-      expect(mockWodService.notifyRefresh).toHaveBeenCalled();
-      expect(navigate).toHaveBeenCalledWith(['/wods', 42]);
-    });
-
-    it('should never offer a copy into a virtual programming', () => {
-      writableGyms.mockReturnValue([{gymId: 8, gymName: 'Zeus', gymProgramming: true}]);
-      init(buildWod({isPublic: true, category: 'OPEN'}));
-      expect(fixture.nativeElement.querySelector('#copy-wod')).toBeNull();
-    });
-
-    it('should show the backend message when the copy fails', () => {
-      writableGyms.mockReturnValue([{gymId: 5, gymName: 'Box'}]);
-      mockWodService.copyWod.mockReturnValue(throwError(() => ({status: 400, error: {detail: 'No gym'}})));
-      init();
-
-      component.openCopy(component.wod()!);
-      component.onCopy(component.wod()!);
-
-      expect(mockNotificationService.showError).toHaveBeenCalledWith('No gym');
-      expect(component.copyDraft()).not.toBeNull();
+    it('should edit a personal WOD with the quick editor of My training', () => {
+      init(buildWod({gymId: undefined, isPublic: false}));
+      expect(fixture.nativeElement.querySelector('app-detail-admin-actions a').getAttribute('href')).toBe('/training/wods/1/edit');
     });
   });
 });

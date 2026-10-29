@@ -42,6 +42,7 @@ export class SpacesService {
         key: 'training', link: '/training', label: 'NAVBAR.SPACES.TRAINING', icon: 'hugeDumbbell01', paths: ['/training'],
         children: [
           {link: '/training/journal', label: 'TRAINING.JOURNAL.TITLE', icon: 'heroClipboardDocumentList'},
+          {link: '/training/wods', label: 'TRAINING.WODS.TITLE', icon: 'hugeKettlebell'},
           {link: '/training/records', label: 'TRAINING.RECORDS.TITLE', icon: 'heroTrophy'},
           {link: '/training/review', label: 'TRAINING.REVIEW.TITLE', icon: 'heroArrowTrendingUp'},
         ]

@@ -1,5 +1,8 @@
 import {MovementResponse} from './movement.model';
 
+/** Part of a WOD a movement belongs to. */
+export type WodSegment = 'BUY_IN' | 'MAIN' | 'BUY_OUT';
+
 export type WodScope = 'ALL' | 'MINE' | 'GYM' | 'PUBLIC';
 
 export interface WodSummaryResponse {
@@ -67,6 +70,18 @@ export interface WodRequest {
   emomInterval?: number;
   emomRounds?: number;
   repScheme?: string;
+  // --- Structure of the quick editor ---
+  // Rounds of a "rounds for time", rest between rounds / intervals and work time of an interval (s)
+  rounds?: number | null;
+  restSeconds?: number | null;
+  workSeconds?: number | null;
+  // Ascending ladder (3-6-9...): first rung and step
+  ladderStart?: number | null;
+  ladderStep?: number | null;
+  // Weight vest worn for the whole WOD (men's, women's), in vestWeightUnit
+  vestWeight?: number | null;
+  vestWeightFemale?: number | null;
+  vestWeightUnit?: string | null;
   movements: WodMovementRequest[];
 }
 
@@ -84,6 +99,8 @@ export interface WodResponse {
   competition: boolean;
   // WOD this one was copied from (e.g. a public Open WOD copied for a gym competition)
   sourceWodId?: number | null;
+  // False for the WOD of a session block: read and edited through its session
+  standalone?: boolean;
   // --- Description and Notes (EN / FR, either may be empty) ---
   descriptionEn?: string;
   descriptionFr?: string;
@@ -99,6 +116,18 @@ export interface WodResponse {
   emomInterval?: number;
   emomRounds?: number;
   repScheme?: string;
+  // --- Structure of the quick editor ---
+  // Rounds of a "rounds for time", rest between rounds / intervals and work time of an interval (s)
+  rounds?: number | null;
+  restSeconds?: number | null;
+  workSeconds?: number | null;
+  // Ascending ladder (3-6-9...): first rung and step
+  ladderStart?: number | null;
+  ladderStep?: number | null;
+  // Weight vest worn for the whole WOD (men's, women's), in vestWeightUnit
+  vestWeight?: number | null;
+  vestWeightFemale?: number | null;
+  vestWeightUnit?: string | null;
   modalities: string[];
   movements: WodMovementResponse[];
   // --- Rights ---
@@ -143,6 +172,10 @@ export interface WodMovementRequest {
   notesFr?: string;
   scalingOptionsEn?: string;
   scalingOptionsFr?: string;
+  // --- Prescribed number of sets (strength / skill work) ---
+  sets?: number | null;
+  // --- Part of the WOD: before the rounds, the rounds, after them (null = MAIN) ---
+  segment?: WodSegment | null;
 }
 
 export interface WodMovementResponse {
@@ -174,6 +207,10 @@ export interface WodMovementResponse {
   notesFr?: string;
   scalingOptionsEn?: string;
   scalingOptionsFr?: string;
+  // --- Prescribed number of sets (strength / skill work) ---
+  sets?: number | null;
+  // --- Part of the WOD: before the rounds, the rounds, after them (null = MAIN) ---
+  segment?: WodSegment | null;
 }
 
 export interface WodReferenceData {

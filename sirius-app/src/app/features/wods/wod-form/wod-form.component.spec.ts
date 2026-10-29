@@ -257,19 +257,17 @@ describe('WodFormComponent', () => {
       expect(component.buildPayload().movements.map(m => [m.movementId, m.orderIndex])).toEqual([[10, 1], [20, 2]]);
     });
 
-    it('should resolve the movement search box and offer only the allowed variants', () => {
+    it('should pick the movement in the combobox and offer only the allowed variants', () => {
       component.addMovement();
       const row = component.movementsFormArray.at(0);
 
-      row.patchValue({movementQuery: 'pull-UP '});
-      component.onMovementQuery(0);
+      component.onMovementChange(0, 20);
       expect(row.value.movementId).toBe(20);
       expect(mockMovementService.getMovement).toHaveBeenCalledWith(20);
       expect(component.allowedVariants(0, 'equipment')).toEqual(['PULL_UP_BAR', 'RINGS']);
       expect(component.allowedVariants(0, 'techniques')).toEqual(['KIPPING', 'STRICT']);
 
-      row.patchValue({movementQuery: 'Unknown move'});
-      component.onMovementQuery(0);
+      component.onMovementChange(0, null);
       expect(row.value.movementId).toBeNull();
       expect(row.get('movementId')!.invalid).toBe(true);
       expect(component.allowedVariants(0, 'equipment')).toEqual([]);
@@ -278,8 +276,7 @@ describe('WodFormComponent', () => {
     it('should toggle variants, send them and clear them when the movement changes', () => {
       fillValidForm();
       const row = component.movementsFormArray.at(0);
-      row.patchValue({movementQuery: 'Pull-up'});
-      component.onMovementQuery(0); // same movement: nothing reset
+      component.onMovementChange(0, 20); // same movement: nothing reset
 
       component.toggleVariant(0, 'equipment', 'RINGS');
       component.toggleVariant(0, 'techniques', 'STRICT');
@@ -288,8 +285,7 @@ describe('WodFormComponent', () => {
       expect(component.isVariantSelected(0, 'equipment', 'RINGS')).toBe(true);
       expect(component.buildPayload().movements[0]).toMatchObject({equipment: ['RINGS'], techniques: ['STRICT']});
 
-      row.patchValue({movementQuery: 'Air Squat'});
-      component.onMovementQuery(0);
+      component.onMovementChange(0, 10);
       expect(component.buildPayload().movements[0]).toMatchObject({movementId: 10, equipment: [], techniques: []});
     });
 
@@ -386,8 +382,8 @@ describe('WodFormComponent', () => {
       expect(component.wodForm.controls.isPublic.enabled).toBe(true);
     });
 
-    it('should prefill the search box and drop stored variants the movement no longer allows', () => {
-      expect(component.movementsFormArray.at(0).value.movementQuery).toBe('Thruster');
+    it('should prefill the movement and drop stored variants the movement no longer allows', () => {
+      expect(component.movementsFormArray.at(0).value.movementId).toBe(10);
       mockMovementService.getMovement.mockReturnValueOnce(
         of({id: 99, name: 'Dip', equipment: ['RINGS'], techniques: [], targetedMuscles: []} as any));
 

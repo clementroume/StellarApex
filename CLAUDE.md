@@ -105,7 +105,8 @@ and a virtual programming); there is no "active gym" in requests.
   staff of any role (Owner/Programmer/Coach) always; athletes per the session's policy (`ADVANCE`,
   `DAY_OF`, `AFTER`, `AFTER_PARTICIPANTS`, `PARTICIPANTS_ONLY`; a program only `ADVANCE`/`DAY_OF`;
   default in Aldebaran `gym_session_settings`, gym time zone). Hidden content is null in responses,
-  and session WODs and their leaderboards are 403. Write: `WOD_WRITE`; personal session (`gymId =
+  and session WODs and their leaderboards are 403. Admin: lists show only their own gyms (another
+  gym on explicit `gymId`), any session by id. Write: `WOD_WRITE`; personal session (`gymId =
   null`): author only. "Séance faite" creates the athlete's journal (`session_logs`, participant);
   a journal locks the session (409), visibility stays editable. Competition block (physical box):
   the block's WOD is a box competition WOD (the Open is copied), athletes submit their score to the
@@ -152,7 +153,11 @@ scores for them (Aldebaran).
 - Catalog: a movement variant is the `equipment` / `techniques` of the movement and of the WOD movement
   (Aldebaran rejects values the movement does not allow), never a new movement or a note. Muscles have
   one functional group level (`parent`, same region). Never use a movement name absent from the catalog.
-- WODs: `wodType` = format (For Time, AMRAP...), optional `category` (Girls, Hero, Open...),
+- WODs: `wodType` = format (For Time, Chipper, Ladder, AMRAP, EMOM, Death by...), optional `category` (Girls, Hero, Open...),
+  structure in fields, not in a free scheme: `rounds` (Helen = For Time + 3 rounds), `restSeconds`,
+  `workSeconds` (intervals, Tabata), `ladderStart`/`ladderStep` (ascending ladder, Death by), `repScheme`
+  for a descending ladder or strength sets, weight vest `vestWeight(Female)`, buy-in / buy-out lines
+  (`WodMovement.segment`);
   `scoreType` as officially scored (EMOM such as Chelsea = `ROUNDS`, 1RM = `WEIGHT`, every AMRAP =
   `REPS` stored as total reps, shown/entered as rounds + reps when the WOD has `repsPerRound`),
   optional official tiebreak text (`tiebreakEn/Fr`); a score's tiebreak is always optional.

@@ -31,6 +31,11 @@ export class WodScoresStore {
   readonly comparison = signal<ScoreComparisonResponse | null>(null);
   /** Score being edited, 'new' while logging one, null when the form is closed. */
   readonly editing = signal<ScoreResponse | 'new' | null>(null);
+  /**
+   * Journal of the session the WOD is shown in (a session block), or null on the WOD detail. New
+   * scores join it; Aldebaran takes the journal's day and gym.
+   */
+  readonly sessionLogId = signal<number | null>(null);
   /** Emits after a score is logged, updated or deleted (the WOD may become locked or unlocked). */
   readonly changed$ = new Subject<void>();
 
@@ -80,9 +85,10 @@ export class WodScoresStore {
 
   save(request: ScoreRequest): void {
     const editing = this.editing();
+    const sessionLogId = this.sessionLogId();
     const call = editing && editing !== 'new'
       ? this.scoreService.updateScore(editing.id, request)
-      : this.scoreService.logScore(request);
+      : this.scoreService.logScore(sessionLogId != null ? {...request, sessionLogId} : request);
 
     this.isSaving.set(true);
     call.subscribe({

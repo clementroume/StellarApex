@@ -1,0 +1,319 @@
+<form [formGroup]="form" (ngSubmit)="onSubmit()" class="flex flex-col gap-4" novalidate>
+  <!-- Format: chips, the usual score type and structure fields follow -->
+  <div class="flex flex-wrap gap-2" role="group" [attr.aria-label]="'WOD.FIELDS.WOD_TYPE' | translate">
+    @for (f of formats; track f) {
+      <button type="button" hlmBtn variant="outline" size="sm" [id]="'format-' + f"
+              class="rounded-full aria-pressed:bg-primary aria-pressed:text-primary-foreground"
+              [attr.aria-pressed]="format() === f" (click)="setFormat(f)">
+        {{ 'WOD.QUICK.FORMATS.' + f | translate }}
+      </button>
+    }
+  </div>
+
+  <!-- Structure of the format -->
+  <div class="flex flex-wrap items-end gap-3">
+    @switch (format()) {
+      @case ('ROUNDS') {
+        <label class="flex flex-col gap-1.5 w-24">
+          <span class="text-sm font-medium">{{ 'WOD.QUICK.ROUNDS' | translate }}</span>
+          <input type="number" min="1" inputmode="numeric" id="quick-rounds" formControlName="rounds" hlmInput class="h-11 md:h-10"/>
+        </label>
+        <label class="flex flex-col gap-1.5 w-36">
+          <span class="text-sm font-medium">{{ 'WOD.QUICK.REST_BETWEEN' | translate }}</span>
+          <input type="number" min="0" inputmode="numeric" id="quick-rest" formControlName="restSeconds" hlmInput class="h-11 md:h-10"
+                 placeholder="0"/>
+        </label>
+      }
+      @case ('LADDER') {
+        <div class="flex rounded-md border p-0.5" role="group" [attr.aria-label]="'WOD.QUICK.LADDER_DIRECTION' | translate">
+          <button type="button" id="ladder-down" class="rounded px-3 h-10 text-sm aria-pressed:bg-primary aria-pressed:text-primary-foreground"
+                  [attr.aria-pressed]="!value().ladderUp" (click)="setLadderUp(false)">{{ 'WOD.QUICK.LADDER_DOWN' | translate }}</button>
+          <button type="button" id="ladder-up" class="rounded px-3 h-10 text-sm aria-pressed:bg-primary aria-pressed:text-primary-foreground"
+                  [attr.aria-pressed]="value().ladderUp" (click)="setLadderUp(true)">{{ 'WOD.QUICK.LADDER_UP' | translate }}</button>
+        </div>
+        @if (value().ladderUp) {
+          <label class="flex flex-col gap-1.5 w-24">
+            <span class="text-sm font-medium">{{ 'WOD.QUICK.LADDER_START' | translate }}</span>
+            <input type="number" min="1" inputmode="numeric" id="ladder-start" formControlName="ladderStart" hlmInput class="h-11 md:h-10"/>
+          </label>
+          <label class="flex flex-col gap-1.5 w-24">
+            <span class="text-sm font-medium">{{ 'WOD.QUICK.LADDER_STEP' | translate }}</span>
+            <input type="number" min="1" inputmode="numeric" id="ladder-step" formControlName="ladderStep" hlmInput class="h-11 md:h-10"/>
+          </label>
+        } @else {
+          <label class="flex flex-col gap-1.5 flex-1 min-w-40">
+            <span class="text-sm font-medium">{{ 'WOD.QUICK.LADDER_VALUES' | translate }}</span>
+            <input type="text" id="ladder-values" formControlName="ladder" maxlength="50" hlmInput class="h-11 md:h-10"
+                   inputmode="numeric" placeholder="21-15-9"/>
+          </label>
+        }
+      }
+      @case ('EMOM') {
+        <label class="flex flex-col gap-1.5 w-28">
+          <span class="text-sm font-medium">{{ 'WOD.QUICK.EVERY' | translate }}</span>
+          <input type="number" min="0.25" step="0.5" inputmode="decimal" id="emom-every" formControlName="everyMinutes" hlmInput class="h-11 md:h-10"/>
+        </label>
+        <label class="flex flex-col gap-1.5 w-24">
+          <span class="text-sm font-medium">{{ 'WOD.QUICK.ROUNDS' | translate }}</span>
+          <input type="number" min="1" inputmode="numeric" id="quick-rounds" formControlName="rounds" hlmInput class="h-11 md:h-10"/>
+        </label>
+        @if (showWorkRest()) {
+          <label class="flex flex-col gap-1.5 w-24">
+            <span class="text-sm font-medium">{{ 'WOD.QUICK.WORK' | translate }}</span>
+            <input type="number" min="1" inputmode="numeric" id="quick-work" formControlName="workSeconds" hlmInput class="h-11 md:h-10"/>
+          </label>
+          <label class="flex flex-col gap-1.5 w-24">
+            <span class="text-sm font-medium">{{ 'WOD.QUICK.REST' | translate }}</span>
+            <input type="number" min="0" inputmode="numeric" id="quick-rest" formControlName="restSeconds" hlmInput class="h-11 md:h-10"/>
+          </label>
+        }
+        <button type="button" id="toggle-work-rest" class="h-10 text-sm text-primary hover:underline" (click)="toggleWorkRest()">
+          {{ (showWorkRest() ? 'WOD.QUICK.NO_WORK_REST' : 'WOD.QUICK.WORK_REST') | translate }}
+        </button>
+      }
+      @case ('TABATA') {
+        <label class="flex flex-col gap-1.5 w-24">
+          <span class="text-sm font-medium">{{ 'WOD.QUICK.ROUNDS' | translate }}</span>
+          <input type="number" min="1" inputmode="numeric" id="quick-rounds" formControlName="rounds" hlmInput class="h-11 md:h-10"/>
+        </label>
+        <label class="flex flex-col gap-1.5 w-24">
+          <span class="text-sm font-medium">{{ 'WOD.QUICK.WORK' | translate }}</span>
+          <input type="number" min="1" inputmode="numeric" id="quick-work" formControlName="workSeconds" hlmInput class="h-11 md:h-10"/>
+        </label>
+        <label class="flex flex-col gap-1.5 w-24">
+          <span class="text-sm font-medium">{{ 'WOD.QUICK.REST' | translate }}</span>
+          <input type="number" min="0" inputmode="numeric" id="quick-rest" formControlName="restSeconds" hlmInput class="h-11 md:h-10"/>
+        </label>
+      }
+      @case ('DEATH_BY') {
+        <label class="flex flex-col gap-1.5 w-32">
+          <span class="text-sm font-medium">{{ 'WOD.QUICK.DEATH_START' | translate }}</span>
+          <input type="number" min="1" inputmode="numeric" id="ladder-start" formControlName="ladderStart" hlmInput class="h-11 md:h-10"/>
+        </label>
+        <label class="flex flex-col gap-1.5 w-32">
+          <span class="text-sm font-medium">{{ 'WOD.QUICK.DEATH_STEP' | translate }}</span>
+          <input type="number" min="1" inputmode="numeric" id="ladder-step" formControlName="ladderStep" hlmInput class="h-11 md:h-10"/>
+        </label>
+      }
+    }
+    @if (format() === 'STRENGTH' || format() === 'SKILL') {
+      <label class="flex flex-col gap-1.5 flex-1 min-w-40">
+        <span class="text-sm font-medium">{{ 'WOD.QUICK.SETS' | translate }}</span>
+        <input type="text" id="quick-sets" formControlName="sets" maxlength="50" hlmInput class="h-11 md:h-10"
+               [placeholder]="'WOD.QUICK.SETS_PLACEHOLDER' | translate"/>
+      </label>
+    }
+    @if (timed()) {
+      <label class="flex flex-col gap-1.5 w-28">
+        <span class="text-sm font-medium">
+          {{ (format() === 'AMRAP' || (format() === 'LADDER' && value().ladderUp) ? 'WOD.QUICK.DURATION' : 'WOD.QUICK.TIME_CAP') | translate }}
+        </span>
+        <input type="number" min="0" step="0.5" inputmode="decimal" id="quick-minutes" formControlName="minutes" hlmInput class="h-11 md:h-10"/>
+      </label>
+    }
+  </div>
+  @if (format() === 'LADDER' && !value().ladderUp) {
+    <div class="flex flex-wrap items-center gap-2 -mt-2 text-sm">
+      @for (hint of ladderHints; track hint) {
+        <button type="button" class="rounded-full border px-2.5 py-0.5 hover:bg-muted" (click)="setLadder(hint)">{{ hint }}</button>
+      }
+    </div>
+  }
+  @if (setsHints().length > 0) {
+    <div class="flex flex-wrap items-center gap-2 -mt-2 text-sm">
+      @for (hint of setsHints(); track hint) {
+        <button type="button" class="rounded-full border px-2.5 py-0.5 hover:bg-muted" (click)="setSets(hint)">{{ hint }}</button>
+      }
+    </div>
+  }
+  <p class="text-xs text-muted-foreground -mt-2 flex flex-wrap items-center gap-1">
+    @if (parsedSets(); as s) {
+      {{ 'WOD.QUICK.SETS_HINT' | translate: {sets: s.sets, reps: s.reps} }} ·
+    } @else if (sharedReps()) {
+      {{ 'WOD.QUICK.LADDER_HINT' | translate }} ·
+    }
+    {{ 'WOD.QUICK.SCORE' | translate }} : {{ 'WOD.SCORE_TYPES.' + value().scoreType | translate }}
+    @if (!showScoreType()) {
+      · <button type="button" id="change-score" class="text-primary hover:underline" (click)="showScoreType.set(true)">{{ 'SESSION.FORM.CHANGE' | translate }}</button>
+    }
+  </p>
+  @if (showScoreType()) {
+    <select appNativeSelect id="quick-score-type" formControlName="scoreType" [attr.aria-label]="'WOD.FIELDS.SCORE_TYPE' | translate">
+      @for (t of scoreTypes; track t) {
+        <option [value]="t">{{ 'WOD.SCORE_TYPES.' + t | translate }}</option>
+      }
+    </select>
+  }
+
+  <!-- Movements: a quantity measure, then only the extra measures each one needs -->
+  <ol formArrayName="rows" class="flex flex-col divide-y border-y">
+    @for (row of rowControls(); track row; let i = $index) {
+      <li [formGroupName]="i" class="quick-row py-3 flex flex-col gap-2">
+        <div class="flex items-start gap-2">
+          <div class="flex-1 min-w-0">
+            <app-movement-combobox [movements]="movements()" [label]="'WOD.FIELDS.MOVEMENT' | translate"
+                                   [value]="row.controls.movementId.value" (valueChange)="onMovement(i, $event)"/>
+            @if (row.controls.movementId.touched && row.controls.movementId.invalid) {
+              <p class="text-sm text-destructive">{{ 'WOD.MESSAGES.MOVEMENT_REQUIRED' | translate }}</p>
+            }
+          </div>
+          <button type="button" hlmBtn variant="ghost" size="icon" class="text-destructive shrink-0" (click)="removeRow(i)"
+                  [attr.aria-label]="'WOD.QUICK.REMOVE' | translate: {n: i + 1}">
+            <ng-icon name="heroTrash"/>
+          </button>
+        </div>
+
+        <div class="flex flex-wrap items-end gap-2">
+          <label class="flex flex-col gap-1">
+            <span class="text-xs text-muted-foreground">{{ 'WOD.QUICK.MEASURE' | translate }}</span>
+            <select appNativeSelect formControlName="measure" class="measure-select h-10 w-32">
+              @for (m of measures; track m) {
+                <option [value]="m">{{ 'WOD.QUICK.MEASURES.' + m | translate }}</option>
+              }
+            </select>
+          </label>
+          @switch (measureOfRow(i)) {
+            @case ('REPS') {
+              @if (showReps(i)) {
+                <label class="flex flex-col gap-1 w-24">
+                  <span class="text-xs text-muted-foreground">{{ 'WOD.QUICK.REPS' | translate }}</span>
+                  <input type="text" formControlName="reps" hlmInput class="h-10" inputmode="numeric" placeholder="10"/>
+                </label>
+              }
+            }
+            @case ('DISTANCE') {
+              <label class="flex flex-col gap-1">
+                <span class="text-xs text-muted-foreground">{{ 'WOD.QUICK.DISTANCE' | translate }} (m)</span>
+                <input type="number" min="0" inputmode="numeric" formControlName="distance" hlmInput class="h-10 w-24" placeholder="400"/>
+              </label>
+            }
+            @case ('CALORIES') {
+              <div class="flex flex-col gap-1">
+                <span class="text-xs text-muted-foreground">{{ 'WOD.QUICK.CALORIES' | translate }}</span>
+                <div class="flex items-center gap-1">
+                  <input type="number" min="0" inputmode="numeric" formControlName="calories" hlmInput class="h-10 w-20"
+                         [attr.aria-label]="'WOD.QUICK.MEN' | translate"/>
+                  <span aria-hidden="true">/</span>
+                  <input type="number" min="0" inputmode="numeric" formControlName="caloriesFemale" hlmInput class="h-10 w-20"
+                         [attr.aria-label]="'WOD.QUICK.WOMEN' | translate"/>
+                </div>
+              </div>
+            }
+            @case ('TIME') {
+              <label class="flex flex-col gap-1">
+                <span class="text-xs text-muted-foreground">{{ 'WOD.QUICK.TIME_S' | translate }}</span>
+                <input type="number" min="0" inputmode="numeric" formControlName="durationSeconds" hlmInput class="h-10 w-24" placeholder="60"/>
+              </label>
+            }
+          }
+          @for (m of extrasOf(i); track m) {
+            @switch (m) {
+              @case ('LOAD') {
+                <div class="flex flex-col gap-1">
+                  <span class="text-xs text-muted-foreground">{{ 'WOD.QUICK.LOAD' | translate }} ({{ massLabel() }})</span>
+                  <div class="flex items-center gap-1">
+                    <input type="number" min="0" step="0.5" inputmode="decimal" formControlName="weight" hlmInput class="h-10 w-20"
+                           [attr.aria-label]="'WOD.QUICK.MEN' | translate"/>
+                    <span aria-hidden="true">/</span>
+                    <input type="number" min="0" step="0.5" inputmode="decimal" formControlName="weightFemale" hlmInput class="h-10 w-20"
+                           [attr.aria-label]="'WOD.QUICK.WOMEN' | translate"/>
+                  </div>
+                </div>
+              }
+              @case ('HEIGHT') {
+                <div class="flex flex-col gap-1">
+                  <span class="text-xs text-muted-foreground">{{ 'WOD.QUICK.HEIGHT' | translate }} ({{ heightLabel() }})</span>
+                  <div class="flex items-center gap-1">
+                    <input type="number" min="0" inputmode="decimal" formControlName="height" hlmInput class="h-10 w-20"
+                           [attr.aria-label]="'WOD.QUICK.MEN' | translate"/>
+                    <span aria-hidden="true">/</span>
+                    <input type="number" min="0" inputmode="decimal" formControlName="heightFemale" hlmInput class="h-10 w-20"
+                           [attr.aria-label]="'WOD.QUICK.WOMEN' | translate"/>
+                  </div>
+                </div>
+              }
+            }
+          }
+        </div>
+
+        <div class="flex flex-wrap items-center gap-3 text-sm">
+          @for (field of variantFields; track field) {
+            @if (variantsOf(i, field).length > 0) {
+              <button type="button" class="variant-toggle text-primary hover:underline" [attr.data-field]="field"
+                      [attr.aria-expanded]="isVariantsOpen(i, field)" (click)="toggleVariants(i, field)">{{ variantLabel(i, field) }} ▾</button>
+            }
+          }
+          @if (!expanded().has(i) && extrasOf(i).length < 2) {
+            <button type="button" class="text-muted-foreground hover:underline" (click)="toggleExpanded(i)">+ {{ 'WOD.QUICK.LOAD_HEIGHT' | translate }}</button>
+          }
+          @if (withSegments()) {
+            <select appNativeSelect formControlName="segment" class="segment-select h-8 w-auto text-sm"
+                    [attr.aria-label]="'WOD.QUICK.SEGMENT' | translate">
+              @for (s of segmentValues; track s) {
+                <option [value]="s">{{ 'WOD.SEGMENTS.' + s | translate }}</option>
+              }
+            </select>
+          }
+        </div>
+        @for (field of variantFields; track field) {
+          @if (isVariantsOpen(i, field)) {
+            <div class="flex flex-wrap gap-1.5" role="group"
+                 [attr.aria-label]="(field === 'equipment' ? 'WOD.QUICK.EQUIPMENT' : 'WOD.QUICK.TECHNIQUE') | translate">
+              @for (v of variantsOf(i, field); track v) {
+                <button type="button" class="rounded-full border px-2.5 py-0.5 text-xs aria-pressed:bg-primary aria-pressed:text-primary-foreground"
+                        [attr.aria-pressed]="isVariantSelected(i, field, v)" (click)="toggleVariant(i, field, v)">
+                  {{ variantKey(field, v) | translate }}
+                </button>
+              }
+            </div>
+          }
+        }
+      </li>
+    }
+  </ol>
+  <button type="button" hlmBtn variant="outline" class="h-11 self-start" id="add-movement" (click)="addRow()">
+    <ng-icon name="heroPlus" aria-hidden="true"/>{{ 'WOD.ACTIONS.ADD_MOVEMENT' | translate }}
+  </button>
+
+  <label class="flex flex-col gap-1.5">
+    <span class="text-sm font-medium">{{ 'WOD.QUICK.TITLE' | translate }}</span>
+    <input type="text" id="quick-title" formControlName="title" maxlength="100" hlmInput class="h-11 md:h-10"
+           [placeholder]="generatedTitle()"/>
+  </label>
+
+  <!-- Folded options: weight vest, notes -->
+  @if (withVest() && showVest()) {
+    <div class="flex flex-col gap-1">
+      <span class="text-sm font-medium">{{ 'WOD.QUICK.VEST' | translate }} ({{ massLabel() }})</span>
+      <div class="flex items-center gap-1">
+        <input type="number" min="0" step="0.5" inputmode="decimal" id="vest-men" formControlName="vestWeight" hlmInput class="h-10 w-20"
+               [attr.aria-label]="'WOD.QUICK.MEN' | translate"/>
+        <span aria-hidden="true">/</span>
+        <input type="number" min="0" step="0.5" inputmode="decimal" id="vest-women" formControlName="vestWeightFemale" hlmInput class="h-10 w-20"
+               [attr.aria-label]="'WOD.QUICK.WOMEN' | translate"/>
+      </div>
+    </div>
+  }
+  @if (showNotes()) {
+    <label class="flex flex-col gap-1.5">
+      <span class="text-sm font-medium">{{ 'WOD.QUICK.NOTES' | translate }}</span>
+      <textarea formControlName="notes" rows="3" maxlength="4000" hlmTextarea [placeholder]="'WOD.QUICK.NOTES_PLACEHOLDER' | translate"></textarea>
+    </label>
+  }
+  @if ((withVest() && !showVest()) || !showNotes()) {
+    <div class="flex flex-wrap gap-4 text-sm">
+      @if (withVest() && !showVest()) {
+        <button type="button" id="show-vest" class="text-primary hover:underline" (click)="showVest.set(true)">+ {{ 'WOD.QUICK.VEST' | translate }}</button>
+      }
+      @if (!showNotes()) {
+        <button type="button" id="show-notes" class="text-primary hover:underline" (click)="showNotes.set(true)">+ {{ 'WOD.QUICK.NOTES' | translate }}</button>
+      }
+    </div>
+  }
+
+  <div class="flex justify-end gap-2 pt-2">
+    <button type="button" hlmBtn variant="ghost" size="lg" (click)="cancelled.emit()">{{ 'GLOBAL.CANCEL' | translate }}</button>
+    <button type="submit" hlmBtn size="lg" id="quick-submit">{{ 'SESSION.FORM.WOD_DONE' | translate }}</button>
+  </div>
+</form>
+

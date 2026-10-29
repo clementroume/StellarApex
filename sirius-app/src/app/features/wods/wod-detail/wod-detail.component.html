@@ -21,11 +21,11 @@
           <a id="source-wod" [routerLink]="['/wods', w.sourceWodId]" class="hover:underline text-sm flex items-center gap-1">
             <ng-icon name="heroDocumentDuplicate"></ng-icon>{{ 'WOD.MESSAGES.COPIED_FROM' | translate }}
           </a>
-        } @else if (canCopy()) {
-          <button type="button" id="copy-wod" hlmBtn variant="outline" size="sm" (click)="openCopy(w)">
-            <ng-icon name="heroDocumentDuplicate"></ng-icon>
-            {{ 'WOD.ACTIONS.COPY' | translate }}
-          </button>
+        } @else if (canProgram()) {
+          <a id="program-wod" hlmBtn variant="outline" size="sm" routerLink="/box/sessions/new" [queryParams]="{borrow: w.id}">
+            <ng-icon name="heroCalendarDays"></ng-icon>
+            {{ 'WOD.ACTIONS.PROGRAM' | translate }}
+          </a>
         }
       </app-detail-header>
 
@@ -33,52 +33,7 @@
 
         <!-- The WOD: whiteboard (format, time cap, movements), then badges, score type and texts -->
         <app-detail-card gapClass="gap-6">
-          <div id="whiteboard" class="flex flex-col gap-2">
-            <div class="flex flex-wrap items-baseline justify-between gap-2">
-              <p id="format-line" class="text-2xl font-bold">{{ formatLine(w) }}</p>
-              @if (timeCapLabel(w); as cap) {
-                <span hlmBadge class="bg-accent/15 text-accent h-7 px-3 text-sm">{{ cap }}</span>
-              }
-            </div>
-            @if (repSchemeLine(w); as scheme) {
-              <p class="text-xl font-bold">{{ scheme }}</p>
-            }
-            @if (sortedMovements().length > 0) {
-              <ul class="flex flex-col divide-y divide-border">
-                @for (wm of sortedMovements(); track wm.id) {
-                  <li class="py-2 flex flex-col gap-1">
-                    <div class="flex flex-wrap items-baseline gap-x-2 text-base md:text-lg">
-                      @if (quantity(wm, w); as qty) {
-                        <span class="font-bold">{{ qty }}</span>
-                      }
-                      <a [routerLink]="['/movements', wm.movement.id]"
-                         class="font-semibold hover:text-primary transition-colors">{{ wm.movement.name }}</a>
-                      @if (variants(wm); as v) {
-                        <span class="text-sm text-muted-foreground">({{ v }})</span>
-                      }
-                      @for (measure of measures(wm); track $index) {
-                        <span class="font-semibold text-primary" data-slot="measure">
-                          <!-- One line: whitespace between the values would show around the slash -->
-                          @for (value of measure.values; track $index; let i = $index) {@if (i > 0) {/}<span [class]="measure.mine === null ? '' : measure.mine === i ? 'underline decoration-2 underline-offset-4' : 'font-normal text-muted-foreground'">{{ value }}</span>}
-                          {{ measure.unit }}
-                        </span>
-                      }
-                    </div>
-                    @if (movementNotes(wm); as n) {
-                      <p class="text-sm text-muted-foreground whitespace-pre-line">{{ n }}</p>
-                    }
-                    @if (scaling(wm); as sc) {
-                      <p class="text-sm text-muted-foreground whitespace-pre-line">
-                        <span class="font-semibold">{{ 'WOD.FIELDS.SCALING' | translate }} :</span> {{ sc }}
-                      </p>
-                    }
-                  </li>
-                }
-              </ul>
-            } @else {
-              <p class="italic text-muted-foreground">{{ 'WOD.MESSAGES.NO_MOVEMENTS' | translate }}</p>
-            }
-          </div>
+          <app-wod-whiteboard [wod]="w"/>
 
           <div class="flex flex-col gap-6 border-t border-border pt-6">
             <div class="flex flex-wrap gap-2">
@@ -173,50 +128,13 @@
         </app-detail-card>
       </div>
 
-      @if (copyDraft(); as draft) {
-        <div class="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4" role="dialog" aria-modal="true"
-     aria-labelledby="copy-title" (keydown.escape)="closeCopy()">
-          <div cdkTrapFocus [cdkTrapFocusAutoCapture]="true"
-        class="relative z-10 w-full sm:max-w-lg max-h-[90dvh] overflow-y-auto bg-popover text-popover-foreground border rounded-t-2xl sm:rounded-xl shadow-lg p-6 flex flex-col gap-4">
-            <h3 id="copy-title" class="text-lg font-bold">{{ 'WOD.TITLES.COPY' | translate }}</h3>
-            <p class="text-sm text-muted-foreground">{{ 'WOD.MESSAGES.COPY_HINT' | translate }}</p>
-            <label class="flex flex-col gap-1.5 w-full">
-              <span class="text-sm font-medium">{{ 'WOD.FIELDS.GYM' | translate }}</span>
-              <select id="copy-gym" appNativeSelect class="w-full" (change)="onCopyGymChange($any($event.target).value)">
-                @for (gym of copyTargets(); track gym.gymId) {
-                  <option [value]="gym.gymId" [selected]="gym.gymId === draft.gymId">{{ gym.gymName }}</option>
-                }
-              </select>
-            </label>
-            <label class="flex items-start gap-3 cursor-pointer">
-              <input id="copy-competition" type="checkbox" role="switch" class="switch mt-0.5" [checked]="draft.competition"
-                     (change)="onCopyCompetitionChange($any($event.target).checked)"/>
-              <span class="flex flex-col">
-                <span class="flex items-center gap-2"><ng-icon name="heroTrophy"></ng-icon>{{ 'WOD.FIELDS.COMPETITION' | translate }}</span>
-                <span class="text-sm text-muted-foreground">{{ 'WOD.MESSAGES.COMPETITION_HINT' | translate }}</span>
-              </span>
-            </label>
-            <div class="flex flex-col-reverse sm:flex-row justify-end gap-2 pt-2">
-              <button type="button" hlmBtn variant="ghost" size="lg" (click)="closeCopy()">{{ 'GLOBAL.CANCEL' | translate }}</button>
-              <button type="button" id="copy-confirm" hlmBtn size="lg" [disabled]="isCopying()" (click)="onCopy(w)">
-                @if (isCopying()) {
-                  <hlm-spinner/>
-                }
-                {{ 'WOD.ACTIONS.COPY' | translate }}
-              </button>
-            </div>
-          </div>
-          <div class="absolute inset-0 bg-black/50" aria-hidden="true" (click)="closeCopy()"></div>
-        </div>
-      }
-
       @if (scoresStore.editing()) {
         <app-score-form></app-score-form>
       }
 
       @if (canModify()) {
         <app-detail-admin-actions
-          [editLink]="['/wods/edit', w.id]"
+          [editLink]="w.gymId == null && !w.isPublic ? ['/training/wods', w.id, 'edit'] : ['/wods/edit', w.id]"
           (delete)="onDelete(w)">
         </app-detail-admin-actions>
       }

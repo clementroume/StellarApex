@@ -5,6 +5,7 @@ import {ActivatedRoute, Router, RouterModule} from '@angular/router';
 import {HttpErrorResponse} from '@angular/common/http';
 import {TranslatePipe, TranslateService} from '@ngx-translate/core';
 import {NgIconComponent} from '@ng-icons/core';
+import {MovementComboboxComponent} from '../../../shared/component/movement-combobox/movement-combobox.component';
 import {forkJoin} from 'rxjs';
 import {WodService} from '../../../api/aldebaran/services/wod.service';
 import {MovementService} from '../../../api/aldebaran/services/movement.service';
@@ -41,7 +42,7 @@ import {HlmTextarea} from '@spartan-ng/helm/textarea';
 @Component({
   selector: 'app-wod-form',
   standalone: true,
-  imports: [HlmTextarea, HlmInput, HlmCardImports, HlmButton, HlmBadge, NativeSelectDirective, HlmSpinner, ReactiveFormsModule, RouterModule, TranslatePipe, NgIconComponent],
+  imports: [HlmTextarea, HlmInput, HlmCardImports, HlmButton, HlmBadge, NativeSelectDirective, HlmSpinner, ReactiveFormsModule, RouterModule, TranslatePipe, NgIconComponent, MovementComboboxComponent],
   templateUrl: './wod-form.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -71,8 +72,6 @@ export class WodFormComponent implements OnInit {
   readonly variantFields: readonly WodMovementVariant[] = ['equipment', 'techniques'];
   /** Full movements (allowed equipment and techniques), loaded on demand by id. */
   readonly movementDetails = signal<Record<number, MovementResponse>>({});
-  private readonly movementsByName = computed(
-    () => new Map(this.availableMovements().map(m => [m.name.toLowerCase(), m])));
 
   /** The user's language first: a coach writes in their language, the other one is optional. */
   readonly primaryLanguage = computed<'FR' | 'EN'>(() =>
@@ -81,6 +80,7 @@ export class WodFormComponent implements OnInit {
   readonly languages = computed(() => [this.primaryLanguage(), this.secondaryLanguage()]);
 
   massUnits = computed(() => this.unitGroups()['MASS'] ?? []);
+  readonly segments = ['BUY_IN', 'MAIN', 'BUY_OUT'];
   distanceUnits = computed(() => this.unitGroups()['DISTANCE'] ?? []);
   // Box and target heights: cm / in for boxes, m / ft for wall-ball targets
   heightUnits = computed(() =>
@@ -134,6 +134,15 @@ export class WodFormComponent implements OnInit {
     emomInterval: [null as number | null, [Validators.min(0)]],
     emomRounds: [null as number | null, [Validators.min(0)]],
     repScheme: ['', [Validators.maxLength(100)]],
+    // Structure of the quick editor: rounds, rest / work (s), ascending ladder, weight vest
+    rounds: [null as number | null, [Validators.min(1)]],
+    restSeconds: [null as number | null, [Validators.min(0)]],
+    workSeconds: [null as number | null, [Validators.min(1)]],
+    ladderStart: [null as number | null, [Validators.min(1)]],
+    ladderStep: [null as number | null, [Validators.min(1)]],
+    vestWeight: [null as number | null, [Validators.min(0)]],
+    vestWeightFemale: [null as number | null, [Validators.min(0)]],
+    vestWeightUnit: [this.unitService.massUnit() as string],
     movements: this.fb.array([], minLengthArray(1))
   }, {validators: gymRequiredForGymVisibility});
 
@@ -218,8 +227,10 @@ export class WodFormComponent implements OnInit {
   addMovement(source?: WodMovementResponse): void {
     this.movementsFormArray.push(this.fb.group({
       movementId: [source?.movement.id ?? null as number | null, Validators.required],
-      // Search box (name or abbreviation), resolved to movementId; not sent to the API
-      movementQuery: [source?.movement.name ?? ''],
+      // Prescribed sets (strength / skill work), optional
+      sets: [source?.sets ?? null as number | null, [Validators.min(1)]],
+      // Buy-in, rounds or buy-out
+      segment: [source?.segment ?? 'MAIN'],
       repsScheme: [source?.repsScheme ?? '', [Validators.maxLength(50)]],
       weight: [source?.weight ?? null as number | null, [Validators.min(0)]],
       weightFemale: [source?.weightFemale ?? null as number | null, [Validators.min(0)]],
@@ -247,15 +258,14 @@ export class WodFormComponent implements OnInit {
     }
   }
 
-  /** Resolves the search box to a catalog movement; changing the movement clears its variants. */
-  onMovementQuery(index: number): void {
+  /** Movement picked in the combobox; changing the movement clears its variants. */
+  onMovementChange(index: number, movementId: number | null): void {
     const group = this.movementsFormArray.at(index);
-    const query = String(group.get('movementQuery')?.value ?? '').trim().toLowerCase();
-    const match = this.movementsByName().get(query) ?? null;
-    if ((match?.id ?? null) === group.get('movementId')?.value) return;
-    group.patchValue({movementId: match?.id ?? null, equipment: [], techniques: []});
-    if (match) {
-      this.loadMovementDetails(match.id);
+    if (movementId === group.get('movementId')?.value) return;
+    group.patchValue({movementId, equipment: [], techniques: []});
+    group.get('movementId')?.markAsTouched();
+    if (movementId != null) {
+      this.loadMovementDetails(movementId);
     }
   }
 
@@ -334,39 +344,7 @@ export class WodFormComponent implements OnInit {
           return;
         }
         this.originalWod.set(wod);
-        const timeCap = wod.timeCapSeconds ?? null;
-        this.wodForm.patchValue({
-          // --- Identification ---
-          title: wod.title,
-          wodType: wod.wodType,
-          category: wod.category ?? null,
-          scoreType: wod.scoreType,
-          // --- Authorship and Visibility ---
-          visibility: wod.gymId == null ? 'PRIVATE' : 'GYM',
-          gymId: wod.gymId ?? null,
-          isPublic: wod.isPublic,
-          competition: wod.competition,
-          // --- Description and Notes ---
-          descriptionFr: wod.descriptionFr || '',
-          descriptionEn: wod.descriptionEn || '',
-          notesFr: wod.notesFr || '',
-          notesEn: wod.notesEn || '',
-          tiebreakFr: wod.tiebreakFr || '',
-          tiebreakEn: wod.tiebreakEn || '',
-          // --- Structure and Prescription ---
-          timeCapMinutes: timeCap === null ? null : Math.floor(timeCap / 60),
-          timeCapSeconds: timeCap === null ? null : timeCap % 60,
-          repsPerRound: wod.repsPerRound ?? null,
-          emomInterval: wod.emomInterval ?? null,
-          emomRounds: wod.emomRounds ?? null,
-          repScheme: wod.repScheme || ''
-        });
-
-        this.movementsFormArray.clear();
-        [...wod.movements]
-          .sort((a, b) => a.orderIndex - b.orderIndex)
-          .forEach(wm => this.addMovement(wm));
-
+        this.fillForm(wod);
         this.wodForm.enable();
         // Aldebaran ignores ownership changes on update (WodMapper.updateEntity)
         this.wodForm.controls.visibility.disable();
@@ -378,6 +356,50 @@ export class WodFormComponent implements OnInit {
         void this.router.navigate(['/wods']);
       }
     });
+  }
+
+  /** Fills the form with a WOD (edition, or a session block's own WOD). */
+  private fillForm(wod: WodResponse): void {
+    const timeCap = wod.timeCapSeconds ?? null;
+    this.wodForm.patchValue({
+      // --- Identification ---
+      title: wod.title,
+      wodType: wod.wodType,
+      category: wod.category ?? null,
+      scoreType: wod.scoreType,
+      // --- Authorship and Visibility ---
+      visibility: wod.gymId == null ? 'PRIVATE' : 'GYM',
+      gymId: wod.gymId ?? null,
+      isPublic: wod.isPublic,
+      competition: wod.competition,
+      // --- Description and Notes ---
+      descriptionFr: wod.descriptionFr || '',
+      descriptionEn: wod.descriptionEn || '',
+      notesFr: wod.notesFr || '',
+      notesEn: wod.notesEn || '',
+      tiebreakFr: wod.tiebreakFr || '',
+      tiebreakEn: wod.tiebreakEn || '',
+      // --- Structure and Prescription ---
+      timeCapMinutes: timeCap === null ? null : Math.floor(timeCap / 60),
+      timeCapSeconds: timeCap === null ? null : timeCap % 60,
+      repsPerRound: wod.repsPerRound ?? null,
+      emomInterval: wod.emomInterval ?? null,
+      emomRounds: wod.emomRounds ?? null,
+      repScheme: wod.repScheme || '',
+      rounds: wod.rounds ?? null,
+      restSeconds: wod.restSeconds ?? null,
+      workSeconds: wod.workSeconds ?? null,
+      ladderStart: wod.ladderStart ?? null,
+      ladderStep: wod.ladderStep ?? null,
+      vestWeight: wod.vestWeight ?? null,
+      vestWeightFemale: wod.vestWeightFemale ?? null,
+      vestWeightUnit: wod.vestWeightUnit ?? this.unitService.massUnit()
+    });
+
+    this.movementsFormArray.clear();
+    [...wod.movements]
+      .sort((a, b) => a.orderIndex - b.orderIndex)
+      .forEach(wm => this.addMovement(wm));
   }
 
   onSubmit(): void {
@@ -419,6 +441,8 @@ export class WodFormComponent implements OnInit {
       movementId: m.movementId,
       orderIndex: index + 1,
       // --- Prescription ---
+      sets: m.sets ?? undefined,
+      segment: m.segment ?? 'MAIN',
       repsScheme: m.repsScheme?.trim() || undefined,
       weight: m.weight ?? undefined,
       weightFemale: m.weightFemale ?? undefined,
@@ -467,6 +491,14 @@ export class WodFormComponent implements OnInit {
       emomInterval: isEmom ? (v.emomInterval ?? undefined) : undefined,
       emomRounds: isEmom ? (v.emomRounds ?? undefined) : undefined,
       repScheme: v.repScheme.trim() || undefined,
+      rounds: v.rounds,
+      restSeconds: v.restSeconds,
+      workSeconds: v.workSeconds,
+      ladderStart: v.ladderStart,
+      ladderStep: v.ladderStep,
+      vestWeight: v.vestWeight,
+      vestWeightFemale: v.vestWeightFemale,
+      vestWeightUnit: v.vestWeight == null && v.vestWeightFemale == null ? null : v.vestWeightUnit,
       movements
     };
   }

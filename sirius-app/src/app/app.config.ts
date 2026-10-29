@@ -61,6 +61,8 @@ import {
   heroCheck,
   heroPause,
   heroUserMinus,
+  heroChevronLeft,
+  heroLockOpen,
 } from '@ng-icons/heroicons/outline';
 import {
   hugeBodyPartMuscle,
@@ -115,7 +117,8 @@ export const APP_ICONS = {
   heroCheckBadge,
   heroDocumentDuplicate,
   heroHome, heroBookOpen, heroChartBar, heroUsers, heroCalendarDays, heroClipboardDocumentList, heroArrowTrendingUp, heroCheckCircle, heroAdjustmentsHorizontal,
-  heroUserPlus, heroClipboardDocument, heroLink, heroArrowPath, heroNoSymbol, heroArrowsRightLeft, heroCheck, heroPause, heroUserMinus
+  heroUserPlus, heroClipboardDocument, heroLink, heroArrowPath, heroNoSymbol, heroArrowsRightLeft, heroCheck, heroPause, heroUserMinus,
+  heroChevronLeft, heroLockOpen
 };
 
 export const appConfig: ApplicationConfig = {

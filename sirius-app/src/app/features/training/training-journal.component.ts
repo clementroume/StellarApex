@@ -10,18 +10,23 @@ import {BYPASS_LOADER} from '../../core/interceptors/loading.interceptor';
 import {DisplayGymService} from '../../core/services/display-gym.service';
 import {PageComponent} from '../../shared/component/page/page.component';
 import {ScoreRowComponent} from '../wods/scores/score-row/score-row.component';
+import {SessionJournalComponent} from '../sessions/session-journal/session-journal.component';
 
 const PAGE_SIZE = 20;
 
-/** Training journal: the user's scores, newest first, filtered by the displayed box/prog. */
+/** Training journal: the sessions done, then the user's scores, newest first, filtered by the displayed box/prog. */
 @Component({
   selector: 'app-training-journal',
   standalone: true,
-  imports: [TranslatePipe, HlmButton, HlmCardImports, HlmSpinner, PageComponent, ScoreRowComponent],
+  imports: [TranslatePipe, HlmButton, HlmCardImports, HlmSpinner, PageComponent, ScoreRowComponent, SessionJournalComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <app-page [title]="'TRAINING.JOURNAL.TITLE' | translate" [subtitle]="'TRAINING.JOURNAL.SUBTITLE' | translate">
+      <app-session-journal/>
       <section hlmCard>
+        <div hlmCardHeader>
+          <h2 hlmCardTitle>{{ 'TRAINING.JOURNAL.SCORES' | translate }}</h2>
+        </div>
         <div hlmCardContent>
           <ul class="divide-y">
             @for (score of visibleScores(); track score.id) {

@@ -515,7 +515,9 @@
       "ALL_CATEGORIES": "Toutes les catégories",
       "ALL_FORMATS": "Tous les formats",
       "USE_REPS_PER_ROUND": "Utiliser {{reps}} (d'après les mouvements)",
-      "COPY": "Copier dans ma box"
+      "COPY": "Copier dans ma box",
+      "PROGRAM": "Programmer dans une séance",
+      "ADD_PUBLIC": "Nouveau WOD public"
     },
     "SCOPES": {
       "ALL": "Tous",
@@ -579,7 +581,8 @@
       "TIEBREAK_EN": "Tie-break (anglais)",
       "REPS_PER_ROUND": "Répétitions par tour (facultatif)",
       "COMPETITION": "Compétition",
-      "SCOPE": "Portée"
+      "SCOPE": "Portée",
+      "SETS": "Séries"
     },
     "PLACEHOLDERS": {
       "TITLE": "Ex : Fran",
@@ -588,7 +591,8 @@
       "NOTES": "Consignes pour le coach ou l'athlète...",
       "REPS": "Ex : 21-15-9",
       "MOVEMENT_SEARCH": "Rechercher par nom ou abréviation (ex : HSPU)",
-      "TIEBREAK": "Seulement pour les WOD de compétition, ex. « Temps à la fin de la dernière série de wall walks complète »"
+      "TIEBREAK": "Seulement pour les WOD de compétition, ex. « Temps à la fin de la dernière série de wall walks complète »",
+      "SETS": "ex. 5"
     },
     "VISIBILITY": {
       "PUBLIC": "Public",
@@ -612,7 +616,8 @@
       "COPY_HINT": "La copie est privée à la box et a son propre classement, indépendant du WOD d'origine.",
       "COPIED": "WOD copié",
       "COPY_ERROR": "Impossible de copier le WOD",
-      "COPIED_FROM": "Copié du WOD d'origine"
+      "COPIED_FROM": "Copié du WOD d'origine",
+      "MOVEMENT_REQUIRED": "Choisis un mouvement du catalogue."
     },
     "WOD_TYPES": {
       "FOR_TIME": "For Time",
@@ -623,13 +628,15 @@
       "STRENGTH": "Force",
       "SKILL": "Skill / Technique",
       "ACCESSORY": "Renforcement (Accessory)",
-      "CUSTOM": "Personnalisé"
+      "CUSTOM": "Personnalisé",
+      "CHIPPER": "Chipper",
+      "LADDER": "Ladder",
+      "DEATH_BY": "Death by"
     },
     "CATEGORIES": {
       "GIRLS": "Girls",
       "HERO": "Hero",
       "BENCHMARK": "Benchmark CrossFit",
-      "CUSTOM_BENCHMARK": "Benchmark de la box",
       "OPEN": "Open",
       "QUARTERFINALS": "Quarts de finale",
       "SEMIFINALS": "Demi-finales",
@@ -665,6 +672,80 @@
     },
     "HINTS": {
       "REPS_PER_ROUND": "Pour une AMRAP à tour fixe : les scores sont en total de répétitions, aussi affichés en tours + rép. Laisser vide pour les échelles ou les chippers."
+    },
+    "QUICK": {
+      "ROUNDS": "Rounds",
+      "EVERY": "Toutes les (min)",
+      "DURATION": "Durée (min)",
+      "TIME_CAP": "Time cap (min)",
+      "LADDER_HINT": "Reps communes à tous les mouvements",
+      "SETS_HINT": "{{sets}} séries de {{reps}}",
+      "SCORE": "Score",
+      "REPS": "Reps",
+      "LOAD": "Charge H/F",
+      "HEIGHT": "Hauteur H/F",
+      "DISTANCE": "Distance",
+      "CALORIES": "Calories H/F",
+      "MEN": "Hommes",
+      "WOMEN": "Femmes",
+      "REMOVE": "Retirer le mouvement {{n}}",
+      "TITLE": "Titre (facultatif)",
+      "NOTES": "Notes / scaling",
+      "NOTES_PLACEHOLDER": "Consignes, options de scaling…",
+      "FORMATS": {
+        "FOR_TIME": "For Time",
+        "ROUNDS": "Rounds",
+        "CHIPPER": "Chipper",
+        "LADDER": "Ladder",
+        "AMRAP": "AMRAP",
+        "EMOM": "EMOM / Intervalles",
+        "TABATA": "Tabata",
+        "DEATH_BY": "Death by",
+        "STRENGTH": "Force",
+        "SKILL": "Skill"
+      },
+      "N_ROUNDS": "{{count}} rounds",
+      "REST_BETWEEN": "Repos entre rounds (s)",
+      "WORK": "Travail (s)",
+      "REST": "Repos (s)",
+      "WORK_REST": "+ travail / repos",
+      "NO_WORK_REST": "sans travail / repos",
+      "LADDER_DIRECTION": "Sens de l'échelle",
+      "LADDER_DOWN": "Descendante",
+      "LADDER_UP": "Montante",
+      "LADDER_VALUES": "Reps de l'échelle",
+      "LADDER_START": "Départ",
+      "LADDER_STEP": "Pas",
+      "DEATH_START": "Reps 1re minute",
+      "DEATH_STEP": "+ par minute",
+      "SETS": "Séries",
+      "SETS_PLACEHOLDER": "5x5, 5-5-3-3-1, monter au 1RM…",
+      "MEASURE": "Mesure",
+      "MEASURES": {
+        "REPS": "Reps",
+        "MAX": "Max reps",
+        "DISTANCE": "Distance",
+        "CALORIES": "Calories",
+        "TIME": "Temps"
+      },
+      "TIME_S": "Temps (s)",
+      "LOAD_HEIGHT": "charge / hauteur",
+      "SEGMENT": "Partie du WOD",
+      "VEST": "Gilet lesté H/F",
+      "EQUIPMENT": "Équipement",
+      "TECHNIQUE": "Technique"
+    },
+    "CATALOGUE_SUBTITLE": "Les WODs de référence : Girls, Hero, benchmarks, Open… Programme-les dans une séance de ta box.",
+    "SEGMENTS": {
+      "BUY_IN": "Buy-in",
+      "MAIN": "Dans les rounds",
+      "BUY_OUT": "Buy-out"
+    },
+    "BOARD": {
+      "ROUNDS_FOR_TIME": "{{count}} rounds for time",
+      "DEATH_BY": "{{start}} rep(s) la 1re minute, +{{step}} chaque minute",
+      "REST": "Repos {{rest}} entre les rounds",
+      "VEST": "Gilet"
     }
   },
   "SCORE": {
@@ -711,7 +792,8 @@
       "GYM": "Box / prog",
       "NO_GYM": "Aucune",
       "ATHLETE": "Athlète",
-      "ME": "Moi"
+      "ME": "Moi",
+      "SUBMIT": "Soumettre à validation"
     },
     "PLACEHOLDERS": {
       "SCALING_NOTES": "ex. thrusters à 35 kg, tractions avec élastique"
@@ -740,7 +822,8 @@
       "GYM_HINT": "Où tu as fait ce WOD : ton score apparaît alors dans le classement de cette box ou prog et ses coachs peuvent le vérifier.",
       "ATHLETE_HINT": "Un score saisi pour un athlète est validé directement.",
       "VERIFIED": "Score validé",
-      "UNVERIFIED": "Validation retirée"
+      "UNVERIFIED": "Validation retirée",
+      "SUBMIT_HINT": "Un juge de la box valide ton score pour le classement compétition. Sans la coche, c'est un score normal."
     },
     "TIEBREAK_SHORT": "TB {{time}}",
     "ENTRY": {
@@ -763,7 +846,22 @@
     "VERIFIED": "Validé",
     "VERIFIED_BY": "Validé par {{name}}",
     "LOGGED_BY": "Saisi par {{name}}",
-    "STAFF": "le staff"
+    "STAFF": "le staff",
+    "SETS": {
+      "TITLE": "Séries",
+      "START": "Saisir série par série",
+      "ADD": "Ajouter une série",
+      "REPS": "Répétitions de la série {{n}}",
+      "REPS_SHORT": "Reps",
+      "WEIGHT": "Charge de la série {{n}}",
+      "COMPLETED": "Réussie",
+      "COMPLETED_HINT": "Décoche une série manquée : elle ne compte pas comme performance.",
+      "REMOVE": "Retirer la série {{n}}",
+      "BEST": "Meilleure série : {{value}} {{unit}}",
+      "VOLUME": "Volume : {{value}} {{unit}}",
+      "SUMMARY": "{{count}} séries"
+    },
+    "SUBMITTED": "Soumis à validation"
   },
   "ADMIN": {
     "SUPPORT": {
@@ -880,8 +978,11 @@
     "PR": "PR",
     "SESSION": {
       "TITLE": "Séance du jour",
-      "COMING": "La séance programmée par ta box ou ta prog s'affichera ici, avec « Séance faite » et la saisie de ton score.",
-      "SEE_WODS": "Voir les WODs"
+      "OPEN": "Voir la séance",
+      "LOG_SCORE": "Saisir mes scores",
+      "EMPTY": "Pas de séance aujourd'hui pour ta box ou ta prog.",
+      "SEE_WEEK": "Voir la semaine",
+      "PERSONAL": "Créer une séance perso"
     },
     "SCORES": {
       "TITLE": "Derniers scores",
@@ -896,8 +997,9 @@
   "TRAINING": {
     "JOURNAL": {
       "TITLE": "Journal",
-      "SUBTITLE": "Tous tes scores, du plus récent au plus ancien.",
-      "MORE": "Voir plus"
+      "SUBTITLE": "Tes séances faites et tous tes scores, du plus récent au plus ancien.",
+      "MORE": "Voir plus",
+      "SCORES": "Scores"
     },
     "RECORDS": {
       "TITLE": "Records",
@@ -906,12 +1008,18 @@
     "REVIEW": {
       "TITLE": "Bilan",
       "COMING": "Ton bilan (volume, sollicitation musculaire, répartition par modalité) arrivera ici."
+    },
+    "WODS": {
+      "TITLE": "Mes WODs",
+      "SUBTITLE": "Tes WODs perso, visibles de toi seul.",
+      "NEW": "Nouveau WOD",
+      "EDIT": "Modifier le WOD",
+      "EMPTY": "Pas encore de WOD perso."
     }
   },
   "BOX": {
     "SESSIONS": {
-      "TITLE": "Séances",
-      "COMING": "Les séances programmées par ta box ou ta prog arriveront ici."
+      "TITLE": "Séances"
     },
     "LEADERBOARDS": {
       "TITLE": "Classements",
@@ -1046,5 +1154,186 @@
     "PENDING_EXISTS": "Tu as déjà une demande en attente de validation ({{name}}) : une seule à la fois.",
     "ERROR_NAME_MAX": "100 caractères maximum.",
     "ERROR_DESCRIPTION_MAX": "1000 caractères maximum."
+  },
+  "SESSION": {
+    "WEEK_OF": "Semaine du {{from}} au {{to}}",
+    "DONE": "Faite",
+    "HIDDEN": "Contenu masqué",
+    "HIDDEN_HINT": "Le contenu s'affichera selon la règle de visibilité choisie par le staff.",
+    "HIDDEN_TITLE": "Contenu pas encore visible",
+    "OPENS_AT": "Visible le {{date}}.",
+    "OPTIONAL": "optionnel",
+    "BORROWED": "WOD existant",
+    "LEADERBOARD": "Classement",
+    "MY_SCORE": "Mon score",
+    "MINUTES": "{{count}} min",
+    "BLOCK_DONE": "{{kind}} fait",
+    "BLOCK_DONE_SHORT": "Fait",
+    "PERSONAL": "Séance perso",
+    "LOCKED": "Verrouillée",
+    "LOGGED_ON": "Séance faite le {{date}}",
+    "LANG_FR": "français",
+    "LANG_EN": "anglais",
+    "DELETE_TITLE": "Supprimer la séance ?",
+    "DELETE_DESC": "La séance et les WODs écrits pour elle sont supprimés ; les WODs existants empruntés restent au catalogue.",
+    "UNLOG_TITLE": "Annuler « Séance faite » ?",
+    "UNLOG_DESC": "Ton journal de cette séance est supprimé.",
+    "VISIBILITY_DESC": "Quand les athlètes de la box voient le contenu des blocs. Le staff voit toujours tout.",
+    "TYPES": {
+      "WOD": "Séance WOD",
+      "SPECIALTY": "Spécialité"
+    },
+    "DISCIPLINES": {
+      "CROSSFIT": "CrossFit",
+      "WEIGHTLIFTING": "Haltérophilie",
+      "STRENGTH": "Force",
+      "GYMNASTICS": "Gymnastique",
+      "ENDURANCE": "Endurance",
+      "HYROX": "Hyrox",
+      "MOBILITY": "Mobilité",
+      "BODYBUILDING": "Body / Core",
+      "STRONGMAN": "Strongman",
+      "OTHER": "Autre"
+    },
+    "KINDS": {
+      "WARM_UP": "Warm-up",
+      "SKILL": "Skill",
+      "WOD": "WOD",
+      "ACCESSORY": "Accessoires",
+      "FINISHER": "Finisher",
+      "COOL_DOWN": "Cool down"
+    },
+    "STIMULI": {
+      "STRENGTH": "Force",
+      "POWER": "Puissance",
+      "SKILL": "Technique",
+      "AEROBIC": "Aérobie",
+      "THRESHOLD": "Seuil",
+      "ANAEROBIC": "Anaérobie",
+      "MIXED": "Mixte (metcon)",
+      "MOBILITY": "Mobilité"
+    },
+    "POLICIES": {
+      "ADVANCE": {
+        "LABEL": "À l'avance",
+        "HINT": "Toute la box voit le contenu à l'instant choisi, avant le jour de la séance.",
+        "HIDDEN": ""
+      },
+      "DAY_OF": {
+        "LABEL": "Le jour J",
+        "HINT": "Toute la box voit le contenu le jour de la séance (un jour de sa semaine pour une spécialité), à l'heure choisie.",
+        "HIDDEN": ""
+      },
+      "AFTER": {
+        "LABEL": "Le lendemain",
+        "HINT": "Toute la box voit le contenu le lendemain de la séance (le lundi suivant pour une spécialité).",
+        "HIDDEN": ""
+      },
+      "AFTER_PARTICIPANTS": {
+        "LABEL": "Participants, puis le lendemain",
+        "HINT": "Chaque athlète voit le contenu dès sa « Séance faite », toute la box le lendemain.",
+        "HIDDEN": "Fais « Séance faite » pour voir le contenu, ou attends le {{date}}."
+      },
+      "PARTICIPANTS_ONLY": {
+        "LABEL": "Participants seulement",
+        "HINT": "Seuls les athlètes qui ont fait la séance voient son contenu.",
+        "HIDDEN": "Le contenu est réservé aux athlètes qui ont fait la séance : fais « Séance faite » pour le voir."
+      },
+      "DEFAULT_OF": "Réglage de la box ({{policy}})"
+    },
+    "ACTIONS": {
+      "NEW": "Nouvelle séance",
+      "NEW_PERSONAL": "Séance perso",
+      "VISIBILITY": "Visibilité",
+      "LOG": "Séance faite",
+      "UNLOG": "Annuler",
+      "MOVE_UP": "Monter le bloc {{n}}",
+      "MOVE_DOWN": "Descendre le bloc {{n}}",
+      "REMOVE_BLOCK": "Retirer le bloc {{n}}"
+    },
+    "FIELDS": {
+      "TYPE": "Type de séance",
+      "DATE": "Jour",
+      "WEEK": "Semaine (un jour de la semaine)",
+      "DISCIPLINE": "Discipline",
+      "TITLE": "Titre",
+      "DESCRIPTION": "Description",
+      "VISIBILITY": "Visibilité du contenu",
+      "VISIBLE_AT": "Visible à partir du",
+      "THEME": "Thème",
+      "TEXT": "Texte"
+    },
+    "PLACEHOLDERS": {
+      "TITLE": "ex. WOD des Games (facultatif)",
+      "DESCRIPTION": "Mot du coach, consignes générales…",
+      "TEXT": "ex. 2 tours : 10 air squats, 10 PVC pass-through…",
+      "BORROW": "Rechercher un WOD (Fran, Murph…)",
+      "THEME_SKILL": "ex. 5RM Thruster",
+      "THEME_WOD": "ex. AMRAP Zone 3",
+      "THEME_ACCESSORY": "ex. Gainage",
+      "THEME_FINISHER": "ex. Burpees"
+    },
+    "FORM": {
+      "NEW": "Nouvelle séance",
+      "NEW_PERSONAL": "Nouvelle séance perso",
+      "EDIT": "Modifier la séance",
+      "BLOCKS": "Blocs",
+      "THEME_HINT": "visible à l'avance par toute la box",
+      "WOD_OWN": "WOD écrit pour la séance",
+      "CHANGE_WOD": "Changer",
+      "WRITE_WOD": "Écrire le WOD",
+      "BORROW_WOD": "Prendre un WOD existant",
+      "COMPETITION_HINT": "Pour l'Open : le WOD devient un WOD de compétition de la box ; chaque athlète choisit de soumettre son score aux juges.",
+      "ADD_BLOCK": "Ajouter un bloc",
+      "NO_WOD": "Aucun WOD trouvé.",
+      "WOD_DONE": "Valider le WOD",
+      "CHANGE": "modifier",
+      "MORE": "Titre ou mot du coach",
+      "COMPETITION": "Compétition (Open)"
+    },
+    "MESSAGES": {
+      "LOAD_ERROR": "Impossible de charger les séances.",
+      "FORBIDDEN": "Tu n'as pas accès à cette séance.",
+      "NOT_FOUND": "Séance introuvable.",
+      "LOGGED": "Séance faite, bravo !",
+      "UNLOGGED": "Journal de la séance supprimé.",
+      "SAVE_ERROR": "Impossible d'enregistrer la séance.",
+      "VISIBILITY_SAVED": "Visibilité enregistrée.",
+      "LOCKED": "Des athlètes ont fait la séance : ses blocs ne peuvent plus changer, seule sa visibilité.",
+      "LOGGED_HINT": "Décoche un bloc que tu n'as pas fait et saisis tes scores bloc par bloc.",
+      "LOG_HINT": "Tous les blocs sont cochés : tu pourras décocher ceux que tu n'as pas faits.",
+      "NOT_YET": "« Séance faite » sera disponible le jour de la séance.",
+      "LOG_FIRST": "Fais d'abord « Séance faite » pour rattacher ton score à cette séance.",
+      "WOD_MISSING": "Le bloc {{n}} n'a pas de WOD : écris-le ou prends un WOD existant.",
+      "CREATED": "Séance créée.",
+      "UPDATED": "Séance mise à jour."
+    },
+    "WEEK": {
+      "SUBTITLE": "Les séances de ta box ou ta prog, jour par jour.",
+      "NAV": "Semaine affichée",
+      "PREVIOUS": "Semaine précédente",
+      "NEXT": "Semaine suivante",
+      "THIS_WEEK": "Revenir à cette semaine",
+      "SPECIALTIES": "Spécialités de la semaine",
+      "EMPTY_DAY": "Pas de séance."
+    },
+    "QUEUE": {
+      "TITLE": "Scores à valider",
+      "EMPTY": "Aucun score soumis en attente."
+    },
+    "SETTINGS": {
+      "TITLE": "Séances",
+      "DESC": "Règle de visibilité par défaut des nouvelles séances et fuseau horaire de la box.",
+      "DEFAULT": "Visibilité par défaut",
+      "TIME_ZONE": "Fuseau horaire",
+      "TIME_ZONE_HINT": "Sert à placer « le jour J à 18 h » et « le lendemain » (ex. Europe/Paris).",
+      "SAVED": "Réglages des séances enregistrés."
+    },
+    "JOURNAL": {
+      "TITLE": "Séances",
+      "BLOCKS": "{{done}}/{{total}} blocs",
+      "SCORES": "{{count}} score(s)",
+      "EMPTY": "Pas encore de séance faite."
+    }
   }
 }

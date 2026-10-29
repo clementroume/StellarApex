@@ -6,6 +6,7 @@ import {provideIcons} from '@ng-icons/core';
 import {of} from 'rxjs';
 import {BoxSettingsComponent} from './box-settings.component';
 import {GymService} from '../../../api/antares/services/gym.service';
+import {SessionService} from '../../../api/aldebaran/services/session.service';
 import {MembershipService} from '../../../api/antares/services/membership.service';
 import {UserService} from '../../../api/antares/services/user.service';
 import {AccessService} from '../../../core/services/access.service';
@@ -54,7 +55,14 @@ describe('BoxSettingsComponent', () => {
         {provide: UserService, useValue: userService},
         {provide: AccessService, useValue: {isAdmin: signal(false), gymsWithPermission: vi.fn().mockReturnValue([membership])}},
         {provide: DisplayGymService, useValue: {gymId: signal(null)}},
-        {provide: NotificationService, useValue: {showSuccess: vi.fn(), showError: vi.fn()}}
+        {provide: NotificationService, useValue: {showSuccess: vi.fn(), showError: vi.fn()}},
+        {
+          provide: SessionService,
+          useValue: {
+            getSettings: vi.fn().mockReturnValue(of({defaultVisibility: 'AFTER_PARTICIPANTS', timeZone: 'Europe/Paris'})),
+            updateSettings: vi.fn()
+          }
+        }
       ]
     }).compileComponents();
     fixture = TestBed.createComponent(BoxSettingsComponent);

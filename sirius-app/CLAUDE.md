@@ -7,7 +7,8 @@ the dev proxy targets the local Traefik `https://localhost` with `Host: stellar.
 ## Layout
 
 - `src/app/api/<service>/{models,services}`: one Angular service per backend resource, DTO interfaces
-  mirroring the backend (`antares` = auth/users/gyms/memberships, `aldebaran` = muscles/movements/WODs/scores).
+  mirroring the backend (`antares` = auth/users/gyms/memberships, `aldebaran` = muscles/movements/WODs/
+  scores/sessions).
   URLs built from `environment.authUrl` (`/antares`) / `environment.trainingUrl` (`/aldebaran`).
 - `src/app/core`: guards, interceptors, layout (navbar, bottom-nav, space-nav, `spaces.service`, main-layout,
   support banner), cross-cutting
@@ -109,9 +110,23 @@ the dev proxy targets the local Traefik `https://localhost` with `Host: stellar.
   body weights / heights of the athlete profile: `bodyWeightFromKg` / `heightFromCm` and back.
 - Competition WODs: `WodResponse.capabilities.canJudge` decides the athlete selector of the score form
   (`GymService.getAthletes`); per-score buttons follow `ScoreCapabilities.canModify/canVerify`;
-  `WodScoresStore.setVerified`. The copy dialog lives in the WOD detail (`WodService.copyWod`).
+  `WodScoresStore.setVerified`. A WOD page offers "Program in a session" (`/box/sessions/new?borrow=`).
 - Scores on the WOD detail: `features/wods/scores` (`WodScoresStore` provided by the detail, shared by
-  `score-best`, `score-history`, `score-form`; `formatScore` in `score.utils.ts`).
+  `score-best`, `score-history`, `score-form`; `formatScore` in `score.utils.ts`). Each session block
+  provides its own store with `sessionLogId` (new scores join the journal; the form then hides day
+  and gym). Strength sets: `ScoreRequest.sets` (Aldebaran derives the best set / volume).
+- WOD prescription display: `features/wods/wod-whiteboard` (WOD detail and session blocks). Coaches and
+  athletes write WODs with `features/wods/wod-quick-form` (`initial`, `defaultFormat`, `(submitted)`
+  hands the `WodRequest` back; formats, measures per movement, ladder / sets parsing in `wod-quick.utils.ts`;
+  structure in fields, never a free scheme); the
+  full `wod-form` is for public WODs (admins). Both pick movements with `app-movement-combobox`.
+- WOD catalogue (`/wods`) = public WODs only; personal WODs in `features/training/my-wods`.
+- Sessions (`features/sessions`, lazy routes in `box.routes.ts` and `training.routes.ts`, personal
+  ones flagged by route data `personal`): `session-week`, `session-detail`, `session-block`,
+  `session-form`, `session-card` (frame), `session-journal`, `session-settings` card; dates helpers
+  in `session.utils.ts` (local yyyy-MM-dd, Monday of a week). Content visibility, lock and "Séance
+  faite" come from `SessionResponse.capabilities`; the policy list for a program is restricted in
+  the UI only for comfort (Aldebaran refuses the others).
 
 ## Tests
 
@@ -125,8 +140,8 @@ the dev proxy targets the local Traefik `https://localhost` with `Host: stellar.
 
 ## Known state
 
-- Initial bundle budget (`angular.json`): warning at 600 kB (raised from 500 kB in lot 0): ~580 kB
-  (137 kB transferred; 520 kB before lot 0). Tailwind generates the utilities of every helm file
+- Initial bundle budget (`angular.json`): warning at 600 kB (raised from 500 kB in lot 0): ~590 kB
+  (139 kB transferred after lot B; 520 kB before lot 0). New screens stay lazy (sessions: own chunks). Tailwind generates the utilities of every helm file
   (~145 kB of CSS) and helm in the shell brings `tailwind-merge` (~37 kB). Keep heavy brain modules out of the shell
   (sonner is loaded on first toast and its toaster is `@defer (on idle)`).
   `@spartan-ng/helm/utils` must not re-export `provideSpartanHlm` (it drags `@angular/cdk/overlay` in).

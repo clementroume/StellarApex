@@ -1,24 +1,23 @@
-import {ChangeDetectionStrategy, Component, computed, DOCUMENT, effect, inject, input, signal} from '@angular/core';
+import {ChangeDetectionStrategy, Component, computed, effect, inject, input, signal} from '@angular/core';
 import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
 import {TranslatePipe, TranslateService} from '@ngx-translate/core';
 import {Router, RouterModule} from '@angular/router';
 import {Location} from '@angular/common';
 import {HttpErrorResponse} from '@angular/common/http';
 import {NgIconComponent} from '@ng-icons/core';
-import {WodMovementResponse, WodResponse} from '../../../api/aldebaran/models/wod.model';
+import {WodResponse} from '../../../api/aldebaran/models/wod.model';
 import {WodService} from '../../../api/aldebaran/services/wod.service';
 import {NotificationService} from '../../../core/services/notification.service';
 import {AccessService} from '../../../core/services/access.service';
 import {ProblemDetail} from '../../../core/models/problem-detail.model';
-import {MeasurePair, UnitService} from '../../../core/services/unit.service';
-import {AuthService} from '../../../api/antares/services/auth.service';
 import {
   DetailAdminActionsComponent
 } from '../../../shared/component/detail/detail-admin-actions/detail-admin-actions.component';
 import {DetailCardComponent} from '../../../shared/component/detail/detail-card/detail-card.component';
 import {DetailHeaderComponent} from '../../../shared/component/detail/detail-header/detail-header.component';
 import {DetailStateComponent} from '../../../shared/component/detail/detail-state/detail-state.component';
-import {formatDuration, formatTimeCapShort, localizedText} from '../wod.utils';
+import {localizedText} from '../wod.utils';
+import {WodWhiteboardComponent} from '../wod-whiteboard/wod-whiteboard.component';
 import {WodScoresStore} from '../scores/wod-scores.store';
 import {ScoreBestComponent} from '../scores/score-best/score-best.component';
 import {ScoreHistoryComponent} from '../scores/score-history/score-history.component';
@@ -27,29 +26,19 @@ import {ScoreLeaderboardComponent} from '../scores/score-leaderboard/score-leade
 
 export type WodVisibility = 'PUBLIC' | 'GYM' | 'PRIVATE';
 
-// Official competition categories: their copies are competition WODs by default
-const COMPETITION_CATEGORIES = ['OPEN', 'QUARTERFINALS', 'SEMIFINALS', 'GAMES'];
-// Rep schemes that only restate the format ("AMRAP 20 min", "For time", "Tabata x 4")
-const FORMAT_SCHEME = /^(amrap|emom|tabata|for time)\b/i;
-// Rep schemes that describe the structure rather than list the movement quantities
-const STRUCTURE_SCHEME = /round|tier|window|rm\b| x /i;
 
-import {HlmSpinner} from '@spartan-ng/helm/spinner';
-import {NativeSelectDirective} from '../../../shared/component/native-select/native-select.directive';
 import {HlmBadge} from '@spartan-ng/helm/badge';
 import {HlmButton} from '@spartan-ng/helm/button';
-import {CdkTrapFocus} from '@angular/cdk/a11y';
 @Component({
   selector: 'app-wod-detail',
   standalone: true,
-  imports: [CdkTrapFocus, HlmButton, HlmBadge, NativeSelectDirective, HlmSpinner, TranslatePipe, RouterModule, NgIconComponent, DetailAdminActionsComponent, DetailCardComponent, DetailHeaderComponent, DetailStateComponent, ScoreBestComponent, ScoreHistoryComponent, ScoreFormComponent, ScoreLeaderboardComponent],
+  imports: [HlmButton, HlmBadge, TranslatePipe, RouterModule, NgIconComponent, DetailAdminActionsComponent, DetailCardComponent, DetailHeaderComponent, DetailStateComponent, ScoreBestComponent, ScoreHistoryComponent, ScoreFormComponent, ScoreLeaderboardComponent, WodWhiteboardComponent],
   providers: [WodScoresStore],
   templateUrl: './wod-detail.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class WodDetailComponent {
   // --- INJECTIONS ---
-  private readonly document = inject(DOCUMENT);
   id = input.required<string>();
   private readonly translate = inject(TranslateService);
   private readonly wodService = inject(WodService);
@@ -57,16 +46,11 @@ export class WodDetailComponent {
   private readonly notificationService = inject(NotificationService);
   private readonly router = inject(Router);
   private readonly location = inject(Location);
-  private readonly unitService = inject(UnitService);
-  private readonly authService = inject(AuthService);
   readonly scoresStore = inject(WodScoresStore);
 
   // --- STATE (SIGNALS) ---
   wod = signal<WodResponse | null>(null);
   isLoading = signal<boolean>(true);
-  /** Copy dialog: target gym and competition flag, null while closed. */
-  copyDraft = signal<{gymId: number; competition: boolean} | null>(null);
-  isCopying = signal<boolean>(false);
 
   // --- COMPUTED STATE ---
   activeLang = computed(() => this.translate.currentLang() ?? this.translate.fallbackLang() ?? 'en');
@@ -74,9 +58,6 @@ export class WodDetailComponent {
   description = computed(() => localizedText(this.activeLang(), this.wod()?.descriptionEn, this.wod()?.descriptionFr));
   notes = computed(() => localizedText(this.activeLang(), this.wod()?.notesEn, this.wod()?.notesFr));
   tiebreak = computed(() => localizedText(this.activeLang(), this.wod()?.tiebreakEn, this.wod()?.tiebreakFr));
-  sortedMovements = computed<WodMovementResponse[]>(() =>
-    [...(this.wod()?.movements ?? [])].sort((a, b) => a.orderIndex - b.orderIndex)
-  );
 
   visibility = computed<WodVisibility | null>(() => {
     const wod = this.wod();
@@ -94,12 +75,11 @@ export class WodDetailComponent {
   isLocked = computed(() => !!this.wod()?.capabilities?.locked);
 
   /**
-   * Physical gyms where the user may program WODs (WOD_WRITE): targets of a copy. A virtual
-   * programming sells its own WODs and never copies (Aldebaran refuses it too).
+   * A standalone WOD (a public benchmark, the Open...) is programmed into a session by users
+   * programming a box or a program (WOD_WRITE): the session form borrows it.
    */
-  copyTargets = computed(() => this.accessService.gymsWithPermission('WOD_WRITE').filter(g => !g.gymProgramming));
-  /** An original WOD can be copied by users programming a gym; a copy is never copied again. */
-  canCopy = computed(() => this.copyTargets().length > 0 && !this.wod()?.sourceWodId);
+  canProgram = computed(() =>
+    this.accessService.gymsWithPermission('WOD_WRITE').length > 0 && this.wod()?.standalone !== false);
 
   gymName = computed(() => {
     const gymId = this.wod()?.gymId;
@@ -146,49 +126,6 @@ export class WodDetailComponent {
     this.location.back();
   }
 
-  openCopy(wod: WodResponse): void {
-    const target = this.copyTargets()[0];
-    if (!target) return;
-    this.copyDraft.set({gymId: target.gymId, competition: COMPETITION_CATEGORIES.includes(wod.category ?? '')});
-  }
-
-  closeCopy(): void {
-    this.copyDraft.set(null);
-    // Give focus back to the button that opened the dialog
-    queueMicrotask(() => this.document.getElementById('copy-wod')?.focus());
-  }
-
-  onCopyGymChange(value: string): void {
-    this.copyDraft.update(d => d && {...d, gymId: Number(value)});
-  }
-
-  onCopyCompetitionChange(competition: boolean): void {
-    this.copyDraft.update(d => d && {...d, competition});
-  }
-
-  /** Copies the WOD into the chosen gym (private), then opens the copy. */
-  onCopy(wod: WodResponse): void {
-    const draft = this.copyDraft();
-    if (!draft || this.isCopying()) return;
-    this.isCopying.set(true);
-    this.wodService.copyWod(wod.id, draft).subscribe({
-      next: (copy) => {
-        this.isCopying.set(false);
-        this.copyDraft.set(null);
-        this.notificationService.showSuccess(this.translate.instant('WOD.MESSAGES.COPIED'));
-        this.wodService.notifyRefresh();
-        void this.router.navigate(['/wods', copy.id]);
-      },
-      error: (err: HttpErrorResponse) => {
-        this.isCopying.set(false);
-        const problem: ProblemDetail | undefined = err.error;
-        this.notificationService.showError(err.status === 403
-          ? this.translate.instant('WOD.MESSAGES.FORBIDDEN')
-          : problem?.detail || this.translate.instant('WOD.MESSAGES.COPY_ERROR'));
-      }
-    });
-  }
-
   onDelete(wod: WodResponse): void {
     const confirmMsg = this.translate.instant('GLOBAL.CONFIRM_DELETE', {name: wod.title});
 
@@ -211,95 +148,5 @@ export class WodDetailComponent {
         }
       });
     }
-  }
-
-  // --- HELPERS ---
-  /**
-   * First line of the whiteboard: the format with its duration when the duration is the workout itself
-   * ("AMRAP 20 minutes", "EMOM 10 minutes", "EMOM 5 x 2:00"), else the format alone ("For Time").
-   */
-  formatLine(wod: WodResponse): string {
-    const format = this.translate.instant('WOD.WOD_TYPES.' + wod.wodType);
-    if (wod.emomInterval && wod.emomRounds) {
-      return wod.emomInterval === 60
-        ? `${format} ${this.minutes(wod.emomRounds * 60)}`
-        : `${format} ${wod.emomRounds} x ${formatDuration(wod.emomInterval)}`;
-    }
-    if (wod.wodType === 'AMRAP' && wod.timeCapSeconds) return `${format} ${this.minutes(wod.timeCapSeconds)}`;
-    const scheme = wod.repScheme?.trim() ?? '';
-    // "EMOM 30 min", "Tabata x 4": the rep scheme already is the format line
-    return FORMAT_SCHEME.test(scheme) && !/^for time$/i.test(scheme) ? scheme : format;
-  }
-
-  /**
-   * Rep scheme line, only when it adds something: the structure ("5 rounds", "3 x (15 / 30 / 15)") or
-   * reps shared by the movements ("21-15-9"). A restated format or a list of the movement quantities
-   * ("1 mile / 100 / 200 / 300 / 1 mile") is left out, the movement lines already say it.
-   */
-  repSchemeLine(wod: WodResponse): string {
-    const scheme = wod.repScheme?.trim() ?? '';
-    if (!scheme || FORMAT_SCHEME.test(scheme)) return '';
-    const shared = wod.movements.some(wm => wm.repsScheme === wod.repScheme);
-    return shared || STRUCTURE_SCHEME.test(scheme) ? scheme : '';
-  }
-
-  /** "Time cap 15'", unless the time cap is already the duration of the format line (AMRAP). */
-  timeCapLabel(wod: WodResponse): string {
-    const cap = formatTimeCapShort(wod.timeCapSeconds);
-    if (!cap || wod.wodType === 'AMRAP') return '';
-    return `${this.translate.instant('WOD.FIELDS.TIME_CAP')} ${cap}`;
-  }
-
-  /**
-   * Quantity written before the movement on the whiteboard: its reps (omitted when they repeat the
-   * WOD's rep scheme, as in "21-15-9 / Thruster / Pull-up"), men's/women's calories or distance; the
-   * duration only when nothing else is given.
-   */
-  quantity(wm: WodMovementResponse, wod: WodResponse): string {
-    // "max" is written "Max" on the board
-    const reps = wm.repsScheme && wm.repsScheme !== wod.repScheme ? wm.repsScheme.replace(/^max\b/, 'Max') : '';
-    const calories = [wm.calories, wm.caloriesFemale].filter(v => v != null).join('/');
-    const parts = [
-      reps,
-      calories ? `${calories} cal` : '',
-      this.unitService.formatDistance(wm.distance, null, wm.distanceUnit)
-    ].filter(Boolean);
-    if (parts.length === 0 && wm.durationSeconds) parts.push(formatDuration(wm.durationSeconds));
-    return parts.join(' ');
-  }
-
-  /** Equipment and techniques of the movement in the WOD, e.g. "Rings, Strict". */
-  variants(wm: WodMovementResponse): string {
-    return [
-      ...(wm.equipment ?? []).map(eq => this.translate.instant('MOVEMENT.EQUIPMENT.' + eq)),
-      ...(wm.techniques ?? []).map(tech => this.translate.instant('MOVEMENT.TECHNIQUES.' + tech))
-    ].join(', ');
-  }
-
-  /**
-   * Men's / women's load and height in the user's units, written after the movement: "61/43 kg",
-   * "60/50 cm", the value of the user's division highlighted (D31).
-   */
-  measures(wm: WodMovementResponse): MeasurePair[] {
-    const division = this.authService.currentUser()?.division;
-    return [
-      this.unitService.loadPair(wm.weight, wm.weightFemale, wm.weightUnit, division),
-      this.unitService.distancePair(wm.height, wm.heightFemale, wm.heightUnit, division)
-    ].filter((pair): pair is MeasurePair => pair != null);
-  }
-
-  movementNotes(wm: WodMovementResponse): string {
-    return localizedText(this.activeLang(), wm.notesEn, wm.notesFr);
-  }
-
-  scaling(wm: WodMovementResponse): string {
-    return localizedText(this.activeLang(), wm.scalingOptionsEn, wm.scalingOptionsFr);
-  }
-
-  /** "20 minutes", or "7'05" for a duration that is not a whole number of minutes. */
-  private minutes(seconds: number): string {
-    return seconds % 60 === 0
-      ? this.translate.instant('WOD.FIELDS.DURATION_MINUTES', {count: seconds / 60})
-      : formatTimeCapShort(seconds);
   }
 }

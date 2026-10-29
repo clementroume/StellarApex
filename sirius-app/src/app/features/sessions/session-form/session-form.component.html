@@ -1,0 +1,240 @@
+<app-page [title]="(isEdit() ? 'SESSION.FORM.EDIT' : personal() ? 'SESSION.FORM.NEW_PERSONAL' : 'SESSION.FORM.NEW') | translate"
+          width="max-w-3xl">
+  @if (isLoading()) {
+    <div class="flex justify-center py-16"><hlm-spinner class="text-3xl text-primary" [aria-label]="'GLOBAL.LOADING' | translate"/></div>
+  } @else {
+  <form [formGroup]="form" (ngSubmit)="onSubmit()" class="flex flex-col gap-4" novalidate>
+
+    <!-- Session: gym, type, day (a week for a specialty), visibility on one line -->
+    <section class="rounded-xl border bg-card p-4 md:p-6 flex flex-col gap-3">
+      @if (!personal() && !isEdit()) {
+        <app-staff-gym-picker [candidates]="staffGym.candidates()" [value]="staffGym.gymId()" (valueChange)="staffGym.select($event)"/>
+      }
+      <div class="field-group w-full" role="group" [attr.aria-label]="'SESSION.FIELDS.TYPE' | translate">
+        @for (t of types; track t) {
+          <button type="button" hlmBtn variant="outline" class="flex-1 h-11 aria-pressed:bg-primary aria-pressed:text-primary-foreground aria-pressed:font-semibold"
+                  [id]="'type-' + t" [attr.aria-pressed]="value().type === t" (click)="form.controls.type.setValue(t)">
+            {{ 'SESSION.TYPES.' + t | translate }}
+          </button>
+        }
+      </div>
+
+      <div class="grid gap-3 sm:grid-cols-2">
+        <label class="flex flex-col gap-1.5">
+          <span class="text-sm font-medium">{{ (isSpecialty() ? 'SESSION.FIELDS.WEEK' : 'SESSION.FIELDS.DATE') | translate }}</span>
+          <input type="date" id="session-date" formControlName="date" hlmInput class="h-11 md:h-10"/>
+          @if (weekHint()) {
+            <span class="text-xs text-muted-foreground">{{ weekHint() }}</span>
+          }
+        </label>
+        @if (isSpecialty()) {
+          <label class="flex flex-col gap-1.5">
+            <span class="text-sm font-medium">{{ 'SESSION.FIELDS.DISCIPLINE' | translate }}</span>
+            <select appNativeSelect id="session-discipline" formControlName="discipline">
+              @for (d of disciplines; track d) {
+                @if (d !== 'CROSSFIT') {
+                  <option [value]="d">{{ 'SESSION.DISCIPLINES.' + d | translate }}</option>
+                }
+              }
+            </select>
+          </label>
+        }
+      </div>
+
+      @if (gymId() != null) {
+        @if (showVisibility()) {
+          <div class="flex flex-col gap-2 rounded-lg border p-3">
+            <label class="flex flex-col gap-1.5">
+              <span class="text-sm font-medium">{{ 'SESSION.FIELDS.VISIBILITY' | translate }}</span>
+              <select appNativeSelect id="session-visibility" formControlName="visibilityPolicy">
+                <option value="">{{ 'SESSION.POLICIES.DEFAULT_OF' | translate: {policy: defaultPolicyLabel()} }}</option>
+                @for (p of policies(); track p) {
+                  <option [value]="p">{{ 'SESSION.POLICIES.' + p + '.LABEL' | translate }}</option>
+                }
+              </select>
+            </label>
+            @if (effectivePolicy(); as p) {
+              <p class="text-xs text-muted-foreground">{{ 'SESSION.POLICIES.' + p + '.HINT' | translate }}</p>
+            }
+            @if (needsInstant()) {
+              <label class="flex flex-col gap-1.5">
+                <span class="text-sm font-medium">{{ 'SESSION.FIELDS.VISIBLE_AT' | translate }}</span>
+                <input type="datetime-local" id="session-visible-at" formControlName="contentVisibleAt" hlmInput class="h-11 md:h-10"/>
+              </label>
+            }
+          </div>
+        } @else {
+          <p class="text-sm text-muted-foreground flex flex-wrap items-center gap-1">
+            <ng-icon name="heroEye" aria-hidden="true"/>
+            {{ 'SESSION.FIELDS.VISIBILITY' | translate }} : {{ visibilityLabel() }} ·
+            <button type="button" id="edit-visibility" class="text-primary hover:underline" (click)="showVisibility.set(true)">{{ 'SESSION.FORM.CHANGE' | translate }}</button>
+          </p>
+        }
+      }
+
+      @if (showMore()) {
+        <label class="flex flex-col gap-1.5">
+          <span class="text-sm font-medium">{{ 'SESSION.FIELDS.TITLE' | translate }}</span>
+          <input type="text" id="session-title" formControlName="title" maxlength="100" hlmInput class="h-11 md:h-10"
+                 [placeholder]="'SESSION.PLACEHOLDERS.TITLE' | translate"/>
+        </label>
+        <label class="flex flex-col gap-1.5">
+          <span class="text-sm font-medium">{{ 'SESSION.FIELDS.DESCRIPTION' | translate }}</span>
+          <textarea [formControlName]="primaryFr() ? 'descriptionFr' : 'descriptionEn'" rows="2" hlmTextarea maxlength="4000"
+                    [placeholder]="'SESSION.PLACEHOLDERS.DESCRIPTION' | translate"></textarea>
+        </label>
+      } @else {
+        <button type="button" id="show-more" class="self-start text-sm text-primary hover:underline" (click)="showMore.set(true)">
+          + {{ 'SESSION.FORM.MORE' | translate }}
+        </button>
+      }
+    </section>
+
+    <!-- Blocks: warm-up first, cool down last, A, B, C... for the blocks with a WOD -->
+    <ol formArrayName="blocks" class="flex flex-col gap-3" [attr.aria-label]="'SESSION.FORM.BLOCKS' | translate">
+      @for (block of blockControls(); track block; let i = $index) {
+        @let kind = block.controls.kind.value;
+        <li [formGroupName]="i" class="session-block-editor rounded-xl border bg-card p-4 flex flex-col gap-3">
+          <div class="flex items-center justify-between gap-2">
+            <h3 class="font-semibold">
+              {{ 'SESSION.KINDS.' + kind | translate }}
+              @if (kind === 'ACCESSORY' || kind === 'FINISHER') {
+                <label class="ms-2 inline-flex items-center gap-1.5 text-sm font-normal text-muted-foreground cursor-pointer">
+                  <input type="checkbox" formControlName="optional" class="size-4 accent-(--color-secondary)"/>
+                  {{ 'SESSION.OPTIONAL' | translate }}
+                </label>
+              }
+            </h3>
+            <div class="flex">
+              @if (!isText(kind)) {
+                <button type="button" hlmBtn variant="ghost" size="icon" [disabled]="!canMove(i, -1)" (click)="moveBlock(i, -1)"
+                        [attr.aria-label]="'SESSION.ACTIONS.MOVE_UP' | translate: {n: i + 1}">
+                  <ng-icon name="heroArrowUp"/>
+                </button>
+                <button type="button" hlmBtn variant="ghost" size="icon" [disabled]="!canMove(i, 1)" (click)="moveBlock(i, 1)"
+                        [attr.aria-label]="'SESSION.ACTIONS.MOVE_DOWN' | translate: {n: i + 1}">
+                  <ng-icon name="heroArrowDown"/>
+                </button>
+              }
+              @if (canRemove(i)) {
+                <button type="button" hlmBtn variant="ghost" size="icon" class="text-destructive remove-block" (click)="removeBlock(i)"
+                        [attr.aria-label]="'SESSION.ACTIONS.REMOVE_BLOCK' | translate: {n: i + 1}">
+                  <ng-icon name="heroTrash"/>
+                </button>
+              }
+            </div>
+          </div>
+
+          @if (isText(kind)) {
+            <textarea [formControlName]="primaryFr() ? 'textFr' : 'textEn'" rows="3" hlmTextarea maxlength="4000"
+                      [attr.aria-label]="'SESSION.KINDS.' + kind | translate"
+                      [placeholder]="'SESSION.PLACEHOLDERS.TEXT' | translate"></textarea>
+          } @else {
+            <label class="flex flex-col gap-1.5">
+              <span class="text-sm font-medium">{{ 'SESSION.FIELDS.THEME' | translate }}
+                <span class="font-normal text-xs text-muted-foreground">· {{ 'SESSION.FORM.THEME_HINT' | translate }}</span></span>
+              <input type="text" [formControlName]="primaryFr() ? 'themeFr' : 'themeEn'" maxlength="80" hlmInput class="h-11 md:h-10"
+                     [placeholder]="'SESSION.PLACEHOLDERS.THEME_' + kind | translate"/>
+            </label>
+            @if (block.controls.wod.value; as w) {
+              <div class="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-muted px-3 py-2">
+                <span class="flex flex-col min-w-0">
+                  <span class="font-medium truncate">{{ w.title }}</span>
+                  <span class="text-xs text-muted-foreground">{{ (w.mode === 'own' ? 'SESSION.FORM.WOD_OWN' : 'SESSION.BORROWED') | translate }}</span>
+                </span>
+                <span class="flex gap-1">
+                  @if (w.mode === 'own') {
+                    <button type="button" hlmBtn variant="outline" size="sm" (click)="editingWod.set(i)">{{ 'GLOBAL.EDIT' | translate }}</button>
+                  }
+                  <button type="button" hlmBtn variant="ghost" size="sm" (click)="clearWod(i)">{{ 'SESSION.FORM.CHANGE_WOD' | translate }}</button>
+                </span>
+              </div>
+            } @else {
+              <div class="grid gap-2 grid-cols-2">
+                <button type="button" hlmBtn variant="outline" class="h-11 write-wod" (click)="editingWod.set(i)">
+                  <ng-icon name="heroPencilSquare" aria-hidden="true"/>{{ 'SESSION.FORM.WRITE_WOD' | translate }}
+                </button>
+                <button type="button" hlmBtn variant="outline" class="h-11 borrow-wod" (click)="openBorrow(i)">
+                  <ng-icon name="heroMagnifyingGlass" aria-hidden="true"/>{{ 'SESSION.FORM.BORROW_WOD' | translate }}
+                </button>
+              </div>
+            }
+            @if (kind === 'WOD' && canCompete()) {
+              <label class="flex items-center gap-2 text-sm cursor-pointer" [title]="'SESSION.FORM.COMPETITION_HINT' | translate">
+                <input type="checkbox" formControlName="competition" class="size-4 accent-(--color-secondary)"/>
+                {{ 'SESSION.FORM.COMPETITION' | translate }}
+              </label>
+            }
+          }
+        </li>
+      }
+    </ol>
+
+    <div class="flex flex-wrap gap-2" role="group" [attr.aria-label]="'SESSION.FORM.ADD_BLOCK' | translate">
+      @for (kind of addableKinds(); track kind) {
+        <button type="button" hlmBtn variant="outline" size="sm" [id]="'add-' + kind" (click)="addBlock(kind)">
+          <ng-icon name="heroPlus" aria-hidden="true"/>{{ 'SESSION.KINDS.' + kind | translate }}
+        </button>
+      }
+    </div>
+
+    <div class="sticky bottom-[calc(4rem+env(safe-area-inset-bottom))] md:bottom-0 -mx-4 px-4 py-3 bg-background/95 backdrop-blur border-t flex justify-end gap-2">
+      <a hlmBtn variant="ghost" size="lg" [routerLink]="isEdit() ? [personal() ? '/training/sessions' : '/box/sessions', id()] : [personal() ? '/training/journal' : '/box/sessions']">
+        {{ 'GLOBAL.CANCEL' | translate }}
+      </a>
+      <button type="submit" hlmBtn size="lg" id="save-session" [disabled]="isSaving() || form.controls.blocks.length === 0">
+        @if (isSaving()) {
+          <hlm-spinner/>
+        }
+        {{ 'GLOBAL.SAVE' | translate }}
+      </button>
+    </div>
+  </form>
+  }
+</app-page>
+
+<!-- Embedded WOD form: the WOD of a block, saved with the session -->
+@if (editingWod() !== null) {
+  <div class="fixed inset-0 z-50 flex items-stretch sm:items-center justify-center sm:p-4" role="dialog" aria-modal="true"
+       [attr.aria-label]="'SESSION.FORM.WRITE_WOD' | translate" (keydown.escape)="closeWodEditor($event)">
+    <div class="absolute inset-0 bg-black/50" aria-hidden="true" (click)="editingWod.set(null)"></div>
+    <div cdkTrapFocus [cdkTrapFocusAutoCapture]="true"
+         class="relative z-10 w-full sm:max-w-2xl max-h-dvh sm:max-h-[90dvh] overflow-y-auto bg-background sm:rounded-xl shadow-lg p-4 md:p-6">
+      <h2 class="text-lg font-bold mb-3">{{ 'SESSION.FORM.WRITE_WOD' | translate }} · {{ 'SESSION.KINDS.' + editingKind() | translate }}</h2>
+      <app-wod-quick-form [initial]="wodToEdit()" [defaultFormat]="defaultFormat()"
+                          (submitted)="setOwnWod(editingWod()!, $event)" (cancelled)="editingWod.set(null)"/>
+    </div>
+  </div>
+}
+
+<!-- Borrow a standalone WOD (Fran, a benchmark of the box...) -->
+@if (borrowing() !== null) {
+  <div class="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4" role="dialog" aria-modal="true"
+       aria-labelledby="borrow-title" (keydown.escape)="borrowing.set(null)">
+    <div class="absolute inset-0 bg-black/50" aria-hidden="true" (click)="borrowing.set(null)"></div>
+    <div cdkTrapFocus [cdkTrapFocusAutoCapture]="true"
+         class="relative z-10 w-full sm:max-w-lg max-h-[85dvh] overflow-y-auto bg-popover text-popover-foreground border rounded-t-2xl sm:rounded-xl shadow-lg p-4 flex flex-col gap-3">
+      <div class="flex items-center justify-between gap-2">
+        <h2 id="borrow-title" class="text-lg font-bold">{{ 'SESSION.FORM.BORROW_WOD' | translate }}</h2>
+        <button type="button" hlmBtn variant="ghost" size="sm" (click)="borrowing.set(null)" [attr.aria-label]="'GLOBAL.CLOSE' | translate">
+          <ng-icon name="heroXMark"/>
+        </button>
+      </div>
+      <input type="search" id="borrow-search" hlmInput class="h-11" (input)="onBorrowSearch($event)"
+             [placeholder]="'SESSION.PLACEHOLDERS.BORROW' | translate" [attr.aria-label]="'SESSION.PLACEHOLDERS.BORROW' | translate"/>
+      <ul class="divide-y">
+        @for (wod of borrowResults(); track wod.id) {
+          <li>
+            <button type="button" class="w-full text-left py-3 px-2 hover:bg-muted rounded-md flex flex-col" (click)="borrow(wod)">
+              <span class="font-medium">{{ wod.title }}</span>
+              <span class="text-xs text-muted-foreground">{{ 'WOD.WOD_TYPES.' + wod.wodType | translate }}
+                @if (wod.category) { · {{ 'WOD.CATEGORIES.' + wod.category | translate }} }</span>
+            </button>
+          </li>
+        } @empty {
+          <li class="py-4 text-sm text-muted-foreground text-center">{{ 'SESSION.FORM.NO_WOD' | translate }}</li>
+        }
+      </ul>
+    </div>
+  </div>
+}

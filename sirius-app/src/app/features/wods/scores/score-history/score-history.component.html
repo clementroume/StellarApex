@@ -24,7 +24,15 @@
                 <ng-icon name="heroCheckBadge"></ng-icon>{{ 'SCORE.VERIFIED_BY' | translate: {name: staffName(score.verifiedBy)} }}
               </span>
             }
+            @else if (score.verificationRequested) {
+              <span hlmBadge class="bg-info/15 text-info gap-1">
+                <ng-icon name="heroClock"></ng-icon>{{ 'SCORE.SUBMITTED' | translate }}
+              </span>
+            }
           </div>
+          @if (score.sets?.length) {
+            <p class="text-sm text-muted-foreground tabular-nums">{{ setsLine(score) }}</p>
+          }
           @if (loggedByStaff(score)) {
             <p class="text-sm text-muted-foreground">{{ 'SCORE.LOGGED_BY' | translate: {name: staffName(score.loggedBy)} }}</p>
           }
