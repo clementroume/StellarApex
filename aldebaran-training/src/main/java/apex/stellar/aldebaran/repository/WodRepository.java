@@ -2,6 +2,7 @@ package apex.stellar.aldebaran.repository;
 
 import apex.stellar.aldebaran.model.entities.Wod;
 import apex.stellar.aldebaran.model.entities.Wod.WodCategory;
+import apex.stellar.aldebaran.model.entities.Wod.WodStructure;
 import apex.stellar.aldebaran.model.entities.Wod.WodType;
 import apex.stellar.aldebaran.repository.projection.WodSummary;
 import java.util.Collection;
@@ -125,37 +126,6 @@ public interface WodRepository extends JpaRepository<Wod, Long> {
       """;
 
   /**
-   * Retrieves authorized WODs as lightweight projections, with optional combinable filters (see
-   * {@link #SECURE_FILTERS}).
-   *
-   * @param searchPattern Lower-cased {@code LIKE} pattern on the title, or {@code null}.
-   * @param wodType WOD format filter, or {@code null}.
-   * @param category WOD category filter, or {@code null}.
-   * @param movementId Movement contained in the WOD, or {@code null}.
-   * @param scope Scope name (see {@code WodScope}).
-   * @param gymId Gym filter for the {@code GYM} scope, or {@code null}.
-   * @param authorId Author of personal WODs, or {@code null}.
-   * @param userId Current user ID.
-   * @param memberGymIds Gyms readable by the user (never empty, use {@code {-1}} as a sentinel).
-   * @param isAdmin Whether the user is a platform admin.
-   * @param pageable Pagination information.
-   * @return A slice of WOD summaries matching the filters and the security context.
-   */
-  @Query("SELECT w FROM Wod w WHERE " + SECURE_FILTERS)
-  Slice<WodSummary> findSecure(
-      @Param("searchPattern") String searchPattern,
-      @Param("wodType") WodType wodType,
-      @Param("category") WodCategory category,
-      @Param("movementId") Long movementId,
-      @Param("scope") String scope,
-      @Param("gymId") Long gymId,
-      @Param("authorId") Long authorId,
-      @Param("userId") Long userId,
-      @Param("memberGymIds") Collection<Long> memberGymIds,
-      @Param("isAdmin") boolean isAdmin,
-      Pageable pageable);
-
-  /**
    * Distinct WOD types among the readable WODs matching the filters (dynamic type filter).
    *
    * @return The WOD types present (unordered).
@@ -229,6 +199,109 @@ public interface WodRepository extends JpaRepository<Wod, Long> {
       @Param("userId") Long userId,
       @Param("memberGymIds") Collection<Long> memberGymIds,
       @Param("isAdmin") boolean isAdmin);
+
+  /** Sub-category filter, appended to {@link #SECURE_FILTERS} by the catalogue queries. */
+  String STRUCTURE_FILTER = " AND (:structure IS NULL OR w.structure = :structure)";
+
+  /**
+   * Retrieves authorized WODs as lightweight projections, with optional combinable filters (see
+   * {@link #SECURE_FILTERS}) and a sub-category.
+   *
+   * @param searchPattern Lower-cased {@code LIKE} pattern on the title, or {@code null}.
+   * @param wodType WOD format filter, or {@code null}.
+   * @param category WOD category filter, or {@code null}.
+   * @param movementId Movement contained in the WOD, or {@code null}.
+   * @param scope Scope name (see {@code WodScope}).
+   * @param gymId Gym filter for the {@code GYM} scope, or {@code null}.
+   * @param authorId Author of personal WODs, or {@code null}.
+   * @param userId Current user ID.
+   * @param memberGymIds Gyms readable by the user (never empty, use {@code {-1}} as a sentinel).
+   * @param isAdmin Whether the user is a platform admin.
+   * @param structure Sub-category of the format, or {@code null}.
+   * @param pageable Pagination information.
+   * @return A slice of WOD summaries matching the filters and the security context.
+   */
+  @Query("SELECT w FROM Wod w WHERE " + SECURE_FILTERS + STRUCTURE_FILTER)
+  Slice<WodSummary> findSecure(
+      @Param("searchPattern") String searchPattern,
+      @Param("wodType") WodType wodType,
+      @Param("category") WodCategory category,
+      @Param("movementId") Long movementId,
+      @Param("scope") String scope,
+      @Param("gymId") Long gymId,
+      @Param("authorId") Long authorId,
+      @Param("userId") Long userId,
+      @Param("memberGymIds") Collection<Long> memberGymIds,
+      @Param("isAdmin") boolean isAdmin,
+      @Param("structure") WodStructure structure,
+      Pageable pageable);
+
+  /**
+   * Number of readable WODs matching the filters (numbered pagination of the catalogue).
+   *
+   * @return The count.
+   */
+  @Query("SELECT COUNT(w) FROM Wod w WHERE " + SECURE_FILTERS + STRUCTURE_FILTER)
+  long countSecure(
+      @Param("searchPattern") String searchPattern,
+      @Param("wodType") WodType wodType,
+      @Param("category") WodCategory category,
+      @Param("movementId") Long movementId,
+      @Param("scope") String scope,
+      @Param("gymId") Long gymId,
+      @Param("authorId") Long authorId,
+      @Param("userId") Long userId,
+      @Param("memberGymIds") Collection<Long> memberGymIds,
+      @Param("isAdmin") boolean isAdmin,
+      @Param("structure") WodStructure structure);
+
+  /**
+   * Number of readable WODs per category (family chips of the catalogue), WODs without category
+   * under {@code null}.
+   *
+   * @return Rows of [category, count].
+   */
+  @Query("SELECT w.category, COUNT(w) FROM Wod w WHERE " + SECURE_FILTERS + " GROUP BY w.category")
+  List<Object[]> countSecureByCategory(
+      @Param("searchPattern") String searchPattern,
+      @Param("wodType") WodType wodType,
+      @Param("category") WodCategory category,
+      @Param("movementId") Long movementId,
+      @Param("scope") String scope,
+      @Param("gymId") Long gymId,
+      @Param("authorId") Long authorId,
+      @Param("userId") Long userId,
+      @Param("memberGymIds") Collection<Long> memberGymIds,
+      @Param("isAdmin") boolean isAdmin);
+
+  /**
+   * Distinct sub-categories among the readable WODs matching the filters (sub-category chips).
+   *
+   * @return The sub-categories present (unordered, without null).
+   */
+  @Query("SELECT DISTINCT w.structure FROM Wod w WHERE w.structure IS NOT NULL AND " + SECURE_FILTERS)
+  List<WodStructure> findSecureStructures(
+      @Param("searchPattern") String searchPattern,
+      @Param("wodType") WodType wodType,
+      @Param("category") WodCategory category,
+      @Param("movementId") Long movementId,
+      @Param("scope") String scope,
+      @Param("gymId") Long gymId,
+      @Param("authorId") Long authorId,
+      @Param("userId") Long userId,
+      @Param("memberGymIds") Collection<Long> memberGymIds,
+      @Param("isAdmin") boolean isAdmin);
+
+  /**
+   * Movement names of the given WODs in order (catalogue preview).
+   *
+   * @param wodIds The WODs of a page.
+   * @return Rows of [wod ID, movement name], by WOD then order index.
+   */
+  @Query(
+      "SELECT wm.wod.id, wm.movement.name FROM WodMovement wm WHERE wm.wod.id IN :wodIds"
+          + " ORDER BY wm.wod.id, wm.orderIndex")
+  List<Object[]> findMovementNames(@Param("wodIds") Collection<Long> wodIds);
 
   // -------------------------------------------------------------------------
   // CATALOG CONSISTENCY

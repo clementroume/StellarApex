@@ -66,18 +66,6 @@ public class ScoreService {
   private final SessionLogService sessionLogService;
 
   /**
-   * Retrieves a paginated list of scores for the currently authenticated user.
-   *
-   * @param wodId Optional WOD ID to filter scores.
-   * @param pageable Pagination and sorting information.
-   * @return A slice of ScoreResponse objects.
-   */
-  @Transactional(readOnly = true)
-  public Slice<ScoreResponse> getMyScores(Long wodId, Pageable pageable) {
-    return getMyScores(wodId, null, pageable);
-  }
-
-  /**
    * Retrieves the current user's scores, optionally only those on a WOD logged in a session (the
    * history of a session block, e.g. Fran borrowed by today's session).
    *
@@ -295,35 +283,6 @@ public class ScoreService {
     double percentile = total > 1 ? ((double) (total - rank) / (total - 1)) * 100.0 : 100.0;
 
     return new ScoreComparisonResponse(rank, total, percentile);
-  }
-
-  /**
-   * Retrieves the leaderboard for a specific WOD and scaling level: the Personal Record of each
-   * athlete whose best score is at that level, best first.
-   *
-   * <p>The filters apply before choosing each athlete's best score: with {@code gymIds} (e.g. the
-   * user's boxes or programs), {@code verifiedOnly} and / or {@code division}, each athlete is ranked by their best
-   * score among those kept (scaling tier first, as for a PR). It may differ from their PR, done in
-   * another gym or not verified yet; athletes whose best kept score is at another level are left
-   * out.
-   *
-   * @param wodId The ID of the WOD.
-   * @param scaling The scaling level (e.g., RX, Scaled).
-   * @param gymIds The gyms to keep, or null / empty for every gym (worldwide).
-   * @param verifiedOnly Whether to keep verified scores only (competition WODs).
-   * @param division The division to keep (scores copied with it at logging), or null for all.
-   * @param pageable Pagination information.
-   * @return A slice of ScoreResponse objects representing the leaderboard.
-   */
-  @Transactional(readOnly = true)
-  public Slice<ScoreResponse> getLeaderboard(
-      Long wodId,
-      ScalingLevel scaling,
-      Collection<Long> gymIds,
-      boolean verifiedOnly,
-      @Nullable Division division,
-      Pageable pageable) {
-    return getLeaderboard(wodId, scaling, gymIds, verifiedOnly, division, null, pageable);
   }
 
   /**

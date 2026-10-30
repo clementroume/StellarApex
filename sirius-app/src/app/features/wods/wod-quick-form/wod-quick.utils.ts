@@ -46,29 +46,6 @@ export function withSets(category: WodCategory): boolean {
   return category === 'FOR_LOAD' || category === 'FOR_QUALITY';
 }
 
-/** Former formats (before v3) read as a category and a sub-category. */
-export function legacyFormat(wodType: string): {category: WodCategory; structure: string | null} {
-  switch (wodType) {
-    case 'CHIPPER':
-      return {category: 'FOR_TIME', structure: 'CHIPPER'};
-    case 'LADDER':
-      return {category: 'FOR_TIME', structure: null};
-    case 'INTERVALS':
-      return {category: 'EMOM', structure: 'INTERVALS'};
-    case 'DEATH_BY':
-      return {category: 'EMOM', structure: 'DEATH_BY'};
-    case 'STRENGTH':
-      return {category: 'FOR_LOAD', structure: null};
-    case 'SKILL':
-    case 'ACCESSORY':
-      return {category: 'FOR_QUALITY', structure: 'PRACTICE'};
-    case 'CUSTOM':
-      return {category: 'AMRAP', structure: 'MAX_REPS'};
-    default:
-      return {category: CATEGORIES.includes(wodType as WodCategory) ? wodType as WodCategory : 'FOR_TIME', structure: null};
-  }
-}
-
 /**
  * The quantity of a movement line: reps (a number, "10/side"), max reps, a distance, calories
  * (men / women) or a time. Stored in the existing fields (`repsScheme`, `distance`, `calories`,

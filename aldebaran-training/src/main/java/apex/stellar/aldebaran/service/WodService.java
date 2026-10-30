@@ -35,6 +35,7 @@ import apex.stellar.aldebaran.repository.projection.WodSummary;
 import apex.stellar.aldebaran.security.SecurityService;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -82,27 +83,26 @@ public class WodService {
   private final SessionBlockRepository sessionBlockRepository;
 
   /**
-   * Retrieves a paginated list of WOD summaries based on filters.
+   * Retrieves the WOD list with a sub-category filter, each summary carrying the names of its
+   * movements in order (catalogue preview).
    *
-   * <p><b>Optimization:</b> Uses {@link WodSummary} projections to fetch only essential data,
-   * avoiding the cost of loading full entities and their relationships.
-   *
-   * <p>All filters combine. The security clause (admin, public, author, member gyms) is always
-   * applied on top of the requested {@link WodScope}.
-   *
-   * @param search Optional title search term.
-   * @param type Optional WOD format filter.
-   * @param category Optional WOD category filter.
-   * @param movementId Optional movement ID filter.
-   * @param scope List scope (ALL, MINE, GYM, PUBLIC); defaults to ALL when null.
-   * @param gymId Optional gym filter, only used by the GYM scope.
-   * @param pageable Pagination settings.
-   * @return A list of lightweight WOD summaries.
+   * @param search Optional title search.
+   * @param type Optional format.
+   * @param structure Optional sub-category.
+   * @param category Optional category (family).
+   * @param movementId Optional movement contained.
+   * @param scope List scope.
+   * @param gymId Optional gym.
+   * @param authorId Optional author of personal WODs.
+   * @param pageable Pagination and sorting.
+   * @return A slice of WOD summaries.
    */
   @Transactional(readOnly = true)
+  @SuppressWarnings("java:S107") // Mirrors the list filters
   public Slice<WodSummaryResponse> getWods(
       String search,
       WodType type,
+      WodStructure structure,
       WodCategory category,
       Long movementId,
       WodScope scope,
@@ -112,39 +112,81 @@ public class WodService {
 
     WodScope effectiveScope = scope != null ? scope : WodScope.ALL;
 
-    Slice<WodSummary> projections =
-        wodRepository.findSecure(
-            toSearchPattern(search),
-            type,
-            category,
-            movementId,
-            effectiveScope.name(),
-            gymId,
-            authorId,
-            securityService.getCurrentUserId(),
-            securityService.getCurrentUserMemberGymIds(),
-            securityService.isCurrentUserAdmin(),
-            pageable);
+    Slice<WodSummaryResponse> page =
+        wodRepository
+            .findSecure(
+                toSearchPattern(search),
+                type,
+                category,
+                movementId,
+                effectiveScope.name(),
+                gymId,
+                authorId,
+                securityService.getCurrentUserId(),
+                securityService.getCurrentUserMemberGymIds(),
+                securityService.isCurrentUserAdmin(),
+                structure,
+                pageable)
+            .map(wodMapper::toSummary);
+    if (page.getContent().isEmpty()) {
+      return page;
+    }
+    Map<Long, List<String>> names = new HashMap<>();
+    for (Object[] row :
+        wodRepository.findMovementNames(page.getContent().stream().map(WodSummaryResponse::id).toList())) {
+      names.computeIfAbsent((Long) row[0], k -> new ArrayList<>()).add((String) row[1]);
+    }
+    return page.map(w -> w.withMovementNames(names.getOrDefault(w.id(), List.of())));
+  }
 
-    return projections.map(wodMapper::toSummary);
+  /**
+   * Counts the WODs of the list for the same filters (numbered pagination).
+   *
+   * @return The number of WODs.
+   */
+  @Transactional(readOnly = true)
+  @SuppressWarnings("java:S107") // Mirrors the list filters
+  public long countWods(
+      String search,
+      WodType type,
+      WodStructure structure,
+      WodCategory category,
+      Long movementId,
+      WodScope scope,
+      Long gymId,
+      Long authorId) {
+    return wodRepository.countSecure(
+        toSearchPattern(search),
+        type,
+        category,
+        movementId,
+        (scope != null ? scope : WodScope.ALL).name(),
+        gymId,
+        authorId,
+        securityService.getCurrentUserId(),
+        securityService.getCurrentUserMemberGymIds(),
+        securityService.isCurrentUserAdmin(),
+        structure);
   }
 
   /**
    * Computes the values available to filter the WOD list.
    *
-   * <p>WOD formats and categories follow every current filter except the format and category
-   * themselves, so the UI only offers values that return results. Gyms and authors ignore the
-   * scope, gym and author filters: they feed the admin selectors, which must keep offering the
-   * other choices.
+   * <p>WOD formats, categories and the counts per category follow the search and scope but not the
+   * format and category filters themselves, so the UI only offers values that return results; the
+   * sub-categories are those present for the given format. Gyms and authors ignore the scope, gym
+   * and author filters: they feed the admin selectors, which must keep offering the other choices.
    *
    * @param search Optional title search.
    * @param scope List scope (defaults to ALL).
    * @param gymId Optional gym filter.
    * @param authorId Optional author filter (personal WODs).
-   * @return The available WOD formats, categories, gym IDs and author IDs.
+   * @param type Format whose sub-categories are listed, or null.
+   * @return The facets.
    */
   @Transactional(readOnly = true)
-  public WodFacetsResponse getFacets(String search, WodScope scope, Long gymId, Long authorId) {
+  public WodFacetsResponse getFacets(
+      String search, WodScope scope, Long gymId, Long authorId, WodType type) {
     String pattern = toSearchPattern(search);
     String effectiveScope = (scope != null ? scope : WodScope.ALL).name();
     Long userId = securityService.getCurrentUserId();
@@ -198,7 +240,28 @@ public class WodService {
             .sorted()
             .toList();
 
-    return new WodFacetsResponse(types, categories, gymIds, authorIds);
+    Map<String, Long> categoryCounts = new LinkedHashMap<>();
+    long total = 0;
+    for (Object[] row :
+        wodRepository.countSecureByCategory(
+            pattern, null, null, null, effectiveScope, gymId, authorId, userId, memberGymIds, isAdmin)) {
+      long count = (Long) row[1];
+      categoryCounts.put(row[0] == null ? "NONE" : ((WodCategory) row[0]).name(), count);
+      total += count;
+    }
+    List<WodStructure> structures =
+        type == null
+            ? List.of()
+            : wodRepository
+                .findSecureStructures(
+                    pattern, type, null, null, effectiveScope, gymId, authorId, userId, memberGymIds,
+                    isAdmin)
+                .stream()
+                .sorted()
+                .toList();
+
+    return new WodFacetsResponse(
+        types, categories, gymIds, authorIds, categoryCounts, total, structures);
   }
 
   private static String toSearchPattern(String search) {

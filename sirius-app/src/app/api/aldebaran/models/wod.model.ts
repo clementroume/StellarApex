@@ -22,18 +22,24 @@ export interface WodSummaryResponse {
   // Gym competition WOD: its staff logs and verifies the scores
   competition: boolean;
   createdAt: string;
+  // Sub-category of the format, and movement names in order (catalogue preview)
+  structure?: string | null;
+  movementNames?: string[];
 }
 
 /** Values available to filter the WOD list, computed by Aldebaran with the list's security. */
 export interface WodFacets {
   // WOD formats and categories present for the current filters (those two filters are ignored)
   wodTypes: string[];
-  // Sub-categories of each format
-  structures: Record<string, string[]>;
   categories: string[];
   // Gyms owning readable WODs and authors of readable personal WODs (admin selectors)
   gymIds: number[];
   authorIds: number[];
+  // Number of WODs per category (NONE = without category) and in all, for the search and scope
+  categoryCounts?: Record<string, number>;
+  total?: number;
+  // Sub-categories present for the format asked
+  structures?: string[];
 }
 
 /** Rights of the current user on a WOD, computed by Aldebaran (WodSecurity). */

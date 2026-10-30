@@ -202,7 +202,11 @@ Sunday); the same blocks at two dates are two sessions. Disciplines: `CROSSFIT`,
   `GYM`, `PUBLIC`),
   `gymId` (with `GYM`) and `authorId` (that author's personal WODs). Summaries include `authorId`,
   `gymId` and `isPublic`.
-* `GET /facets`: values available to filter the list, with the same security: `wodTypes` and
+* `GET /` (list) also takes `structure` (sub-category) and returns, per summary, `structure` and
+  `movementNames` (movement names in order, one extra query per page); `GET /count` counts the
+  list for the same filters (numbered pagination of the catalogue).
+* `GET /facets`: values available to filter the list, with the same security (plus `categoryCounts`
+  and `total` for the search and scope, and `structures` present for the `type` given): `wodTypes` and
   `categories` present for the current `search` / `scope` / `gymId` / `authorId` (so the UI never
   offers an empty chip),
   plus `gymIds` and `authorIds` of readable WODs (admin selectors).

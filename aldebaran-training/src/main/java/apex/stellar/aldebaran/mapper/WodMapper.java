@@ -57,6 +57,7 @@ public interface WodMapper {
    * @return A WodSummaryResponse DTO with mapped fields for lightweight WOD representation.
    */
   @Mapping(target = "isPublic", source = "public")
+  @Mapping(target = "movementNames", ignore = true) // Filled by the service
   WodSummaryResponse toSummary(WodSummary projection);
 
   /**

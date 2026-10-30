@@ -26,7 +26,6 @@ import {
   ladderValues,
   Measure,
   MEASURES,
-  legacyFormat,
   monotone,
   parseSets,
   roundsOf,
@@ -194,7 +193,8 @@ export class WodQuickFormComponent implements OnInit {
     if (initial) {
       this.fill(initial);
     } else {
-      this.setCategory(legacyFormat(this.defaultFormat()).category);
+      const category = this.defaultFormat() as WodCategory;
+      this.setCategory(CATEGORIES.includes(category) ? category : 'FOR_TIME');
       this.addRow();
     }
   }
@@ -470,12 +470,11 @@ export class WodQuickFormComponent implements OnInit {
     return parts.join(' ').slice(0, 100) || formatName;
   }
 
-  /** Category and sub-category of a saved WOD; former types and free schemes read as the closest one. */
+  /** Category and sub-category of a saved WOD; without a sub-category, the closest one from its fields. */
   private formatOf(wod: WodResponse): {category: WodCategory; structure: string} {
-    const legacy = legacyFormat(wod.wodType);
-    const category = legacy.category;
-    const known = (st?: string | null) => st && STRUCTURES[category].includes(st) ? st : null;
-    const structure = known(wod.structure) ?? known(legacy.structure) ?? this.guessStructure(category, wod);
+    const category = CATEGORIES.includes(wod.wodType as WodCategory) ? wod.wodType as WodCategory : 'FOR_TIME';
+    const structure = wod.structure && STRUCTURES[category].includes(wod.structure)
+      ? wod.structure : this.guessStructure(category, wod);
     return {category, structure};
   }
 

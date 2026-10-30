@@ -67,7 +67,7 @@ describe('WodQuickFormComponent', () => {
   });
 
   it('should take sets and reps of a strength WOD from its sets field', () => {
-    init({defaultFormat: 'STRENGTH'});
+    init({defaultFormat: 'FOR_LOAD'});
     expect(component.form.controls.scoreType.value).toBe('WEIGHT');
     component.setSets('5x5');
     component.onMovement(0, 3);
@@ -193,7 +193,7 @@ describe('WodQuickFormComponent', () => {
     expect(submitted).not.toHaveBeenCalled();
 
     const saved = {
-      id: 30, title: 'Back Squat 5x5', wodType: 'STRENGTH', scoreType: 'WEIGHT', isPublic: false, competition: false,
+      id: 30, title: 'Back Squat 5x5', wodType: 'FOR_LOAD', structure: 'SETS', scoreType: 'WEIGHT', isPublic: false, competition: false,
       repScheme: '5x5', modalities: [], createdAt: '', updatedAt: '', notesFr: 'Tempo 3-1-1',
       movements: [{id: 1, orderIndex: 1, movement: {id: 3, name: 'Back Squat'}, repsScheme: '5', sets: 5, weight: 100, weightUnit: 'KG'}]
     } as unknown as WodResponse;
@@ -239,7 +239,7 @@ describe('WodQuickFormComponent', () => {
 
   it('should keep Fran a For Time scheme and read a saved pyramid as a Ladder', () => {
     const pyramid = {
-      id: 40, title: 'Pyramid', wodType: 'LADDER', scoreType: 'TIME', isPublic: false, competition: false,
+      id: 40, title: 'Pyramid', wodType: 'FOR_TIME', scoreType: 'TIME', isPublic: false, competition: false,
       repScheme: '1-2-3-2-1', modalities: [], createdAt: '', updatedAt: '',
       movements: [{id: 1, orderIndex: 1, movement: {id: 7, name: 'Burpee'}, repsScheme: '1-2-3-2-1'}]
     } as unknown as WodResponse;

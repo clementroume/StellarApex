@@ -583,7 +583,8 @@
       "COMPETITION": "Competition",
       "SCOPE": "Scope",
       "SETS": "Sets",
-      "STRUCTURE": "Sub-category"
+      "STRUCTURE": "Sub-category",
+      "DURATION_SHORT": "Duration"
     },
     "PLACEHOLDERS": {
       "TITLE": "E.g. Fran",
@@ -625,14 +626,6 @@
       "AMRAP": "AMRAP",
       "EMOM": "EMOM",
       "TABATA": "Tabata",
-      "INTERVALS": "Intervals",
-      "STRENGTH": "Strength",
-      "SKILL": "Skill",
-      "ACCESSORY": "Accessory",
-      "CUSTOM": "Custom",
-      "CHIPPER": "Chipper",
-      "LADDER": "Ladder",
-      "DEATH_BY": "Death by",
       "FOR_LOAD": "For Load",
       "FOR_QUALITY": "For Quality"
     },
@@ -771,6 +764,12 @@
       "FOR_QUALITY": {
         "PRACTICE": "Practice"
       }
+    },
+    "CATALOGUE": {
+      "RANGE": "{{from}}–{{to}} of {{total}}",
+      "PAGINATION": "Catalogue pages",
+      "PREVIOUS": "Previous page",
+      "NEXT": "Next page"
     }
   },
   "SCORE": {
@@ -1198,8 +1197,6 @@
     "PERSONAL": "Personal session",
     "LOCKED": "Locked",
     "LOGGED_ON": "Session done on {{date}}",
-    "LANG_FR": "French",
-    "LANG_EN": "English",
     "DELETE_TITLE": "Delete the session?",
     "DELETE_DESC": "The session and the WODs written for it are deleted; borrowed WODs stay in the catalogue.",
     "UNLOG_TITLE": "Undo \"Session done\"?",

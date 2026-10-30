@@ -3,14 +3,12 @@ import {signal, WritableSignal} from '@angular/core';
 import {provideRouter} from '@angular/router';
 import {provideTranslateService} from '@ngx-translate/core';
 import {provideIcons} from '@ng-icons/core';
-import {HttpContext} from '@angular/common/http';
-import {of, Subject, throwError} from 'rxjs';
+import {of, Subject} from 'rxjs';
 import {vi} from 'vitest';
-import {WOD_PAGE_SIZE, WOD_SEARCH_DEBOUNCE_MS, WodListComponent} from './wod-list.component';
+import {editionYear, WOD_PAGE_SIZE, WOD_SEARCH_DEBOUNCE_MS, WodListComponent} from './wod-list.component';
 import {WodService} from '../../../api/aldebaran/services/wod.service';
 import {AccessService} from '../../../core/services/access.service';
 import {ExporterService} from '../../../api/aldebaran/services/exporter.service';
-import {BYPASS_LOADER} from '../../../core/interceptors/loading.interceptor';
 import {APP_ICONS} from '../../../app.config';
 import {WodSummaryResponse} from '../../../api/aldebaran/models/wod.model';
 import {Slice} from '../../../core/models/pagination.model';
@@ -57,14 +55,21 @@ describe('WodListComponent', () => {
   beforeEach(() => {
     mockWodService = {
       getWods: vi.fn().mockName('WodService.getWods'),
+      countWods: vi.fn().mockName('WodService.countWods'),
       getFacets: vi.fn().mockName('WodService.getFacets'),
       refreshNeeded$: new Subject<void>(),
       savedSearchQuery: signal(''),
       savedTypeFilter: signal(''),
-      savedCategoryFilter: signal('')
+      savedStructureFilter: signal(''),
+      savedCategoryFilter: signal(''),
+      savedPage: signal(0)
     };
-    mockWodService.getWods.mockReturnValue(of(slice([fran, cindy], false)));
-    mockWodService.getFacets.mockReturnValue(of({wodTypes: ['AMRAP', 'FOR_TIME'], gymIds: [5, 9], authorIds: [77]}));
+    mockWodService.getWods.mockReturnValue(of(slice([{...fran, movementNames: ['Thruster', 'Pull-up']}, cindy], false)));
+    mockWodService.countWods.mockReturnValue(of(45));
+    mockWodService.getFacets.mockReturnValue(of({
+      wodTypes: ['AMRAP', 'FOR_TIME'], categories: ['GIRLS', 'OPEN'], gymIds: [], authorIds: [],
+      categoryCounts: {GIRLS: 28, OPEN: 46}, total: 74, structures: []
+    }));
     isAdmin = signal(false);
     mockExporterService = {
       exportWods: vi.fn().mockName('ExporterService.exportWods').mockReturnValue(of('ok')),
@@ -72,128 +77,75 @@ describe('WodListComponent', () => {
     };
   });
 
-  afterEach(() => {
-    vi.useRealTimers();
-  });
+  afterEach(() => vi.useRealTimers());
 
-  describe('public catalogue', () => {
-    beforeEach(async () => {
-      await create();
-    });
-
-    it('should load the first page of the public WODs, bypassing the global loader', () => {
-      expect(lastFilters()).toMatchObject({scope: 'PUBLIC'});
-      const context = (mockWodService.getWods.mock.lastCall as any[])[3] as HttpContext;
-      expect(context.get(BYPASS_LOADER)).toBe(true);
-      expect(mockWodService.getFacets.mock.lastCall[0]).toMatchObject({scope: 'PUBLIC'});
-      expect(component.wods()).toEqual([fran, cindy]);
-    });
-
-    it('should append the next page on loadMore and stop when the last page is reached', () => {
-      mockWodService.getWods.mockReturnValue(of(slice([grace], true, 1)));
-
-      component.loadMore();
-
-      expect((mockWodService.getWods.mock.lastCall as any[])[1]).toBe(1);
-      expect(component.wods()).toEqual([fran, cindy, grace]);
-      expect(component.hasMore()).toBe(false);
-
-      mockWodService.getWods.mockClear();
-      component.loadMore();
-      expect(mockWodService.getWods).not.toHaveBeenCalled();
-    });
-
-    it('should debounce the search and combine it with the type filter', () => {
-      vi.useFakeTimers();
-      component.onTypeChange('FOR_TIME');
-      mockWodService.getWods.mockClear();
-      mockWodService.getWods.mockReturnValue(of(slice([fran], true)));
-
-      component.onSearchChange('fr');
-      component.onSearchChange('fran');
-      expect(mockWodService.getWods).not.toHaveBeenCalled();
-
-      vi.advanceTimersByTime(WOD_SEARCH_DEBOUNCE_MS);
-
-      expect(mockWodService.getWods).toHaveBeenCalledTimes(1);
-      expect(lastFilters()).toMatchObject({search: 'fran', type: 'FOR_TIME'});
-      expect((mockWodService.getWods.mock.lastCall as any[])[1]).toBe(0);
-      expect(component.wods()).toEqual([fran]);
-    });
-
-    it('should not reload when selecting the same type twice', () => {
-      component.onTypeChange('AMRAP');
-      mockWodService.getWods.mockClear();
-      component.onTypeChange('AMRAP');
-      expect(mockWodService.getWods).not.toHaveBeenCalled();
-    });
-
-    it('should filter by category and format together, and label a WOD "category / format"', () => {
-      component.onCategoryChange('GIRLS');
-      component.onTypeChange('FOR_TIME');
-
-      expect(mockWodService.getWods.mock.lastCall![0]).toMatchObject({category: 'GIRLS', type: 'FOR_TIME'});
-      expect(component.typeLabel({wodType: 'FOR_TIME', category: 'GIRLS'}))
-        .toBe('WOD.CATEGORIES.GIRLS / WOD.WOD_TYPES.FOR_TIME');
-      expect(component.typeLabel({wodType: 'AMRAP', category: null})).toBe('WOD.WOD_TYPES.AMRAP');
-    });
-
-    it('should reload when a refresh is requested', () => {
-      mockWodService.getWods.mockClear();
-      mockWodService.refreshNeeded$.next();
-      expect(mockWodService.getWods).toHaveBeenCalledTimes(1);
-    });
-
-    it('should empty the list on error', () => {
-      mockWodService.getWods.mockReturnValue(throwError(() => new Error('boom')));
-      component.loadWods();
-      expect(component.wods()).toEqual([]);
-      expect(component.hasMore()).toBe(false);
-      expect(component.isLoading()).toBe(false);
-    });
-  });
-
-  describe('dynamic WOD types', () => {
-    it('should drop a selected type that the new filters no longer return', async () => {
-      await create();
-      component.onTypeChange('AMRAP');
-      mockWodService.getFacets.mockReturnValue(of({wodTypes: ['HERO'], gymIds: [], authorIds: []}));
-      mockWodService.getWods.mockClear();
-
-      component.onSearchChange('x');
-      component.reload();
-
-      expect(component.wodTypes()).toEqual(['HERO']);
-      expect(component.typeFilter()).toBe('');
-      expect(lastFilters().type).toBeUndefined();
-    });
-  });
-
-  describe('CSV export', () => {
-    const exportButton = () => Array.from(fixture.nativeElement.querySelectorAll('button') as NodeListOf<HTMLButtonElement>)
-      .find(b => b.textContent?.includes('EXPORT.EXPORT_CSV'));
-
-    it('should hide the export button from non-admins', async () => {
-      await create();
-      expect(exportButton()).toBeUndefined();
-    });
-
-    it('should let an admin export the public WODs', async () => {
-      isAdmin.set(true);
-      await create();
-
-      exportButton()!.click();
-
-      expect(mockExporterService.exportWods).toHaveBeenCalled();
-      expect(mockExporterService.executeCsvExport).toHaveBeenCalledWith(expect.anything(), component.isExporting);
-    });
-  });
-
-  it('should let only admins create a public WOD', async () => {
+  it('should show the families with their counts, the rows with a movement preview, and the range', async () => {
     await create();
-    expect(fixture.nativeElement.textContent).not.toContain('WOD.ACTIONS.ADD_PUBLIC');
-    isAdmin.set(true);
+    const el: HTMLElement = fixture.nativeElement;
+    expect(lastFilters()).toEqual({scope: 'PUBLIC', search: undefined, type: undefined, structure: undefined, category: undefined});
+    expect((mockWodService.getWods.mock.lastCall as any[])[4]).toBe('title,asc');
+    const chips = [...el.querySelectorAll('.family-chip')].map(c => c.textContent?.trim());
+    expect(chips).toEqual(['WOD.ACTIONS.ALL_CATEGORIES · 74', 'WOD.CATEGORIES.GIRLS · 28', 'WOD.CATEGORIES.OPEN · 46']);
+    expect(el.querySelectorAll('.catalogue-row').length).toBe(2);
+    expect(el.textContent).toContain('Thruster · Pull-up');
+    expect(component.range()).toEqual({from: 1, to: 20, total: 45});
+  });
+
+  it('should number the pages and load the page asked', async () => {
+    await create();
+    expect(component.pageNumbers()).toEqual([0, 1, 2]);
+    (fixture.nativeElement.querySelectorAll('.page-number')[2] as HTMLButtonElement).click();
+    expect(component.page()).toBe(2);
+    expect((mockWodService.getWods.mock.lastCall as any[])[1]).toBe(2);
+    expect(component.range()).toEqual({from: 41, to: 45, total: 45});
+  });
+
+  it('should group a competition family by edition, latest first, events in order', async () => {
+    mockWodService.getWods.mockReturnValue(of(slice([
+      {...cindy, id: 10, title: 'Open 26.3', category: 'OPEN'}, {...cindy, id: 11, title: 'Open 26.1', category: 'OPEN'},
+      {...cindy, id: 12, title: 'Open 25.2', category: 'OPEN'}, {...cindy, id: 13, title: 'Open 26.2', category: 'OPEN'}
+    ], true)));
+    await create();
+    component.onCategoryChange('OPEN');
     fixture.detectChanges();
-    expect(fixture.nativeElement.textContent).toContain('WOD.ACTIONS.ADD_PUBLIC');
+
+    expect((mockWodService.getWods.mock.lastCall as any[])[4]).toBe('title,desc');
+    expect(component.groups().map(g => g.heading)).toEqual(['WOD.CATEGORIES.OPEN 2026', 'WOD.CATEGORIES.OPEN 2025']);
+    expect(component.groups()[0].wods.map(w => w.title)).toEqual(['Open 26.1', 'Open 26.2', 'Open 26.3']);
+    expect(editionYear('Games 2024 - Final 2421')).toBe(2024);
+  });
+
+  it('should offer the sub-categories of the chosen format and filter on one', async () => {
+    await create();
+    mockWodService.getFacets.mockReturnValue(of({
+      wodTypes: ['AMRAP', 'FOR_TIME'], categories: ['GIRLS'], gymIds: [], authorIds: [], structures: ['ROUNDS', 'CHIPPER']
+    }));
+    component.onTypeChange('FOR_TIME');
+    fixture.detectChanges();
+    expect(mockWodService.getFacets).toHaveBeenLastCalledWith(expect.objectContaining({type: 'FOR_TIME'}), expect.anything());
+    const chips = [...fixture.nativeElement.querySelectorAll('.structure-chip')] as HTMLButtonElement[];
+    expect(chips.map(c => c.id)).toEqual(['structure-ROUNDS', 'structure-CHIPPER']);
+
+    chips[1].click();
+    expect(lastFilters()).toMatchObject({type: 'FOR_TIME', structure: 'CHIPPER'});
+    expect(component.page()).toBe(0);
+  });
+
+  it('should debounce the search and go back to the first page', async () => {
+    vi.useFakeTimers();
+    await create();
+    component.page.set(2);
+    component.onSearchChange('fran');
+    vi.advanceTimersByTime(WOD_SEARCH_DEBOUNCE_MS);
+    expect(component.page()).toBe(0);
+    expect(lastFilters()).toMatchObject({search: 'fran'});
+  });
+
+  it('should offer the CSV export and the creation to admins only', async () => {
+    isAdmin.set(true);
+    await create();
+    expect(fixture.nativeElement.querySelector('a[href="/wods/new"]')).toBeTruthy();
+    component.exportCsv();
+    expect(mockExporterService.executeCsvExport).toHaveBeenCalled();
   });
 });

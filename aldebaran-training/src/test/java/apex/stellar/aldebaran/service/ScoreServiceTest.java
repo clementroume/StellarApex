@@ -116,7 +116,7 @@ class ScoreServiceTest {
     when(scoreRepository.findByUserIdAndWodId(eq(userId), eq(1L), any(Pageable.class)))
         .thenReturn(Page.empty());
 
-    Slice<ScoreResponse> result = scoreService.getMyScores(1L, pageable);
+    Slice<ScoreResponse> result = scoreService.getMyScores(1L, null, pageable);
 
     assertNotNull(result);
     verify(scoreRepository).findByUserIdAndWodId(eq(userId), eq(1L), any(Pageable.class));
@@ -129,7 +129,7 @@ class ScoreServiceTest {
     Pageable pageable = PageRequest.of(0, 20);
     when(scoreRepository.findByUserId(eq(userId), any(Pageable.class))).thenReturn(Page.empty());
 
-    Slice<ScoreResponse> result = scoreService.getMyScores(null, pageable);
+    Slice<ScoreResponse> result = scoreService.getMyScores(null, null, pageable);
 
     assertNotNull(result);
     verify(scoreRepository).findByUserId(eq(userId), any(Pageable.class));
@@ -144,7 +144,7 @@ class ScoreServiceTest {
         .thenReturn(Page.empty());
 
     Slice<ScoreResponse> result =
-        scoreService.getLeaderboard(1L, ScalingLevel.RX, null, false, null, pageable);
+        scoreService.getLeaderboard(1L, ScalingLevel.RX, null, false, null, null, pageable);
 
     assertNotNull(result);
   }
@@ -664,7 +664,7 @@ class ScoreServiceTest {
 
     Slice<ScoreResponse> result =
         scoreService.getLeaderboard(
-            1L, ScalingLevel.RX, List.of(300L), false, null, PageRequest.of(0, 20));
+            1L, ScalingLevel.RX, List.of(300L), false, null, null, PageRequest.of(0, 20));
 
     assertEquals(1, result.getNumberOfElements());
     verify(scoreMapper).toResponse(inMyBox);
@@ -699,7 +699,7 @@ class ScoreServiceTest {
 
     Slice<ScoreResponse> result =
         scoreService.getLeaderboard(
-            1L, ScalingLevel.RX, List.of(300L), true, null, PageRequest.of(0, 20));
+            1L, ScalingLevel.RX, List.of(300L), true, null, null, PageRequest.of(0, 20));
 
     assertEquals(2, result.getNumberOfElements());
     assertFalse(result.hasNext());
@@ -721,9 +721,9 @@ class ScoreServiceTest {
         .thenReturn(List.of(third, first, second));
 
     Slice<ScoreResponse> page0 =
-        scoreService.getLeaderboard(1L, ScalingLevel.RX, null, true, null, PageRequest.of(0, 2));
+        scoreService.getLeaderboard(1L, ScalingLevel.RX, null, true, null, null, PageRequest.of(0, 2));
     Slice<ScoreResponse> page1 =
-        scoreService.getLeaderboard(1L, ScalingLevel.RX, null, true, null, PageRequest.of(1, 2));
+        scoreService.getLeaderboard(1L, ScalingLevel.RX, null, true, null, null, PageRequest.of(1, 2));
 
     assertEquals(2, page0.getNumberOfElements());
     assertTrue(page0.hasNext());
@@ -847,7 +847,7 @@ class ScoreServiceTest {
 
     Slice<ScoreResponse> result =
         scoreService.getLeaderboard(
-            1L, ScalingLevel.RX, null, false, Division.WOMEN, PageRequest.of(0, 20));
+            1L, ScalingLevel.RX, null, false, Division.WOMEN, null, PageRequest.of(0, 20));
 
     assertEquals(1, result.getNumberOfElements());
     verify(scoreRepository, never()).findLeaderboard(any(), any(), any(Pageable.class));

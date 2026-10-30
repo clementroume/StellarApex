@@ -10,35 +10,44 @@
     (valueChange)="onSearchChange($event)">
   </app-search-input>
 
-  <div class="flex flex-col items-center gap-2 mb-8">
-    @if (categories().length > 0) {
-      <div class="flex flex-wrap justify-center gap-2" role="group" [attr.aria-label]="'WOD.FIELDS.CATEGORY' | translate">
-        <button type="button" hlmBadge variant="outline" class="h-8 px-3 text-sm cursor-pointer aria-pressed:border-primary aria-pressed:bg-primary aria-pressed:text-primary-content"
-              [attr.aria-pressed]="categoryFilter() === ''"
-                (click)="onCategoryChange('')">
-          {{ 'WOD.ACTIONS.ALL_CATEGORIES' | translate }}
+  <!-- Families with their counts, then formats and sub-categories -->
+  <div class="flex flex-col gap-2 mb-6">
+    <div class="flex flex-wrap gap-2" role="group" [attr.aria-label]="'WOD.FIELDS.CATEGORY' | translate">
+      <button type="button" id="family-ALL"
+              class="family-chip h-8 px-3 rounded-full border text-sm hover:bg-muted aria-pressed:border-primary aria-pressed:bg-primary aria-pressed:text-primary-foreground"
+              [attr.aria-pressed]="categoryFilter() === ''" (click)="onCategoryChange('')">
+        {{ 'WOD.ACTIONS.ALL_CATEGORIES' | translate }} · {{ allCount() }}
+      </button>
+      @for (family of families(); track family.category) {
+        <button type="button" [id]="'family-' + family.category"
+                class="family-chip h-8 px-3 rounded-full border text-sm hover:bg-muted aria-pressed:border-primary aria-pressed:bg-primary aria-pressed:text-primary-foreground"
+                [attr.aria-pressed]="categoryFilter() === family.category" (click)="onCategoryChange(family.category)">
+          {{ 'WOD.CATEGORIES.' + family.category | translate }} · {{ family.count }}
         </button>
-        @for (category of categories(); track category) {
-          <button type="button" hlmBadge variant="outline" class="h-8 px-3 text-sm cursor-pointer aria-pressed:border-primary aria-pressed:bg-primary aria-pressed:text-primary-content"
-              [attr.aria-pressed]="categoryFilter() === category"
-                  (click)="onCategoryChange(category)">
-            {{ 'WOD.CATEGORIES.' + category | translate }}
-          </button>
-        }
-      </div>
-    }
-    <div class="flex flex-wrap justify-center gap-2" role="group" [attr.aria-label]="'WOD.FIELDS.FORMAT' | translate">
-      <button type="button" hlmBadge variant="outline" class="h-8 px-3 text-sm cursor-pointer aria-pressed:border-secondary aria-pressed:bg-secondary aria-pressed:text-secondary-content"
-              [attr.aria-pressed]="typeFilter() === ''"
-              (click)="onTypeChange('')">
+      }
+    </div>
+    <div class="flex flex-wrap items-center gap-2" role="group" [attr.aria-label]="'WOD.FIELDS.FORMAT' | translate">
+      <button type="button" id="format-ALL"
+              class="h-8 px-3 rounded-full border text-sm hover:bg-muted aria-pressed:border-secondary aria-pressed:bg-secondary/20 aria-pressed:font-semibold"
+              [attr.aria-pressed]="typeFilter() === ''" (click)="onTypeChange('')">
         {{ 'WOD.ACTIONS.ALL_FORMATS' | translate }}
       </button>
       @for (type of wodTypes(); track type) {
-        <button type="button" hlmBadge variant="outline" class="h-8 px-3 text-sm cursor-pointer aria-pressed:border-secondary aria-pressed:bg-secondary aria-pressed:text-secondary-content"
-              [attr.aria-pressed]="typeFilter() === type"
-                (click)="onTypeChange(type)">
+        <button type="button" [id]="'format-' + type"
+                class="h-8 px-3 rounded-full border text-sm hover:bg-muted aria-pressed:border-secondary aria-pressed:bg-secondary/20 aria-pressed:font-semibold"
+                [attr.aria-pressed]="typeFilter() === type" (click)="onTypeChange(type)">
           {{ 'WOD.WOD_TYPES.' + type | translate }}
         </button>
+      }
+      @if (typeFilter() && structures().length > 1) {
+        <span class="w-px h-6 bg-border mx-1" aria-hidden="true"></span>
+        @for (st of structures(); track st) {
+          <button type="button" [id]="'structure-' + st"
+                  class="structure-chip h-8 px-3 rounded-full border border-dashed text-sm hover:bg-muted aria-pressed:border-solid aria-pressed:border-secondary aria-pressed:bg-secondary/20 aria-pressed:font-semibold"
+                  [attr.aria-pressed]="structureFilter() === st" (click)="onStructureChange(st)">
+            {{ 'WOD.STRUCTURES.' + typeFilter() + '.' + st | translate }}
+          </button>
+        }
       }
     </div>
   </div>
@@ -50,32 +59,66 @@
     [emptyMessage]="'WOD.MESSAGES.EMPTY_LIST' | translate"
     [emptySearchMessage]="'WOD.MESSAGES.EMPTY_LIST_SEARCH' | translate">
 
-    <div class="bg-card border border-border rounded-xl">
-      <ul class="divide-y divide-border">
-        @for (wod of wods(); track wod.id) {
-          <app-list-item
-            [title]="wod.title"
-            [badge]="typeLabel(wod)"
-            [subtitle]="(wod.repScheme ?? '')
-              + (wod.repScheme && wod.timeCapSeconds ? ' · ' : '')
-              + (wod.timeCapSeconds ? ('WOD.FIELDS.TIME_CAP_SHORT' | translate) + ' ' + formatTimeCap(wod.timeCapSeconds) : '')"
-            [link]="['/wods', wod.id]">
-          </app-list-item>
-        }
-      </ul>
+    <p class="text-sm text-muted-foreground mb-2" id="catalogue-count">
+      {{ 'WOD.CATALOGUE.RANGE' | translate: range() }}
+    </p>
+    <div class="flex flex-col gap-4">
+      @for (group of groups(); track group.heading) {
+        <section class="bg-card border border-border rounded-xl" [attr.aria-label]="group.heading">
+          @if (group.heading) {
+            <h2 class="catalogue-group px-4 pt-3 pb-1 text-sm font-semibold text-muted-foreground">{{ group.heading }}</h2>
+          }
+          <ul class="divide-y divide-border">
+            @for (wod of group.wods; track wod.id) {
+              <li>
+                <a [routerLink]="['/wods', wod.id]" class="catalogue-row flex items-start gap-3 px-4 py-3 hover:bg-muted/50 transition-colors">
+                  <div class="flex-1 min-w-0">
+                    <div class="flex flex-wrap items-center gap-2">
+                      <span class="font-semibold">{{ wod.title }}</span>
+                      @if (wod.category && !categoryFilter()) {
+                        <span hlmBadge variant="outline" class="text-xs">{{ 'WOD.CATEGORIES.' + wod.category | translate }}</span>
+                      }
+                    </div>
+                    @if (preview(wod); as movements) {
+                      <p class="text-sm text-muted-foreground truncate">{{ movements }}</p>
+                    }
+                  </div>
+                  <div class="text-right text-sm shrink-0">
+                    <div>{{ 'WOD.WOD_TYPES.' + wod.wodType | translate }}</div>
+                    @if (wod.structure) {
+                      <div class="text-muted-foreground">{{ 'WOD.STRUCTURES.' + wod.wodType + '.' + wod.structure | translate }}</div>
+                    }
+                    @if (detail(wod); as d) {
+                      <div class="text-xs text-muted-foreground">{{ d }}</div>
+                    }
+                  </div>
+                </a>
+              </li>
+            }
+          </ul>
+        </section>
+      }
     </div>
 
-    @if (hasMore()) {
-      <div class="flex justify-center mt-6">
-        <button type="button" hlmBtn variant="outline" size="lg" class="min-w-36"
-                [disabled]="isLoadingMore()"
-                (click)="loadMore()">
-          @if (isLoadingMore()) {
-            <hlm-spinner/>
-          }
-          {{ 'WOD.ACTIONS.LOAD_MORE' | translate }}
+    @if (pageCount() > 1) {
+      <nav class="flex justify-center items-center gap-1 mt-6" [attr.aria-label]="'WOD.CATALOGUE.PAGINATION' | translate">
+        <button type="button" hlmBtn variant="outline" size="icon" class="page-prev"
+                [attr.aria-label]="'WOD.CATALOGUE.PREVIOUS' | translate" [disabled]="page() === 0" (click)="goToPage(page() - 1)">
+          <ng-icon name="heroChevronLeft"/>
         </button>
-      </div>
+        @for (p of pageNumbers(); track $index) {
+          @if (p === null) {
+            <span class="px-1 text-muted-foreground" aria-hidden="true">…</span>
+          } @else {
+            <button type="button" hlmBtn [variant]="p === page() ? 'default' : 'outline'" size="icon" class="page-number"
+                    [attr.aria-current]="p === page() ? 'page' : null" (click)="goToPage(p)">{{ p + 1 }}</button>
+          }
+        }
+        <button type="button" hlmBtn variant="outline" size="icon" class="page-next"
+                [attr.aria-label]="'WOD.CATALOGUE.NEXT' | translate" [disabled]="page() >= pageCount() - 1" (click)="goToPage(page() + 1)">
+          <ng-icon name="heroChevronRight"/>
+        </button>
+      </nav>
     }
   </app-list-state>
 

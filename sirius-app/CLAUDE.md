@@ -121,7 +121,10 @@ the dev proxy targets the local Traefik `https://localhost` with `Host: stellar.
   measures per movement, scheme / sets parsing in `wod-quick.utils.ts`;
   structure in fields, never a free scheme); the
   full `wod-form` is for public WODs (admins). Both pick movements with `app-movement-combobox`.
-- WOD catalogue (`/wods`) = public WODs only; personal WODs in `features/training/my-wods`.
+- WOD catalogue (`/wods`) = public WODs only: family chips with counts (`WodFacets.categoryCounts`),
+  format then sub-category chips, rows with a movement preview, competitions grouped by edition
+  (`editionYear`, latest first, `sort=title,desc`), numbered pagination (`GET /wods/count`; page and
+  filters kept in `WodService` signals); personal WODs in `features/training/my-wods`.
 - Sessions (`features/sessions`, lazy routes in `box.routes.ts` and `training.routes.ts`, personal
   ones flagged by route data `personal`): `session-week`, `session-detail`, `session-block`,
   `session-form`, `session-card` (frame), `session-journal`, `session-settings` card; dates helpers

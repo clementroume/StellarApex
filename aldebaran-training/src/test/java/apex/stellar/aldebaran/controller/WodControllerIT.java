@@ -6,6 +6,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -60,6 +61,7 @@ class WodControllerIT extends BaseIntegrationTest {
         Wod.builder()
             .title("Fran")
             .wodType(WodType.FOR_TIME)
+            .structure(Wod.WodStructure.SCHEME)
             .scoreType(ScoreType.TIME)
             .descriptionEn("21-15-9 Thrusters and Pull-ups")
             .isPublic(true)
@@ -84,6 +86,45 @@ class WodControllerIT extends BaseIntegrationTest {
         .andExpect(jsonPath("$.wodTypes[0]").value("FOR_TIME"))
         .andExpect(jsonPath("$.gymIds[0]").value(101))
         .andExpect(jsonPath("$.authorIds", hasSize(0)));
+  }
+
+  @Test
+  @DisplayName("Catalogue: counts per category, sub-categories, total and sub-category filter")
+  void testCatalogueFacetsAndCount() throws Exception {
+    mockMvc
+        .perform(
+            get("/aldebaran/wods/facets")
+                .param("scope", "PUBLIC")
+                .param("type", "FOR_TIME")
+                .header("X-Auth-User-Id", "1")
+                .header("X-Auth-User-Role", "USER")
+                .header("X-Internal-Secret", "test-internal-secret"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.total").value(1))
+        .andExpect(jsonPath("$.categoryCounts.NONE").value(1))
+        .andExpect(jsonPath("$.structures[0]").value("SCHEME"));
+    mockMvc
+        .perform(
+            get("/aldebaran/wods/count")
+                .param("scope", "PUBLIC")
+                .param("structure", "CHIPPER")
+                .header("X-Auth-User-Id", "1")
+                .header("X-Auth-User-Role", "USER")
+                .header("X-Internal-Secret", "test-internal-secret"))
+        .andExpect(status().isOk())
+        .andExpect(content().string("0"));
+    mockMvc
+        .perform(
+            get("/aldebaran/wods")
+                .param("scope", "PUBLIC")
+                .param("structure", "SCHEME")
+                .header("X-Auth-User-Id", "1")
+                .header("X-Auth-User-Role", "USER")
+                .header("X-Internal-Secret", "test-internal-secret"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.content", hasSize(1)))
+        .andExpect(jsonPath("$.content[0].structure").value("SCHEME"))
+        .andExpect(jsonPath("$.content[0].movementNames", hasSize(0)));
   }
 
   @Test

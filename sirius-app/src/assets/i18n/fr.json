@@ -583,7 +583,8 @@
       "COMPETITION": "Compétition",
       "SCOPE": "Portée",
       "SETS": "Séries",
-      "STRUCTURE": "Sous-catégorie"
+      "STRUCTURE": "Sous-catégorie",
+      "DURATION_SHORT": "Durée"
     },
     "PLACEHOLDERS": {
       "TITLE": "Ex : Fran",
@@ -625,14 +626,6 @@
       "AMRAP": "AMRAP",
       "EMOM": "EMOM",
       "TABATA": "Tabata",
-      "INTERVALS": "Intervalles",
-      "STRENGTH": "Force",
-      "SKILL": "Skill / Technique",
-      "ACCESSORY": "Renforcement (Accessory)",
-      "CUSTOM": "Personnalisé",
-      "CHIPPER": "Chipper",
-      "LADDER": "Ladder",
-      "DEATH_BY": "Death by",
       "FOR_LOAD": "For Load",
       "FOR_QUALITY": "For Quality"
     },
@@ -771,6 +764,12 @@
       "FOR_QUALITY": {
         "PRACTICE": "Technique"
       }
+    },
+    "CATALOGUE": {
+      "RANGE": "{{from}}–{{to}} sur {{total}}",
+      "PAGINATION": "Pages du catalogue",
+      "PREVIOUS": "Page précédente",
+      "NEXT": "Page suivante"
     }
   },
   "SCORE": {
@@ -1198,8 +1197,6 @@
     "PERSONAL": "Séance perso",
     "LOCKED": "Verrouillée",
     "LOGGED_ON": "Séance faite le {{date}}",
-    "LANG_FR": "français",
-    "LANG_EN": "anglais",
     "DELETE_TITLE": "Supprimer la séance ?",
     "DELETE_DESC": "La séance et les WODs écrits pour elle sont supprimés ; les WODs existants empruntés restent au catalogue.",
     "UNLOG_TITLE": "Annuler « Séance faite » ?",
