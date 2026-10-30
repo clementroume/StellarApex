@@ -65,6 +65,8 @@ export class WodFormComponent implements OnInit {
   readonly originalWod = signal<WodResponse | null>(null);
 
   wodTypes = signal<string[]>([]);
+  /** Sub-categories of each format (reference data). */
+  structuresByType = signal<Record<string, string[]>>({});
   categories = signal<string[]>([]);
   scoreTypes = signal<string[]>([]);
   unitGroups = signal<Record<string, string[]>>({});
@@ -112,6 +114,8 @@ export class WodFormComponent implements OnInit {
     // --- Identification ---
     title: ['', [Validators.required, Validators.maxLength(100)]],
     wodType: ['', Validators.required],
+    // Sub-category of the format (For Time: ROUNDS, SCHEME, CHIPPER...)
+    structure: [null as string | null],
     category: [null as string | null],
     scoreType: ['', Validators.required],
     // --- Authorship and Visibility ---
@@ -152,6 +156,7 @@ export class WodFormComponent implements OnInit {
       movements: this.movementService.getMovements()
     }).subscribe(({wodRef, movements}) => {
       this.wodTypes.set(wodRef.wodTypes);
+      this.structuresByType.set(wodRef.structures ?? {});
       this.categories.set(wodRef.categories ?? []);
       this.scoreTypes.set(wodRef.scoreTypes);
       this.unitGroups.set(wodRef.unitGroups);
@@ -231,6 +236,8 @@ export class WodFormComponent implements OnInit {
       sets: [source?.sets ?? null as number | null, [Validators.min(1)]],
       // Buy-in, rounds or buy-out
       segment: [source?.segment ?? 'MAIN'],
+      // Group of a weightlifting complex, kept as is
+      complexGroup: [source?.complexGroup ?? null as number | null],
       repsScheme: [source?.repsScheme ?? '', [Validators.maxLength(50)]],
       weight: [source?.weight ?? null as number | null, [Validators.min(0)]],
       weightFemale: [source?.weightFemale ?? null as number | null, [Validators.min(0)]],
@@ -365,6 +372,7 @@ export class WodFormComponent implements OnInit {
       // --- Identification ---
       title: wod.title,
       wodType: wod.wodType,
+      structure: wod.structure ?? null,
       category: wod.category ?? null,
       scoreType: wod.scoreType,
       // --- Authorship and Visibility ---
@@ -443,6 +451,7 @@ export class WodFormComponent implements OnInit {
       // --- Prescription ---
       sets: m.sets ?? undefined,
       segment: m.segment ?? 'MAIN',
+      complexGroup: m.complexGroup ?? null,
       repsScheme: m.repsScheme?.trim() || undefined,
       weight: m.weight ?? undefined,
       weightFemale: m.weightFemale ?? undefined,
@@ -491,6 +500,7 @@ export class WodFormComponent implements OnInit {
       emomInterval: isEmom ? (v.emomInterval ?? undefined) : undefined,
       emomRounds: isEmom ? (v.emomRounds ?? undefined) : undefined,
       repScheme: v.repScheme.trim() || undefined,
+      structure: v.structure && (this.structuresByType()[v.wodType] ?? []).includes(v.structure) ? v.structure : null,
       rounds: v.rounds,
       restSeconds: v.restSeconds,
       workSeconds: v.workSeconds,

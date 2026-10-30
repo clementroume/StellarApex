@@ -114,10 +114,11 @@ the dev proxy targets the local Traefik `https://localhost` with `Host: stellar.
 - Scores on the WOD detail: `features/wods/scores` (`WodScoresStore` provided by the detail, shared by
   `score-best`, `score-history`, `score-form`; `formatScore` in `score.utils.ts`). Each session block
   provides its own store with `sessionLogId` (new scores join the journal; the form then hides day
-  and gym). Strength sets: `ScoreRequest.sets` (Aldebaran derives the best set / volume).
+  and gym) and `sessionId` (history and the folded "session leaderboard" keep that session's scores). Strength sets: `ScoreRequest.sets` (Aldebaran derives the best set / volume).
 - WOD prescription display: `features/wods/wod-whiteboard` (WOD detail and session blocks). Coaches and
   athletes write WODs with `features/wods/wod-quick-form` (`initial`, `defaultFormat`, `(submitted)`
-  hands the `WodRequest` back; formats, measures per movement, ladder / sets parsing in `wod-quick.utils.ts`;
+  hands the `WodRequest` back; categories / sub-categories (`CATEGORIES`, `STRUCTURES`, `legacyFormat`),
+  measures per movement, scheme / sets parsing in `wod-quick.utils.ts`;
   structure in fields, never a free scheme); the
   full `wod-form` is for public WODs (admins). Both pick movements with `app-movement-combobox`.
 - WOD catalogue (`/wods`) = public WODs only; personal WODs in `features/training/my-wods`.

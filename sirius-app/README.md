@@ -76,11 +76,11 @@ src/spartan.css       # spartan tokens and Tailwind colours mapped to the palett
   session" on a WOD page prefills it, as a competition block for an official one). Session settings
   (default policy, time zone) sit in My box › Settings.
 * **Quick WOD editor** (`features/wods/wod-quick-form`, session blocks and My training › My WODs):
-  format chips (For Time, Rounds, Chipper, Ladder, AMRAP, EMOM / intervals, Tabata, Death by,
-  Strength, Skill) with the usual score type (changeable) and only the structure fields of the
-  format (rounds and rest, descending values or ascending start + step, every X minutes with optional
-  work / rest, Tabata 8 × 20 s / 10 s, Death by start + step, strength sets `5x5` / `5-5-3-3-1`); no
-  free rep scheme. Each movement line has a measure (reps, max, distance, calories, time, picked from
+  two rows of chips: the category (For Time, AMRAP, EMOM, Tabata, For Load, For Quality) then its
+  sub-category (For Time: Rounds, Once, Scheme, Chipper, Ladder; For Load: Sets, Scheme, Max,
+  Complex...), with the usual score type (changeable) and only the structure fields of the
+  sub-category (rounds and rest, scheme or pyramid values, start + step, every X minutes, work /
+  rest, Death by start + step, sets `5x5` / `5-5-3-3-1`, one complex); no free rep scheme. Each movement line has a measure (reps, max, distance, calories, time, picked from
   the movement: run → distance, rower → calories, plank → time), the load / height its category needs
   (other measures, equipment and technique folded) and, on Rounds and AMRAP, a buy-in / buy-out part. Weight vest
   and notes (writer's language) are folded options; title generated when empty. The full WOD form stays for admins writing public WODs.

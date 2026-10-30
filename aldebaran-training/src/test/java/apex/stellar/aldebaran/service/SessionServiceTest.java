@@ -24,23 +24,23 @@ class SessionServiceTest {
     assertNull(SessionService.deriveStimulus(Kind.WARM_UP, null, Discipline.CROSSFIT));
     assertEquals(
         Stimulus.STRENGTH,
-        SessionService.deriveStimulus(Kind.SKILL, wod(WodType.STRENGTH), Discipline.CROSSFIT));
+        SessionService.deriveStimulus(Kind.SKILL, wod(WodType.FOR_LOAD), Discipline.CROSSFIT));
     assertEquals(
         Stimulus.SKILL,
         SessionService.deriveStimulus(Kind.SKILL, wod(WodType.EMOM), Discipline.CROSSFIT));
     assertEquals(
         Stimulus.POWER,
         SessionService.deriveStimulus(
-            Kind.SKILL, wod(WodType.STRENGTH), Discipline.WEIGHTLIFTING));
+            Kind.SKILL, wod(WodType.FOR_LOAD), Discipline.WEIGHTLIFTING));
     assertEquals(
         Stimulus.MIXED,
         SessionService.deriveStimulus(Kind.WOD, wod(WodType.AMRAP), Discipline.CROSSFIT));
     assertEquals(
         Stimulus.STRENGTH,
-        SessionService.deriveStimulus(Kind.ACCESSORY, wod(WodType.ACCESSORY), Discipline.CROSSFIT));
+        SessionService.deriveStimulus(Kind.ACCESSORY, wod(WodType.FOR_QUALITY), Discipline.CROSSFIT));
     assertEquals(
         Stimulus.THRESHOLD,
-        SessionService.deriveStimulus(Kind.WOD, wod(WodType.INTERVALS), Discipline.ENDURANCE));
+        SessionService.deriveStimulus(Kind.WOD, wod(WodType.EMOM), Discipline.ENDURANCE));
     assertEquals(
         Stimulus.AEROBIC,
         SessionService.deriveStimulus(Kind.WOD, wod(WodType.FOR_TIME), Discipline.ENDURANCE));

@@ -137,6 +137,9 @@ public interface WodMapper {
   @Mapping(
       target = "vestWeightUnit",
       nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.SET_TO_NULL)
+  @Mapping(
+      target = "structure",
+      nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.SET_TO_NULL)
   void updateEntity(WodRequest request, @MappingTarget Wod entity);
 
   // -------------------------------------------------------------------------

@@ -74,6 +74,20 @@ public class ScoreService {
    */
   @Transactional(readOnly = true)
   public Slice<ScoreResponse> getMyScores(Long wodId, Pageable pageable) {
+    return getMyScores(wodId, null, pageable);
+  }
+
+  /**
+   * Retrieves the current user's scores, optionally only those on a WOD logged in a session (the
+   * history of a session block, e.g. Fran borrowed by today's session).
+   *
+   * @param wodId Optional WOD ID to filter scores.
+   * @param sessionId Optional session (needs {@code wodId}): only the scores of its journals.
+   * @param pageable Pagination and sorting information.
+   * @return A slice of ScoreResponse objects.
+   */
+  @Transactional(readOnly = true)
+  public Slice<ScoreResponse> getMyScores(Long wodId, Long sessionId, Pageable pageable) {
     Long userId = securityService.getCurrentUserId();
 
     Pageable sortedPageable =
@@ -82,10 +96,14 @@ public class ScoreService {
             : PageRequest.of(
                 pageable.getPageNumber(), pageable.getPageSize(), Sort.by("date").descending());
 
-    Slice<Score> scores =
-        (wodId != null)
-            ? scoreRepository.findByUserIdAndWodId(userId, wodId, sortedPageable)
-            : scoreRepository.findByUserId(userId, sortedPageable);
+    Slice<Score> scores;
+    if (wodId != null && sessionId != null) {
+      scores = scoreRepository.findByUserIdAndWodIdInSession(userId, wodId, sessionId, sortedPageable);
+    } else if (wodId != null) {
+      scores = scoreRepository.findByUserIdAndWodId(userId, wodId, sortedPageable);
+    } else {
+      scores = scoreRepository.findByUserId(userId, sortedPageable);
+    }
 
     return scores.map(scoreMapper::toResponse);
   }
@@ -305,15 +323,44 @@ public class ScoreService {
       boolean verifiedOnly,
       @Nullable Division division,
       Pageable pageable) {
+    return getLeaderboard(wodId, scaling, gymIds, verifiedOnly, division, null, pageable);
+  }
+
+  /**
+   * Retrieves the leaderboard of a WOD, optionally restricted to the scores logged in the journals
+   * of one session (the session leaderboard of a borrowed WOD such as Fran).
+   *
+   * @param wodId The WOD.
+   * @param scaling The scaling level to rank.
+   * @param gymIds The gyms to keep, or null / empty for every gym.
+   * @param verifiedOnly Whether to keep verified scores only (competition WODs).
+   * @param division The division to keep, or null for all.
+   * @param sessionId The session to keep, or null for every score.
+   * @param pageable Pagination information.
+   * @return A slice of ScoreResponse objects representing the leaderboard.
+   */
+  @Transactional(readOnly = true)
+  public Slice<ScoreResponse> getLeaderboard(
+      Long wodId,
+      ScalingLevel scaling,
+      Collection<Long> gymIds,
+      boolean verifiedOnly,
+      @Nullable Division division,
+      @Nullable Long sessionId,
+      Pageable pageable) {
     WodResponse wod = wodService.getWodDetail(wodId);
 
     boolean filterGyms = gymIds != null && !gymIds.isEmpty();
     // A JPQL IN clause needs a non-empty collection, even when the filter is off
     Collection<Long> gyms = filterGyms ? gymIds : Set.of(-1L);
 
-    if (filterGyms || verifiedOnly || division != null) {
+    if (filterGyms || verifiedOnly || division != null || sessionId != null) {
       return filteredLeaderboard(
-              wodId, wod.scoreType(), scaling, filterGyms, gyms, verifiedOnly, division, pageable)
+              wodId,
+              wod.scoreType(),
+              scaling,
+              new Filters(filterGyms, gyms, verifiedOnly, division, sessionId),
+              pageable)
           .map(scoreMapper::toResponse);
     }
 
@@ -334,17 +381,18 @@ public class ScoreService {
    * scores belong to a few gyms (or to a competition WOD of one gym), so the set stays small.
    */
   private Slice<Score> filteredLeaderboard(
-      Long wodId,
-      ScoreType type,
-      ScalingLevel scaling,
-      boolean filterGyms,
-      Collection<Long> gyms,
-      boolean verifiedOnly,
-      @Nullable Division division,
-      Pageable pageable) {
+      Long wodId, ScoreType type, ScalingLevel scaling, Filters filters, Pageable pageable) {
     Comparator<Score> best = ScoreRanking.bestFirst(type);
     Map<Long, Score> bestByAthlete = new HashMap<>();
-    for (Score score : scoreRepository.findFilteredByWod(wodId, filterGyms, gyms, verifiedOnly, division)) {
+    long session = filters.sessionId() == null ? ScoreRepository.NO_SESSION : filters.sessionId();
+    for (Score score :
+        scoreRepository.findFilteredByWod(
+            wodId,
+            filters.filterGyms(),
+            filters.gyms(),
+            filters.verifiedOnly(),
+            filters.division(),
+            session)) {
       bestByAthlete.merge(score.getUserId(), score, (a, b) -> best.compare(a, b) <= 0 ? a : b);
     }
 
@@ -568,4 +616,12 @@ public class ScoreService {
     // Hibernate only issues UPDATEs for rows that actually changed
     scoreRepository.saveAll(allScores);
   }
+
+  /** Filters of the in-memory leaderboard path. */
+  private record Filters(
+      boolean filterGyms,
+      Collection<Long> gyms,
+      boolean verifiedOnly,
+      @Nullable Division division,
+      @Nullable Long sessionId) {}
 }

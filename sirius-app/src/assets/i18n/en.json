@@ -582,7 +582,8 @@
       "REPS_PER_ROUND": "Reps per round (optional)",
       "COMPETITION": "Competition",
       "SCOPE": "Scope",
-      "SETS": "Sets"
+      "SETS": "Sets",
+      "STRUCTURE": "Sub-category"
     },
     "PLACEHOLDERS": {
       "TITLE": "E.g. Fran",
@@ -631,7 +632,9 @@
       "CUSTOM": "Custom",
       "CHIPPER": "Chipper",
       "LADDER": "Ladder",
-      "DEATH_BY": "Death by"
+      "DEATH_BY": "Death by",
+      "FOR_LOAD": "For Load",
+      "FOR_QUALITY": "For Quality"
     },
     "CATEGORIES": {
       "GIRLS": "Girls",
@@ -692,27 +695,12 @@
       "TITLE": "Title (optional)",
       "NOTES": "Notes / scaling",
       "NOTES_PLACEHOLDER": "Instructions, scaling options…",
-      "FORMATS": {
-        "FOR_TIME": "For Time",
-        "ROUNDS": "Rounds",
-        "CHIPPER": "Chipper",
-        "LADDER": "Ladder",
-        "AMRAP": "AMRAP",
-        "EMOM": "EMOM / Intervals",
-        "TABATA": "Tabata",
-        "DEATH_BY": "Death by",
-        "STRENGTH": "Strength",
-        "SKILL": "Skill"
-      },
       "N_ROUNDS": "{{count}} rounds",
       "REST_BETWEEN": "Rest between rounds (s)",
       "WORK": "Work (s)",
       "REST": "Rest (s)",
-      "WORK_REST": "+ work / rest",
-      "NO_WORK_REST": "no work / rest",
       "LADDER_DIRECTION": "Ladder direction",
-      "LADDER_DOWN": "Descending",
-      "LADDER_UP": "Ascending",
+      "LADDER_UP": "Start + step",
       "LADDER_VALUES": "Ladder reps",
       "LADDER_START": "Start",
       "LADDER_STEP": "Step",
@@ -733,7 +721,11 @@
       "SEGMENT": "Part of the WOD",
       "VEST": "Weight vest M/W",
       "EQUIPMENT": "Equipment",
-      "TECHNIQUE": "Technique"
+      "TECHNIQUE": "Technique",
+      "MINUTES": "Minutes",
+      "WINDOW": "Window (min)",
+      "TABATA_CLASSIC": "8 rounds of 20 s work / 10 s rest",
+      "LADDER_PYRAMID": "Values / pyramid"
     },
     "CATALOGUE_SUBTITLE": "The reference WODs: Girls, Hero, benchmarks, Open… Program them in a session of your box.",
     "SEGMENTS": {
@@ -746,6 +738,39 @@
       "DEATH_BY": "{{start}} rep(s) the 1st minute, +{{step}} each minute",
       "REST": "Rest {{rest}} between rounds",
       "VEST": "Vest"
+    },
+    "STRUCTURES": {
+      "FOR_TIME": {
+        "SINGLE": "Once",
+        "ROUNDS": "Rounds",
+        "SCHEME": "Scheme",
+        "CHIPPER": "Chipper",
+        "LADDER": "Ladder"
+      },
+      "AMRAP": {
+        "ROUNDS": "Rounds + reps",
+        "LADDER": "Ladder",
+        "MAX_REPS": "Max reps"
+      },
+      "EMOM": {
+        "EVERY_MINUTE": "Every minute",
+        "EVERY_X": "Every X min",
+        "INTERVALS": "Intervals",
+        "DEATH_BY": "Death by"
+      },
+      "TABATA": {
+        "CLASSIC": "Classic",
+        "CUSTOM": "Custom"
+      },
+      "FOR_LOAD": {
+        "SETS": "Sets",
+        "SCHEME": "Scheme",
+        "MAX": "Max",
+        "COMPLEX": "Complex"
+      },
+      "FOR_QUALITY": {
+        "PRACTICE": "Practice"
+      }
     }
   },
   "SCORE": {
@@ -841,7 +866,8 @@
       "MY_BOX": "My box",
       "MY_BOXES": "My boxes",
       "MY_PROG": "My program",
-      "MY_PROGS": "My programs"
+      "MY_PROGS": "My programs",
+      "SESSION_TITLE": "Session leaderboard"
     },
     "VERIFIED": "Verified",
     "VERIFIED_BY": "Verified by {{name}}",
@@ -1334,6 +1360,7 @@
       "BLOCKS": "{{done}}/{{total}} blocks",
       "SCORES": "{{count}} score(s)",
       "EMPTY": "No session done yet."
-    }
+    },
+    "SESSION_LEADERBOARD": "Session leaderboard"
   }
 }

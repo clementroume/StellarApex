@@ -49,6 +49,7 @@ public class ScoreController {
    * Retrieves the score history for the currently authenticated user.
    *
    * @param wodId Optional WOD ID to filter history (e.g., "Show me my progress on Fran").
+   * @param sessionId Optional session (with {@code wodId}): only the scores logged in it.
    * @param pageable Pagination info.
    * @param principal The authenticated user.
    * @return A page of the user's scores, with their capabilities.
@@ -56,12 +57,13 @@ public class ScoreController {
   @GetMapping("/me")
   public ResponseEntity<Slice<ScoreResponse>> getMyScores(
       @RequestParam(required = false) Long wodId,
+      @RequestParam(required = false) Long sessionId,
       @PageableDefault(size = 20) Pageable pageable,
       @AuthenticationPrincipal AldebaranUserPrincipal principal) {
 
     return ResponseEntity.ok(
         scoreService
-            .getMyScores(wodId, pageable)
+            .getMyScores(wodId, sessionId, pageable)
             .map(score -> scoreCapabilityService.forViewer(score, principal)));
   }
 
@@ -218,25 +220,29 @@ public class ScoreController {
    *     performed there, e.g. "my box(es)" or "my program(s)"; worldwide when absent.
    * @param verifiedOnly Only verified scores (competition WODs); default false.
    * @param division Only the scores logged in this division (MEN, WOMEN); every score when absent.
+   * @param sessionId Only the scores logged in this session's journals (session leaderboard);
+   *     needs the session content to be visible to the user.
    * @param pageable Pagination info.
    * @param principal The authenticated user.
    * @return A page of top scores.
    */
   @GetMapping("/leaderboard/{id}")
   @PreAuthorize(
-      "@wodSecurity.canRead(#id, principal) and @scoreSecurity.canUseGyms(#gymIds, principal)")
+      "@wodSecurity.canRead(#id, principal) and @scoreSecurity.canUseGyms(#gymIds, principal)"
+          + " and @sessionSecurity.canReadContent(#sessionId, principal)")
   public ResponseEntity<Slice<ScoreResponse>> getLeaderboard(
       @PathVariable Long id,
       @RequestParam(defaultValue = "RX") ScalingLevel scaling,
       @RequestParam(required = false) List<Long> gymIds,
       @RequestParam(defaultValue = "false") boolean verifiedOnly,
       @RequestParam(required = false) Division division,
+      @RequestParam(required = false) Long sessionId,
       @PageableDefault(size = 20) Pageable pageable,
       @AuthenticationPrincipal AldebaranUserPrincipal principal) {
 
     return ResponseEntity.ok(
         scoreService
-            .getLeaderboard(id, scaling, gymIds, verifiedOnly, division, pageable)
+            .getLeaderboard(id, scaling, gymIds, verifiedOnly, division, sessionId, pageable)
             .map(score -> scoreCapabilityService.forViewer(score, principal)));
   }
 

@@ -124,7 +124,7 @@ class ScoreControllerIT extends BaseIntegrationTest {
         wodRepository.save(
             Wod.builder()
                 .title("1RM Squat")
-                .wodType(WodType.STRENGTH)
+                .wodType(WodType.FOR_LOAD)
                 .scoreType(ScoreType.WEIGHT)
                 .isPublic(true)
                 .authorId(100L)
@@ -236,7 +236,7 @@ class ScoreControllerIT extends BaseIntegrationTest {
         wodRepository.save(
             Wod.builder()
                 .title("1RM Bench")
-                .wodType(WodType.STRENGTH)
+                .wodType(WodType.FOR_LOAD)
                 .scoreType(ScoreType.WEIGHT)
                 .isPublic(true)
                 .authorId(100L)

@@ -28,6 +28,8 @@ export interface WodSummaryResponse {
 export interface WodFacets {
   // WOD formats and categories present for the current filters (those two filters are ignored)
   wodTypes: string[];
+  // Sub-categories of each format
+  structures: Record<string, string[]>;
   categories: string[];
   // Gyms owning readable WODs and authors of readable personal WODs (admin selectors)
   gymIds: number[];
@@ -82,6 +84,8 @@ export interface WodRequest {
   vestWeight?: number | null;
   vestWeightFemale?: number | null;
   vestWeightUnit?: string | null;
+  // --- Sub-category of the format (For Time: ROUNDS, SCHEME, CHIPPER...) ---
+  structure?: string | null;
   movements: WodMovementRequest[];
 }
 
@@ -128,6 +132,8 @@ export interface WodResponse {
   vestWeight?: number | null;
   vestWeightFemale?: number | null;
   vestWeightUnit?: string | null;
+  // --- Sub-category of the format (For Time: ROUNDS, SCHEME, CHIPPER...) ---
+  structure?: string | null;
   modalities: string[];
   movements: WodMovementResponse[];
   // --- Rights ---
@@ -176,6 +182,8 @@ export interface WodMovementRequest {
   sets?: number | null;
   // --- Part of the WOD: before the rounds, the rounds, after them (null = MAIN) ---
   segment?: WodSegment | null;
+  // --- Group of a weightlifting complex (lines done as one set), or null ---
+  complexGroup?: number | null;
 }
 
 export interface WodMovementResponse {
@@ -211,11 +219,15 @@ export interface WodMovementResponse {
   sets?: number | null;
   // --- Part of the WOD: before the rounds, the rounds, after them (null = MAIN) ---
   segment?: WodSegment | null;
+  // --- Group of a weightlifting complex (lines done as one set), or null ---
+  complexGroup?: number | null;
 }
 
 export interface WodReferenceData {
   // --- Wod Formats and Categories ---
   wodTypes: string[];
+  // Sub-categories of each format
+  structures: Record<string, string[]>;
   categories: string[];
   // --- Score Types ---
   scoreTypes: string[];

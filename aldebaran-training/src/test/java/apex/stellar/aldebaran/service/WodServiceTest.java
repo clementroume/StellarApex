@@ -172,7 +172,7 @@ class WodServiceTest {
     when(securityService.isCurrentUserAdmin()).thenReturn(true);
     when(wodRepository.findSecureWodTypes(
             "%fran%", null, null, null, "GYM", 101L, null, 5L, Set.of(101L), true))
-        .thenReturn(List.of(WodType.STRENGTH, WodType.AMRAP));
+        .thenReturn(List.of(WodType.FOR_LOAD, WodType.AMRAP));
     when(wodRepository.findSecureCategories(
             "%fran%", null, null, null, "GYM", 101L, null, 5L, Set.of(101L), true))
         .thenReturn(List.of(WodCategory.OPEN, WodCategory.GIRLS));
@@ -186,7 +186,7 @@ class WodServiceTest {
     WodFacetsResponse facets = wodService.getFacets("Fran", WodScope.GYM, 101L, null);
 
     // Types are returned in enum order, ids sorted
-    assertEquals(List.of(WodType.AMRAP, WodType.STRENGTH), facets.wodTypes());
+    assertEquals(List.of(WodType.AMRAP, WodType.FOR_LOAD), facets.wodTypes());
     assertEquals(List.of(WodCategory.GIRLS, WodCategory.OPEN), facets.categories());
     assertEquals(List.of(1L, 3L), facets.gymIds());
     assertEquals(List.of(4L, 9L), facets.authorIds());
@@ -642,7 +642,7 @@ class WodServiceTest {
     WodMovementResponse sourceMovement =
         new WodMovementResponse(
             3L, movementDto, 1, "21-15-9", 43.0, 29.0, null, null, null, null, null, null, null,
-            null, null, null, Set.of(), Set.of(), null, null, null, null, null, null);
+            null, null, null, Set.of(), Set.of(), null, null, null, null, null, null, null);
     WodResponse sourceDto = mock(WodResponse.class);
     when(sourceDto.title()).thenReturn("26.1");
     when(sourceDto.movements()).thenReturn(List.of(sourceMovement));

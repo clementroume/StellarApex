@@ -165,12 +165,16 @@ Sunday); the same blocks at two dates are two sessions. Disciplines: `CROSSFIT`,
   (`WodMovement.checkVariantsAllowed`): 400 on create/update, also enforced when reading the CSVs.
   Conversely, a movement update cannot remove an equipment or technique that any WOD (public, gym
   or personal) still prescribes for it: 409 naming the value and the number of WODs.
-* **WOD format and category**: `wodType` is the format (`FOR_TIME`, `CHIPPER`, `LADDER`, `AMRAP`,
-  `EMOM`, `TABATA`, `INTERVALS`, `DEATH_BY`, `STRENGTH`, `SKILL`, `ACCESSORY`, `CUSTOM`); the optional `category` is the family
+* **WOD format and category** (formats v3, V15): `wodType` is the format category (`FOR_TIME`, `AMRAP`,
+  `EMOM`, `TABATA`, `FOR_LOAD`, `FOR_QUALITY`) and `structure` its sub-category (`Wod.WodStructure`,
+  `allowedIn(type)`, 400 `error.wod.structure.mismatch` otherwise; listed per format in
+  `GET /wods/reference-data` `structures`); a weightlifting complex groups its lines with
+  `wod_movements.complex_group`. V15 moved the former types (CHIPPER, LADDER, INTERVALS, DEATH_BY,
+  STRENGTH, SKILL, ACCESSORY, CUSTOM) to a category and a sub-category; the optional `category` is the family
   (`GIRLS`, `HERO`, `BENCHMARK` = official CrossFit benchmarks such as Fight Gone Bad, `OPEN`,
   `QUARTERFINALS`, `SEMIFINALS`, `GAMES`): categories of public WODs (V13 dropped the former box
   benchmark category; box programming goes through sessions).
-  Fran is a `LADDER` WOD (`repScheme` 21-15-9) of the `GIRLS` category.
+  Fran is a `FOR_TIME` / `SCHEME` WOD (`repScheme` 21-15-9) of the `GIRLS` category.
 * **WOD structure** (V14, written by the Sirius quick editor): `rounds` (a "rounds for time": Helen
   = `FOR_TIME` + 3), `restSeconds` (between rounds, or the rest of an interval), `workSeconds`
   (intervals, Tabata 20 s), `ladderStart` / `ladderStep` (ascending ladder 3-6-9..., Death by 1 + 1),
@@ -213,7 +217,8 @@ Sunday); the same blocks at two dates are two sessions. Disciplines: `CROSSFIT`,
 
 ### Scores (`/aldebaran/scores`)
 
-* `GET /me`: the current user's scores (optional `wodId`, paginated).
+* `GET /me`: the current user's scores (optional `wodId`, paginated; with `sessionId` too, only the
+  scores logged in that session's journal, e.g. a borrowed Fran in today's session).
 * `POST /`, `PUT /{id}`, `DELETE /{id}`: log or edit a score (rules above). The value required by the
   WOD's score type must be present (400 otherwise); a time-capped TIME score stores the reps done at
   the cap and no time; a score never changes athlete or WOD (400 if `wodId` differs).
@@ -237,7 +242,9 @@ Sunday); the same blocks at two dates are two sessions. Disciplines: `CROSSFIT`,
 * `GET /leaderboard/{id}`: leaderboard of a WOD (`scaling`, default `RX`): each athlete's PR at that
   level; optional `gymIds` (comma-separated, all among the caller's gyms, 403 otherwise) keeps the
   scores performed there (e.g. the caller's boxes, or programs), `verifiedOnly=true` the
-  verified ones and `division` (`MEN`, `WOMEN`) the scores logged in that division. Filters apply before choosing each athlete's best score: an athlete is ranked by
+  verified ones, `division` (`MEN`, `WOMEN`) the scores logged in that division and `sessionId` the
+  scores logged in that session's journals (session leaderboard; the session content must be visible
+  to the caller, `SessionSecurity.canReadContent`, 403 otherwise). Filters apply before choosing each athlete's best score: an athlete is ranked by
   their best kept score, which may not be their PR (done in another gym, or not verified yet).
   Filtered leaderboards are ranked in memory in `ScoreService`, the worldwide one in the database.
 * Division (V10, `scores.division`): copied at logging from `X-Auth-User-Division` for one's own
@@ -290,9 +297,9 @@ starts empty. This mechanism (export endpoints, source volume, CSV seeding) is t
   (`parent` = medical name of the functional group, linked once every muscle is saved).
 * `movements.csv`: equipment, techniques and muscles (`agonists`, `synergists`, `stabilizers`) are
   lists separated by `, `.
-* `wods.csv`: `title,wod_type,category,score_type,rep_scheme,time_cap_seconds,emom_interval,emom_rounds,description_en,description_fr,notes_en,notes_fr,tiebreak_en,tiebreak_fr,reps_per_round,rounds,rest_seconds,work_seconds,ladder_start,ladder_step,vest_weight,vest_weight_female,vest_weight_unit` (from `tiebreak_en` on optional; a former `ROUNDS_REPS` score type reads as `REPS`)
+* `wods.csv`: `title,wod_type,category,score_type,rep_scheme,time_cap_seconds,emom_interval,emom_rounds,description_en,description_fr,notes_en,notes_fr,tiebreak_en,tiebreak_fr,reps_per_round,rounds,rest_seconds,work_seconds,ladder_start,ladder_step,vest_weight,vest_weight_female,vest_weight_unit,structure` (from `tiebreak_en` on optional; former `wod_type` values read as a category + sub-category; a former `ROUNDS_REPS` score type reads as `REPS`)
 * `wod_movements.csv`: `wod_title,order_index,movement_name,reps_scheme,weight,weight_unit,distance,distance_unit,duration_seconds,calories,notes_en,scaling_options_en`,
-  plus optional `duration_display_unit,equipment,techniques,weight_female,notes_fr,scaling_options_fr,calories_female,height,height_female,height_unit,sets,segment` (blank segment = `MAIN`)
+  plus optional `duration_display_unit,equipment,techniques,weight_female,notes_fr,scaling_options_fr,calories_female,height,height_female,height_unit,sets,segment,complex_group` (blank segment = `MAIN`)
   (lists separated by `|`). Files with the former `description`, `notes` and `scaling_options`
   columns still load (read as English).
   `movement_name` is the exact movement name; an unknown one is logged and the row skipped.

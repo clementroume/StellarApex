@@ -29,6 +29,17 @@
               }
             </select>
           </label>
+          @if ((structuresByType()[wodForm.controls.wodType.value] ?? []).length > 0) {
+            <label class="flex flex-col gap-1.5 w-full">
+              <span class="text-sm font-medium">{{ 'WOD.FIELDS.STRUCTURE' | translate }}</span>
+              <select formControlName="structure" appNativeSelect class="w-full">
+                <option [ngValue]="null">—</option>
+                @for (st of structuresByType()[wodForm.controls.wodType.value]; track st) {
+                  <option [ngValue]="st">{{ 'WOD.STRUCTURES.' + wodForm.controls.wodType.value + '.' + st | translate }}</option>
+                }
+              </select>
+            </label>
+          }
           <label class="flex flex-col gap-1.5 w-full">
             <span class="text-sm font-medium">{{ 'WOD.FIELDS.CATEGORY' | translate }}</span>
             <select formControlName="category" appNativeSelect class="w-full">

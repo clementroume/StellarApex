@@ -19,6 +19,7 @@ import {Component, input} from '@angular/core';
 @Component({selector: 'app-session-block', standalone: true, template: '<p>block {{ block().id }}</p>'})
 class FakeBlockComponent {
   readonly block = input<any>();
+  readonly sessionId = input<any>();
   readonly log = input<any>();
 }
 

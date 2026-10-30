@@ -21,6 +21,7 @@ import apex.stellar.aldebaran.model.entities.Movement;
 import apex.stellar.aldebaran.model.entities.Wod;
 import apex.stellar.aldebaran.model.entities.Wod.ScoreType;
 import apex.stellar.aldebaran.model.entities.Wod.WodCategory;
+import apex.stellar.aldebaran.model.entities.Wod.WodStructure;
 import apex.stellar.aldebaran.model.entities.Wod.WodType;
 import apex.stellar.aldebaran.model.entities.WodMovement;
 import apex.stellar.aldebaran.model.enums.Category.Modality;
@@ -290,7 +291,8 @@ public class WodService {
                 source.ladderStep(),
                 source.vestWeight(),
                 source.vestWeightFemale(),
-                source.vestWeightUnit())
+                source.vestWeightUnit(),
+                source.structure())
             .ownedBy(
                 request.gymId(),
                 request.competition(),
@@ -379,7 +381,8 @@ public class WodService {
         wm.scalingOptionsEn(),
         wm.scalingOptionsFr(),
         wm.sets(),
-        wm.segment());
+        wm.segment(),
+        wm.complexGroup());
   }
 
   /**
@@ -399,6 +402,7 @@ public class WodService {
     wod.setSourceWodId(sourceWodId);
     wod.setStandalone(standalone);
     checkCompetition(wod);
+    checkStructure(wod);
 
     // Ensure collections are initialized
     if (wod.getMovements() == null) {
@@ -443,6 +447,19 @@ public class WodService {
 
     // Mapping occurs inside the transaction (caller), avoiding LazyInitializationException
     return savedWod;
+  }
+
+  /**
+   * The sub-category must belong to the WOD's format (Rounds in For Time or AMRAP, Sets in For
+   * Load...).
+   *
+   * @param wod The WOD about to be saved.
+   * @throws InvalidWodException if the sub-category does not belong to the format.
+   */
+  private static void checkStructure(Wod wod) {
+    if (wod.getStructure() != null && !wod.getStructure().allowedIn(wod.getWodType())) {
+      throw new InvalidWodException("error.wod.structure.mismatch");
+    }
   }
 
   /**
@@ -521,6 +538,7 @@ public class WodService {
     // 3. Update Scalar Fields
     wodMapper.updateEntity(request, existingWod);
     checkCompetition(existingWod);
+    checkStructure(existingWod);
 
     // 4. Smart Merge Movements
     mergeWodMovements(existingWod, request.movements());
@@ -566,6 +584,12 @@ public class WodService {
    */
   public WodReferenceData getReferenceData() {
     List<String> wodTypes = Arrays.stream(WodType.values()).map(Enum::name).toList();
+    Map<String, List<String>> structures = new LinkedHashMap<>();
+    for (WodType type : WodType.values()) {
+      structures.put(
+          type.name(),
+          Arrays.stream(WodStructure.values()).filter(st -> st.allowedIn(type)).map(Enum::name).toList());
+    }
     List<String> categories = Arrays.stream(WodCategory.values()).map(Enum::name).toList();
     List<String> scoreTypes = Arrays.stream(ScoreType.values()).map(Enum::name).toList();
 
@@ -574,7 +598,7 @@ public class WodService {
       unitGroups.computeIfAbsent(u.getType().name(), k -> new ArrayList<>()).add(u.name());
     }
 
-    return new WodReferenceData(wodTypes, categories, scoreTypes, unitGroups);
+    return new WodReferenceData(wodTypes, structures, categories, scoreTypes, unitGroups);
   }
 
   /**

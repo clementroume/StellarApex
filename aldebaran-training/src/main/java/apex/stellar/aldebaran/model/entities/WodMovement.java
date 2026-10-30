@@ -64,6 +64,11 @@ public class WodMovement {
   @NotNull
   private Integer orderIndex;
 
+  /** Group of a weightlifting complex (lines of one group are done as one set), or null. */
+  @Column(name = "complex_group")
+  @Min(1)
+  private Integer complexGroup;
+
   /** Part of the WOD the movement belongs to: buy-in, rounds (MAIN) or buy-out. */
   @Enumerated(EnumType.STRING)
   @Column(name = "segment", nullable = false, length = 10)

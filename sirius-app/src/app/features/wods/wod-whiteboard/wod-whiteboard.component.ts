@@ -56,6 +56,15 @@ export class WodWhiteboardComponent {
     if (wod.rounds && wod.rounds > 1 && (wod.wodType === 'FOR_TIME' || wod.wodType === 'CHIPPER')) {
       return this.translate.instant('WOD.BOARD.ROUNDS_FOR_TIME', {count: wod.rounds});
     }
+    if (wod.structure === 'DEATH_BY' || wod.wodType === 'DEATH_BY') {
+      return this.translate.instant('WOD.STRUCTURES.EMOM.DEATH_BY');
+    }
+    if (wod.structure === 'COMPLEX') {
+      return `${format} · ${this.translate.instant('WOD.STRUCTURES.FOR_LOAD.COMPLEX')}`;
+    }
+    if (wod.structure === 'LADDER' && wod.ladderStart == null && wod.wodType === 'FOR_TIME') {
+      return `${format} · ${this.translate.instant('WOD.STRUCTURES.FOR_TIME.LADDER')}`;
+    }
     if (wod.workSeconds) {
       // Tabata 8 x 20s / 10s, Intervals 5 x (3:00 on / 1:00 off)
       const rounds = wod.emomRounds ? `${wod.emomRounds} x ` : '';
@@ -90,7 +99,7 @@ export class WodWhiteboardComponent {
    * of a Death by ("1 rep the 1st minute, +1 each minute").
    */
   structureLine(wod: WodResponse): string {
-    if (wod.wodType === 'DEATH_BY') {
+    if (wod.structure === 'DEATH_BY' || wod.wodType === 'DEATH_BY') {
       return this.translate.instant('WOD.BOARD.DEATH_BY', {start: wod.ladderStart ?? 1, step: wod.ladderStep ?? 1});
     }
     if (wod.ladderStart && wod.ladderStep) {

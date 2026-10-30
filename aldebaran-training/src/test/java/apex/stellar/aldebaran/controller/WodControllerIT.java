@@ -496,7 +496,7 @@ class WodControllerIT extends BaseIntegrationTest {
   void testCreateWod_StructureAndSegments() throws Exception {
     String body =
         """
-        {"title": "Murph", "wodType": "CHIPPER", "scoreType": "TIME", "isPublic": false,
+        {"title": "Murph", "wodType": "FOR_TIME", "structure": "CHIPPER", "scoreType": "TIME", "isPublic": false,
          "competition": false, "authorId": 20,
          "rounds": 20, "restSeconds": 0, "vestWeight": 20, "vestWeightFemale": 14,
          "vestWeightUnit": "LBS",
@@ -518,13 +518,25 @@ class WodControllerIT extends BaseIntegrationTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(body))
         .andExpect(status().isCreated())
-        .andExpect(jsonPath("$.wodType").value("CHIPPER"))
+        .andExpect(jsonPath("$.structure").value("CHIPPER"))
         .andExpect(jsonPath("$.rounds").value(20))
         .andExpect(jsonPath("$.vestWeight").value(20.0))
         .andExpect(jsonPath("$.vestWeightUnit").value("LBS"))
         .andExpect(jsonPath("$.movements[0].segment").value("BUY_IN"))
         .andExpect(jsonPath("$.movements[1].segment").value("MAIN"))
         .andExpect(jsonPath("$.movements[2].segment").value("BUY_OUT"));
+
+    // A sub-category of another format is refused
+    mockMvc
+        .perform(
+            post("/aldebaran/wods")
+                .with(csrf())
+                .header("X-Auth-User-Id", "20")
+                .header("X-Auth-User-Role", "USER")
+                .header("X-Internal-Secret", "test-internal-secret")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(body.replace("\"wodType\": \"FOR_TIME\"", "\"wodType\": \"AMRAP\"")))
+        .andExpect(status().isBadRequest());
   }
 
   @Test

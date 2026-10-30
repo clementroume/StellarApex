@@ -143,7 +143,7 @@ class SessionControllerIT extends BaseIntegrationTest {
 
   private WodRequest squatWod() {
     return new WodRequest(
-        "Back Squat 5x5", WodType.STRENGTH, null, ScoreType.WEIGHT, null, null, false, false,
+        "Back Squat 5x5", WodType.FOR_LOAD, null, ScoreType.WEIGHT, null, null, false, false,
         null, null, null, null, null, null, null, null, null, null, "5x5",
         List.of(
             new WodMovementRequest(
@@ -363,6 +363,34 @@ class SessionControllerIT extends BaseIntegrationTest {
         .andExpect(status().isCreated())
         .andExpect(jsonPath("$.gymId").value(BOX))
         .andExpect(jsonPath("$.sessionLogId").value(logId));
+
+    // A Fran done outside the session stays out of the session history and leaderboard
+    ScoreRequest franElsewhere =
+        new ScoreRequest(
+            null, today.minusDays(3), fran.getId(), 4, 0, null, null, null, null, null, null, null,
+            null, ScalingLevel.RX, false, null, null, null, null, null, null, false);
+    mockMvc
+        .perform(as(post("/aldebaran/scores"), ATHLETE, ATHLETE_MEMBERSHIPS).content(json(franElsewhere)))
+        .andExpect(status().isCreated());
+    mockMvc
+        .perform(
+            as(get("/aldebaran/scores/me"), ATHLETE, ATHLETE_MEMBERSHIPS)
+                .param("wodId", fran.getId().toString())
+                .param("sessionId", String.valueOf(id)))
+        .andExpect(jsonPath("$.content", hasSize(1)))
+        .andExpect(jsonPath("$.content[0].sessionLogId").value(logId));
+    mockMvc
+        .perform(
+            as(get("/aldebaran/scores/leaderboard/" + fran.getId()), OWNER, OWNER_MEMBERSHIPS)
+                .param("sessionId", String.valueOf(id)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.content", hasSize(1)))
+        .andExpect(jsonPath("$.content[0].timeSeconds").value(270));
+    mockMvc
+        .perform(
+            as(get("/aldebaran/scores/leaderboard/" + fran.getId()), OTHER_ATHLETE, "999:ATHLETE:")
+                .param("sessionId", String.valueOf(id)))
+        .andExpect(status().isForbidden());
 
     // Another athlete cannot use this journal
     mockMvc

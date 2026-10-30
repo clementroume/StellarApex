@@ -41,4 +41,7 @@ public record WodMovementResponse(
     Integer sets,
 
     // --- Part of the WOD: BUY_IN, MAIN or BUY_OUT ---
-    Segment segment) {}
+    Segment segment,
+
+    // --- Group of a weightlifting complex, or null ---
+    Integer complexGroup) {}

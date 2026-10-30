@@ -2,6 +2,7 @@ package apex.stellar.aldebaran.dto;
 
 import apex.stellar.aldebaran.model.entities.Wod.ScoreType;
 import apex.stellar.aldebaran.model.entities.Wod.WodCategory;
+import apex.stellar.aldebaran.model.entities.Wod.WodStructure;
 import apex.stellar.aldebaran.model.entities.Wod.WodType;
 import apex.stellar.aldebaran.model.enums.Unit;
 import jakarta.validation.Valid;
@@ -58,7 +59,48 @@ public record WodRequest(
     @Min(value = 1, message = "{validation.wod.rounds.min}") Integer ladderStep,
     @DecimalMin(value = "0.0", message = "{validation.value.positive}") Double vestWeight,
     @DecimalMin(value = "0.0", message = "{validation.value.positive}") Double vestWeightFemale,
-    Unit vestWeightUnit) {
+    Unit vestWeightUnit,
+
+    // --- Sub-category of the format (For Time: Rounds, Scheme, Chipper...), optional ---
+    WodStructure structure) {
+
+  /** WOD with the quick editor structure, without a sub-category. */
+  @SuppressWarnings("java:S107") // Mirrors the record components
+  public WodRequest(
+      String title,
+      WodType wodType,
+      WodCategory category,
+      ScoreType scoreType,
+      Long authorId,
+      Long gymId,
+      boolean isPublic,
+      boolean competition,
+      String descriptionEn,
+      String descriptionFr,
+      String notesEn,
+      String notesFr,
+      String tiebreakEn,
+      String tiebreakFr,
+      Integer timeCapSeconds,
+      Integer repsPerRound,
+      Integer emomInterval,
+      Integer emomRounds,
+      String repScheme,
+      List<WodMovementRequest> movements,
+      Integer rounds,
+      Integer restSeconds,
+      Integer workSeconds,
+      Integer ladderStart,
+      Integer ladderStep,
+      Double vestWeight,
+      Double vestWeightFemale,
+      Unit vestWeightUnit) {
+    this(
+        title, wodType, category, scoreType, authorId, gymId, isPublic, competition, descriptionEn,
+        descriptionFr, notesEn, notesFr, tiebreakEn, tiebreakFr, timeCapSeconds, repsPerRound,
+        emomInterval, emomRounds, repScheme, movements, rounds, restSeconds, workSeconds,
+        ladderStart, ladderStep, vestWeight, vestWeightFemale, vestWeightUnit, null);
+  }
 
   /** WOD without the structure fields of the quick editor. */
   @SuppressWarnings("java:S107") // Mirrors the record components
@@ -103,6 +145,6 @@ public record WodRequest(
         title, wodType, category, scoreType, null, gymId, false, competitionWod, descriptionEn,
         descriptionFr, notesEn, notesFr, tiebreakEn, tiebreakFr, timeCapSeconds, repsPerRound,
         emomInterval, emomRounds, repScheme, movementList, rounds, restSeconds, workSeconds,
-        ladderStart, ladderStep, vestWeight, vestWeightFemale, vestWeightUnit);
+        ladderStart, ladderStep, vestWeight, vestWeightFemale, vestWeightUnit, structure);
   }
 }

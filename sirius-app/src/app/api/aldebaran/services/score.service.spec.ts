@@ -141,6 +141,14 @@ describe('ScoreService', () => {
     req.flush(mockSlice);
   });
 
+  it('should pass the session to the history and to the leaderboard', () => {
+    service.getMyScores(7, 0, 50, undefined, 4).subscribe();
+    httpMock.expectOne(`${base}/scores/me?page=0&size=50&wodId=7&sessionId=4`).flush(mockSlice);
+
+    service.getLeaderboard(7, 'RX', 0, 20, [], false, null, 4).subscribe();
+    httpMock.expectOne(`${base}/scores/leaderboard/7?scaling=RX&page=0&size=20&sessionId=4`).flush(mockSlice);
+  });
+
   it('verifyScore should POST and unverifyScore DELETE /scores/{id}/verify', () => {
     service.verifyScore(1).subscribe();
     const verify = httpMock.expectOne(`${base}/scores/1/verify`);

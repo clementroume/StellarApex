@@ -1,28 +1,73 @@
-/** Formats offered by the quick editor (chips). Rounds and EMOM / intervals are stored as plain WOD types. */
-export type QuickFormat = 'FOR_TIME' | 'ROUNDS' | 'CHIPPER' | 'LADDER' | 'AMRAP' | 'EMOM' | 'TABATA' | 'DEATH_BY'
-  | 'STRENGTH' | 'SKILL';
+/** WOD categories (formats v3): the first row of chips. */
+export type WodCategory = 'FOR_TIME' | 'AMRAP' | 'EMOM' | 'TABATA' | 'FOR_LOAD' | 'FOR_QUALITY';
 
-export const QUICK_FORMATS: QuickFormat[] = ['FOR_TIME', 'ROUNDS', 'CHIPPER', 'LADDER', 'AMRAP', 'EMOM', 'TABATA',
-  'DEATH_BY', 'STRENGTH', 'SKILL'];
+export const CATEGORIES: WodCategory[] = ['FOR_TIME', 'AMRAP', 'EMOM', 'TABATA', 'FOR_LOAD', 'FOR_QUALITY'];
 
-/** Score type each format is usually scored by (an ascending ladder is scored in reps, see `scoreTypeOf`). */
-const FORMAT_SCORES: Record<QuickFormat, string> = {
-  FOR_TIME: 'TIME', ROUNDS: 'TIME', CHIPPER: 'TIME', LADDER: 'TIME', AMRAP: 'REPS', EMOM: 'ROUNDS', TABATA: 'REPS',
-  DEATH_BY: 'ROUNDS', STRENGTH: 'WEIGHT', SKILL: 'NONE'
+/** Sub-categories of each category (second row of chips), the usual one first. */
+export const STRUCTURES: Record<WodCategory, string[]> = {
+  FOR_TIME: ['ROUNDS', 'SINGLE', 'SCHEME', 'CHIPPER', 'LADDER'],
+  AMRAP: ['ROUNDS', 'LADDER', 'MAX_REPS'],
+  EMOM: ['EVERY_MINUTE', 'EVERY_X', 'INTERVALS', 'DEATH_BY'],
+  TABATA: ['CLASSIC', 'CUSTOM'],
+  FOR_LOAD: ['SETS', 'SCHEME', 'MAX', 'COMPLEX'],
+  FOR_QUALITY: ['PRACTICE']
 };
 
-/** Usual score type of a format; an ascending ladder (3-6-9... until the cap) counts reps, intervals count reps. */
-export function scoreTypeOf(format: QuickFormat, ladderUp = false, intervals = false): string {
-  if (format === 'LADDER' && ladderUp) return 'REPS';
-  if (format === 'EMOM' && intervals) return 'REPS';
-  return FORMAT_SCORES[format];
+/** Usual score type of a category / sub-category (changeable apart). */
+export function scoreTypeOf(category: WodCategory, structure: string): string {
+  switch (category) {
+    case 'FOR_TIME':
+      return 'TIME';
+    case 'AMRAP':
+    case 'TABATA':
+      return 'REPS';
+    case 'EMOM':
+      return structure === 'INTERVALS' ? 'REPS' : 'ROUNDS';
+    case 'FOR_LOAD':
+      return 'WEIGHT';
+    default:
+      return 'NONE';
+  }
 }
 
-/** Formats whose movements can be split into buy-in, rounds and buy-out (Murph). */
-export const SEGMENT_FORMATS: QuickFormat[] = ['ROUNDS', 'AMRAP'];
+/** Sub-categories whose movements can be split into buy-in, rounds and buy-out (Murph). */
+export function withSegments(category: WodCategory, structure: string): boolean {
+  return structure === 'ROUNDS' && (category === 'FOR_TIME' || category === 'AMRAP');
+}
 
-/** Formats with a time cap or a duration in minutes. */
-export const TIMED_FORMATS: QuickFormat[] = ['FOR_TIME', 'ROUNDS', 'CHIPPER', 'LADDER', 'AMRAP'];
+/** Sub-categories with a time cap or a duration in minutes (For Load › Max: "build to a 1RM in 12 min"). */
+export function timed(category: WodCategory, structure: string): boolean {
+  return category === 'FOR_TIME' || (category === 'AMRAP' && structure !== 'MAX_REPS')
+    || (category === 'FOR_LOAD' && structure === 'MAX');
+}
+
+/** Sub-categories written as sets (5x5, 5-5-3-3-1, a complex) in the sets field. */
+export function withSets(category: WodCategory): boolean {
+  return category === 'FOR_LOAD' || category === 'FOR_QUALITY';
+}
+
+/** Former formats (before v3) read as a category and a sub-category. */
+export function legacyFormat(wodType: string): {category: WodCategory; structure: string | null} {
+  switch (wodType) {
+    case 'CHIPPER':
+      return {category: 'FOR_TIME', structure: 'CHIPPER'};
+    case 'LADDER':
+      return {category: 'FOR_TIME', structure: null};
+    case 'INTERVALS':
+      return {category: 'EMOM', structure: 'INTERVALS'};
+    case 'DEATH_BY':
+      return {category: 'EMOM', structure: 'DEATH_BY'};
+    case 'STRENGTH':
+      return {category: 'FOR_LOAD', structure: null};
+    case 'SKILL':
+    case 'ACCESSORY':
+      return {category: 'FOR_QUALITY', structure: 'PRACTICE'};
+    case 'CUSTOM':
+      return {category: 'AMRAP', structure: 'MAX_REPS'};
+    default:
+      return {category: CATEGORIES.includes(wodType as WodCategory) ? wodType as WodCategory : 'FOR_TIME', structure: null};
+  }
+}
 
 /**
  * The quantity of a movement line: reps (a number, "10/side"), max reps, a distance, calories
@@ -94,6 +139,13 @@ export function parseSets(scheme: string): {sets: number; reps: string} | null {
   if (setsByReps) return {sets: Number(setsByReps[1]), reps: setsByReps[2]};
   const values = ladderValues(text);
   return values ? {sets: values.length, reps: values.join('-')} : null;
+}
+
+/** Reps of a scheme going one way only (21-15-9, 1-3-6-9): a For Time › Schéma; otherwise a pyramid (Ladder). */
+export function monotone(values: number[]): boolean {
+  const down = values.every((v, i) => i === 0 || v <= values[i - 1]);
+  const up = values.every((v, i) => i === 0 || v >= values[i - 1]);
+  return down || up;
 }
 
 /** Rounds written in a former rep scheme ("5 rounds", "3 Rounds for time"), or null. */

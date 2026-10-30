@@ -56,7 +56,7 @@ describe('WodScoresStore', () => {
   it('should load the history, take the PR flagged by Aldebaran and rank it', () => {
     store.load(wod);
 
-    expect(scoreService.getMyScores).toHaveBeenCalledWith(7, 0, 50);
+    expect(scoreService.getMyScores).toHaveBeenCalledWith(7, 0, 50, undefined, null);
     expect(store.best()?.id).toBe(2);
     expect(scoreService.compareScore).toHaveBeenCalledWith(2);
     expect(store.comparison()?.rank).toBe(3);

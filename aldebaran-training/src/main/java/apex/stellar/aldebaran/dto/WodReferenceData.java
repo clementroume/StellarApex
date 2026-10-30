@@ -7,6 +7,8 @@ import java.util.Map;
 public record WodReferenceData(
     // --- Wod Formats and Categories ---
     List<String> wodTypes,
+    // Sub-categories of each format
+    Map<String, List<String>> structures,
     List<String> categories,
     // --- Score Types ---
     List<String> scoreTypes,

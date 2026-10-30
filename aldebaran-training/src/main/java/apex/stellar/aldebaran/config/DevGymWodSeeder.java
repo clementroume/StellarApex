@@ -204,7 +204,7 @@ public class DevGymWodSeeder implements ApplicationRunner {
     wods.add(
         wod(
             catalog,
-            base("Sparta Back Squat 5x5", WodType.STRENGTH, ScoreType.WEIGHT, sparta, ids.owner())
+            base("Sparta Back Squat 5x5", WodType.FOR_LOAD, ScoreType.WEIGHT, sparta, ids.owner())
                 .repScheme("5x5")
                 .descriptionEn("5 sets of 5 reps, rest 2 minutes between sets. Score the heaviest.")
                 .descriptionFr(
@@ -218,7 +218,7 @@ public class DevGymWodSeeder implements ApplicationRunner {
     wods.add(
         wod(
             catalog,
-            base("Olympus Deadlift", WodType.STRENGTH, ScoreType.WEIGHT, zeus, ids.programmer())
+            base("Olympus Deadlift", WodType.FOR_LOAD, ScoreType.WEIGHT, zeus, ids.programmer())
                 .repScheme("5-3-1")
                 .descriptionEn("Work up to a heavy single.")
                 .descriptionFr("Monte jusqu'à une répétition lourde."),
