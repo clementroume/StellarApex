@@ -323,21 +323,20 @@ public class GymController {
   }
 
   /**
-   * Lists the usable members of a gym with their display name, for the staff logging competition
-   * scores on their behalf.
+   * Lists the usable members of a gym with their display name: the staff logging competition scores
+   * on their behalf, and the athletes choosing their teammates for a team WOD.
    *
-   * <p>Access is granted to Global Admins and users with the {@code SCORE_VERIFY} permission for
-   * this gym.
+   * <p>Access is granted to Global Admins and to the usable members of this gym (they already see
+   * their gym mates' names on the leaderboards).
    *
    * @param gymId The ID of the gym.
    * @return The members (ID and "First L." name), sorted by name.
    */
   @GetMapping("/{gymId}/athletes")
-  @PreAuthorize("@security.hasGymPermission(#gymId, 'SCORE_VERIFY')")
+  @PreAuthorize("@security.isUsableMember(#gymId)")
   @Operation(
       summary = "List gym athletes",
-      description =
-          "Usable members of the gym with their display name. Requires SCORE_VERIFY permission.")
+      description = "Usable members of the gym with their display name. Requires being one.")
   @ApiResponses(
       value = {
         @ApiResponse(responseCode = "200", description = "Members retrieved"),

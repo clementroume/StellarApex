@@ -141,6 +141,12 @@ public interface WodMapper {
   @Mapping(
       target = "structure",
       nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.SET_TO_NULL)
+  @Mapping(
+      target = "teamSize",
+      nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.SET_TO_NULL)
+  @Mapping(
+      target = "teamMode",
+      nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.SET_TO_NULL)
   void updateEntity(WodRequest request, @MappingTarget Wod entity);
 
   // -------------------------------------------------------------------------

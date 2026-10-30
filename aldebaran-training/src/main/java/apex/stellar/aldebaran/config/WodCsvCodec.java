@@ -20,6 +20,7 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -72,7 +73,10 @@ public final class WodCsvCodec {
     "vest_weight_female",
     "vest_weight_unit",
     // Sub-category of the format (formats v3); the former wod_type values still read
-    "structure"
+    "structure",
+    // Team WOD: athletes per team and how they share the work
+    "team_size",
+    "team_mode"
   };
 
   static final String[] WOD_MOVEMENT_HEADERS = {
@@ -102,7 +106,9 @@ public final class WodCsvCodec {
     // Sets of strength work, part of the WOD (BUY_IN / MAIN / BUY_OUT, blank = MAIN)
     "sets",
     "segment",
-    "complex_group"
+    "complex_group",
+    // Team WOD line: TOTAL (blank), EACH or TOGETHER
+    "team_split"
   };
 
   /** Separator of the equipment / technique lists (free text, so not a comma). */
@@ -136,6 +142,8 @@ public final class WodCsvCodec {
               .title(title)
               .wodType(format.type())
               .structure(format.structure())
+              .teamSize(integer(row, "team_size"))
+              .teamMode(enumValue(row, "team_mode", Wod.TeamMode.class))
               .category(category(row))
               .scoreType(scoreType(row))
               .repScheme(text(row, "rep_scheme"))
@@ -212,6 +220,10 @@ public final class WodCsvCodec {
               .sets(integer(row, "sets"))
               .segment(segment(row))
               .complexGroup(integer(row, "complex_group"))
+              .teamSplit(
+                  Objects.requireNonNullElse(
+                      enumValue(row, "team_split", WodMovement.TeamSplit.class),
+                      WodMovement.TeamSplit.TOTAL))
               .build();
       wodMovement.checkVariantsAllowed(
           movement.getName(), movement.getEquipment(), movement.getTechniques());
@@ -264,7 +276,9 @@ public final class WodCsvCodec {
             w.getVestWeight(),
             w.getVestWeightFemale(),
             name(w.getVestWeightUnit()),
-            name(w.getStructure()));
+            name(w.getStructure()),
+            w.getTeamSize(),
+            name(w.getTeamMode()));
 
         List<WodMovement> movements = new ArrayList<>(w.getMovements());
         movements.sort(Comparator.comparing(WodMovement::getOrderIndex));
@@ -294,7 +308,8 @@ public final class WodCsvCodec {
               name(wm.getHeightUnit()),
               wm.getSets(),
               wm.getSegment() == Segment.MAIN ? null : wm.getSegment().name(),
-              wm.getComplexGroup());
+              wm.getComplexGroup(),
+              wm.getTeamSplit() == WodMovement.TeamSplit.TOTAL ? null : wm.getTeamSplit().name());
         }
       }
     }
@@ -384,6 +399,11 @@ public final class WodCsvCodec {
   private static Segment segment(CSVRecord row) {
     String value = text(row, "segment");
     return value == null ? Segment.MAIN : Segment.valueOf(value.trim().toUpperCase());
+  }
+
+  private static <E extends Enum<E>> E enumValue(CSVRecord row, String header, Class<E> type) {
+    String value = text(row, header);
+    return value == null ? null : Enum.valueOf(type, value.trim().toUpperCase());
   }
 
   private static Integer integer(CSVRecord row, String header) {

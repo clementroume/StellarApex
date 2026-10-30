@@ -66,6 +66,10 @@ public record ScoreResponse(
     Long sessionLogId,
     List<ScoreSetResponse> sets,
 
+    // --- Team WOD: team of the score and its members (same performance), or null ---
+    Long teamId,
+    List<Long> teamMemberIds,
+
     // --- Per-user rights (computed per request) ---
     ScoreCapabilities capabilities) {
 
@@ -110,6 +114,8 @@ public record ScoreResponse(
         verificationRequested,
         sessionLogId,
         sets,
+        teamId,
+        teamMemberIds,
         capabilities);
   }
 }

@@ -1,6 +1,7 @@
 package apex.stellar.aldebaran.dto;
 
 import apex.stellar.aldebaran.model.entities.WodMovement.Segment;
+import apex.stellar.aldebaran.model.entities.WodMovement.TeamSplit;
 import apex.stellar.aldebaran.model.enums.Unit;
 import java.util.Set;
 
@@ -44,4 +45,7 @@ public record WodMovementResponse(
     Segment segment,
 
     // --- Group of a weightlifting complex, or null ---
-    Integer complexGroup) {}
+    Integer complexGroup,
+
+    // --- Team WOD: TOTAL, EACH or TOGETHER ---
+    TeamSplit teamSplit) {}

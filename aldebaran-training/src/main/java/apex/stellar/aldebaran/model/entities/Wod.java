@@ -154,6 +154,16 @@ public class Wod {
   @Column(name = "structure", length = 20)
   private WodStructure structure;
 
+  /** Team WOD: number of athletes per team (2 to 6), or null for an individual WOD. */
+  @Column(name = "team_size")
+  @Min(2)
+  private Integer teamSize;
+
+  /** Team WOD: how the work is shared, or null. */
+  @Enumerated(EnumType.STRING)
+  @Column(name = "team_mode", length = 20)
+  private TeamMode teamMode;
+
   /** Rounds of a "rounds for time" (Helen: 3), or null. */
   @Column(name = "rounds")
   @Min(1)
@@ -251,6 +261,16 @@ public class Wod {
     FOR_LOAD,
     // Skill, accessory or mobility work, without a score
     FOR_QUALITY
+  }
+
+  /** How the members of a team share the work. */
+  public enum TeamMode {
+    // One works while the others rest, in turns
+    YOU_GO_I_GO,
+    // Work split as the team likes
+    SPLIT,
+    // Everyone at the same time
+    SYNCHRO
   }
 
   /** Sub-category of a WOD format, guiding its entry ({@link #allowedIn} gives its formats). */

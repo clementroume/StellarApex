@@ -2,6 +2,7 @@ package apex.stellar.aldebaran.dto;
 
 import apex.stellar.aldebaran.model.entities.Wod.ScoreType;
 import apex.stellar.aldebaran.model.entities.Wod.WodCategory;
+import apex.stellar.aldebaran.model.entities.Wod.TeamMode;
 import apex.stellar.aldebaran.model.entities.Wod.WodStructure;
 import apex.stellar.aldebaran.model.entities.Wod.WodType;
 import apex.stellar.aldebaran.model.enums.Category.Modality;
@@ -55,6 +56,8 @@ public record WodResponse(
     Double vestWeightFemale,
     Unit vestWeightUnit,
     WodStructure structure,
+    Integer teamSize,
+    TeamMode teamMode,
     Set<Modality> modalities,
     List<WodMovementResponse> movements,
 
@@ -104,6 +107,8 @@ public record WodResponse(
         vestWeightFemale,
         vestWeightUnit,
         structure,
+        teamSize,
+        teamMode,
         modalities,
         movements,
         createdAt,

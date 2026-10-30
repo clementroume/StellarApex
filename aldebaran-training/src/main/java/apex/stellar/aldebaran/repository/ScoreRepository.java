@@ -13,6 +13,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 /**
@@ -176,4 +177,13 @@ public interface ScoreRepository extends JpaRepository<Score, Long> {
       "SELECT s FROM Score s WHERE s.wod.id = :wodId AND s.verificationRequested = true"
           + " AND s.verifiedAt IS NULL ORDER BY s.loggedAt, s.id")
   List<Score> findVerificationQueue(Long wodId);
+
+  /**
+   * Scores of a team WOD team (one per member).
+   *
+   * @param teamId The team.
+   * @return The members' scores.
+   */
+  @Query("SELECT s FROM Score s WHERE s.team.id = :teamId")
+  List<Score> findByTeamId(@Param("teamId") Long teamId);
 }

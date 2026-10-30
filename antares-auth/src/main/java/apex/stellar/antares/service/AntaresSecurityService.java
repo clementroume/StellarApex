@@ -99,6 +99,27 @@ public class AntaresSecurityService {
   }
 
   /**
+   * Checks if the current user is a usable member of a gym (any role; a membership Aldebaran would
+   * accept, see {@code Membership.isUsable}), e.g. to list their gym mates as teammates.
+   *
+   * @param gymId The ID of the gym.
+   * @return {@code true} for a usable member or a Global Admin.
+   */
+  public boolean isUsableMember(Long gymId) {
+    User user = getCurrentUser();
+    if (user == null) {
+      return false;
+    }
+    if (user.getPlatformRole() == PlatformRole.ADMIN) {
+      return true;
+    }
+    return membershipRepository
+        .findByUserIdAndGymId(user.getId(), gymId)
+        .map(Membership::isUsable)
+        .orElse(false);
+  }
+
+  /**
    * Checks if the current user holds a gym (its OWNER or PROGRAMMER, with an ACTIVE membership).
    *
    * @param gymId The ID of the gym.

@@ -1,5 +1,7 @@
 package apex.stellar.aldebaran.service;
 
+import apex.stellar.aldebaran.repository.ScoreTeamRepository;
+import apex.stellar.aldebaran.model.entities.ScoreTeam;
 import apex.stellar.aldebaran.client.AntaresClient;
 import apex.stellar.aldebaran.dto.ScoreComparisonResponse;
 import apex.stellar.aldebaran.dto.ScoreReferenceData;
@@ -26,6 +28,7 @@ import apex.stellar.aldebaran.repository.SessionLogRepository;
 import apex.stellar.aldebaran.repository.WodRepository;
 import apex.stellar.aldebaran.security.SecurityService;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
@@ -64,6 +67,7 @@ public class ScoreService {
   private final SessionLogRepository sessionLogRepository;
   private final SessionBlockRepository sessionBlockRepository;
   private final SessionLogService sessionLogService;
+  private final ScoreTeamRepository scoreTeamRepository;
 
   /**
    * Retrieves the current user's scores, optionally only those on a WOD logged in a session (the
@@ -132,11 +136,19 @@ public class ScoreService {
     applySets(newScore, request, wod);
     normalizeAndCheck(newScore, wod);
 
+    List<Long> teammates = teammatesOf(request, wod, targetUserId, newScore.getGymId());
+    List<Score> teamScores = new ArrayList<>();
+    if (!teammates.isEmpty()) {
+      teamScores = formTeam(newScore, wod, teammates, currentUserId);
+    }
+
     Score savedScore = scoreRepository.save(newScore);
+    scoreRepository.saveAll(teamScores);
 
     recalculatePrsForUser(wod, targetUserId);
+    teammates.forEach(mate -> recalculatePrsForUser(wod, mate));
 
-    if (savedScore.getDivision() != null) {
+    if (savedScore.getDivision() != null && savedScore.getTeam() == null) {
       // Scores logged before the athlete chose a division join it now (after the PR update, which
       // flushes first, so no loaded score writes its old null division back)
       scoreRepository.assignDivisionToUnclassified(targetUserId, savedScore.getDivision());
@@ -203,6 +215,16 @@ public class ScoreService {
     Score savedScore = scoreRepository.save(existingScore);
 
     recalculatePrsForUser(wod, savedScore.getUserId());
+    if (savedScore.getTeam() != null) {
+      // One shared performance: every member's row follows the correction
+      for (Score other : scoreRepository.findByTeamId(savedScore.getTeam().getId())) {
+        if (!other.getId().equals(savedScore.getId())) {
+          copyPerformance(savedScore, other);
+          scoreRepository.save(other);
+          recalculatePrsForUser(wod, other.getUserId());
+        }
+      }
+    }
 
     return scoreMapper.toResponse(savedScore);
   }
@@ -221,11 +243,151 @@ public class ScoreService {
 
     Wod wod = score.getWod();
     Long userId = score.getUserId();
+    ScoreTeam team = score.getTeam();
+
+    if (team != null && removesWholeTeam(team, userId)) {
+      List<Score> rows = scoreRepository.findByTeamId(team.getId());
+      scoreRepository.deleteAll(rows);
+      scoreTeamRepository.delete(team);
+      scoreRepository.flush();
+      rows.forEach(row -> recalculatePrsForUser(wod, row.getUserId()));
+      return;
+    }
+    if (team != null) {
+      // A member leaves the team: the others keep their score
+      team.getMemberIds().remove(userId);
+      scoreTeamRepository.save(team);
+    }
 
     scoreRepository.delete(score);
     scoreRepository.flush();
 
     recalculatePrsForUser(wod, userId);
+  }
+
+  /**
+   * Whether deleting a team score removes it for the whole team: yes for the member who logged it,
+   * a judge or an admin; a teammate deleting their own row only leaves the team.
+   */
+  private boolean removesWholeTeam(ScoreTeam team, Long rowUserId) {
+    Long currentUserId = securityService.getCurrentUserId();
+    return Objects.equals(currentUserId, team.getCreatedBy())
+        || !Objects.equals(currentUserId, rowUserId);
+  }
+
+  /**
+   * Teammates of a team WOD score: distinct, without the athlete, at most the team size (the extra
+   * one is the "mirror" of an odd number of athletes), all members of the box where the score was
+   * done (Antares confirms each one, 503 if unavailable).
+   *
+   * @throws InvalidScoreException if the WOD is not a team WOD, the score has no box, the number of
+   *     teammates is wrong or one of them is not a member of the box.
+   */
+  private List<Long> teammatesOf(ScoreRequest request, Wod wod, Long athleteId, Long gymId) {
+    if (request.teammateIds() == null || request.teammateIds().isEmpty()) {
+      return List.of();
+    }
+    if (wod.getTeamSize() == null) {
+      throw new InvalidScoreException("error.score.team.not.team.wod");
+    }
+    if (gymId == null) {
+      throw new InvalidScoreException("error.score.team.gym.required");
+    }
+    List<Long> mates =
+        request.teammateIds().stream()
+            .filter(Objects::nonNull)
+            .filter(id -> !id.equals(athleteId))
+            .distinct()
+            .toList();
+    if (mates.isEmpty() || mates.size() > wod.getTeamSize()) {
+      throw new InvalidScoreException("error.score.team.size", wod.getTeamSize());
+    }
+    for (Long mate : mates) {
+      if (!antaresClient.isGymMember(gymId, mate)) {
+        throw new InvalidScoreException("error.score.team.member", mate);
+      }
+    }
+    return mates;
+  }
+
+  /**
+   * Creates the team of a new score and one copy of the score per teammate, all with the team's
+   * division (men, women, mixed; none while a member has not chosen theirs).
+   *
+   * @return The teammates' scores, not saved yet.
+   */
+  private List<Score> formTeam(Score score, Wod wod, List<Long> teammates, Long currentUserId) {
+    ScoreTeam team =
+        ScoreTeam.builder()
+            .wodId(wod.getId())
+            .gymId(score.getGymId())
+            .createdBy(currentUserId)
+            .build();
+    team.getMemberIds().add(score.getUserId());
+    team.getMemberIds().addAll(teammates);
+    team = scoreTeamRepository.save(team);
+
+    List<Division> divisions = new ArrayList<>();
+    divisions.add(score.getDivision());
+    teammates.forEach(mate -> divisions.add(antaresClient.getUserDivision(mate)));
+    Division teamDivision = teamDivision(divisions);
+
+    score.setTeam(team);
+    score.setDivision(teamDivision);
+    List<Score> copies = new ArrayList<>();
+    for (Long mate : teammates) {
+      Score copy =
+          Score.builder()
+              .wod(wod)
+              .userId(mate)
+              .team(team)
+              .division(teamDivision)
+              .loggedAt(score.getLoggedAt())
+              .loggedBy(score.getLoggedBy())
+              .verificationRequested(score.isVerificationRequested())
+              .verifiedBy(score.getVerifiedBy())
+              .verifiedAt(score.getVerifiedAt())
+              .build();
+      copyPerformance(score, copy);
+      copies.add(copy);
+    }
+    return copies;
+  }
+
+  /** Men or women when every member is, mixed otherwise; null while a member has no division. */
+  static @Nullable Division teamDivision(List<Division> divisions) {
+    if (divisions.contains(null)) {
+      return null;
+    }
+    if (divisions.stream().allMatch(d -> d == Division.MEN)) {
+      return Division.MEN;
+    }
+    return divisions.stream().allMatch(d -> d == Division.WOMEN) ? Division.WOMEN : Division.MIXED;
+  }
+
+  /** Copies the shared performance of a team score (day, box, result, sets) onto another member's. */
+  private static void copyPerformance(Score from, Score to) {
+    to.setDate(from.getDate());
+    to.setGymId(from.getGymId());
+    to.setTimeSeconds(from.getTimeSeconds());
+    to.setTimeDisplayUnit(from.getTimeDisplayUnit());
+    to.setRounds(from.getRounds());
+    to.setReps(from.getReps());
+    to.setMaxWeightKg(from.getMaxWeightKg());
+    to.setTotalLoadKg(from.getTotalLoadKg());
+    to.setWeightDisplayUnit(from.getWeightDisplayUnit());
+    to.setTotalDistanceMeters(from.getTotalDistanceMeters());
+    to.setDistanceDisplayUnit(from.getDistanceDisplayUnit());
+    to.setTotalCalories(from.getTotalCalories());
+    to.setScaling(from.getScaling());
+    to.setTimeCapped(from.getTimeCapped());
+    to.setTiebreakSeconds(from.getTiebreakSeconds());
+    to.getSets().clear();
+    from.getSets()
+        .forEach(
+            set ->
+                to.getSets()
+                    .add(new ScoreSet(set.getReps(), set.getWeightKg(), set.isCompleted())));
   }
 
   /**
@@ -313,7 +475,8 @@ public class ScoreService {
     // A JPQL IN clause needs a non-empty collection, even when the filter is off
     Collection<Long> gyms = filterGyms ? gymIds : Set.of(-1L);
 
-    if (filterGyms || verifiedOnly || division != null || sessionId != null) {
+    // A team WOD ranks teams, not athletes: one row per team (in memory)
+    if (filterGyms || verifiedOnly || division != null || sessionId != null || wod.teamSize() != null) {
       return filteredLeaderboard(
               wodId,
               wod.scoreType(),
@@ -352,7 +515,9 @@ public class ScoreService {
             filters.verifiedOnly(),
             filters.division(),
             session)) {
-      bestByAthlete.merge(score.getUserId(), score, (a, b) -> best.compare(a, b) <= 0 ? a : b);
+      // A team counts once (negative key, never a user ID); an athlete once per their best score
+      Long key = score.getTeam() != null ? -score.getTeam().getId() : score.getUserId();
+      bestByAthlete.merge(key, score, (a, b) -> best.compare(a, b) <= 0 ? a : b);
     }
 
     // Same order as ScoreRanking.leaderboardSort: performance, tiebreak, earliest logged, id
