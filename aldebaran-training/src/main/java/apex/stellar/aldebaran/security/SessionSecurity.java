@@ -121,6 +121,30 @@ public class SessionSecurity {
   }
 
   /**
+   * Evaluates if the user reads the content of a session (its scores, e.g. the session leaderboard
+   * of a borrowed WOD). No session given means no restriction.
+   *
+   * @param sessionId The session, or null.
+   * @param principal The authenticated user.
+   * @return {@code true} if allowed, if no session is given or if it does not exist.
+   */
+  @Transactional(readOnly = true)
+  public boolean canReadContent(Long sessionId, AldebaranUserPrincipal principal) {
+    if (sessionId == null) {
+      return true;
+    }
+    return sessionRepository
+        .findById(sessionId)
+        .map(
+            s ->
+                isContentVisible(
+                    s,
+                    principal,
+                    sessionLogRepository.existsByUserIdAndSessionId(principal.getId(), s.getId())))
+        .orElse(true);
+  }
+
+  /**
    * Evaluates if the user may create the session: WOD_WRITE in its gym, anyone for a personal
    * session.
    *

@@ -1,5 +1,6 @@
 package apex.stellar.aldebaran.repository.projection;
 
+import apex.stellar.aldebaran.model.entities.Wod.WodStructure;
 import apex.stellar.aldebaran.model.entities.Wod.ScoreType;
 import apex.stellar.aldebaran.model.entities.Wod.WodCategory;
 import apex.stellar.aldebaran.model.entities.Wod.WodType;
@@ -98,4 +99,11 @@ public interface WodSummary {
    * @return {@code true} for a competition WOD.
    */
   boolean isCompetition();
+
+  /**
+   * Retrieves the sub-category of the format.
+   *
+   * @return the {@link WodStructure}, or null.
+   */
+  WodStructure getStructure();
 }

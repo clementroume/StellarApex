@@ -1,8 +1,7 @@
 package apex.stellar.aldebaran.model.entities;
 
-import apex.stellar.aldebaran.model.enums.Unit;
-import jakarta.validation.constraints.DecimalMin;
 import apex.stellar.aldebaran.model.enums.Category.Modality;
+import apex.stellar.aldebaran.model.enums.Unit;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
@@ -20,12 +19,14 @@ import jakarta.persistence.OneToMany;
 import jakarta.persistence.OrderBy;
 import jakarta.persistence.Table;
 import jakarta.persistence.Version;
+import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -148,6 +149,11 @@ public class Wod {
   @Min(0)
   private Integer emomInterval;
 
+  /** Sub-category of the format (For Time: Rounds, Scheme, Chipper...), or null. */
+  @Enumerated(EnumType.STRING)
+  @Column(name = "structure", length = 20)
+  private WodStructure structure;
+
   /** Rounds of a "rounds for time" (Helen: 3), or null. */
   @Column(name = "rounds")
   @Min(1)
@@ -238,24 +244,55 @@ public class Wod {
   @Getter
   @RequiredArgsConstructor
   public enum WodType {
-    // --- Conditioning ---
     FOR_TIME,
-    // Long list of movements done once (Angie, Murph)
-    CHIPPER,
-    // Descending (21-15-9, rep_scheme) or ascending (ladder_start, ladder_step) reps
-    LADDER,
     AMRAP,
     EMOM,
     TABATA,
-    INTERVALS,
-    // One more rep every minute until failure
-    DEATH_BY,
-    // --- Training Focus ---
-    STRENGTH,
-    SKILL,
-    ACCESSORY,
-    // --- Other ---
-    CUSTOM
+    FOR_LOAD,
+    // Skill, accessory or mobility work, without a score
+    FOR_QUALITY
+  }
+
+  /** Sub-category of a WOD format, guiding its entry ({@link #allowedIn} gives its formats). */
+  public enum WodStructure {
+    // For Time: lines done once, rounds, shared rep scheme (Fran 21-15-9), chipper, ladder / pyramid
+    SINGLE(WodType.FOR_TIME),
+    ROUNDS(WodType.FOR_TIME, WodType.AMRAP),
+    SCHEME(WodType.FOR_TIME, WodType.FOR_LOAD),
+    CHIPPER(WodType.FOR_TIME),
+    LADDER(WodType.FOR_TIME, WodType.AMRAP),
+    // AMRAP: rounds of max reps without a clock (Lynne)
+    MAX_REPS(WodType.AMRAP),
+    // EMOM
+    EVERY_MINUTE(WodType.EMOM),
+    EVERY_X(WodType.EMOM),
+    INTERVALS(WodType.EMOM),
+    DEATH_BY(WodType.EMOM),
+    // Tabata: 8 x 20 s / 10 s, or other work / rest
+    CLASSIC(WodType.TABATA),
+    CUSTOM(WodType.TABATA),
+    // For Load: sets x reps, 1RM / heavy single, weightlifting complex
+    SETS(WodType.FOR_LOAD),
+    MAX(WodType.FOR_LOAD),
+    COMPLEX(WodType.FOR_LOAD),
+    // For Quality
+    PRACTICE(WodType.FOR_QUALITY);
+
+    private final Set<WodType> formats;
+
+    WodStructure(WodType... formats) {
+      this.formats = EnumSet.copyOf(List.of(formats));
+    }
+
+    /**
+     * Whether this sub-category belongs to the given format.
+     *
+     * @param type A WOD format.
+     * @return {@code true} if allowed.
+     */
+    public boolean allowedIn(WodType type) {
+      return formats.contains(type);
+    }
   }
 
   /** Optional family of the WOD, independent of its format. */

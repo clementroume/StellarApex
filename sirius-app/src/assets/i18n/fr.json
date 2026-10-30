@@ -582,7 +582,9 @@
       "REPS_PER_ROUND": "Répétitions par tour (facultatif)",
       "COMPETITION": "Compétition",
       "SCOPE": "Portée",
-      "SETS": "Séries"
+      "SETS": "Séries",
+      "STRUCTURE": "Sous-catégorie",
+      "DURATION_SHORT": "Durée"
     },
     "PLACEHOLDERS": {
       "TITLE": "Ex : Fran",
@@ -624,14 +626,8 @@
       "AMRAP": "AMRAP",
       "EMOM": "EMOM",
       "TABATA": "Tabata",
-      "INTERVALS": "Intervalles",
-      "STRENGTH": "Force",
-      "SKILL": "Skill / Technique",
-      "ACCESSORY": "Renforcement (Accessory)",
-      "CUSTOM": "Personnalisé",
-      "CHIPPER": "Chipper",
-      "LADDER": "Ladder",
-      "DEATH_BY": "Death by"
+      "FOR_LOAD": "For Load",
+      "FOR_QUALITY": "For Quality"
     },
     "CATEGORIES": {
       "GIRLS": "Girls",
@@ -692,27 +688,12 @@
       "TITLE": "Titre (facultatif)",
       "NOTES": "Notes / scaling",
       "NOTES_PLACEHOLDER": "Consignes, options de scaling…",
-      "FORMATS": {
-        "FOR_TIME": "For Time",
-        "ROUNDS": "Rounds",
-        "CHIPPER": "Chipper",
-        "LADDER": "Ladder",
-        "AMRAP": "AMRAP",
-        "EMOM": "EMOM / Intervalles",
-        "TABATA": "Tabata",
-        "DEATH_BY": "Death by",
-        "STRENGTH": "Force",
-        "SKILL": "Skill"
-      },
       "N_ROUNDS": "{{count}} rounds",
       "REST_BETWEEN": "Repos entre rounds (s)",
       "WORK": "Travail (s)",
       "REST": "Repos (s)",
-      "WORK_REST": "+ travail / repos",
-      "NO_WORK_REST": "sans travail / repos",
       "LADDER_DIRECTION": "Sens de l'échelle",
-      "LADDER_DOWN": "Descendante",
-      "LADDER_UP": "Montante",
+      "LADDER_UP": "Départ + pas",
       "LADDER_VALUES": "Reps de l'échelle",
       "LADDER_START": "Départ",
       "LADDER_STEP": "Pas",
@@ -733,7 +714,11 @@
       "SEGMENT": "Partie du WOD",
       "VEST": "Gilet lesté H/F",
       "EQUIPMENT": "Équipement",
-      "TECHNIQUE": "Technique"
+      "TECHNIQUE": "Technique",
+      "MINUTES": "Minutes",
+      "WINDOW": "Fenêtre (min)",
+      "TABATA_CLASSIC": "8 rounds de 20 s de travail / 10 s de repos",
+      "LADDER_PYRAMID": "Valeurs / pyramide"
     },
     "CATALOGUE_SUBTITLE": "Les WODs de référence : Girls, Hero, benchmarks, Open… Programme-les dans une séance de ta box.",
     "SEGMENTS": {
@@ -746,6 +731,45 @@
       "DEATH_BY": "{{start}} rep(s) la 1re minute, +{{step}} chaque minute",
       "REST": "Repos {{rest}} entre les rounds",
       "VEST": "Gilet"
+    },
+    "STRUCTURES": {
+      "FOR_TIME": {
+        "SINGLE": "Une fois",
+        "ROUNDS": "Rounds",
+        "SCHEME": "Schéma",
+        "CHIPPER": "Chipper",
+        "LADDER": "Ladder"
+      },
+      "AMRAP": {
+        "ROUNDS": "Rounds + reps",
+        "LADDER": "Ladder",
+        "MAX_REPS": "Max reps"
+      },
+      "EMOM": {
+        "EVERY_MINUTE": "Chaque minute",
+        "EVERY_X": "Toutes les X min",
+        "INTERVALS": "Intervalles",
+        "DEATH_BY": "Death by"
+      },
+      "TABATA": {
+        "CLASSIC": "Classique",
+        "CUSTOM": "Personnalisé"
+      },
+      "FOR_LOAD": {
+        "SETS": "Séries",
+        "SCHEME": "Schéma",
+        "MAX": "Max",
+        "COMPLEX": "Complexe"
+      },
+      "FOR_QUALITY": {
+        "PRACTICE": "Technique"
+      }
+    },
+    "CATALOGUE": {
+      "RANGE": "{{from}}–{{to}} sur {{total}}",
+      "PAGINATION": "Pages du catalogue",
+      "PREVIOUS": "Page précédente",
+      "NEXT": "Page suivante"
     }
   },
   "SCORE": {
@@ -841,7 +865,8 @@
       "MY_BOX": "Ma box",
       "MY_BOXES": "Mes boxes",
       "MY_PROG": "Ma prog",
-      "MY_PROGS": "Mes progs"
+      "MY_PROGS": "Mes progs",
+      "SESSION_TITLE": "Classement de la séance"
     },
     "VERIFIED": "Validé",
     "VERIFIED_BY": "Validé par {{name}}",
@@ -1172,8 +1197,6 @@
     "PERSONAL": "Séance perso",
     "LOCKED": "Verrouillée",
     "LOGGED_ON": "Séance faite le {{date}}",
-    "LANG_FR": "français",
-    "LANG_EN": "anglais",
     "DELETE_TITLE": "Supprimer la séance ?",
     "DELETE_DESC": "La séance et les WODs écrits pour elle sont supprimés ; les WODs existants empruntés restent au catalogue.",
     "UNLOG_TITLE": "Annuler « Séance faite » ?",
@@ -1334,6 +1357,7 @@
       "BLOCKS": "{{done}}/{{total}} blocs",
       "SCORES": "{{count}} score(s)",
       "EMPTY": "Pas encore de séance faite."
-    }
+    },
+    "SESSION_LEADERBOARD": "Classement de la séance"
   }
 }

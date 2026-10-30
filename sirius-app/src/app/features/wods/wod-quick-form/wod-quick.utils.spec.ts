@@ -1,4 +1,4 @@
-import {defaultExtras, defaultMeasure, ladderValues, parseSets, roundsOf, scoreTypeOf} from './wod-quick.utils';
+import {defaultExtras, defaultMeasure, ladderValues, monotone, parseSets, roundsOf, scoreTypeOf} from './wod-quick.utils';
 
 describe('wod-quick utils', () => {
   it('should pick the usual measure of a movement', () => {
@@ -30,11 +30,14 @@ describe('wod-quick utils', () => {
     expect(roundsOf('21-15-9')).toBeNull();
   });
 
-  it('should score an ascending ladder and intervals in reps', () => {
-    expect(scoreTypeOf('LADDER')).toBe('TIME');
-    expect(scoreTypeOf('LADDER', true)).toBe('REPS');
-    expect(scoreTypeOf('EMOM')).toBe('ROUNDS');
-    expect(scoreTypeOf('EMOM', false, true)).toBe('REPS');
-    expect(scoreTypeOf('DEATH_BY')).toBe('ROUNDS');
+  it('should score each category and tell a scheme from a pyramid', () => {
+    expect(scoreTypeOf('FOR_TIME', 'SCHEME')).toBe('TIME');
+    expect(scoreTypeOf('AMRAP', 'LADDER')).toBe('REPS');
+    expect(scoreTypeOf('EMOM', 'EVERY_MINUTE')).toBe('ROUNDS');
+    expect(scoreTypeOf('EMOM', 'INTERVALS')).toBe('REPS');
+    expect(scoreTypeOf('FOR_LOAD', 'SETS')).toBe('WEIGHT');
+    expect(scoreTypeOf('FOR_QUALITY', 'PRACTICE')).toBe('NONE');
+    expect(monotone([21, 15, 9])).toBe(true);
+    expect(monotone([1, 2, 3, 2, 1])).toBe(false);
   });
 });

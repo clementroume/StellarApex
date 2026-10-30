@@ -7,6 +7,7 @@ import apex.stellar.aldebaran.dto.WodRequest;
 import apex.stellar.aldebaran.dto.WodResponse;
 import apex.stellar.aldebaran.dto.WodSummaryResponse;
 import apex.stellar.aldebaran.model.entities.Wod.WodCategory;
+import apex.stellar.aldebaran.model.entities.Wod.WodStructure;
 import apex.stellar.aldebaran.model.entities.Wod.WodType;
 import apex.stellar.aldebaran.model.enums.WodScope;
 import apex.stellar.aldebaran.security.AldebaranUserPrincipal;
@@ -60,6 +61,7 @@ public class WodController {
    * @param scope List scope: ALL (default), MINE, GYM or PUBLIC.
    * @param gymId Optional gym filter for the GYM scope (must be one of the user's member gyms).
    * @param authorId Optional author filter: that author's personal WODs (readable ones only).
+   * @param structure Optional sub-category of the format (For Time: ROUNDS, CHIPPER...).
    * @param pageable Pagination info (page, size, sort). Defaults to 20 items per page.
    * @return A list of WOD summaries matching the criteria.
    */
@@ -67,6 +69,7 @@ public class WodController {
   public ResponseEntity<Slice<WodSummaryResponse>> getWods(
       @RequestParam(required = false) String search,
       @RequestParam(required = false) WodType type,
+      @RequestParam(required = false) WodStructure structure,
       @RequestParam(required = false) WodCategory category,
       @RequestParam(required = false) Long movementId,
       @RequestParam(defaultValue = "ALL") WodScope scope,
@@ -75,7 +78,28 @@ public class WodController {
       @PageableDefault(size = 20) Pageable pageable) {
 
     return ResponseEntity.ok(
-        wodService.getWods(search, type, category, movementId, scope, gymId, authorId, pageable));
+        wodService.getWods(
+            search, type, structure, category, movementId, scope, gymId, authorId, pageable));
+  }
+
+  /**
+   * Counts the WODs of the list for the same filters (numbered pagination of the catalogue).
+   *
+   * @return The number of WODs readable with these filters.
+   */
+  @GetMapping("/count")
+  @SuppressWarnings("java:S107") // Mirrors the list filters
+  public ResponseEntity<Long> countWods(
+      @RequestParam(required = false) String search,
+      @RequestParam(required = false) WodType type,
+      @RequestParam(required = false) WodStructure structure,
+      @RequestParam(required = false) WodCategory category,
+      @RequestParam(required = false) Long movementId,
+      @RequestParam(defaultValue = "ALL") WodScope scope,
+      @RequestParam(required = false) Long gymId,
+      @RequestParam(required = false) Long authorId) {
+    return ResponseEntity.ok(
+        wodService.countWods(search, type, structure, category, movementId, scope, gymId, authorId));
   }
 
   /**
@@ -88,6 +112,7 @@ public class WodController {
    * @param scope List scope: ALL (default), MINE, GYM or PUBLIC.
    * @param gymId Optional gym filter for the GYM scope.
    * @param authorId Optional author filter (personal WODs).
+   * @param type Format whose sub-categories are listed (with the counts per category).
    * @return The available filter values.
    */
   @GetMapping("/facets")
@@ -95,9 +120,10 @@ public class WodController {
       @RequestParam(required = false) String search,
       @RequestParam(defaultValue = "ALL") WodScope scope,
       @RequestParam(required = false) Long gymId,
-      @RequestParam(required = false) Long authorId) {
+      @RequestParam(required = false) Long authorId,
+      @RequestParam(required = false) WodType type) {
 
-    return ResponseEntity.ok(wodService.getFacets(search, scope, gymId, authorId));
+    return ResponseEntity.ok(wodService.getFacets(search, scope, gymId, authorId, type));
   }
 
   /**

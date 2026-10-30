@@ -15,6 +15,7 @@ import {UnitService} from '../../../core/services/unit.service';
 import {WodScoresStore} from '../../wods/scores/wod-scores.store';
 import {ScoreHistoryComponent} from '../../wods/scores/score-history/score-history.component';
 import {ScoreFormComponent} from '../../wods/scores/score-form/score-form.component';
+import {ScoreLeaderboardComponent} from '../../wods/scores/score-leaderboard/score-leaderboard.component';
 import {formatScore} from '../../wods/scores/score.utils';
 import {WodWhiteboardComponent} from '../../wods/wod-whiteboard/wod-whiteboard.component';
 import {localizedText} from '../../wods/wod.utils';
@@ -30,6 +31,7 @@ import {blockTheme, isTextKind} from '../session.utils';
   selector: 'app-session-block',
   standalone: true,
   imports: [RouterLink, TranslatePipe, NgIcon, HlmBadge, HlmButton, ScoreHistoryComponent, ScoreFormComponent,
+    ScoreLeaderboardComponent,
     WodWhiteboardComponent],
   providers: [WodScoresStore],
   templateUrl: './session-block.component.html',
@@ -46,6 +48,8 @@ export class SessionBlockComponent {
 
   // --- STATE (SIGNALS & VARIABLES) ---
   readonly block = input.required<SessionBlockResponse>();
+  /** Session of the block: history and leaderboard keep that session's scores. */
+  readonly sessionId = input<number | null>(null);
   /** The user's journal of the session, or null before "Séance faite". */
   readonly log = input<SessionLogResponse | null>(null);
   /** Emits after a score of the block changed (the journal may have been created). */
@@ -54,6 +58,8 @@ export class SessionBlockComponent {
   /** The block's WOD with the user's capabilities (judging), loaded apart from the session. */
   protected readonly wod = signal<WodResponse | null>(null);
   protected readonly queue = signal<ScoreResponse[]>([]);
+  /** Session leaderboard of the block, folded by default. */
+  protected readonly showLeaderboard = signal(false);
   private readonly names = signal<Record<number, string>>({});
 
   // --- COMPUTED STATE ---
@@ -90,6 +96,7 @@ export class SessionBlockComponent {
     this.wodService.getWod(id).subscribe({
       next: wod => {
         this.wod.set(wod);
+        this.store.sessionId.set(this.sessionId());
         this.store.load(wod);
         if (wod.capabilities?.canJudge) this.loadQueue();
       },

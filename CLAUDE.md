@@ -153,7 +153,11 @@ scores for them (Aldebaran).
 - Catalog: a movement variant is the `equipment` / `techniques` of the movement and of the WOD movement
   (Aldebaran rejects values the movement does not allow), never a new movement or a note. Muscles have
   one functional group level (`parent`, same region). Never use a movement name absent from the catalog.
-- WODs: `wodType` = format (For Time, Chipper, Ladder, AMRAP, EMOM, Death by...), optional `category` (Girls, Hero, Open...),
+- WODs: `wodType` = category of format (`FOR_TIME`, `AMRAP`, `EMOM`, `TABATA`, `FOR_LOAD`, `FOR_QUALITY`)
+  with a sub-category `structure` (For Time: `ROUNDS`, `SINGLE`, `SCHEME` = Fran 21-15-9, `CHIPPER`,
+  `LADDER` = rungs / pyramid; AMRAP `ROUNDS` / `LADDER` / `MAX_REPS`; EMOM `EVERY_MINUTE` / `EVERY_X` /
+  `INTERVALS` / `DEATH_BY`; Tabata `CLASSIC` / `CUSTOM`; For Load `SETS` / `SCHEME` / `MAX` / `COMPLEX`
+  with `WodMovement.complexGroup`; For Quality `PRACTICE`), optional `category` (Girls, Hero, Open...),
   structure in fields, not in a free scheme: `rounds` (Helen = For Time + 3 rounds), `restSeconds`,
   `workSeconds` (intervals, Tabata), `ladderStart`/`ladderStep` (ascending ladder, Death by), `repScheme`
   for a descending ladder or strength sets, weight vest `vestWeight(Female)`, buy-in / buy-out lines

@@ -88,7 +88,7 @@
       @for (block of s.blocks; track block.id) {
         <li>
           @if (s.capabilities.contentVisible) {
-            <app-session-block [block]="block" [log]="log()" (scoresChanged)="reload()"
+            <app-session-block [block]="block" [sessionId]="s.id" [log]="log()" (scoresChanged)="reload()"
                                (doneChange)="setBlockDone(block.id, $event)"/>
           } @else {
             <div class="rounded-xl border bg-card p-4 flex flex-col gap-1" [class.text-muted-foreground]="block.optional">

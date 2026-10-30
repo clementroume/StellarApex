@@ -81,7 +81,7 @@ class WodRepositoryIT extends BaseIntegrationTest {
   private List<String> titles(
       String search, WodType type, Long movementId, String scope, Long gymId, boolean admin) {
     return wodRepository
-        .findSecure(search, type, null, movementId, scope, gymId, null, ME, MY_GYMS, admin, PAGE)
+        .findSecure(search, type, null, movementId, scope, gymId, null, ME, MY_GYMS, admin, null, PAGE)
         .map(WodSummary::getTitle)
         .getContent();
   }
@@ -146,7 +146,7 @@ class WodRepositoryIT extends BaseIntegrationTest {
   void projectionFields() {
     WodSummary box =
         wodRepository
-            .findSecure("%box%", null, null, null, "ALL", null, null, ME, MY_GYMS, false, PAGE)
+            .findSecure("%box%", null, null, null, "ALL", null, null, ME, MY_GYMS, false, null, PAGE)
             .getContent()
             .getFirst();
 
@@ -161,20 +161,20 @@ class WodRepositoryIT extends BaseIntegrationTest {
     // A stranger's private WOD stays hidden to non-admins, even when filtering on its author
     assertThat(
             wodRepository
-                .findSecure(null, null, null, null, "ALL", null, 77L, ME, MY_GYMS, false, PAGE)
+                .findSecure(null, null, null, null, "ALL", null, 77L, ME, MY_GYMS, false, null, PAGE)
                 .map(WodSummary::getTitle)
                 .getContent())
         .containsExactly("Stranger Public");
     assertThat(
             wodRepository
-                .findSecure(null, null, null, null, "ALL", null, 77L, ME, MY_GYMS, true, PAGE)
+                .findSecure(null, null, null, null, "ALL", null, 77L, ME, MY_GYMS, true, null, PAGE)
                 .map(WodSummary::getTitle)
                 .getContent())
         .containsExactly("Stranger Private", "Stranger Public");
     // Gym WODs are never "personal", even for their author
     assertThat(
             wodRepository
-                .findSecure(null, null, null, null, "ALL", null, 50L, ME, MY_GYMS, true, PAGE)
+                .findSecure(null, null, null, null, "ALL", null, 50L, ME, MY_GYMS, true, null, PAGE)
                 .getContent())
         .isEmpty();
   }
@@ -221,7 +221,7 @@ class WodRepositoryIT extends BaseIntegrationTest {
     assertThat(
             wodRepository
                 .findSecure(
-                    null, null, WodCategory.GIRLS, null, "ALL", null, null, ME, MY_GYMS, false, PAGE)
+                    null, null, WodCategory.GIRLS, null, "ALL", null, null, ME, MY_GYMS, false, null, PAGE)
                 .map(WodSummary::getTitle)
                 .getContent())
         .containsExactly("Stranger Public");

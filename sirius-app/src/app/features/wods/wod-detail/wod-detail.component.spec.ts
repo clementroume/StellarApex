@@ -282,7 +282,7 @@ describe('WodDetailComponent', () => {
     it('should load the user\'s scores on the WOD and invite to log one when there is none', () => {
       init();
 
-      expect(mockScoreService.getMyScores).toHaveBeenCalledWith(1, 0, 50);
+      expect(mockScoreService.getMyScores).toHaveBeenCalledWith(1, 0, 50, undefined, null);
       const text: string = fixture.nativeElement.textContent;
       expect(text).toContain('SCORE.ACTIONS.LOG');
       expect(text).toContain('SCORE.MESSAGES.EMPTY');

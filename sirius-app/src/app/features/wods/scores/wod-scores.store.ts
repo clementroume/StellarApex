@@ -36,6 +36,11 @@ export class WodScoresStore {
    * scores join it; Aldebaran takes the journal's day and gym.
    */
   readonly sessionLogId = signal<number | null>(null);
+  /**
+   * Session the WOD is shown in, or null on the WOD detail: the history and the leaderboard keep the
+   * scores of that session only (a borrowed Fran shows today's Fran, not every Fran).
+   */
+  readonly sessionId = signal<number | null>(null);
   /** Emits after a score is logged, updated or deleted (the WOD may become locked or unlocked). */
   readonly changed$ = new Subject<void>();
 
@@ -47,7 +52,7 @@ export class WodScoresStore {
   load(wod: WodResponse): void {
     this.wod.set(wod);
     this.isLoading.set(true);
-    this.scoreService.getMyScores(wod.id, 0, HISTORY_SIZE).subscribe({
+    this.scoreService.getMyScores(wod.id, 0, HISTORY_SIZE, undefined, this.sessionId()).subscribe({
       next: (slice) => {
         this.scores.set(slice.content);
         this.isLoading.set(false);

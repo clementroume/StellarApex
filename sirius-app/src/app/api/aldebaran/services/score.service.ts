@@ -11,13 +11,18 @@ import {Division} from '../../antares/models/user.model';
 export class ScoreService {
   private readonly http = inject(HttpClient);
 
-  getMyScores(wodId?: number, page: number = 0, size: number = 20, context?: HttpContext): Observable<Slice<ScoreResponse>> {
+  getMyScores(wodId?: number, page: number = 0, size: number = 20, context?: HttpContext,
+              sessionId: number | null = null): Observable<Slice<ScoreResponse>> {
     let params = new HttpParams()
       .set('page', page)
       .set('size', size);
 
     if (wodId) {
       params = params.set('wodId', wodId);
+    }
+    // Only the scores logged in this session's journal (history of a session block)
+    if (wodId && sessionId != null) {
+      params = params.set('sessionId', sessionId);
     }
 
     return this.http.get<Slice<ScoreResponse>>(this.buildUrl('/me'), {params, context});
@@ -59,7 +64,8 @@ export class ScoreService {
     size: number = 20,
     gymIds: number[] = [],
     verifiedOnly: boolean = false,
-    division: Division | null = null
+    division: Division | null = null,
+    sessionId: number | null = null
   ): Observable<Slice<ScoreResponse>> {
     let params = new HttpParams()
       .set('scaling', scaling)
@@ -75,6 +81,10 @@ export class ScoreService {
     // Scores logged in this division only, else every score
     if (division) {
       params = params.set('division', division);
+    }
+    // Session leaderboard: only the scores logged in this session's journals
+    if (sessionId != null) {
+      params = params.set('sessionId', sessionId);
     }
 
     return this.http.get<Slice<ScoreResponse>>(this.buildUrl(`/leaderboard/${wodId}`), {params});

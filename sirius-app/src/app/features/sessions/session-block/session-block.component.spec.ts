@@ -29,13 +29,15 @@ describe('SessionBlockComponent', () => {
   const scoreService = {
     getMyScores: vi.fn().mockReturnValue(of({content: []})),
     compareScore: vi.fn(),
-    getVerificationQueue: vi.fn().mockName('ScoreService.getVerificationQueue')
+    getVerificationQueue: vi.fn().mockName('ScoreService.getVerificationQueue'),
+    getLeaderboard: vi.fn().mockReturnValue(of({content: [], last: true}))
   };
   const userService = {getDisplayNames: vi.fn().mockReturnValue(of([{id: 8, displayName: 'Anne L.'}]))};
 
   const init = (block: SessionBlockResponse, log: any = null) => {
     fixture = TestBed.createComponent(SessionBlockComponent);
     fixture.componentRef.setInput('block', block);
+    fixture.componentRef.setInput('sessionId', 4);
     fixture.componentRef.setInput('log', log);
     fixture.detectChanges();
   };
@@ -77,7 +79,8 @@ describe('SessionBlockComponent', () => {
     expect(wodService.getWod).toHaveBeenCalledWith(30);
     expect(fixture.nativeElement.querySelector('app-wod-whiteboard')).toBeTruthy();
     expect(store.sessionLogId()).toBe(9);
-    expect(scoreService.getMyScores).toHaveBeenCalledWith(30, 0, 50);
+    expect(store.sessionId()).toBe(4);
+    expect(scoreService.getMyScores).toHaveBeenCalledWith(30, 0, 50, undefined, 4);
 
     const done = vi.fn();
     fixture.componentInstance.doneChange.subscribe(done);
@@ -87,6 +90,18 @@ describe('SessionBlockComponent', () => {
     (fixture.nativeElement.querySelector('.log-score') as HTMLButtonElement).click();
     fixture.detectChanges();
     expect(fixture.nativeElement.querySelector('app-score-form')).toBeTruthy();
+  });
+
+  it('should fold the session leaderboard and load only the session scores', () => {
+    init(block({borrowed: true, wod: wod({id: 31, title: 'Fran', standalone: true})}), {id: 9, blocks: [], scores: []});
+    expect(fixture.nativeElement.querySelector('app-score-leaderboard')).toBeNull();
+
+    (fixture.nativeElement.querySelector('.session-leaderboard-toggle') as HTMLButtonElement).click();
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector('app-score-leaderboard')).toBeTruthy();
+    expect(scoreService.getLeaderboard).toHaveBeenCalledWith(30, 'RX', 0, expect.any(Number), [], false, null, 4);
+    expect(fixture.nativeElement.textContent).toContain('SCORE.LEADERBOARD.SESSION_TITLE');
   });
 
   it('should ask for "Séance faite" before scoring a borrowed WOD', () => {

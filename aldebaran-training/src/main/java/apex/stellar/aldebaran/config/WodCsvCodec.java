@@ -4,6 +4,7 @@ import apex.stellar.aldebaran.model.entities.Movement;
 import apex.stellar.aldebaran.model.entities.Wod;
 import apex.stellar.aldebaran.model.entities.Wod.ScoreType;
 import apex.stellar.aldebaran.model.entities.Wod.WodCategory;
+import apex.stellar.aldebaran.model.entities.Wod.WodStructure;
 import apex.stellar.aldebaran.model.entities.Wod.WodType;
 import apex.stellar.aldebaran.model.entities.WodMovement;
 import apex.stellar.aldebaran.model.entities.WodMovement.Segment;
@@ -69,7 +70,9 @@ public final class WodCsvCodec {
     "ladder_step",
     "vest_weight",
     "vest_weight_female",
-    "vest_weight_unit"
+    "vest_weight_unit",
+    // Sub-category of the format (formats v3); the former wod_type values still read
+    "structure"
   };
 
   static final String[] WOD_MOVEMENT_HEADERS = {
@@ -98,7 +101,8 @@ public final class WodCsvCodec {
     "height_unit",
     // Sets of strength work, part of the WOD (BUY_IN / MAIN / BUY_OUT, blank = MAIN)
     "sets",
-    "segment"
+    "segment",
+    "complex_group"
   };
 
   /** Separator of the equipment / technique lists (free text, so not a comma). */
@@ -126,10 +130,12 @@ public final class WodCsvCodec {
     Map<String, Wod> wodsByTitle = new LinkedHashMap<>();
     for (CSVRecord row : parse(wodsReader)) {
       String title = required(row, "title");
+      Format format = format(row);
       Wod wod =
           Wod.builder()
               .title(title)
-              .wodType(WodType.valueOf(required(row, "wod_type").toUpperCase()))
+              .wodType(format.type())
+              .structure(format.structure())
               .category(category(row))
               .scoreType(scoreType(row))
               .repScheme(text(row, "rep_scheme"))
@@ -205,6 +211,7 @@ public final class WodCsvCodec {
               .techniques(list(row, "techniques"))
               .sets(integer(row, "sets"))
               .segment(segment(row))
+              .complexGroup(integer(row, "complex_group"))
               .build();
       wodMovement.checkVariantsAllowed(
           movement.getName(), movement.getEquipment(), movement.getTechniques());
@@ -256,7 +263,8 @@ public final class WodCsvCodec {
             w.getLadderStep(),
             w.getVestWeight(),
             w.getVestWeightFemale(),
-            name(w.getVestWeightUnit()));
+            name(w.getVestWeightUnit()),
+            name(w.getStructure()));
 
         List<WodMovement> movements = new ArrayList<>(w.getMovements());
         movements.sort(Comparator.comparing(WodMovement::getOrderIndex));
@@ -285,7 +293,8 @@ public final class WodCsvCodec {
               wm.getHeightFemale(),
               name(wm.getHeightUnit()),
               wm.getSets(),
-              wm.getSegment() == Segment.MAIN ? null : wm.getSegment().name());
+              wm.getSegment() == Segment.MAIN ? null : wm.getSegment().name(),
+              wm.getComplexGroup());
         }
       }
     }
@@ -339,6 +348,36 @@ public final class WodCsvCodec {
   private static ScoreType scoreType(CSVRecord row) {
     String value = required(row, "score_type").toUpperCase();
     return "ROUNDS_REPS".equals(value) ? ScoreType.REPS : ScoreType.valueOf(value);
+  }
+
+  /** Format and sub-category of a WOD row. */
+  private record Format(WodType type, WodStructure structure) {}
+
+  /**
+   * Format of a row: the {@code structure} column when given, else the sub-category implied by a
+   * former {@code wod_type} value (CHIPPER, LADDER, INTERVALS, DEATH_BY, STRENGTH, SKILL, ACCESSORY,
+   * CUSTOM), so that files written before formats v3 still load.
+   */
+  private static Format format(CSVRecord row) {
+    String type = required(row, "wod_type").toUpperCase();
+    String structureText = text(row, "structure");
+    WodStructure structure =
+        structureText == null ? null : WodStructure.valueOf(structureText.trim().toUpperCase());
+    Format legacy =
+        switch (type) {
+          case "CHIPPER" -> new Format(WodType.FOR_TIME, WodStructure.CHIPPER);
+          case "LADDER" ->
+              text(row, "ladder_start") == null
+                  ? new Format(WodType.FOR_TIME, WodStructure.SCHEME)
+                  : new Format(WodType.FOR_TIME, WodStructure.LADDER);
+          case "INTERVALS" -> new Format(WodType.EMOM, WodStructure.INTERVALS);
+          case "DEATH_BY" -> new Format(WodType.EMOM, WodStructure.DEATH_BY);
+          case "STRENGTH" -> new Format(WodType.FOR_LOAD, null);
+          case "SKILL", "ACCESSORY" -> new Format(WodType.FOR_QUALITY, WodStructure.PRACTICE);
+          case "CUSTOM" -> new Format(WodType.AMRAP, WodStructure.MAX_REPS);
+          default -> new Format(WodType.valueOf(type), null);
+        };
+    return new Format(legacy.type(), structure != null ? structure : legacy.structure());
   }
 
   /** Part of the WOD; blank (or a file without the column) means the rounds. */

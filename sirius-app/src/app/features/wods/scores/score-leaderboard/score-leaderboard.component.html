@@ -1,8 +1,9 @@
-<section class="flex flex-col gap-3" aria-labelledby="leaderboard-title">
+@let title = (inSession() ? 'SCORE.LEADERBOARD.SESSION_TITLE' : 'SCORE.LEADERBOARD.TITLE') | translate;
+<section class="flex flex-col gap-3" [attr.aria-label]="title">
   <div class="flex flex-wrap items-center justify-between gap-2">
-    <h4 id="leaderboard-title" class="text-sm font-semibold text-muted-foreground flex items-center gap-1">
+    <h4 class="text-sm font-semibold text-muted-foreground flex items-center gap-1">
       <ng-icon name="heroTrophy"></ng-icon>
-      {{ 'SCORE.LEADERBOARD.TITLE' | translate }}
+      {{ title }}
     </h4>
     <div class="flex flex-wrap items-center gap-2">
       <div class="field-group" role="group" [attr.aria-label]="'SCORE.FIELDS.SCALING' | translate">

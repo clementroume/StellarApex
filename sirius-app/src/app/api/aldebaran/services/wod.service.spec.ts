@@ -44,6 +44,7 @@ describe('WodService', () => {
 
   const mockReferenceData: WodReferenceData = {
     wodTypes: ['AMRAP', 'FOR_TIME', 'EMOM'],
+    structures: {},
     categories: ['GIRLS', 'HERO'],
     scoreTypes: ['TIME', 'REPS', 'LOAD'],
     unitGroups: {

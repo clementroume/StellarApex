@@ -472,7 +472,7 @@ public class SessionService {
     }
     WodType type = wod.getWodType();
     if (discipline == Discipline.ENDURANCE) {
-      return type == WodType.INTERVALS || type == WodType.TABATA
+      return type == WodType.EMOM || type == WodType.TABATA
           ? Stimulus.THRESHOLD
           : Stimulus.AEROBIC;
     }
@@ -484,7 +484,7 @@ public class SessionService {
         if (discipline == Discipline.WEIGHTLIFTING) {
           yield Stimulus.POWER;
         }
-        yield type == WodType.STRENGTH ? Stimulus.STRENGTH : Stimulus.SKILL;
+        yield type == WodType.FOR_LOAD ? Stimulus.STRENGTH : Stimulus.SKILL;
       }
       case ACCESSORY -> Stimulus.STRENGTH;
       default -> Stimulus.MIXED;

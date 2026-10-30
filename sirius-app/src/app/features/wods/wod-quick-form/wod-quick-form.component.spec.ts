@@ -45,7 +45,8 @@ describe('WodQuickFormComponent', () => {
 
   it('should write Fran as a descending ladder: no reps per movement, only the load, title generated', () => {
     init();
-    component.setFormat('LADDER');
+    component.setCategory('FOR_TIME');
+    component.setStructure('SCHEME');
     component.form.patchValue({minutes: 10});
     component.onMovement(0, 1);
     component.addRow();
@@ -58,7 +59,7 @@ describe('WodQuickFormComponent', () => {
     component.form.controls.rows.at(0).patchValue({weight: 43, weightFemale: 29});
 
     const request = component.buildRequest();
-    expect(request).toMatchObject({title: '21-15-9 Thruster / Pull-up', wodType: 'LADDER', scoreType: 'TIME',
+    expect(request).toMatchObject({title: '21-15-9 Thruster / Pull-up', wodType: 'FOR_TIME', structure: 'SCHEME', scoreType: 'TIME',
       timeCapSeconds: 600, repScheme: '21-15-9', ladderStart: null});
     expect(request.movements[0]).toMatchObject({movementId: 1, repsScheme: '21-15-9', weight: 43, weightFemale: 29,
       weightUnit: 'KG', segment: 'MAIN'});
@@ -66,7 +67,7 @@ describe('WodQuickFormComponent', () => {
   });
 
   it('should take sets and reps of a strength WOD from its sets field', () => {
-    init({defaultFormat: 'STRENGTH'});
+    init({defaultFormat: 'FOR_LOAD'});
     expect(component.form.controls.scoreType.value).toBe('WEIGHT');
     component.setSets('5x5');
     component.onMovement(0, 3);
@@ -76,13 +77,13 @@ describe('WodQuickFormComponent', () => {
     component.onSubmit();
 
     const request: WodRequest = submitted.mock.calls[0][0];
-    expect(request).toMatchObject({title: 'Back Squat 5x5', wodType: 'STRENGTH', repScheme: '5x5', vestWeight: null});
+    expect(request).toMatchObject({title: 'Back Squat 5x5', wodType: 'FOR_LOAD', structure: 'SETS', repScheme: '5x5', vestWeight: null});
     expect(request.movements[0]).toMatchObject({sets: 5, repsScheme: '5', weight: 100});
   });
 
   it('should pick the measure of each movement, ask reps only where needed, and count the reps of a round', () => {
     init();
-    component.setFormat('AMRAP');
+    component.setCategory('AMRAP');
     component.form.patchValue({minutes: 12});
     component.onMovement(0, 4);
     component.addRow();
@@ -95,14 +96,14 @@ describe('WodQuickFormComponent', () => {
     expect(fixture.nativeElement.querySelectorAll('input[formControlName="reps"]').length).toBe(1);
     expect(component.extrasOf(1)).toEqual(['LOAD', 'HEIGHT']);
     const request = component.buildRequest();
-    expect(request).toMatchObject({wodType: 'AMRAP', scoreType: 'REPS', timeCapSeconds: 720, repsPerRound: 35});
+    expect(request).toMatchObject({wodType: 'AMRAP', structure: 'ROUNDS', scoreType: 'REPS', timeCapSeconds: 720, repsPerRound: 35});
     expect(request.movements[0]).toMatchObject({calories: 15, repsScheme: undefined});
     expect(request.movements[1]).toMatchObject({repsScheme: '20', heightUnit: 'CENTIMETERS'});
   });
 
   it('should write Murph: rounds, buy-in and buy-out runs, weight vest', () => {
     init();
-    component.setFormat('ROUNDS');
+    component.setCategory('FOR_TIME');
     component.form.patchValue({rounds: 20, minutes: 60});
     component.onMovement(0, 6);
     component.addRow();
@@ -118,7 +119,7 @@ describe('WodQuickFormComponent', () => {
     expect(component.measureOfRow(0)).toBe('DISTANCE');
     expect(fixture.nativeElement.querySelectorAll('.segment-select').length).toBe(3);
     const request = component.buildRequest();
-    expect(request).toMatchObject({wodType: 'FOR_TIME', scoreType: 'TIME', rounds: 20, timeCapSeconds: 3600,
+    expect(request).toMatchObject({wodType: 'FOR_TIME', structure: 'ROUNDS', scoreType: 'TIME', rounds: 20, timeCapSeconds: 3600,
       vestWeight: 9, vestWeightFemale: 6, vestWeightUnit: 'KG', repScheme: undefined});
     expect(request.movements.map(m => m.segment)).toEqual(['BUY_IN', 'MAIN', 'BUY_OUT']);
     expect(request.movements[0]).toMatchObject({distance: 1600, distanceUnit: 'METERS', repsScheme: undefined});
@@ -127,34 +128,35 @@ describe('WodQuickFormComponent', () => {
 
   it('should write an ascending ladder in reps and a Death by in rounds', () => {
     init();
-    component.setFormat('LADDER');
-    component.setLadderUp(true);
+    component.setCategory('AMRAP');
+    component.setStructure('LADDER');
     component.form.patchValue({ladderStart: 3, ladderStep: 3, minutes: 12});
     component.onMovement(0, 7);
-    expect(component.buildRequest()).toMatchObject({wodType: 'LADDER', scoreType: 'REPS', ladderStart: 3,
+    expect(component.buildRequest()).toMatchObject({wodType: 'AMRAP', structure: 'LADDER', scoreType: 'REPS', ladderStart: 3,
       ladderStep: 3, repScheme: undefined, title: 'Burpee 3-6-9…'});
 
-    component.setFormat('DEATH_BY');
+    component.setCategory('EMOM');
+    component.setStructure('DEATH_BY');
     const request = component.buildRequest();
-    expect(request).toMatchObject({wodType: 'DEATH_BY', scoreType: 'ROUNDS', ladderStart: 1, ladderStep: 1,
+    expect(request).toMatchObject({wodType: 'EMOM', structure: 'DEATH_BY', scoreType: 'ROUNDS', ladderStart: 1, ladderStep: 1,
       emomInterval: 60, timeCapSeconds: undefined});
     expect(request.movements[0].repsScheme).toBeUndefined();
   });
 
   it('should preset a Tabata and turn an EMOM with work / rest into intervals', () => {
     init();
-    component.setFormat('TABATA');
+    component.setCategory('TABATA');
     component.onMovement(0, 7);
     expect(component.buildRequest()).toMatchObject({wodType: 'TABATA', scoreType: 'REPS', emomRounds: 8,
       workSeconds: 20, restSeconds: 10});
 
-    component.setFormat('EMOM');
+    component.setCategory('EMOM');
     expect(component.buildRequest()).toMatchObject({wodType: 'EMOM', scoreType: 'ROUNDS', emomRounds: 10,
       emomInterval: 60, workSeconds: null});
-    component.toggleWorkRest();
-    component.form.patchValue({rounds: 5, everyMinutes: 4, workSeconds: 180, restSeconds: 60});
-    expect(component.buildRequest()).toMatchObject({wodType: 'INTERVALS', scoreType: 'REPS', emomRounds: 5,
-      emomInterval: 240, workSeconds: 180, restSeconds: 60});
+    component.setStructure('INTERVALS');
+    component.form.patchValue({rounds: 5, workSeconds: 180, restSeconds: 60});
+    expect(component.buildRequest()).toMatchObject({wodType: 'EMOM', structure: 'INTERVALS', scoreType: 'REPS', emomRounds: 5,
+      emomInterval: undefined, workSeconds: 180, restSeconds: 60});
   });
 
   it('should fold equipment, technique and the other measures until asked', () => {
@@ -176,6 +178,10 @@ describe('WodQuickFormComponent', () => {
 
     component.toggleExpanded(0);
     expect(component.extrasOf(0)).toEqual(['LOAD', 'HEIGHT']);
+    // Buy-in / buy-out only on Rounds (the default For Time sub-category) and AMRAP
+    expect(fixture.nativeElement.querySelector('.segment-select')).toBeTruthy();
+    component.setStructure('SINGLE');
+    fixture.detectChanges();
     expect(fixture.nativeElement.querySelector('.segment-select')).toBeNull();
   });
 
@@ -187,12 +193,12 @@ describe('WodQuickFormComponent', () => {
     expect(submitted).not.toHaveBeenCalled();
 
     const saved = {
-      id: 30, title: 'Back Squat 5x5', wodType: 'STRENGTH', scoreType: 'WEIGHT', isPublic: false, competition: false,
+      id: 30, title: 'Back Squat 5x5', wodType: 'FOR_LOAD', structure: 'SETS', scoreType: 'WEIGHT', isPublic: false, competition: false,
       repScheme: '5x5', modalities: [], createdAt: '', updatedAt: '', notesFr: 'Tempo 3-1-1',
       movements: [{id: 1, orderIndex: 1, movement: {id: 3, name: 'Back Squat'}, repsScheme: '5', sets: 5, weight: 100, weightUnit: 'KG'}]
     } as unknown as WodResponse;
     init({initial: saved});
-    expect(component.form.getRawValue()).toMatchObject({format: 'STRENGTH', sets: '5x5', title: 'Back Squat 5x5'});
+    expect(component.form.getRawValue()).toMatchObject({category: 'FOR_LOAD', structure: 'SETS', sets: '5x5', title: 'Back Squat 5x5'});
     expect(component.form.controls.rows.at(0).getRawValue()).toMatchObject({movementId: 3, weight: 100, reps: ''});
   });
 
@@ -207,9 +213,38 @@ describe('WodQuickFormComponent', () => {
       ]
     } as unknown as WodResponse;
     init({initial: saved});
-    expect(component.form.getRawValue()).toMatchObject({format: 'ROUNDS', rounds: 20, vestWeight: 20});
+    expect(component.form.getRawValue()).toMatchObject({category: 'FOR_TIME', structure: 'ROUNDS', rounds: 20, vestWeight: 20});
     expect(component.form.controls.rows.at(0).getRawValue()).toMatchObject({measure: 'DISTANCE', segment: 'BUY_IN'});
     expect(component.measureOfRow(1)).toBe('MAX');
     expect(component.buildRequest().movements[1].repsScheme).toBe('max');
+  });
+
+  it('should group the lines of a complex and offer the sub-categories of the category', () => {
+    init();
+    component.setCategory('FOR_LOAD');
+    fixture.detectChanges();
+    const chips = [...fixture.nativeElement.querySelectorAll('[id^="structure-"]')].map((b: Element) => b.id);
+    expect(chips).toEqual(['structure-SETS', 'structure-SCHEME', 'structure-MAX', 'structure-COMPLEX']);
+
+    component.setStructure('COMPLEX');
+    component.setSets('5x1');
+    component.onMovement(0, 3);
+    component.addRow();
+    component.onMovement(1, 1);
+    const request = component.buildRequest();
+    expect(request).toMatchObject({wodType: 'FOR_LOAD', structure: 'COMPLEX', scoreType: 'WEIGHT', repScheme: '5x1'});
+    expect(request.movements.map(m => m.complexGroup)).toEqual([1, 1]);
+    expect(request.movements[0]).toMatchObject({sets: 5, repsScheme: '1'});
+  });
+
+  it('should keep Fran a For Time scheme and read a saved pyramid as a Ladder', () => {
+    const pyramid = {
+      id: 40, title: 'Pyramid', wodType: 'FOR_TIME', scoreType: 'TIME', isPublic: false, competition: false,
+      repScheme: '1-2-3-2-1', modalities: [], createdAt: '', updatedAt: '',
+      movements: [{id: 1, orderIndex: 1, movement: {id: 7, name: 'Burpee'}, repsScheme: '1-2-3-2-1'}]
+    } as unknown as WodResponse;
+    init({initial: pyramid});
+    expect(component.form.getRawValue()).toMatchObject({category: 'FOR_TIME', structure: 'LADDER', ladder: '1-2-3-2-1'});
+    expect(component.buildRequest()).toMatchObject({wodType: 'FOR_TIME', structure: 'LADDER', repScheme: '1-2-3-2-1'});
   });
 });

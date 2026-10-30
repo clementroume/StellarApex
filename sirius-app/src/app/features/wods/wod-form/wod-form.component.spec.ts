@@ -96,6 +96,7 @@ describe('WodFormComponent', () => {
     } as any;
     mockWodService.getReferenceData.mockReturnValue(of({
       wodTypes: ['AMRAP', 'EMOM', 'FOR_TIME'],
+      structures: {},
       categories: ['GIRLS', 'HERO'],
       scoreTypes: ['TIME', 'REPS'],
       unitGroups: {MASS: ['KG', 'LBS'], DISTANCE: ['METERS'], TIME: ['SECONDS']}

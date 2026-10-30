@@ -41,7 +41,7 @@ class WodCapabilityServiceTest {
   private static WodResponse gymWod(Long gymId) {
     return new WodResponse(
         10L, "Fran", null, null, null, 50L, gymId, false, false, null, true,
-        null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+        null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
         Set.of(), List.of(), null, null, null);
   }
 
@@ -122,7 +122,7 @@ class WodCapabilityServiceTest {
     WodResponse competition =
         new WodResponse(
             10L, "26.1", null, null, null, 50L, 101L, false, true, 7L, true, null, null, null, null, null,
-            null, null, null, null, null, null, null, null, null, null, null, null, null, null, Set.of(),
+            null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, Set.of(),
             List.of(), null, null, null);
 
     assertTrue(

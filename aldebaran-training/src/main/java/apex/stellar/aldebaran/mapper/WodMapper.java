@@ -57,6 +57,7 @@ public interface WodMapper {
    * @return A WodSummaryResponse DTO with mapped fields for lightweight WOD representation.
    */
   @Mapping(target = "isPublic", source = "public")
+  @Mapping(target = "movementNames", ignore = true) // Filled by the service
   WodSummaryResponse toSummary(WodSummary projection);
 
   /**
@@ -136,6 +137,9 @@ public interface WodMapper {
       nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.SET_TO_NULL)
   @Mapping(
       target = "vestWeightUnit",
+      nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.SET_TO_NULL)
+  @Mapping(
+      target = "structure",
       nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.SET_TO_NULL)
   void updateEntity(WodRequest request, @MappingTarget Wod entity);
 

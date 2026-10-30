@@ -22,6 +22,9 @@ export interface WodSummaryResponse {
   // Gym competition WOD: its staff logs and verifies the scores
   competition: boolean;
   createdAt: string;
+  // Sub-category of the format, and movement names in order (catalogue preview)
+  structure?: string | null;
+  movementNames?: string[];
 }
 
 /** Values available to filter the WOD list, computed by Aldebaran with the list's security. */
@@ -32,6 +35,11 @@ export interface WodFacets {
   // Gyms owning readable WODs and authors of readable personal WODs (admin selectors)
   gymIds: number[];
   authorIds: number[];
+  // Number of WODs per category (NONE = without category) and in all, for the search and scope
+  categoryCounts?: Record<string, number>;
+  total?: number;
+  // Sub-categories present for the format asked
+  structures?: string[];
 }
 
 /** Rights of the current user on a WOD, computed by Aldebaran (WodSecurity). */
@@ -82,6 +90,8 @@ export interface WodRequest {
   vestWeight?: number | null;
   vestWeightFemale?: number | null;
   vestWeightUnit?: string | null;
+  // --- Sub-category of the format (For Time: ROUNDS, SCHEME, CHIPPER...) ---
+  structure?: string | null;
   movements: WodMovementRequest[];
 }
 
@@ -128,6 +138,8 @@ export interface WodResponse {
   vestWeight?: number | null;
   vestWeightFemale?: number | null;
   vestWeightUnit?: string | null;
+  // --- Sub-category of the format (For Time: ROUNDS, SCHEME, CHIPPER...) ---
+  structure?: string | null;
   modalities: string[];
   movements: WodMovementResponse[];
   // --- Rights ---
@@ -176,6 +188,8 @@ export interface WodMovementRequest {
   sets?: number | null;
   // --- Part of the WOD: before the rounds, the rounds, after them (null = MAIN) ---
   segment?: WodSegment | null;
+  // --- Group of a weightlifting complex (lines done as one set), or null ---
+  complexGroup?: number | null;
 }
 
 export interface WodMovementResponse {
@@ -211,11 +225,15 @@ export interface WodMovementResponse {
   sets?: number | null;
   // --- Part of the WOD: before the rounds, the rounds, after them (null = MAIN) ---
   segment?: WodSegment | null;
+  // --- Group of a weightlifting complex (lines done as one set), or null ---
+  complexGroup?: number | null;
 }
 
 export interface WodReferenceData {
   // --- Wod Formats and Categories ---
   wodTypes: string[];
+  // Sub-categories of each format
+  structures: Record<string, string[]>;
   categories: string[];
   // --- Score Types ---
   scoreTypes: string[];

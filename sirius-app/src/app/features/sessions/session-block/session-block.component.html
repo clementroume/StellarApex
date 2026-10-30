@@ -63,6 +63,13 @@
       }
       @if (wod()) {
         <app-score-history class="block"/>
+        <button type="button" class="session-leaderboard-toggle self-start text-sm text-primary hover:underline"
+                [attr.aria-expanded]="showLeaderboard()" (click)="showLeaderboard.set(!showLeaderboard())">
+          {{ 'SESSION.SESSION_LEADERBOARD' | translate }} {{ showLeaderboard() ? '▴' : '▾' }}
+        </button>
+        @if (showLeaderboard()) {
+          <app-score-leaderboard class="block"/>
+        }
       }
     </section>
 

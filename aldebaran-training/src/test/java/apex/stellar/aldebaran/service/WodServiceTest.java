@@ -121,12 +121,20 @@ class WodServiceTest {
     when(securityService.getCurrentUserMemberGymIds()).thenReturn(Set.of(101L));
     when(securityService.isCurrentUserAdmin()).thenReturn(false);
     when(wodRepository.findSecure(
-            null, null, null, null, "ALL", null, null, 5L, Set.of(101L), false, pageable))
+            null, null, null, null, "ALL", null, null, 5L, Set.of(101L), false, null, pageable))
         .thenReturn(slice);
+    when(wodMapper.toSummary(any()))
+        .thenReturn(
+            new WodSummaryResponse(
+                1L, "Fran", WodType.FOR_TIME, null, null, null, null, null, null, null, null, true,
+                false, null, null));
+    when(wodRepository.findMovementNames(List.of(1L)))
+        .thenReturn(List.<Object[]>of(new Object[] {1L, "Thruster"}, new Object[] {1L, "Pull-up"}));
 
     // When
     Slice<WodSummaryResponse> results =
-        wodService.getWods(null, null, null, null, null, null, null, pageable);
+        wodService.getWods(null, null, null, null, null, null, null, null, pageable);
+    assertEquals(List.of("Thruster", "Pull-up"), results.getContent().getFirst().movementNames());
 
     // Then
     assertNotNull(results);
@@ -142,11 +150,11 @@ class WodServiceTest {
     when(securityService.getCurrentUserMemberGymIds()).thenReturn(Set.of(101L, 202L));
     when(securityService.isCurrentUserAdmin()).thenReturn(false);
     when(wodRepository.findSecure(
-            any(), any(), any(), any(), any(), any(), any(), any(), any(), anyBoolean(), any()))
+            any(), any(), any(), any(), any(), any(), any(), any(), any(), anyBoolean(), any(), any()))
         .thenReturn(new SliceImpl<>(List.of()));
 
     // When
-    wodService.getWods(" FrAn ", WodType.AMRAP, null, 1L, WodScope.GYM, 202L, 9L, pageable);
+    wodService.getWods(" FrAn ", WodType.AMRAP, null, null, 1L, WodScope.GYM, 202L, 9L, pageable);
 
     // Then: search is trimmed and lower-cased into a LIKE pattern
     verify(wodRepository)
@@ -161,6 +169,7 @@ class WodServiceTest {
             5L,
             Set.of(101L, 202L),
             false,
+            null,
             pageable);
   }
 
@@ -172,7 +181,7 @@ class WodServiceTest {
     when(securityService.isCurrentUserAdmin()).thenReturn(true);
     when(wodRepository.findSecureWodTypes(
             "%fran%", null, null, null, "GYM", 101L, null, 5L, Set.of(101L), true))
-        .thenReturn(List.of(WodType.STRENGTH, WodType.AMRAP));
+        .thenReturn(List.of(WodType.FOR_LOAD, WodType.AMRAP));
     when(wodRepository.findSecureCategories(
             "%fran%", null, null, null, "GYM", 101L, null, 5L, Set.of(101L), true))
         .thenReturn(List.of(WodCategory.OPEN, WodCategory.GIRLS));
@@ -183,10 +192,10 @@ class WodServiceTest {
             "%fran%", null, null, null, "ALL", null, null, 5L, Set.of(101L), true))
         .thenReturn(List.of(9L, 4L));
 
-    WodFacetsResponse facets = wodService.getFacets("Fran", WodScope.GYM, 101L, null);
+    WodFacetsResponse facets = wodService.getFacets("Fran", WodScope.GYM, 101L, null, null);
 
     // Types are returned in enum order, ids sorted
-    assertEquals(List.of(WodType.AMRAP, WodType.STRENGTH), facets.wodTypes());
+    assertEquals(List.of(WodType.AMRAP, WodType.FOR_LOAD), facets.wodTypes());
     assertEquals(List.of(WodCategory.GIRLS, WodCategory.OPEN), facets.categories());
     assertEquals(List.of(1L, 3L), facets.gymIds());
     assertEquals(List.of(4L, 9L), facets.authorIds());
@@ -642,7 +651,7 @@ class WodServiceTest {
     WodMovementResponse sourceMovement =
         new WodMovementResponse(
             3L, movementDto, 1, "21-15-9", 43.0, 29.0, null, null, null, null, null, null, null,
-            null, null, null, Set.of(), Set.of(), null, null, null, null, null, null);
+            null, null, null, Set.of(), Set.of(), null, null, null, null, null, null, null);
     WodResponse sourceDto = mock(WodResponse.class);
     when(sourceDto.title()).thenReturn("26.1");
     when(sourceDto.movements()).thenReturn(List.of(sourceMovement));

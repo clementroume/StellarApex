@@ -148,6 +148,33 @@ class WodCsvCodecTest {
   }
 
   @Test
+  @DisplayName("Former formats read as a category and a sub-category (formats v3)")
+  void shouldReadFormerFormats() throws Exception {
+    String wods =
+        """
+        title,wod_type,category,score_type,rep_scheme,ladder_start
+        Angie,CHIPPER,GIRLS,TIME,,
+        Fran,LADDER,GIRLS,TIME,21-15-9,
+        Leehan,LADDER,HERO,TIME,,6
+        Back Squat,STRENGTH,,WEIGHT,5x5,
+        Mobility,SKILL,,NONE,,
+        Helen,FOR_TIME,GIRLS,TIME,,
+        """;
+    List<Wod> read =
+        WodCsvCodec.read(
+            new StringReader(wods), new StringReader("wod_title,order_index,movement_name\n"), CATALOG);
+
+    assertEquals(Wod.WodType.FOR_TIME, read.get(0).getWodType());
+    assertEquals(Wod.WodStructure.CHIPPER, read.get(0).getStructure());
+    assertEquals(Wod.WodStructure.SCHEME, read.get(1).getStructure());
+    assertEquals(Wod.WodStructure.LADDER, read.get(2).getStructure());
+    assertEquals(Wod.WodType.FOR_LOAD, read.get(3).getWodType());
+    assertEquals(Wod.WodType.FOR_QUALITY, read.get(4).getWodType());
+    assertEquals(Wod.WodStructure.PRACTICE, read.get(4).getStructure());
+    assertNull(read.get(5).getStructure());
+  }
+
+  @Test
   @DisplayName("Write then read gives back the same values")
   void shouldRoundTrip() throws Exception {
     Wod wod =
@@ -174,6 +201,7 @@ class WodCsvCodecTest {
             .vestWeight(20.0)
             .vestWeightFemale(14.0)
             .vestWeightUnit(Unit.LBS)
+            .structure(Wod.WodStructure.ROUNDS)
             .isPublic(true)
             .build();
     wod.getMovements()
@@ -185,6 +213,7 @@ class WodCsvCodecTest {
                 .repsScheme("42")
                 .sets(5)
                 .segment(WodMovement.Segment.BUY_OUT)
+                .complexGroup(2)
                 .weight(null)
                 .weightUnit(null)
                 .distanceUnit(null)
@@ -255,6 +284,7 @@ class WodCsvCodecTest {
     assertEquals(expected.getVestWeight(), actual.getVestWeight());
     assertEquals(expected.getVestWeightFemale(), actual.getVestWeightFemale());
     assertEquals(expected.getVestWeightUnit(), actual.getVestWeightUnit());
+    assertEquals(expected.getStructure(), actual.getStructure());
 
     List<WodMovement> sorted =
         expected.getMovements().stream()
@@ -287,6 +317,7 @@ class WodCsvCodecTest {
       assertEquals(e.getTechniques(), a.getTechniques());
       assertEquals(e.getSets(), a.getSets());
       assertEquals(e.getSegment(), a.getSegment());
+      assertEquals(e.getComplexGroup(), a.getComplexGroup());
     }
   }
 }

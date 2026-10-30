@@ -66,8 +66,12 @@ export class ScoreLeaderboardComponent {
   readonly myId = computed(() => this.accessService.userId());
   /** A gym WOD is only ranked within its gym; a public WOD can be filtered on the user's gyms. */
   /** The user's boxes (physical gyms) and programs (virtual), offered as filters on a public WOD. */
-  readonly boxes = computed(() => this.store.wod()?.gymId != null ? [] : this.accessService.memberships().filter(m => !m.gymProgramming));
-  readonly progs = computed(() => this.store.wod()?.gymId != null ? [] : this.accessService.memberships().filter(m => m.gymProgramming));
+  readonly boxes = computed(() => this.store.wod()?.gymId != null || this.inSession() ? []
+    : this.accessService.memberships().filter(m => !m.gymProgramming));
+  readonly progs = computed(() => this.store.wod()?.gymId != null || this.inSession() ? []
+    : this.accessService.memberships().filter(m => m.gymProgramming));
+  /** Shown in a session block: the session leaderboard (its participants' scores only). */
+  readonly inSession = computed(() => this.store.sessionId() != null);
   /** Gyms kept by the checked filters; none = worldwide. */
   readonly gymIds = computed(() => [
     ...(this.myBoxes() ? this.boxes() : []),
@@ -85,6 +89,7 @@ export class ScoreLeaderboardComponent {
       this.gymIds();
       this.verifiedOnly();
       this.division();
+      this.store.sessionId();
       if (wod) untracked(() => this.load(true));
     });
     // A logged, edited or deleted score may change the ranking
@@ -98,7 +103,7 @@ export class ScoreLeaderboardComponent {
     this.page = reset ? 0 : this.page + 1;
     this.isLoading.set(true);
     this.scoreService.getLeaderboard(wod.id, this.scaling(), this.page, PAGE_SIZE, this.gymIds(), this.verifiedOnly(),
-      this.division()).subscribe({
+      this.division(), this.store.sessionId()).subscribe({
       next: (slice) => {
         this.rows.set(reset ? slice.content : [...this.rows(), ...slice.content]);
         this.hasMore.set(!slice.last);

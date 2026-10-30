@@ -89,19 +89,41 @@ public interface ScoreRepository extends JpaRepository<Score, Long> {
    * @param gymIds The gyms to keep (never empty, so that the JPQL {@code IN} stays valid).
    * @param verifiedOnly Whether to keep verified scores only.
    * @param division The division to keep, or null for every score (unclassified ones included).
+   * @param sessionId The session whose journals the scores belong to, or {@link #NO_SESSION}.
    * @return The scores of the WOD kept by the filters.
    */
   @Query(
       "SELECT s FROM Score s WHERE s.wod.id = :wodId"
           + " AND (:filterGyms = false OR s.gymId IN :gymIds)"
           + " AND (:verifiedOnly = false OR s.verifiedAt IS NOT NULL)"
-          + " AND (:division IS NULL OR s.division = :division)")
+          + " AND (:division IS NULL OR s.division = :division)"
+          + " AND (:sessionId = -1 OR s.sessionLogId IN"
+          + " (SELECT l.id FROM SessionLog l WHERE l.session.id = :sessionId))")
   List<Score> findFilteredByWod(
       Long wodId,
       boolean filterGyms,
       Collection<Long> gymIds,
       boolean verifiedOnly,
-      Division division);
+      Division division,
+      long sessionId);
+
+  /** Session filter value meaning "every score" (PostgreSQL cannot type a null parameter here). */
+  long NO_SESSION = -1L;
+
+  /**
+   * Retrieves a user's scores on a WOD logged in their journal of a session.
+   *
+   * @param userId The athlete.
+   * @param wodId The WOD.
+   * @param sessionId The session.
+   * @param pageable Pagination and sorting.
+   * @return The scores.
+   */
+  @Query(
+      "SELECT s FROM Score s WHERE s.userId = :userId AND s.wod.id = :wodId AND s.sessionLogId IN"
+          + " (SELECT l.id FROM SessionLog l WHERE l.session.id = :sessionId)")
+  Slice<Score> findByUserIdAndWodIdInSession(
+      Long userId, Long wodId, Long sessionId, Pageable pageable);
 
   /**
    * Gives a division to the athlete's scores logged before they chose one.

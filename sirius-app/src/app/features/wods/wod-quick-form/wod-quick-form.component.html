@@ -1,54 +1,54 @@
 <form [formGroup]="form" (ngSubmit)="onSubmit()" class="flex flex-col gap-4" novalidate>
-  <!-- Format: chips, the usual score type and structure fields follow -->
-  <div class="flex flex-wrap gap-2" role="group" [attr.aria-label]="'WOD.FIELDS.WOD_TYPE' | translate">
-    @for (f of formats; track f) {
-      <button type="button" hlmBtn variant="outline" size="sm" [id]="'format-' + f"
-              class="rounded-full aria-pressed:bg-primary aria-pressed:text-primary-foreground"
-              [attr.aria-pressed]="format() === f" (click)="setFormat(f)">
-        {{ 'WOD.QUICK.FORMATS.' + f | translate }}
-      </button>
+  <!-- Category, then its sub-category: the usual score type and structure fields follow -->
+  <div class="flex flex-col gap-2">
+    <div class="flex flex-wrap gap-2" role="group" [attr.aria-label]="'WOD.FIELDS.WOD_TYPE' | translate">
+      @for (c of categories; track c) {
+        <button type="button" hlmBtn variant="outline" size="sm" [id]="'category-' + c"
+                class="rounded-full aria-pressed:bg-primary aria-pressed:text-primary-foreground"
+                [attr.aria-pressed]="category() === c" (click)="setCategory(c)">
+          {{ 'WOD.WOD_TYPES.' + c | translate }}
+        </button>
+      }
+    </div>
+    @if (structures().length > 1) {
+      <div class="flex flex-wrap gap-1.5" role="group" [attr.aria-label]="'WOD.FIELDS.STRUCTURE' | translate">
+        @for (st of structures(); track st) {
+          <button type="button" [id]="'structure-' + st"
+                  class="rounded-full border px-3 py-1 text-sm hover:bg-muted aria-pressed:border-primary aria-pressed:bg-primary/15 aria-pressed:text-primary aria-pressed:font-semibold"
+                  [attr.aria-pressed]="structure() === st" (click)="setStructure(st)">
+            {{ 'WOD.STRUCTURES.' + category() + '.' + st | translate }}
+          </button>
+        }
+      </div>
     }
   </div>
 
-  <!-- Structure of the format -->
+  <!-- Structure of the sub-category -->
   <div class="flex flex-wrap items-end gap-3">
     @switch (format()) {
-      @case ('ROUNDS') {
+      @case ('FOR_TIME:ROUNDS') {
         <label class="flex flex-col gap-1.5 w-24">
           <span class="text-sm font-medium">{{ 'WOD.QUICK.ROUNDS' | translate }}</span>
           <input type="number" min="1" inputmode="numeric" id="quick-rounds" formControlName="rounds" hlmInput class="h-11 md:h-10"/>
         </label>
         <label class="flex flex-col gap-1.5 w-36">
           <span class="text-sm font-medium">{{ 'WOD.QUICK.REST_BETWEEN' | translate }}</span>
-          <input type="number" min="0" inputmode="numeric" id="quick-rest" formControlName="restSeconds" hlmInput class="h-11 md:h-10"
-                 placeholder="0"/>
+          <input type="number" min="0" inputmode="numeric" id="quick-rest" formControlName="restSeconds" hlmInput class="h-11 md:h-10"/>
         </label>
       }
-      @case ('LADDER') {
-        <div class="flex rounded-md border p-0.5" role="group" [attr.aria-label]="'WOD.QUICK.LADDER_DIRECTION' | translate">
-          <button type="button" id="ladder-down" class="rounded px-3 h-10 text-sm aria-pressed:bg-primary aria-pressed:text-primary-foreground"
-                  [attr.aria-pressed]="!value().ladderUp" (click)="setLadderUp(false)">{{ 'WOD.QUICK.LADDER_DOWN' | translate }}</button>
-          <button type="button" id="ladder-up" class="rounded px-3 h-10 text-sm aria-pressed:bg-primary aria-pressed:text-primary-foreground"
-                  [attr.aria-pressed]="value().ladderUp" (click)="setLadderUp(true)">{{ 'WOD.QUICK.LADDER_UP' | translate }}</button>
-        </div>
-        @if (value().ladderUp) {
-          <label class="flex flex-col gap-1.5 w-24">
-            <span class="text-sm font-medium">{{ 'WOD.QUICK.LADDER_START' | translate }}</span>
-            <input type="number" min="1" inputmode="numeric" id="ladder-start" formControlName="ladderStart" hlmInput class="h-11 md:h-10"/>
-          </label>
-          <label class="flex flex-col gap-1.5 w-24">
-            <span class="text-sm font-medium">{{ 'WOD.QUICK.LADDER_STEP' | translate }}</span>
-            <input type="number" min="1" inputmode="numeric" id="ladder-step" formControlName="ladderStep" hlmInput class="h-11 md:h-10"/>
-          </label>
-        } @else {
-          <label class="flex flex-col gap-1.5 flex-1 min-w-40">
-            <span class="text-sm font-medium">{{ 'WOD.QUICK.LADDER_VALUES' | translate }}</span>
-            <input type="text" id="ladder-values" formControlName="ladder" maxlength="50" hlmInput class="h-11 md:h-10"
-                   inputmode="numeric" placeholder="21-15-9"/>
-          </label>
-        }
+      @case ('AMRAP:MAX_REPS') {
+        <label class="flex flex-col gap-1.5 w-24">
+          <span class="text-sm font-medium">{{ 'WOD.QUICK.ROUNDS' | translate }}</span>
+          <input type="number" min="1" inputmode="numeric" id="quick-rounds" formControlName="rounds" hlmInput class="h-11 md:h-10"/>
+        </label>
       }
-      @case ('EMOM') {
+      @case ('EMOM:EVERY_MINUTE') {
+        <label class="flex flex-col gap-1.5 w-24">
+          <span class="text-sm font-medium">{{ 'WOD.QUICK.MINUTES' | translate }}</span>
+          <input type="number" min="1" inputmode="numeric" id="quick-rounds" formControlName="rounds" hlmInput class="h-11 md:h-10"/>
+        </label>
+      }
+      @case ('EMOM:EVERY_X') {
         <label class="flex flex-col gap-1.5 w-28">
           <span class="text-sm font-medium">{{ 'WOD.QUICK.EVERY' | translate }}</span>
           <input type="number" min="0.25" step="0.5" inputmode="decimal" id="emom-every" formControlName="everyMinutes" hlmInput class="h-11 md:h-10"/>
@@ -57,21 +57,8 @@
           <span class="text-sm font-medium">{{ 'WOD.QUICK.ROUNDS' | translate }}</span>
           <input type="number" min="1" inputmode="numeric" id="quick-rounds" formControlName="rounds" hlmInput class="h-11 md:h-10"/>
         </label>
-        @if (showWorkRest()) {
-          <label class="flex flex-col gap-1.5 w-24">
-            <span class="text-sm font-medium">{{ 'WOD.QUICK.WORK' | translate }}</span>
-            <input type="number" min="1" inputmode="numeric" id="quick-work" formControlName="workSeconds" hlmInput class="h-11 md:h-10"/>
-          </label>
-          <label class="flex flex-col gap-1.5 w-24">
-            <span class="text-sm font-medium">{{ 'WOD.QUICK.REST' | translate }}</span>
-            <input type="number" min="0" inputmode="numeric" id="quick-rest" formControlName="restSeconds" hlmInput class="h-11 md:h-10"/>
-          </label>
-        }
-        <button type="button" id="toggle-work-rest" class="h-10 text-sm text-primary hover:underline" (click)="toggleWorkRest()">
-          {{ (showWorkRest() ? 'WOD.QUICK.NO_WORK_REST' : 'WOD.QUICK.WORK_REST') | translate }}
-        </button>
       }
-      @case ('TABATA') {
+      @case ('EMOM:INTERVALS') {
         <label class="flex flex-col gap-1.5 w-24">
           <span class="text-sm font-medium">{{ 'WOD.QUICK.ROUNDS' | translate }}</span>
           <input type="number" min="1" inputmode="numeric" id="quick-rounds" formControlName="rounds" hlmInput class="h-11 md:h-10"/>
@@ -85,18 +72,50 @@
           <input type="number" min="0" inputmode="numeric" id="quick-rest" formControlName="restSeconds" hlmInput class="h-11 md:h-10"/>
         </label>
       }
-      @case ('DEATH_BY') {
-        <label class="flex flex-col gap-1.5 w-32">
-          <span class="text-sm font-medium">{{ 'WOD.QUICK.DEATH_START' | translate }}</span>
-          <input type="number" min="1" inputmode="numeric" id="ladder-start" formControlName="ladderStart" hlmInput class="h-11 md:h-10"/>
+      @case ('TABATA:CUSTOM') {
+        <label class="flex flex-col gap-1.5 w-24">
+          <span class="text-sm font-medium">{{ 'WOD.QUICK.ROUNDS' | translate }}</span>
+          <input type="number" min="1" inputmode="numeric" id="quick-rounds" formControlName="rounds" hlmInput class="h-11 md:h-10"/>
         </label>
-        <label class="flex flex-col gap-1.5 w-32">
-          <span class="text-sm font-medium">{{ 'WOD.QUICK.DEATH_STEP' | translate }}</span>
-          <input type="number" min="1" inputmode="numeric" id="ladder-step" formControlName="ladderStep" hlmInput class="h-11 md:h-10"/>
+        <label class="flex flex-col gap-1.5 w-24">
+          <span class="text-sm font-medium">{{ 'WOD.QUICK.WORK' | translate }}</span>
+          <input type="number" min="1" inputmode="numeric" id="quick-work" formControlName="workSeconds" hlmInput class="h-11 md:h-10"/>
+        </label>
+        <label class="flex flex-col gap-1.5 w-24">
+          <span class="text-sm font-medium">{{ 'WOD.QUICK.REST' | translate }}</span>
+          <input type="number" min="0" inputmode="numeric" id="quick-rest" formControlName="restSeconds" hlmInput class="h-11 md:h-10"/>
         </label>
       }
+      @case ('TABATA:CLASSIC') {
+        <p class="text-sm text-muted-foreground">{{ 'WOD.QUICK.TABATA_CLASSIC' | translate }}</p>
+      }
+      @case ('FOR_TIME:LADDER') {
+        <div class="flex rounded-md border p-0.5" role="group" [attr.aria-label]="'WOD.QUICK.LADDER_DIRECTION' | translate">
+          <button type="button" id="ladder-values-mode" class="rounded px-3 h-10 text-sm aria-pressed:bg-primary aria-pressed:text-primary-foreground"
+                  [attr.aria-pressed]="!value().ladderUp" (click)="setLadderUp(false)">{{ 'WOD.QUICK.LADDER_PYRAMID' | translate }}</button>
+          <button type="button" id="ladder-up" class="rounded px-3 h-10 text-sm aria-pressed:bg-primary aria-pressed:text-primary-foreground"
+                  [attr.aria-pressed]="value().ladderUp" (click)="setLadderUp(true)">{{ 'WOD.QUICK.LADDER_UP' | translate }}</button>
+        </div>
+      }
     }
-    @if (format() === 'STRENGTH' || format() === 'SKILL') {
+    @if (usesValues()) {
+      <label class="flex flex-col gap-1.5 flex-1 min-w-40">
+        <span class="text-sm font-medium">{{ 'WOD.QUICK.LADDER_VALUES' | translate }}</span>
+        <input type="text" id="ladder-values" formControlName="ladder" maxlength="50" hlmInput class="h-11 md:h-10"
+               inputmode="numeric" [placeholder]="structure() === 'LADDER' ? '1-2-3-4-5-4-3-2-1' : '21-15-9'"/>
+      </label>
+    }
+    @if (usesStartStep()) {
+      <label class="flex flex-col gap-1.5 w-32">
+          <span class="text-sm font-medium">{{ (structure() === 'DEATH_BY' ? 'WOD.QUICK.DEATH_START' : 'WOD.QUICK.LADDER_START') | translate }}</span>
+          <input type="number" min="1" inputmode="numeric" id="ladder-start" formControlName="ladderStart" hlmInput class="h-11 md:h-10"/>
+        </label>
+      <label class="flex flex-col gap-1.5 w-32">
+          <span class="text-sm font-medium">{{ (structure() === 'DEATH_BY' ? 'WOD.QUICK.DEATH_STEP' : 'WOD.QUICK.LADDER_STEP') | translate }}</span>
+          <input type="number" min="1" inputmode="numeric" id="ladder-step" formControlName="ladderStep" hlmInput class="h-11 md:h-10"/>
+        </label>
+    }
+    @if (withSets()) {
       <label class="flex flex-col gap-1.5 flex-1 min-w-40">
         <span class="text-sm font-medium">{{ 'WOD.QUICK.SETS' | translate }}</span>
         <input type="text" id="quick-sets" formControlName="sets" maxlength="50" hlmInput class="h-11 md:h-10"
@@ -106,15 +125,15 @@
     @if (timed()) {
       <label class="flex flex-col gap-1.5 w-28">
         <span class="text-sm font-medium">
-          {{ (format() === 'AMRAP' || (format() === 'LADDER' && value().ladderUp) ? 'WOD.QUICK.DURATION' : 'WOD.QUICK.TIME_CAP') | translate }}
+          {{ (category() === 'AMRAP' ? 'WOD.QUICK.DURATION' : category() === 'FOR_LOAD' ? 'WOD.QUICK.WINDOW' : 'WOD.QUICK.TIME_CAP') | translate }}
         </span>
         <input type="number" min="0" step="0.5" inputmode="decimal" id="quick-minutes" formControlName="minutes" hlmInput class="h-11 md:h-10"/>
       </label>
     }
   </div>
-  @if (format() === 'LADDER' && !value().ladderUp) {
+  @if (usesValues()) {
     <div class="flex flex-wrap items-center gap-2 -mt-2 text-sm">
-      @for (hint of ladderHints; track hint) {
+      @for (hint of (structure() === 'LADDER' ? pyramidHints : ladderHints); track hint) {
         <button type="button" class="rounded-full border px-2.5 py-0.5 hover:bg-muted" (click)="setLadder(hint)">{{ hint }}</button>
       }
     </div>

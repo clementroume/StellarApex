@@ -177,7 +177,7 @@ export class SessionFormComponent {
   });
   /** Format of a new WOD by block: strength work for a Skill block, accessory work, else For Time. */
   protected readonly defaultFormat = computed(() =>
-    ({SKILL: 'STRENGTH', ACCESSORY: 'ACCESSORY'} as Record<string, string>)[this.editingKind()] ?? 'FOR_TIME');
+    ({SKILL: 'FOR_LOAD', ACCESSORY: 'FOR_LOAD'} as Record<string, string>)[this.editingKind()] ?? 'FOR_TIME');
   /** Quick WOD editor input: the block's WOD as last written, or its saved WOD. */
   protected readonly wodToEdit = computed<WodResponse | null>(() => {
     const index = this.editingWod();

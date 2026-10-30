@@ -45,13 +45,49 @@ public record WodMovementRequest(
     @Min(value = 1, message = "{validation.wod.sets.min}") Integer sets,
 
     // --- Part of the WOD (buy-in, rounds, buy-out); null = MAIN ---
-    Segment segment) {
+    Segment segment,
+
+    // --- Group of a weightlifting complex, or null ---
+    @Min(value = 1, message = "{validation.wod.rounds.min}") Integer complexGroup) {
 
   /** Defaults the segment to the rounds. */
   public WodMovementRequest {
     if (segment == null) {
       segment = Segment.MAIN;
     }
+  }
+
+  /** Line outside any complex. */
+  @SuppressWarnings("java:S107") // Mirrors the record components
+  public WodMovementRequest(
+      Long movementId,
+      Integer orderIndex,
+      String repsScheme,
+      Double weight,
+      Double weightFemale,
+      Unit weightUnit,
+      Integer durationSeconds,
+      Unit durationDisplayUnit,
+      Double distance,
+      Unit distanceUnit,
+      Integer calories,
+      Integer caloriesFemale,
+      Double height,
+      Double heightFemale,
+      Unit heightUnit,
+      Set<String> equipment,
+      Set<String> techniques,
+      String notesEn,
+      String notesFr,
+      String scalingOptionsEn,
+      String scalingOptionsFr,
+      Integer sets,
+      Segment segment) {
+    this(
+        movementId, orderIndex, repsScheme, weight, weightFemale, weightUnit, durationSeconds,
+        durationDisplayUnit, distance, distanceUnit, calories, caloriesFemale, height, heightFemale,
+        heightUnit, equipment, techniques, notesEn, notesFr, scalingOptionsEn, scalingOptionsFr,
+        sets, segment, null);
   }
 
   /** Movement of the rounds, with optional sets. */

@@ -74,7 +74,7 @@ describe('WodWhiteboardComponent', () => {
   });
 
   it('should write the prescribed sets before the reps', () => {
-    const wod = buildWod({wodType: 'STRENGTH', repScheme: '5x5'});
+    const wod = buildWod({wodType: 'FOR_LOAD', structure: 'SETS', repScheme: '5x5'});
     init(wod);
 
     expect(component.quantity({...wod.movements[0], repsScheme: '5', sets: 5}, wod)).toBe('5 x 5');
@@ -181,8 +181,8 @@ describe('WodWhiteboardComponent', () => {
     init(buildWod({wodType: 'TABATA', emomRounds: 8, workSeconds: 20, restSeconds: 10, timeCapSeconds: undefined}));
     expect(component.formatLine(component.wod())).toBe('WOD.WOD_TYPES.TABATA 8 x 20s / 10s');
     expect(component.restLabel(component.wod())).toBe('');
-    expect(component.structureLine(buildWod({wodType: 'LADDER', ladderStart: 3, ladderStep: 3}))).toBe('3-6-9-12…');
-    expect(component.structureLine(buildWod({wodType: 'DEATH_BY', ladderStart: 1, ladderStep: 1})))
+    expect(component.structureLine(buildWod({wodType: 'FOR_TIME', structure: 'LADDER', ladderStart: 3, ladderStep: 3}))).toBe('3-6-9-12…');
+    expect(component.structureLine(buildWod({wodType: 'EMOM', structure: 'DEATH_BY', ladderStart: 1, ladderStep: 1})))
       .toBe('WOD.BOARD.DEATH_BY');
   });
 });
