@@ -419,7 +419,7 @@ class SessionControllerIT extends BaseIntegrationTest {
         .andExpect(jsonPath("$.content", hasSize(1)))
         .andExpect(jsonPath("$.content[0].scores", hasSize(2)));
 
-    // Locked: content frozen, visibility still editable
+    // Scored blocks frozen, deletion refused, visibility still editable
     mockMvc
         .perform(
             as(put("/aldebaran/sessions/" + id), OWNER, OWNER_MEMBERSHIPS)
@@ -435,7 +435,7 @@ class SessionControllerIT extends BaseIntegrationTest {
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.visibilityPolicy").value("PARTICIPANTS_ONLY"))
         .andExpect(jsonPath("$.contentVisibleFrom").value(nullValue()))
-        .andExpect(jsonPath("$.capabilities.locked").value(true));
+        .andExpect(jsonPath("$.capabilities.canDelete").value(false));
 
     // Borrowed Fran cannot be deleted while a block uses it (even by an admin)
     mockMvc
@@ -445,6 +445,153 @@ class SessionControllerIT extends BaseIntegrationTest {
                 .header("X-Auth-User-Role", "ADMIN")
                 .header("X-Internal-Secret", "test-internal-secret"))
         .andExpect(status().isConflict());
+  }
+
+  private static SessionBlockRequest keep(JsonNode block) {
+    JsonNode wod = block.get("wod");
+    return new SessionBlockRequest(
+        block.get("id").asLong(), Kind.valueOf(block.get("kind").asString()), null, null, null,
+        block.get("optional").asBoolean(), null, 10,
+        block.get("kind").asString().equals("WARM_UP") ? "Hip mobility" : null,
+        block.get("kind").asString().equals("WARM_UP") ? "Mobilité hanches" : null, false,
+        wod != null && !wod.isNull() ? wod.get("id").asLong() : null, null);
+  }
+
+  private SessionBlockRequest withKind(SessionBlockRequest b, Kind kind) {
+    return new SessionBlockRequest(
+        b.id(), kind, b.label(), b.themeEn(), b.themeFr(), b.optional(), b.stimulus(),
+        b.plannedMinutes(), b.textEn(), b.textFr(), b.competition(), b.wodId(), b.wod());
+  }
+
+  private SessionBlockRequest withWodId(SessionBlockRequest b, Long wodId) {
+    return new SessionBlockRequest(
+        b.id(), b.kind(), b.label(), b.themeEn(), b.themeFr(), b.optional(), b.stimulus(),
+        b.plannedMinutes(), b.textEn(), b.textFr(), b.competition(), wodId, null);
+  }
+
+  private void putBlocks(long id, List<SessionBlockRequest> blocks, int expectedStatus)
+      throws Exception {
+    mockMvc
+        .perform(
+            as(put("/aldebaran/sessions/" + id), OWNER, OWNER_MEMBERSHIPS)
+                .content(json(wodSession(BOX, null, null, blocks))))
+        .andExpect(status().is(expectedStatus));
+  }
+
+  @Test
+  @DisplayName("Per-block lock: scored block frozen, checked block undeletable but editable")
+  void perBlockLock() throws Exception {
+    SessionBlockRequest accessory =
+        new SessionBlockRequest(
+            null, Kind.ACCESSORY, null, null, null, true, null, 10, null, null, false, null,
+            squatWod());
+    JsonNode session =
+        create(
+            wodSession(
+                BOX, VisibilityPolicy.AFTER_PARTICIPANTS, null,
+                List.of(warmUp(), skill(), borrowed(fran.getId(), false), accessory)),
+            OWNER, OWNER_MEMBERSHIPS);
+    long id = session.get("id").asLong();
+    long accessoryWodId = session.at("/blocks/3/wod/id").asLong();
+    // Without journal every block is free
+    assertTrue(session.at("/blocks/3/capabilities/canDelete").asBoolean());
+    assertFalse(session.at("/blocks/3/capabilities/frozen").asBoolean());
+    assertTrue(session.at("/capabilities/canDelete").asBoolean());
+
+    // The athlete logs the session (4 blocks checked) and scores the accessory only
+    mockMvc
+        .perform(as(post("/aldebaran/sessions/" + id + "/logs"), ATHLETE, ATHLETE_MEMBERSHIPS))
+        .andExpect(status().isCreated());
+    ScoreRequest accessoryScore =
+        new ScoreRequest(
+            null, today, accessoryWodId, null, null, null, null, null, null, Unit.KG, null, null,
+            null, ScalingLevel.RX, false, null, null, null, null, null,
+            List.of(new ScoreSetRequest(5, 100.0, true)), false);
+    mockMvc
+        .perform(
+            as(post("/aldebaran/scores"), ATHLETE, ATHLETE_MEMBERSHIPS)
+                .content(json(accessoryScore)))
+        .andExpect(status().isCreated());
+    // A Fran done outside the session does not freeze the block borrowing it
+    ScoreRequest franElsewhere =
+        new ScoreRequest(
+            null, today.minusDays(3), fran.getId(), 4, 0, null, null, null, null, null, null, null,
+            null, ScalingLevel.RX, false, null, null, null, null, null, null, false);
+    mockMvc
+        .perform(
+            as(post("/aldebaran/scores"), ATHLETE, ATHLETE_MEMBERSHIPS)
+                .content(json(franElsewhere)))
+        .andExpect(status().isCreated());
+
+    JsonNode current = objectMapper.readTree(
+        mockMvc.perform(as(get("/aldebaran/sessions/" + id), OWNER, OWNER_MEMBERSHIPS))
+            .andReturn().getResponse().getContentAsString());
+    // Capabilities: frozen accessory, checked blocks undeletable but modifiable
+    assertTrue(current.at("/blocks/3/capabilities/frozen").asBoolean());
+    assertFalse(current.at("/blocks/3/capabilities/canModify").asBoolean());
+    assertFalse(current.at("/blocks/3/capabilities/canDelete").asBoolean());
+    for (int i = 0; i < 3; i++) {
+      assertFalse(current.at("/blocks/" + i + "/capabilities/frozen").asBoolean());
+      assertFalse(current.at("/blocks/" + i + "/capabilities/canDelete").asBoolean());
+    }
+    assertTrue(current.at("/blocks/2/capabilities/canModify").asBoolean());
+    assertTrue(current.at("/capabilities/canModify").asBoolean());
+    assertFalse(current.at("/capabilities/canDelete").asBoolean());
+
+    SessionBlockRequest warm = keep(current.at("/blocks/0"));
+    SessionBlockRequest skillBlock = keep(current.at("/blocks/1"));
+    SessionBlockRequest franBlock = keep(current.at("/blocks/2"));
+    SessionBlockRequest accBlock = keep(current.at("/blocks/3"));
+
+    // Frozen block: kind, WOD (written or borrowed) and removal refused
+    putBlocks(id, List.of(warm, skillBlock, franBlock, withKind(accBlock, Kind.FINISHER)), 409);
+    putBlocks(id, List.of(warm, skillBlock, franBlock, withWodId(accBlock, open.getId())), 409);
+    putBlocks(id, List.of(warm, skillBlock, franBlock,
+        new SessionBlockRequest(accBlock.id(), Kind.ACCESSORY, null, null, null, true, null, 10,
+            null, null, false, null, squatWod())), 409);
+    putBlocks(id, List.of(warm, skillBlock, franBlock), 409);
+    // Checked blocks cannot be removed
+    putBlocks(id, List.of(skillBlock, franBlock, accBlock), 409);
+    // Frame and deletion stay locked
+    mockMvc
+        .perform(
+            as(put("/aldebaran/sessions/" + id), OWNER, OWNER_MEMBERSHIPS)
+                .content(json(new SessionRequest(
+                    SessionType.WOD, Discipline.CROSSFIT, today.plusDays(1), "Tuesday", null, null,
+                    BOX, null, null, List.of(warm, skillBlock, franBlock, accBlock)))))
+        .andExpect(status().isConflict());
+    mockMvc
+        .perform(as(delete("/aldebaran/sessions/" + id), OWNER, OWNER_MEMBERSHIPS))
+        .andExpect(status().isConflict());
+
+    mockMvc
+        .perform(
+            as(put("/aldebaran/sessions/" + id), OWNER, OWNER_MEMBERSHIPS)
+                .content(json(new SessionRequest(
+                    SessionType.WOD, Discipline.WEIGHTLIFTING, today, "Tuesday", null, null,
+                    BOX, null, null, List.of(warm, skillBlock, franBlock, accBlock)))))
+        .andExpect(status().isConflict());
+
+    // Everything else stays editable: title, texts, checked block WOD and kind, add, reorder
+    SessionBlockRequest swapped = withWodId(franBlock, open.getId());
+    SessionBlockRequest extra =
+        new SessionBlockRequest(
+            null, Kind.FINISHER, null, null, null, true, null, 5, null, null, false,
+            fran.getId(), null);
+    mockMvc
+        .perform(
+            as(put("/aldebaran/sessions/" + id), OWNER, OWNER_MEMBERSHIPS)
+                .content(json(new SessionRequest(
+                    SessionType.WOD, Discipline.CROSSFIT, today, "New title", "New notes", null,
+                    BOX, null, null, List.of(accBlock, skillBlock, swapped, warm, extra)))))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.title").value("New title"))
+        .andExpect(jsonPath("$.blocks[0].kind").value("ACCESSORY"))
+        .andExpect(jsonPath("$.blocks[0].capabilities.frozen").value(true))
+        .andExpect(jsonPath("$.blocks[2].wod.id").value(open.getId()))
+        .andExpect(jsonPath("$.blocks[2].capabilities.canDelete").value(false))
+        .andExpect(jsonPath("$.blocks[4].capabilities.canDelete").value(true))
+        .andExpect(jsonPath("$.blocks[4].capabilities.frozen").value(false));
   }
 
   @Test

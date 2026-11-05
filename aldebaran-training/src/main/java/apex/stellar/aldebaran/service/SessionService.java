@@ -1,5 +1,6 @@
 package apex.stellar.aldebaran.service;
 
+import apex.stellar.aldebaran.dto.BlockCapabilities;
 import apex.stellar.aldebaran.dto.SessionBlockRequest;
 import apex.stellar.aldebaran.dto.SessionBlockResponse;
 import apex.stellar.aldebaran.dto.SessionCapabilities;
@@ -25,6 +26,7 @@ import apex.stellar.aldebaran.model.entities.SessionLog;
 import apex.stellar.aldebaran.model.entities.Wod;
 import apex.stellar.aldebaran.model.entities.Wod.WodType;
 import apex.stellar.aldebaran.model.enums.SessionScope;
+import apex.stellar.aldebaran.repository.ScoreRepository;
 import apex.stellar.aldebaran.repository.SessionLogRepository;
 import apex.stellar.aldebaran.repository.SessionRepository;
 import apex.stellar.aldebaran.repository.WodRepository;
@@ -63,7 +65,11 @@ import org.springframework.transaction.annotation.Transactional;
  * <ul>
  *   <li>A WOD session has at least a SKILL block and a WOD block; a specialty or personal session
  *       at least one block with a WOD.
- *   <li>A session is locked (409) once someone logged it; its visibility stays editable.
+ *   <li>Once someone logged the session, its date, type, discipline and deletion are locked (409). Locking is
+ *       per block: a block with scores in a journal of the session is frozen (kind, WOD and removal
+ *       refused); a block checked in a journal without score cannot be removed but stays editable
+ *       (the muscle balance of lot D recomputes on change). Free blocks, texts, title, ordering and
+ *       visibility stay editable.
  *   <li>Visibility: the policy and the local instant chosen by the staff give {@code
  *       contentVisibleFrom}, placed in time with the gym's time zone.
  * </ul>
@@ -79,6 +85,7 @@ public class SessionService {
 
   private final SessionRepository sessionRepository;
   private final SessionLogRepository sessionLogRepository;
+  private final ScoreRepository scoreRepository;
   private final WodRepository wodRepository;
   private final WodService wodService;
   private final WodSecurity wodSecurity;
@@ -204,23 +211,33 @@ public class SessionService {
    * @param request The new definition ({@code gymId} ignored).
    * @param principal The current user.
    * @return The updated session.
-   * @throws WodLockedException if someone logged the session (409).
+   * @throws WodLockedException if a journal exists and the date or type changes, or a frozen block
+   *     is changed or removed, or a checked block removed (409).
    * @throws InvalidSessionException if the composition or the visibility breaks a rule.
    */
   @Transactional
   public SessionResponse updateSession(
       Long id, SessionRequest request, AldebaranUserPrincipal principal) {
     Session session = findSession(id);
-    checkNotLocked(id);
     checkComposition(new SessionRequest(
         request.type(), request.discipline(), request.date(), request.title(),
         request.descriptionEn(), request.descriptionFr(), session.getGymId(),
         request.visibilityPolicy(), request.contentVisibleAt(), request.blocks()));
+    if (request.discipline() != session.getDiscipline()
+        && sessionLogRepository.existsBySessionId(id)) {
+      throw new WodLockedException("error.session.frame.locked", id);
+    }
     session.setDiscipline(request.discipline());
     session.setTitle(request.title());
     session.setDescriptionEn(request.descriptionEn());
     session.setDescriptionFr(request.descriptionFr());
+    SessionType oldType = session.getType();
+    LocalDate oldDate = session.getDate();
     session.schedule(request.type(), request.date());
+    if ((oldType != session.getType() || !oldDate.equals(session.getDate()))
+        && sessionLogRepository.existsBySessionId(id)) {
+      throw new WodLockedException("error.session.frame.locked", id);
+    }
     applyVisibility(
         session,
         request.visibilityPolicy() != null
@@ -235,7 +252,7 @@ public class SessionService {
   }
 
   /**
-   * Changes the visibility of a session (allowed once locked: the staff opens the content later).
+   * Changes the visibility of a session (always allowed, even with journals: the staff opens the content later).
    *
    * @param id The session.
    * @param request The policy and the local opening instant.
@@ -262,7 +279,7 @@ public class SessionService {
   @Transactional
   public void deleteSession(Long id) {
     Session session = findSession(id);
-    checkNotLocked(id);
+    checkNotLogged(id);
     List<Long> owned =
         session.getBlocks().stream()
             .map(SessionBlock::getWod)
@@ -305,7 +322,7 @@ public class SessionService {
     }
   }
 
-  private void checkNotLocked(Long id) {
+  private void checkNotLogged(Long id) {
     if (sessionLogRepository.existsBySessionId(id)) {
       throw new WodLockedException("error.session.locked", id);
     }
@@ -368,6 +385,20 @@ public class SessionService {
     Map<Long, SessionBlock> existing =
         session.getBlocks().stream()
             .collect(Collectors.toMap(SessionBlock::getId, Function.identity()));
+    BlockLocks locks = locksOf(session);
+    Set<Long> requestedIds =
+        requests.stream().map(SessionBlockRequest::id).filter(Objects::nonNull)
+            .collect(Collectors.toSet());
+    for (SessionBlock removed : existing.values()) {
+      if (!requestedIds.contains(removed.getId())) {
+        if (locks.frozen(removed)) {
+          throw new WodLockedException("error.session.block.frozen", removed.getId());
+        }
+        if (locks.checked(removed)) {
+          throw new WodLockedException("error.session.block.checked", removed.getId());
+        }
+      }
+    }
     Set<Long> keptOwned = new HashSet<>();
     List<SessionBlock> blocks = new ArrayList<>();
     int index = 1;
@@ -381,6 +412,10 @@ public class SessionService {
       } else {
         block = SessionBlock.builder().session(session).build();
       }
+      boolean frozen = block.getId() != null && locks.frozen(block);
+      if (frozen && (req.kind() != block.getKind())) {
+        throw new WodLockedException("error.session.block.frozen", block.getId());
+      }
       block.setOrderIndex(index++);
       block.setKind(req.kind());
       block.setLabel(req.label());
@@ -390,7 +425,15 @@ public class SessionService {
       block.setPlannedMinutes(req.plannedMinutes());
       block.setTextEn(req.kind().isText() ? req.textEn() : null);
       block.setTextFr(req.kind().isText() ? req.textFr() : null);
-      Wod wod = resolveWod(session, block.getWod(), req, principal);
+      Wod wod;
+      if (frozen) {
+        if (req.wod() != null || !Objects.equals(req.wodId(), block.getWod().getId())) {
+          throw new WodLockedException("error.session.block.frozen", block.getId());
+        }
+        wod = block.getWod();
+      } else {
+        wod = resolveWod(session, block.getWod(), req, principal);
+      }
       block.setWod(wod);
       if (wod != null && !wod.isStandalone()) {
         keptOwned.add(wod.getId());
@@ -411,6 +454,26 @@ public class SessionService {
     session.getBlocks().clear();
     session.getBlocks().addAll(blocks);
     return orphans;
+  }
+
+  /** Blocks frozen (scored) and checked (done in a journal) in the journals of a session. */
+  private record BlockLocks(Set<Long> scoredWodIds, Set<Long> checkedBlockIds) {
+    boolean frozen(SessionBlock block) {
+      return block.getWod() != null && scoredWodIds.contains(block.getWod().getId());
+    }
+
+    boolean checked(SessionBlock block) {
+      return checkedBlockIds.contains(block.getId());
+    }
+  }
+
+  private BlockLocks locksOf(Session session) {
+    if (session.getId() == null || !sessionLogRepository.existsBySessionId(session.getId())) {
+      return new BlockLocks(Set.of(), Set.of());
+    }
+    return new BlockLocks(
+        new HashSet<>(scoreRepository.findScoredWodIdsInSession(session.getId())),
+        new HashSet<>(sessionLogRepository.findCheckedBlockIds(session.getId())));
   }
 
   /**
@@ -501,15 +564,29 @@ public class SessionService {
             .findByUserIdAndSessionId(principal.getId(), session.getId())
             .orElse(null);
     boolean visible = sessionSecurity.isContentVisible(session, principal, myLog != null);
-    boolean locked = sessionLogRepository.existsBySessionId(session.getId());
+    boolean canModify = sessionSecurity.canModify(session, principal);
+    BlockLocks locks = locksOf(session);
+    boolean logged = myLog != null || sessionLogRepository.existsBySessionId(session.getId());
     SessionCapabilities capabilities =
         new SessionCapabilities(
-            sessionSecurity.canModify(session, principal),
-            locked,
+            canModify,
+            canModify && !logged,
             visible,
             myLog == null && sessionSecurity.canLogNow(session, principal));
     List<SessionBlockResponse> blocks =
-        session.getBlocks().stream().map(b -> toBlockResponse(b, visible)).toList();
+        session.getBlocks().stream()
+            .map(
+                b -> {
+                  boolean frozen = locks.frozen(b);
+                  return toBlockResponse(
+                      b,
+                      visible,
+                      new BlockCapabilities(
+                          canModify && !frozen,
+                          canModify && !frozen && !locks.checked(b),
+                          frozen));
+                })
+            .toList();
     return new SessionResponse(
         session.getId(),
         session.getType(),
@@ -530,7 +607,8 @@ public class SessionService {
         myLog != null ? sessionLogService.toResponse(myLog, principal) : null);
   }
 
-  private SessionBlockResponse toBlockResponse(SessionBlock block, boolean visible) {
+  private SessionBlockResponse toBlockResponse(
+      SessionBlock block, boolean visible, BlockCapabilities capabilities) {
     Wod wod = block.getWod();
     WodResponse wodResponse =
         visible && wod != null ? wodService.getWodDetail(wod.getId()) : null;
@@ -548,7 +626,8 @@ public class SessionService {
         visible ? block.getTextFr() : null,
         wodResponse,
         wod != null && wod.isStandalone(),
-        wod != null && wod.isCompetition());
+        wod != null && wod.isCompetition(),
+        capabilities);
   }
 
   private SessionSummaryResponse toSummary(

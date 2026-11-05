@@ -398,7 +398,7 @@ public class WodService {
   }
 
   /**
-   * Updates the WOD of a session block. Its session is not locked, so the WOD has no scores.
+   * Updates the WOD of a session block. A WOD with scores keeps the usual lock (409).
    *
    * @param id The session WOD.
    * @param request The WOD definition (ownership set by the caller).
@@ -407,6 +407,9 @@ public class WodService {
   @Transactional
   @CacheEvict(value = CACHE_WODS, key = "#id")
   public Wod updateSessionWod(Long id, WodRequest request) {
+    if (scoreRepository.existsByWodId(id)) {
+      throw new WodLockedException("error.wod.locked", id);
+    }
     return update(id, request);
   }
 
