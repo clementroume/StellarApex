@@ -1,27 +1,40 @@
 {
   "permissions": {
     "allow": [
-      "Bash(npm test *)",
-      "Bash(npm test)",
-      "Bash(npm run build *)",
-      "Bash(npm run build)",
+      "Bash(./mvnw *)",
+      "Bash(npm test*)",
+      "Bash(npm run build*)",
+      "Bash(npm start)",
       "Bash(npx ng build *)",
-      "Bash(./mvnw verify *)",
-      "Bash(./mvnw verify)",
-      "Bash(./mvnw test *)",
-      "Bash(./mvnw test)",
-      "Bash(./mvnw -q verify *)",
-      "Bash(./mvnw -q verify)",
-      "Bash(git status *)",
-      "Bash(git status)",
+      "Bash(docker compose *)",
+      "Bash(git status*)",
       "Bash(git diff *)",
       "Bash(git diff)",
       "Bash(git log *)",
       "Bash(git log)"
     ],
+    "ask": [
+      "Bash(git push *)",
+      "Bash(rm *)"
+    ],
     "deny": [
       "Read(./.env)",
-      "Read(./**/.env)"
+      "Read(./.env.*)",
+      "Read(./**/.env)",
+      "Read(./**/.env.*)"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/block-claude-attribution.sh"
+          }
+        ]
+      }
     ]
   }
 }
