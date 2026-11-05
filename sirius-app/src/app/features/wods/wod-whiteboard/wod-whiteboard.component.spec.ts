@@ -148,7 +148,9 @@ describe('WodWhiteboardComponent', () => {
       scalingOptionsEn: 'Lighter barbell'
     };
 
-    expect(component.variants(thruster)).toBe('MOVEMENT.EQUIPMENT.BARBELL, MOVEMENT.TECHNIQUES.TOUCH_AND_GO');
+    // Variants built into the name in CrossFit English, plural for 21-15-9
+    expect(component.movementName(thruster, component.wod())).toBe('Touch-and-Go Barbell Thrusters');
+    expect(fixture.nativeElement.querySelector('.movement-name').textContent.trim()).toBe('Thrusters');
     // No language loaded in tests: English, with the French text as fallback when English is missing
     expect(component.movementNotes(thruster)).toBe('Squat below parallel');
     expect(component.movementNotes({...thruster, notesEn: undefined})).toBe('Squat sous la parallèle');
@@ -160,7 +162,7 @@ describe('WodWhiteboardComponent', () => {
     const board: HTMLElement = fixture.nativeElement;
     expect(board.querySelector('.badge-secondary')).toBeNull();
   });
-  it('should write rounds, rest, vest and the buy-in / buy-out parts', () => {
+  it('should write rounds, rest, vest and the buy-in / cash-out parts', () => {
     init(buildWod({
       title: 'Murph', rounds: 20, restSeconds: 120, vestWeight: 20, vestWeightFemale: 14, vestWeightUnit: 'LBS',
       movements: [
@@ -175,6 +177,9 @@ describe('WodWhiteboardComponent', () => {
     expect(board.querySelector('#vest-badge')?.textContent).toContain('20/14 LBS');
     expect([...board.querySelectorAll('[data-segment]')].map(e => e.getAttribute('data-segment'))).toEqual(['BUY_IN', 'BUY_OUT']);
     expect(board.querySelectorAll('ul').length).toBe(3);
+    // Buy-in, then the format line and the rounds, then the cash-out
+    const order = [...board.querySelectorAll('[data-segment], #format-line')].map(e => e.getAttribute('data-segment') ?? 'FORMAT');
+    expect(order).toEqual(['BUY_IN', 'FORMAT', 'BUY_OUT']);
   });
 
   it('should write intervals, an ascending ladder and a Death by', () => {
@@ -184,5 +189,37 @@ describe('WodWhiteboardComponent', () => {
     expect(component.structureLine(buildWod({wodType: 'FOR_TIME', structure: 'LADDER', ladderStart: 3, ladderStep: 3}))).toBe('3-6-9-12…');
     expect(component.structureLine(buildWod({wodType: 'EMOM', structure: 'DEATH_BY', ladderStart: 1, ladderStep: 1})))
       .toBe('WOD.BOARD.DEATH_BY');
+  });
+
+  it('should show the team and how much each line asks from it', () => {
+    init(buildWod({
+      teamSize: 2, teamMode: 'YOU_GO_I_GO',
+      movements: [{id: 1, movement: movement(2, 'Pull-up'), orderIndex: 1, repsScheme: '50', teamSplit: 'EACH'}]
+    }));
+    expect(fixture.nativeElement.querySelector('#team-badge').textContent).toContain('WOD.TEAM.OF');
+    const [pullUp] = component.wod().movements;
+    expect(component.quantity(pullUp, component.wod())).toBe('50');
+    expect(component.teamSplit(pullUp, component.wod())).toBe('(WOD.BOARD.SPLITS.EACH)');
+    expect(fixture.nativeElement.querySelector('.team-split').textContent.trim()).toBe('(WOD.BOARD.SPLITS.EACH)');
+  });
+
+  it('should write a carry done together as a partner carry, without a split', () => {
+    const carry = {id: 2, movement: {...movement(3, 'Carry'), category: 'CARRY'}, orderIndex: 2, distance: 17,
+      distanceUnit: 'METERS', equipment: ['BARBELL'], teamSplit: 'TOGETHER' as const};
+    init(buildWod({teamSize: 2, movements: [carry]}));
+    expect(component.movementName(carry, component.wod())).toBe('WOD.BOARD.SPLITS.PARTNER Barbell Carry');
+    expect(component.teamSplit(carry, component.wod())).toBe('');
+  });
+
+  it('should keep the singular for one rep, a distance or calories', () => {
+    init();
+    const wod = buildWod({repScheme: undefined});
+    const line = (repsScheme?: string, extra: object = {}) =>
+      component.movementName({id: 1, movement: movement(1, 'Power Clean'), orderIndex: 1, repsScheme,
+        techniques: ['HANG'], ...extra}, wod);
+    expect(line('9')).toBe('Hang Power Cleans');
+    expect(line('1')).toBe('Hang Power Clean');
+    expect(line('1-1-1')).toBe('Hang Power Cleans');
+    expect(line(undefined, {calories: 20})).toBe('Hang Power Clean');
   });
 });

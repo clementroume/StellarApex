@@ -55,6 +55,21 @@
       </label>
     }
 
+    @if (isTeam()) {
+      <fieldset class="flex flex-col gap-1.5">
+        <legend class="text-sm font-medium">{{ 'SCORE.FIELDS.TEAMMATES' | translate: {size: teamSize()} }}</legend>
+        <div class="flex flex-wrap gap-1.5" role="group">
+          @for (mate of gymMates(); track mate.id) {
+            <button type="button" class="teammate rounded-full border px-3 py-1 text-sm aria-pressed:bg-primary aria-pressed:text-primary-foreground"
+                    [attr.aria-pressed]="teammates().includes(mate.id)" (click)="toggleTeammate(mate.id)">{{ mate.displayName }}</button>
+          } @empty {
+            <span class="text-sm text-muted-foreground">{{ 'SCORE.MESSAGES.NO_GYM_MATES' | translate }}</span>
+          }
+        </div>
+        <span class="text-xs text-muted-foreground">{{ 'SCORE.MESSAGES.TEAM_HINT' | translate }}</span>
+      </fieldset>
+    }
+
     @switch (scoreType()) {
       @case ('TIME') {
         <label class="flex items-center gap-3 cursor-pointer">

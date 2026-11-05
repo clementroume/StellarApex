@@ -143,7 +143,8 @@
     "LABEL": "Division",
     "ALL": "All",
     "MEN": "Men",
-    "WOMEN": "Women"
+    "WOMEN": "Women",
+    "MIXED": "Mixed"
   },
   "SETTINGS": {
     "TITLE": "Security",
@@ -711,26 +712,34 @@
       },
       "TIME_S": "Time (s)",
       "LOAD_HEIGHT": "load / height",
-      "SEGMENT": "Part of the WOD",
       "VEST": "Weight vest M/W",
       "EQUIPMENT": "Equipment",
       "TECHNIQUE": "Technique",
       "MINUTES": "Minutes",
       "WINDOW": "Window (min)",
       "TABATA_CLASSIC": "8 rounds of 20 s work / 10 s rest",
-      "LADDER_PYRAMID": "Values / pyramid"
+      "LADDER_PYRAMID": "Values / pyramid",
+      "ADD_BUY_IN": "Add a buy-in",
+      "ADD_CASH_OUT": "Add a cash-out",
+      "SEGMENT": "Part of the WOD"
     },
     "CATALOGUE_SUBTITLE": "The reference WODs: Girls, Hero, benchmarks, Open… Program them in a session of your box.",
     "SEGMENTS": {
       "BUY_IN": "Buy-in",
       "MAIN": "In the rounds",
-      "BUY_OUT": "Buy-out"
+      "BUY_OUT": "Cash-out"
     },
     "BOARD": {
       "ROUNDS_FOR_TIME": "{{count}} rounds for time",
       "DEATH_BY": "{{start}} rep(s) the 1st minute, +{{step}} each minute",
       "REST": "Rest {{rest}} between rounds",
-      "VEST": "Vest"
+      "VEST": "Vest",
+      "SPLITS": {
+        "EACH": "each",
+        "TOGETHER": "synchro",
+        "PARTNER": "Partner",
+        "ALONGSIDE": "together"
+      }
     },
     "STRUCTURES": {
       "FOR_TIME": {
@@ -770,6 +779,24 @@
       "PAGINATION": "Catalogue pages",
       "PREVIOUS": "Previous page",
       "NEXT": "Next page"
+    },
+    "TEAM": {
+      "OF": "Team of {{count}}",
+      "SIZE": "Athletes per team",
+      "MODE": "Work sharing",
+      "ADD": "Team",
+      "REMOVE": "No team",
+      "SPLIT": "Team quantity",
+      "MODES": {
+        "YOU_GO_I_GO": "You go I go",
+        "SPLIT": "Split as needed",
+        "SYNCHRO": "Synchro"
+      },
+      "SPLITS": {
+        "TOTAL": "In total",
+        "EACH": "Each",
+        "TOGETHER": "Together"
+      }
     }
   },
   "SCORE": {
@@ -817,7 +844,8 @@
       "NO_GYM": "None",
       "ATHLETE": "Athlete",
       "ME": "Me",
-      "SUBMIT": "Submit for verification"
+      "SUBMIT": "Submit for verification",
+      "TEAMMATES": "Teammates (teams of {{size}})"
     },
     "PLACEHOLDERS": {
       "SCALING_NOTES": "e.g. 35 kg thrusters, banded pull-ups"
@@ -847,7 +875,9 @@
       "ATHLETE_HINT": "A score logged for an athlete is verified at once.",
       "VERIFIED": "Score verified",
       "UNVERIFIED": "Verification withdrawn",
-      "SUBMIT_HINT": "A judge of the box verifies your score for the competition leaderboard. Unticked, it is a regular score."
+      "SUBMIT_HINT": "A judge of the box verifies your score for the competition leaderboard. Unticked, it is a regular score.",
+      "NO_GYM_MATES": "No other member in this box.",
+      "TEAM_HINT": "Your teammates get the same score. An extra athlete mirrors a member."
     },
     "TIEBREAK_SHORT": "TB {{time}}",
     "ENTRY": {
@@ -886,7 +916,8 @@
       "VOLUME": "Volume: {{value}} {{unit}}",
       "SUMMARY": "{{count}} sets"
     },
-    "SUBMITTED": "Submitted for verification"
+    "SUBMITTED": "Submitted for verification",
+    "TEAM_OF": "Team of {{count}}"
   },
   "ADMIN": {
     "SUPPORT": {

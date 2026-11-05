@@ -168,4 +168,17 @@ describe('ScoreLeaderboardComponent', () => {
     fixture.detectChanges();
     expect(scoreService.getLeaderboard).toHaveBeenLastCalledWith(7, 'RX', 0, 50, [], false, null, null);
   });
+
+  it('should name every member of a team and offer the mixed division on a team WOD', async () => {
+    scoreService.getLeaderboard.mockReturnValue(of({content: [{...score(1, 1, 250), teamMemberIds: [1, 2]}], last: true} as any));
+    userService.getDisplayNames.mockReturnValue(of([{id: 1, displayName: 'Anne L.'}, {id: 2, displayName: 'Clément R.'}]));
+    wod.set({id: 7, scoreType: 'TIME', gymId: 5, teamSize: 2});
+    await init(5);
+    wod.set({id: 7, scoreType: 'TIME', gymId: 5, teamSize: 2});
+    fixture.detectChanges();
+
+    expect(userService.getDisplayNames).toHaveBeenCalledWith([1, 2]);
+    expect(fixture.nativeElement.querySelector('li').textContent).toContain('Anne L. & Clément R.');
+    expect(component.divisions()).toEqual(['MEN', 'WOMEN', 'MIXED']);
+  });
 });

@@ -293,6 +293,10 @@ public class ScoreService {
     if (gymId == null) {
       throw new InvalidScoreException("error.score.team.gym.required");
     }
+    // Teams train together in a box, never on a program
+    if (antaresClient.isProgrammingGym(gymId)) {
+      throw new InvalidScoreException("error.score.team.program");
+    }
     List<Long> mates =
         request.teammateIds().stream()
             .filter(Objects::nonNull)
@@ -432,12 +436,22 @@ public class ScoreService {
             .orElseThrow(() -> new ResourceNotFoundException(ERROR_SCORE_NOT_FOUND, scoreId));
 
     Comparator<Score> order = ScoreRanking.rankingFirst(score.getWod().getScoreType());
-    List<Score> others =
-        scoreRepository
-            .findByWodIdAndScalingAndPersonalRecordTrue(score.getWod().getId(), score.getScaling())
-            .stream()
-            .filter(other -> !Objects.equals(other.getUserId(), score.getUserId()))
-            .toList();
+    // A team counts once (its members share one score), the score's own team excluded
+    Long ownTeam = score.getTeam() == null ? null : score.getTeam().getId();
+    Map<Long, Score> bestByCompetitor = new HashMap<>();
+    scoreRepository
+        .findByWodIdAndScalingAndPersonalRecordTrue(score.getWod().getId(), score.getScaling())
+        .stream()
+        .filter(other -> !Objects.equals(other.getUserId(), score.getUserId()))
+        .filter(other -> ownTeam == null || other.getTeam() == null
+            || !ownTeam.equals(other.getTeam().getId()))
+        .forEach(
+            other ->
+                bestByCompetitor.merge(
+                    other.getTeam() == null ? other.getUserId() : -other.getTeam().getId(),
+                    other,
+                    (x, y) -> order.compare(x, y) <= 0 ? x : y));
+    Collection<Score> others = bestByCompetitor.values();
 
     long better = others.stream().filter(other -> order.compare(other, score) < 0).count();
     long total = others.size() + 1L;

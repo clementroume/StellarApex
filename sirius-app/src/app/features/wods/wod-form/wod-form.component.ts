@@ -12,7 +12,7 @@ import {MovementService} from '../../../api/aldebaran/services/movement.service'
 import {NotificationService} from '../../../core/services/notification.service';
 import {AccessService} from '../../../core/services/access.service';
 import {MovementResponse, MovementSummaryResponse} from '../../../api/aldebaran/models/movement.model';
-import {WodMovementRequest, WodMovementResponse, WodRequest, WodResponse} from '../../../api/aldebaran/models/wod.model';
+import {TeamMode, WodMovementRequest, WodMovementResponse, WodRequest, WodResponse} from '../../../api/aldebaran/models/wod.model';
 import {ProblemDetail} from '../../../core/models/problem-detail.model';
 import {UnitService} from '../../../core/services/unit.service';
 
@@ -83,6 +83,9 @@ export class WodFormComponent implements OnInit {
 
   massUnits = computed(() => this.unitGroups()['MASS'] ?? []);
   readonly segments = ['BUY_IN', 'MAIN', 'BUY_OUT'];
+  readonly teamSizes = [2, 3, 4, 5, 6];
+  readonly teamModes: TeamMode[] = ['YOU_GO_I_GO', 'SPLIT', 'SYNCHRO'];
+  readonly teamSplits = ['TOTAL', 'EACH', 'TOGETHER'];
   distanceUnits = computed(() => this.unitGroups()['DISTANCE'] ?? []);
   // Box and target heights: cm / in for boxes, m / ft for wall-ball targets
   heightUnits = computed(() =>
@@ -116,6 +119,9 @@ export class WodFormComponent implements OnInit {
     wodType: ['', Validators.required],
     // Sub-category of the format (For Time: ROUNDS, SCHEME, CHIPPER...)
     structure: [null as string | null],
+    // Team WOD: athletes per team (2 to 6) and how they share the work
+    teamSize: [null as number | null],
+    teamMode: [null as string | null],
     category: [null as string | null],
     scoreType: ['', Validators.required],
     // --- Authorship and Visibility ---
@@ -234,10 +240,12 @@ export class WodFormComponent implements OnInit {
       movementId: [source?.movement.id ?? null as number | null, Validators.required],
       // Prescribed sets (strength / skill work), optional
       sets: [source?.sets ?? null as number | null, [Validators.min(1)]],
-      // Buy-in, rounds or buy-out
+      // Buy-in, rounds or cash-out
       segment: [source?.segment ?? 'MAIN'],
       // Group of a weightlifting complex, kept as is
       complexGroup: [source?.complexGroup ?? null as number | null],
+      // Team WOD: in total, by each member, or together
+      teamSplit: [source?.teamSplit ?? 'TOTAL'],
       repsScheme: [source?.repsScheme ?? '', [Validators.maxLength(50)]],
       weight: [source?.weight ?? null as number | null, [Validators.min(0)]],
       weightFemale: [source?.weightFemale ?? null as number | null, [Validators.min(0)]],
@@ -373,6 +381,8 @@ export class WodFormComponent implements OnInit {
       title: wod.title,
       wodType: wod.wodType,
       structure: wod.structure ?? null,
+      teamSize: wod.teamSize ?? null,
+      teamMode: wod.teamMode ?? null,
       category: wod.category ?? null,
       scoreType: wod.scoreType,
       // --- Authorship and Visibility ---
@@ -452,6 +462,7 @@ export class WodFormComponent implements OnInit {
       sets: m.sets ?? undefined,
       segment: m.segment ?? 'MAIN',
       complexGroup: m.complexGroup ?? null,
+      teamSplit: m.teamSplit ?? 'TOTAL',
       repsScheme: m.repsScheme?.trim() || undefined,
       weight: m.weight ?? undefined,
       weightFemale: m.weightFemale ?? undefined,
@@ -501,6 +512,8 @@ export class WodFormComponent implements OnInit {
       emomRounds: isEmom ? (v.emomRounds ?? undefined) : undefined,
       repScheme: v.repScheme.trim() || undefined,
       structure: v.structure && (this.structuresByType()[v.wodType] ?? []).includes(v.structure) ? v.structure : null,
+      teamSize: v.teamSize ?? null,
+      teamMode: v.teamSize ? (v.teamMode ?? 'YOU_GO_I_GO') as TeamMode : null,
       rounds: v.rounds,
       restSeconds: v.restSeconds,
       workSeconds: v.workSeconds,

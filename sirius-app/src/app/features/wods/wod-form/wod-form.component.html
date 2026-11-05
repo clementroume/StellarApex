@@ -176,6 +176,27 @@
             <input type="number" min="1" formControlName="ladderStep" hlmInput class="h-11 md:h-10"/>
           </label>
         </div>
+        <div class="grid grid-cols-2 gap-4">
+          <label class="flex flex-col gap-1.5">
+            <span class="text-sm font-medium">{{ 'WOD.TEAM.SIZE' | translate }}</span>
+            <select formControlName="teamSize" appNativeSelect id="wod-team-size">
+              <option [ngValue]="null">—</option>
+              @for (size of teamSizes; track size) {
+                <option [ngValue]="size">{{ size }}</option>
+              }
+            </select>
+          </label>
+          @if (wodForm.controls.teamSize.value) {
+            <label class="flex flex-col gap-1.5">
+              <span class="text-sm font-medium">{{ 'WOD.TEAM.MODE' | translate }}</span>
+              <select formControlName="teamMode" appNativeSelect>
+                @for (mode of teamModes; track mode) {
+                  <option [ngValue]="mode">{{ 'WOD.TEAM.MODES.' + mode | translate }}</option>
+                }
+              </select>
+            </label>
+          }
+        </div>
         <div class="flex flex-col gap-1.5">
           <span class="text-sm font-medium">{{ 'WOD.QUICK.VEST' | translate }}</span>
           <div class="flex items-center gap-2">
@@ -302,6 +323,16 @@
               }
 
               <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                @if (wodForm.controls.teamSize.value) {
+                  <label class="flex flex-col gap-1.5 w-full">
+                    <span class="text-sm font-medium">{{ 'WOD.TEAM.SPLIT' | translate }}</span>
+                    <select formControlName="teamSplit" appNativeSelect>
+                      @for (split of teamSplits; track split) {
+                        <option [ngValue]="split">{{ 'WOD.TEAM.SPLITS.' + split | translate }}</option>
+                      }
+                    </select>
+                  </label>
+                }
                 <label class="flex flex-col gap-1.5 w-full">
                   <span class="text-sm font-medium">{{ 'WOD.QUICK.SEGMENT' | translate }}</span>
                   <select formControlName="segment" appNativeSelect>

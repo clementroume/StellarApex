@@ -3,6 +3,10 @@ import {MovementResponse} from './movement.model';
 /** Part of a WOD a movement belongs to. */
 export type WodSegment = 'BUY_IN' | 'MAIN' | 'BUY_OUT';
 
+/** How the members of a team share the work, and how much a line asks from them. */
+export type TeamMode = 'YOU_GO_I_GO' | 'SPLIT' | 'SYNCHRO';
+export type TeamSplit = 'TOTAL' | 'EACH' | 'TOGETHER';
+
 export type WodScope = 'ALL' | 'MINE' | 'GYM' | 'PUBLIC';
 
 export interface WodSummaryResponse {
@@ -24,6 +28,9 @@ export interface WodSummaryResponse {
   createdAt: string;
   // Sub-category of the format, and movement names in order (catalogue preview)
   structure?: string | null;
+  // --- Team WOD: athletes per team (2 to 6) and how they share the work ---
+  teamSize?: number | null;
+  teamMode?: TeamMode | null;
   movementNames?: string[];
 }
 
@@ -92,6 +99,9 @@ export interface WodRequest {
   vestWeightUnit?: string | null;
   // --- Sub-category of the format (For Time: ROUNDS, SCHEME, CHIPPER...) ---
   structure?: string | null;
+  // --- Team WOD: athletes per team (2 to 6) and how they share the work ---
+  teamSize?: number | null;
+  teamMode?: TeamMode | null;
   movements: WodMovementRequest[];
 }
 
@@ -140,6 +150,9 @@ export interface WodResponse {
   vestWeightUnit?: string | null;
   // --- Sub-category of the format (For Time: ROUNDS, SCHEME, CHIPPER...) ---
   structure?: string | null;
+  // --- Team WOD: athletes per team (2 to 6) and how they share the work ---
+  teamSize?: number | null;
+  teamMode?: TeamMode | null;
   modalities: string[];
   movements: WodMovementResponse[];
   // --- Rights ---
@@ -190,6 +203,8 @@ export interface WodMovementRequest {
   segment?: WodSegment | null;
   // --- Group of a weightlifting complex (lines done as one set), or null ---
   complexGroup?: number | null;
+  // --- Team WOD: quantity in total (default), by each member, or together ---
+  teamSplit?: TeamSplit | null;
 }
 
 export interface WodMovementResponse {
@@ -227,6 +242,8 @@ export interface WodMovementResponse {
   segment?: WodSegment | null;
   // --- Group of a weightlifting complex (lines done as one set), or null ---
   complexGroup?: number | null;
+  // --- Team WOD: quantity in total (default), by each member, or together ---
+  teamSplit?: TeamSplit | null;
 }
 
 export interface WodReferenceData {

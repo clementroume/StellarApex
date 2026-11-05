@@ -165,9 +165,19 @@
   }
 
   <!-- Movements: a quantity measure, then only the extra measures each one needs -->
+  @if (withSegments()) {
+    <button type="button" id="add-buy-in" class="self-start text-sm text-primary hover:underline" (click)="addRow('BUY_IN')">
+      + {{ 'WOD.QUICK.ADD_BUY_IN' | translate }}
+    </button>
+  }
   <ol formArrayName="rows" class="flex flex-col divide-y border-y">
     @for (row of rowControls(); track row; let i = $index) {
       <li [formGroupName]="i" class="quick-row py-3 flex flex-col gap-2">
+        @if (segmentHeading(i); as heading) {
+          <p class="segment-heading text-sm font-semibold uppercase tracking-wide text-muted-foreground" [attr.data-segment]="heading">
+            {{ 'WOD.SEGMENTS.' + heading | translate }}
+          </p>
+        }
         <div class="flex items-start gap-2">
           <div class="flex-1 min-w-0">
             <app-movement-combobox [movements]="movements()" [label]="'WOD.FIELDS.MOVEMENT' | translate"
@@ -231,11 +241,24 @@
                 <div class="flex flex-col gap-1">
                   <span class="text-xs text-muted-foreground">{{ 'WOD.QUICK.LOAD' | translate }} ({{ massLabel() }})</span>
                   <div class="flex items-center gap-1">
-                    <input type="number" min="0" step="0.5" inputmode="decimal" formControlName="weight" hlmInput class="h-10 w-20"
-                           [attr.aria-label]="'WOD.QUICK.MEN' | translate"/>
-                    <span aria-hidden="true">/</span>
-                    <input type="number" min="0" step="0.5" inputmode="decimal" formControlName="weightFemale" hlmInput class="h-10 w-20"
-                           [attr.aria-label]="'WOD.QUICK.WOMEN' | translate"/>
+                    @if (loadChoices(i); as weights) {
+                      <!-- Kettlebells and dumbbells come in standard weights -->
+                      <select appNativeSelect formControlName="weight" class="load-preset h-10 w-20" [attr.aria-label]="'WOD.QUICK.MEN' | translate">
+                        <option [ngValue]="null">–</option>
+                        @for (w of weights; track w) { <option [ngValue]="w">{{ w }}</option> }
+                      </select>
+                      <span aria-hidden="true">/</span>
+                      <select appNativeSelect formControlName="weightFemale" class="load-preset h-10 w-20" [attr.aria-label]="'WOD.QUICK.WOMEN' | translate">
+                        <option [ngValue]="null">–</option>
+                        @for (w of weights; track w) { <option [ngValue]="w">{{ w }}</option> }
+                      </select>
+                    } @else {
+                      <input type="number" min="0" step="0.5" inputmode="decimal" formControlName="weight" hlmInput class="h-10 w-20"
+                             [attr.aria-label]="'WOD.QUICK.MEN' | translate"/>
+                      <span aria-hidden="true">/</span>
+                      <input type="number" min="0" step="0.5" inputmode="decimal" formControlName="weightFemale" hlmInput class="h-10 w-20"
+                             [attr.aria-label]="'WOD.QUICK.WOMEN' | translate"/>
+                    }
                   </div>
                 </div>
               }
@@ -243,11 +266,24 @@
                 <div class="flex flex-col gap-1">
                   <span class="text-xs text-muted-foreground">{{ 'WOD.QUICK.HEIGHT' | translate }} ({{ heightLabel() }})</span>
                   <div class="flex items-center gap-1">
-                    <input type="number" min="0" inputmode="decimal" formControlName="height" hlmInput class="h-10 w-20"
-                           [attr.aria-label]="'WOD.QUICK.MEN' | translate"/>
-                    <span aria-hidden="true">/</span>
-                    <input type="number" min="0" inputmode="decimal" formControlName="heightFemale" hlmInput class="h-10 w-20"
-                           [attr.aria-label]="'WOD.QUICK.WOMEN' | translate"/>
+                    @if (heightChoices(i); as heights) {
+                      <!-- A plyo box has three heights -->
+                      <select appNativeSelect formControlName="height" class="height-preset h-10 w-20" [attr.aria-label]="'WOD.QUICK.MEN' | translate">
+                        <option [ngValue]="null">–</option>
+                        @for (h of heights; track h) { <option [ngValue]="h">{{ h }}</option> }
+                      </select>
+                      <span aria-hidden="true">/</span>
+                      <select appNativeSelect formControlName="heightFemale" class="height-preset h-10 w-20" [attr.aria-label]="'WOD.QUICK.WOMEN' | translate">
+                        <option [ngValue]="null">–</option>
+                        @for (h of heights; track h) { <option [ngValue]="h">{{ h }}</option> }
+                      </select>
+                    } @else {
+                      <input type="number" min="0" inputmode="decimal" formControlName="height" hlmInput class="h-10 w-20"
+                             [attr.aria-label]="'WOD.QUICK.MEN' | translate"/>
+                      <span aria-hidden="true">/</span>
+                      <input type="number" min="0" inputmode="decimal" formControlName="heightFemale" hlmInput class="h-10 w-20"
+                             [attr.aria-label]="'WOD.QUICK.WOMEN' | translate"/>
+                    }
                   </div>
                 </div>
               }
@@ -265,11 +301,11 @@
           @if (!expanded().has(i) && extrasOf(i).length < 2) {
             <button type="button" class="text-muted-foreground hover:underline" (click)="toggleExpanded(i)">+ {{ 'WOD.QUICK.LOAD_HEIGHT' | translate }}</button>
           }
-          @if (withSegments()) {
-            <select appNativeSelect formControlName="segment" class="segment-select h-8 w-auto text-sm"
-                    [attr.aria-label]="'WOD.QUICK.SEGMENT' | translate">
-              @for (s of segmentValues; track s) {
-                <option [value]="s">{{ 'WOD.SEGMENTS.' + s | translate }}</option>
+          @if (showTeam()) {
+            <select appNativeSelect formControlName="teamSplit" class="team-split-select h-8 w-auto text-sm"
+                    [attr.aria-label]="'WOD.TEAM.SPLIT' | translate">
+              @for (split of teamSplits; track split) {
+                <option [value]="split">{{ 'WOD.TEAM.SPLITS.' + split | translate }}</option>
               }
             </select>
           }
@@ -290,9 +326,16 @@
       </li>
     }
   </ol>
-  <button type="button" hlmBtn variant="outline" class="h-11 self-start" id="add-movement" (click)="addRow()">
-    <ng-icon name="heroPlus" aria-hidden="true"/>{{ 'WOD.ACTIONS.ADD_MOVEMENT' | translate }}
-  </button>
+  <div class="flex flex-wrap items-center gap-4">
+    <button type="button" hlmBtn variant="outline" class="h-11" id="add-movement" (click)="addRow()">
+      <ng-icon name="heroPlus" aria-hidden="true"/>{{ 'WOD.ACTIONS.ADD_MOVEMENT' | translate }}
+    </button>
+    @if (withSegments()) {
+      <button type="button" id="add-cash-out" class="text-sm text-primary hover:underline" (click)="addRow('BUY_OUT')">
+        + {{ 'WOD.QUICK.ADD_CASH_OUT' | translate }}
+      </button>
+    }
+  </div>
 
   <label class="flex flex-col gap-1.5">
     <span class="text-sm font-medium">{{ 'WOD.QUICK.TITLE' | translate }}</span>
@@ -300,7 +343,30 @@
            [placeholder]="generatedTitle()"/>
   </label>
 
-  <!-- Folded options: weight vest, notes -->
+  <!-- Folded options: team, weight vest, notes -->
+  @if (showTeam()) {
+    <div class="flex flex-wrap items-end gap-3" id="team-options">
+      <label class="flex flex-col gap-1">
+        <span class="text-sm font-medium">{{ 'WOD.TEAM.SIZE' | translate }}</span>
+        <select appNativeSelect formControlName="teamSize" class="h-10 w-24">
+          @for (size of teamSizes; track size) {
+            <option [ngValue]="size">{{ size }}</option>
+          }
+        </select>
+      </label>
+      <div class="flex flex-wrap gap-1.5" role="group" [attr.aria-label]="'WOD.TEAM.MODE' | translate">
+        @for (mode of teamModes; track mode) {
+          <button type="button" class="rounded-full border px-3 py-1 text-sm aria-pressed:bg-primary aria-pressed:text-primary-foreground"
+                  [attr.aria-pressed]="value().teamMode === mode" (click)="form.controls.teamMode.setValue(mode)">
+            {{ 'WOD.TEAM.MODES.' + mode | translate }}
+          </button>
+        }
+      </div>
+      <button type="button" class="h-10 text-sm text-muted-foreground hover:underline" (click)="showTeam.set(false)">
+        {{ 'WOD.TEAM.REMOVE' | translate }}
+      </button>
+    </div>
+  }
   @if (withVest() && showVest()) {
     <div class="flex flex-col gap-1">
       <span class="text-sm font-medium">{{ 'WOD.QUICK.VEST' | translate }} ({{ massLabel() }})</span>
@@ -319,10 +385,13 @@
       <textarea formControlName="notes" rows="3" maxlength="4000" hlmTextarea [placeholder]="'WOD.QUICK.NOTES_PLACEHOLDER' | translate"></textarea>
     </label>
   }
-  @if ((withVest() && !showVest()) || !showNotes()) {
+  @if ((withVest() && !showVest()) || !showNotes() || !showTeam()) {
     <div class="flex flex-wrap gap-4 text-sm">
       @if (withVest() && !showVest()) {
         <button type="button" id="show-vest" class="text-primary hover:underline" (click)="showVest.set(true)">+ {{ 'WOD.QUICK.VEST' | translate }}</button>
+      }
+      @if (!showTeam()) {
+        <button type="button" id="show-team" class="text-primary hover:underline" (click)="showTeam.set(true)">+ {{ 'WOD.TEAM.ADD' | translate }}</button>
       }
       @if (!showNotes()) {
         <button type="button" id="show-notes" class="text-primary hover:underline" (click)="showNotes.set(true)">+ {{ 'WOD.QUICK.NOTES' | translate }}</button>

@@ -97,6 +97,13 @@ of them:
   Logging a score for someone else is admin-only, except on competition WODs (below). Each score
   carries `capabilities {canModify, canVerify}`; other athletes' comments and scaling notes are hidden
   from viewers who cannot moderate the score.
+* **Team WODs** (V16): `teamSize` (2–6) and `teamMode` (`YOU_GO_I_GO`, `SPLIT`, `SYNCHRO`) on the WOD,
+  `teamSplit` (`TOTAL` default, `EACH`, `TOGETHER`) on each line; never on a program (400). A team
+  score names teammates of the box (`teammateIds`, at most `teamSize`: an odd athlete mirrors a team;
+  members checked with Antares, a program refused): one `score_teams` row, one score per member
+  (PRs of each), division MEN / WOMEN / MIXED. Corrections reach every member; the logger, a judge
+  or an admin deletes the team score, a teammate deleting their row leaves the team. Leaderboards
+  keep one row per team (`teamId`, `teamMemberIds`).
 * **Competition WODs** (`competition`, physical gym WODs only, never public: 400 otherwise; Antares
   tells the gym type): staff holding
   `SCORE_VERIFY` in the WOD's gym log scores for the gym's members (`userId`; Antares confirms the

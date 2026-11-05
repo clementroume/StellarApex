@@ -274,4 +274,31 @@ describe('ScoreFormComponent', () => {
     expect(fixture.nativeElement.querySelector('#score-gym')).toBeNull();
     store.sessionLogId.set(null);
   });
+
+  it('should let a member choose teammates of the box on a team WOD, at most the team size', () => {
+    init('TIME', 'new', {gymId: 5, teamSize: 2});
+
+    expect(gymService.getAthletes).toHaveBeenCalledWith(5);
+    const chips = fixture.nativeElement.querySelectorAll('.teammate') as NodeListOf<HTMLButtonElement>;
+    expect([...chips].map(c => c.textContent?.trim())).toEqual(['Anne L.']);
+    component.toggleTeammate(9);
+    component.toggleTeammate(11);
+    component.toggleTeammate(12);
+    expect(component.teammates()).toEqual([9, 11]);
+
+    component.form.patchValue({minutes: 9, seconds: 0});
+    component.onSubmit();
+    expect(store.save).toHaveBeenCalledWith(expect.objectContaining({teammateIds: [9, 11]}));
+  });
+
+  it('should only offer boxes, never a program, for a team score on a public team WOD', () => {
+    (TestBed.inject(AccessService) as any).memberships.set([
+      {gymId: 8, gymName: 'Zeus', gymProgramming: true}, {gymId: 5, gymName: 'Box', gymProgramming: false}]);
+    init('TIME', 'new', {teamSize: 2});
+
+    expect(component.gymChoices().map(g => g.gymId)).toEqual([5]);
+    expect(component.form.controls.gymId.value).toBe(5);
+    expect(gymService.getAthletes).toHaveBeenCalledWith(5);
+    expect(gymService.getAthletes).not.toHaveBeenCalledWith(8);
+  });
 });

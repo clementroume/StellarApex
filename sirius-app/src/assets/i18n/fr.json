@@ -143,7 +143,8 @@
     "LABEL": "Division",
     "ALL": "Tous",
     "MEN": "Hommes",
-    "WOMEN": "Femmes"
+    "WOMEN": "Femmes",
+    "MIXED": "Mixte"
   },
   "SETTINGS": {
     "TITLE": "Sécurité",
@@ -711,26 +712,34 @@
       },
       "TIME_S": "Temps (s)",
       "LOAD_HEIGHT": "charge / hauteur",
-      "SEGMENT": "Partie du WOD",
       "VEST": "Gilet lesté H/F",
       "EQUIPMENT": "Équipement",
       "TECHNIQUE": "Technique",
       "MINUTES": "Minutes",
       "WINDOW": "Fenêtre (min)",
       "TABATA_CLASSIC": "8 rounds de 20 s de travail / 10 s de repos",
-      "LADDER_PYRAMID": "Valeurs / pyramide"
+      "LADDER_PYRAMID": "Valeurs / pyramide",
+      "ADD_BUY_IN": "Ajouter un buy-in",
+      "ADD_CASH_OUT": "Ajouter un cash-out",
+      "SEGMENT": "Partie du WOD"
     },
     "CATALOGUE_SUBTITLE": "Les WODs de référence : Girls, Hero, benchmarks, Open… Programme-les dans une séance de ta box.",
     "SEGMENTS": {
       "BUY_IN": "Buy-in",
       "MAIN": "Dans les rounds",
-      "BUY_OUT": "Buy-out"
+      "BUY_OUT": "Cash-out"
     },
     "BOARD": {
       "ROUNDS_FOR_TIME": "{{count}} rounds for time",
       "DEATH_BY": "{{start}} rep(s) la 1re minute, +{{step}} chaque minute",
       "REST": "Repos {{rest}} entre les rounds",
-      "VEST": "Gilet"
+      "VEST": "Gilet",
+      "SPLITS": {
+        "EACH": "each",
+        "TOGETHER": "synchro",
+        "PARTNER": "Partner",
+        "ALONGSIDE": "together"
+      }
     },
     "STRUCTURES": {
       "FOR_TIME": {
@@ -770,6 +779,24 @@
       "PAGINATION": "Pages du catalogue",
       "PREVIOUS": "Page précédente",
       "NEXT": "Page suivante"
+    },
+    "TEAM": {
+      "OF": "Équipe de {{count}}",
+      "SIZE": "Athlètes par équipe",
+      "MODE": "Partage du travail",
+      "ADD": "Équipe",
+      "REMOVE": "Sans équipe",
+      "SPLIT": "Quantité de l'équipe",
+      "MODES": {
+        "YOU_GO_I_GO": "You go I go",
+        "SPLIT": "Partage libre",
+        "SYNCHRO": "Synchro"
+      },
+      "SPLITS": {
+        "TOTAL": "Au total",
+        "EACH": "Chacun",
+        "TOGETHER": "Ensemble"
+      }
     }
   },
   "SCORE": {
@@ -817,7 +844,8 @@
       "NO_GYM": "Aucune",
       "ATHLETE": "Athlète",
       "ME": "Moi",
-      "SUBMIT": "Soumettre à validation"
+      "SUBMIT": "Soumettre à validation",
+      "TEAMMATES": "Coéquipiers (équipes de {{size}})"
     },
     "PLACEHOLDERS": {
       "SCALING_NOTES": "ex. thrusters à 35 kg, tractions avec élastique"
@@ -847,7 +875,9 @@
       "ATHLETE_HINT": "Un score saisi pour un athlète est validé directement.",
       "VERIFIED": "Score validé",
       "UNVERIFIED": "Validation retirée",
-      "SUBMIT_HINT": "Un juge de la box valide ton score pour le classement compétition. Sans la coche, c'est un score normal."
+      "SUBMIT_HINT": "Un juge de la box valide ton score pour le classement compétition. Sans la coche, c'est un score normal.",
+      "NO_GYM_MATES": "Aucun autre membre dans cette box.",
+      "TEAM_HINT": "Tes coéquipiers reçoivent le même score. Un athlète en plus fait le miroir d'un membre."
     },
     "TIEBREAK_SHORT": "TB {{time}}",
     "ENTRY": {
@@ -886,7 +916,8 @@
       "VOLUME": "Volume : {{value}} {{unit}}",
       "SUMMARY": "{{count}} séries"
     },
-    "SUBMITTED": "Soumis à validation"
+    "SUBMITTED": "Soumis à validation",
+    "TEAM_OF": "Équipe de {{count}}"
   },
   "ADMIN": {
     "SUPPORT": {

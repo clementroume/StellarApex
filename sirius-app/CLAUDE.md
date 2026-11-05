@@ -109,16 +109,23 @@ the dev proxy targets the local Traefik `https://localhost` with `Host: stellar.
   Men/women pairs with the user's division highlighted: `loadPair` / `distancePair` (`MeasurePair.mine`);
   body weights / heights of the athlete profile: `bodyWeightFromKg` / `heightFromCm` and back.
 - Competition WODs: `WodResponse.capabilities.canJudge` decides the athlete selector of the score form
-  (`GymService.getAthletes`); per-score buttons follow `ScoreCapabilities.canModify/canVerify`;
+  (`GymService.getAthletes`), and so does the teammates list of a team WOD (boxes only, never a program);
+  per-score buttons follow `ScoreCapabilities.canModify/canVerify`;
   `WodScoresStore.setVerified`. A WOD page offers "Program in a session" (`/box/sessions/new?borrow=`).
 - Scores on the WOD detail: `features/wods/scores` (`WodScoresStore` provided by the detail, shared by
   `score-best`, `score-history`, `score-form`; `formatScore` in `score.utils.ts`). Each session block
   provides its own store with `sessionLogId` (new scores join the journal; the form then hides day
   and gym) and `sessionId` (history and the folded "session leaderboard" keep that session's scores). Strength sets: `ScoreRequest.sets` (Aldebaran derives the best set / volume).
-- WOD prescription display: `features/wods/wod-whiteboard` (WOD detail and session blocks). Coaches and
+- WOD prescription display: `features/wods/wod-whiteboard` (WOD detail and session blocks). Movement
+  names are written in CrossFit English whatever the language (`features/wods/movement-board-name.ts`:
+  variants built into the name, plural for reps: "9 Hang Power Cleans", "Bar Muscle-Ups"), team split
+  after the line ("(each)", "(synchro)", partner carry); a buy-in is written before the format line. Coaches and
   athletes write WODs with `features/wods/wod-quick-form` (`initial`, `defaultFormat`, `(submitted)`
-  hands the `WodRequest` back; categories / sub-categories (`CATEGORIES`, `STRUCTURES`, `legacyFormat`),
-  measures per movement, scheme / sets parsing in `wod-quick.utils.ts`;
+  hands the `WodRequest` back; categories / sub-categories (`CATEGORIES`, `STRUCTURES`),
+  measures per movement, scheme / sets parsing in `wod-quick.utils.ts`; kettlebell / dumbbell weights
+  (Rogue catalogue) and the three box heights are picked from lists (`loadPresets`, `BOX_CM` / `BOX_IN`),
+  the implied equipment is picked with the movement (`obviousEquipment`), buy-in / cash-out lines come
+  from their own buttons (`addRow(segment)`; `BUY_OUT` in code is shown "Cash-out");
   structure in fields, never a free scheme); the
   full `wod-form` is for public WODs (admins). Both pick movements with `app-movement-combobox`.
 - WOD catalogue (`/wods`) = public WODs only: family chips with counts (`WodFacets.categoryCounts`),

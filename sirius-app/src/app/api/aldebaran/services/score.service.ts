@@ -64,7 +64,7 @@ export class ScoreService {
     size: number = 20,
     gymIds: number[] = [],
     verifiedOnly: boolean = false,
-    division: Division | null = null,
+    division: Division | 'MIXED' | null = null,
     sessionId: number | null = null
   ): Observable<Slice<ScoreResponse>> {
     let params = new HttpParams()

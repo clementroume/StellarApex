@@ -172,8 +172,8 @@ During a support session `GET /me` returns the target user with
 * `PUT /{gymId}/settings` `{enrollmentCode, isAutoSubscription}`: [`MANAGE_SETTINGS`] Update them.
 * `POST /{gymId}/settings/enrollment-code`: [`MANAGE_SETTINGS`] New random code (former invitation
   links stop working).
-* `GET /{gymId}/athletes`: [`SCORE_VERIFY`] Usable members of the gym (`{id, displayName}`, sorted by
-  name), for the staff logging competition scores.
+* `GET /{gymId}/athletes`: [usable member of the gym] Usable members of the gym (`{id, displayName}`,
+  sorted by name), for the staff logging competition scores and the teammates of a team score.
 * `POST /{gymId}/transfer-ownership` `{membershipId}`: [gym OWNER/PROGRAMMER] Make an ACTIVE member
   the gym holder; the former holder becomes COACH (physical) or ATHLETE (virtual). Returns both
   memberships.

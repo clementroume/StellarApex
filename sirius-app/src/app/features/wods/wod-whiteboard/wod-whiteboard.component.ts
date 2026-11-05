@@ -1,4 +1,5 @@
 import {ChangeDetectionStrategy, Component, computed, inject, input} from '@angular/core';
+import {NgTemplateOutlet} from '@angular/common';
 import {RouterLink} from '@angular/router';
 import {TranslatePipe, TranslateService} from '@ngx-translate/core';
 import {HlmBadge} from '@spartan-ng/helm/badge';
@@ -6,6 +7,8 @@ import {WodMovementResponse, WodResponse, WodSegment} from '../../../api/aldebar
 import {MeasurePair, UnitService} from '../../../core/services/unit.service';
 import {AuthService} from '../../../api/antares/services/auth.service';
 import {formatDuration, formatTimeCapShort, localizedText} from '../wod.utils';
+import {boardName} from '../movement-board-name';
+import {ladderValues} from '../wod-quick-form/wod-quick.utils';
 
 // Rep schemes that only restate the format ("AMRAP 20 min", "For time", "Tabata x 4")
 const FORMAT_SCHEME = /^(amrap|emom|tabata|for time)\b/i;
@@ -14,13 +17,13 @@ const STRUCTURE_SCHEME = /round|tier|window|rm\b| x /i;
 
 /**
  * The prescription of a WOD as written on the box whiteboard: format and duration, time cap, rep
- * scheme, then one line per movement (quantity, name, variants, men/women load with the user's
- * division highlighted, notes and scaling). Used by the WOD detail and by each block of a session.
+ * scheme, then one line per movement (quantity, name with its variants in CrossFit English, men/women
+ * load with the user's division highlighted, team split, notes and scaling). Used by the WOD detail and by each block of a session.
  */
 @Component({
   selector: 'app-wod-whiteboard',
   standalone: true,
-  imports: [RouterLink, TranslatePipe, HlmBadge],
+  imports: [NgTemplateOutlet, RouterLink, TranslatePipe, HlmBadge],
   templateUrl: './wod-whiteboard.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
@@ -36,7 +39,7 @@ export class WodWhiteboardComponent {
   readonly sortedMovements = computed<WodMovementResponse[]>(() =>
     [...(this.wod().movements ?? [])].sort((a, b) => a.orderIndex - b.orderIndex)
   );
-  /** Movements by part of the WOD: buy-in, rounds, buy-out (only the parts that have movements). */
+  /** Movements by part of the WOD: buy-in, rounds, cash-out (only the parts that have movements). */
   readonly segments = computed<{segment: WodSegment; movements: WodMovementResponse[]}[]>(() =>
     (['BUY_IN', 'MAIN', 'BUY_OUT'] as WodSegment[])
       .map(segment => ({
@@ -47,6 +50,16 @@ export class WodWhiteboardComponent {
   );
 
   // --- HELPERS ---
+  /** Movements of one part of the WOD, or null when it has none. */
+  part(segment: WodSegment): WodMovementResponse[] | null {
+    return this.segments().find(p => p.segment === segment)?.movements ?? null;
+  }
+
+  /** Types the movements handed to the part template. */
+  asMovements(movements: WodMovementResponse[]): WodMovementResponse[] {
+    return movements;
+  }
+
   /**
    * First line of the whiteboard: "5 rounds for time", "Death by", "For Load · Complex", the format with
    * its duration when the duration is the workout itself ("AMRAP 20 minutes", "EMOM 10 minutes", "EMOM
@@ -147,12 +160,35 @@ export class WodWhiteboardComponent {
     return parts.join(' ');
   }
 
-  /** Equipment and techniques of the movement in the WOD, e.g. "Rings, Strict". */
-  variants(wm: WodMovementResponse): string {
-    return [
-      ...(wm.equipment ?? []).map(eq => this.translate.instant('MOVEMENT.EQUIPMENT.' + eq)),
-      ...(wm.techniques ?? []).map(tech => this.translate.instant('MOVEMENT.TECHNIQUES.' + tech))
-    ].join(', ');
+  /**
+   * Movement name in CrossFit English jargon, variants built in, plural for a number of reps:
+   * "9 Hang Power Cleans", "9 Bar Muscle-Ups"; "Partner Barbell Carry" when a team carries together.
+   */
+  movementName(wm: WodMovementResponse, wod: WodResponse): string {
+    const reps = wm.repsScheme?.trim() || (ladderValues(wod.repScheme ?? '') ? wod.repScheme ?? '' : '');
+    const measured = wm.distance != null || wm.calories != null || (!reps && wm.durationSeconds != null);
+    const plural = !!reps && !measured && !/^1(?![\d-])/.test(reps);
+    const name = boardName(
+      {name: wm.movement.name, allowed: wm.movement.equipment, equipment: wm.equipment, techniques: wm.techniques}, plural);
+    return this.partnerCarry(wm, wod) ? `${this.translate.instant('WOD.BOARD.SPLITS.PARTNER')} ${name}` : name;
+  }
+
+  /**
+   * Team WOD: "(each)", "(synchro)" for reps done together, "(together)" for a run; the total is the
+   * default, a carry together is a partner carry.
+   */
+  teamSplit(wm: WodMovementResponse, wod: WodResponse): string {
+    if (!wod.teamSize || !wm.teamSplit || wm.teamSplit === 'TOTAL' || this.partnerCarry(wm, wod)) return '';
+    const moving = wm.distance != null || wm.calories != null || wm.durationSeconds != null;
+    const key = wm.teamSplit === 'TOGETHER' && moving ? 'ALONGSIDE' : wm.teamSplit;
+    return `(${this.translate.instant('WOD.BOARD.SPLITS.' + key)})`;
+  }
+
+  /** "Team of 2 · You go I go", or nothing for an individual WOD. */
+  teamLabel(wod: WodResponse): string {
+    if (!wod.teamSize) return '';
+    const size = this.translate.instant('WOD.TEAM.OF', {count: wod.teamSize});
+    return wod.teamMode ? `${size} · ${this.translate.instant('WOD.TEAM.MODES.' + wod.teamMode)}` : size;
   }
 
   /**
@@ -173,6 +209,10 @@ export class WodWhiteboardComponent {
 
   scaling(wm: WodMovementResponse): string {
     return localizedText(this.activeLang(), wm.scalingOptionsEn, wm.scalingOptionsFr);
+  }
+
+  private partnerCarry(wm: WodMovementResponse, wod: WodResponse): boolean {
+    return !!wod.teamSize && wm.teamSplit === 'TOGETHER' && ['CARRY', 'SLED'].includes(wm.movement.category ?? '');
   }
 
   /** "20s" under a minute, "3:00" from a minute. */

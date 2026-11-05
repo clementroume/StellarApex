@@ -30,7 +30,7 @@ export function scoreTypeOf(category: WodCategory, structure: string): string {
   }
 }
 
-/** Sub-categories whose movements can be split into buy-in, rounds and buy-out (Murph). */
+/** Sub-categories whose movements can be split into buy-in, rounds and cash-out (Murph). */
 export function withSegments(category: WodCategory, structure: string): boolean {
   return structure === 'ROUNDS' && (category === 'FOR_TIME' || category === 'AMRAP');
 }
@@ -129,4 +129,63 @@ export function monotone(values: number[]): boolean {
 export function roundsOf(scheme: string | null | undefined): number | null {
   const match = /^(\d+)\s*rounds?\b/i.exec(scheme?.trim() ?? '');
   return match ? Number(match[1]) : null;
+}
+
+/**
+ * Standard implement weights (Rogue Fitness catalogue): kettlebells in kilograms with their usual
+ * pound labels (16 kg = 35 lb, 24 kg = 53 lb), dumbbells by 2.5 kg / 5 lb.
+ */
+export const KETTLEBELL_KG = [4, 6, 8, 12, 16, 20, 24, 28, 32, 36, 40, 48];
+export const KETTLEBELL_LB = [9, 13, 18, 26, 35, 44, 53, 62, 70, 80, 88, 106];
+export const DUMBBELL_KG = Array.from({length: 20}, (_, i) => (i + 1) * 2.5);
+export const DUMBBELL_LB = Array.from({length: 20}, (_, i) => (i + 1) * 5);
+/** The three heights of a plyo box: 20", 24", 30" (51, 61, 76 cm). */
+export const BOX_IN = [20, 24, 30];
+export const BOX_CM = [51, 61, 76];
+
+/** Weighted implement of a WOD line: the equipment picked, else the only one of the movement or its name. */
+export function implementOf(picked: string[], allowed: string[] | null | undefined, name: string | null | undefined):
+  'KETTLEBELL' | 'DUMBBELL' | null {
+  const implement = (values: string[]) =>
+    values.includes('KETTLEBELL') ? 'KETTLEBELL' : values.includes('DUMBBELL') ? 'DUMBBELL' : null;
+  if (picked.length > 0) return implement(picked);
+  if (name && /kettlebell/i.test(name)) return 'KETTLEBELL';
+  if (name && /dumbbell/i.test(name)) return 'DUMBBELL';
+  return allowed?.length === 1 ? implement(allowed) : null;
+}
+
+/** Weights offered for an implement in the user's unit, or null for a free load. */
+export function loadPresets(implement: 'KETTLEBELL' | 'DUMBBELL' | null, metric: boolean): number[] | null {
+  if (implement === 'KETTLEBELL') return metric ? KETTLEBELL_KG : KETTLEBELL_LB;
+  if (implement === 'DUMBBELL') return metric ? DUMBBELL_KG : DUMBBELL_LB;
+  return null;
+}
+
+/** A movement on a plyo box (box jump, step-up, burpee box jump over): three heights only. */
+export function onBox(picked: string[], name: string | null | undefined): boolean {
+  return picked.includes('BOX') || (!!name && /\bbox\b/i.test(name));
+}
+
+/** The preset values, plus a value already written that is not one of them (kept on edit). */
+export function withCurrent(presets: number[], ...current: (number | null | undefined)[]): number[] {
+  const extra = current.filter((v): v is number => v != null && !presets.includes(v));
+  return [...presets, ...extra].sort((a, b) => a - b);
+}
+
+// Equipment a movement name already says ("Box Jump", "American Kettlebell Swing", "Ring Dip")
+const NAMED_EQUIPMENT: [RegExp, string][] = [
+  [/\bbox\b/i, 'BOX'], [/kettlebell/i, 'KETTLEBELL'], [/dumbbell/i, 'DUMBBELL'], [/barbell/i, 'BARBELL'],
+  [/\brings?\b/i, 'RINGS'], [/\bropes?\b/i, 'ROPE'], [/\bghd\b/i, 'GHD'], [/sandbag/i, 'SANDBAG'], [/\bsled\b/i, 'SLED'],
+  [/wall-?ball|med(icine)? ball/i, 'MEDICINE_BALL'], [/d-ball/i, 'D_BALL'], [/slam ball/i, 'SLAM_BALL'], [/pegboard/i, 'PEGBOARD']
+];
+
+/**
+ * Equipment picked at once for a new line: the only one the movement allows, or the one its name
+ * says ("Box Step-up" → box, among the loads it allows). None when the choice is open.
+ */
+export function obviousEquipment(name: string | null | undefined, allowed: string[] | null | undefined): string[] {
+  const options = allowed ?? [];
+  if (options.length === 1) return [...options];
+  const named = NAMED_EQUIPMENT.find(([pattern, eq]) => !!name && pattern.test(name) && options.includes(eq));
+  return named ? [named[1]] : [];
 }

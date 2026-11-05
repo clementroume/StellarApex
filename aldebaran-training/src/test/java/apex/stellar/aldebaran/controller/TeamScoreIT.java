@@ -103,7 +103,7 @@ class TeamScoreIT extends BaseIntegrationTest {
   @Test
   @DisplayName("A team score reaches every member and counts once on the leaderboard")
   void teamScoreSharedByMembers() throws Exception {
-    logTeamScore();
+    long anneScore = logTeamScore();
 
     mockMvc
         .perform(
@@ -116,6 +116,11 @@ class TeamScoreIT extends BaseIntegrationTest {
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.content", hasSize(1)))
         .andExpect(jsonPath("$.content[0].teamMemberIds", hasSize(2)));
+    // The teammate's copy is not a rival
+    mockMvc
+        .perform(as(get("/aldebaran/scores/" + anneScore + "/compare"), ANNE))
+        .andExpect(jsonPath("$.rank").value(1))
+        .andExpect(jsonPath("$.totalScores").value(1));
   }
 
   @Test
@@ -126,6 +131,15 @@ class TeamScoreIT extends BaseIntegrationTest {
         .andExpect(status().isBadRequest());
     mockMvc
         .perform(as(post("/aldebaran/scores"), ANNE).content(score(10, BOB, OUTSIDER, 400L)))
+        .andExpect(status().isBadRequest());
+  }
+
+  @Test
+  @DisplayName("A team score is never logged on a program")
+  void noTeamScoreOnProgram() throws Exception {
+    when(antaresClient.isProgrammingGym(GYM)).thenReturn(true);
+    mockMvc
+        .perform(as(post("/aldebaran/scores"), ANNE).content(score(10, BOB)))
         .andExpect(status().isBadRequest());
   }
 

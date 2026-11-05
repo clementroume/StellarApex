@@ -54,8 +54,10 @@ export class ScoreLeaderboardComponent {
    * Division leaderboard (D37): scores logged in that division only; null = every score. Starts on
    * every score, as scores logged before the athletes chose a division have none.
    */
-  readonly divisions = DIVISIONS;
-  readonly division = signal<Division | null>(null);
+  /** Men, women, and mixed teams on a team WOD. */
+  readonly divisions = computed<(Division | 'MIXED')[]>(() =>
+    this.store.wod()?.teamSize ? [...DIVISIONS, 'MIXED'] : DIVISIONS);
+  readonly division = signal<Division | 'MIXED' | null>(null);
   readonly rows = signal<ScoreResponse[]>([]);
   readonly names = signal<Record<number, string>>({});
   readonly hasMore = signal<boolean>(false);
@@ -120,7 +122,9 @@ export class ScoreLeaderboardComponent {
 
   private loadNames(scores: ScoreResponse[]): void {
     const known = this.names();
-    const missing = [...new Set(scores.map(s => s.userId))].filter(id => !(id in known));
+    // A team row names every member
+    const ids = scores.flatMap(s => s.teamMemberIds?.length ? s.teamMemberIds : [s.userId]);
+    const missing = [...new Set(ids)].filter(id => !(id in known));
     if (missing.length === 0) return;
     this.userService.getDisplayNames(missing).subscribe({
       next: (names) => this.names.set({...this.names(), ...Object.fromEntries(names.map(n => [n.id, n.displayName]))}),
@@ -141,7 +145,7 @@ export class ScoreLeaderboardComponent {
     this.myProgs.set(checked);
   }
 
-  onDivisionChange(division: Division | null): void {
+  onDivisionChange(division: Division | 'MIXED' | null): void {
     this.division.set(division);
   }
 
@@ -150,8 +154,11 @@ export class ScoreLeaderboardComponent {
   }
 
   // --- HELPERS ---
+  /** Athlete's name, or "Anne L. & Bob M." for a team (unknown members as anonymous). */
   name(score: ScoreResponse): string {
-    return this.names()[score.userId] ?? this.translate.instant('SCORE.LEADERBOARD.ANONYMOUS');
+    const anonymous = this.translate.instant('SCORE.LEADERBOARD.ANONYMOUS');
+    const ids = score.teamMemberIds?.length ? score.teamMemberIds : [score.userId];
+    return ids.map(id => this.names()[id] ?? anonymous).join(' & ');
   }
 
   value(score: ScoreResponse): string {

@@ -82,6 +82,14 @@ and a virtual programming); there is no "active gym" in requests.
   `POST /antares/users/display-names` (gym mates, opted-in users, oneself).
   `ScoreResponse.capabilities {canModify, canVerify}`; others' comments hidden from non-moderators.
   Movements/muscles CRUD and CSV export: `hasRole('ADMIN')`.
+- Team WODs (`wods.team_size` 2–6, `team_mode`, per line `team_split` TOTAL/EACH/TOGETHER; never on a
+  program, 400): the logger names teammates of the box (`ScoreRequest.teammateIds`, up to `teamSize`
+  so an odd athlete mirrors a team; each checked through Antares `isGymMember`, box only, never a
+  program), one `score_teams` row and one score per member (counts in each member's PRs), division
+  MEN / WOMEN / MIXED (null while a member has none). A correction applies to the whole team; the
+  logger, a judge or an admin deletes it for all, a teammate deleting their row leaves the team.
+  Leaderboards show one row per team. Sirius lists gym mates with Antares `GET /gyms/{id}/athletes`
+  (usable members of that gym).
 - Competition WODs (`wods.competition`, physical gym WODs only, never public; a virtual programming
   sells its own WODs: no competition, no copies into it, only moderation of aberrant scores), the
   only place scores are

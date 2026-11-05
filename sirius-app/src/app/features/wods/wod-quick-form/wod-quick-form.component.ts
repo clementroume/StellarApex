@@ -13,6 +13,8 @@ import {
   WodMovementResponse,
   WodRequest,
   WodResponse,
+  TeamMode,
+  TeamSplit,
   WodSegment
 } from '../../../api/aldebaran/models/wod.model';
 import {UnitService} from '../../../core/services/unit.service';
@@ -20,7 +22,14 @@ import {MovementComboboxComponent} from '../../../shared/component/movement-comb
 import {NativeSelectDirective} from '../../../shared/component/native-select/native-select.directive';
 import {
   ALL_EXTRAS,
+  BOX_CM,
+  BOX_IN,
   defaultExtras,
+  implementOf,
+  loadPresets,
+  obviousEquipment,
+  onBox,
+  withCurrent,
   defaultMeasure,
   Extra,
   ladderValues,
@@ -65,6 +74,7 @@ type MovementRow = FormGroup<{
   equipment: FormControl<string[]>;
   techniques: FormControl<string[]>;
   segment: FormControl<WodSegment>;
+  teamSplit: FormControl<TeamSplit>;
 }>;
 
 /**
@@ -75,7 +85,7 @@ type MovementRow = FormGroup<{
  * scheme is generated, never typed freely. Each movement
  * line has a quantity measure (reps, max, distance, calories, time) chosen from its catalogue
  * movement, the load / height it usually needs in the user's units, folded equipment and technique, and a buy-in /
- * buy-out part on Rounds and AMRAP. A weight vest and notes are folded options. Writes in the
+ * cash-out part on Rounds and AMRAP. A weight vest and notes are folded options. Writes in the
  * user's language only; the full WOD form stays for public WODs. Hands the `WodRequest` back
  * (`submitted`); the caller saves it.
  */
@@ -104,7 +114,6 @@ export class WodQuickFormComponent implements OnInit {
   protected readonly categories = CATEGORIES;
   protected readonly scoreTypes = SCORE_TYPES;
   protected readonly measures = MEASURES;
-  protected readonly segmentValues = SEGMENTS;
   protected readonly ladderHints = LADDER_HINTS;
   protected readonly pyramidHints = PYRAMID_HINTS;
   protected readonly movements = signal<MovementSummaryResponse[]>([]);
@@ -113,6 +122,11 @@ export class WodQuickFormComponent implements OnInit {
   protected readonly showScoreType = signal(false);
   protected readonly showNotes = signal(false);
   protected readonly showVest = signal(false);
+  /** Team WOD option unfolded (team size, mode, total / each / together per line). */
+  protected readonly showTeam = signal(false);
+  protected readonly teamSizes = [2, 3, 4, 5, 6];
+  protected readonly teamModes: TeamMode[] = ['YOU_GO_I_GO', 'SPLIT', 'SYNCHRO'];
+  protected readonly teamSplits: TeamSplit[] = ['TOTAL', 'EACH', 'TOGETHER'];
   /** Rows showing every extra measure. */
   protected readonly expanded = signal<Set<number>>(new Set());
   /** Open equipment / technique choices, keyed "row:field". */
@@ -140,6 +154,9 @@ export class WodQuickFormComponent implements OnInit {
     sets: new FormControl<string>('', {nonNullable: true, validators: Validators.maxLength(50)}),
     vestWeight: new FormControl<number | null>(null, Validators.min(0)),
     vestWeightFemale: new FormControl<number | null>(null, Validators.min(0)),
+    // Team WOD: athletes per team and how they share the work
+    teamSize: new FormControl<number>(2, {nonNullable: true}),
+    teamMode: new FormControl<TeamMode>('YOU_GO_I_GO', {nonNullable: true}),
     title: new FormControl<string>('', {nonNullable: true, validators: Validators.maxLength(100)}),
     notes: new FormControl<string>('', {nonNullable: true, validators: Validators.maxLength(4000)}),
     rows: new FormArray<MovementRow>([])
@@ -241,12 +258,23 @@ export class WodQuickFormComponent implements OnInit {
     this.form.controls.sets.setValue(sets);
   }
 
-  addRow(): void {
-    this.form.controls.rows.push(this.row());
+  /**
+   * Adds a movement line: a buy-in after the other buy-in lines, a cash-out at the end, a line of the
+   * rounds before the cash-out (at the end when the WOD has no parts).
+   */
+  addRow(segment: WodSegment = 'MAIN'): void {
+    const rows = this.form.controls.rows;
+    const segments = rows.controls.map(r => r.controls.segment.value);
+    let index = rows.length;
+    if (segment === 'BUY_IN') index = segments.filter(s => s === 'BUY_IN').length;
+    else if (segment === 'MAIN' && this.withSegments()) index = rows.length - segments.filter(s => s === 'BUY_OUT').length;
+    this.shiftRowState(index, 1);
+    rows.insert(index, this.row({segment}));
   }
 
   removeRow(index: number): void {
     this.form.controls.rows.removeAt(index);
+    this.shiftRowState(index, -1);
   }
 
   /** Picking another movement clears its variants, brings its usual measure and loads the allowed variants. */
@@ -260,7 +288,14 @@ export class WodQuickFormComponent implements OnInit {
       movementId, equipment: [], techniques: [],
       ...(untouched ? {measure: defaultMeasure(movement?.name, movement?.category)} : {})
     });
-    if (movementId != null) this.loadDetail(movementId);
+    if (movementId != null) {
+      // The equipment the movement implies is picked at once (kettlebell swing, box jump)
+      this.loadDetail(movementId, detail => {
+        if (row.controls.movementId.value === movementId && row.controls.equipment.value.length === 0) {
+          row.controls.equipment.setValue(obviousEquipment(detail.name, detail.equipment));
+        }
+      });
+    }
   }
 
   toggleExpanded(index: number): void {
@@ -302,6 +337,26 @@ export class WodQuickFormComponent implements OnInit {
   }
 
   // --- HELPERS ---
+  /** Heading before a line opening a part of the WOD (buy-in, the rounds, cash-out), when it has parts. */
+  segmentHeading(index: number): WodSegment | null {
+    if (!this.withSegments()) return null;
+    const segments = this.form.controls.rows.controls.map(r => r.controls.segment.value);
+    if (segments.every(s => s === 'MAIN')) return null;
+    return index === 0 || segments[index] !== segments[index - 1] ? segments[index] : null;
+  }
+
+  /** Keeps the unfolded measures and variants on their line when lines move from `index` on. */
+  private shiftRowState(index: number, delta: number): void {
+    const shift = (i: number) => (i >= index ? i + delta : i);
+    this.expanded.update(s => new Set([...s].filter(i => delta > 0 || i !== index).map(shift)));
+    this.variantsOpen.update(s => new Set([...s]
+      .filter(key => delta > 0 || Number(key.split(':')[0]) !== index)
+      .map(key => {
+        const [i, field] = key.split(':');
+        return `${shift(Number(i))}:${field}`;
+      })));
+  }
+
   measureOfRow(index: number): Measure {
     return this.form.controls.rows.at(index).controls.measure.value;
   }
@@ -321,6 +376,23 @@ export class WodQuickFormComponent implements OnInit {
     if (row.height != null || row.heightFemale != null) filled.push('HEIGHT');
     const shown = new Set([...defaultExtras(movement?.category, movement?.name), ...filled]);
     return ALL_EXTRAS.filter(m => shown.has(m));
+  }
+
+  /** Standard weights of the row's kettlebell or dumbbell in the user's unit, or null for a free load. */
+  loadChoices(index: number): number[] | null {
+    const row = this.form.controls.rows.at(index).getRawValue();
+    const movement = this.movements().find(m => m.id === row.movementId);
+    const allowed = row.movementId == null ? null : this.details()[row.movementId]?.equipment;
+    const presets = loadPresets(implementOf(row.equipment, allowed, movement?.name), this.metric());
+    return presets && withCurrent(presets, row.weight, row.weightFemale);
+  }
+
+  /** The three box heights (20/24/30 in, 51/61/76 cm) for a movement on a box, or null for a free height. */
+  heightChoices(index: number): number[] | null {
+    const row = this.form.controls.rows.at(index).getRawValue();
+    const movement = this.movements().find(m => m.id === row.movementId);
+    if (!onBox(row.equipment, movement?.name)) return null;
+    return withCurrent(this.metric() ? BOX_CM : BOX_IN, row.height, row.heightFemale);
   }
 
   /** Equipment or techniques the row's movement allows, once loaded. */
@@ -385,6 +457,7 @@ export class WodQuickFormComponent implements OnInit {
         equipment: r.equipment,
         techniques: r.techniques,
         segment: segments ? r.segment : 'MAIN',
+        teamSplit: this.showTeam() ? r.teamSplit : 'TOTAL',
         complexGroup: complex ? 1 : null
       };
     });
@@ -419,6 +492,8 @@ export class WodQuickFormComponent implements OnInit {
       vestWeight: vest ? v.vestWeight : null,
       vestWeightFemale: vest ? v.vestWeightFemale : null,
       vestWeightUnit: vest ? this.unitService.massUnit() : null,
+      teamSize: this.showTeam() ? v.teamSize : null,
+      teamMode: this.showTeam() ? v.teamMode : null,
       movements
     };
   }
@@ -527,8 +602,12 @@ export class WodQuickFormComponent implements OnInit {
     });
     this.showNotes.set(!!this.form.controls.notes.value);
     this.showVest.set(wod.vestWeight != null || wod.vestWeightFemale != null);
+    this.showTeam.set(!!wod.teamSize);
+    if (wod.teamSize) this.form.patchValue({teamSize: wod.teamSize, teamMode: wod.teamMode ?? 'YOU_GO_I_GO'});
     const shared = this.sharedReps();
-    [...wod.movements].sort((a, b) => a.orderIndex - b.orderIndex).forEach(wm => {
+    // Buy-in lines first, cash-out lines last, whatever their order in older WODs
+    const rank = (wm: WodMovementResponse) => SEGMENTS.indexOf(wm.segment ?? 'MAIN');
+    [...wod.movements].sort((a, b) => rank(a) - rank(b) || a.orderIndex - b.orderIndex).forEach(wm => {
       const measure = this.measureOf(wm);
       this.form.controls.rows.push(this.row({
         movementId: wm.movement.id,
@@ -539,7 +618,8 @@ export class WodQuickFormComponent implements OnInit {
         weight: wm.weight ?? null, weightFemale: wm.weightFemale ?? null,
         height: wm.height ?? null, heightFemale: wm.heightFemale ?? null,
         equipment: wm.equipment ?? [], techniques: wm.techniques ?? [],
-        segment: wm.segment ?? 'MAIN'
+        segment: wm.segment ?? 'MAIN',
+        teamSplit: wm.teamSplit ?? 'TOTAL'
       }));
       this.loadDetail(wm.movement.id);
     });
@@ -566,12 +646,20 @@ export class WodQuickFormComponent implements OnInit {
       height: number(v.height), heightFemale: number(v.heightFemale),
       equipment: new FormControl<string[]>(v.equipment ?? [], {nonNullable: true}),
       techniques: new FormControl<string[]>(v.techniques ?? [], {nonNullable: true}),
-      segment: new FormControl<WodSegment>(v.segment ?? 'MAIN', {nonNullable: true})
+      segment: new FormControl<WodSegment>(v.segment ?? 'MAIN', {nonNullable: true}),
+      teamSplit: new FormControl<TeamSplit>(v.teamSplit ?? 'TOTAL', {nonNullable: true})
     });
   }
 
-  private loadDetail(id: number): void {
-    if (this.details()[id]) return;
-    this.movementService.getMovement(id).subscribe(detail => this.details.update(d => ({...d, [id]: detail})));
+  private loadDetail(id: number, then?: (detail: MovementResponse) => void): void {
+    const known = this.details()[id];
+    if (known) {
+      then?.(known);
+      return;
+    }
+    this.movementService.getMovement(id).subscribe(detail => {
+      this.details.update(d => ({...d, [id]: detail}));
+      then?.(detail);
+    });
   }
 }
