@@ -13,7 +13,7 @@ name: stellar-observability
 services:
   # --- 1. TELEMETRY COLLECTOR (GRAFANA ALLOY) ---
   vega-alloy:
-    image: grafana/alloy:v1.21.0
+    image: grafana/alloy:v1.21.2
     container_name: vega-alloy
     command: [ "run", "--server.http.listen-addr=0.0.0.0:12345", "/etc/alloy/config.alloy" ]
     volumes:
@@ -34,7 +34,7 @@ services:
 
   # --- 2. METRICS STORAGE (PROMETHEUS) ---
   vega-prometheus:
-    image: prom/prometheus:v3.15.0
+    image: prom/prometheus:v3.15.1
     container_name: vega-prometheus
     volumes:
       - "./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml"
@@ -51,7 +51,7 @@ services:
 
   # --- 3. LOGS STORAGE (LOKI) ---
   vega-loki:
-    image: grafana/loki:3.7.8
+    image: grafana/loki:3.7.9
     container_name: vega-loki
     volumes:
       - "./monitoring/loki/loki-config.yaml:/etc/loki/local-config.yaml"
@@ -63,7 +63,7 @@ services:
 
   # --- 4. TRACING STORAGE (TEMPO) ---
   vega-tempo:
-    image: grafana/tempo:3.1.0
+    image: grafana/tempo:3.1.1
     container_name: vega-tempo
     command: [ "-config.file=/etc/tempo.yaml" ]
     volumes:
