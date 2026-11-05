@@ -22,6 +22,7 @@ the root one; keep them in sync with code changes.
 ```bash
 cd sirius-app && npm test          # Vitest via ng test (non-watch)
 cd sirius-app && npm run build     # production build (CI runs this)
+cd sirius-app && npm run e2e       # Playwright journeys on :4200 against the local Docker stack (optional, not in CI; see Sirius README)
 cd sirius-app && npm start         # dev server on :4200, proxies /antares and /aldebaran to the local Traefik (Host: stellar.apex)
 cd antares-auth && ./mvnw verify   # unit tests + *IT (Failsafe, Testcontainers: Docker must run)
 cd aldebaran-training && ./mvnw verify

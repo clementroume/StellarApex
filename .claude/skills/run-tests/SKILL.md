@@ -27,6 +27,12 @@ Find the touched services with `git status --short` (folders `antares-auth`, `al
 ITs share one JVM, one database and one Spring context: a test that passes alone and fails in the
 suite (or the opposite) is order coupling. Re-run with `-Dfailsafe.runOrder=random` to confirm.
 
+## Optional: end-to-end journeys
+
+Before a PR that touches a user journey (sign-in, boxes, WODs, scores, sessions), and only with the Docker stack up
+and `sirius-app/e2e/local.env` filled in: `cd sirius-app && npm run e2e` (about 1 min, desktop + mobile). Not in CI,
+not required for a commit. Each run registers (then deletes) one account: the local Antares limit is 100 registrations per hour per IP.
+
 ## Report (and nothing else)
 
 - Per service: command, result (green/red), duration.
