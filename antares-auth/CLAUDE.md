@@ -61,4 +61,7 @@ HttpOnly cookies, XSRF cookie `XSRF-TOKEN`). `./mvnw verify` runs unit tests and
 - No valid access token on a protected endpoint → 401 ProblemDetail from
   `config/ProblemDetailAuthenticationEntryPoint` (Sirius refreshes only on 401); authenticated but
   forbidden → 403. Never fall back to Spring's default 403 entry point.
-- Tests: `*Test` unit tests (Mockito); `*IT` extend `config/BaseIntegrationTest`.
+- Tests: `*Test` unit tests (Mockito); `*IT` extend `config/BaseIntegrationTest` (one JVM, one container
+  pair and one cached context for all ITs, tables truncated before each test, BCrypt cost 4, real CSRF
+  repository restored before each test because `csrf()` swaps it). Never add a per-class
+  `@MockitoBean` / property (it splits the context cache) and never depend on test order.

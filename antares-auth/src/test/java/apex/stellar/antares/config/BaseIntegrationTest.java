@@ -16,6 +16,9 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.core.JdbcTemplate;
+import java.util.List;
+import org.junit.jupiter.api.BeforeEach;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
@@ -23,6 +26,11 @@ import org.springframework.data.redis.connection.RedisConnection;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.http.MediaType;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mock.web.MockHttpServletRequest;
+import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
+import org.springframework.security.web.csrf.CsrfTokenRepository;
+import org.springframework.security.test.web.support.WebTestUtils;
+import org.springframework.web.context.WebApplicationContext;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
@@ -57,6 +65,11 @@ public abstract class BaseIntegrationTest {
   @Autowired protected JsonMapper jsonMapper;
   @Autowired protected UserRepository userRepository;
   @Autowired protected PasswordEncoder passwordEncoder;
+  @Autowired private JdbcTemplate jdbcTemplate;
+  @Autowired private WebApplicationContext webApplicationContext;
+
+  /** The application's real CSRF repository, captured before any test swaps it. */
+  private static volatile CsrfTokenRepository realCsrfRepository;
 
   /** No SMTP server in tests: sent messages can be captured from this mock. */
   @MockitoBean protected JavaMailSender mailSender;
@@ -74,6 +87,8 @@ public abstract class BaseIntegrationTest {
     registry.add("application.security.jwt.issuer", () -> "antares-test-issuer");
     registry.add("application.security.jwt.audience", () -> "antares-test-audience");
     registry.add("application.security.jwt.cookie.domain", () -> "antares-domain");
+    // BCrypt at cost 4 (minimum): hashing dominates the run time at the production cost
+    registry.add("application.security.password.bcrypt-strength", () -> "4");
     registry.add("application.security.internal-secret", () -> "test-internal-secret");
     // Every test request comes from the same IP: registration throttling is tested on its own
     registry.add("application.security.registration.max-per-ip", () -> "1000");
@@ -82,6 +97,47 @@ public abstract class BaseIntegrationTest {
     registry.add("management.otlp.metrics.export.enabled", () -> "false");
     registry.add("management.tracing.export.otlp.enabled", () -> "false");
     registry.add("management.logging.export.otlp.enabled", () -> "false");
+  }
+
+
+  private static volatile String truncateStatement;
+
+  /**
+   * Every test starts from empty tables (Flyway history kept), so that the classes sharing one
+   * database and one Spring context never depend on each other's leftovers or on execution order.
+   */
+  @BeforeEach
+  void truncateAllTables() {
+    String sql = truncateStatement;
+    if (sql == null) {
+      List<String> tables =
+          jdbcTemplate.queryForList(
+              "select tablename from pg_tables where schemaname = 'antares'"
+                  + " and tablename <> 'flyway_schema_history'",
+              String.class);
+      sql =
+          "TRUNCATE TABLE "
+              + String.join(", ", tables.stream().map(t -> "antares." + t).toList())
+              + " RESTART IDENTITY CASCADE";
+      truncateStatement = sql;
+    }
+    jdbcTemplate.execute(sql);
+  }
+
+  /**
+   * {@code csrf()} (spring-security-test) replaces the repository of the shared CSRF filter for good,
+   * so the {@code XSRF-TOKEN} cookie would vanish for every class running after it. Put the real
+   * one back before each test, to keep tests independent of their execution order.
+   */
+  @BeforeEach
+  void restoreRealCsrfRepository() {
+    MockHttpServletRequest request = new MockHttpServletRequest(webApplicationContext.getServletContext());
+    CsrfTokenRepository current = WebTestUtils.getCsrfTokenRepository(request);
+    if (current instanceof CookieCsrfTokenRepository) {
+      realCsrfRepository = current;
+    } else if (realCsrfRepository != null) {
+      WebTestUtils.setCsrfTokenRepository(request, realCsrfRepository);
+    }
   }
 
   @BeforeEach

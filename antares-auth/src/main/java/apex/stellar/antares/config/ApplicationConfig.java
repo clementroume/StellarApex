@@ -82,11 +82,14 @@ public class ApplicationConfig {
    * <p>This bean defines the hashing algorithm (BCrypt) to be used for storing and verifying user
    * passwords.
    *
+   * @param strength BCrypt cost (log rounds); 10 unless a property lowers it, which only the test
+   *     suite does to keep hashing fast.
    * @return A BCryptPasswordEncoder instance.
    */
   @Bean
-  public PasswordEncoder passwordEncoder() {
-    return new BCryptPasswordEncoder();
+  public PasswordEncoder passwordEncoder(
+      @Value("${application.security.password.bcrypt-strength:10}") int strength) {
+    return new BCryptPasswordEncoder(strength);
   }
 
   /**

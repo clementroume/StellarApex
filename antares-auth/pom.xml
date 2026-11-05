@@ -56,7 +56,6 @@
                     <includes>
                         <include>**/*IT.java</include>
                     </includes>
-                    <reuseForks>false</reuseForks>
                 </configuration>
                 <groupId>org.apache.maven.plugins</groupId>
             </plugin>

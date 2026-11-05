@@ -7,10 +7,8 @@ import apex.stellar.aldebaran.controller.MuscleController;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
 
 /** Integration test class to verify the Spring application context loading. */
-@SpringBootTest
 class AldebaranTrainingIT extends BaseIntegrationTest {
 
   @Autowired private MuscleController muscleController;
