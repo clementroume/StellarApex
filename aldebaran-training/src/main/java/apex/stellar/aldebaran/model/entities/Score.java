@@ -157,6 +157,11 @@ public class Score {
   @Column(length = 10)
   private Division division;
 
+  /** Team of a team WOD score (members share the performance), or null. */
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "team_id")
+  private ScoreTeam team;
+
   // --- Session ---
   /** Journal of the session the score was done in, or null for a score outside a session. */
   @Column(name = "session_log_id")

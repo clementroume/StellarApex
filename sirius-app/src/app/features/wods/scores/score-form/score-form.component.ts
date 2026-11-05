@@ -1,4 +1,4 @@
-import {ChangeDetectionStrategy, Component, computed, DestroyRef, DOCUMENT, effect, inject, signal} from '@angular/core';
+import {ChangeDetectionStrategy, Component, computed, DestroyRef, DOCUMENT, effect, inject, signal, untracked} from '@angular/core';
 import {toSignal} from '@angular/core/rxjs-interop';
 import {FormBuilder, FormControl, FormGroup, ReactiveFormsModule} from '@angular/forms';
 import {TranslatePipe, TranslateService} from '@ngx-translate/core';
@@ -67,6 +67,9 @@ export class ScoreFormComponent {
   readonly repsEntry = signal<'ROUNDS' | 'TOTAL'>('ROUNDS');
   /** Members of the competition WOD's gym, offered to its judge (Antares, SCORE_VERIFY). */
   readonly athletes = signal<DisplayName[]>([]);
+  /** Team WOD: members of the box offered as teammates, and the ones chosen. */
+  readonly gymMates = signal<DisplayName[]>([]);
+  readonly teammates = signal<number[]>([]);
 
   readonly form = this.fb.nonNullable.group({
     date: [today()],
@@ -132,9 +135,15 @@ export class ScoreFormComponent {
   readonly myId = computed(() => this.accessService.userId());
   readonly massUnitLabel = computed(() => this.unitService.massUnit() === 'KG' ? 'kg' : 'lb');
   readonly timeCap = computed(() => formatTimeCapShort(this.store.wod()?.timeCapSeconds));
-  /** A gym WOD is always scored in its gym; a public or personal WOD in one of the user's gyms. */
-  readonly gymChoices = computed(() =>
-    this.store.wod()?.gymId != null || this.inSession() ? [] : this.accessService.memberships());
+  /**
+   * A gym WOD is always scored in its gym; a public or personal WOD in one of the user's gyms, a
+   * box for a team WOD (no team on a program).
+   */
+  readonly gymChoices = computed(() => {
+    if (this.store.wod()?.gymId != null || this.inSession()) return [];
+    const memberships = this.accessService.memberships();
+    return this.isTeam() ? memberships.filter(m => !m.gymProgramming) : memberships;
+  });
   /** The gym is only asked to members of several gyms; a single gym is used automatically. */
   readonly showGymChoice = computed(() => this.gymChoices().length > 1);
 
@@ -162,6 +171,15 @@ export class ScoreFormComponent {
     return localizedText(lang, wod?.tiebreakEn, wod?.tiebreakFr);
   });
   /** The tiebreak is optional and only offered when it applies: never for a finished For Time. */
+  /** Team WOD (new score): teammates of the box are chosen, and get the same score. */
+  readonly isTeam = computed(() => !this.isEdit() && !!this.store.wod()?.teamSize);
+  readonly teamSize = computed(() => this.store.wod()?.teamSize ?? 0);
+  /** Box where the team did the WOD: the WOD's, else the box chosen (or the only one). */
+  private readonly teamGymId = computed(() => {
+    const chosen = this.formValue().gymId;
+    return this.store.wod()?.gymId ?? (this.gymChoices().some(c => c.gymId === chosen) ? chosen : null);
+  });
+
   readonly showTiebreak = computed(() =>
     !!this.tiebreakRule() && (this.scoreType() !== 'TIME' || this.timeCapped()));
 
@@ -178,6 +196,18 @@ export class ScoreFormComponent {
       const gymId = this.store.wod()?.gymId;
       if (this.canChooseAthlete() && gymId != null) this.loadAthletes(gymId);
     });
+    effect(() => {
+      // The chosen gym stays one of the choices (a team WOD drops the programs)
+      const choices = this.gymChoices();
+      const control = this.form.controls.gymId;
+      if (choices.length > 0 && !choices.some(c => c.gymId === control.value)) {
+        untracked(() => control.setValue(choices[0].gymId));
+      }
+    });
+    effect(() => {
+      const gymId = this.teamGymId();
+      if (this.isTeam() && gymId != null) untracked(() => this.loadGymMates(gymId));
+    });
   }
 
   // --- DATA FETCHING ---
@@ -188,7 +218,23 @@ export class ScoreFormComponent {
     });
   }
 
+  /** Members of the box where the team did the WOD (Antares lists them to its members). */
+  private loadGymMates(gymId: number): void {
+    this.teammates.set([]);
+    this.gymService.getAthletes(gymId).subscribe({
+      next: (mates) => this.gymMates.set(mates.filter(a => a.id !== this.myId())),
+      error: () => this.gymMates.set([])
+    });
+  }
+
   // --- ACTIONS & EVENTS ---
+  /** Adds or removes a teammate; at most the team size (the extra one mirrors a member). */
+  toggleTeammate(id: number): void {
+    this.teammates.update(ids => ids.includes(id)
+      ? ids.filter(i => i !== id)
+      : ids.length < this.teamSize() ? [...ids, id] : ids);
+  }
+
   /** Switches between rounds + reps and total reps, keeping the typed score. */
   setRepsEntry(mode: 'ROUNDS' | 'TOTAL'): void {
     const perRound = this.repsPerRound();
@@ -312,7 +358,8 @@ export class ScoreFormComponent {
       tiebreakSeconds: this.showTiebreak() && tiebreak > 0 ? tiebreak : undefined,
       scalingNotes: v.scaling === 'RX' ? undefined : v.scalingNotes.trim() || undefined,
       userComment: v.userComment.trim() || undefined,
-      verificationRequested: this.canSubmit() && v.verificationRequested
+      verificationRequested: this.canSubmit() && v.verificationRequested,
+      teammateIds: this.isTeam() && this.teammates().length > 0 ? this.teammates() : undefined
     };
     if (this.useSets()) {
       // Aldebaran derives the performance from the sets (best complete set, or volume)

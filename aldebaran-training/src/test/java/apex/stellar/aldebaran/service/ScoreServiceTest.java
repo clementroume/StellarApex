@@ -101,6 +101,8 @@ class ScoreServiceTest {
   private void mockWodDetailHit(ScoreType type) {
     WodResponse dto = mock(WodResponse.class);
     when(dto.scoreType()).thenReturn(type);
+    // A mock returns 0 for an Integer: an individual WOD has no team size
+    lenient().when(dto.teamSize()).thenReturn(null);
     when(wodService.getWodDetail(1L)).thenReturn(dto);
   }
 

@@ -19,6 +19,11 @@
                 <ng-icon name="heroTrophy"></ng-icon>{{ 'SCORE.PR' | translate }}
               </span>
             }
+            @if (score.teamMemberIds?.length) {
+              <span hlmBadge variant="outline" class="team-badge gap-1">
+                <ng-icon name="heroUsers"></ng-icon>{{ 'SCORE.TEAM_OF' | translate: {count: score.teamMemberIds?.length} }}
+              </span>
+            }
             @if (score.verifiedAt) {
               <span hlmBadge class="bg-success/15 text-success gap-1">
                 <ng-icon name="heroCheckBadge"></ng-icon>{{ 'SCORE.VERIFIED_BY' | translate: {name: staffName(score.verifiedBy)} }}

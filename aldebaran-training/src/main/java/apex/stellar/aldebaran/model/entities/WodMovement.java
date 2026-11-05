@@ -69,6 +69,12 @@ public class WodMovement {
   @Min(1)
   private Integer complexGroup;
 
+  /** Team WOD: quantity done by the team in total, by each member, or together. */
+  @Enumerated(EnumType.STRING)
+  @Column(name = "team_split", nullable = false, length = 10)
+  @Builder.Default
+  private TeamSplit teamSplit = TeamSplit.TOTAL;
+
   /** Part of the WOD the movement belongs to: buy-in, rounds (MAIN) or buy-out. */
   @Enumerated(EnumType.STRING)
   @Column(name = "segment", nullable = false, length = 10)
@@ -229,5 +235,12 @@ public class WodMovement {
     BUY_IN,
     MAIN,
     BUY_OUT
+  }
+
+  /** Quantity of a line in a team WOD. */
+  public enum TeamSplit {
+    TOTAL,
+    EACH,
+    TOGETHER
   }
 }

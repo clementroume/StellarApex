@@ -15,7 +15,7 @@
       <div class="field-group" role="group" [attr.aria-label]="'DIVISION.LABEL' | translate" data-slot="division-filter">
         <button type="button" hlmBtn variant="outline" size="sm" class="aria-pressed:bg-muted aria-pressed:font-semibold"
                 [attr.aria-pressed]="division() === null" (click)="onDivisionChange(null)">{{ 'DIVISION.ALL' | translate }}</button>
-        @for (d of divisions; track d) {
+        @for (d of divisions(); track d) {
           <button type="button" hlmBtn variant="outline" size="sm" class="aria-pressed:bg-muted aria-pressed:font-semibold"
                   [attr.aria-pressed]="division() === d" (click)="onDivisionChange(d)">{{ 'DIVISION.' + d | translate }}</button>
         }

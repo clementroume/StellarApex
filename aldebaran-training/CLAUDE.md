@@ -11,7 +11,8 @@ WOD CSV format lives in `config/WodCsvCodec` (blank = null, lossless round-trip;
 name; WOD movement variants joined by `|`, whereas `movements.csv` lists use `, `; FR/EN text
 columns `*_en` / `*_fr`, the former single-language columns still read as English; optional trailing
 `tiebreak_en` ... `reps_per_round` then the V14 structure columns `rounds` ... `vest_weight_unit`, V15
-`structure`, and `sets` / `segment` / `complex_group` for WOD movements; former `wod_type` values read
+`structure`, V16 `team_size` / `team_mode`, and `sets` / `segment` / `complex_group` / `team_split`
+for WOD movements; former `wod_type` values read
 as a category + sub-category; a former `ROUNDS_REPS` score type reads as `REPS`).
 `config/DevGymWodSeeder` (`@Profile("dev")`, temporary) seeds WODs for the Antares test gyms,
 resolving IDs from the `antares` schema with `JdbcTemplate`, then calls `config/DevScoreSeeder`
@@ -47,6 +48,8 @@ resolving IDs from the `antares` schema with `JdbcTemplate`, then calls `config/
   `service/WodCapabilityService` / `ScoreCapabilityService` per request, never inside cached methods
   (`WodService.getWodDetail` is `@Cacheable`). `ScoreCapabilityService.forViewer` also hides others'
   comments/scaling notes from non-moderators.
+- Team scores (`ScoreTeam`, `ScoreService.teammatesOf` / `formTeam`): one row per member, kept in
+  sync on update; team WOD leaderboards go through the in-memory path keyed by team.
 - Score ordering lives once in `service/ScoreRanking` (PR, compare, leaderboard sort); score/WOD
   consistency in `ScoreService.normalizeAndCheck` (`InvalidScoreException` → 400).
 - Antares facts Aldebaran cannot know (another user's membership) come from `client/AntaresClient`

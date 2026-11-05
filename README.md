@@ -241,6 +241,9 @@ Rules are enforced by the backends; Sirius only adapts its UI to what they retur
   is locked. The API returns `capabilities` (`canModify`, `locked`) for each WOD.
 - **Scores**: athletes log and manage their own scores on the WODs they can read, in one of their
   gyms; `SCORE_VERIFY` on that gym lets staff correct or delete their athletes' scores.
+- **Team WODs**: a box WOD (or a public one) done in teams of 2 to 6; one athlete logs the team
+  score with teammates of the box, each member gets it (mixed division for mixed teams), and the
+  leaderboard shows one row per team. Never on a program.
 - **Competitions**: a physical gym's WOD can be flagged "competition" (never public), for instance a
   public Open WOD copied into the gym. A virtual programming sells its own programming: no
   competitions and no copies there; its staff only corrects or deletes aberrant scores. Its judges (`SCORE_VERIFY` in the gym) log scores for the gym's members and

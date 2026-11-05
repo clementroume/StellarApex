@@ -355,7 +355,9 @@ public class WodService {
                 source.vestWeight(),
                 source.vestWeightFemale(),
                 source.vestWeightUnit(),
-                source.structure())
+                source.structure(),
+                source.teamSize(),
+                source.teamMode())
             .ownedBy(
                 request.gymId(),
                 request.competition(),
@@ -445,7 +447,8 @@ public class WodService {
         wm.scalingOptionsFr(),
         wm.sets(),
         wm.segment(),
-        wm.complexGroup());
+        wm.complexGroup(),
+        wm.teamSplit());
   }
 
   /**
@@ -466,6 +469,7 @@ public class WodService {
     wod.setStandalone(standalone);
     checkCompetition(wod);
     checkStructure(wod);
+    checkTeam(wod);
 
     // Ensure collections are initialized
     if (wod.getMovements() == null) {
@@ -510,6 +514,23 @@ public class WodService {
 
     // Mapping occurs inside the transaction (caller), avoiding LazyInitializationException
     return savedWod;
+  }
+
+  /**
+   * A team WOD never belongs to a program (virtual gym): its athletes train apart. Without a team
+   * size, the WOD has no team mode either.
+   *
+   * @param wod The WOD about to be saved.
+   * @throws InvalidWodException if a program WOD gets a team size.
+   */
+  private void checkTeam(Wod wod) {
+    if (wod.getTeamSize() == null) {
+      wod.setTeamMode(null);
+      return;
+    }
+    if (wod.getGymId() != null && antaresClient.isProgrammingGym(wod.getGymId())) {
+      throw new InvalidWodException("error.wod.team.programming");
+    }
   }
 
   /**
@@ -602,6 +623,7 @@ public class WodService {
     wodMapper.updateEntity(request, existingWod);
     checkCompetition(existingWod);
     checkStructure(existingWod);
+    checkTeam(existingWod);
 
     // 4. Smart Merge Movements
     mergeWodMovements(existingWod, request.movements());

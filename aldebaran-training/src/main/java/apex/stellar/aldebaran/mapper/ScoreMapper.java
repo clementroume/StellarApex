@@ -52,6 +52,8 @@ public interface ScoreMapper {
   @Mapping(target = "weightUnit", source = "weightDisplayUnit")
   @Mapping(target = "distanceUnit", source = "distanceDisplayUnit")
   @Mapping(target = "sets", source = "score", qualifiedByName = "mapSetsToDisplay")
+  @Mapping(target = "teamId", source = "team.id")
+  @Mapping(target = "teamMemberIds", source = "team.memberIds")
   ScoreResponse toResponse(Score score);
 
   // -------------------------------------------------------------------------

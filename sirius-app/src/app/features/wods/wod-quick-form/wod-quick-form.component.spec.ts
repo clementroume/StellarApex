@@ -21,10 +21,13 @@ describe('WodQuickFormComponent', () => {
       {id: 4, name: 'Rowing', category: 'CARDIO_MACHINES'},
       {id: 5, name: 'Wall-ball Shot', category: 'THROWS_AND_SLAMS'},
       {id: 6, name: 'Running', category: 'CARDIO'},
-      {id: 7, name: 'Burpee', category: 'BURPEES'}
+      {id: 7, name: 'Burpee', category: 'BURPEES'},
+      {id: 8, name: 'American Kettlebell Swing', category: 'SWING'},
+      {id: 9, name: 'Box Jump', category: 'JUMPING'},
+      {id: 10, name: 'Snatch', category: 'SNATCH'}
     ])),
     getMovement: vi.fn().mockImplementation((id: number) =>
-      of({id, name: 'M' + id, equipment: id === 2 ? ['RINGS'] : [], techniques: id === 2 ? ['KIPPING', 'STRICT'] : []}))
+      of({id, name: 'M' + id, equipment: id === 2 ? ['PULL_UP_BAR', 'RINGS'] : id === 8 ? ['KETTLEBELL'] : id === 9 ? ['BOX'] : [], techniques: id === 2 ? ['KIPPING', 'STRICT'] : []}))
   };
 
   const init = (inputs: Record<string, unknown> = {}) => {
@@ -101,23 +104,29 @@ describe('WodQuickFormComponent', () => {
     expect(request.movements[1]).toMatchObject({repsScheme: '20', heightUnit: 'CENTIMETERS'});
   });
 
-  it('should write Murph: rounds, buy-in and buy-out runs, weight vest', () => {
+  it('should write Murph: rounds, buy-in and cash-out runs, weight vest', () => {
     init();
     component.setCategory('FOR_TIME');
     component.form.patchValue({rounds: 20, minutes: 60});
+    component.onMovement(0, 2);
+    component.form.controls.rows.at(0).patchValue({reps: '5'});
+    // The cash-out goes last, the buy-in first, a new line of the rounds before the cash-out
+    component.addRow('BUY_OUT');
+    component.addRow('BUY_IN');
+    component.addRow();
+    expect(component.form.controls.rows.controls.map(r => r.controls.segment.value))
+      .toEqual(['BUY_IN', 'MAIN', 'MAIN', 'BUY_OUT']);
+    component.removeRow(2);
     component.onMovement(0, 6);
-    component.addRow();
-    component.onMovement(1, 2);
-    component.addRow();
     component.onMovement(2, 6);
-    component.form.controls.rows.at(0).patchValue({distance: 1600, segment: 'BUY_IN'});
-    component.form.controls.rows.at(1).patchValue({reps: '5'});
-    component.form.controls.rows.at(2).patchValue({distance: 1600, segment: 'BUY_OUT'});
+    component.form.controls.rows.at(0).patchValue({distance: 1600});
+    component.form.controls.rows.at(2).patchValue({distance: 1600});
     component.form.patchValue({vestWeight: 9, vestWeightFemale: 6});
     fixture.detectChanges();
 
     expect(component.measureOfRow(0)).toBe('DISTANCE');
-    expect(fixture.nativeElement.querySelectorAll('.segment-select').length).toBe(3);
+    const headings = [...fixture.nativeElement.querySelectorAll('.segment-heading')] as HTMLElement[];
+    expect(headings.map(h => h.dataset['segment'])).toEqual(['BUY_IN', 'MAIN', 'BUY_OUT']);
     const request = component.buildRequest();
     expect(request).toMatchObject({wodType: 'FOR_TIME', structure: 'ROUNDS', scoreType: 'TIME', rounds: 20, timeCapSeconds: 3600,
       vestWeight: 9, vestWeightFemale: 6, vestWeightUnit: 'KG', repScheme: undefined});
@@ -178,11 +187,12 @@ describe('WodQuickFormComponent', () => {
 
     component.toggleExpanded(0);
     expect(component.extrasOf(0)).toEqual(['LOAD', 'HEIGHT']);
-    // Buy-in / buy-out only on Rounds (the default For Time sub-category) and AMRAP
-    expect(fixture.nativeElement.querySelector('.segment-select')).toBeTruthy();
+    // Buy-in / cash-out only on Rounds (the default For Time sub-category) and AMRAP
+    expect(fixture.nativeElement.querySelector('#add-buy-in')).toBeTruthy();
     component.setStructure('SINGLE');
     fixture.detectChanges();
-    expect(fixture.nativeElement.querySelector('.segment-select')).toBeNull();
+    expect(fixture.nativeElement.querySelector('#add-buy-in')).toBeNull();
+    expect(fixture.nativeElement.querySelector('#add-cash-out')).toBeNull();
   });
 
   it('should refuse a movement line without movement, and fill a saved WOD back', () => {
@@ -246,5 +256,44 @@ describe('WodQuickFormComponent', () => {
     init({initial: pyramid});
     expect(component.form.getRawValue()).toMatchObject({category: 'FOR_TIME', structure: 'LADDER', ladder: '1-2-3-2-1'});
     expect(component.buildRequest()).toMatchObject({wodType: 'FOR_TIME', structure: 'LADDER', repScheme: '1-2-3-2-1'});
+  });
+
+  it('should write a team WOD: size, mode and each line in total, by each or together', () => {
+    init();
+    fixture.nativeElement.querySelector('#show-team').click();
+    fixture.detectChanges();
+    component.form.patchValue({teamSize: 3, teamMode: 'SPLIT'});
+    component.onMovement(0, 2);
+    component.form.controls.rows.at(0).patchValue({reps: '50', teamSplit: 'EACH'});
+
+    const request = component.buildRequest();
+    expect(request).toMatchObject({teamSize: 3, teamMode: 'SPLIT'});
+    expect(request.movements[0].teamSplit).toBe('EACH');
+    expect(fixture.nativeElement.querySelectorAll('.team-split-select').length).toBe(1);
+  });
+  it('should offer standard kettlebell and dumbbell weights and the three box heights', () => {
+    init();
+    component.onMovement(0, 8);
+    component.addRow();
+    component.onMovement(1, 9);
+    component.addRow();
+    component.onMovement(2, 10);
+    fixture.detectChanges();
+
+    // The implied equipment is picked at once
+    expect(component.form.controls.rows.at(0).controls.equipment.value).toEqual(['KETTLEBELL']);
+    expect(component.form.controls.rows.at(1).controls.equipment.value).toEqual(['BOX']);
+    expect(component.loadChoices(0)).toEqual([4, 6, 8, 12, 16, 20, 24, 28, 32, 36, 40, 48]);
+    expect(component.heightChoices(1)).toEqual([51, 61, 76]);
+    // A barbell snatch keeps a free load, a dumbbell one gets the 2.5 kg steps
+    expect(component.loadChoices(2)).toBeNull();
+    component.toggleVariant(2, 'equipment', 'DUMBBELL');
+    expect(component.loadChoices(2)?.slice(0, 3)).toEqual([2.5, 5, 7.5]);
+    // A weight already written stays offered
+    component.form.controls.rows.at(0).patchValue({weight: 22});
+    expect(component.loadChoices(0)).toContain(22);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelectorAll('select.load-preset').length).toBe(4);
+    expect(fixture.nativeElement.querySelectorAll('select.height-preset').length).toBe(2);
   });
 });

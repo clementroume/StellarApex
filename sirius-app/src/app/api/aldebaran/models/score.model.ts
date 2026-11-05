@@ -49,6 +49,8 @@ export interface ScoreRequest {
   sets?: ScoreSet[];
   // --- Competition WOD: submit the score to the judges ---
   verificationRequested?: boolean;
+  // Team WOD: the other members of the team (same box), who get the same score
+  teammateIds?: number[];
 }
 
 /** One set of a strength score; a failed set is kept with completed = false. */
@@ -103,6 +105,9 @@ export interface ScoreResponse {
   // Submitted to the judges of a competition WOD
   verificationRequested?: boolean;
   // --- Session journal and strength sets (weights in weightUnit) ---
+  // Team WOD: team of the score and its members (same performance)
+  teamId?: number | null;
+  teamMemberIds?: number[] | null;
   sessionLogId?: number | null;
   sets?: ScoreSet[];
   // --- Per-user rights (computed per request) ---

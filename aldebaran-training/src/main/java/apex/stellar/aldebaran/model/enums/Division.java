@@ -9,7 +9,9 @@ import org.jspecify.annotations.Nullable;
  */
 public enum Division {
   MEN,
-  WOMEN;
+  WOMEN,
+  // Team score with men and women (never an athlete's own division)
+  MIXED;
 
   /**
    * Parses a header or Antares value.

@@ -136,7 +136,7 @@ describe('WodDetailComponent', () => {
     expect(mockWodService.getWod).toHaveBeenCalledWith(1);
     expect(component.wod()?.title).toBe('Fran');
     const text: string = fixture.nativeElement.textContent;
-    expect(text.indexOf('Thruster')).toBeLessThan(text.indexOf('Pull-up'));
+    expect(text.indexOf('Thruster')).toBeLessThan(text.indexOf('Pull-Ups'));
   });
 
   it('should notify and go back when the WOD cannot be loaded', () => {

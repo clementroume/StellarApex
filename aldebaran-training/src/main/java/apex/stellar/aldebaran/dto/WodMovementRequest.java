@@ -1,6 +1,7 @@
 package apex.stellar.aldebaran.dto;
 
 import apex.stellar.aldebaran.model.entities.WodMovement.Segment;
+import apex.stellar.aldebaran.model.entities.WodMovement.TeamSplit;
 import apex.stellar.aldebaran.model.enums.Unit;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Min;
@@ -48,13 +49,53 @@ public record WodMovementRequest(
     Segment segment,
 
     // --- Group of a weightlifting complex, or null ---
-    @Min(value = 1, message = "{validation.wod.rounds.min}") Integer complexGroup) {
+    @Min(value = 1, message = "{validation.wod.rounds.min}") Integer complexGroup,
 
-  /** Defaults the segment to the rounds. */
+    // --- Team WOD: in total (default), by each member, or together ---
+    TeamSplit teamSplit) {
+
+  /** Defaults the segment to the rounds and the team split to the total. */
   public WodMovementRequest {
     if (segment == null) {
       segment = Segment.MAIN;
     }
+    if (teamSplit == null) {
+      teamSplit = TeamSplit.TOTAL;
+    }
+  }
+
+  /** Line of an individual WOD, possibly in a complex. */
+  @SuppressWarnings("java:S107") // Mirrors the record components
+  public WodMovementRequest(
+      Long movementId,
+      Integer orderIndex,
+      String repsScheme,
+      Double weight,
+      Double weightFemale,
+      Unit weightUnit,
+      Integer durationSeconds,
+      Unit durationDisplayUnit,
+      Double distance,
+      Unit distanceUnit,
+      Integer calories,
+      Integer caloriesFemale,
+      Double height,
+      Double heightFemale,
+      Unit heightUnit,
+      Set<String> equipment,
+      Set<String> techniques,
+      String notesEn,
+      String notesFr,
+      String scalingOptionsEn,
+      String scalingOptionsFr,
+      Integer sets,
+      Segment segment,
+      Integer complexGroup) {
+    this(
+        movementId, orderIndex, repsScheme, weight, weightFemale, weightUnit, durationSeconds,
+        durationDisplayUnit, distance, distanceUnit, calories, caloriesFemale, height, heightFemale,
+        heightUnit, equipment, techniques, notesEn, notesFr, scalingOptionsEn, scalingOptionsFr,
+        sets, segment, complexGroup, TeamSplit.TOTAL);
   }
 
   /** Line outside any complex. */
