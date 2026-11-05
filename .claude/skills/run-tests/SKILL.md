@@ -2,7 +2,7 @@
 name: run-tests
 description: Run StellarApex tests - targeted tests while working, the full suite of every touched service before proposing a commit. Use whenever code was changed and must be verified. Returns only failures and timings.
 context: fork
-allowed-tools: Bash(./mvnw *) Bash(npm test*) Bash(npm run build*) Bash(npx ng test *) Bash(git status*) Bash(git diff *)
+allowed-tools: Bash(cd *) Bash(./mvnw *) Bash(npm test*) Bash(npm run build*) Bash(npx ng test *) Bash(git status*) Bash(git diff *)
 ---
 
 # Run the tests of StellarApex
