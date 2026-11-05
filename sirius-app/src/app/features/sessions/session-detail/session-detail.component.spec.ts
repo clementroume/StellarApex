@@ -38,8 +38,9 @@ describe('SessionDetailComponent', () => {
     id: 5, type: 'WOD', discipline: 'CROSSFIT', date: '2026-11-03', endDate: '2026-11-03', title: 'Tuesday', gymId: 4,
     authorId: 1, visibilityPolicy: 'AFTER_PARTICIPANTS', contentVisibleFrom: '2026-11-03T23:00:00Z', createdAt: '', updatedAt: '',
     descriptionEn: null, descriptionFr: null,
-    blocks: [{id: 11, orderIndex: 1, kind: 'SKILL', optional: false, themeEn: 'Heavy squat', borrowed: false, competition: false}],
-    capabilities: {canModify: false, locked: false, contentVisible: false, canLog: true},
+    blocks: [{id: 11, orderIndex: 1, kind: 'SKILL', optional: false, themeEn: 'Heavy squat', borrowed: false, competition: false,
+      capabilities: {canModify: false, canDelete: false, frozen: false}}],
+    capabilities: {canModify: false, canDelete: false, contentVisible: false, canLog: true},
     myLog: null,
     ...overrides
   });
@@ -83,7 +84,7 @@ describe('SessionDetailComponent', () => {
 
   it('should show the blocks and the journal once the content is visible', () => {
     init(session({
-      capabilities: {canModify: false, locked: true, contentVisible: true, canLog: false},
+      capabilities: {canModify: false, canDelete: false, contentVisible: true, canLog: false},
       myLog: {id: 9, userId: 2, sessionId: 5, sessionType: 'WOD', discipline: 'CROSSFIT', sessionDate: '2026-11-03', gymId: 4,
         date: '2026-11-03', source: 'MANUAL', blocks: [{blockId: 11, kind: 'SKILL', done: true}], scores: []}
     }));
@@ -94,7 +95,7 @@ describe('SessionDetailComponent', () => {
   });
 
   it('should let staff edit, delete and change the visibility of an unlocked session', () => {
-    init(session({capabilities: {canModify: true, locked: false, contentVisible: true, canLog: true}}));
+    init(session({capabilities: {canModify: true, canDelete: true, contentVisible: true, canLog: true}}));
     expect(fixture.nativeElement.querySelector('#edit-session').getAttribute('href')).toBe('/box/sessions/5/edit');
     expect(fixture.nativeElement.querySelector('#visibility-badge').textContent).toContain('SESSION.POLICIES.AFTER_PARTICIPANTS.LABEL');
 
@@ -114,9 +115,9 @@ describe('SessionDetailComponent', () => {
     expect(router.navigate).toHaveBeenCalledWith(['/box/sessions']);
   });
 
-  it('should hide edit and delete once someone logged the session', () => {
-    init(session({capabilities: {canModify: true, locked: true, contentVisible: true, canLog: false}}));
-    expect(fixture.nativeElement.querySelector('#edit-session')).toBeNull();
+  it('should keep editing but hide delete once someone logged the session', () => {
+    init(session({capabilities: {canModify: true, canDelete: false, contentVisible: true, canLog: false}}));
+    expect(fixture.nativeElement.querySelector('#edit-session')).toBeTruthy();
     expect(fixture.nativeElement.querySelector('#delete-session')).toBeNull();
     expect(fixture.nativeElement.querySelector('#edit-visibility')).toBeTruthy();
   });

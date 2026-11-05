@@ -43,7 +43,8 @@ describe('SessionBlockComponent', () => {
   };
   const block = (overrides: Partial<SessionBlockResponse> = {}): SessionBlockResponse => ({
     id: 11, orderIndex: 1, kind: 'SKILL', optional: false, label: 'A', themeEn: 'Heavy squat', stimulus: 'STRENGTH',
-    plannedMinutes: 20, wod: wod(), borrowed: false, competition: false, ...overrides
+    plannedMinutes: 20, wod: wod(), borrowed: false, competition: false,
+    capabilities: {canModify: true, canDelete: true, frozen: false}, ...overrides
   });
 
   beforeEach(async () => {

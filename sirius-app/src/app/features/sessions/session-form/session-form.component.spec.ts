@@ -139,7 +139,7 @@ describe('SessionFormComponent', () => {
           wod: {id: 30, title: 'Back Squat 5x5'}},
         {id: 12, orderIndex: 2, kind: 'WOD', optional: false, borrowed: true, competition: false, wod: {id: 7, title: 'Fran'}}
       ],
-      capabilities: {canModify: true, locked: false, contentVisible: true, canLog: false}
+      capabilities: {canModify: true, canDelete: true, contentVisible: true, canLog: false}
     } as unknown as SessionResponse;
     sessionService.getSession.mockReturnValue(of(existing));
     init({id: '5'});
@@ -153,6 +153,43 @@ describe('SessionFormComponent', () => {
     (component as any).onSubmit();
     expect(sessionService.updateSession).toHaveBeenCalledWith(5, expect.anything());
     expect(notifications.showError).toHaveBeenCalledWith('Locked');
+  });
+
+  it('should freeze scored blocks, keep checked ones editable, and lock the frame once logged', () => {
+    const caps = (frozen: boolean, canDelete: boolean) => ({canModify: !frozen, canDelete, frozen});
+    const existing = {
+      id: 5, type: 'WOD', discipline: 'CROSSFIT', date: '2026-11-03', endDate: '2026-11-03', gymId: 4, authorId: 1,
+      visibilityPolicy: 'AFTER', createdAt: '', updatedAt: '',
+      blocks: [
+        {id: 10, orderIndex: 1, kind: 'WARM_UP', optional: false, borrowed: false, competition: false, capabilities: caps(false, false)},
+        {id: 11, orderIndex: 2, kind: 'SKILL', optional: false, borrowed: false, competition: false,
+          wod: {id: 30, title: 'Back Squat 5x5'}, capabilities: caps(true, false)},
+        {id: 12, orderIndex: 3, kind: 'WOD', optional: false, borrowed: true, competition: false,
+          wod: {id: 7, title: 'Fran'}, capabilities: caps(false, false)},
+        {id: 13, orderIndex: 4, kind: 'ACCESSORY', optional: true, borrowed: false, competition: false,
+          wod: {id: 31, title: 'Curls'}, capabilities: caps(false, true)}
+      ],
+      capabilities: {canModify: true, canDelete: false, contentVisible: true, canLog: false}
+    } as unknown as SessionResponse;
+    sessionService.getSession.mockReturnValue(of(existing));
+    init({id: '5'});
+    const c = component as any;
+
+    expect(c.isFrozen(1)).toBe(true);
+    expect(c.isChecked(1)).toBe(false);
+    expect(c.isChecked(2)).toBe(true);
+    expect(c.canRemove(0)).toBe(false); // checked
+    expect(c.canRemove(1)).toBe(false); // frozen
+    expect(c.canRemove(3)).toBe(true); // free
+    expect(c.canMove(3, -1)).toBe(true); // reordering stays possible
+    expect(component.form.controls.type.disabled).toBe(true);
+    expect(component.form.controls.date.disabled).toBe(true);
+    expect(component.form.controls.discipline.disabled).toBe(true);
+    expect(fixture.nativeElement.querySelector('.block-frozen')).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('.frame-locked')).toBeTruthy();
+    // The frozen block keeps its WOD: sent by id, never rewritten
+    expect(component.buildRequest().blocks[1]).toMatchObject({id: 11, wodId: 30, wod: null});
+    expect(component.buildRequest().date).toBe('2026-11-03');
   });
 
   it('should offer only in advance / on the day for a program, and competition blocks for a box only', () => {

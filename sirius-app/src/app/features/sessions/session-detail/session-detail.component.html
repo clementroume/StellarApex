@@ -3,21 +3,19 @@
 } @else if (session(); as s) {
   <app-page [title]="heading()" [subtitle]="dateLabel()">
     @if (s.capabilities.canModify) {
-      @if (!s.capabilities.locked) {
-        <a pageActions hlmBtn variant="outline" size="lg" id="edit-session" [routerLink]="editLink()">
-          <ng-icon name="heroPencilSquare" aria-hidden="true"/>{{ 'GLOBAL.EDIT' | translate }}
-        </a>
-      }
-      @if (s.visibilityPolicy) {
-        <button pageActions type="button" hlmBtn variant="outline" size="lg" id="edit-visibility" (click)="openVisibility()">
-          <ng-icon name="heroEye" aria-hidden="true"/>{{ 'SESSION.ACTIONS.VISIBILITY' | translate }}
-        </button>
-      }
-      @if (!s.capabilities.locked) {
-        <button pageActions type="button" hlmBtn variant="destructive" size="lg" id="delete-session" (click)="confirmDelete.set(true)">
-          <ng-icon name="heroTrash" aria-hidden="true"/>{{ 'GLOBAL.DELETE' | translate }}
-        </button>
-      }
+      <a pageActions hlmBtn variant="outline" size="lg" id="edit-session" [routerLink]="editLink()">
+        <ng-icon name="heroPencilSquare" aria-hidden="true"/>{{ 'GLOBAL.EDIT' | translate }}
+      </a>
+    }
+    @if (s.capabilities.canModify && s.visibilityPolicy) {
+      <button pageActions type="button" hlmBtn variant="outline" size="lg" id="edit-visibility" (click)="openVisibility()">
+        <ng-icon name="heroEye" aria-hidden="true"/>{{ 'SESSION.ACTIONS.VISIBILITY' | translate }}
+      </button>
+    }
+    @if (s.capabilities.canDelete) {
+      <button pageActions type="button" hlmBtn variant="destructive" size="lg" id="delete-session" (click)="confirmDelete.set(true)">
+        <ng-icon name="heroTrash" aria-hidden="true"/>{{ 'GLOBAL.DELETE' | translate }}
+      </button>
     }
 
     <div class="mb-6 flex flex-wrap items-center gap-2">
@@ -30,7 +28,7 @@
       @if (s.visibilityPolicy && s.capabilities.canModify) {
         <span hlmBadge variant="outline" id="visibility-badge">{{ 'SESSION.POLICIES.' + s.visibilityPolicy + '.LABEL' | translate }}</span>
       }
-      @if (s.capabilities.locked && s.capabilities.canModify) {
+      @if (!s.capabilities.canDelete && s.capabilities.canModify) {
         <span hlmBadge class="bg-warning/15 text-warning gap-1" [title]="'SESSION.MESSAGES.LOCKED' | translate">
           <ng-icon name="heroLockClosed" aria-hidden="true"/>{{ 'SESSION.LOCKED' | translate }}
         </span>
