@@ -18,6 +18,11 @@ CREATE TEMP TABLE e2e_wods ON COMMIT DROP AS
   SELECT w.id FROM aldebaran.wods w
     JOIN aldebaran.session_blocks b ON b.wod_id = w.id
    WHERE b.session_id IN (SELECT id FROM e2e_sessions) AND NOT w.standalone;
+-- A WOD still borrowed by a session that is not an E2E one is kept, with its scores
+DELETE FROM e2e_wods w WHERE EXISTS (
+  SELECT 1 FROM aldebaran.session_blocks b
+   WHERE b.wod_id = w.id AND b.session_id NOT IN (SELECT id FROM e2e_sessions));
+
 -- Accounts created by the registration journey (e2e+<timestamp>@test.local; e2e.<timestamp> = former pattern)
 CREATE TEMP TABLE e2e_users ON COMMIT DROP AS
   SELECT id FROM antares.users WHERE email ~ '^e2e[.+][0-9]+@test\.local$';
@@ -52,7 +57,6 @@ WITH d AS (DELETE FROM aldebaran.wod_movements WHERE wod_id IN (SELECT id FROM e
   INSERT INTO e2e_counts SELECT 'wod_movements', count(*) FROM d;
 WITH d AS (DELETE FROM aldebaran.wod_modalities WHERE wod_id IN (SELECT id FROM e2e_wods) RETURNING 1)
   INSERT INTO e2e_counts SELECT 'wod_modalities', count(*) FROM d;
--- A WOD still borrowed by a session that is not an E2E one is kept (RESTRICT)
 WITH d AS (DELETE FROM aldebaran.wods w WHERE w.id IN (SELECT id FROM e2e_wods)
              AND NOT EXISTS (SELECT 1 FROM aldebaran.session_blocks b WHERE b.wod_id = w.id) RETURNING 1)
   INSERT INTO e2e_counts SELECT 'wods', count(*) FROM d;

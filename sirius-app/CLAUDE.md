@@ -163,7 +163,7 @@ the dev proxy targets the local Traefik `https://localhost` with `Host: stellar.
   i18n files); `data-slot` / ids only where no accessible name exists. Use `asRole(browser, role)` for extra contexts.
 - Traefik rate-limits the API per IP (100 req/min on Aldebaran) and one registration per run (desktop only, the account is deleted from its settings at the end; the
   local `docker-compose.yml` raises Antares' per-IP registration limit to 100 per hour): `support/fixtures.ts` retries
-  429s of reads and of Aldebaran writes.
+  the 429s of Aldebaran calls.
 - Data: titles start with "E2E "; `global-setup` and `global-teardown` purge the E2E WODs, sessions, scores and registered accounts through
   `e2e/cleanup/purge-e2e-data.sh` (psql in `castor-db`, local only, double-keyed on title "E2E " + test-account author;
   dry run unless `--apply`; `E2E_KEEP_DATA=1` skips; `npm run e2e:clean`).

@@ -5,6 +5,10 @@
 set -euo pipefail
 here="$(cd "$(dirname "$0")" && pwd)"
 
+case "${DOCKER_HOST:-}" in
+  ""|unix://*) ;;
+  *) echo "DOCKER_HOST points to a remote engine: refusing to purge." >&2; exit 1 ;;
+esac
 [ "$(docker inspect -f '{{.Name}} {{.State.Running}}' castor-db 2>/dev/null)" = "/castor-db true" ] \
   || { echo "castor-db is not a running local container: refusing to purge." >&2; exit 1; }
 
