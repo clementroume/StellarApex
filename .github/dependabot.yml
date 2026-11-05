@@ -1,62 +1,33 @@
 version: 2
 updates:
-  # ==============================================================================
-  # 1. CI/CD WORKFLOWS
-  # ==============================================================================
+  # Minor and patch updates are grouped in one pull request per ecosystem (and auto-merged once CI
+  # passes, see .github/workflows/dependabot-auto-merge.yml). Major updates stay separate pull requests.
+
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "weekly"
     groups:
-      github-actions:
-        patterns:
-          - "*"
+      minor-and-patch:
+        update-types: [ "minor", "patch" ]
 
-  # ==============================================================================
-  # 2. BACKEND SERVICES (MAVEN)
-  # ==============================================================================
-
-  # --- Antares Auth ---
+  # The three Maven backends in one entry: Spring Boot, springdoc... give a single pull request.
   - package-ecosystem: "maven"
-    directory: "/antares-auth"
+    directories:
+      - "/antares-auth"
+      - "/aldebaran-training"
+      - "/bellatrix-swagger"
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 5
+    ignore:
+      # The alpha Logback appender must follow the OpenTelemetry SDK managed by Spring Boot and
+      # breaks when bumped alone. Removing the appender is a later lot.
+      - dependency-name: "io.opentelemetry.instrumentation:*"
     groups:
-      spring-boot:
-        patterns:
-          - "org.springframework.boot:*"
-      apache-commons:
-        patterns:
-          - "org.apache.commons:*"
+      minor-and-patch:
+        update-types: [ "minor", "patch" ]
 
-  # --- Aldebaran Training ---
-  - package-ecosystem: "maven"
-    directory: "/aldebaran-training"
-    schedule:
-      interval: "weekly"
-    open-pull-requests-limit: 5
-    groups:
-      spring-boot:
-        patterns:
-          - "org.springframework.boot:*"
-
-  # --- Bellatrix Swagger ---
-  - package-ecosystem: "maven"
-    directory: "/bellatrix-swagger"
-    schedule:
-      interval: "weekly"
-    open-pull-requests-limit: 5
-    groups:
-      spring-boot:
-        patterns:
-          - "org.springframework.boot:*"
-
-  # ==============================================================================
-  # 3. FRONTEND (NPM)
-  # ==============================================================================
-
-  # --- Sirius App ---
   - package-ecosystem: "npm"
     directory: "/sirius-app"
     schedule:
@@ -66,51 +37,26 @@ updates:
       - dependency-name: "typescript"
         update-types: [ "version-update:semver-major" ]
     groups:
-      angular-framework:
-        patterns:
-          - "@angular/*"
-          - "@angular-devkit/*"
-          - "rxjs"
-          - "zone.js"
-      ng-icon:
-        patterns:
-          - "@ng-icons/*"
+      minor-and-patch:
+        update-types: [ "minor", "patch" ]
 
-  # ==============================================================================
-  # 4. DOCKER IMAGES (BASE IMAGES)
-  # ==============================================================================
-
-  # --- Docker Compose (Root) ---
+  # Observability images in docker-compose.observability.yml and base images: monthly.
   - package-ecosystem: "docker-compose"
     directory: "/"
     schedule:
-      interval: "weekly"
-    open-pull-requests-limit: 5
+      interval: "monthly"
+    groups:
+      minor-and-patch:
+        update-types: [ "minor", "patch" ]
 
-  # --- Antares Auth ---
   - package-ecosystem: "docker"
-    directory: "/antares-auth"
+    directories:
+      - "/antares-auth"
+      - "/aldebaran-training"
+      - "/bellatrix-swagger"
+      - "/sirius-app"
     schedule:
-      interval: "weekly"
-    open-pull-requests-limit: 3
-
-  # --- Aldebaran Training ---
-  - package-ecosystem: "docker"
-    directory: "/aldebaran-training"
-    schedule:
-      interval: "weekly"
-    open-pull-requests-limit: 3
-
-  # --- Bellatrix Swagger ---
-  - package-ecosystem: "docker"
-    directory: "/bellatrix-swagger"
-    schedule:
-      interval: "weekly"
-    open-pull-requests-limit: 3
-
-  # --- Sirius App ---
-  - package-ecosystem: "docker"
-    directory: "/sirius-app"
-    schedule:
-      interval: "weekly"
-    open-pull-requests-limit: 3
+      interval: "monthly"
+    groups:
+      minor-and-patch:
+        update-types: [ "minor", "patch" ]

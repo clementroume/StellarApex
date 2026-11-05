@@ -1,16 +1,19 @@
 package apex.stellar.aldebaran.config;
 
 import apex.stellar.aldebaran.client.AntaresClient;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import java.util.List;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.data.redis.connection.RedisConnection;
 import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.postgresql.PostgreSQLContainer;
@@ -55,6 +58,7 @@ public abstract class BaseIntegrationTest {
   @Autowired protected MockMvc mockMvc;
   @Autowired protected JsonMapper objectMapper;
   @Autowired protected StringRedisTemplate redisTemplate;
+  @Autowired private JdbcTemplate jdbcTemplate;
 
   /** Antares internal API: no Antares in tests, each test states the memberships it needs. */
   @MockitoBean protected AntaresClient antaresClient;
@@ -79,6 +83,30 @@ public abstract class BaseIntegrationTest {
     registry.add("management.otlp.metrics.export.enabled", () -> "false");
     registry.add("management.tracing.export.otlp.enabled", () -> "false");
     registry.add("management.logging.export.otlp.enabled", () -> "false");
+  }
+
+  private static volatile String truncateStatement;
+
+  /**
+   * Every test starts from empty tables (Flyway history kept), so that the classes sharing one
+   * database and one Spring context never depend on each other's leftovers or on execution order.
+   */
+  @BeforeEach
+  void truncateAllTables() {
+    String sql = truncateStatement;
+    if (sql == null) {
+      List<String> tables =
+          jdbcTemplate.queryForList(
+              "select tablename from pg_tables where schemaname = 'aldebaran'"
+                  + " and tablename <> 'flyway_schema_history'",
+              String.class);
+      sql =
+          "TRUNCATE TABLE "
+              + String.join(", ", tables.stream().map(t -> "aldebaran." + t).toList())
+              + " RESTART IDENTITY CASCADE";
+      truncateStatement = sql;
+    }
+    jdbcTemplate.execute(sql);
   }
 
   @AfterEach

@@ -84,4 +84,6 @@ resolving IDs from the `antares` schema with `JdbcTemplate`, then calls `config/
   `WodLockedException` → 409); `exception/GlobalExceptionHandler` turns them into localized
   `ProblemDetail`. Add new keys to `messages.properties` and `messages_fr.properties`.
 - Tests: `*Test` = unit (JUnit 5 + Mockito, principals from `security/TestPrincipals`); `*IT` extends
-  `config/BaseIntegrationTest` (full context, random port, Testcontainers).
+  `config/BaseIntegrationTest` (full context, random port, Testcontainers; one JVM and one context
+  shared by all ITs, tables truncated before each test: create your own data, never depend on order,
+  no per-class `@MockitoBean` except where unavoidable, e.g. `ExporterIT`).

@@ -187,9 +187,12 @@ Direct access to databases for development:
 | Aldebaran | `cd aldebaran-training && ./mvnw verify` | `docker compose build aldebaran-training` |
 
 Backend integration tests (`*IT`) start PostgreSQL and Redis with Testcontainers, so Docker must be
-running. `npm start` proxies `/antares` and `/aldebaran` to `https://stellar.apex`
+running. All `*IT` classes of a backend share one JVM, one PostgreSQL + Redis pair and one Spring
+context: `BaseIntegrationTest` truncates every table before each test, so a test must create its own
+data and never rely on execution order (check with `-Dfailsafe.runOrder=random`). `npm start` proxies `/antares` and `/aldebaran` to `https://stellar.apex`
 (`sirius-app/proxy.conf.json`), so the Docker stack must be up. CI (`.github/workflows/ci.yml`) runs
-the same commands for each service whose files changed.
+the same commands for each service whose files changed; its final `ci-ok` job is the single required
+check (a skipped service counts as success), and a new push on a pull request cancels its previous run.
 
 ## Security
 

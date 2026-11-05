@@ -38,7 +38,8 @@ To build the executable JAR and run all tests:
 ```
 
 *This command runs all unit tests (`*Test.java`) and integration tests (`*IT.java`). Integration
-tests start PostgreSQL and Redis with Testcontainers: Docker must be running.*
+tests start PostgreSQL and Redis with Testcontainers: Docker must be running. All ITs share one container pair and one Spring context; tables are
+truncated before each test.*
 
 To build the JAR *without* running tests:
 

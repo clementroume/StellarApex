@@ -150,6 +150,29 @@ export): test gyms "Spartacus CrossFit" (physical), "Zeus Programming" (virtual)
 their accounts (Antares; `free@athlete.com` shows its name on public leaderboards), gym WODs and
 scores for them (Aldebaran).
 
+## Working on a roadmap lot
+
+Rules common to every lot session (the brief of a lot only lists what is specific to it):
+
+- Create `feature/<topic>` before the first change; never switch to another branch. One lot writes at
+  a time, in the main folder (no worktree).
+- Code, comments and commits in English; visible text in FR + EN (skill `i18n-pair`). Rights live in the
+  backends, Sirius follows `capabilities`. Schema changes only through Flyway (skill `flyway-migration`).
+- No Claude attribution line (`Co-Authored-By`, "Generated with") in commits or PRs (the
+  `.claude/hooks` hook blocks it). Commit only on the user's yes, proposing a commit at the end of
+  each phase.
+- Tests: targeted while working, the full suite of each touched service before proposing a commit
+  (skill `run-tests`). ITs share one database: never depend on order or on another test's data.
+- Run `/code-review medium` on the branch before opening a PR and fix the confirmed findings.
+- Browser checks only on `http://localhost:4200` with the accounts of `docs-private/comptes-test/`;
+  never credentials on `https://stellar.apex`, never an admin account.
+- Anything outside the brief is reported to the steering session in one line at once; a big addition
+  goes in its own PR.
+- Handover note in `docs-private/roadmap/lot<x>-passation-<theme>.md`, project notes in
+  `docs-private/<theme>/` (French kebab-case, git-excluded, never committed).
+- CI: the single required check is `ci-ok`. Merge only on the user's explicit OK; auto-merge only if
+  the user asks (Dependabot minor/patch PRs are auto-merged by workflow once `ci-ok` is required).
+
 ## Conventions
 
 - Backend code, comments, Javadoc and commit messages in English. User-facing text is translated
