@@ -23,6 +23,7 @@ import apex.stellar.aldebaran.model.entities.Wod.ScoreType;
 import apex.stellar.aldebaran.model.enums.Division;
 import apex.stellar.aldebaran.model.enums.Unit;
 import apex.stellar.aldebaran.repository.ScoreRepository;
+import apex.stellar.aldebaran.model.entities.SessionBlock;
 import apex.stellar.aldebaran.repository.SessionBlockRepository;
 import apex.stellar.aldebaran.repository.SessionLogRepository;
 import apex.stellar.aldebaran.repository.WodRepository;
@@ -132,7 +133,8 @@ public class ScoreService {
       newScore.setVerifiedBy(currentUserId);
       newScore.setVerifiedAt(LocalDateTime.now());
     }
-    attachToSession(newScore, wod, request.sessionLogId(), targetUserId, currentUserId);
+    attachToSession(
+        newScore, wod, request.sessionLogId(), request.sessionBlockId(), targetUserId, currentUserId);
     applySets(newScore, request, wod);
     normalizeAndCheck(newScore, wod);
 
@@ -574,8 +576,14 @@ public class ScoreService {
    * @throws InvalidScoreException if the journal is another athlete's or its session lacks the WOD.
    */
   private void attachToSession(
-      Score score, Wod wod, Long sessionLogId, Long targetUserId, Long currentUserId) {
+      Score score,
+      Wod wod,
+      Long sessionLogId,
+      Long sessionBlockId,
+      Long targetUserId,
+      Long currentUserId) {
     SessionLog journal;
+    score.setSessionBlockId(null);
     if (sessionLogId != null) {
       journal =
           sessionLogRepository
@@ -600,10 +608,31 @@ public class ScoreService {
       return;
     }
     score.setSessionLogId(journal.getId());
+    score.setSessionBlockId(
+        blockOf(journal.getSession().getId(), wod.getId(), sessionBlockId).getId());
     score.setDate(journal.getDate());
     if (wod.getGymId() == null) {
       score.setGymId(journal.getGymId());
     }
+  }
+
+  /**
+   * Block a session score is logged for: the requested one (it must hold the WOD), else the first
+   * block of the session holding the WOD.
+   *
+   * @throws InvalidScoreException if the requested block does not hold the WOD in that session.
+   */
+  private SessionBlock blockOf(Long sessionId, Long wodId, Long requestedBlockId) {
+    List<SessionBlock> blocks =
+        sessionBlockRepository.findBySessionIdAndWodIdOrderByOrderIndex(sessionId, wodId);
+    if (requestedBlockId == null) {
+      return blocks.getFirst();
+    }
+    return blocks.stream()
+        .filter(b -> b.getId().equals(requestedBlockId))
+        .findFirst()
+        .orElseThrow(
+            () -> new InvalidScoreException("error.score.session.log.mismatch", requestedBlockId));
   }
 
   /**

@@ -173,7 +173,7 @@
             }
             @if (kind === 'WOD' && canCompete()) {
               <label class="flex items-center gap-2 text-sm cursor-pointer" [title]="'SESSION.FORM.COMPETITION_HINT' | translate">
-                <input type="checkbox" formControlName="competition" class="size-4 accent-(--color-secondary)"/>
+                <input type="checkbox" formControlName="competition" [attr.disabled]="isFrozen(i) ? '' : null" class="size-4 accent-(--color-secondary)"/>
                 {{ 'SESSION.FORM.COMPETITION' | translate }}
               </label>
             }

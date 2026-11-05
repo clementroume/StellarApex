@@ -155,8 +155,9 @@ Sunday); the same blocks at two dates are two sessions. Disciplines: `CROSSFIT`,
   unchecked; `source` `MANUAL` (`PLANNING` reserved for the planning service). A score on a session
   WOD joins the athlete's journal (created when missing, e.g. by a judge); a borrowed WOD's score
   joins it with `sessionLogId`. A journal makes its athlete a participant; it cannot be deleted while scores are linked.
-  **Lock per block** (`SessionService`, `BlockLocks`): a block whose WOD has scores attached to a
-  journal of the session is *frozen* (kind, WOD written or borrowed, removal: 409); a block *checked*
+  **Lock per block** (`SessionService`, `BlockLocks`): a block holding scores (`scores.session_block_id`,
+  V17, set with the journal: `ScoreRequest.sessionBlockId`, else the first block of the session
+  holding the WOD; two blocks may borrow the same WOD) is *frozen* (kind, WOD written or borrowed, removal: 409); a block *checked*
   in a journal (`session_log_blocks.done`) without score cannot be removed (409) but stays fully
   editable, its prescription may change (lot D recomputes the muscle balance); free blocks, title,
   texts, themes, ordering, new blocks and visibility stay editable. With a journal the session's date,

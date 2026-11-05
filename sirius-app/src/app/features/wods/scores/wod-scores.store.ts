@@ -36,6 +36,8 @@ export class WodScoresStore {
    * scores join it; Aldebaran takes the journal's day and gym.
    */
   readonly sessionLogId = signal<number | null>(null);
+  /** Session block the WOD is shown in: new scores are logged for it (two blocks may share a WOD). */
+  readonly sessionBlockId = signal<number | null>(null);
   /**
    * Session the WOD is shown in, or null on the WOD detail: the history and the leaderboard keep the
    * scores of that session only (a borrowed Fran shows today's Fran, not every Fran).
@@ -91,9 +93,10 @@ export class WodScoresStore {
   save(request: ScoreRequest): void {
     const editing = this.editing();
     const sessionLogId = this.sessionLogId();
+    const sessionBlockId = this.sessionBlockId();
     const call = editing && editing !== 'new'
       ? this.scoreService.updateScore(editing.id, request)
-      : this.scoreService.logScore(sessionLogId != null ? {...request, sessionLogId} : request);
+      : this.scoreService.logScore(sessionLogId != null ? {...request, sessionLogId, sessionBlockId} : request);
 
     this.isSaving.set(true);
     call.subscribe({

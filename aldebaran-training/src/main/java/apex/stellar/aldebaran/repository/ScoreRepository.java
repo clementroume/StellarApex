@@ -149,16 +149,16 @@ public interface ScoreRepository extends JpaRepository<Score, Long> {
   List<Score> findByWodIdAndScalingAndPersonalRecordTrue(Long wodId, ScalingLevel scaling);
 
   /**
-   * WODs scored within the journals of a session (scores attached to a journal of that session; a
-   * borrowed WOD's scores logged elsewhere do not count).
+   * Blocks of a session holding scores (scores attached to a journal of that session for the
+   * block; a borrowed WOD's scores logged elsewhere do not count).
    *
    * @param sessionId The session.
-   * @return The distinct WOD IDs.
+   * @return The distinct block IDs.
    */
   @Query(
-      "SELECT DISTINCT s.wod.id FROM Score s WHERE s.sessionLogId IN"
-          + " (SELECT l.id FROM SessionLog l WHERE l.session.id = :sessionId)")
-  List<Long> findScoredWodIdsInSession(@Param("sessionId") Long sessionId);
+      "SELECT DISTINCT s.sessionBlockId FROM Score s WHERE s.sessionBlockId IN"
+          + " (SELECT b.id FROM SessionBlock b WHERE b.session.id = :sessionId)")
+  List<Long> findScoredBlockIdsInSession(@Param("sessionId") Long sessionId);
 
   /**
    * Checks whether scores are linked to the session journal.

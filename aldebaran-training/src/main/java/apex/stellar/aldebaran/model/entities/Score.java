@@ -167,6 +167,10 @@ public class Score {
   @Column(name = "session_log_id")
   private Long sessionLogId;
 
+  /** Block of the session the score was logged for (set with {@code sessionLogId}). */
+  @Column(name = "session_block_id")
+  private Long sessionBlockId;
+
   /** Sets of a strength block, set by set; the best complete set is the performance. */
   @ElementCollection(fetch = FetchType.LAZY)
   @CollectionTable(name = "score_sets", joinColumns = @JoinColumn(name = "score_id"))

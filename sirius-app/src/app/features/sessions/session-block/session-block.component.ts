@@ -85,6 +85,7 @@ export class SessionBlockComponent {
       untracked(() => wod ? this.loadWod(wod.id) : this.wod.set(null));
     });
     effect(() => this.store.sessionLogId.set(this.log()?.id ?? null));
+    effect(() => this.store.sessionBlockId.set(this.block().id));
     this.store.changed$.pipe(takeUntilDestroyed()).subscribe(() => {
       this.scoresChanged.emit();
       if (this.canJudge()) this.loadQueue();

@@ -91,12 +91,13 @@ describe('WodScoresStore', () => {
   it('should link a new score to the session journal of the block', () => {
     store.load(wod);
     store.sessionLogId.set(12);
+    store.sessionBlockId.set(31);
     scoreService.logScore.mockReturnValue(of(score(3)));
 
     store.openNew();
     store.save(request);
 
-    expect(scoreService.logScore).toHaveBeenCalledWith({...request, sessionLogId: 12});
+    expect(scoreService.logScore).toHaveBeenCalledWith({...request, sessionLogId: 12, sessionBlockId: 31});
   });
 
   it('should update the score being edited', () => {

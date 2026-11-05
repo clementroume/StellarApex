@@ -595,6 +595,62 @@ class SessionControllerIT extends BaseIntegrationTest {
   }
 
   @Test
+  @DisplayName("Per-block lock: a score freezes only the block it was logged for")
+  void scoreFreezesItsBlockOnly() throws Exception {
+    SessionBlockRequest finisher =
+        new SessionBlockRequest(
+            null, Kind.FINISHER, null, null, null, true, null, 5, null, null, false,
+            fran.getId(), null);
+    JsonNode session =
+        create(
+            wodSession(
+                BOX, VisibilityPolicy.AFTER_PARTICIPANTS, null,
+                List.of(skill(), borrowed(fran.getId(), false), finisher)),
+            OWNER, OWNER_MEMBERSHIPS);
+    long id = session.get("id").asLong();
+    long wodBlockId = session.at("/blocks/1/id").asLong();
+    long finisherBlockId = session.at("/blocks/2/id").asLong();
+    MvcResult logged =
+        mockMvc
+            .perform(as(post("/aldebaran/sessions/" + id + "/logs"), ATHLETE, ATHLETE_MEMBERSHIPS))
+            .andExpect(status().isCreated())
+            .andReturn();
+    long logId =
+        objectMapper.readTree(logged.getResponse().getContentAsString()).get("id").asLong();
+
+    // A block that does not hold the WOD is refused
+    ScoreRequest wrongBlock =
+        new ScoreRequest(
+            null, today, fran.getId(), 4, 30, null, null, null, null, null, null, null, null,
+            ScalingLevel.RX, false, null, null, null, null, logId, session.at("/blocks/0/id").asLong(),
+            null, false, null);
+    mockMvc
+        .perform(as(post("/aldebaran/scores"), ATHLETE, ATHLETE_MEMBERSHIPS).content(json(wrongBlock)))
+        .andExpect(status().isBadRequest());
+    ScoreRequest franScore =
+        new ScoreRequest(
+            null, today, fran.getId(), 4, 30, null, null, null, null, null, null, null, null,
+            ScalingLevel.RX, false, null, null, null, null, logId, wodBlockId, null, false, null);
+    mockMvc
+        .perform(as(post("/aldebaran/scores"), ATHLETE, ATHLETE_MEMBERSHIPS).content(json(franScore)))
+        .andExpect(status().isCreated());
+
+    JsonNode current = objectMapper.readTree(
+        mockMvc.perform(as(get("/aldebaran/sessions/" + id), OWNER, OWNER_MEMBERSHIPS))
+            .andReturn().getResponse().getContentAsString());
+    assertTrue(current.at("/blocks/1/capabilities/frozen").asBoolean());
+    assertFalse(current.at("/blocks/2/capabilities/frozen").asBoolean());
+    assertEquals(finisherBlockId, current.at("/blocks/2/id").asLong());
+
+    SessionBlockRequest skillBlock = keep(current.at("/blocks/0"));
+    SessionBlockRequest wodBlock = keep(current.at("/blocks/1"));
+    SessionBlockRequest finisherBlock = keep(current.at("/blocks/2"));
+    // The scored borrowed block cannot swap its WOD; the other one can
+    putBlocks(id, List.of(skillBlock, withWodId(wodBlock, open.getId()), finisherBlock), 409);
+    putBlocks(id, List.of(skillBlock, wodBlock, withWodId(finisherBlock, open.getId())), 200);
+  }
+
+  @Test
   @DisplayName("Visibility: policies give the opening instant; a program uses ADVANCE / DAY_OF")
   void visibilityPolicies() throws Exception {
     JsonNode dayOf =

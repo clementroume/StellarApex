@@ -1,3 +1,4 @@
+import {map} from 'rxjs';
 import {ChangeDetectionStrategy, Component, computed, DestroyRef, effect, inject, input, signal, untracked} from '@angular/core';
 import {toSignal} from '@angular/core/rxjs-interop';
 import {HttpErrorResponse} from '@angular/common/http';
@@ -122,7 +123,7 @@ export class SessionFormComponent {
     contentVisibleAt: new FormControl<string>('', {nonNullable: true}),
     blocks: new FormArray<BlockForm>([])
   });
-  protected readonly value = toSignal(this.form.valueChanges, {initialValue: this.form.getRawValue()});
+  protected readonly value = toSignal(this.form.valueChanges.pipe(map(() => this.form.getRawValue())), {initialValue: this.form.getRawValue()});
 
   // --- COMPUTED STATE ---
   protected readonly isEdit = computed(() => !!this.id());
@@ -433,7 +434,8 @@ export class SessionFormComponent {
     const policy = personal || v.visibilityPolicy === '' ? null : v.visibilityPolicy as VisibilityPolicy;
     return {
       type: v.type,
-      discipline: v.type === 'WOD' ? 'CROSSFIT' : v.discipline,
+      // A logged session keeps its discipline (locked): send the loaded one
+      discipline: v.type === 'WOD' && !this.form.controls.discipline.disabled ? 'CROSSFIT' : v.discipline,
       date: v.date,
       title: v.title.trim() || null,
       descriptionFr: v.descriptionFr.trim() || null,
