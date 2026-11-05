@@ -137,8 +137,9 @@ the dev proxy targets the local Traefik `https://localhost` with `Host: stellar.
 - Sessions (`features/sessions`, lazy routes in `box.routes.ts` and `training.routes.ts`, personal
   ones flagged by route data `personal`): `session-week`, `session-detail`, `session-block`,
   `session-form`, `session-card` (frame), `session-journal`, `session-settings` card; dates helpers
-  in `session.utils.ts` (local yyyy-MM-dd, Monday of a week). Content visibility, lock and "Séance
-  faite" come from `SessionResponse.capabilities`; the policy list for a program is restricted in
+  in `session.utils.ts` (local yyyy-MM-dd, Monday of a week). Content visibility, delete and "Séance
+  faite" come from `SessionResponse.capabilities`, the per-block lock (frozen / checked) from
+  `SessionBlockResponse.capabilities` (a frozen block sends its WOD by `wodId`, never inline); the policy list for a program is restricted in
   the UI only for comfort (Aldebaran refuses the others).
 
 ## Tests

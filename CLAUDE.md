@@ -116,9 +116,15 @@ and a virtual programming); there is no "active gym" in requests.
   and session WODs and their leaderboards are 403. Admin: lists show only their own gyms (another
   gym on explicit `gymId`), any session by id. Write: `WOD_WRITE`; personal session (`gymId =
   null`): author only. "Séance faite" creates the athlete's journal (`session_logs`, participant);
-  a journal locks the session (409), visibility stays editable. Competition block (physical box):
+  the lock is per block (lot B bis): a block with scores in a journal of the session is frozen (kind,
+  WOD, removal: 409; a borrowed WOD's scores logged elsewhere do not count); a block checked in a
+  journal without score cannot be removed but stays editable (its prescription may change: lot D
+  recomputes the muscle balance); free blocks, title, texts, ordering, added blocks and visibility
+  stay editable. Once a journal exists the date, the type, the discipline and the deletion of the session are locked
+  (409). Competition block (physical box):
   the block's WOD is a box competition WOD (the Open is copied), athletes submit their score to the
-  judges. `SessionResponse.capabilities {canModify, locked, contentVisible, canLog}`.
+  judges. `SessionResponse.capabilities {canModify, canDelete, contentVisible, canLog}`, per block
+  `SessionBlockResponse.capabilities {canModify, canDelete, frozen}`.
 - Internal API: Antares `/antares/internal/**` (membership check, gym type; Aldebaran → `http://antares-auth:8080`,
   `X-Internal-Secret`, 404 without it, excluded from the Traefik `/antares` route). Aldebaran calls it
   through `client/AntaresClient` only.
