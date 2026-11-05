@@ -19,6 +19,8 @@ the dev proxy targets the local Traefik `https://localhost` with `Host: stellar.
   `gym-selector` components (inline templates).
 - `src/app/shared/ui`: spartan/ui helm code (styles copied from the spartan CLI, ours to edit), imported as
   `@spartan-ng/helm/<name>` (`tsconfig.json` paths) on top of `@spartan-ng/brain` (pinned version).
+  A brain bump (also inside a Dependabot group PR) can break the copies (1.9.0: `BrnAvatar` lost `_image`):
+  diff the copies against `libs/helm/<name>/src/lib` of the spartan repo at that tag and fix them in the same PR.
 
 ## UI primitives (D42: spartan/ui)
 
@@ -151,8 +153,8 @@ the dev proxy targets the local Traefik `https://localhost` with `Host: stellar.
 
 ## Known state
 
-- Initial bundle budget (`angular.json`): warning at 600 kB (raised from 500 kB in lot 0): ~590 kB
-  (139 kB transferred after lot B; 520 kB before lot 0). New screens stay lazy (sessions: own chunks). Tailwind generates the utilities of every helm file
+- Initial bundle budget (`angular.json`): warning at 600 kB (raised from 500 kB in lot 0): ~596 kB
+  (140 kB transferred after brain 1.9.0; 520 kB before lot 0). New screens stay lazy (sessions: own chunks). Tailwind generates the utilities of every helm file
   (~145 kB of CSS) and helm in the shell brings `tailwind-merge` (~37 kB). Keep heavy brain modules out of the shell
   (sonner is loaded on first toast and its toaster is `@defer (on idle)`).
   `@spartan-ng/helm/utils` must not re-export `provideSpartanHlm` (it drags `@angular/cdk/overlay` in).
