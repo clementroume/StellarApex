@@ -75,7 +75,13 @@ jobs:
         uses: github/codeql-action/init@v4
         with:
           languages: java-kotlin
-          build-mode: none
+          build-mode: manual
+
+      - name: Build Antares Auth
+        working-directory: ./antares-auth
+        run: |
+          chmod +x mvnw
+          ./mvnw clean package -DskipTests
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v4
@@ -111,7 +117,13 @@ jobs:
         uses: github/codeql-action/init@v4
         with:
           languages: java-kotlin
-          build-mode: none
+          build-mode: manual
+
+      - name: Build Aldebaran Training
+        working-directory: ./aldebaran-training
+        run: |
+          chmod +x mvnw
+          ./mvnw clean package -DskipTests
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v4
@@ -147,7 +159,13 @@ jobs:
         uses: github/codeql-action/init@v4
         with:
           languages: java-kotlin
-          build-mode: none
+          build-mode: manual
+
+      - name: Build Bellatrix Swagger
+        working-directory: ./bellatrix-swagger
+        run: |
+          chmod +x mvnw
+          ./mvnw clean package -DskipTests
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v4
