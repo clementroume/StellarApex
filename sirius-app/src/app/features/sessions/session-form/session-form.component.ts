@@ -1,3 +1,4 @@
+import {map} from 'rxjs';
 import {ChangeDetectionStrategy, Component, computed, DestroyRef, effect, inject, input, signal, untracked} from '@angular/core';
 import {toSignal} from '@angular/core/rxjs-interop';
 import {HttpErrorResponse} from '@angular/common/http';
@@ -13,6 +14,7 @@ import {CdkTrapFocus} from '@angular/cdk/a11y';
 import {SessionService} from '../../../api/aldebaran/services/session.service';
 import {WodService} from '../../../api/aldebaran/services/wod.service';
 import {
+  BlockCapabilities,
   BlockKind,
   Discipline,
   SessionBlockRequest,
@@ -121,7 +123,7 @@ export class SessionFormComponent {
     contentVisibleAt: new FormControl<string>('', {nonNullable: true}),
     blocks: new FormArray<BlockForm>([])
   });
-  protected readonly value = toSignal(this.form.valueChanges, {initialValue: this.form.getRawValue()});
+  protected readonly value = toSignal(this.form.valueChanges.pipe(map(() => this.form.getRawValue())), {initialValue: this.form.getRawValue()});
 
   // --- COMPUTED STATE ---
   protected readonly isEdit = computed(() => !!this.id());
@@ -240,9 +242,8 @@ export class SessionFormComponent {
     this.isLoading.set(true);
     this.sessionService.getSession(id).subscribe({
       next: s => {
-        if (!s.capabilities.canModify || s.capabilities.locked) {
-          this.notificationService.showError(this.translate.instant(
-            s.capabilities.locked ? 'SESSION.MESSAGES.LOCKED' : 'SESSION.MESSAGES.FORBIDDEN'));
+        if (!s.capabilities.canModify) {
+          this.notificationService.showError(this.translate.instant('SESSION.MESSAGES.FORBIDDEN'));
           void this.router.navigate([s.gymId == null ? '/training/sessions' : '/box/sessions', s.id]);
           return;
         }
@@ -258,6 +259,12 @@ export class SessionFormComponent {
           contentVisibleAt: toLocalInput(s.contentVisibleFrom) ?? ''
         }, {emitEvent: false});
         this.form.controls.discipline.setValue(s.discipline);
+        // Journals point to a dated session: type and day are locked once someone logged it
+        if (!s.capabilities.canDelete) {
+          this.form.controls.type.disable({emitEvent: false});
+          this.form.controls.date.disable({emitEvent: false});
+          this.form.controls.discipline.disable({emitEvent: false});
+        }
         this.showMore.set(!!(s.title || s.descriptionFr || s.descriptionEn));
         this.form.controls.blocks.clear();
         for (const b of s.blocks) {
@@ -308,9 +315,27 @@ export class SessionFormComponent {
 
   /** A WOD session keeps at least one Skill and one WOD block (Aldebaran checks it too). */
   protected canRemove(index: number): boolean {
+    if (this.blockCaps(index)?.canDelete === false) return false;
     const kind = this.form.controls.blocks.at(index).controls.kind.value;
     if (this.value().type !== 'WOD' || (kind !== 'SKILL' && kind !== 'WOD')) return true;
     return this.form.controls.blocks.controls.filter(b => b.controls.kind.value === kind).length > 1;
+  }
+
+  /** Rights Aldebaran gave the saved block at this position, absent for a new block. */
+  protected blockCaps(index: number): BlockCapabilities | null {
+    const id = this.form.controls.blocks.at(index).controls.id.value;
+    return id == null ? null : this.original()?.blocks.find(b => b.id === id)?.capabilities ?? null;
+  }
+
+  /** Scored block: its WOD stays as it is (only the other fields change). */
+  protected isFrozen(index: number): boolean {
+    return this.blockCaps(index)?.frozen === true;
+  }
+
+  /** Checked in a journal without scores: editable, but it cannot be removed. */
+  protected isChecked(index: number): boolean {
+    const caps = this.blockCaps(index);
+    return !!caps && !caps.frozen && !caps.canDelete;
   }
 
   protected moveBlock(index: number, delta: -1 | 1): void {
@@ -409,7 +434,8 @@ export class SessionFormComponent {
     const policy = personal || v.visibilityPolicy === '' ? null : v.visibilityPolicy as VisibilityPolicy;
     return {
       type: v.type,
-      discipline: v.type === 'WOD' ? 'CROSSFIT' : v.discipline,
+      // A logged session keeps its discipline (locked): send the loaded one
+      discipline: v.type === 'WOD' && !this.form.controls.discipline.disabled ? 'CROSSFIT' : v.discipline,
       date: v.date,
       title: v.title.trim() || null,
       descriptionFr: v.descriptionFr.trim() || null,

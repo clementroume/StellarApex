@@ -9,6 +9,7 @@ import apex.stellar.aldebaran.model.entities.SessionBlock.Stimulus;
  *
  * @param borrowed The block borrows a standalone WOD (its scores join that WOD's leaderboard).
  * @param competition The block's WOD is a competition WOD of the box.
+ * @param capabilities What the user may do with the block (frozen, deletable...).
  */
 public record SessionBlockResponse(
     Long id,
@@ -24,4 +25,5 @@ public record SessionBlockResponse(
     String textFr,
     WodResponse wod,
     boolean borrowed,
-    boolean competition) {}
+    boolean competition,
+    BlockCapabilities capabilities) {}

@@ -154,8 +154,14 @@ Sunday); the same blocks at two dates are two sessions. Disciplines: `CROSSFIT`,
   (one per session, on one of its days, never in the future) with every block checked; blocks can be
   unchecked; `source` `MANUAL` (`PLANNING` reserved for the planning service). A score on a session
   WOD joins the athlete's journal (created when missing, e.g. by a judge); a borrowed WOD's score
-  joins it with `sessionLogId`. A journal makes its athlete a participant and **locks** the session
-  (409 on update and delete; visibility stays editable); it cannot be deleted while scores are linked.
+  joins it with `sessionLogId`. A journal makes its athlete a participant; it cannot be deleted while scores are linked.
+  **Lock per block** (`SessionService`, `BlockLocks`): a block holding scores (`scores.session_block_id`,
+  V17, set with the journal: `ScoreRequest.sessionBlockId`, else the first block of the session
+  holding the WOD; two blocks may borrow the same WOD) is *frozen* (kind, WOD written or borrowed, removal: 409); a block *checked*
+  in a journal (`session_log_blocks.done`) without score cannot be removed (409) but stays fully
+  editable, its prescription may change (lot D recomputes the muscle balance); free blocks, title,
+  texts, themes, ordering, new blocks and visibility stay editable. With a journal the session's date,
+  type, discipline and deletion are locked (409).
 * Strength sets (`score_sets`): `sets [{reps, weight, completed}]` on `WEIGHT`, `LOAD` and `NONE`
   scores; the heaviest complete set becomes `maxWeight` (PR and leaderboard unchanged), the sum of
   reps × load of complete sets `totalLoad`. `wod_movements.sets` is the prescribed number of sets.
@@ -278,8 +284,8 @@ Sunday); the same blocks at two dates are two sessions. Disciplines: `CROSSFIT`,
   `from`, `to`: a specialty covers its week, `type`), with `contentVisible` and `loggedByMe`. A
   platform admin's lists keep their own gyms and personal sessions; another gym only with its
   `gymId` (the admin still opens any session by id).
-* `GET /sessions/{id}`: frame, content when visible, `capabilities {canModify, locked, contentVisible,
-  canLog}` and `myLog`.
+* `GET /sessions/{id}`: frame, content when visible, `capabilities {canModify, canDelete, contentVisible,
+  canLog}`, blocks with `capabilities {canModify, canDelete, frozen}`, and `myLog`.
 * `POST /sessions`, `PUT /sessions/{id}` (blocks merged by `id`; an owned WOD left behind is deleted),
   `DELETE /sessions/{id}` (deletes its owned WODs), `PUT /sessions/{id}/visibility`.
 * `POST /sessions/{id}/logs` `{date?, gymId?}`: "Séance faite". `GET /session-logs/me` (`from`, `to`),

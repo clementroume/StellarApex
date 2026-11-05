@@ -2,6 +2,7 @@ package apex.stellar.aldebaran.repository;
 
 import apex.stellar.aldebaran.model.entities.Session;
 import apex.stellar.aldebaran.model.entities.SessionBlock;
+import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -38,4 +39,13 @@ public interface SessionBlockRepository extends JpaRepository<SessionBlock, Long
    * @return true if one of its blocks points at the WOD.
    */
   boolean existsBySessionIdAndWodId(Long sessionId, Long wodId);
+
+  /**
+   * Blocks of the session holding the WOD, in session order.
+   *
+   * @param sessionId The session ID.
+   * @param wodId The WOD ID.
+   * @return The blocks (several when a WOD is borrowed twice).
+   */
+  List<SessionBlock> findBySessionIdAndWodIdOrderByOrderIndex(Long sessionId, Long wodId);
 }

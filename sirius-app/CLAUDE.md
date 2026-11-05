@@ -116,7 +116,7 @@ the dev proxy targets the local Traefik `https://localhost` with `Host: stellar.
   `WodScoresStore.setVerified`. A WOD page offers "Program in a session" (`/box/sessions/new?borrow=`).
 - Scores on the WOD detail: `features/wods/scores` (`WodScoresStore` provided by the detail, shared by
   `score-best`, `score-history`, `score-form`; `formatScore` in `score.utils.ts`). Each session block
-  provides its own store with `sessionLogId` (new scores join the journal; the form then hides day
+  provides its own store with `sessionLogId` and `sessionBlockId` (new scores join the journal and the block; the form then hides day
   and gym) and `sessionId` (history and the folded "session leaderboard" keep that session's scores). Strength sets: `ScoreRequest.sets` (Aldebaran derives the best set / volume).
 - WOD prescription display: `features/wods/wod-whiteboard` (WOD detail and session blocks). Movement
   names are written in CrossFit English whatever the language (`features/wods/movement-board-name.ts`:
@@ -137,8 +137,9 @@ the dev proxy targets the local Traefik `https://localhost` with `Host: stellar.
 - Sessions (`features/sessions`, lazy routes in `box.routes.ts` and `training.routes.ts`, personal
   ones flagged by route data `personal`): `session-week`, `session-detail`, `session-block`,
   `session-form`, `session-card` (frame), `session-journal`, `session-settings` card; dates helpers
-  in `session.utils.ts` (local yyyy-MM-dd, Monday of a week). Content visibility, lock and "Séance
-  faite" come from `SessionResponse.capabilities`; the policy list for a program is restricted in
+  in `session.utils.ts` (local yyyy-MM-dd, Monday of a week). Content visibility, delete and "Séance
+  faite" come from `SessionResponse.capabilities`, the per-block lock (frozen / checked) from
+  `SessionBlockResponse.capabilities` (a frozen block sends its WOD by `wodId`, never inline); the policy list for a program is restricted in
   the UI only for comfort (Aldebaran refuses the others).
 
 ## Tests

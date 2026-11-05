@@ -74,6 +74,7 @@ public interface ScoreMapper {
   @Mapping(target = "division", ignore = true)
   @Mapping(target = "sets", ignore = true) // Converted and checked by ScoreService
   @Mapping(target = "sessionLogId", ignore = true) // Checked by ScoreService
+  @Mapping(target = "sessionBlockId", ignore = true) // Derived by ScoreService
   @Mapping(target = "verificationRequested", ignore = true) // Competition WODs only
   @Mapping(target = "timeSeconds", source = "request", qualifiedByName = "calculateTotalSeconds")
   @Mapping(target = "timeDisplayUnit", source = "request", qualifiedByName = "inferTimeDisplayUnit")
@@ -102,6 +103,7 @@ public interface ScoreMapper {
   @Mapping(target = "division", ignore = true)
   @Mapping(target = "sets", ignore = true) // Converted and checked by ScoreService
   @Mapping(target = "sessionLogId", ignore = true) // Checked by ScoreService
+  @Mapping(target = "sessionBlockId", ignore = true) // Derived by ScoreService
   @Mapping(target = "verificationRequested", ignore = true) // Competition WODs only
   @Mapping(target = "timeSeconds", source = "request", qualifiedByName = "calculateTotalSeconds")
   @Mapping(target = "timeDisplayUnit", source = "request", qualifiedByName = "inferTimeDisplayUnit")

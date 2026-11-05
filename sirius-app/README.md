@@ -67,7 +67,8 @@ src/spartan.css       # spartan tokens and Tailwind colours mapped to the palett
   get "New session"). The session page shows the frame, then the content when its visibility policy
   opens it (`SessionResponse.capabilities`): "Séance faite" (journal, every block ticked, untick what
   was skipped), per-block scores (score form with sets and "Submit for verification" on a competition
-  block), the judge's queue of submitted scores, and for staff edit / delete (until someone logged it)
+  block), the judge's queue of submitted scores, and for staff edit (also once logged: scored blocks are read-only with an explanation, checked blocks
+  cannot be removed, date and type are fixed), delete (until someone logged it)
   and the visibility dialog. The session form (staff and personal) stays light: type and day,
   visibility on one line, title and coach's word folded; Skill and WOD blocks from the start (not
   removable in a WOD session), warm-up always first, cool down always last (text only), accessory /

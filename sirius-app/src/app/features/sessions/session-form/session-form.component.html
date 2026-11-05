@@ -13,12 +13,15 @@
       <div class="field-group w-full" role="group" [attr.aria-label]="'SESSION.FIELDS.TYPE' | translate">
         @for (t of types; track t) {
           <button type="button" hlmBtn variant="outline" class="flex-1 h-11 aria-pressed:bg-primary aria-pressed:text-primary-foreground aria-pressed:font-semibold"
-                  [id]="'type-' + t" [attr.aria-pressed]="value().type === t" (click)="form.controls.type.setValue(t)">
+                  [id]="'type-' + t" [attr.aria-pressed]="value().type === t" [disabled]="form.controls.type.disabled" (click)="form.controls.type.setValue(t)">
             {{ 'SESSION.TYPES.' + t | translate }}
           </button>
         }
       </div>
 
+      @if (form.controls.date.disabled) {
+        <p class="text-sm text-muted-foreground frame-locked">{{ 'SESSION.FORM.FRAME_LOCKED' | translate }}</p>
+      }
       <div class="grid gap-3 sm:grid-cols-2">
         <label class="flex flex-col gap-1.5">
           <span class="text-sm font-medium">{{ (isSpecialty() ? 'SESSION.FIELDS.WEEK' : 'SESSION.FIELDS.DATE') | translate }}</span>
@@ -142,13 +145,22 @@
                   <span class="font-medium truncate">{{ w.title }}</span>
                   <span class="text-xs text-muted-foreground">{{ (w.mode === 'own' ? 'SESSION.FORM.WOD_OWN' : 'SESSION.BORROWED') | translate }}</span>
                 </span>
-                <span class="flex gap-1">
-                  @if (w.mode === 'own') {
-                    <button type="button" hlmBtn variant="outline" size="sm" (click)="editingWod.set(i)">{{ 'GLOBAL.EDIT' | translate }}</button>
-                  }
-                  <button type="button" hlmBtn variant="ghost" size="sm" (click)="clearWod(i)">{{ 'SESSION.FORM.CHANGE_WOD' | translate }}</button>
-                </span>
+                @if (!isFrozen(i)) {
+                  <span class="flex gap-1">
+                    @if (w.mode === 'own') {
+                      <button type="button" hlmBtn variant="outline" size="sm" (click)="editingWod.set(i)">{{ 'GLOBAL.EDIT' | translate }}</button>
+                    }
+                    <button type="button" hlmBtn variant="ghost" size="sm" (click)="clearWod(i)">{{ 'SESSION.FORM.CHANGE_WOD' | translate }}</button>
+                  </span>
+                }
               </div>
+              @if (isFrozen(i)) {
+                <p class="flex items-start gap-2 text-sm text-warning block-frozen">
+                  <ng-icon name="heroLockClosed" class="mt-0.5 shrink-0" aria-hidden="true"/>{{ 'SESSION.FORM.BLOCK_FROZEN' | translate }}
+                </p>
+              } @else if (isChecked(i)) {
+                <p class="text-sm text-muted-foreground block-checked">{{ 'SESSION.FORM.BLOCK_CHECKED' | translate }}</p>
+              }
             } @else {
               <div class="grid gap-2 grid-cols-2">
                 <button type="button" hlmBtn variant="outline" class="h-11 write-wod" (click)="editingWod.set(i)">
@@ -161,7 +173,7 @@
             }
             @if (kind === 'WOD' && canCompete()) {
               <label class="flex items-center gap-2 text-sm cursor-pointer" [title]="'SESSION.FORM.COMPETITION_HINT' | translate">
-                <input type="checkbox" formControlName="competition" class="size-4 accent-(--color-secondary)"/>
+                <input type="checkbox" formControlName="competition" [attr.disabled]="isFrozen(i) ? '' : null" class="size-4 accent-(--color-secondary)"/>
                 {{ 'SESSION.FORM.COMPETITION' | translate }}
               </label>
             }

@@ -59,6 +59,10 @@ public record ScoreRequest(
     // the athlete's journal is found or created) ---
     Long sessionLogId,
 
+    // --- Session block the score is logged for (optional: derived from the WOD when it is held
+    // by one block of the session; needed when two blocks borrow the same WOD) ---
+    Long sessionBlockId,
+
     // --- Strength sets, set by set (WEIGHT / LOAD / NONE scores), in weightUnit ---
     @Valid @Size(max = 50, message = "{validation.score.sets.size}") List<ScoreSetRequest> sets,
 
@@ -67,6 +71,22 @@ public record ScoreRequest(
 
     // --- Team WOD: the other members of the team (same box), who get the same score ---
     @Size(max = 5, message = "{validation.score.team.size}") List<Long> teammateIds) {
+
+  /** Score without session block (the block is derived from the WOD), with team mates. */
+  @SuppressWarnings("java:S107") // Mirrors the record components
+  public ScoreRequest(
+      Long userId, LocalDate date, Long wodId, Integer timeMinutes, Integer timeSeconds,
+      Integer rounds, Integer reps, Double maxWeight, Double totalLoad, Unit weightUnit,
+      Double totalDistance, Unit distanceUnit, Integer totalCalories, ScalingLevel scaling,
+      boolean timeCapped, Integer tiebreakSeconds, String userComment, String scalingNotes,
+      Long gymId, Long sessionLogId, List<ScoreSetRequest> sets, boolean verificationRequested,
+      List<Long> teammateIds) {
+    this(
+        userId, date, wodId, timeMinutes, timeSeconds, rounds, reps, maxWeight, totalLoad,
+        weightUnit, totalDistance, distanceUnit, totalCalories, scaling, timeCapped,
+        tiebreakSeconds, userComment, scalingNotes, gymId, sessionLogId, null, sets,
+        verificationRequested, teammateIds);
+  }
 
   /** Individual score, possibly in a session, with sets or a verification request. */
   @SuppressWarnings("java:S107") // Mirrors the record components

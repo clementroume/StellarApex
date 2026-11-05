@@ -44,6 +44,17 @@ public interface SessionLogRepository extends JpaRepository<SessionLog, Long> {
   boolean existsBySessionId(Long sessionId);
 
   /**
+   * Blocks of a session checked as done in at least one journal.
+   *
+   * @param sessionId The session.
+   * @return The distinct block IDs.
+   */
+  @Query(
+      "SELECT DISTINCT KEY(b) FROM SessionLog l JOIN l.blocks b"
+          + " WHERE l.session.id = :sessionId AND VALUE(b) = true")
+  List<Long> findCheckedBlockIds(@Param("sessionId") Long sessionId);
+
+  /**
    * Among the given sessions, those the athlete logged.
    *
    * @param userId The athlete.

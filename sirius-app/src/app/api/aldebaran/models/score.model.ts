@@ -45,6 +45,8 @@ export interface ScoreRequest {
   gymId?: number | null;
   // --- Session: the athlete's journal (optional for a session WOD, found or created) ---
   sessionLogId?: number | null;
+  // Block of the session the score is logged for (derived from the WOD when only one block holds it)
+  sessionBlockId?: number | null;
   // --- Strength sets, set by set, in weightUnit (WEIGHT / LOAD / NONE scores) ---
   sets?: ScoreSet[];
   // --- Competition WOD: submit the score to the judges ---

@@ -18,12 +18,23 @@ export const TIMED_POLICIES: VisibilityPolicy[] = ['ADVANCE', 'DAY_OF'];
 
 /** Rights of the current user on a session, computed by Aldebaran (SessionSecurity). */
 export interface SessionCapabilities {
+  // Some edit is allowed (blocks carry their own capabilities)
   canModify: boolean;
-  // Someone logged the session: blocks are frozen, visibility stays editable
-  locked: boolean;
+  // False once someone logged the session: it cannot be deleted, its date and type are locked
+  canDelete: boolean;
   contentVisible: boolean;
   // "Séance faite" available now (frame readable, first day reached, not logged yet)
   canLog: boolean;
+}
+
+/** Rights of the current user on one block, computed by Aldebaran per request. */
+export interface BlockCapabilities {
+  // Kind and WOD may change (false once frozen)
+  canModify: boolean;
+  // False once frozen or checked in a journal
+  canDelete: boolean;
+  // A journal of the session holds scores of this block: kind, WOD and removal are locked
+  frozen: boolean;
 }
 
 export interface SessionBlockRequest {
@@ -85,6 +96,7 @@ export interface SessionBlockResponse {
   // Borrowed standalone WOD (scores join its leaderboard)
   borrowed: boolean;
   competition: boolean;
+  capabilities: BlockCapabilities;
 }
 
 export interface BlockDone {
