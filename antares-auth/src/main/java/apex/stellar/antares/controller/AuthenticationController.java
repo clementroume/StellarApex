@@ -4,8 +4,8 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.text.Normalizer.Form.NFD;
 import static java.text.Normalizer.normalize;
 
-import apex.stellar.antares.config.SupportSessionAuthentication;
 import apex.stellar.antares.config.CsrfTokenRotator;
+import apex.stellar.antares.config.SupportSessionAuthentication;
 import apex.stellar.antares.dto.AuthenticationRequest;
 import apex.stellar.antares.dto.ForgotPasswordRequest;
 import apex.stellar.antares.dto.RegisterRequest;

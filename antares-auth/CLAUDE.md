@@ -66,7 +66,9 @@ HttpOnly cookies, XSRF cookie `XSRF-TOKEN`). `./mvnw verify` runs unit tests and
   authenticated by `JwtAuthenticationFilter` (a GET landing during a POST invalidated it). A rejection is
   a 403 ProblemDetail `code=CSRF_INVALID` from `config/ProblemDetailAccessDeniedHandler` (never
   `sendError`: the `/error` dispatch is unauthenticated and became a 401). `GET /auth/csrf` only
-  ensures the cookie exists; Sirius calls it and retries once on `CSRF_INVALID`. Covered by `CsrfRaceIT`.
+  ensures the cookie exists; Sirius (`authInterceptor`) calls it and retries once on `CSRF_INVALID`.
+  Identity changes re-issue the token explicitly through `config/CsrfTokenRotator` (login, logout, start/end
+  of a support session); never on refresh or ordinary requests. Covered by `CsrfRaceIT`.
 - Tests: `*Test` unit tests (Mockito); `*IT` extend `config/BaseIntegrationTest` (one JVM, one container
   pair and one cached context for all ITs, tables truncated before each test, BCrypt cost 4, real CSRF
   repository restored before each test because `csrf()` swaps it). Never add a per-class

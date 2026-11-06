@@ -33,7 +33,7 @@ export const authInterceptor: HttpInterceptorFn = (req: HttpRequest<unknown>, ne
       }
 
       // Rejected XSRF token (stale or missing cookie): fetch one and retry once. Never a logout.
-      if (error.status === 403 && error.error?.code === CSRF_INVALID && isApiUrl(req.url)) {
+      if (error.status === 403 && error.error?.code === CSRF_INVALID && req.url.startsWith(environment.authUrl)) {
         // The retry goes straight to `next`, so a second rejection is not caught here again.
         return authService.ensureCsrfToken().pipe(switchMap(() => next(authorizedReq)));
       }
