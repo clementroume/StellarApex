@@ -6,6 +6,7 @@ import {environment} from '../../../../environments/environment';
 import {UserResponse} from '../models/user.model';
 import {
   AuthenticationRequest,
+  DemoAccess,
   ForgotPasswordRequest,
   RegisterRequest,
   ResetPasswordRequest,
@@ -50,6 +51,11 @@ export class AuthService {
     return this.http.post<UserResponse>(this.buildUrl('/auth/register'), payload).pipe(
       tap(user => this._currentUser.set(user))
     );
+  }
+
+  /** The shared demo password, or null when this deployment offers no demo accounts. */
+  demoAccess(): Observable<DemoAccess | null> {
+    return this.http.get<DemoAccess>(this.buildUrl('/auth/demo')).pipe(catchError(() => of(null)));
   }
 
   login(payload: AuthenticationRequest): Observable<UserResponse> {

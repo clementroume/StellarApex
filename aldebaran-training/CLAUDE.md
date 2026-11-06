@@ -10,12 +10,12 @@ when no public WOD exists). `muscles.csv` has a `parent` column (functional grou
 WOD CSV format lives in `config/WodCsvCodec` (blank = null, lossless round-trip; movements by exact
 name; WOD movement variants joined by `|`, whereas `movements.csv` lists use `, `; FR/EN text
 columns `*_en` / `*_fr`, the former single-language columns still read as English; optional trailing
-`tiebreak_en` ... `reps_per_round` then the V14 structure columns `rounds` ... `vest_weight_unit`, V15
-`structure`, V16 `team_size` / `team_mode`, V18 `rep_max`, and `sets` / `segment` / `complex_group` /
+`tiebreak_en` ... `reps_per_round` then the former V14 structure columns `rounds` ... `vest_weight_unit`, former V15
+`structure`, former V16 `team_size` / `team_mode`, former V18 `rep_max`, and `sets` / `segment` / `complex_group` /
 `team_split` / `percent_of_rm` / `rm_reps` for WOD movements; former `wod_type` values read
 as a category + sub-category; a former `ROUNDS_REPS` score type reads as `REPS`).
-`config/DevGymWodSeeder` (`@Profile("dev")`, temporary) seeds WODs for the Antares test gyms,
-resolving IDs from the `antares` schema with `JdbcTemplate`, then calls `config/DevScoreSeeder`
+`demo/DevGymWodSeeder` (`@Profile("demo")`, package `aldebaran.demo` = what to delete to retire the demo) seeds WODs for the Antares test gyms,
+resolving IDs from the `antares` schema with `JdbcTemplate`, then calls `demo/DevScoreSeeder`
 (scores of the test accounts on gym WODs and public benchmarks, PRs via `ScoreRanking`; skipped when
 `owner@sparta.com` already has scores).
 `./mvnw verify` runs unit tests and `*IT` (Testcontainers PostgreSQL + Redis, Docker required).

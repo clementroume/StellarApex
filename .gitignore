@@ -112,8 +112,7 @@ test.http
 /aldebaran-training/src/main/resources/wods.csv
 /aldebaran-training/src/main/resources/wod_movements.csv
 
-# Sirius e2e (Playwright): local credentials, saved sessions, reports
-sirius-app/e2e/local.env
+# Sirius e2e (Playwright): saved sessions, reports
 sirius-app/e2e/.auth/
 sirius-app/test-results/
 sirius-app/playwright-report/

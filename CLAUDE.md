@@ -167,10 +167,23 @@ older access tokens refused). Athlete profile (division, birth year, height, bod
 division and the age group derived from the birth year are shared; the rest is private to its owner,
 never on a leaderboard.
 
-Temporary dev data (`dev` Spring profile, set in `docker-compose.yml`, to be removed like the CSV
-export): test gyms "Spartacus CrossFit" (physical), "Zeus Programming" (virtual), "Pending Box" and
-their accounts (Antares; `free@athlete.com` shows its name on public leaderboards), gym WODs and
-scores for them (Aldebaran).
+Demo data: Spring profile `demo` (set in `docker-compose.yml`, together with `e2e` for Antares), code in a
+`demo` sub-package of each service (`apex.stellar.antares.demo`: seeder, `GET /antares/auth/demo`;
+`apex.stellar.aldebaran.demo`: WODs and scores of the demo gyms), so that retiring the demo = deleting those
+packages (+ the Sirius sign-in section, see the Antares README). Gyms "Spartacus CrossFit" (physical), "Zeus
+Programming" (virtual), "Pending Box" and their accounts (`DevDataSeeder`; `free@demo.test` shows its name on
+public leaderboards). The accounts are **demo accounts** (D68): `users.demo`, addresses `<role>.<box>@demo.test`
+(the whole `.test` TLD is refused at registration), a known password from configuration
+(`application.demo.password`, `application-demo.properties` for the profile, `APPLICATION_DEMO_PASSWORD`
+elsewhere; empty = nothing seeded; public on purpose, never the admin's), kept in production one day. The sign-in
+page offers one-click persona buttons (password from `GET /antares/auth/demo`, 404 when none);
+`UserResponse.demo` flags the account. **A demo account can never be a platform administrator**, enforced by
+Antares (`User` refuses it, `getPlatformRole()` reports USER, database CHECK `chk_users_demo_not_admin`): never
+work around it, and keep that rule (core, not in the `demo` package) until a migration drops `users.demo`. To
+design before production: blocking password / e-mail / deletion changes on demo accounts and resetting their data.
+Playwright fixtures are separate: profile `e2e`, package `apex.stellar.antares.e2e` (`E2eFixtureSeeder`: box "E2E Box"
+without auto-subscription, its Owner, judge and athlete, `*@e2e.test`, ordinary non-demo users, password
+`application.e2e.password`), so the journeys depend on no demo data.
 
 ## Working on a roadmap lot
 
@@ -186,8 +199,9 @@ Rules common to every lot session (the brief of a lot only lists what is specifi
 - Tests: targeted while working, the full suite of each touched service before proposing a commit
   (skill `run-tests`). ITs share one database: never depend on order or on another test's data.
 - Run `/code-review medium` on the branch before opening a PR and fix the confirmed findings.
-- Browser checks only on `http://localhost:4200` with the accounts of `docs-private/comptes-test/`;
-  never credentials on `https://stellar.apex`, never an admin account.
+- Browser checks only on `http://localhost:4200` with the demo accounts (`docs-private/comptes-test/comptes-demo.md`,
+  password = `application.demo.password`, never repeated in chat); never credentials on
+  `https://stellar.apex`, never an admin account.
 - Anything outside the brief is reported to the steering session in one line at once; a big addition
   goes in its own PR.
 - Handover note in `docs-private/roadmap/lot<x>-passation-<theme>.md`, project notes in
@@ -200,7 +214,10 @@ Rules common to every lot session (the brief of a lot only lists what is specifi
 - Backend code, comments, Javadoc and commit messages in English. User-facing text is translated
   (FR + EN) on both sides: `messages*.properties` in backends, `sirius-app/src/assets/i18n/{fr,en}.json`.
 - Schema changes go through new Flyway migrations (`src/main/resources/db/migration`, schemas
-  `antares` / `aldebaran`, `ddl-auto=validate`); never edit an applied migration.
+  `antares` / `aldebaran`, `ddl-auto=validate`); never edit an applied migration. **Temporary exception
+  (D67):** while there is no real database, the history is folded into `V1__Baseline.sql` per service
+  (done at lot N, schema checked equal with `pg_dump --schema-only`); it is folded once more at the end
+  of the roadmap, before the first production release, then the rule applies without exception.
 - Default branch `main`; dependabot opens most PRs. Branch before committing; commit only when asked.
 - Frontend DTOs in `sirius-app/src/app/api/**/models` mirror backend DTOs: change both together.
 - Catalog: a movement variant is the `equipment` / `techniques` of the movement and of the WOD movement

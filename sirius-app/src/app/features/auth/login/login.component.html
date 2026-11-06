@@ -27,5 +27,20 @@
       <a hlmBtn variant="link" class="self-start px-0" routerLink="/auth/register"
          [queryParams]="forwardReturnUrl ? {returnUrl: forwardReturnUrl} : {}">{{ 'LOGIN.NO_ACCOUNT' | translate }}</a>
     </form>
+
+    @if (demoPassword()) {
+      <div hlmCardContent class="flex flex-col gap-2 border-t pt-4" data-slot="demo-access">
+        <p class="text-sm font-semibold">{{ 'LOGIN.DEMO.TITLE' | translate }}</p>
+        <p class="text-sm text-muted-foreground">{{ 'LOGIN.DEMO.HINT' | translate }}</p>
+        <div class="flex flex-wrap gap-2">
+          @for (persona of demoPersonas; track persona.key) {
+            <button hlmBtn type="button" variant="outline" size="sm" [attr.data-persona]="persona.key"
+                    (click)="signInDemo(persona.email)">
+              {{ 'LOGIN.DEMO.' + persona.key | translate }}
+            </button>
+          }
+        </div>
+      </div>
+    }
   </section>
 </div>

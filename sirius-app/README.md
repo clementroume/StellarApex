@@ -201,13 +201,13 @@ Prerequisites:
 
 * The Docker stack running (`docker compose up -d`: Traefik, Antares, Aldebaran, PostgreSQL, Redis and Mailpit
   `deneb-mail` on http://localhost:8025, used to read the verification e-mail).
-* The test accounts of the physical box "Test Box" and the virtual "Test Prog" (Owner, Coach-judge with
-  `SCORE_VERIFY` + `WOD_WRITE`, Athlete, Programmer).
+* The Playwright **fixtures** of Antares' `e2e` profile (`E2eFixtureSeeder`, active in the local `docker-compose.yml`):
+  the box "E2E Box" (code `E2EBOX`, no auto-subscription) with its Owner, a judge (COACH with `WOD_WRITE` +
+  `SCORE_VERIFY`) and an athlete (`e2e.*@e2e.test`, see `e2e/support/env.ts`). The journeys depend on no demo data.
+  The password is read from Antares' `application-e2e.properties`; on another stack, activate the `e2e` profile there
+  and set `E2E_PASSWORD`. The journeys create WODs, sessions and scores (purged at the end): never run them on a
+  deployment that must stay clean.
 * The Chromium binary: `npx playwright install chromium` (once).
-* `e2e/local.env` (git-ignored): `cp e2e/local.env.example e2e/local.env`, then fill in the passwords and
-  `E2E_BOX_CODE` (join code of "Test Box"). A missing variable stops the run with a clear message. Never use
-  production credentials.
-
 ```bash
 npm run e2e                                   # every journey, desktop + mobile (375 px)
 npx playwright test --project=desktop         # one project
@@ -220,7 +220,7 @@ npx tsc -p e2e                                # type-check the e2e code
 timestamp in the names and the whole suite takes about a minute. Scored WODs and sessions with a journal cannot be
 deleted from the UI (409), so every run purges the E2E data at its start (leftovers of a failed run) and at its end
 (`e2e/cleanup/purge-e2e-data.sh` + `.sql`, through `docker exec` on the local `castor-db` container only: it refuses
-to run otherwise). Filter: title starting with "E2E " **and** author among the test accounts (`E2E_*_EMAIL`), with their
+to run otherwise). Filter: title starting with "E2E " **and** author among the demo accounts of the journeys, with their
 scores, journals and blocks, plus the accounts `e2e+<timestamp>@test.local`; one transaction, row counts printed.
 `E2E_KEEP_DATA=1` skips it; `bash e2e/cleanup/purge-e2e-data.sh` is a dry run (rollback), `npm run e2e:clean` applies it. Without it the week list (20 sessions at most) would hide the new sessions.
 The registration journey runs on the desktop project only and deletes its account at the end (Account → Security).
@@ -231,7 +231,7 @@ and Traefik rate-limits the API per IP: runs retry 429s on their own.
 | Journey | What it covers |
 |---------|----------------|
 | `sign-in` | protected deep link, sign-in, back to the `returnUrl`, sign-out |
-| `register-and-join` | registration, unverified refusal, e-mail verification (Mailpit), join "Test Box", Owner validates |
+| `register-and-join` | registration, unverified refusal, e-mail verification (Mailpit), join "E2E Box", its Owner validates |
 | `wod-score-leaderboard` | box WOD, two scores, leaderboard order, locked WOD |
 | `session-journal-lock` | Owner session (written + borrowed WOD), Athlete journal and score, per-block lock |
 | `competition-verification` | competition block, score submitted, judge queue, verified score locked |

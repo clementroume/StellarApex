@@ -136,6 +136,17 @@ class GatewayIdentityServiceTest {
     assertEquals("10:ATHLETE:", headers.getFirst(HEADER_AUTH_MEMBERSHIPS));
   }
 
+  @Test
+  @DisplayName("verify: a demo account never gets ADMIN, even if its stored role says so")
+  void verify_DemoAccount_NeverSendsAdmin() {
+    // Built without the guarded setters, as a tampered row would be loaded
+    user =
+        User.builder().id(1L).platformRole(PlatformRole.ADMIN).demo(true).locale("fr").build();
+    when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+
+    assertEquals("USER", verify().getFirst(HEADER_AUTH_USER_ROLE));
+  }
+
   // --- Support session ---
 
   @Test

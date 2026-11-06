@@ -41,6 +41,8 @@ export interface UserResponse {
   birthYear?: number | null;
   heightCm?: number | null;
   createdAt: string;
+  // Demo account: public password, never an administrator (set by the backend)
+  demo?: boolean;
   // Set when a platform admin is acting as this user through a support session
   supportSession?: SupportSessionInfo | null;
 }

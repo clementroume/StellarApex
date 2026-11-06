@@ -11,7 +11,7 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
   const browser = await chromium.launch();
   try {
     for (const role of ROLES) {
-      const {email, password} = credentials(role); // fails fast with a clear message
+      const {email, password} = credentials(role);
       const context = await browser.newContext({baseURL, locale: 'en-US'});
       const page = await context.newPage();
       await page.goto('/auth/login');
@@ -19,7 +19,7 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
       await page.locator('#login-password').fill(password);
       await page.locator('form button[type=submit]').click();
       await page.waitForURL(url => !url.pathname.startsWith('/auth'), {timeout: 20_000}).catch(() => {
-        throw new Error(`Sign-in of the ${role} test account failed (check E2E_${role.toUpperCase()}_* in e2e/local.env).`);
+        throw new Error(`Sign-in of the ${role} fixture account (${email}) failed: is the local stack running with the e2e profile?`);
       });
       mkdirSync(dirname(authFile(role)), {recursive: true});
       await context.storageState({path: authFile(role)});

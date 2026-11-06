@@ -5,6 +5,7 @@ import apex.stellar.antares.dto.RegisterRequest;
 import apex.stellar.antares.dto.TokenRefreshResponse;
 import apex.stellar.antares.dto.UserResponse;
 import apex.stellar.antares.exception.AccountLockedException;
+import apex.stellar.antares.exception.BusinessRuleException;
 import apex.stellar.antares.exception.DataConflictException;
 import apex.stellar.antares.exception.ResourceNotFoundException;
 import apex.stellar.antares.exception.TooManyAttemptsException;
@@ -15,6 +16,7 @@ import apex.stellar.antares.repository.jpa.UserRepository;
 import jakarta.servlet.http.HttpServletResponse;
 import java.time.Clock;
 import java.time.Duration;
+import java.util.Locale;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -77,6 +79,11 @@ public class AuthenticationService {
     }
     limiter.record(throttleKey, registrationWindow, now);
 
+    // The reserved .test domain belongs to the demo accounts (roadmap D68): nobody else registers there,
+    // so a seeded address can never be taken before the seeder runs. No mail can reach it anyway.
+    if (request.email().toLowerCase(Locale.ROOT).endsWith(".test")) {
+      throw new BusinessRuleException("error.email.reserved.domain");
+    }
     if (repository.findByEmail(request.email()).isPresent()) {
       throw new DataConflictException("error.email.in.use", request.email());
     }

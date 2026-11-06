@@ -1,8 +1,9 @@
-package apex.stellar.aldebaran.config;
+package apex.stellar.aldebaran.demo;
 
 import apex.stellar.aldebaran.model.entities.Score;
 import apex.stellar.aldebaran.model.entities.Score.ScalingLevel;
 import apex.stellar.aldebaran.model.entities.Wod;
+import apex.stellar.aldebaran.model.enums.Division;
 import apex.stellar.aldebaran.repository.ScoreRepository;
 import apex.stellar.aldebaran.repository.WodRepository;
 import apex.stellar.aldebaran.service.MovementRecordService;
@@ -13,6 +14,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
@@ -27,25 +29,28 @@ import org.springframework.stereotype.Component;
  * scaling level and per gym) can be checked without typing them. Called by {@link
  * DevGymWodSeeder} once the WODs exist.
  *
- * <p>Idempotent: nothing is done when {@code owner@sparta.com} already has a score. Accounts or WODs
+ * <p>Idempotent: nothing is done when {@code owner.sparta@demo.test} already has a score. Accounts or WODs
  * that cannot be found are skipped with a warning. Dates are relative to today; personal records are
  * computed with {@link ScoreRanking} like the service does. Values are stored canonically (AMRAP =
  * total reps, capped TIME = reps at the cap).
  */
 @Component
-@Profile("dev")
+@Profile("demo")
 @Slf4j
 public class DevScoreSeeder {
 
   static final String OWNER = DevGymWodSeeder.SPARTA_OWNER;
-  static final String COACH = "coach@sparta.com";
-  static final String SCORER = "scorer@sparta.com";
+  static final String COACH = "coach.sparta@demo.test";
+  static final String SCORER = "scorer.sparta@demo.test";
   static final String ATHLETE = DevGymWodSeeder.SPARTA_ATHLETE;
-  static final String HYBRID = "hybrid@sparta.com";
-  static final String MULTI = "multi@athlete.com";
+  static final String HYBRID = "hybrid.sparta@demo.test";
+  static final String MULTI = "multi@demo.test";
   static final String PROGRAMMER = DevGymWodSeeder.ZEUS_PROGRAMMER;
-  static final String ACTIVE = "active@zeus.com";
-  static final String FREE = "free@athlete.com";
+  static final String ACTIVE = "active.zeus@demo.test";
+  static final String FREE = "free@demo.test";
+
+  /** Public "N RM" test whose owner score marks the lift scores as seeded. */
+  static final String LIFT_MARKER = "Back Squat 1RM";
 
   private static final List<String> ACCOUNTS =
       List.of(OWNER, COACH, SCORER, ATHLETE, HYBRID, MULTI, PROGRAMMER, ACTIVE, FREE);
@@ -126,34 +131,80 @@ public class DevScoreSeeder {
         users.put(email, ids.getFirst());
       }
     }
+    Map<Long, Division> divisions = new HashMap<>();
+    users.forEach(
+        (email, id) ->
+            jdbcTemplate
+                .queryForList("SELECT division FROM antares.users WHERE id = ?", String.class, id)
+                .stream()
+                .filter(Objects::nonNull)
+                .findFirst()
+                .ifPresent(d -> divisions.put(id, Division.valueOf(d))));
     Long owner = users.get(OWNER);
     if (owner == null) {
       log.warn("Dev score seeding skipped: {} not found", OWNER);
-      return;
-    }
-    if (!jdbcTemplate
-        .queryForList(
-            "SELECT id FROM aldebaran.scores WHERE user_id = ? LIMIT 1", Long.class, owner)
-        .isEmpty()) {
-      log.info("Dev score seeding skipped: {} already has scores", OWNER);
       return;
     }
 
     Map<String, Wod> wods =
         wodRepository.findAll().stream()
             .collect(Collectors.toMap(Wod::getTitle, Function.identity(), (a, b) -> a));
-    Seed seed = new Seed(users, wods, spartaGymId, zeusGymId, LocalDate.now(clock));
-    addGymScores(seed);
-    addPublicScores(seed);
+    LocalDate today = LocalDate.now(clock);
 
+    if (hasScores(owner)) {
+      log.info("Dev score seeding skipped: {} already has scores", OWNER);
+    } else {
+      Seed seed = new Seed(users, divisions, wods, spartaGymId, zeusGymId, today);
+      addGymScores(seed);
+      addPublicScores(seed);
+      save(seed);
+    }
+
+    // The lift tests come in a second step, so a database seeded before them gets them on the next
+    // start (idempotent: the owner's score on the first test marks them as seeded)
+    Wod marker = wods.get(LIFT_MARKER);
+    if (marker != null && !hasScores(owner, marker.getId())) {
+      Seed lifts = new Seed(users, divisions, wods, spartaGymId, zeusGymId, today);
+      addLiftScores(lifts);
+      save(lifts);
+      // Same transaction as the inserts: the scores carry their division already (see Seed.on), the
+      // records copy it from these managed instances
+      lifts.scores.stream()
+          .map(sc -> List.of(sc.getWod(), sc.getUserId()))
+          .distinct()
+          .forEach(k -> movementRecordService.rebuildFor((Wod) k.get(0), (Long) k.get(1)));
+    }
+
+    // Seeded after the startup rebuild (the gym lookup runs in the background): records now
+    movementRecordService.rebuildAllIfEmpty();
+  }
+
+  private boolean hasScores(Long userId) {
+    return !jdbcTemplate
+        .queryForList("SELECT id FROM aldebaran.scores WHERE user_id = ? LIMIT 1", Long.class, userId)
+        .isEmpty();
+  }
+
+  private boolean hasScores(Long userId, Long wodId) {
+    return !jdbcTemplate
+        .queryForList(
+            "SELECT id FROM aldebaran.scores WHERE user_id = ? AND wod_id = ? LIMIT 1",
+            Long.class,
+            userId,
+            wodId)
+        .isEmpty();
+  }
+
+  private void save(Seed seed) {
+    if (seed.scores.isEmpty()) {
+      return;
+    }
     seed.scores.stream()
         .collect(Collectors.groupingBy(s -> List.of(s.getWod().getId(), s.getUserId())))
         .values()
         .forEach(DevScoreSeeder::markPersonalRecord);
     scoreRepository.saveAll(seed.scores);
     log.info("Dev score seeding: logged {} scores", seed.scores.size());
-    // Seeded after the startup rebuild (the gym lookup runs in the background): records now
-    movementRecordService.rebuildAllIfEmpty();
   }
 
   private static void markPersonalRecord(List<Score> scores) {
@@ -209,6 +260,72 @@ public class DevScoreSeeder {
     // Personal WOD (no reps per round)
     s.add(s.on("Athlete Engine Builder", ATHLETE, 30, ScalingLevel.RX, null).reps(180));
     s.add(s.on("Athlete Engine Builder", ATHLETE, 2, ScalingLevel.RX, null).reps(196));
+  }
+
+  /**
+   * Scores on the public "N RM" tests (no sets: a score on such a test feeds its N record), so the
+   * records, lift leaderboards and the box board have data. Two attempts for some athletes show the
+   * previous load and the progression.
+   */
+  private static void addLiftScores(Seed s) {
+    lift(s, "Back Squat 1RM", OWNER, 90, 150.0);
+    lift(s, "Back Squat 1RM", OWNER, 30, 160.0);
+    lift(s, "Back Squat 1RM", COACH, 20, 110.0);
+    lift(s, "Back Squat 1RM", SCORER, 25, 145.0);
+    lift(s, "Back Squat 1RM", ATHLETE, 40, 85.0);
+    lift(s, "Back Squat 1RM", ATHLETE, 7, 90.0);
+    lift(s, "Back Squat 1RM", HYBRID, 18, 105.0);
+    lift(s, "Back Squat 1RM", MULTI, 21, 150.0);
+    lift(s, "Back Squat 1RM", FREE, 14, 170.0);
+    lift(s, "Back Squat 1RM", PROGRAMMER, 12, 180.0);
+    lift(s, "Back Squat 1RM", ACTIVE, 16, 95.0);
+    lift(s, "Back Squat 5RM", OWNER, 28, 130.0);
+    lift(s, "Back Squat 5RM", COACH, 19, 90.0);
+    lift(s, "Back Squat 5RM", ATHLETE, 8, 70.0);
+    lift(s, "Back Squat 5RM", MULTI, 20, 120.0);
+    lift(s, "Front Squat 3RM", OWNER, 26, 120.0);
+    lift(s, "Front Squat 3RM", ATHLETE, 9, 65.0);
+    lift(s, "Deadlift 1RM", OWNER, 33, 200.0);
+    lift(s, "Deadlift 1RM", COACH, 22, 140.0);
+    lift(s, "Deadlift 1RM", SCORER, 24, 190.0);
+    lift(s, "Deadlift 1RM", ATHLETE, 10, 110.0);
+    lift(s, "Deadlift 1RM", HYBRID, 17, 130.0);
+    lift(s, "Deadlift 1RM", MULTI, 21, 185.0);
+    lift(s, "Deadlift 1RM", FREE, 13, 210.0);
+    lift(s, "Deadlift 1RM", PROGRAMMER, 11, 220.0);
+    lift(s, "Deadlift 1RM", ACTIVE, 15, 120.0);
+    lift(s, "Clean and Jerk 1RM", OWNER, 27, 110.0);
+    lift(s, "Clean and Jerk 1RM", COACH, 23, 80.0);
+    lift(s, "Clean and Jerk 1RM", SCORER, 25, 100.0);
+    lift(s, "Clean and Jerk 1RM", ATHLETE, 11, 55.0);
+    lift(s, "Clean and Jerk 1RM", HYBRID, 16, 75.0);
+    lift(s, "Clean and Jerk 1RM", MULTI, 19, 105.0);
+    lift(s, "Clean and Jerk 1RM", FREE, 12, 120.0);
+    lift(s, "Snatch 1RM", OWNER, 29, 90.0);
+    lift(s, "Snatch 1RM", COACH, 21, 65.0);
+    lift(s, "Snatch 1RM", SCORER, 26, 80.0);
+    lift(s, "Snatch 1RM", ATHLETE, 12, 45.0);
+    lift(s, "Snatch 1RM", MULTI, 18, 85.0);
+    lift(s, "Snatch 1RM", FREE, 10, 95.0);
+    lift(s, "Shoulder Press 1RM", OWNER, 31, 80.0);
+    lift(s, "Shoulder Press 1RM", COACH, 22, 50.0);
+    lift(s, "Shoulder Press 1RM", ATHLETE, 13, 35.0);
+    lift(s, "Shoulder Press 1RM", MULTI, 17, 75.0);
+    lift(s, "Bench Press 1RM", OWNER, 32, 110.0);
+    lift(s, "Bench Press 1RM", SCORER, 23, 100.0);
+    lift(s, "Bench Press 1RM", MULTI, 16, 105.0);
+    lift(s, "Bench Press 1RM", FREE, 11, 120.0);
+  }
+
+  /** One lift test score: the gym is the athlete's (Zeus for its athletes, none for the free one). */
+  private static void lift(Seed s, String title, String email, int daysAgo, double kg) {
+    Gym gym =
+        switch (email) {
+          case PROGRAMMER, ACTIVE -> Gym.ZEUS;
+          case FREE -> Gym.NONE;
+          default -> Gym.SPARTA;
+        };
+    s.add(s.on(title, email, daysAgo, ScalingLevel.RX, gym).maxWeightKg(kg));
   }
 
   private static void addPublicScores(Seed s) {
@@ -281,6 +398,7 @@ public class DevScoreSeeder {
   /** Collects the scores; a score whose account or WOD is unknown is skipped. */
   private static final class Seed {
     private final Map<String, Long> users;
+    private final Map<Long, Division> divisions;
     private final Map<String, Wod> wods;
     private final Long sparta;
     private final Long zeus;
@@ -288,8 +406,14 @@ public class DevScoreSeeder {
     private final List<Score> scores = new ArrayList<>();
 
     private Seed(
-        Map<String, Long> users, Map<String, Wod> wods, Long sparta, Long zeus, LocalDate today) {
+        Map<String, Long> users,
+        Map<Long, Division> divisions,
+        Map<String, Wod> wods,
+        Long sparta,
+        Long zeus,
+        LocalDate today) {
       this.users = users;
+      this.divisions = divisions;
       this.wods = wods;
       this.sparta = sparta;
       this.zeus = zeus;
@@ -315,6 +439,9 @@ public class DevScoreSeeder {
       return Score.builder()
           .wod(wod)
           .userId(users.get(email))
+          // Set now, not by classifyDivisions: the seeding runs in one transaction, where a JDBC
+          // update would leave these managed scores (and the records copied from them) stale
+          .division(divisions.get(users.get(email)))
           .date(today.minusDays(daysAgo))
           .scaling(scaling)
           .gymId(gymId);

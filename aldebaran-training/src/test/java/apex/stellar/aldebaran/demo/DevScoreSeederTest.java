@@ -1,4 +1,4 @@
-package apex.stellar.aldebaran.config;
+package apex.stellar.aldebaran.demo;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -7,6 +7,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -70,6 +72,15 @@ class DevScoreSeederTest {
     seeder =
         new DevScoreSeeder(
             jdbcTemplate, wodRepository, scoreRepository, mock(MovementRecordService.class), clock);
+    lenient()
+        .when(
+            jdbcTemplate.queryForList(
+                eq("SELECT division FROM antares.users WHERE id = ?"), eq(String.class), any()))
+        .thenAnswer(
+            inv -> {
+              Object id = inv.getArgument(2);
+              return OWNER_ID.equals(id) ? List.of("MEN") : ATHLETE_ID.equals(id) ? List.of("WOMEN") : List.of();
+            });
     when(jdbcTemplate.queryForList(
             eq("SELECT id FROM antares.users WHERE email = ?"), eq(Long.class), anyString()))
         .thenAnswer(
@@ -102,14 +113,16 @@ class DevScoreSeederTest {
                 wod(ids, "Murph", ScoreType.TIME, null),
                 wod(ids, "Open 25.1", ScoreType.REPS, null),
                 wod(ids, "Open 25.2", ScoreType.TIME, null),
-                wod(ids, "CrossFit Total", ScoreType.LOAD, null)));
+                wod(ids, "CrossFit Total", ScoreType.LOAD, null),
+                wod(ids, "Back Squat 1RM", ScoreType.WEIGHT, null),
+                wod(ids, "Deadlift 1RM", ScoreType.WEIGHT, null)));
   }
 
   @SuppressWarnings("unchecked")
   private List<Score> savedScores() {
     ArgumentCaptor<List<Score>> captor = ArgumentCaptor.forClass(List.class);
-    verify(scoreRepository).saveAll(captor.capture());
-    return captor.getValue();
+    verify(scoreRepository, atLeastOnce()).saveAll(captor.capture());
+    return captor.getAllValues().stream().flatMap(List::stream).toList();
   }
 
   @Test
@@ -160,6 +173,30 @@ class DevScoreSeederTest {
         scores.stream()
             .filter(s -> Boolean.TRUE.equals(s.getTimeCapped()))
             .allMatch(s -> s.getTimeSeconds() == null && s.getReps() != null));
+  }
+
+  @Test
+  @DisplayName("Logs the lift tests so records exist, once")
+  void shouldSeedLiftTests() {
+    wodsPresent();
+    when(jdbcTemplate.queryForList(anyString(), eq(Long.class), eq(OWNER_ID))).thenReturn(List.of());
+
+    seeder.seed(SPARTA, ZEUS);
+
+    List<Score> scores = savedScores();
+    assertTrue(
+        scores.stream()
+            .anyMatch(
+                s ->
+                    s.getWod().getTitle().equals("Back Squat 1RM")
+                        && s.getMaxWeightKg() != null
+                        && s.getUserId().equals(OWNER_ID)));
+    assertTrue(scores.stream().anyMatch(s -> s.getWod().getTitle().equals("Deadlift 1RM")));
+    // The division is on the score before it is saved, so the records copy it (one transaction)
+    assertTrue(
+        scores.stream()
+            .filter(s -> s.getUserId().equals(OWNER_ID) || s.getUserId().equals(ATHLETE_ID))
+            .allMatch(s -> s.getDivision() != null));
   }
 
   @Test

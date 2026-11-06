@@ -25,6 +25,7 @@ import java.util.List;
  * @param birthYear Birth year (private), or null.
  * @param heightCm Height in centimetres (private), or null.
  * @param createdAt Account creation timestamp.
+ * @param demo Whether this is a demo account (known password, never an administrator).
  * @param supportSession The active support session when an admin acts as this user, else null.
  */
 public record UserResponse(
@@ -54,6 +55,7 @@ public record UserResponse(
         Integer heightCm,
     @Schema(description = "Account creation date", example = "2023-01-01T12:00:00")
         LocalDateTime createdAt,
+    @Schema(description = "Demo account (public password, never an administrator)") boolean demo,
     @Schema(description = "Active support session, null outside a support session", nullable = true)
         SupportSessionInfo supportSession) {
 
@@ -66,6 +68,6 @@ public record UserResponse(
   public UserResponse withSupportSession(SupportSessionInfo session) {
     return new UserResponse(
         id, firstName, lastName, email, emailVerified, platformRole, memberships, locale, theme, palette, unitSystem,
-        publicLeaderboardName, division, birthYear, heightCm, createdAt, session);
+        publicLeaderboardName, division, birthYear, heightCm, createdAt, demo, session);
   }
 }

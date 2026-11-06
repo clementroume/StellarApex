@@ -1,5 +1,6 @@
 package apex.stellar.antares.model;
 
+import apex.stellar.antares.exception.DemoAccountException;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -10,6 +11,8 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.OneToMany;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import java.io.Serial;
 import java.time.Instant;
@@ -36,6 +39,12 @@ import org.springframework.security.core.userdetails.UserDetails;
  *
  * <p>This entity is the core identity provider, implementing Spring Security's {@link UserDetails}.
  * Equality is determined by the unique business key: {@code email}.
+ *
+ * <p>A {@linkplain #isDemo() demo account} (public password, roadmap D68) can never be a platform
+ * administrator, on any path: {@code setPlatformRole} / {@code setDemo} and the JPA lifecycle refuse
+ * the combination ({@link DemoAccountException}), the database has a CHECK, and {@link
+ * #getPlatformRole()} reports USER for a demo account whatever the stored value, so the gateway and
+ * every authority check stay safe even if a row were tampered with.
  */
 @Getter
 @Setter
@@ -66,7 +75,10 @@ public class User implements UserDetails {
   @Column(nullable = false)
   private String password;
 
-  /** Global platform role (ADMIN or USER). */
+  /**
+   * Global platform role (ADMIN or USER). Read it through {@link #getPlatformRole()}, which never
+   * reports ADMIN for a demo account.
+   */
   @Enumerated(EnumType.STRING)
   @Column(name = "platform_role", nullable = false, length = 50)
   private PlatformRole platformRole;
@@ -106,6 +118,14 @@ public class User implements UserDetails {
   @Column(name = "password_changed_at")
   private Instant passwordChangedAt;
 
+  /**
+   * Demo account (seeded, public password): never a platform administrator. Set by the seeder only;
+   * no request can change it.
+   */
+  @Builder.Default
+  @Column(nullable = false)
+  private boolean demo = false;
+
   // --- Athlete profile (all optional) ---
 
   /** Competition division (men/women loads, separate leaderboards); null when not chosen. */
@@ -133,12 +153,59 @@ public class User implements UserDetails {
   @Column(name = "updated_at", nullable = false)
   private LocalDateTime updatedAt;
 
+  // --- Demo accounts never hold administration ---
+
+  /**
+   * Effective platform role: always USER for a demo account, whatever is stored.
+   *
+   * @return the role to use for every rights decision.
+   */
+  public PlatformRole getPlatformRole() {
+    return demo ? PlatformRole.USER : platformRole;
+  }
+
+  /**
+   * Sets the platform role.
+   *
+   * @param platformRole the new role.
+   * @throws DemoAccountException if this is a demo account and the role is ADMIN.
+   */
+  public void setPlatformRole(PlatformRole platformRole) {
+    requireNotDemoAdmin(demo, platformRole);
+    this.platformRole = platformRole;
+  }
+
+  /**
+   * Marks the account as a demo account (or not).
+   *
+   * @param demo whether this is a demo account.
+   * @throws DemoAccountException if the account is a platform administrator and {@code demo} is
+   *     true.
+   */
+  public void setDemo(boolean demo) {
+    requireNotDemoAdmin(demo, platformRole);
+    this.demo = demo;
+  }
+
+  /** Last line before the database for accounts built without the setters (builder). */
+  @PrePersist
+  @PreUpdate
+  void checkDemoIsNotAdmin() {
+    requireNotDemoAdmin(demo, platformRole);
+  }
+
+  private static void requireNotDemoAdmin(boolean demo, PlatformRole role) {
+    if (demo && role == PlatformRole.ADMIN) {
+      throw new DemoAccountException();
+    }
+  }
+
   // --- Spring Security Implementation ---
 
   @Override
   @NonNull
   public Collection<? extends GrantedAuthority> getAuthorities() {
-    return List.of(new SimpleGrantedAuthority("ROLE_" + platformRole.name()));
+    return List.of(new SimpleGrantedAuthority("ROLE_" + getPlatformRole().name()));
   }
 
   @Override

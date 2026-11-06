@@ -1,4 +1,4 @@
-package apex.stellar.aldebaran.config;
+package apex.stellar.aldebaran.demo;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;

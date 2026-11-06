@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Deletes the data created by the e2e journeys (see purge-e2e-data.sql). LOCAL Docker stack only:
 # refuses to run unless the running container is the local `castor-db`. Dry run by default; `--apply` commits.
-# Test accounts come from E2E_*_EMAIL (environment or e2e/local.env); no password is read.
+# The journeys use the fixture accounts of Antares' `e2e` profile (no password is read here).
 set -euo pipefail
 here="$(cd "$(dirname "$0")" && pwd)"
 
@@ -12,16 +12,8 @@ esac
 [ "$(docker inspect -f '{{.Name}} {{.State.Running}}' castor-db 2>/dev/null)" = "/castor-db true" ] \
   || { echo "castor-db is not a running local container: refusing to purge." >&2; exit 1; }
 
-emails=""
-for role in OWNER JUDGE ATHLETE PROGRAMMER; do
-  var="E2E_${role}_EMAIL"
-  value="${!var-}"
-  if [ -z "$value" ] && [ -f "$here/../local.env" ]; then
-    value="$(sed -n "s/^E2E_${role}_EMAIL=//p" "$here/../local.env" | head -1)"
-  fi
-  [ -n "$value" ] || { echo "Missing E2E_${role}_EMAIL." >&2; exit 1; }
-  emails="${emails:+$emails,}$value"
-done
+# Fixture accounts of the journeys (keep in sync with E2E_EMAILS in e2e/support/env.ts)
+emails="e2e.owner@e2e.test,e2e.judge@e2e.test,e2e.athlete@e2e.test"
 
 commit=""
 [ "${1:-}" = "--apply" ] && commit=1

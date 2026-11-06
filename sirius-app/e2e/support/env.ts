@@ -1,34 +1,38 @@
 import {existsSync, readFileSync} from 'node:fs';
 import {join} from 'node:path';
 
-export type Role = 'owner' | 'judge' | 'athlete' | 'programmer';
-export const ROLES: Role[] = ['owner', 'judge', 'athlete', 'programmer'];
+/** Roles of the journeys: Owner, judge (COACH with WOD_WRITE + SCORE_VERIFY) and athlete of the fixture box. */
+export type Role = 'owner' | 'judge' | 'athlete';
+export const ROLES: Role[] = ['owner', 'judge', 'athlete'];
 
-/** Loads e2e/local.env into process.env (already-set variables win). */
-export function loadLocalEnv(): void {
-  const file = join(__dirname, '..', 'local.env');
-  if (!existsSync(file)) return;
-  for (const line of readFileSync(file, 'utf8').split(/\r?\n/)) {
-    const m = /^\s*([A-Z0-9_]+)\s*=\s*(.*?)\s*$/.exec(line);
-    if (m && !line.trim().startsWith('#') && process.env[m[1]] === undefined) process.env[m[1]] = m[2];
-  }
-}
+/**
+ * The journeys depend on no demo data: they sign in with the fixtures of Antares' `e2e` profile
+ * (`E2eFixtureSeeder`: the box "E2E Box" with its three accounts), mirrored here. Local stack: the
+ * password is read from Antares' `application-e2e.properties`; elsewhere set E2E_PASSWORD (and
+ * activate the `e2e` profile there). Never run the journeys on a deployment that must stay clean:
+ * they create WODs, sessions and scores (purged at the end).
+ */
+export const BOX_NAME = 'E2E Box';
+export const BOX_CODE = 'E2EBOX';
 
-function required(name: string): string {
-  const value = process.env[name];
-  if (!value) {
-    throw new Error(`Missing ${name}. Copy sirius-app/e2e/local.env.example to local.env and fill it in (README, "End-to-end tests").`);
-  }
-  return value;
+export const E2E_EMAILS: Record<Role, string> = {
+  owner: 'e2e.owner@e2e.test',
+  judge: 'e2e.judge@e2e.test',
+  athlete: 'e2e.athlete@e2e.test',
+};
+
+const E2E_PROPERTIES = join(__dirname, '..', '..', '..', 'antares-auth', 'src', 'main', 'resources', 'application-e2e.properties');
+
+function e2ePassword(): string {
+  const fromEnv = process.env['E2E_PASSWORD'];
+  if (fromEnv) return fromEnv;
+  const match = /^application\.e2e\.password=(.+)$/m.exec(existsSync(E2E_PROPERTIES) ? readFileSync(E2E_PROPERTIES, 'utf8') : '');
+  if (!match) throw new Error(`No e2e password: set E2E_PASSWORD or application.e2e.password in ${E2E_PROPERTIES}.`);
+  return match[1].trim();
 }
 
 export function credentials(role: Role): {email: string; password: string} {
-  const prefix = `E2E_${role.toUpperCase()}`;
-  return {email: required(`${prefix}_EMAIL`), password: required(`${prefix}_PASSWORD`)};
-}
-
-export function boxCode(): string {
-  return required('E2E_BOX_CODE');
+  return {email: E2E_EMAILS[role], password: e2ePassword()};
 }
 
 export const authFile = (role: Role): string => join(__dirname, '..', '.auth', `${role}.json`);

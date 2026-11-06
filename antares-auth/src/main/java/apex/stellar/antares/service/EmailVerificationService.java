@@ -24,7 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
  * <p>An unverified account can sign in, log personal scores and use its profile, but cannot join a
  * gym nor request a new one ({@link #requireVerified}): multiplying throwaway accounts must not
  * multiply enrollment-code guesses or gym requests. Accounts created before e-mail verification
- * existed are verified (migration V8).
+ * existed are verified (migration former V8).
  */
 @Slf4j
 @Service
