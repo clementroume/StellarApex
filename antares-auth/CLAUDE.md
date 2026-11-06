@@ -61,6 +61,14 @@ HttpOnly cookies, XSRF cookie `XSRF-TOKEN`). `./mvnw verify` runs unit tests and
 - No valid access token on a protected endpoint → 401 ProblemDetail from
   `config/ProblemDetailAuthenticationEntryPoint` (Sirius refreshes only on 401); authenticated but
   forbidden → 403. Never fall back to Spring's default 403 entry point.
+- CSRF: double-submit cookie (`csrf.spa()`). The `XSRF-TOKEN` must stay stable: `SecurityConfig` sets a
+  no-op `sessionAuthenticationStrategy`, because the default one rotates the token on every request
+  authenticated by `JwtAuthenticationFilter` (a GET landing during a POST invalidated it). A rejection is
+  a 403 ProblemDetail `code=CSRF_INVALID` from `config/ProblemDetailAccessDeniedHandler` (never
+  `sendError`: the `/error` dispatch is unauthenticated and became a 401). `GET /auth/csrf` only
+  ensures the cookie exists; Sirius (`authInterceptor`) calls it and retries once on `CSRF_INVALID`.
+  Identity changes re-issue the token explicitly through `config/CsrfTokenRotator` (login, logout, start/end
+  of a support session); never on refresh or ordinary requests. Covered by `CsrfRaceIT`.
 - Tests: `*Test` unit tests (Mockito); `*IT` extend `config/BaseIntegrationTest` (one JVM, one container
   pair and one cached context for all ITs, tables truncated before each test, BCrypt cost 4, real CSRF
   repository restored before each test because `csrf()` swaps it). Never add a per-class

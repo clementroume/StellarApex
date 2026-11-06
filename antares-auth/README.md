@@ -11,7 +11,7 @@ Boot application designed to run as a containerized microservice.
 * **Language**: Java 25
 * **Security**: Spring Security 7 (stateless), OAuth2 Resource Server (JWT)
 * **Authentication**: HttpOnly Cookies (Access + Refresh Tokens)
-* **CSRF Protection**: Double-Submit Cookie
+* **CSRF Protection**: Double-Submit Cookie (stable `XSRF-TOKEN`; rejection = 403 `CSRF_INVALID`, `GET /auth/csrf` re-issues a missing cookie)
 * **Database**: PostgreSQL (managed by Flyway migrations)
 * **Cache**: Redis (for secure refresh token storage)
 * **Tooling**: MapStruct (DTO mapping), Lombok (boilerplate reduction)

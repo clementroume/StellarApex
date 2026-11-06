@@ -4,6 +4,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.text.Normalizer.Form.NFD;
 import static java.text.Normalizer.normalize;
 
+import apex.stellar.antares.config.CsrfTokenRotator;
 import apex.stellar.antares.config.SupportSessionAuthentication;
 import apex.stellar.antares.dto.AuthenticationRequest;
 import apex.stellar.antares.dto.ForgotPasswordRequest;
@@ -73,6 +74,7 @@ public class AuthenticationController {
   private final PasswordResetService passwordResetService;
   private final EmailVerificationService emailVerificationService;
   private final ClientIpResolver clientIpResolver;
+  private final CsrfTokenRotator csrfTokenRotator;
 
   @Value("${application.frontend.login.url}")
   private String loginBaseUrl;
@@ -238,7 +240,9 @@ public class AuthenticationController {
   public ResponseEntity<@NonNull UserResponse> login(
       @Valid @RequestBody AuthenticationRequest request, HttpServletResponse response) {
 
-    return ResponseEntity.ok(authenticationService.login(request, response));
+    UserResponse user = authenticationService.login(request, response);
+    csrfTokenRotator.rotate(response);
+    return ResponseEntity.ok(user);
   }
 
   /**
@@ -265,8 +269,19 @@ public class AuthenticationController {
 
     User currentUser = (User) authentication.getPrincipal();
     authenticationService.logout(currentUser, response);
+    csrfTokenRotator.rotate(response);
 
     return ResponseEntity.ok().build();
+  }
+
+  /**
+   * Does nothing but let the CSRF filter write the {@code XSRF-TOKEN} cookie when the browser has
+   * none. Sirius calls it once before retrying a request rejected with {@code CSRF_INVALID}.
+   */
+  @GetMapping("/csrf")
+  @Operation(summary = "Ensure an XSRF-TOKEN cookie is set")
+  public ResponseEntity<Void> csrf() {
+    return ResponseEntity.noContent().build();
   }
 
   /**

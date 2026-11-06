@@ -32,7 +32,6 @@ test('register → unverified cannot join → verify by e-mail → join Test Box
     await page.locator('#enrollment-code').fill(boxCode());
     let status = 0;
     await expect(async () => { // Antares writes are not retried by the 429 fixture: click again when rate-limited
-      await page.waitForLoadState('networkidle'); // a GET answered meanwhile rotates the XSRF cookie under the POST (401 on /error)
       const answered = page.waitForResponse(r => r.request().method() === 'POST' && r.url().endsWith('/antares/gyms/join') && r.status() !== 401); // a 401 is refreshed and retried by the app
       await page.getByRole('button', {name: t('JOIN_GYM.SUBMIT'), exact: true}).click();
       status = (await answered).status();
@@ -53,7 +52,6 @@ test('register → unverified cannot join → verify by e-mail → join Test Box
     await page.getByPlaceholder(t('JOIN_GYM.SEARCH')).fill('Test Box');
     await page.locator('[data-slot=gym-result]', {hasText: 'Test Box'}).first().click();
     await page.locator('#enrollment-code').fill(boxCode());
-    await page.waitForLoadState('networkidle');
     await page.getByRole('button', {name: t('JOIN_GYM.SUBMIT'), exact: true}).click();
     // Joined at once or waiting for the staff: wait for the answer before the Owner looks at the list
     await expect(page.getByText(t('JOIN_GYM.JOINED')).or(page.getByText(t('JOIN_GYM.REQUESTED')))).toBeVisible();

@@ -87,6 +87,14 @@ export class AuthService {
     return this.http.post<TokenRefreshResponse>(this.buildUrl('/auth/refresh-token'), {});
   }
 
+  /**
+   * Makes Antares set the XSRF-TOKEN cookie when the browser has none (a rejected request is
+   * retried once afterwards, see authInterceptor). Never fails: a missing cookie surfaces on the retry.
+   */
+  ensureCsrfToken(): Observable<void> {
+    return this.http.get<void>(this.buildUrl('/auth/csrf')).pipe(catchError(() => of(undefined)));
+  }
+
   private buildUrl(path: string): string {
     return `${environment.authUrl}${path}`;
   }

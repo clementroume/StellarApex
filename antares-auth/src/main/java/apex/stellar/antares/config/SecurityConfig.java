@@ -14,6 +14,8 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
+import org.springframework.security.web.csrf.CsrfTokenRepository;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -34,6 +36,7 @@ public class SecurityConfig {
 
   private final JwtAuthenticationFilter jwtAuthenticationFilter;
   private final ProblemDetailAuthenticationEntryPoint authenticationEntryPoint;
+  private final ProblemDetailAccessDeniedHandler accessDeniedHandler;
 
   @Value("${cors.allowed-origins}")
   private String allowedOrigins;
@@ -72,12 +75,18 @@ public class SecurityConfig {
    */
   @Bean
   @Order(2)
-  public SecurityFilterChain securityFilterChain(HttpSecurity http) {
+  public SecurityFilterChain securityFilterChain(
+      HttpSecurity http, CsrfTokenRepository csrfTokenRepository) {
 
     http.cors(withDefaults()) // Delegate to the corsConfigurationSource bean
         .csrf(
             csrf ->
                 csrf.spa()
+                    .csrfTokenRepository(csrfTokenRepository)
+                    // Keep the XSRF-TOKEN stable: the default strategy rotates it on every request
+                    // authenticated by JwtAuthenticationFilter (no session), so a GET answered
+                    // while a POST is in flight invalidated the POST's header.
+                    .sessionAuthenticationStrategy((authentication, request, response) -> {})
                     .ignoringRequestMatchers(
                         "/antares/auth/register",
                         "/antares/auth/login",
@@ -100,7 +109,11 @@ public class SecurityConfig {
                     .authenticated())
         // Missing/expired access token: 401 (lets Sirius refresh), never the default 403
         .exceptionHandling(
-            exceptions -> exceptions.authenticationEntryPoint(authenticationEntryPoint))
+            exceptions ->
+                exceptions
+                    .authenticationEntryPoint(authenticationEntryPoint)
+                    // CSRF rejection: 403 ProblemDetail CSRF_INVALID, not a sendError via /error
+                    .accessDeniedHandler(accessDeniedHandler))
         .sessionManagement(
             session ->
                 session
@@ -108,6 +121,16 @@ public class SecurityConfig {
                     .sessionCreationPolicy(SessionCreationPolicy.STATELESS));
 
     return http.build();
+  }
+
+  /**
+   * The CSRF token repository (cookie readable by Sirius), shared with {@link CsrfTokenRotator}.
+   *
+   * @return the cookie repository.
+   */
+  @Bean
+  public CsrfTokenRepository csrfTokenRepository() {
+    return CookieCsrfTokenRepository.withHttpOnlyFalse();
   }
 
   /**

@@ -7,6 +7,8 @@ import {AuthService} from '../../api/antares/services/auth.service';
 import {SUPPORT_SESSION_EXPIRED} from '../../api/antares/models/support.model';
 import {SupportSessionService} from '../services/support-session.service';
 
+const CSRF_INVALID = 'CSRF_INVALID';
+
 const isApiUrl = (url: string): boolean => url.startsWith(environment.authUrl) || url.startsWith(environment.trainingUrl);
 const isAuthUrl = (url: string): boolean => url.startsWith(`${environment.authUrl}/auth/`);
 
@@ -30,6 +32,11 @@ export const authInterceptor: HttpInterceptorFn = (req: HttpRequest<unknown>, ne
         return throwError(() => error);
       }
 
+      // Rejected XSRF token (stale or missing cookie): fetch one and retry once. Never a logout.
+      if (error.status === 403 && error.error?.code === CSRF_INVALID && req.url.startsWith(environment.authUrl)) {
+        // The retry goes straight to `next`, so a second rejection is not caught here again.
+        return authService.ensureCsrfToken().pipe(switchMap(() => next(authorizedReq)));
+      }
       // If the error is not a 401, or if it's on a non-API or auth URL, re-throw it.
       if (error.status !== 401 || !isApiUrl(req.url) || isAuthUrl(req.url)) {
         return throwError(() => error);

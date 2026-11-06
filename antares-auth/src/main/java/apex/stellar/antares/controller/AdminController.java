@@ -1,5 +1,6 @@
 package apex.stellar.antares.controller;
 
+import apex.stellar.antares.config.CsrfTokenRotator;
 import apex.stellar.antares.dto.AdminGymResponse;
 import apex.stellar.antares.dto.SupportSessionRequest;
 import apex.stellar.antares.dto.SupportSessionResponse;
@@ -50,6 +51,7 @@ public class AdminController {
   private final UserService userService;
   private final SupportSessionService supportSessionService;
   private final GymService gymService;
+  private final CsrfTokenRotator csrfTokenRotator;
 
   /**
    * Searches every box and program (approval queue, suspension), with holder and member count.
@@ -203,8 +205,9 @@ public class AdminController {
       @Valid @RequestBody SupportSessionRequest request,
       @AuthenticationPrincipal User admin,
       HttpServletResponse response) {
-    return ResponseEntity.status(HttpStatus.CREATED)
-        .body(supportSessionService.start(admin, request, response));
+    SupportSessionResponse started = supportSessionService.start(admin, request, response);
+    csrfTokenRotator.rotate(response);
+    return ResponseEntity.status(HttpStatus.CREATED).body(started);
   }
 
   /**
@@ -237,6 +240,7 @@ public class AdminController {
   public ResponseEntity<Void> endSupportSession(
       @AuthenticationPrincipal User admin, HttpServletResponse response) {
     supportSessionService.endActiveSessions(admin, response);
+    csrfTokenRotator.rotate(response);
     return ResponseEntity.noContent().build();
   }
 }
