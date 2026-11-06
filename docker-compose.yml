@@ -82,6 +82,8 @@ services:
     environment:
       # Dev test accounts (DevDataSeeder): temporary, TO BE REMOVED
       SPRING_PROFILES_ACTIVE: dev
+      # Local only: the Playwright journeys register one account per run (default: 10 per hour per IP)
+      APPLICATION_SECURITY_REGISTRATION_MAX_PER_IP: 100
     depends_on:
       castor-db:
         condition: service_healthy
