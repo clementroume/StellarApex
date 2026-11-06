@@ -257,7 +257,8 @@ deletion, and once at startup when the table is empty (`config/MovementRecordBac
   record, `previousWeightKg` (best load before its day, V19); estimates are displayed only, never stored.
 * `GET /me/progress?movementId=&reps=1`: each day the caller set a new best N RM on the base version.
 * `GET /lifts`: canonical lifts, i.e. public "N RM" tests of a base-version movement (one per movement
-  and N); their WOD leaderboard is the lift leaderboard.
+  and N, official competition events excluded: an Open 1RM still feeds the records but is never the
+  lift's test); their WOD leaderboard is the lift leaderboard.
 * `GET /gyms/{gymId}?movementId=`: records board of a box: base-version records of the gym's current
   usable members (Antares `member-ids`, 503 if unavailable), wherever set; members of the gym or admin.
 

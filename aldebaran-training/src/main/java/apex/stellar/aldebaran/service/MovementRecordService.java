@@ -13,6 +13,7 @@ import apex.stellar.aldebaran.model.entities.MovementRecord;
 import apex.stellar.aldebaran.model.entities.Score;
 import apex.stellar.aldebaran.model.entities.ScoreSet;
 import apex.stellar.aldebaran.model.entities.Wod;
+import apex.stellar.aldebaran.model.entities.Wod.WodCategory;
 import apex.stellar.aldebaran.repository.MovementRecordRepository;
 import apex.stellar.aldebaran.repository.ScoreRepository;
 import apex.stellar.aldebaran.repository.WodRepository;
@@ -20,6 +21,7 @@ import apex.stellar.aldebaran.security.SecurityService;
 import apex.stellar.aldebaran.service.LiftVariant.Lift;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -58,6 +60,10 @@ public class MovementRecordService {
 
   /** A record candidate from one score. */
   private record Candidate(String variantKey, int reps, double weightKg, Score score) {}
+
+  /** Official competition events: never a canonical lift test (D65). */
+  private static final Set<WodCategory> COMPETITION_CATEGORIES =
+      EnumSet.of(WodCategory.OPEN, WodCategory.QUARTERFINALS, WodCategory.SEMIFINALS, WodCategory.GAMES);
 
   /** Heaviest first, then earliest day, then oldest score. */
   private static final Comparator<Candidate> BEST_FIRST =
@@ -329,8 +335,10 @@ public class MovementRecordService {
   }
 
   /**
-   * The canonical lifts of the catalog (D51): public "N RM" tests of a base-version movement, one
-   * per movement and N (the oldest when duplicated), by movement name then N.
+   * The canonical lifts of the catalog (D51, D65): public "N RM" tests of a base-version movement,
+   * one per movement and N (the oldest when duplicated), by movement name then N. Official
+   * competition events (an Open 1RM clean in a time window) are not free tests: their scores still
+   * feed the records, but they are never the lift's test nor its leaderboard.
    *
    * @return The lifts.
    */
@@ -338,6 +346,9 @@ public class MovementRecordService {
   public List<CanonicalLiftResponse> getCanonicalLifts() {
     Map<String, CanonicalLiftResponse> lifts = new LinkedHashMap<>();
     for (Wod wod : wodRepository.findPublicRepMaxTests()) {
+      if (wod.getCategory() != null && COMPETITION_CATEGORIES.contains(wod.getCategory())) {
+        continue;
+      }
       LiftVariant.of(wod)
           .filter(lift -> LiftVariant.BASE.equals(lift.variantKey()))
           .ifPresent(

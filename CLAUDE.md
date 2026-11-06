@@ -135,7 +135,8 @@ and a virtual programming); there is no "active gym" in requests.
   feeds its N RM, a score without sets on an "N RM" test (`wods.rep_max`) feeds N; every scaling and
   unverified scores count, team scores never. `GET /records/me` (with Epley 1RM estimate, 2-10 reps,
   never stored; `estimates` of the usual 1/2/3/5/10 RM without a record, `previousWeightKg` per record),
-  `GET /records/me/progress` (successive bests), `GET /records/lifts` (public N RM tests = lift leaderboards, with `ageGroup` filter),
+  `GET /records/me/progress` (successive bests), `GET /records/lifts` (public N RM tests, competition
+  events such as Open 18.2a excluded = lift leaderboards, with `ageGroup` filter),
   `GET /records/gyms/{gymId}` (members of that gym or admin: current usable members' base records,
   list from Antares `GET /internal/gyms/{id}/member-ids`). Sirius shows `percentOfRm` / `rmReps` loads
   from the base version's record (else the estimated 1RM), rounded to 1 kg / 2.5 lb.

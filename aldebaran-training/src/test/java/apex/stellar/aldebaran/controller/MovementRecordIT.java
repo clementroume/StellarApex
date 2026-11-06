@@ -301,6 +301,10 @@ class MovementRecordIT extends BaseIntegrationTest {
   @Test
   @DisplayName("Canonical lifts: public base-version N RM tests only, one per movement and N")
   void canonicalLifts() throws Exception {
+    // An older Open event with a 1RM is not the lift's test (D65)
+    Wod open = wod("Open 18.2a", ScoreType.WEIGHT, 1, true, squat);
+    open.setCategory(Wod.WodCategory.OPEN);
+    wodRepository.save(open);
     Wod squat1 = wod("Back Squat 1RM", ScoreType.WEIGHT, 1, true, squat);
     wod("Back Squat 1RM bis", ScoreType.WEIGHT, 1, true, squat);
     wod("Back Squat 5RM", ScoreType.WEIGHT, 5, true, squat);

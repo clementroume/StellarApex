@@ -1,112 +1,116 @@
 <app-page [title]="'BOX.LEADERBOARDS.TITLE' | translate" [subtitle]="'RECORDS.BOARD.SUBTITLE' | translate">
-  <section class="flex flex-col gap-3" [attr.aria-label]="'RECORDS.BOARD.FILTERS' | translate">
-    <div class="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1" role="group" [attr.aria-label]="'RECORDS.BOARD.LIFT' | translate" data-slot="lift-chips">
-      @for (lift of boardLifts(); track lift.movementId) {
-        <button type="button" hlmBtn variant="outline" size="sm"
-                class="shrink-0 rounded-full aria-pressed:bg-secondary/20 aria-pressed:border-secondary"
-                [attr.aria-pressed]="lift.movementId === movementId()" (click)="onMovementChange('' + lift.movementId)">{{ lift.movementName }}</button>
-      }
-    </div>
-    <div class="flex items-center gap-2">
-      <div class="field-group flex-1" role="group" [attr.aria-label]="'RECORDS.BOARD.REPS' | translate" data-slot="reps-filter">
-        @for (n of repsOptions(); track n) {
-          <button type="button" hlmBtn variant="outline" size="sm" class="flex-1 aria-pressed:bg-secondary/20 aria-pressed:font-semibold"
-                  [attr.aria-pressed]="reps() === n" (click)="onRepsChange(n)">{{ 'RECORDS.RM' | translate: {reps: n} }}</button>
+  <div class="flex flex-col gap-4">
+    <section class="flex flex-col gap-3" [attr.aria-label]="'RECORDS.BOARD.FILTERS' | translate">
+      <!-- Phones: one swiped row without a scrollbar; wider screens: the chips wrap -->
+      <div class="no-scrollbar -mx-4 flex gap-2 overflow-x-auto px-4 md:mx-0 md:flex-wrap md:overflow-visible md:px-0"
+           role="group" [attr.aria-label]="'RECORDS.BOARD.LIFT' | translate" data-slot="lift-chips">
+        @for (lift of boardLifts(); track lift.movementId) {
+          <button type="button" hlmBtn variant="outline" size="sm"
+                  class="shrink-0 rounded-full aria-pressed:bg-secondary/20 aria-pressed:border-secondary"
+                  [attr.aria-pressed]="lift.movementId === movementId()" (click)="onMovementChange('' + lift.movementId)">{{ lift.movementName }}</button>
         }
       </div>
-      <button type="button" hlmBtn variant="outline" size="sm" id="board-filters" [attr.aria-expanded]="filtersOpen()"
-              [attr.aria-label]="'RECORDS.BOARD.FILTERS' | translate" (click)="toggleFilters()">
-        <ng-icon name="heroAdjustmentsHorizontal" aria-hidden="true"></ng-icon>
-        @if (activeFilters() > 0) { <span class="text-xs">{{ activeFilters() }}</span> }
-      </button>
-    </div>
-    @if (filtersOpen()) {
-      <div class="flex flex-col gap-3 rounded-xl border p-3" data-slot="filters">
-        @if (!displayGymChosen() && gyms().length > 1) {
+      <div class="flex items-center gap-2">
+        <div class="field-group min-w-0 flex-1" role="group" [attr.aria-label]="'RECORDS.BOARD.REPS' | translate" data-slot="reps-filter">
+          @for (n of repsOptions(); track n) {
+            <button type="button" hlmBtn variant="outline" size="sm" class="min-w-0 flex-1 px-1 aria-pressed:bg-secondary/20 aria-pressed:font-semibold"
+                    [attr.aria-pressed]="reps() === n" (click)="onRepsChange(n)">{{ 'RECORDS.RM' | translate: {reps: n} }}</button>
+          }
+        </div>
+        <button type="button" hlmBtn variant="outline" size="sm" id="board-filters" [attr.aria-expanded]="filtersOpen()"
+                [attr.aria-label]="'RECORDS.BOARD.FILTERS' | translate" (click)="toggleFilters()">
+          <ng-icon name="heroAdjustmentsHorizontal" aria-hidden="true"></ng-icon>
+          @if (activeFilters() > 0) { <span class="text-xs">{{ activeFilters() }}</span> }
+        </button>
+      </div>
+      @if (filtersOpen()) {
+        <div class="flex flex-col gap-3 rounded-xl border p-3" data-slot="filters">
+          @if (!displayGymChosen() && gyms().length > 1) {
+            <label class="flex flex-col gap-1.5">
+              <span class="text-sm font-medium">{{ 'RECORDS.BOARD.GYM' | translate }}</span>
+              <select appNativeSelect id="board-gym" (change)="onGymChange($any($event.target).value)">
+                @for (g of gyms(); track g.gymId) {
+                  <option [value]="g.gymId" [selected]="g.gymId === gymId()">{{ g.gymName }}</option>
+                }
+              </select>
+            </label>
+          }
+          <div class="field-group" role="group" [attr.aria-label]="'DIVISION.LABEL' | translate">
+            <button type="button" hlmBtn variant="outline" size="sm" class="aria-pressed:bg-muted aria-pressed:font-semibold"
+                    [attr.aria-pressed]="division() === null" (click)="onDivisionChange(null)">{{ 'DIVISION.ALL' | translate }}</button>
+            @for (d of divisions; track d) {
+              <button type="button" hlmBtn variant="outline" size="sm" class="aria-pressed:bg-muted aria-pressed:font-semibold"
+                      [attr.aria-pressed]="division() === d" (click)="onDivisionChange(d)">{{ 'DIVISION.' + d | translate }}</button>
+            }
+          </div>
           <label class="flex flex-col gap-1.5">
-            <span class="text-sm font-medium">{{ 'RECORDS.BOARD.GYM' | translate }}</span>
-            <select appNativeSelect id="board-gym" (change)="onGymChange($any($event.target).value)">
-              @for (g of gyms(); track g.gymId) {
-                <option [value]="g.gymId" [selected]="g.gymId === gymId()">{{ g.gymName }}</option>
+            <span class="text-sm font-medium">{{ 'AGE_GROUP.LABEL' | translate }}</span>
+            <select appNativeSelect id="board-age" (change)="onAgeGroupChange($any($event.target).value)">
+              <option value="" [selected]="ageGroup() === null">{{ 'AGE_GROUP.ALL' | translate }}</option>
+              @for (group of ageGroups; track group) {
+                <option [value]="group" [selected]="ageGroup() === group">{{ 'AGE_GROUP.' + group | translate }}</option>
               }
             </select>
           </label>
-        }
-        <div class="field-group" role="group" [attr.aria-label]="'DIVISION.LABEL' | translate">
-          <button type="button" hlmBtn variant="outline" size="sm" class="aria-pressed:bg-muted aria-pressed:font-semibold"
-                  [attr.aria-pressed]="division() === null" (click)="onDivisionChange(null)">{{ 'DIVISION.ALL' | translate }}</button>
-          @for (d of divisions; track d) {
-            <button type="button" hlmBtn variant="outline" size="sm" class="aria-pressed:bg-muted aria-pressed:font-semibold"
-                    [attr.aria-pressed]="division() === d" (click)="onDivisionChange(d)">{{ 'DIVISION.' + d | translate }}</button>
-          }
         </div>
-        <label class="flex flex-col gap-1.5">
-          <span class="text-sm font-medium">{{ 'AGE_GROUP.LABEL' | translate }}</span>
-          <select appNativeSelect id="board-age" (change)="onAgeGroupChange($any($event.target).value)">
-            <option value="" [selected]="ageGroup() === null">{{ 'AGE_GROUP.ALL' | translate }}</option>
-            @for (group of ageGroups; track group) {
-              <option [value]="group" [selected]="ageGroup() === group">{{ 'AGE_GROUP.' + group | translate }}</option>
-            }
-          </select>
-        </label>
-      </div>
-    } @else if (activeFilters() > 0) {
-      <p class="text-xs text-muted-foreground" data-slot="filters-summary">
-        {{ (division() ? ('DIVISION.' + division()) : 'DIVISION.ALL') | translate }} · {{ (ageGroup() ? ('AGE_GROUP.' + ageGroup()) : 'AGE_GROUP.ALL') | translate }}
-      </p>
-    }
-  </section>
+      } @else if (activeFilters() > 0) {
+        <p class="text-xs text-muted-foreground" data-slot="filters-summary">
+          {{ (division() ? ('DIVISION.' + division()) : 'DIVISION.ALL') | translate }} · {{ (ageGroup() ? ('AGE_GROUP.' + ageGroup()) : 'AGE_GROUP.ALL') | translate }}
+        </p>
+      }
+    </section>
 
-  <section class="flex flex-col gap-3" [attr.aria-label]="'BOX.LEADERBOARDS.TITLE' | translate">
-    @if (isLoading()) {
-      <div class="flex justify-center py-8"><hlm-spinner/></div>
-    } @else if (failed()) {
-      <p class="py-8 text-center text-sm text-muted-foreground">{{ 'RECORDS.LOAD_ERROR' | translate }}</p>
-    } @else if (rows().length === 0) {
-      <p class="rounded-xl border py-8 text-center text-sm text-muted-foreground">{{ 'RECORDS.BOARD.EMPTY' | translate }}</p>
-    } @else {
-      <ol class="flex items-end justify-center gap-2 pt-2" data-slot="podium">
-        @for (p of podium(); track p.row.userId) {
-          <li class="flex w-1/3 max-w-40 flex-col items-center gap-1 text-center" [attr.aria-label]="(p.rank) + '. ' + (name(p.row) ?? '')">
-            <span class="w-full truncate text-xs" [class.font-semibold]="p.row.userId === myId()">
-              {{ p.row.userId === myId() ? ('RECORDS.BOARD.ME' | translate) : (name(p.row) ?? ('SCORE.LEADERBOARD.ANONYMOUS' | translate)) }}
-            </span>
-            <div class="flex w-full flex-col items-center justify-center rounded-t-lg"
-                 [class]="p.rank === 1 ? 'h-20 bg-secondary/20' : p.rank === 2 ? 'h-16 bg-muted' : 'h-12 bg-muted/60'">
-              <span class="font-bold">{{ loadText(p.row) }}</span>
-              <span class="text-xs text-muted-foreground">{{ 'RECORDS.BOARD.RANK' | translate: {rank: p.rank} }}</span>
-            </div>
-          </li>
-        }
-      </ol>
-      @if (others().length > 0) {
-        <ol class="flex flex-col divide-y" data-slot="board">
-          @for (o of others(); track o.row.userId) {
-            <li class="flex items-center gap-3 py-2" [class.font-semibold]="o.row.userId === myId()">
-              <span class="w-6 text-right text-muted-foreground">{{ o.rank }}</span>
-              <span class="flex-1 truncate">{{ name(o.row) ?? ('SCORE.LEADERBOARD.ANONYMOUS' | translate) }}</span>
-              <span>{{ loadText(o.row) }}</span>
+    <section class="flex flex-col gap-3" [attr.aria-label]="'BOX.LEADERBOARDS.TITLE' | translate">
+      @if (isLoading()) {
+        <div class="flex justify-center py-8"><hlm-spinner/></div>
+      } @else if (failed()) {
+        <p class="py-8 text-center text-sm text-muted-foreground">{{ 'RECORDS.LOAD_ERROR' | translate }}</p>
+      } @else if (rows().length === 0) {
+        <p class="rounded-xl border py-8 text-center text-sm text-muted-foreground">{{ 'RECORDS.BOARD.EMPTY' | translate }}</p>
+      } @else {
+        <ol class="flex items-end justify-center gap-2 pt-2" data-slot="podium">
+          @for (p of podium(); track p.row.userId) {
+            <li class="flex w-1/3 max-w-40 flex-col items-center gap-1 text-center" [attr.aria-label]="(p.rank) + '. ' + (name(p.row) ?? '')">
+              <span class="w-full truncate text-xs" [class.font-semibold]="p.row.userId === myId()">
+                {{ p.row.userId === myId() ? ('RECORDS.BOARD.ME' | translate) : (name(p.row) ?? ('SCORE.LEADERBOARD.ANONYMOUS' | translate)) }}
+              </span>
+              <div class="flex w-full flex-col items-center justify-center rounded-t-lg"
+                   [class]="p.rank === 1 ? 'h-20 bg-secondary/20' : p.rank === 2 ? 'h-16 bg-muted' : 'h-12 bg-muted/60'">
+                <span class="font-bold">{{ loadText(p.row) }}</span>
+                <span class="text-xs text-muted-foreground">{{ 'RECORDS.BOARD.RANK' | translate: {rank: p.rank} }}</span>
+              </div>
             </li>
           }
         </ol>
-      }
-    }
-    @if (!isLoading() && !failed()) {
-      @if (mine(); as me) {
-        @if (me.rank > 3) {
-        <div class="flex items-center justify-between gap-2 rounded-lg bg-primary/15 px-3 py-2 text-sm" data-slot="mine">
-          <span class="font-semibold">{{ me.rank }}  {{ 'RECORDS.BOARD.ME' | translate }}</span>
-          <span>
-            {{ loadText(me.row) }}
-            @if (me.gapKg) { · {{ 'RECORDS.BOARD.GAP' | translate: {gap: kg(me.gapKg), rank: me.rank - 1} }} }
-          </span>
-        </div>
+        @if (others().length > 0) {
+          <ol class="flex flex-col divide-y" data-slot="board">
+            @for (o of others(); track o.row.userId) {
+              <li class="flex items-center gap-3 py-2" [class.font-semibold]="o.row.userId === myId()">
+                <span class="w-6 text-right text-muted-foreground">{{ o.rank }}</span>
+                <span class="flex-1 truncate">{{ name(o.row) ?? ('SCORE.LEADERBOARD.ANONYMOUS' | translate) }}</span>
+                <span>{{ loadText(o.row) }}</span>
+              </li>
+            }
+          </ol>
         }
-      } @else if (testWodId(); as wodId) {
-        <a [routerLink]="['/wods', wodId]" hlmBtn variant="outline" size="sm" class="self-start">
-          {{ 'RECORDS.BOARD.LOG_MINE' | translate: {reps: reps()} }}
-        </a>
       }
-    }
-  </section>
+      @if (!isLoading() && !failed()) {
+        @if (mine(); as me) {
+          @if (me.rank > 3) {
+          <div class="flex items-center justify-between gap-2 rounded-lg bg-primary/15 px-3 py-2 text-sm" data-slot="mine">
+            <span class="font-semibold">{{ me.rank }}  {{ 'RECORDS.BOARD.ME' | translate }}</span>
+            <span>
+              {{ loadText(me.row) }}
+              @if (me.gapKg) { · {{ 'RECORDS.BOARD.GAP' | translate: {gap: kg(me.gapKg), rank: me.rank - 1} }} }
+            </span>
+          </div>
+          }
+        } @else if (testWodId(); as wodId) {
+          <a [routerLink]="['/wods', wodId]" hlmBtn variant="outline" size="sm" class="self-start">
+            {{ 'RECORDS.BOARD.LOG_MINE' | translate: {reps: reps()} }}
+          </a>
+        }
+      }
+    </section>
+  </div>
 </app-page>
