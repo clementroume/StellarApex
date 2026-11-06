@@ -509,6 +509,8 @@ public class WodService {
               }
             });
 
+    checkRecordFields(wod);
+
     // 3. Save & Map
     Wod savedWod = wodRepository.save(wod);
 
@@ -533,6 +535,30 @@ public class WodService {
     }
     if (wod.getGymId() != null && antaresClient.isProgrammingGym(wod.getGymId())) {
       throw new InvalidWodException("error.wod.team.programming");
+    }
+  }
+
+  /**
+   * Record fields (D50, D58): an "N RM" test is an individual For Load WOD with a single movement;
+   * a percentage load refers to the 1RM unless another RM is given, and an RM without percentage
+   * is dropped.
+   *
+   * @param wod The WOD about to be saved, with its movements.
+   * @throws InvalidWodException if {@code repMax} is set on another kind of WOD.
+   */
+  static void checkRecordFields(Wod wod) {
+    for (WodMovement line : wod.getMovements()) {
+      if (line.getPercentOfRm() == null) {
+        line.setRmReps(null);
+      } else if (line.getRmReps() == null) {
+        line.setRmReps(1);
+      }
+    }
+    if (wod.getRepMax() != null
+        && (wod.getWodType() != WodType.FOR_LOAD
+            || wod.getTeamSize() != null
+            || wod.getMovements().size() != 1)) {
+      throw new InvalidWodException("error.wod.repmax.single");
     }
   }
 
@@ -630,6 +656,7 @@ public class WodService {
 
     // 4. Smart Merge Movements
     mergeWodMovements(existingWod, request.movements());
+    checkRecordFields(existingWod);
 
     // 5. Save & Return
     Wod savedWod = wodRepository.save(existingWod);
@@ -782,6 +809,8 @@ public class WodService {
     target.setScalingOptionsFr(temp.getScalingOptionsFr());
     target.setOrderIndex(temp.getOrderIndex());
     target.setSets(temp.getSets());
+    target.setPercentOfRm(temp.getPercentOfRm());
+    target.setRmReps(temp.getRmReps());
 
     target.getEquipment().clear();
     if (temp.getEquipment() != null) {

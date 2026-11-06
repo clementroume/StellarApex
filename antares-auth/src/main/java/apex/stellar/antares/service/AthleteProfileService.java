@@ -3,12 +3,12 @@ package apex.stellar.antares.service;
 import apex.stellar.antares.dto.AthleteProfileRequest;
 import apex.stellar.antares.dto.BodyWeightRequest;
 import apex.stellar.antares.dto.BodyWeightResponse;
+import apex.stellar.antares.dto.UserDivisionResponse;
 import apex.stellar.antares.dto.UserResponse;
 import apex.stellar.antares.exception.BusinessRuleException;
 import apex.stellar.antares.exception.ResourceNotFoundException;
 import apex.stellar.antares.mapper.UserMapper;
 import apex.stellar.antares.model.BodyWeight;
-import apex.stellar.antares.model.Division;
 import apex.stellar.antares.model.User;
 import apex.stellar.antares.repository.jpa.BodyWeightRepository;
 import apex.stellar.antares.repository.jpa.UserRepository;
@@ -27,8 +27,10 @@ import org.springframework.transaction.annotation.Transactional;
  * Athlete profile (D31): division, birth year, height and body weight history, all optional.
  *
  * <p>The division is shared: sent to Aldebaran as {@code X-Auth-User-Division} and copied on each
- * score at logging (a change applies to the next scores, see the root CLAUDE.md). Birth year,
- * height and body weights are private: only their owner reads them, through {@code /users/me}.
+ * score at logging (a change applies to the next scores, see the root CLAUDE.md). The birth year
+ * reaches Aldebaran as {@code X-Auth-User-Birth-Year} only to derive the age group copied on a
+ * score (D55), never shown. Height and body weights are private: only their owner reads them,
+ * through {@code /users/me}.
  */
 @Service
 @RequiredArgsConstructor
@@ -122,18 +124,20 @@ public class AthleteProfileService {
   }
 
   /**
-   * A user's division, for the internal API (scores logged by staff for an athlete).
+   * The facts a score needs about its athlete (internal API for Aldebaran): division and birth
+   * year.
    *
-   * @param userId The user.
-   * @return The division, or null when not chosen.
+   * @param userId The ID of the user.
+   * @return The division and birth year, each null when not given.
    * @throws ResourceNotFoundException When the user does not exist.
    */
   @Transactional(readOnly = true)
-  public Division getDivision(Long userId) {
-    return userRepository
-        .findById(userId)
-        .orElseThrow(() -> new ResourceNotFoundException("error.user.not.found", userId))
-        .getDivision();
+  public UserDivisionResponse getScoreProfile(Long userId) {
+    User user =
+        userRepository
+            .findById(userId)
+            .orElseThrow(() -> new ResourceNotFoundException("error.user.not.found", userId));
+    return new UserDivisionResponse(user.getDivision(), user.getBirthYear());
   }
 
   private User reload(User currentUser) {

@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -17,6 +18,7 @@ import apex.stellar.aldebaran.model.entities.Wod;
 import apex.stellar.aldebaran.model.entities.Wod.ScoreType;
 import apex.stellar.aldebaran.repository.ScoreRepository;
 import apex.stellar.aldebaran.repository.WodRepository;
+import apex.stellar.aldebaran.service.MovementRecordService;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -65,7 +67,9 @@ class DevScoreSeederTest {
   @BeforeEach
   void setUp() {
     Clock clock = Clock.fixed(Instant.parse("2026-10-27T10:00:00Z"), ZoneOffset.UTC);
-    seeder = new DevScoreSeeder(jdbcTemplate, wodRepository, scoreRepository, clock);
+    seeder =
+        new DevScoreSeeder(
+            jdbcTemplate, wodRepository, scoreRepository, mock(MovementRecordService.class), clock);
     when(jdbcTemplate.queryForList(
             eq("SELECT id FROM antares.users WHERE email = ?"), eq(Long.class), anyString()))
         .thenAnswer(

@@ -33,6 +33,15 @@
         (back)="goBack()">
       </app-detail-header>
 
+      @if (showRecords()) {
+        <div class="mb-6" id="movement-records">
+          <app-detail-card [title]="'RECORDS.MY_MOVEMENT' | translate">
+            <app-movement-records-card [movementId]="mov.id" [movementName]="mov.name" [showName]="false"
+                                       [records]="myRecords()" [lifts]="lifts()"/>
+          </app-detail-card>
+        </div>
+      }
+
       <ng-template #mediaBox>
         <app-detail-card [title]="'MOVEMENT.SECTIONS.MEDIA' | translate">
           <div

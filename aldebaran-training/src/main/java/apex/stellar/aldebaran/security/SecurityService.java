@@ -51,6 +51,15 @@ public class SecurityService {
   }
 
   /**
+   * Retrieves the birth year of the currently authenticated user ({@code X-Auth-User-Birth-Year}).
+   *
+   * @return The year, or {@code null} when not given or not authenticated.
+   */
+  public @Nullable Integer getCurrentUserBirthYear() {
+    return getPrincipal().map(AldebaranUserPrincipal::getBirthYear).orElse(null);
+  }
+
+  /**
    * Checks if the user is a Platform Administrator. Relies on the platform role only, so an admin
    * operating inside a gym context stays admin.
    */

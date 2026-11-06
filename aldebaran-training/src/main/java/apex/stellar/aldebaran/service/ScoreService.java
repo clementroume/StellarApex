@@ -3,6 +3,7 @@ package apex.stellar.aldebaran.service;
 import apex.stellar.aldebaran.repository.ScoreTeamRepository;
 import apex.stellar.aldebaran.model.entities.ScoreTeam;
 import apex.stellar.aldebaran.client.AntaresClient;
+import apex.stellar.aldebaran.client.AntaresClient.AthleteFacts;
 import apex.stellar.aldebaran.dto.ScoreComparisonResponse;
 import apex.stellar.aldebaran.dto.ScoreReferenceData;
 import apex.stellar.aldebaran.dto.ScoreRequest;
@@ -20,6 +21,7 @@ import apex.stellar.aldebaran.model.entities.Session;
 import apex.stellar.aldebaran.model.entities.SessionLog;
 import apex.stellar.aldebaran.model.entities.Wod;
 import apex.stellar.aldebaran.model.entities.Wod.ScoreType;
+import apex.stellar.aldebaran.model.enums.AgeGroup;
 import apex.stellar.aldebaran.model.enums.Division;
 import apex.stellar.aldebaran.model.enums.Unit;
 import apex.stellar.aldebaran.repository.ScoreRepository;
@@ -69,6 +71,7 @@ public class ScoreService {
   private final SessionBlockRepository sessionBlockRepository;
   private final SessionLogService sessionLogService;
   private final ScoreTeamRepository scoreTeamRepository;
+  private final MovementRecordService movementRecordService;
 
   /**
    * Retrieves the current user's scores, optionally only those on a WOD logged in a session (the
@@ -125,7 +128,8 @@ public class ScoreService {
     newScore.setGymId(wod.getGymId() != null ? wod.getGymId() : request.gymId());
     newScore.setLoggedAt(LocalDateTime.now());
     newScore.setLoggedBy(currentUserId);
-    newScore.setDivision(divisionOf(targetUserId, currentUserId));
+    AthleteFacts athlete = athleteOf(targetUserId, currentUserId);
+    newScore.setDivision(athlete.division());
     boolean judged = wod.isCompetition() && !Objects.equals(targetUserId, currentUserId);
     newScore.setVerificationRequested(
         wod.isCompetition() && (judged || request.verificationRequested()));
@@ -142,6 +146,12 @@ public class ScoreService {
     List<Score> teamScores = new ArrayList<>();
     if (!teammates.isEmpty()) {
       teamScores = formTeam(newScore, wod, teammates, currentUserId);
+    } else {
+      // Age group of the year of the score (the day is final here: journal day included)
+      newScore.setAgeGroup(
+          newScore.getDate() == null
+              ? null
+              : AgeGroup.of(athlete.birthYear(), newScore.getDate().getYear()));
     }
 
     Score savedScore = scoreRepository.save(newScore);
@@ -149,26 +159,33 @@ public class ScoreService {
 
     recalculatePrsForUser(wod, targetUserId);
     teammates.forEach(mate -> recalculatePrsForUser(wod, mate));
+    movementRecordService.rebuildFor(wod, targetUserId);
 
     if (savedScore.getDivision() != null && savedScore.getTeam() == null) {
       // Scores logged before the athlete chose a division join it now (after the PR update, which
       // flushes first, so no loaded score writes its old null division back)
       scoreRepository.assignDivisionToUnclassified(targetUserId, savedScore.getDivision());
     }
+    if (athlete.birthYear() != null && savedScore.getTeam() == null) {
+      // Same for the age group, each older score with the group of its own year
+      scoreRepository.assignAgeGroupToUnclassified(targetUserId, athlete.birthYear());
+    }
 
     return scoreMapper.toResponse(savedScore);
   }
 
   /**
-   * Division copied on a new score: the logger's own ({@code X-Auth-User-Division}) for a score
-   * logged for themselves, else the athlete's, asked to Antares (never the judge's division).
+   * Division and birth year behind a new score: the logger's own ({@code X-Auth-User-Division},
+   * {@code X-Auth-User-Birth-Year}) for a score logged for themselves, else the athlete's, asked to
+   * Antares (never the judge's). The birth year only gives the score's age group, never stored.
    *
-   * @throws AntaresUnavailableException if Antares cannot tell the athlete's division (503).
+   * @throws AntaresUnavailableException if Antares cannot tell the athlete's facts (503).
    */
-  private @Nullable Division divisionOf(Long targetUserId, Long currentUserId) {
+  private AthleteFacts athleteOf(Long targetUserId, Long currentUserId) {
     return Objects.equals(targetUserId, currentUserId)
-        ? securityService.getCurrentUserDivision()
-        : antaresClient.getUserDivision(targetUserId);
+        ? new AthleteFacts(
+            securityService.getCurrentUserDivision(), securityService.getCurrentUserBirthYear())
+        : antaresClient.getAthleteFacts(targetUserId);
   }
 
   /**
@@ -192,6 +209,7 @@ public class ScoreService {
       throw new InvalidScoreException("error.score.wod.mismatch", id, wod.getId());
     }
 
+    Integer previousYear = existingScore.getDate() == null ? null : existingScore.getDate().getYear();
     scoreMapper.updateEntity(request, existingScore);
     existingScore.setGymId(wod.getGymId() != null ? wod.getGymId() : request.gymId());
     if (wod.isCompetition() && !existingScore.isVerified()) {
@@ -213,10 +231,19 @@ public class ScoreService {
     }
     applySets(existingScore, request, wod);
     normalizeAndCheck(existingScore, wod);
+    if (existingScore.getTeam() == null
+        && existingScore.getDate() != null
+        && !Objects.equals(existingScore.getDate().getYear(), previousYear)) {
+      // The age group is the one of the score's year
+      Integer birthYear =
+          athleteOf(existingScore.getUserId(), securityService.getCurrentUserId()).birthYear();
+      existingScore.setAgeGroup(AgeGroup.of(birthYear, existingScore.getDate().getYear()));
+    }
 
     Score savedScore = scoreRepository.save(existingScore);
 
     recalculatePrsForUser(wod, savedScore.getUserId());
+    movementRecordService.rebuildFor(wod, savedScore.getUserId());
     if (savedScore.getTeam() != null) {
       // One shared performance: every member's row follows the correction
       for (Score other : scoreRepository.findByTeamId(savedScore.getTeam().getId())) {
@@ -265,6 +292,7 @@ public class ScoreService {
     scoreRepository.flush();
 
     recalculatePrsForUser(wod, userId);
+    movementRecordService.rebuildFor(wod, userId);
   }
 
   /**
@@ -472,6 +500,7 @@ public class ScoreService {
    * @param gymIds The gyms to keep, or null / empty for every gym.
    * @param verifiedOnly Whether to keep verified scores only (competition WODs).
    * @param division The division to keep, or null for all.
+   * @param ageGroup The age group to keep, or null for all.
    * @param sessionId The session to keep, or null for every score.
    * @param pageable Pagination information.
    * @return A slice of ScoreResponse objects representing the leaderboard.
@@ -483,6 +512,7 @@ public class ScoreService {
       Collection<Long> gymIds,
       boolean verifiedOnly,
       @Nullable Division division,
+      @Nullable AgeGroup ageGroup,
       @Nullable Long sessionId,
       Pageable pageable) {
     WodResponse wod = wodService.getWodDetail(wodId);
@@ -492,12 +522,17 @@ public class ScoreService {
     Collection<Long> gyms = filterGyms ? gymIds : Set.of(-1L);
 
     // A team WOD ranks teams, not athletes: one row per team (in memory)
-    if (filterGyms || verifiedOnly || division != null || sessionId != null || wod.teamSize() != null) {
+    if (filterGyms
+        || verifiedOnly
+        || division != null
+        || ageGroup != null
+        || sessionId != null
+        || wod.teamSize() != null) {
       return filteredLeaderboard(
               wodId,
               wod.scoreType(),
               scaling,
-              new Filters(filterGyms, gyms, verifiedOnly, division, sessionId),
+              new Filters(filterGyms, gyms, verifiedOnly, division, ageGroup, sessionId),
               pageable)
           .map(scoreMapper::toResponse);
     }
@@ -530,6 +565,7 @@ public class ScoreService {
             filters.gyms(),
             filters.verifiedOnly(),
             filters.division(),
+            filters.ageGroup(),
             session)) {
       // A team counts once (negative key, never a user ID); an athlete once per their best score
       Long key = score.getTeam() != null ? -score.getTeam().getId() : score.getUserId();
@@ -790,5 +826,6 @@ public class ScoreService {
       Collection<Long> gyms,
       boolean verifiedOnly,
       @Nullable Division division,
+      @Nullable AgeGroup ageGroup,
       @Nullable Long sessionId) {}
 }

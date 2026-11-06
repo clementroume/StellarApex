@@ -123,6 +123,17 @@ export class UnitService {
   }
 
   /**
+   * A load computed from a percentage of a record (D60), in the display unit, rounded to the
+   * nearest 1 kg or 2.5 lb: "96 kg", "212.5 lb".
+   *
+   * @param kg The exact load, in kg.
+   */
+  formatPercentLoad(kg: number): string {
+    const value = this.massUnit() === 'KG' ? Math.round(kg) : Math.round(kg / LB_IN_KG / 2.5) * 2.5;
+    return this.format({values: [value], unit: this.massUnit()});
+  }
+
+  /**
    * Converts distances (men's then women's value) to the display system, e.g. 200 ft -> "61 m",
    * 1 mi -> "1.6 km", 60/50 cm -> "24/20 in". Units unknown to the conversion are kept.
    */

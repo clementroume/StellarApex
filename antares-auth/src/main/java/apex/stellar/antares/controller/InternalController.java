@@ -7,6 +7,7 @@ import apex.stellar.antares.dto.UserDivisionResponse;
 import apex.stellar.antares.service.AthleteProfileService;
 import apex.stellar.antares.service.GymService;
 import io.swagger.v3.oas.annotations.Hidden;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -58,14 +59,27 @@ public class InternalController {
   }
 
   /**
-   * A user's competition division, nothing else. Used by Aldebaran when staff log a score for an
-   * athlete: the score takes the athlete's division, never the judge's.
+   * A user's competition division and birth year, nothing else. Used by Aldebaran when staff log a
+   * score for an athlete: the score takes the athlete's division and age group, never the judge's.
    *
    * @param userId The ID of the user.
-   * @return {@code {"division": "MEN"|"WOMEN"|null}}, 404 for an unknown user.
+   * @return {@code {"division": "MEN"|"WOMEN"|null, "birthYear": 1990|null}}, 404 for an unknown
+   *     user.
    */
   @GetMapping("/users/{userId}/division")
   public ResponseEntity<UserDivisionResponse> getDivision(@PathVariable Long userId) {
-    return ResponseEntity.ok(new UserDivisionResponse(athleteProfileService.getDivision(userId)));
+    return ResponseEntity.ok(athleteProfileService.getScoreProfile(userId));
+  }
+
+  /**
+   * The IDs of a gym's usable members (see {@code Membership#isUsable}). Used by Aldebaran for the
+   * records board of a box, shown to its members only.
+   *
+   * @param gymId The ID of the gym.
+   * @return The user IDs, empty for an unknown gym or a gym without usable members.
+   */
+  @GetMapping("/gyms/{gymId}/member-ids")
+  public ResponseEntity<List<Long>> getMemberIds(@PathVariable Long gymId) {
+    return ResponseEntity.ok(gymService.getUsableMemberIds(gymId));
   }
 }

@@ -5,6 +5,7 @@ import apex.stellar.aldebaran.model.entities.Score.ScalingLevel;
 import apex.stellar.aldebaran.model.entities.Wod;
 import apex.stellar.aldebaran.repository.ScoreRepository;
 import apex.stellar.aldebaran.repository.WodRepository;
+import apex.stellar.aldebaran.service.MovementRecordService;
 import apex.stellar.aldebaran.service.ScoreRanking;
 import java.time.Clock;
 import java.time.LocalDate;
@@ -58,6 +59,7 @@ public class DevScoreSeeder {
 
   private final JdbcTemplate jdbcTemplate;
   private final WodRepository wodRepository;
+  private final MovementRecordService movementRecordService;
   private final ScoreRepository scoreRepository;
   private final Clock clock;
 
@@ -67,21 +69,28 @@ public class DevScoreSeeder {
    * @param jdbcTemplate Access to the Antares users and existing scores.
    * @param wodRepository WOD lookup by title.
    * @param scoreRepository Score persistence.
+   * @param movementRecordService Rebuilds the records of the seeded scores.
    */
   @Autowired
   public DevScoreSeeder(
-      JdbcTemplate jdbcTemplate, WodRepository wodRepository, ScoreRepository scoreRepository) {
-    this(jdbcTemplate, wodRepository, scoreRepository, Clock.systemDefaultZone());
+      JdbcTemplate jdbcTemplate,
+      WodRepository wodRepository,
+      ScoreRepository scoreRepository,
+      MovementRecordService movementRecordService) {
+    this(
+        jdbcTemplate, wodRepository, scoreRepository, movementRecordService, Clock.systemDefaultZone());
   }
 
   DevScoreSeeder(
       JdbcTemplate jdbcTemplate,
       WodRepository wodRepository,
       ScoreRepository scoreRepository,
+      MovementRecordService movementRecordService,
       Clock clock) {
     this.jdbcTemplate = jdbcTemplate;
     this.wodRepository = wodRepository;
     this.scoreRepository = scoreRepository;
+    this.movementRecordService = movementRecordService;
     this.clock = clock;
   }
 
@@ -143,6 +152,8 @@ public class DevScoreSeeder {
         .forEach(DevScoreSeeder::markPersonalRecord);
     scoreRepository.saveAll(seed.scores);
     log.info("Dev score seeding: logged {} scores", seed.scores.size());
+    // Seeded after the startup rebuild (the gym lookup runs in the background): records now
+    movementRecordService.rebuildAllIfEmpty();
   }
 
   private static void markPersonalRecord(List<Score> scores) {

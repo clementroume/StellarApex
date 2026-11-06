@@ -20,6 +20,15 @@
                   [attr.aria-pressed]="division() === d" (click)="onDivisionChange(d)">{{ 'DIVISION.' + d | translate }}</button>
         }
       </div>
+      @if (!store.wod()?.teamSize) {
+        <select appNativeSelect class="h-8 md:h-8 w-auto max-w-40" data-slot="age-group-filter"
+                [attr.aria-label]="'AGE_GROUP.LABEL' | translate" (change)="onAgeGroupChange($any($event.target).value)">
+          <option value="" [selected]="ageGroup() === null">{{ 'AGE_GROUP.ALL' | translate }}</option>
+          @for (group of ageGroups; track group) {
+            <option [value]="group" [selected]="ageGroup() === group">{{ 'AGE_GROUP.' + group | translate }}</option>
+          }
+        </select>
+      }
       @if (isCompetition()) {
         <label class="flex items-center gap-2 cursor-pointer text-sm">
           <input id="leaderboard-verified" type="checkbox" class="size-4 accent-(--color-success)"

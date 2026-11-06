@@ -101,6 +101,37 @@ class InternalControllerIT extends BaseIntegrationTest {
   }
 
   @Test
+  @DisplayName("Member IDs: usable members only, 404 without the secret")
+  void memberIds() throws Exception {
+    String memberIds = "/antares/internal/gyms/" + gym.getId() + "/member-ids";
+    mockMvc
+        .perform(get(memberIds).header("X-Internal-Secret", SECRET))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.length()").value(0));
+
+    saveMembership(MembershipStatus.ACTIVE);
+    mockMvc
+        .perform(get(memberIds).header("X-Internal-Secret", SECRET))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.length()").value(1))
+        .andExpect(jsonPath("$[0]").value(athlete.getId()));
+
+    mockMvc.perform(get(memberIds).cookie(athleteCookies)).andExpect(status().isNotFound());
+  }
+
+  @Test
+  @DisplayName("Member IDs: a pending membership is not listed")
+  void memberIds_pendingExcluded() throws Exception {
+    saveMembership(MembershipStatus.PENDING);
+    mockMvc
+        .perform(
+            get("/antares/internal/gyms/" + gym.getId() + "/member-ids")
+                .header("X-Internal-Secret", SECRET))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.length()").value(0));
+  }
+
+  @Test
   @DisplayName("Gym type: physical or programming, 404 for an unknown gym or without the secret")
   void gymType() throws Exception {
     Gym prog =

@@ -1,0 +1,76 @@
+<app-page [title]="'BOX.LEADERBOARDS.TITLE' | translate" [subtitle]="'RECORDS.BOARD.SUBTITLE' | translate">
+  <section hlmCard>
+    <div hlmCardContent class="flex flex-col gap-3">
+      <div class="flex flex-wrap gap-3">
+        @if (!displayGymChosen() && gyms().length > 1) {
+          <label class="flex flex-col gap-1.5 w-full sm:w-56">
+            <span class="text-sm font-medium">{{ 'RECORDS.BOARD.GYM' | translate }}</span>
+            <select appNativeSelect id="board-gym" (change)="onGymChange($any($event.target).value)">
+              @for (g of gyms(); track g.gymId) {
+                <option [value]="g.gymId" [selected]="g.gymId === gymId()">{{ g.gymName }}</option>
+              }
+            </select>
+          </label>
+        }
+        <label class="flex flex-col gap-1.5 w-full sm:w-56">
+          <span class="text-sm font-medium">{{ 'RECORDS.BOARD.LIFT' | translate }}</span>
+          <select appNativeSelect id="board-lift" (change)="onMovementChange($any($event.target).value)">
+            @for (lift of boardLifts(); track lift.movementId) {
+              <option [value]="lift.movementId" [selected]="lift.movementId === movementId()">{{ lift.movementName }}</option>
+            }
+          </select>
+        </label>
+        <label class="flex flex-col gap-1.5 w-full sm:w-44">
+          <span class="text-sm font-medium">{{ 'AGE_GROUP.LABEL' | translate }}</span>
+          <select appNativeSelect id="board-age" (change)="onAgeGroupChange($any($event.target).value)">
+            <option value="" [selected]="ageGroup() === null">{{ 'AGE_GROUP.ALL' | translate }}</option>
+            @for (group of ageGroups; track group) {
+              <option [value]="group" [selected]="ageGroup() === group">{{ 'AGE_GROUP.' + group | translate }}</option>
+            }
+          </select>
+        </label>
+      </div>
+      <div class="flex flex-wrap gap-1" role="group" [attr.aria-label]="'RECORDS.BOARD.REPS' | translate" data-slot="reps-filter">
+        @for (n of repsOptions(); track n) {
+          <button type="button" hlmBtn variant="outline" size="sm" class="aria-pressed:bg-muted aria-pressed:font-semibold"
+                  [attr.aria-pressed]="reps() === n" (click)="onRepsChange(n)">{{ 'RECORDS.RM' | translate: {reps: n} }}</button>
+        }
+      </div>
+      <div class="field-group" role="group" [attr.aria-label]="'DIVISION.LABEL' | translate">
+        <button type="button" hlmBtn variant="outline" size="sm" class="aria-pressed:bg-muted aria-pressed:font-semibold"
+                [attr.aria-pressed]="division() === null" (click)="onDivisionChange(null)">{{ 'DIVISION.ALL' | translate }}</button>
+        @for (d of divisions; track d) {
+          <button type="button" hlmBtn variant="outline" size="sm" class="aria-pressed:bg-muted aria-pressed:font-semibold"
+                  [attr.aria-pressed]="division() === d" (click)="onDivisionChange(d)">{{ 'DIVISION.' + d | translate }}</button>
+        }
+      </div>
+    </div>
+  </section>
+
+  <section hlmCard [attr.aria-label]="'BOX.LEADERBOARDS.TITLE' | translate">
+    <div hlmCardContent>
+      @if (isLoading()) {
+        <div class="flex justify-center py-8"><hlm-spinner/></div>
+      } @else if (failed()) {
+        <p class="py-8 text-center text-sm text-muted-foreground">{{ 'RECORDS.LOAD_ERROR' | translate }}</p>
+      } @else {
+        <ol class="flex flex-col divide-y" data-slot="board">
+          @for (r of rows(); track r.userId; let i = $index) {
+            <li class="flex items-center gap-3 py-2" [class.font-semibold]="r.userId === myId()">
+              <span class="w-6 text-right text-muted-foreground">{{ i + 1 }}</span>
+              <span class="flex-1 truncate">{{ name(r) ?? ('SCORE.LEADERBOARD.ANONYMOUS' | translate) }}</span>
+              <span class="font-bold text-secondary">{{ loadText(r) }}</span>
+            </li>
+          } @empty {
+            <li class="py-8 text-center text-sm text-muted-foreground">{{ 'RECORDS.BOARD.EMPTY' | translate }}</li>
+          }
+        </ol>
+        @if (testWodId(); as wodId) {
+          <a [routerLink]="['/wods', wodId]" hlmBtn variant="outline" size="sm" class="mt-4">
+            {{ 'RECORDS.BOARD.LOG_MINE' | translate: {reps: reps()} }}
+          </a>
+        }
+      }
+    </div>
+  </section>
+</app-page>

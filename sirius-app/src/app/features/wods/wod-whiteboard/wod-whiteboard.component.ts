@@ -1,4 +1,5 @@
-import {ChangeDetectionStrategy, Component, computed, inject, input} from '@angular/core';
+import {ChangeDetectionStrategy, Component, computed, effect, inject, input, signal, untracked} from '@angular/core';
+import {HttpContext} from '@angular/common/http';
 import {NgTemplateOutlet} from '@angular/common';
 import {RouterLink} from '@angular/router';
 import {TranslatePipe, TranslateService} from '@ngx-translate/core';
@@ -9,6 +10,10 @@ import {AuthService} from '../../../api/antares/services/auth.service';
 import {formatDuration, formatTimeCapShort, localizedText} from '../wod.utils';
 import {boardName} from '../movement-board-name';
 import {ladderValues} from '../wod-quick-form/wod-quick.utils';
+import {MovementRecords} from '../../../api/aldebaran/models/record.model';
+import {RecordService} from '../../../api/aldebaran/services/record.service';
+import {BYPASS_LOADER} from '../../../core/interceptors/loading.interceptor';
+import {percentBase, percentLoadKg} from '../../records/record.utils';
 
 // Rep schemes that only restate the format ("AMRAP 20 min", "For time", "Tabata x 4")
 const FORMAT_SCHEME = /^(amrap|emom|tabata|for time)\b/i;
@@ -32,7 +37,12 @@ export class WodWhiteboardComponent {
   private readonly translate = inject(TranslateService);
   private readonly unitService = inject(UnitService);
   private readonly authService = inject(AuthService);
+  private readonly recordService = inject(RecordService);
   readonly wod = input.required<WodResponse>();
+
+  // --- STATE (SIGNALS & VARIABLES) ---
+  /** The user's records, loaded only for a WOD prescribing loads as a percentage (D58). */
+  readonly myRecords = signal<MovementRecords[] | null>(null);
 
   // --- COMPUTED STATE ---
   readonly activeLang = computed(() => this.translate.currentLang() ?? this.translate.fallbackLang() ?? 'en');
@@ -49,7 +59,40 @@ export class WodWhiteboardComponent {
       .filter(part => part.movements.length > 0)
   );
 
+  /** Whether a line prescribes its load as a percentage of an RM. */
+  readonly hasPercentLoads = computed(() => (this.wod().movements ?? []).some(wm => !!wm.percentOfRm));
+
+  // --- LIFECYCLE ---
+  constructor() {
+    effect(() => {
+      if (!this.hasPercentLoads()) return;
+      // A score just logged may have set a new record: reload them
+      this.recordService.version();
+      untracked(() => this.recordService.getMyRecords(new HttpContext().set(BYPASS_LOADER, true)).subscribe({
+        next: records => this.myRecords.set(records),
+        error: () => this.myRecords.set([])
+      }));
+    });
+  }
+
   // --- HELPERS ---
+  /** "@ 80% 1RM", or nothing for a line without percentage. */
+  percentLabel(wm: WodMovementResponse): string {
+    if (!wm.percentOfRm) return '';
+    return this.translate.instant('RECORDS.PERCENT.OF', {percent: wm.percentOfRm, reps: wm.rmReps ?? 1});
+  }
+
+  /**
+   * The athlete's load for a percentage line: "96 kg", from the record of the base version (estimated
+   * 1RM marked), or null without a base (no fallback to another variant) or while the records load.
+   */
+  percentLoad(wm: WodMovementResponse): {text: string; estimated: boolean} | null {
+    if (!wm.percentOfRm) return null;
+    const base = percentBase(this.myRecords(), wm.movement.id, wm.rmReps);
+    if (!base) return null;
+    return {text: this.unitService.formatPercentLoad(percentLoadKg(base, wm.percentOfRm)), estimated: base.estimated};
+  }
+
   /** Movements of one part of the WOD, or null when it has none. */
   part(segment: WodSegment): WodMovementResponse[] | null {
     return this.segments().find(p => p.segment === segment)?.movements ?? null;

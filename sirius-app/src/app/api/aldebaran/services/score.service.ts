@@ -5,6 +5,7 @@ import {environment} from '../../../../environments/environment';
 import {ScoreComparisonResponse, ScoreReferenceData, ScoreRequest, ScoreResponse} from '../models/score.model';
 import {Slice} from '../../../core/models/pagination.model';
 import {Division} from '../../antares/models/user.model';
+import {AgeGroup} from '../models/record.model';
 
 
 @Injectable({providedIn: 'root'})
@@ -65,7 +66,8 @@ export class ScoreService {
     gymIds: number[] = [],
     verifiedOnly: boolean = false,
     division: Division | 'MIXED' | null = null,
-    sessionId: number | null = null
+    sessionId: number | null = null,
+    ageGroup: AgeGroup | null = null
   ): Observable<Slice<ScoreResponse>> {
     let params = new HttpParams()
       .set('scaling', scaling)
@@ -81,6 +83,10 @@ export class ScoreService {
     // Scores logged in this division only, else every score
     if (division) {
       params = params.set('division', division);
+    }
+    // Scores logged in this age group only (CrossFit Open brackets), else every score
+    if (ageGroup) {
+      params = params.set('ageGroup', ageGroup);
     }
     // Session leaderboard: only the scores logged in this session's journals
     if (sessionId != null) {

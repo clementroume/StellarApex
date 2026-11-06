@@ -17,7 +17,9 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -86,6 +88,21 @@ public class WodMovement {
   @Column(name = "sets")
   @Min(1)
   private Integer sets;
+
+  /**
+   * Load prescribed as a percentage of the athlete's {@code rmReps} RM of this movement (base
+   * version, D58-D59), e.g. 80; or null.
+   */
+  @Column(name = "percent_of_rm")
+  @DecimalMin("0.0")
+  @DecimalMax("150.0")
+  private Double percentOfRm;
+
+  /** N of the RM a percentage refers to (1 = 1RM, the default), or null without percentage. */
+  @Column(name = "rm_reps")
+  @Min(1)
+  @Max(50)
+  private Integer rmReps;
 
   @Column(name = "reps_scheme", length = 50)
   @Size(max = 50)

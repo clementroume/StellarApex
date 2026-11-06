@@ -101,7 +101,7 @@ describe('SessionBlockComponent', () => {
     fixture.detectChanges();
 
     expect(fixture.nativeElement.querySelector('app-score-leaderboard')).toBeTruthy();
-    expect(scoreService.getLeaderboard).toHaveBeenCalledWith(30, 'RX', 0, expect.any(Number), [], false, null, 4);
+    expect(scoreService.getLeaderboard).toHaveBeenCalledWith(30, 'RX', 0, expect.any(Number), [], false, null, 4, null);
     expect(fixture.nativeElement.textContent).toContain('SCORE.LEADERBOARD.SESSION_TITLE');
   });
 

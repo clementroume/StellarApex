@@ -65,6 +65,20 @@
               {{ measure.unit }}
             </span>
           }
+          @if (percentLabel(wm); as pct) {
+            <span class="font-semibold text-primary" data-slot="percent">
+              {{ pct }}
+              @if (percentLoad(wm); as load) {
+                → {{ load.text }}
+                @if (load.estimated) {
+                  <span class="text-sm font-normal text-muted-foreground">({{ 'RECORDS.PERCENT.ESTIMATED' | translate }})</span>
+                }
+              } @else if (myRecords() !== null) {
+                <a routerLink="/training/records" class="text-sm font-normal underline underline-offset-4 text-muted-foreground"
+                   data-slot="percent-no-record">{{ 'RECORDS.PERCENT.NO_RECORD' | translate: {reps: wm.rmReps ?? 1} }}</a>
+              }
+            </span>
+          }
           @if (teamSplit(wm, wod()); as split) {
             <span class="team-split text-muted-foreground">{{ split }}</span>
           }

@@ -54,10 +54,19 @@ src/spartan.css       # spartan tokens and Tailwind colours mapped to the palett
 ## Navigation
 
 * **Spaces** (`core/layout/spaces.service.ts`): Today (`/today`, home) · My training (`/training`:
-  journal of the sessions done and of the scores, personal sessions, records and review to come) ·
-  My box (`/box`, members only: sessions, leaderboards to come; members and settings for staff holding `MANAGE_MEMBERSHIPS` /
+  journal of the sessions done and of the scores, personal sessions, records, review to come) ·
+  My box (`/box`, members only: sessions, records board; members and settings for staff holding `MANAGE_MEMBERSHIPS` /
   `MANAGE_SETTINGS`) · Catalogue (`/wods`, `/movements`, `/muscles`) · Admin (`/admin`, admins).
   Desktop: spaces in the top bar, the space's pages as tabs below it. Mobile: bottom tab bar.
+* **Records** (`features/records`, lot C): My training › Records lists the user's records per movement
+  (`GET /aldebaran/records/me`: base version first with each N RM and its day, the estimated 1RM, the
+  variants folded), the CrossFit Total computed from the three 1RMs, and the canonical "N RM" tests to
+  log (`GET /aldebaran/records/lifts`). The movement page shows the same card. My box › Leaderboards is
+  the records board of the box (`GET /aldebaran/records/gyms/{id}`): one lift, one N RM, division and
+  age group filters, names from Antares. WOD leaderboards also filter by age group (CrossFit Open
+  brackets). A line prescribed as a percentage (`percentOfRm`, written in the quick editor's For Load
+  lines) shows "@ 80% 1RM → 96 kg" from the user's record of the base version (else the estimated 1RM,
+  marked), rounded to 1 kg / 2.5 lb, or a link to log the RM.
 * **Displayed box/prog** (`core/services/display-gym.service.ts`): selector in the top bar when the
   user has several usable memberships; one box/prog or all, remembered on the device. A display
   filter only (Today, journal): never sent to the APIs, rights stay per resource.

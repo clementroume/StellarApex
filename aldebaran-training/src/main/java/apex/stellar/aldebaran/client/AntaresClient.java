@@ -3,6 +3,7 @@ package apex.stellar.aldebaran.client;
 import apex.stellar.aldebaran.exception.AntaresUnavailableException;
 import apex.stellar.aldebaran.model.enums.Division;
 import java.time.Duration;
+import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -107,7 +108,7 @@ public class AntaresClient {
   }
 
   /**
-   * Asks Antares for a user's competition division, e.g. for a score staff log for an athlete.
+   * Asks Antares for a user's competition division, e.g. for a teammate of a team score.
    *
    * @param userId The user.
    * @return The division, or {@code null} when the user has not chosen one.
@@ -115,6 +116,19 @@ public class AntaresClient {
    *     included).
    */
   public @Nullable Division getUserDivision(Long userId) {
+    return getAthleteFacts(userId).division();
+  }
+
+  /**
+   * Asks Antares for the facts a score needs about its athlete (division and birth year), e.g. for
+   * a score staff log for an athlete: the score takes the athlete's, never the judge's.
+   *
+   * @param userId The user.
+   * @return The division and birth year, each null when not given.
+   * @throws AntaresUnavailableException if Antares does not give a clear answer (unknown user
+   *     included).
+   */
+  public AthleteFacts getAthleteFacts(Long userId) {
     try {
       UserDivision answer =
           restClient
@@ -125,10 +139,35 @@ public class AntaresClient {
       if (answer == null) {
         throw new AntaresUnavailableException("Empty division answer from Antares", null);
       }
-      return Division.parse(answer.division());
+      return new AthleteFacts(Division.parse(answer.division()), answer.birthYear());
     } catch (RestClientException e) {
       log.warn("Antares division lookup failed (user {})", userId, e);
       throw new AntaresUnavailableException("Antares division lookup failed", e);
+    }
+  }
+
+  /**
+   * Asks Antares for the usable members of a gym (records board of a box).
+   *
+   * @param gymId The gym.
+   * @return The user IDs (empty for an unknown gym).
+   * @throws AntaresUnavailableException if Antares does not give a clear answer.
+   */
+  public List<Long> getGymMemberIds(Long gymId) {
+    try {
+      Long[] ids =
+          restClient
+              .get()
+              .uri("/antares/internal/gyms/{gymId}/member-ids", gymId)
+              .retrieve()
+              .body(Long[].class);
+      if (ids == null) {
+        throw new AntaresUnavailableException("Empty member list from Antares", null);
+      }
+      return List.of(ids);
+    } catch (RestClientException e) {
+      log.warn("Antares member list failed (gym {})", gymId, e);
+      throw new AntaresUnavailableException("Antares member list failed", e);
     }
   }
 
@@ -146,5 +185,13 @@ public class AntaresClient {
   record GymType(boolean programming) {}
 
   /** Answer of {@code GET /antares/internal/users/{userId}/division}. */
-  record UserDivision(@Nullable String division) {}
+  record UserDivision(@Nullable String division, @Nullable Integer birthYear) {}
+
+  /**
+   * What a score needs about its athlete.
+   *
+   * @param division The competition division, or null.
+   * @param birthYear The birth year, or null (never stored: only the age group derived from it).
+   */
+  public record AthleteFacts(@Nullable Division division, @Nullable Integer birthYear) {}
 }

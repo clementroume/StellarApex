@@ -1,0 +1,53 @@
+<app-page [title]="'TRAINING.RECORDS.TITLE' | translate" [subtitle]="'RECORDS.SUBTITLE' | translate">
+  @if (isLoading()) {
+    <div class="flex justify-center py-8"><hlm-spinner/></div>
+  } @else if (failed()) {
+    <p class="py-8 text-center text-sm text-muted-foreground">{{ 'RECORDS.LOAD_ERROR' | translate }}</p>
+  } @else {
+    @if (total(); as t) {
+      <section hlmCard data-slot="crossfit-total">
+        <div hlmCardContent class="flex items-baseline justify-between gap-2">
+          <span class="font-semibold">{{ 'RECORDS.TOTAL' | translate }}</span>
+          <span class="text-2xl font-bold text-secondary">{{ unitService.formatScoreLoad(t.kg, 'KG') }}</span>
+        </div>
+        <p hlmCardContent class="text-xs text-muted-foreground">{{ 'RECORDS.TOTAL_HINT' | translate }}</p>
+      </section>
+    }
+    <section hlmCard>
+      <div hlmCardHeader>
+        <h2 hlmCardTitle>{{ 'RECORDS.MINE' | translate }}</h2>
+        <p hlmCardDescription>{{ 'RECORDS.MINE_HINT' | translate }}</p>
+      </div>
+      <div hlmCardContent>
+        <ul class="flex flex-col divide-y">
+          @for (row of withRecords(); track row.movementId) {
+            <li class="py-4 first:pt-0">
+              <app-movement-records-card [movementId]="row.movementId" [movementName]="row.movementName"
+                                         [records]="row.records" [lifts]="row.lifts"/>
+            </li>
+          } @empty {
+            <li class="py-8 text-center text-sm text-muted-foreground">{{ 'RECORDS.EMPTY' | translate }}</li>
+          }
+        </ul>
+      </div>
+    </section>
+    @if (toTest().length > 0) {
+      <section hlmCard>
+        <div hlmCardHeader>
+          <h2 hlmCardTitle>{{ 'RECORDS.TO_TEST' | translate }}</h2>
+          <p hlmCardDescription>{{ 'RECORDS.TO_TEST_HINT' | translate }}</p>
+        </div>
+        <div hlmCardContent>
+          <ul class="flex flex-col divide-y">
+            @for (row of toTest(); track row.movementId) {
+              <li class="py-3 first:pt-0 flex flex-col gap-2">
+                <app-movement-records-card [movementId]="row.movementId" [movementName]="row.movementName"
+                                           [lifts]="row.lifts" [showEmpty]="false"/>
+              </li>
+            }
+          </ul>
+        </div>
+      </section>
+    }
+  }
+</app-page>

@@ -1,6 +1,10 @@
 package apex.stellar.aldebaran.config;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
+
 import apex.stellar.aldebaran.client.AntaresClient;
+import apex.stellar.aldebaran.client.AntaresClient.AthleteFacts;
 import java.util.List;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -91,6 +95,12 @@ public abstract class BaseIntegrationTest {
    * Every test starts from empty tables (Flyway history kept), so that the classes sharing one
    * database and one Spring context never depend on each other's leftovers or on execution order.
    */
+  /** Athletes without division nor birth year unless a test states them (staff-logged scores). */
+  @BeforeEach
+  void defaultAthleteFacts() {
+    when(antaresClient.getAthleteFacts(any())).thenReturn(new AthleteFacts(null, null));
+  }
+
   @BeforeEach
   void truncateAllTables() {
     String sql = truncateStatement;

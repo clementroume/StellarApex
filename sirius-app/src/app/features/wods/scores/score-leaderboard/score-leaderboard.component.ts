@@ -6,6 +6,8 @@ import {ScalingLevel, ScoreResponse} from '../../../../api/aldebaran/models/scor
 import {ScoreService} from '../../../../api/aldebaran/services/score.service';
 import {UserService} from '../../../../api/antares/services/user.service';
 import {Division, DIVISIONS} from '../../../../api/antares/models/user.model';
+import {AGE_GROUPS, AgeGroup} from '../../../../api/aldebaran/models/record.model';
+import {NativeSelectDirective} from '../../../../shared/component/native-select/native-select.directive';
 import {AccessService} from '../../../../core/services/access.service';
 import {UnitService} from '../../../../core/services/unit.service';
 import {formatDuration} from '../../wod.utils';
@@ -26,7 +28,7 @@ import {HlmButton} from '@spartan-ng/helm/button';
 @Component({
   selector: 'app-score-leaderboard',
   standalone: true,
-  imports: [HlmButton, TranslatePipe, NgIconComponent],
+  imports: [HlmButton, TranslatePipe, NgIconComponent, NativeSelectDirective],
   templateUrl: './score-leaderboard.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
@@ -58,6 +60,9 @@ export class ScoreLeaderboardComponent {
   readonly divisions = computed<(Division | 'MIXED')[]>(() =>
     this.store.wod()?.teamSize ? [...DIVISIONS, 'MIXED'] : DIVISIONS);
   readonly division = signal<Division | 'MIXED' | null>(null);
+  /** Age group leaderboard (D55, CrossFit Open brackets); null = every score. Individual WODs only. */
+  readonly ageGroups = AGE_GROUPS;
+  readonly ageGroup = signal<AgeGroup | null>(null);
   readonly rows = signal<ScoreResponse[]>([]);
   readonly names = signal<Record<number, string>>({});
   readonly hasMore = signal<boolean>(false);
@@ -91,6 +96,7 @@ export class ScoreLeaderboardComponent {
       this.gymIds();
       this.verifiedOnly();
       this.division();
+      this.ageGroup();
       this.store.sessionId();
       if (wod) untracked(() => this.load(true));
     });
@@ -105,7 +111,7 @@ export class ScoreLeaderboardComponent {
     this.page = reset ? 0 : this.page + 1;
     this.isLoading.set(true);
     this.scoreService.getLeaderboard(wod.id, this.scaling(), this.page, PAGE_SIZE, this.gymIds(), this.verifiedOnly(),
-      this.division(), this.store.sessionId()).subscribe({
+      this.division(), this.store.sessionId(), this.ageGroup()).subscribe({
       next: (slice) => {
         this.rows.set(reset ? slice.content : [...this.rows(), ...slice.content]);
         this.hasMore.set(!slice.last);
@@ -147,6 +153,10 @@ export class ScoreLeaderboardComponent {
 
   onDivisionChange(division: Division | 'MIXED' | null): void {
     this.division.set(division);
+  }
+
+  onAgeGroupChange(value: string): void {
+    this.ageGroup.set(value ? value as AgeGroup : null);
   }
 
   onVerifiedOnlyChange(checked: boolean): void {

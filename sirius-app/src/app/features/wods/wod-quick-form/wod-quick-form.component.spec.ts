@@ -84,6 +84,28 @@ describe('WodQuickFormComponent', () => {
     expect(request.movements[0]).toMatchObject({sets: 5, repsScheme: '5', weight: 100});
   });
 
+  it('should write a For Load line as a percentage of the 1RM, and keep it when editing', () => {
+    init({defaultFormat: 'FOR_LOAD'});
+    component.setSets('5x3');
+    component.onMovement(0, 3);
+    fixture.detectChanges();
+    const input = fixture.nativeElement.querySelector('.percent-input') as HTMLInputElement;
+    expect(input).not.toBeNull();
+    component.form.controls.rows.at(0).patchValue({percentOfRm: 80});
+    expect(component.buildRequest().movements[0]).toMatchObject({sets: 5, repsScheme: '3', percentOfRm: 80, rmReps: 1});
+
+    component.setCategory('AMRAP');
+    expect(component.buildRequest().movements[0]).toMatchObject({percentOfRm: null, rmReps: null});
+
+    const saved = {
+      id: 31, title: 'Squat', wodType: 'FOR_LOAD', structure: 'SETS', scoreType: 'WEIGHT', isPublic: false, competition: false,
+      repScheme: '5x3', modalities: [], createdAt: '', updatedAt: '',
+      movements: [{id: 1, orderIndex: 1, movement: {id: 3, name: 'Back Squat'}, repsScheme: '3', sets: 5, percentOfRm: 85, rmReps: 3}]
+    } as unknown as WodResponse;
+    init({initial: saved});
+    expect(component.buildRequest().movements[0]).toMatchObject({percentOfRm: 85, rmReps: 3});
+  });
+
   it('should pick the measure of each movement, ask reps only where needed, and count the reps of a round', () => {
     init();
     component.setCategory('AMRAP');

@@ -146,6 +146,50 @@
     "WOMEN": "Women",
     "MIXED": "Mixed"
   },
+  "AGE_GROUP": {
+    "LABEL": "Age",
+    "ALL": "All ages",
+    "AGE_15_AND_UNDER": "15 and under",
+    "AGE_16_17": "16-17",
+    "AGE_18_34": "18-34",
+    "AGE_35_39": "35-39",
+    "AGE_40_44": "40-44",
+    "AGE_45_49": "45-49",
+    "AGE_50_54": "50-54",
+    "AGE_55_59": "55-59",
+    "AGE_60_64": "60-64",
+    "AGE_65_PLUS": "65+"
+  },
+  "RECORDS": {
+    "SUBTITLE": "Your best loads per movement: every complete set counts (a 3RM out of a 3×3), as does every N RM test.",
+    "LOAD_ERROR": "Records could not be loaded. Try again later.",
+    "RM": "{{reps}}RM",
+    "ESTIMATED_1RM": "Estimated 1RM (Epley):",
+    "NO_BASE": "No record on the base version yet.",
+    "VARIANTS": "Variants ({{count}})",
+    "TEST": "Test:",
+    "TOTAL": "CrossFit Total",
+    "TOTAL_HINT": "Sum of your back squat, shoulder press and deadlift 1RMs.",
+    "MINE": "My records",
+    "MINE_HINT": "Base version first, variants folded below. The estimated 1RM is a guide, never a record.",
+    "EMPTY": "No record yet: log an N RM test or your strength sets.",
+    "TO_TEST": "Test an RM",
+    "TO_TEST_HINT": "The catalogue tests: your score sets your record and ranks you on the lift.",
+    "MY_MOVEMENT": "My records",
+    "PERCENT": {
+      "OF": "@ {{percent}}% {{reps}}RM",
+      "ESTIMATED": "estimated 1RM",
+      "NO_RECORD": "log my {{reps}}RM"
+    },
+    "BOARD": {
+      "SUBTITLE": "Your box members' records on the main lifts, wherever they were set.",
+      "GYM": "Box / program",
+      "LIFT": "Lift",
+      "REPS": "Reps",
+      "EMPTY": "No record on this lift yet.",
+      "LOG_MINE": "Log my {{reps}}RM"
+    }
+  },
   "SETTINGS": {
     "TITLE": "Security",
     "PASSWORD_SUBTITLE": "Change your password. It must be at least 8 characters long.",
@@ -585,7 +629,9 @@
       "SCOPE": "Scope",
       "SETS": "Sets",
       "STRUCTURE": "Sub-category",
-      "DURATION_SHORT": "Duration"
+      "DURATION_SHORT": "Duration",
+      "REP_MAX": "N RM test (N)",
+      "REP_MAX_HINT": "One movement only: the score becomes the athlete’s N RM record (blank otherwise)."
     },
     "PLACEHOLDERS": {
       "TITLE": "E.g. Fran",
@@ -721,7 +767,8 @@
       "LADDER_PYRAMID": "Values / pyramid",
       "ADD_BUY_IN": "Add a buy-in",
       "ADD_CASH_OUT": "Add a cash-out",
-      "SEGMENT": "Part of the WOD"
+      "SEGMENT": "Part of the WOD",
+      "PERCENT": "% of 1RM"
     },
     "CATALOGUE_SUBTITLE": "The reference WODs: Girls, Hero, benchmarks, Open… Program them in a session of your box.",
     "SEGMENTS": {
@@ -1058,8 +1105,7 @@
       "SCORES": "Scores"
     },
     "RECORDS": {
-      "TITLE": "Records",
-      "COMING": "Your records per movement (1RM, 3RM, max reps…) and their progress will show here."
+      "TITLE": "Records"
     },
     "REVIEW": {
       "TITLE": "Review",
@@ -1078,8 +1124,7 @@
       "TITLE": "Sessions"
     },
     "LEADERBOARDS": {
-      "TITLE": "Leaderboards",
-      "COMING": "Your box or program leaderboards will show here. Meanwhile, they are on each WOD."
+      "TITLE": "Leaderboards"
     },
     "MEMBERS": {
       "TITLE": "Members",

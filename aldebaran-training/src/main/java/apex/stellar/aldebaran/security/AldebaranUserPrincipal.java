@@ -51,6 +51,12 @@ public class AldebaranUserPrincipal implements UserDetails {
   @Nullable private Division division;
 
   /**
+   * The user's birth year ({@code X-Auth-User-Birth-Year}), or {@code null} when not given. Only used
+   * to derive the age group copied on the user's own scores (D55); never stored.
+   */
+  @Nullable private Integer birthYear;
+
+  /**
    * The platform admin acting as this user through an audited support session ({@code
    * X-Auth-Actor-Id}), or {@code null} for a normal request. Rights stay those of the user.
    */

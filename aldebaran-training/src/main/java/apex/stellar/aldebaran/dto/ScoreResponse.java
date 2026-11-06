@@ -1,6 +1,7 @@
 package apex.stellar.aldebaran.dto;
 
 import apex.stellar.aldebaran.model.entities.Score.ScalingLevel;
+import apex.stellar.aldebaran.model.enums.AgeGroup;
 import apex.stellar.aldebaran.model.enums.Division;
 import apex.stellar.aldebaran.model.enums.Unit;
 import java.time.LocalDate;
@@ -46,6 +47,8 @@ public record ScoreResponse(
     boolean personalRecord,
     // Division of the athlete when the score was logged (null: not chosen)
     Division division,
+    // Age group of the athlete in the year of the score (null: no birth year)
+    AgeGroup ageGroup,
 
     // --- Comments and Scaling notes---
     String userComment,
@@ -105,6 +108,7 @@ public record ScoreResponse(
         tiebreakSeconds,
         personalRecord,
         division,
+        ageGroup,
         showNotes ? userComment : null,
         showNotes ? scalingNotes : null,
         loggedAt,

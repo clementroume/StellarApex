@@ -3,6 +3,7 @@ package apex.stellar.aldebaran.config;
 import static org.springframework.security.config.Customizer.withDefaults;
 import static org.springframework.util.StringUtils.hasText;
 
+import apex.stellar.aldebaran.model.enums.AgeGroup;
 import apex.stellar.aldebaran.model.enums.Division;
 import apex.stellar.aldebaran.security.AldebaranUserPrincipal;
 import apex.stellar.aldebaran.security.GymAccess;
@@ -103,6 +104,7 @@ public class SecurityConfig {
             "X-Auth-User-Role",
             "X-Auth-Memberships",
             "X-Auth-User-Division",
+            "X-Auth-User-Birth-Year",
             "X-Auth-Actor-Id"));
     configuration.setAllowCredentials(true);
 
@@ -125,6 +127,8 @@ public class SecurityConfig {
    *       12:COACH:WOD_WRITE+SCORE_VERIFY,15:ATHLETE:});
    *   <li>{@code X-Auth-User-Division}: {@code MEN} or {@code WOMEN}, empty when not chosen
    *       (optional; unknown values are ignored);
+   *   <li>{@code X-Auth-User-Birth-Year}: the birth year, empty when not given (optional; only
+   *       used to derive the age group of the user's own scores, never stored);
    *   <li>{@code X-Auth-Actor-Id}: the platform admin acting as this user through an audited support
    *       session (optional). The other headers then describe the target user, whose rights apply.
    * </ul>
@@ -140,6 +144,7 @@ public class SecurityConfig {
     static final String HEADER_MEMBERSHIPS = "X-Auth-Memberships";
     static final String HEADER_ACTOR_ID = "X-Auth-Actor-Id";
     static final String HEADER_DIVISION = "X-Auth-User-Division";
+    static final String HEADER_BIRTH_YEAR = "X-Auth-User-Birth-Year";
 
     // Compared in constant time; an empty secret rejects every request
     private final byte[] internalSecret;
@@ -227,6 +232,7 @@ public class SecurityConfig {
                   .platformRole(platformRole.trim())
                   .memberships(parseMemberships(request.getHeader(HEADER_MEMBERSHIPS)))
                   .division(Division.parse(request.getHeader(HEADER_DIVISION)))
+                  .birthYear(AgeGroup.parseBirthYear(request.getHeader(HEADER_BIRTH_YEAR)))
                   .actorId(actorId)
                   .build();
 

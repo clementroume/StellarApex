@@ -102,6 +102,8 @@ export interface WodRequest {
   // --- Team WOD: athletes per team (2 to 6) and how they share the work ---
   teamSize?: number | null;
   teamMode?: TeamMode | null;
+  // --- N of an "N RM" test (For Load WOD with one movement), or null ---
+  repMax?: number | null;
   movements: WodMovementRequest[];
 }
 
@@ -153,6 +155,8 @@ export interface WodResponse {
   // --- Team WOD: athletes per team (2 to 6) and how they share the work ---
   teamSize?: number | null;
   teamMode?: TeamMode | null;
+  // N of an "N RM" test, or null
+  repMax?: number | null;
   modalities: string[];
   movements: WodMovementResponse[];
   // --- Rights ---
@@ -205,6 +209,9 @@ export interface WodMovementRequest {
   complexGroup?: number | null;
   // --- Team WOD: quantity in total (default), by each member, or together ---
   teamSplit?: TeamSplit | null;
+  // --- Load as a percentage of the athlete's rmReps RM (base version of the movement) ---
+  percentOfRm?: number | null;
+  rmReps?: number | null;
 }
 
 export interface WodMovementResponse {
@@ -244,6 +251,9 @@ export interface WodMovementResponse {
   complexGroup?: number | null;
   // --- Team WOD: quantity in total (default), by each member, or together ---
   teamSplit?: TeamSplit | null;
+  // --- Load as a percentage of the athlete's rmReps RM (base version of the movement) ---
+  percentOfRm?: number | null;
+  rmReps?: number | null;
 }
 
 export interface WodReferenceData {

@@ -11,8 +11,8 @@ WOD CSV format lives in `config/WodCsvCodec` (blank = null, lossless round-trip;
 name; WOD movement variants joined by `|`, whereas `movements.csv` lists use `, `; FR/EN text
 columns `*_en` / `*_fr`, the former single-language columns still read as English; optional trailing
 `tiebreak_en` ... `reps_per_round` then the V14 structure columns `rounds` ... `vest_weight_unit`, V15
-`structure`, V16 `team_size` / `team_mode`, and `sets` / `segment` / `complex_group` / `team_split`
-for WOD movements; former `wod_type` values read
+`structure`, V16 `team_size` / `team_mode`, V18 `rep_max`, and `sets` / `segment` / `complex_group` /
+`team_split` / `percent_of_rm` / `rm_reps` for WOD movements; former `wod_type` values read
 as a category + sub-category; a former `ROUNDS_REPS` score type reads as `REPS`).
 `config/DevGymWodSeeder` (`@Profile("dev")`, temporary) seeds WODs for the Antares test gyms,
 resolving IDs from the `antares` schema with `JdbcTemplate`, then calls `config/DevScoreSeeder`
@@ -61,9 +61,17 @@ resolving IDs from the `antares` schema with `JdbcTemplate`, then calls `config/
   its athlete), `canVerify` (submitted scores only: `Score.verificationRequested`); `WodSecurity.canJudge` feeds `WodCapabilities.canJudge`;
   `WodService.checkCompetition` (gym required, never public, `InvalidWodException` → 400).
 - Division: `AldebaranUserPrincipal.division` (`X-Auth-User-Division`); `ScoreService.logScore` copies
-  it on own scores, or `AntaresClient.getUserDivision` for a score logged for someone else (503 when
+  it on own scores, or `AntaresClient.getAthleteFacts` for a score logged for someone else (503 when
   Antares fails, never the judge's division), then `assignDivisionToUnclassified`. Leaderboard filter
   `division` goes through the in-memory filtered path (`findFilteredByWod`).
+- Age group: `AldebaranUserPrincipal.birthYear` (`X-Auth-User-Birth-Year`, never stored) or
+  `AntaresClient.getAthleteFacts` for a staff score → `scores.age_group` (`model/enums/AgeGroup`), then
+  `assignAgeGroupToUnclassified`; team scores keep none. ITs default `getAthleteFacts` to no facts in
+  `BaseIntegrationTest`.
+- Records (lot C): `service/MovementRecordService` rebuilds `movement_records` for (athlete, movement)
+  from `ScoreService` after each log / update / delete (`rebuildFor(wod, userId)`), never from a
+  request; `service/LiftVariant` says whether a WOD feeds records and builds the variant key. The
+  canonical "N RM" WODs live in the catalog CSVs (`rep_max`), frozen in a migration at lot E.
 - Support session: `X-Auth-Actor-Id` (nullable `actorId`) = the admin acting as the user; rights stay
   the user's. `security/SupportSessionAuditFilter` logs every non-GET request with an actor at INFO.
 

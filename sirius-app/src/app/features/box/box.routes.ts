@@ -1,5 +1,4 @@
 import {Routes} from '@angular/router';
-import {SpacePlaceholderComponent} from '../../shared/component/coming-soon/space-placeholder.component';
 import {gymPermissionGuard} from '../../core/guards/gym-permission.guard';
 
 /** My box: athlete pages, then staff pages opened by permission. */
@@ -21,10 +20,8 @@ export const BOX_ROUTES: Routes = [
     path: 'sessions/:id/edit', canActivate: [gymPermissionGuard('WOD_WRITE')],
     loadComponent: () => import('../sessions/session-form/session-form.component').then(c => c.SessionFormComponent)
   },
-  {
-    path: 'leaderboards', component: SpacePlaceholderComponent,
-    data: {titleKey: 'BOX.LEADERBOARDS.TITLE', descriptionKey: 'BOX.LEADERBOARDS.COMING', icon: 'heroChartBar'}
-  },
+  // Records board of the box (lot C, D56)
+  {path: 'leaderboards', loadComponent: () => import('../records/box-records.component').then(c => c.BoxRecordsComponent)},
   {
     path: 'members', canActivate: [gymPermissionGuard('MANAGE_MEMBERSHIPS')],
     loadComponent: () => import('./members/box-members.component').then(c => c.BoxMembersComponent)

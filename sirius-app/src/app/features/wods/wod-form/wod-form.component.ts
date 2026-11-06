@@ -144,6 +144,8 @@ export class WodFormComponent implements OnInit {
     emomInterval: [null as number | null, [Validators.min(0)]],
     emomRounds: [null as number | null, [Validators.min(0)]],
     repScheme: ['', [Validators.maxLength(100)]],
+    // N of an "N RM" test (For Load, one movement): its score sets the N RM record (lot C)
+    repMax: [null as number | null, [Validators.min(1), Validators.max(50)]],
     // Structure of the quick editor: rounds, rest / work (s), ascending ladder, weight vest
     rounds: [null as number | null, [Validators.min(1)]],
     restSeconds: [null as number | null, [Validators.min(0)]],
@@ -246,6 +248,9 @@ export class WodFormComponent implements OnInit {
       complexGroup: [source?.complexGroup ?? null as number | null],
       // Team WOD: in total, by each member, or together
       teamSplit: [source?.teamSplit ?? 'TOTAL'],
+      // Load as a percentage of an RM (written in the quick editor), kept as is
+      percentOfRm: [source?.percentOfRm ?? null as number | null],
+      rmReps: [source?.rmReps ?? null as number | null],
       repsScheme: [source?.repsScheme ?? '', [Validators.maxLength(50)]],
       weight: [source?.weight ?? null as number | null, [Validators.min(0)]],
       weightFemale: [source?.weightFemale ?? null as number | null, [Validators.min(0)]],
@@ -404,6 +409,7 @@ export class WodFormComponent implements OnInit {
       emomInterval: wod.emomInterval ?? null,
       emomRounds: wod.emomRounds ?? null,
       repScheme: wod.repScheme || '',
+      repMax: wod.repMax ?? null,
       rounds: wod.rounds ?? null,
       restSeconds: wod.restSeconds ?? null,
       workSeconds: wod.workSeconds ?? null,
@@ -463,6 +469,8 @@ export class WodFormComponent implements OnInit {
       segment: m.segment ?? 'MAIN',
       complexGroup: m.complexGroup ?? null,
       teamSplit: m.teamSplit ?? 'TOTAL',
+      percentOfRm: m.percentOfRm ?? null,
+      rmReps: m.rmReps ?? null,
       repsScheme: m.repsScheme?.trim() || undefined,
       weight: m.weight ?? undefined,
       weightFemale: m.weightFemale ?? undefined,
@@ -511,6 +519,7 @@ export class WodFormComponent implements OnInit {
       emomInterval: isEmom ? (v.emomInterval ?? undefined) : undefined,
       emomRounds: isEmom ? (v.emomRounds ?? undefined) : undefined,
       repScheme: v.repScheme.trim() || undefined,
+      repMax: v.wodType === 'FOR_LOAD' ? v.repMax ?? null : null,
       structure: v.structure && (this.structuresByType()[v.wodType] ?? []).includes(v.structure) ? v.structure : null,
       teamSize: v.teamSize ?? null,
       teamMode: v.teamSize ? (v.teamMode ?? 'YOU_GO_I_GO') as TeamMode : null,
