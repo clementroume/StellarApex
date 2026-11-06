@@ -2,7 +2,7 @@ import {signal} from '@angular/core';
 import {ComponentFixture, TestBed} from '@angular/core/testing';
 import {provideRouter} from '@angular/router';
 import {provideTranslateService} from '@ngx-translate/core';
-import {of} from 'rxjs';
+import {of, Subject} from 'rxjs';
 import {BoxRecordsComponent} from './box-records.component';
 import {RecordService} from '../../api/aldebaran/services/record.service';
 import {UserService} from '../../api/antares/services/user.service';
@@ -72,6 +72,19 @@ describe('BoxRecordsComponent', () => {
     const mine = fixture.nativeElement.querySelector('[data-slot="mine"]') as HTMLElement;
     expect(mine.textContent).toContain('5');
     expect(mine.textContent).toContain('RECORDS.BOARD.GAP');
+  });
+
+  it('should drop the board of a lift picked before the current one', () => {
+    const squat = new Subject<unknown[]>();
+    const deadlift = new Subject<unknown[]>();
+    recordService.getGymBoard.mockReturnValueOnce(squat).mockReturnValueOnce(deadlift);
+    component.onMovementChange('3');
+    fixture.detectChanges();
+    component.onMovementChange('2');
+    fixture.detectChanges();
+    deadlift.next([{userId: 7, reps: 1, weightKg: 200, date: '2026-11-01', division: 'MEN', ageGroup: null}]);
+    squat.next([{userId: 7, reps: 1, weightKg: 120, date: '2026-11-01', division: 'MEN', ageGroup: null}]);
+    expect(component.rows().map(r => r.weightKg)).toEqual([200]);
   });
 
   it('should open the filters, with the gym picker when the navbar shows every box', () => {

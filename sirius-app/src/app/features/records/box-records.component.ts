@@ -127,12 +127,15 @@ export class BoxRecordsComponent {
     this.isLoading.set(true);
     this.recordService.getGymBoard(gymId, movementId, new HttpContext().set(BYPASS_LOADER, true)).subscribe({
       next: board => {
+        // A later pick (lift chip, box) is already loading: drop this answer
+        if (this.gymId() !== gymId || this.movementId() !== movementId) return;
         this.board.set(board);
         this.failed.set(false);
         this.isLoading.set(false);
         this.loadNames(board);
       },
       error: () => {
+        if (this.gymId() !== gymId || this.movementId() !== movementId) return;
         this.board.set([]);
         this.failed.set(true);
         this.isLoading.set(false);

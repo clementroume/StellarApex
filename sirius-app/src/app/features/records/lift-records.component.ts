@@ -10,7 +10,7 @@ import {RecordService} from '../../api/aldebaran/services/record.service';
 import {BYPASS_LOADER} from '../../core/interceptors/loading.interceptor';
 import {UnitService} from '../../core/services/unit.service';
 import {PageComponent} from '../../shared/component/page/page.component';
-import {PERCENT_STEPS, rmRows, variantLabel} from './record.utils';
+import {PERCENT_STEPS, percentBase, rmRows, variantLabel} from './record.utils';
 
 /** Bars of the progression chart (the latest bests). */
 const PROGRESS_BARS = 12;
@@ -54,12 +54,10 @@ export class LiftRecordsComponent {
   readonly base = computed<VariantRecords | undefined>(() => this.records()?.variants.find(v => v.base));
   readonly variants = computed<VariantRecords[]>(() => this.records()?.variants.filter(v => !v.base) ?? []);
   readonly rows = computed(() => rmRows(this.base()));
-  /** Base of the % table: the real 1RM, else the estimated one. */
+  /** Base of the % table: the real 1RM, else the estimated one (same rule as the whiteboard). */
   readonly oneRm = computed(() => {
-    const base = this.base();
-    const real = base?.records.find(r => r.reps === 1);
-    if (real) return {kg: real.weightKg, estimated: false};
-    return base?.estimatedOneRepMaxKg ? {kg: base.estimatedOneRepMaxKg, estimated: true} : null;
+    const records = this.records();
+    return percentBase(records ? [records] : [], this.id(), 1);
   });
   readonly bars = computed(() => {
     const points = this.progress().slice(-PROGRESS_BARS);
@@ -86,21 +84,32 @@ export class LiftRecordsComponent {
     this.isLoading.set(true);
     this.recordService.getMyMovementRecords(id, context).subscribe({
       next: records => {
+        // Another movement is already loading: drop this answer
+        if (this.id() !== id) return;
         this.records.set(records[0]);
         this.isLoading.set(false);
       },
       error: () => {
+        if (this.id() !== id) return;
         this.records.set(undefined);
         this.isLoading.set(false);
       }
     });
     this.recordService.getCanonicalLifts(context).subscribe({
-      next: lifts => this.lifts.set(lifts.filter(l => l.movementId === id)),
-      error: () => this.lifts.set([])
+      next: lifts => {
+        if (this.id() === id) this.lifts.set(lifts.filter(l => l.movementId === id));
+      },
+      error: () => {
+        if (this.id() === id) this.lifts.set([]);
+      }
     });
     this.recordService.getMyProgress(id, 1, context).subscribe({
-      next: points => this.progress.set(points),
-      error: () => this.progress.set([])
+      next: points => {
+        if (this.id() === id) this.progress.set(points);
+      },
+      error: () => {
+        if (this.id() === id) this.progress.set([]);
+      }
     });
   }
 
