@@ -7,6 +7,8 @@ import {WodResponse} from '../../../api/aldebaran/models/wod.model';
 import {UnitService} from '../../../core/services/unit.service';
 import {AuthService} from '../../../api/antares/services/auth.service';
 import {UserResponse} from '../../../api/antares/models/user.model';
+import {RecordService} from '../../../api/aldebaran/services/record.service';
+import {of} from 'rxjs';
 
 describe('WodWhiteboardComponent', () => {
   let component: WodWhiteboardComponent;
@@ -40,6 +42,7 @@ describe('WodWhiteboardComponent', () => {
       mine: v != null && f != null && division ? (division === 'MEN' ? 0 : 1) : null
     };
   const currentUser = signal<Partial<UserResponse> | null>({division: null});
+  const recordService = {getMyRecords: vi.fn().mockName('RecordService.getMyRecords'), version: signal(0)};
 
   const init = (wod: WodResponse = buildWod()) => {
     fixture = TestBed.createComponent(WodWhiteboardComponent);
@@ -60,12 +63,48 @@ describe('WodWhiteboardComponent', () => {
             formatDistance: (v?: number | null, f?: number | null, u?: string | null) =>
               v == null ? '' : `${v}${f ? '/' + f : ''} ${u}`,
             loadPair: pair,
-            distancePair: pair
+            distancePair: pair,
+            formatPercentLoad: (kg: number) => `${Math.round(kg)} kg`
           }
         },
-        {provide: AuthService, useValue: {currentUser}}
+        {provide: AuthService, useValue: {currentUser}},
+        {provide: RecordService, useValue: recordService}
       ]
     }).compileComponents();
+  });
+
+  it('should load my records only for percentage loads, and write my load from the base version', () => {
+    recordService.getMyRecords.mockReset();
+    init();
+    expect(recordService.getMyRecords).not.toHaveBeenCalled();
+
+    recordService.getMyRecords.mockReturnValue(of([{movementId: 1, movementName: 'Thruster', variants: [
+      {variantKey: '', base: true, equipment: [], techniques: [], estimatedOneRepMaxKg: 110,
+        records: [{reps: 3, weightKg: 100, date: '2026-11-01', scoreId: 1, wodId: 1, wodTitle: 'W'}], estimates: []}
+    ]}]));
+    const wod = buildWod({wodType: 'FOR_LOAD', movements: [
+      {id: 11, movement: movement(1, 'Thruster'), orderIndex: 1, repsScheme: '3', sets: 5, percentOfRm: 80, rmReps: 1},
+      {id: 12, movement: movement(1, 'Thruster'), orderIndex: 2, repsScheme: '3', percentOfRm: 90, rmReps: 3},
+      {id: 13, movement: movement(2, 'Pull-up'), orderIndex: 3, repsScheme: '5', percentOfRm: 50, rmReps: 1}
+    ]});
+    init(wod);
+
+    expect(recordService.getMyRecords).toHaveBeenCalledTimes(1);
+    expect(component.percentLoad(wod.movements[0])).toMatchObject({text: '88 kg', estimated: true, source: 'RECORDS.PERCENT.SOURCE_ESTIMATED'});
+    expect(component.percentLoad(wod.movements[1])).toMatchObject({text: '90 kg', estimated: false, source: 'RECORDS.PERCENT.SOURCE'});
+    expect(component.percentLoad(wod.movements[2])).toBeNull();
+    // A variant line refers to the record of the base version, and says so
+    expect(component.percentLoad({...wod.movements[1], techniques: ['PAUSED']})?.source).toBe('RECORDS.PERCENT.SOURCE_BASE');
+    const percents = fixture.nativeElement.querySelectorAll('[data-slot="percent"]');
+    expect(percents.length).toBe(2);
+    expect(percents[0].textContent).toContain('≈ 88 kg');
+    expect(fixture.nativeElement.querySelectorAll('[data-slot="percent-source"]').length).toBe(3);
+    expect(fixture.nativeElement.querySelector('[data-slot="percent-no-record"]')).not.toBeNull();
+
+    // A new score: the records are asked again
+    recordService.version.set(1);
+    fixture.detectChanges();
+    expect(recordService.getMyRecords).toHaveBeenCalledTimes(2);
   });
 
   it('should list the movements by order', () => {

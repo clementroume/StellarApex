@@ -5,6 +5,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 import apex.stellar.aldebaran.client.AntaresClient;
+import apex.stellar.aldebaran.client.AntaresClient.AthleteFacts;
 import apex.stellar.aldebaran.dto.ScoreComparisonResponse;
 import apex.stellar.aldebaran.dto.ScoreRequest;
 import apex.stellar.aldebaran.dto.ScoreResponse;
@@ -53,6 +54,7 @@ class ScoreServiceTest {
   @Mock private SessionLogRepository sessionLogRepository;
   @Mock private SessionBlockRepository sessionBlockRepository;
   @Mock private SessionLogService sessionLogService;
+  @Mock private MovementRecordService movementRecordService;
   @InjectMocks private ScoreService scoreService;
 
   private Wod wodProxy;
@@ -61,6 +63,8 @@ class ScoreServiceTest {
 
   @BeforeEach
   void setUp() {
+    // Athletes logged for by staff: no division nor birth year unless a test states them
+    lenient().when(antaresClient.getAthleteFacts(any())).thenReturn(new AthleteFacts(null, null));
     wodProxy = Wod.builder().id(1L).scoreType(ScoreType.TIME).build();
 
     requestTime =
@@ -146,7 +150,7 @@ class ScoreServiceTest {
         .thenReturn(Page.empty());
 
     Slice<ScoreResponse> result =
-        scoreService.getLeaderboard(1L, ScalingLevel.RX, null, false, null, null, pageable);
+        scoreService.getLeaderboard(1L, ScalingLevel.RX, null, false, null, null, null, pageable);
 
     assertNotNull(result);
   }
@@ -661,12 +665,12 @@ class ScoreServiceTest {
     // Athlete 7: PR 230 s done elsewhere, 270 s in gym 300; only the latter is returned
     Score inMyBox = verified(1L, 7L, 270, ScalingLevel.RX);
     when(scoreRepository.findFilteredByWod(
-            eq(1L), eq(true), eq(List.of(300L)), eq(false), isNull(), eq(ScoreRepository.NO_SESSION)))
+            eq(1L), eq(true), eq(List.of(300L)), eq(false), isNull(), isNull(), eq(ScoreRepository.NO_SESSION)))
         .thenReturn(List.of(inMyBox));
 
     Slice<ScoreResponse> result =
         scoreService.getLeaderboard(
-            1L, ScalingLevel.RX, List.of(300L), false, null, null, PageRequest.of(0, 20));
+            1L, ScalingLevel.RX, List.of(300L), false, null, null, null, PageRequest.of(0, 20));
 
     assertEquals(1, result.getNumberOfElements());
     verify(scoreMapper).toResponse(inMyBox);
@@ -696,12 +700,12 @@ class ScoreServiceTest {
     Score rx9 = verified(4L, 9L, 250, ScalingLevel.RX);
     Score elite9 = verified(5L, 9L, 400, ScalingLevel.ELITE);
     when(scoreRepository.findFilteredByWod(
-            eq(1L), eq(true), eq(List.of(300L)), eq(true), isNull(), eq(ScoreRepository.NO_SESSION)))
+            eq(1L), eq(true), eq(List.of(300L)), eq(true), isNull(), isNull(), eq(ScoreRepository.NO_SESSION)))
         .thenReturn(List.of(slow7, only8, best7, rx9, elite9));
 
     Slice<ScoreResponse> result =
         scoreService.getLeaderboard(
-            1L, ScalingLevel.RX, List.of(300L), true, null, null, PageRequest.of(0, 20));
+            1L, ScalingLevel.RX, List.of(300L), true, null, null, null, PageRequest.of(0, 20));
 
     assertEquals(2, result.getNumberOfElements());
     assertFalse(result.hasNext());
@@ -719,13 +723,13 @@ class ScoreServiceTest {
     Score first = verified(1L, 7L, 290, ScalingLevel.RX);
     Score second = verified(2L, 8L, 300, ScalingLevel.RX);
     Score third = verified(3L, 9L, 310, ScalingLevel.RX);
-    when(scoreRepository.findFilteredByWod(eq(1L), eq(false), any(), eq(true), isNull(), eq(ScoreRepository.NO_SESSION)))
+    when(scoreRepository.findFilteredByWod(eq(1L), eq(false), any(), eq(true), isNull(), isNull(), eq(ScoreRepository.NO_SESSION)))
         .thenReturn(List.of(third, first, second));
 
     Slice<ScoreResponse> page0 =
-        scoreService.getLeaderboard(1L, ScalingLevel.RX, null, true, null, null, PageRequest.of(0, 2));
+        scoreService.getLeaderboard(1L, ScalingLevel.RX, null, true, null, null, null, PageRequest.of(0, 2));
     Slice<ScoreResponse> page1 =
-        scoreService.getLeaderboard(1L, ScalingLevel.RX, null, true, null, null, PageRequest.of(1, 2));
+        scoreService.getLeaderboard(1L, ScalingLevel.RX, null, true, null, null, null, PageRequest.of(1, 2));
 
     assertEquals(2, page0.getNumberOfElements());
     assertTrue(page0.hasNext());
@@ -805,7 +809,7 @@ class ScoreServiceTest {
             ScalingLevel.RX, false, null, null, null, null);
     Score entity = Score.builder().timeSeconds(300).scaling(ScalingLevel.RX).build();
     when(securityService.getCurrentUserId()).thenReturn(coachId);
-    when(antaresClient.getUserDivision(athleteId)).thenReturn(Division.MEN);
+    when(antaresClient.getAthleteFacts(athleteId)).thenReturn(new AthleteFacts(Division.MEN, null));
     when(wodRepository.findById(1L)).thenReturn(Optional.of(competition));
     when(scoreMapper.toEntity(request)).thenReturn(entity);
     when(scoreRepository.save(entity)).thenReturn(entity);
@@ -831,7 +835,7 @@ class ScoreServiceTest {
     when(securityService.getCurrentUserId()).thenReturn(2L);
     when(wodRepository.findById(1L)).thenReturn(Optional.of(competition));
     when(scoreMapper.toEntity(request)).thenReturn(Score.builder().build());
-    when(antaresClient.getUserDivision(athleteId))
+    when(antaresClient.getAthleteFacts(athleteId))
         .thenThrow(new AntaresUnavailableException("down", null));
 
     assertThrows(AntaresUnavailableException.class, () -> scoreService.logScore(request));
@@ -844,12 +848,12 @@ class ScoreServiceTest {
     mockWodDetailHit(ScoreType.TIME);
     Score women = verified(1L, 7L, 290, ScalingLevel.RX);
     when(scoreRepository.findFilteredByWod(
-            eq(1L), eq(false), any(), eq(false), eq(Division.WOMEN), eq(ScoreRepository.NO_SESSION)))
+            eq(1L), eq(false), any(), eq(false), eq(Division.WOMEN), isNull(), eq(ScoreRepository.NO_SESSION)))
         .thenReturn(List.of(women));
 
     Slice<ScoreResponse> result =
         scoreService.getLeaderboard(
-            1L, ScalingLevel.RX, null, false, Division.WOMEN, null, PageRequest.of(0, 20));
+            1L, ScalingLevel.RX, null, false, Division.WOMEN, null, null, PageRequest.of(0, 20));
 
     assertEquals(1, result.getNumberOfElements());
     verify(scoreRepository, never()).findLeaderboard(any(), any(), any(Pageable.class));
@@ -904,12 +908,12 @@ class ScoreServiceTest {
   void testGetLeaderboard_SessionFilter() {
     mockWodDetailHit(ScoreType.TIME);
     Score inSession = verified(1L, 7L, 270, ScalingLevel.RX);
-    when(scoreRepository.findFilteredByWod(eq(1L), eq(false), any(), eq(false), isNull(), eq(42L)))
+    when(scoreRepository.findFilteredByWod(eq(1L), eq(false), any(), eq(false), isNull(), isNull(), eq(42L)))
         .thenReturn(List.of(inSession));
 
     Slice<ScoreResponse> result =
         scoreService.getLeaderboard(
-            1L, ScalingLevel.RX, null, false, null, 42L, PageRequest.of(0, 20));
+            1L, ScalingLevel.RX, null, false, null, null, 42L, PageRequest.of(0, 20));
 
     assertEquals(1, result.getNumberOfElements());
     verify(scoreRepository, never()).findLeaderboard(any(), any(), any(Pageable.class));

@@ -55,6 +55,18 @@ public interface WodRepository extends JpaRepository<Wod, Long> {
   Optional<Wod> findByIdWithMovements(@Param("id") Long id);
 
   /**
+   * Retrieves the public "N RM" tests with their movement (canonical lifts, D51); the caller keeps
+   * the single-movement base versions.
+   *
+   * @return The WODs, oldest first.
+   */
+  @EntityGraph(attributePaths = {"movements", "movements.movement"})
+  @Query(
+      "SELECT w FROM Wod w WHERE w.isPublic = true AND w.standalone = true"
+          + " AND w.repMax IS NOT NULL ORDER BY w.id")
+  List<Wod> findPublicRepMaxTests();
+
+  /**
    * Retrieves every public WOD with its movements, ordered by title (temporary CSV export).
    *
    * @return The public WODs.

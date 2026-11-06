@@ -72,6 +72,7 @@ public interface ScoreMapper {
   @Mapping(target = "loggedAt", ignore = true)
   @Mapping(target = "personalRecord", ignore = true)
   @Mapping(target = "division", ignore = true)
+  @Mapping(target = "ageGroup", ignore = true)
   @Mapping(target = "sets", ignore = true) // Converted and checked by ScoreService
   @Mapping(target = "sessionLogId", ignore = true) // Checked by ScoreService
   @Mapping(target = "sessionBlockId", ignore = true) // Derived by ScoreService
@@ -101,6 +102,7 @@ public interface ScoreMapper {
   @Mapping(target = "loggedAt", ignore = true)
   @Mapping(target = "personalRecord", ignore = true)
   @Mapping(target = "division", ignore = true)
+  @Mapping(target = "ageGroup", ignore = true)
   @Mapping(target = "sets", ignore = true) // Converted and checked by ScoreService
   @Mapping(target = "sessionLogId", ignore = true) // Checked by ScoreService
   @Mapping(target = "sessionBlockId", ignore = true) // Derived by ScoreService

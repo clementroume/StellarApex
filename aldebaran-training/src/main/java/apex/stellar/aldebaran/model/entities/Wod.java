@@ -20,6 +20,7 @@ import jakarta.persistence.OrderBy;
 import jakarta.persistence.Table;
 import jakarta.persistence.Version;
 import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -209,6 +210,15 @@ public class Wod {
   @Column(name = "rep_scheme", length = 100)
   @Size(max = 100)
   private String repScheme;
+
+  /**
+   * N of an "N RM" test (For Load WOD with one movement, e.g. "Back Squat 5RM"), or null: its
+   * score counts as an N-rep record of the movement (D50).
+   */
+  @Column(name = "rep_max")
+  @Min(1)
+  @Max(50)
+  private Integer repMax;
 
   @ElementCollection(fetch = FetchType.LAZY)
   @CollectionTable(name = "wod_modalities", joinColumns = @JoinColumn(name = "wod_id"))

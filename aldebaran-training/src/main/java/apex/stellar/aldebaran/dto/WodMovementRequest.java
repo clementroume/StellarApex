@@ -3,7 +3,9 @@ package apex.stellar.aldebaran.dto;
 import apex.stellar.aldebaran.model.entities.WodMovement.Segment;
 import apex.stellar.aldebaran.model.entities.WodMovement.TeamSplit;
 import apex.stellar.aldebaran.model.enums.Unit;
+import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -52,7 +54,15 @@ public record WodMovementRequest(
     @Min(value = 1, message = "{validation.wod.rounds.min}") Integer complexGroup,
 
     // --- Team WOD: in total (default), by each member, or together ---
-    TeamSplit teamSplit) {
+    TeamSplit teamSplit,
+
+    // --- Load as a percentage of the athlete's RM (base version of the movement), optional ---
+    @DecimalMin(value = "0.0", inclusive = false, message = "{validation.wod.percent.range}")
+        @DecimalMax(value = "150.0", message = "{validation.wod.percent.range}")
+        Double percentOfRm,
+    @Min(value = 1, message = "{validation.wod.rmReps.range}")
+        @Max(value = 50, message = "{validation.wod.rmReps.range}")
+        Integer rmReps) {
 
   /** Defaults the segment to the rounds and the team split to the total. */
   public WodMovementRequest {
@@ -62,6 +72,41 @@ public record WodMovementRequest(
     if (teamSplit == null) {
       teamSplit = TeamSplit.TOTAL;
     }
+  }
+
+  /** Line without a percentage load. */
+  @SuppressWarnings("java:S107") // Mirrors the record components
+  public WodMovementRequest(
+      Long movementId,
+      Integer orderIndex,
+      String repsScheme,
+      Double weight,
+      Double weightFemale,
+      Unit weightUnit,
+      Integer durationSeconds,
+      Unit durationDisplayUnit,
+      Double distance,
+      Unit distanceUnit,
+      Integer calories,
+      Integer caloriesFemale,
+      Double height,
+      Double heightFemale,
+      Unit heightUnit,
+      Set<String> equipment,
+      Set<String> techniques,
+      String notesEn,
+      String notesFr,
+      String scalingOptionsEn,
+      String scalingOptionsFr,
+      Integer sets,
+      Segment segment,
+      Integer complexGroup,
+      TeamSplit teamSplit) {
+    this(
+        movementId, orderIndex, repsScheme, weight, weightFemale, weightUnit, durationSeconds,
+        durationDisplayUnit, distance, distanceUnit, calories, caloriesFemale, height, heightFemale,
+        heightUnit, equipment, techniques, notesEn, notesFr, scalingOptionsEn, scalingOptionsFr,
+        sets, segment, complexGroup, teamSplit, null, null);
   }
 
   /** Line of an individual WOD, possibly in a complex. */

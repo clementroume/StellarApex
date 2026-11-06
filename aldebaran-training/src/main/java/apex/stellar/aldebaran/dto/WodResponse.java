@@ -58,6 +58,8 @@ public record WodResponse(
     WodStructure structure,
     Integer teamSize,
     TeamMode teamMode,
+    // N of an "N RM" test, or null
+    Integer repMax,
     Set<Modality> modalities,
     List<WodMovementResponse> movements,
 
@@ -109,6 +111,7 @@ public record WodResponse(
         structure,
         teamSize,
         teamMode,
+        repMax,
         modalities,
         movements,
         createdAt,

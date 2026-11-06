@@ -70,7 +70,54 @@ public record WodRequest(
     @Min(value = 2, message = "{validation.wod.team.size}")
         @Max(value = 6, message = "{validation.wod.team.size}")
         Integer teamSize,
-    TeamMode teamMode) {
+    TeamMode teamMode,
+
+    // --- N of an "N RM" test (For Load WOD with one movement), optional ---
+    @Min(value = 1, message = "{validation.wod.rmReps.range}")
+        @Max(value = 50, message = "{validation.wod.rmReps.range}")
+        Integer repMax) {
+
+  /** WOD that is not an "N RM" test. */
+  @SuppressWarnings("java:S107") // Mirrors the record components
+  public WodRequest(
+      String title,
+      WodType wodType,
+      WodCategory category,
+      ScoreType scoreType,
+      Long authorId,
+      Long gymId,
+      boolean isPublic,
+      boolean competition,
+      String descriptionEn,
+      String descriptionFr,
+      String notesEn,
+      String notesFr,
+      String tiebreakEn,
+      String tiebreakFr,
+      Integer timeCapSeconds,
+      Integer repsPerRound,
+      Integer emomInterval,
+      Integer emomRounds,
+      String repScheme,
+      List<WodMovementRequest> movements,
+      Integer rounds,
+      Integer restSeconds,
+      Integer workSeconds,
+      Integer ladderStart,
+      Integer ladderStep,
+      Double vestWeight,
+      Double vestWeightFemale,
+      Unit vestWeightUnit,
+      WodStructure structure,
+      Integer teamSize,
+      TeamMode teamMode) {
+    this(
+        title, wodType, category, scoreType, authorId, gymId, isPublic, competition, descriptionEn,
+        descriptionFr, notesEn, notesFr, tiebreakEn, tiebreakFr, timeCapSeconds, repsPerRound,
+        emomInterval, emomRounds, repScheme, movements, rounds, restSeconds, workSeconds,
+        ladderStart, ladderStep, vestWeight, vestWeightFemale, vestWeightUnit, structure, teamSize,
+        teamMode, null);
+  }
 
   /** Individual WOD with a sub-category. */
   @SuppressWarnings("java:S107") // Mirrors the record components
@@ -193,6 +240,6 @@ public record WodRequest(
         descriptionFr, notesEn, notesFr, tiebreakEn, tiebreakFr, timeCapSeconds, repsPerRound,
         emomInterval, emomRounds, repScheme, movementList, rounds, restSeconds, workSeconds,
         ladderStart, ladderStep, vestWeight, vestWeightFemale, vestWeightUnit, structure, teamSize,
-        teamMode);
+        teamMode, repMax);
   }
 }

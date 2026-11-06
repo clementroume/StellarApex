@@ -30,6 +30,8 @@ import org.springframework.transaction.annotation.Transactional;
  *       the effective ones (see {@link Membership#effectivePermissions()}).
  *   <li>{@code X-Auth-User-Division}: the competition division ({@code MEN|WOMEN}), always sent,
  *       empty when not chosen; Aldebaran copies it on the scores the user logs.
+ *   <li>{@code X-Auth-User-Birth-Year}: the birth year, always sent, empty when not given;
+ *       Aldebaran only derives the age group copied on a score from it, never stores it.
  *   <li>{@code X-Auth-Actor-Id}: the platform admin's id, only during a support session. The other
  *       headers then describe the supported (target) user, resolved upstream by the JWT filter.
  * </ul>
@@ -43,6 +45,7 @@ public class GatewayIdentityService {
   public static final String HEADER_AUTH_USER_LOCALE = "X-Auth-User-Locale";
   public static final String HEADER_AUTH_MEMBERSHIPS = "X-Auth-Memberships";
   public static final String HEADER_AUTH_USER_DIVISION = "X-Auth-User-Division";
+  public static final String HEADER_AUTH_USER_BIRTH_YEAR = "X-Auth-User-Birth-Year";
   public static final String HEADER_AUTH_ACTOR_ID = "X-Auth-Actor-Id";
   public static final String HEADER_INTERNAL_SECRET = "X-Internal-Secret";
 
@@ -88,6 +91,9 @@ public class GatewayIdentityService {
             .header(
                 HEADER_AUTH_USER_DIVISION,
                 user.getDivision() == null ? "" : user.getDivision().name())
+            .header(
+                HEADER_AUTH_USER_BIRTH_YEAR,
+                user.getBirthYear() == null ? "" : String.valueOf(user.getBirthYear()))
             .header(HEADER_INTERNAL_SECRET, internalSecret);
     if (actorId != null) {
       response.header(HEADER_AUTH_ACTOR_ID, String.valueOf(actorId));

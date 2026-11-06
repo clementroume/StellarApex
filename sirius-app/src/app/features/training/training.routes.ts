@@ -21,9 +21,11 @@ export const TRAINING_ROUTES: Routes = [
     path: 'sessions/:id/edit', data: {personal: true},
     loadComponent: () => import('../sessions/session-form/session-form.component').then(c => c.SessionFormComponent)
   },
+  // Per-movement records (lot C)
+  {path: 'records', loadComponent: () => import('../records/my-records.component').then(c => c.MyRecordsComponent)},
   {
-    path: 'records', component: SpacePlaceholderComponent,
-    data: {titleKey: 'TRAINING.RECORDS.TITLE', descriptionKey: 'TRAINING.RECORDS.COMING', icon: 'heroTrophy'}
+    path: 'records/:movementId', data: {page: true},
+    loadComponent: () => import('../records/lift-records.component').then(c => c.LiftRecordsComponent)
   },
   {
     path: 'review', component: SpacePlaceholderComponent,

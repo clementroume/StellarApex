@@ -105,7 +105,8 @@ docker compose logs -f antares-auth
 * `GET /verify/admin`: Forward Auth for admin-only services (e.g., Grafana, Traefik).
 * `GET /verify/api`: Forward Auth for backend API services (e.g., Aldebaran). Sends
   `X-Auth-User-Role` (platform role), `X-Auth-Memberships` (`gymId:ROLE:PERM+PERM,...`, usable
-  memberships with effective permissions) and `X-Auth-User-Division` (`MEN`, `WOMEN`, empty). During a support session these describe the target
+  memberships with effective permissions), `X-Auth-User-Division` (`MEN`, `WOMEN`, empty) and
+  `X-Auth-User-Birth-Year` (year or empty: Aldebaran only derives the age group of a score). During a support session these describe the target
   user, plus `X-Auth-Actor-Id` (the admin). See `GatewayIdentityService`.
 
 ### User (`/antares/users`)
@@ -209,8 +210,10 @@ without it the answer is a bare 404.
 * `GET /gyms/{gymId}`: `{programming}`, whether the gym is a virtual programming (404 if unknown).
 * `GET /gyms/{gymId}/members/{userId}`: `{member}`, whether the user holds a usable membership in the
   gym (ACTIVE, and ACTIVE gym or OWNER/PROGRAMMER).
-* `GET /users/{userId}/division`: `{division}` only (404 if unknown), for a score staff log for an
-  athlete (the athlete's division, never the judge's).
+* `GET /users/{userId}/division`: `{division, birthYear}` only (404 if unknown), for a score staff log
+  for an athlete (the athlete's division and age group, never the judge's).
+* `GET /gyms/{gymId}/member-ids`: IDs of the gym's usable members (empty for an unknown gym), for the
+  records board of a box.
 
 ## Account E-mails
 

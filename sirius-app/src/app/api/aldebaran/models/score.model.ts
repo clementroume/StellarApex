@@ -1,5 +1,6 @@
 import {Division} from '../../antares/models/user.model';
 import {WodSummaryResponse} from './wod.model';
+import {AgeGroup} from './record.model';
 
 /** Level at which a WOD was performed; personal records rank ELITE (Rx+) > RX > SCALED > CUSTOM. */
 export type ScalingLevel = 'RX' | 'SCALED' | 'ELITE' | 'CUSTOM';
@@ -94,6 +95,8 @@ export interface ScoreResponse {
   personalRecord: boolean;
   // Athlete's division when the score was logged (null: not chosen yet)
   division?: Division | null;
+  // Athlete's age group in the year of the score (CrossFit Open brackets; null: no birth year)
+  ageGroup?: AgeGroup | null;
   // --- Comments and Scaling notes---
   userComment?: string;
   scalingNotes?: string;

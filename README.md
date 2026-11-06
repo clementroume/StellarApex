@@ -210,6 +210,8 @@ check (a skipped service counts as success), and a new push on a pull request ca
       (`gymId:ROLE:PERM+PERM,...`)
     - `X-Auth-User-Division`: competition division (`MEN`, `WOMEN`, empty when not chosen),
       copied by Aldebaran on each score the user logs
+    - `X-Auth-User-Birth-Year`: birth year (empty when not given); Aldebaran only copies the
+      CrossFit Open age group of each score's year, never the year
     - `X-Auth-Actor-Id`: the admin's id during a support session
     - `X-Internal-Secret`: proves the headers come from Antares
 

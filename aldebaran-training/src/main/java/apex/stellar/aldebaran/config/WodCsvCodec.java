@@ -76,7 +76,9 @@ public final class WodCsvCodec {
     "structure",
     // Team WOD: athletes per team and how they share the work
     "team_size",
-    "team_mode"
+    "team_mode",
+    // N of an "N RM" test (For Load, one movement)
+    "rep_max"
   };
 
   static final String[] WOD_MOVEMENT_HEADERS = {
@@ -108,7 +110,10 @@ public final class WodCsvCodec {
     "segment",
     "complex_group",
     // Team WOD line: TOTAL (blank), EACH or TOGETHER
-    "team_split"
+    "team_split",
+    // Load as a percentage of the athlete's RM (base version), and the N of that RM
+    "percent_of_rm",
+    "rm_reps"
   };
 
   /** Separator of the equipment / technique lists (free text, so not a comma). */
@@ -144,6 +149,7 @@ public final class WodCsvCodec {
               .structure(format.structure())
               .teamSize(integer(row, "team_size"))
               .teamMode(enumValue(row, "team_mode", Wod.TeamMode.class))
+              .repMax(integer(row, "rep_max"))
               .category(category(row))
               .scoreType(scoreType(row))
               .repScheme(text(row, "rep_scheme"))
@@ -224,6 +230,8 @@ public final class WodCsvCodec {
                   Objects.requireNonNullElse(
                       enumValue(row, "team_split", WodMovement.TeamSplit.class),
                       WodMovement.TeamSplit.TOTAL))
+              .percentOfRm(decimal(row, "percent_of_rm"))
+              .rmReps(integer(row, "rm_reps"))
               .build();
       wodMovement.checkVariantsAllowed(
           movement.getName(), movement.getEquipment(), movement.getTechniques());
@@ -278,7 +286,8 @@ public final class WodCsvCodec {
             name(w.getVestWeightUnit()),
             name(w.getStructure()),
             w.getTeamSize(),
-            name(w.getTeamMode()));
+            name(w.getTeamMode()),
+            w.getRepMax());
 
         List<WodMovement> movements = new ArrayList<>(w.getMovements());
         movements.sort(Comparator.comparing(WodMovement::getOrderIndex));
@@ -309,7 +318,9 @@ public final class WodCsvCodec {
               wm.getSets(),
               wm.getSegment() == Segment.MAIN ? null : wm.getSegment().name(),
               wm.getComplexGroup(),
-              wm.getTeamSplit() == WodMovement.TeamSplit.TOTAL ? null : wm.getTeamSplit().name());
+              wm.getTeamSplit() == WodMovement.TeamSplit.TOTAL ? null : wm.getTeamSplit().name(),
+              wm.getPercentOfRm(),
+              wm.getRmReps());
         }
       }
     }

@@ -8,7 +8,11 @@ import {MuscleRefResponse, MuscleResponse} from '../../../api/aldebaran/models/m
 import {AccessService} from '../../../core/services/access.service';
 import {MovementService} from '../../../api/aldebaran/services/movement.service';
 import {NotificationService} from '../../../core/services/notification.service';
-import {HttpErrorResponse} from '@angular/common/http';
+import {HttpContext, HttpErrorResponse} from '@angular/common/http';
+import {forkJoin} from 'rxjs';
+import {RecordService} from '../../../api/aldebaran/services/record.service';
+import {BYPASS_LOADER} from '../../../core/interceptors/loading.interceptor';
+import {LiftRecordsComponent} from '../../records/lift-records.component';
 import {
   DetailAdminActionsComponent
 } from '../../../shared/component/detail/detail-admin-actions/detail-admin-actions.component';
@@ -21,7 +25,7 @@ import {HlmButton} from '@spartan-ng/helm/button';
 @Component({
   selector: 'app-movement-detail',
   standalone: true,
-  imports: [HlmButton, HlmBadge, TranslatePipe, RouterModule, NgIconComponent, NgOptimizedImage, NgTemplateOutlet, DetailAdminActionsComponent, DetailCardComponent, DetailHeaderComponent, DetailStateComponent],
+  imports: [HlmButton, HlmBadge, TranslatePipe, RouterModule, NgIconComponent, NgOptimizedImage, NgTemplateOutlet, DetailAdminActionsComponent, DetailCardComponent, DetailHeaderComponent, DetailStateComponent, LiftRecordsComponent],
   templateUrl: './movement-detail.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
@@ -34,6 +38,7 @@ export class MovementDetailComponent {
   private readonly notificationService = inject(NotificationService);
   private readonly router = inject(Router);
   private readonly location = inject(Location);
+  private readonly recordService = inject(RecordService);
 
   // --- STATE (SIGNALS) ---
   activeLang = computed(() => this.translate.currentLang() ?? this.translate.fallbackLang() ?? 'en');
@@ -41,12 +46,15 @@ export class MovementDetailComponent {
 
   movement = signal<MovementResponse | null>(null);
   isLoading = signal<boolean>(true); // Nouvel état explicite
+  /** Shows the user's records block when they hold one on this movement or it has canonical tests (lot C). */
+  readonly showRecords = signal<boolean>(false);
 
   constructor() {
     effect(() => {
       const currentId = Number(this.id());
       if (currentId && !Number.isNaN(currentId)) {
         this.loadMovement(currentId);
+        this.loadRecords(currentId);
       }
     });
   }
@@ -65,6 +73,17 @@ export class MovementDetailComponent {
         this.isLoading.set(false);
         this.location.back();
       }
+    });
+  }
+
+  private loadRecords(id: number): void {
+    // Both lists are cached by RecordService: the block itself loads the details
+    const context = new HttpContext().set(BYPASS_LOADER, true);
+    this.showRecords.set(false);
+    forkJoin([this.recordService.getMyRecords(context), this.recordService.getCanonicalLifts(context)]).subscribe({
+      next: ([records, lifts]) =>
+        this.showRecords.set(records.some(r => r.movementId === id) || lifts.some(l => l.movementId === id)),
+      error: () => this.showRecords.set(false)
     });
   }
 

@@ -68,7 +68,23 @@
           @if (teamSplit(wm, wod()); as split) {
             <span class="team-split text-muted-foreground">{{ split }}</span>
           }
+          @if (wm.percentOfRm) {
+            @if (percentLoad(wm); as load) {
+              <span class="ml-auto rounded-md px-2 py-0.5 text-base font-bold" data-slot="percent"
+                    [class]="load.estimated ? 'border border-dashed border-secondary text-foreground' : 'bg-secondary/20 text-foreground'">
+                @if (load.estimated) {≈ }{{ load.text }}
+              </span>
+            } @else if (myRecords() !== null) {
+              <a [routerLink]="['/training/records', wm.movement.id]" class="ml-auto text-sm text-primary hover:underline"
+                 data-slot="percent-no-record">{{ 'RECORDS.PERCENT.NO_RECORD' | translate: {reps: wm.rmReps ?? 1} }} ›</a>
+            }
+          }
         </div>
+        @if (wm.percentOfRm) {
+          <p class="text-sm text-muted-foreground" data-slot="percent-source">
+            {{ percentLoad(wm)?.source ?? percentLabel(wm) }}
+          </p>
+        }
         @if (movementNotes(wm); as n) {
           <p class="text-sm text-muted-foreground whitespace-pre-line">{{ n }}</p>
         }

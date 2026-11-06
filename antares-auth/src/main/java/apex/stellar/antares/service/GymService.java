@@ -199,6 +199,21 @@ public class GymService {
   }
 
   /**
+   * The IDs of a gym's usable members, sorted (internal API for Aldebaran's box records board).
+   *
+   * @param gymId The unique identifier of the gym.
+   * @return The user IDs, empty when the gym has none or does not exist.
+   */
+  @Transactional(readOnly = true)
+  public List<Long> getUsableMemberIds(Long gymId) {
+    return membershipRepository.findByGymId(gymId).stream()
+        .filter(Membership::isUsable)
+        .map(Membership::getUserId)
+        .sorted()
+        .toList();
+  }
+
+  /**
    * Tells whether a gym is a virtual programming (internal API for Aldebaran).
    *
    * @param gymId The unique identifier of the gym.

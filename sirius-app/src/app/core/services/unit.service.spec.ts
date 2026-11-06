@@ -101,6 +101,15 @@ describe('UnitService', () => {
     expect(service.formatScoreLoad(null, 'KG')).toBe('');
   });
 
+  it('should round a percentage load to 1 kg or 2.5 lb (D60)', () => {
+    service.setUnitSystem('METRIC');
+    expect(service.formatPercentLoad(96.4)).toBe('96 kg');
+    expect(service.formatPercentLoad(96.5)).toBe('97 kg');
+
+    service.setUnitSystem('IMPERIAL');
+    expect(service.formatPercentLoad(96)).toBe('212.5 lb');
+  });
+
   it('should return an empty text without a load', () => {
     expect(service.formatLoad(undefined, undefined, 'KG')).toBe('');
     expect(service.formatDistance(null, null, 'METERS')).toBe('');

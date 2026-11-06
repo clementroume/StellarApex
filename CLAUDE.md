@@ -52,6 +52,9 @@ Traefik strip client-forged values; any new header MUST be added there):
   the user logs (`scores.division`); a score staff log for an athlete takes the athlete's division
   from Antares `GET /antares/internal/users/{id}/division`, never the judge's. A division change applies
   to the next scores (older null-division scores are classified at the athlete's next score)
+- `X-Auth-User-Birth-Year`: year | empty; Aldebaran never stores it, only the CrossFit Open age group
+  of the score's year (`scores.age_group`, same copy rules as the division: the internal division
+  endpoint also returns the athlete's `birthYear` for staff-logged scores)
 - `X-Auth-Actor-Id`: admin id, only during a support session (the other headers then describe the
   target user)
 
@@ -126,6 +129,17 @@ and a virtual programming); there is no "active gym" in requests.
   the block's WOD is a box competition WOD (the Open is copied), athletes submit their score to the
   judges. `SessionResponse.capabilities {canModify, canDelete, contentVisible, canLog}`, per block
   `SessionBlockResponse.capabilities {canModify, canDelete, frozen}`.
+- Records (lot C, D47-D62): Aldebaran `movement_records` = best load per athlete, movement, variant key
+  (equipment + techniques, implied barbell removed) and reps, rebuilt on every score write from the
+  individual single-movement lift WODs (`WEIGHT` / `LOAD` / `NONE` with sets): every complete set
+  feeds its N RM, a score without sets on an "N RM" test (`wods.rep_max`) feeds N; every scaling and
+  unverified scores count, team scores never. `GET /records/me` (with Epley 1RM estimate, 2-10 reps,
+  never stored; `estimates` of the usual 1/2/3/5/10 RM without a record, `previousWeightKg` per record),
+  `GET /records/me/progress` (successive bests), `GET /records/lifts` (public N RM tests, competition
+  events such as Open 18.2a excluded = lift leaderboards, with `ageGroup` filter),
+  `GET /records/gyms/{gymId}` (members of that gym or admin: current usable members' base records,
+  list from Antares `GET /internal/gyms/{id}/member-ids`). Sirius shows `percentOfRm` / `rmReps` loads
+  from the base version's record (else the estimated 1RM), rounded to 1 kg / 2.5 lb.
 - Internal API: Antares `/antares/internal/**` (membership check, gym type; Aldebaran → `http://antares-auth:8080`,
   `X-Internal-Secret`, 404 without it, excluded from the Traefik `/antares` route). Aldebaran calls it
   through `client/AntaresClient` only.
@@ -150,7 +164,8 @@ hashed tokens in Redis, sent in the URL fragment) over generic SMTP (`MAIL_*` en
 `EMAIL_NOT_VERIFIED`); registrations and reset requests are throttled per client IP (last
 `X-Forwarded-For` entry, set by Traefik). A password reset ends every session (refresh token deleted,
 older access tokens refused). Athlete profile (division, birth year, height, body weights): only the
-division is shared; the rest is private to its owner, never on a leaderboard.
+division and the age group derived from the birth year are shared; the rest is private to its owner,
+never on a leaderboard.
 
 Temporary dev data (`dev` Spring profile, set in `docker-compose.yml`, to be removed like the CSV
 export): test gyms "Spartacus CrossFit" (physical), "Zeus Programming" (virtual), "Pending Box" and

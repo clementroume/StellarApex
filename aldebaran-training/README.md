@@ -79,6 +79,8 @@ request and forwards these headers, checked with `X-Internal-Secret`:
   `12:COACH:WOD_WRITE+SCORE_VERIFY,15:ATHLETE:`
 * `X-Auth-User-Division`: `MEN`, `WOMEN` or empty (athlete profile in Antares), copied on the
   scores the user logs
+* `X-Auth-User-Birth-Year`: year or empty, never stored: only the age group of the score's year is
+  copied on the scores the user logs (`scores.age_group`)
 * `X-Auth-Actor-Id`: set when a platform admin acts as this user through an audited support
   session. The other headers then describe the target user, whose rights apply unchanged; every
   non-GET request is logged at INFO (actor, user, method, path, status) by
@@ -232,6 +234,33 @@ Sunday); the same blocks at two dates are two sessions. Disciplines: `CROSSFIT`,
 * `POST /`, `PUT /{id}`, `DELETE /{id}`: manage a WOD (rules above). A session WOD answers 400
   (edited through its session); a WOD borrowed by a session block cannot be deleted (409).
 * `GET /reference-data`: WOD formats, categories, score types and unit groups.
+* `repMax` (V18): N of an "N RM" test, only on an individual For Load WOD with one movement (400
+  otherwise). Per line, `percentOfRm` (0-150) and `rmReps` (default 1 with a percentage, dropped
+  without): the load as a percentage of the athlete's RM of the base version of the movement.
+
+### Records (`/aldebaran/records`, lot C)
+
+`movement_records` (V18) holds each athlete's best load per movement, variant key and number of reps,
+rebuilt by `MovementRecordService.rebuild(userId, movementId)` after every score write, correction or
+deletion, and once at startup when the table is empty (`config/MovementRecordBackfill`).
+
+* Sources: individual WODs with a single main movement scored `WEIGHT`, `LOAD` or `NONE` (any format):
+  every complete set with a load is a candidate for the N RM of its reps; a score without sets on an
+  "N RM" test (`repMax`) is a candidate for N. Every scaling level and unverified scores count; team
+  scores and multi-movement WODs never do. On a tie the earliest day keeps the record.
+* Variant key (`service/LiftVariant`): sorted equipment `;` sorted techniques of the WOD line, the
+  implied equipment removed (the barbell when the movement allows it, else its only equipment); `''`
+  is the base version.
+* `GET /me[?movementId=]`: the caller's records by movement (name order, with its `category`) and
+  variant (base first), with `estimatedOneRepMaxKg` (Epley from the 2-10 rep records), `estimates`
+  (the usual 1/2/3/5/10 RM without a record, Epley from the real 1RM else the estimated one) and, per
+  record, `previousWeightKg` (best load before its day, V19); estimates are displayed only, never stored.
+* `GET /me/progress?movementId=&reps=1`: each day the caller set a new best N RM on the base version.
+* `GET /lifts`: canonical lifts, i.e. public "N RM" tests of a base-version movement (one per movement
+  and N, official competition events excluded: an Open 1RM still feeds the records but is never the
+  lift's test); their WOD leaderboard is the lift leaderboard.
+* `GET /gyms/{gymId}?movementId=`: records board of a box: base-version records of the gym's current
+  usable members (Antares `member-ids`, 503 if unavailable), wherever set; members of the gym or admin.
 
 ### Scores (`/aldebaran/scores`)
 
@@ -260,7 +289,8 @@ Sunday); the same blocks at two dates are two sessions. Disciplines: `CROSSFIT`,
 * `GET /leaderboard/{id}`: leaderboard of a WOD (`scaling`, default `RX`): each athlete's PR at that
   level; optional `gymIds` (comma-separated, all among the caller's gyms, 403 otherwise) keeps the
   scores performed there (e.g. the caller's boxes, or programs), `verifiedOnly=true` the
-  verified ones, `division` (`MEN`, `WOMEN`) the scores logged in that division and `sessionId` the
+  verified ones, `division` (`MEN`, `WOMEN`) the scores logged in that division, `ageGroup`
+  (`AGE_15_AND_UNDER` ... `AGE_65_PLUS`, CrossFit Open brackets) the scores logged in that age group, and `sessionId` the
   scores logged in that session's journals (session leaderboard; the session content must be visible
   to the caller, `SessionSecurity.canReadContent`, 403 otherwise). Filters apply before choosing each athlete's best score: an athlete is ranked by
   their best kept score, which may not be their PR (done in another gym, or not verified yet).
@@ -270,6 +300,10 @@ Sunday); the same blocks at two dates are two sessions. Disciplines: `CROSSFIT`,
   (`GET /antares/internal/users/{id}/division`, 503 if unavailable), never the judge's. A score logged
   with a division also classifies the athlete's older scores without one. A division change applies
   to the scores logged afterwards; scores without a division only appear on the "all" leaderboard.
+* Age group (V18, `scores.age_group`): age = year of the score − birth year, CrossFit Open brackets,
+  computed at logging from `X-Auth-User-Birth-Year` (own score) or Antares' `birthYear` (staff score);
+  the birth year is never stored. Older scores without a group get the group of their own year at the
+  athlete's next score. Team scores have none.
 * `POST /{id}/verify`, `DELETE /{id}/verify`: verify a submitted competition score or withdraw the
   verification (rules above; 400 outside a competition WOD or for a score not submitted).
 * `GET /verification-queue/{wodId}`: submitted scores of a competition WOD not verified yet, oldest

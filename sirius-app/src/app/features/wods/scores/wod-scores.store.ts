@@ -3,6 +3,7 @@ import {HttpErrorResponse} from '@angular/common/http';
 import {TranslateService} from '@ngx-translate/core';
 import {Subject} from 'rxjs';
 import {ScoreService} from '../../../api/aldebaran/services/score.service';
+import {RecordService} from '../../../api/aldebaran/services/record.service';
 import {ScoreComparisonResponse, ScoreRequest, ScoreResponse} from '../../../api/aldebaran/models/score.model';
 import {WodResponse} from '../../../api/aldebaran/models/wod.model';
 import {NotificationService} from '../../../core/services/notification.service';
@@ -20,6 +21,7 @@ const HISTORY_SIZE = 50;
 export class WodScoresStore {
   // --- INJECTIONS ---
   private readonly scoreService = inject(ScoreService);
+  private readonly recordService = inject(RecordService);
   private readonly notificationService = inject(NotificationService);
   private readonly translate = inject(TranslateService);
 
@@ -141,6 +143,8 @@ export class WodScoresStore {
     this.close();
     const wod = this.wod();
     if (wod) this.load(wod);
+    // A score may set or remove a movement record
+    this.recordService.invalidate();
     this.changed$.next();
   }
 

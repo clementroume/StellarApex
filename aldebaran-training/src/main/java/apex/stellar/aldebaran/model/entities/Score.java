@@ -1,5 +1,6 @@
 package apex.stellar.aldebaran.model.entities;
 
+import apex.stellar.aldebaran.model.enums.AgeGroup;
 import apex.stellar.aldebaran.model.enums.Division;
 import apex.stellar.aldebaran.model.enums.Unit;
 import apex.stellar.aldebaran.validation.ValidScore;
@@ -156,6 +157,14 @@ public class Score {
   @Enumerated(EnumType.STRING)
   @Column(length = 10)
   private Division division;
+
+  /**
+   * Age group of the athlete in the year of the score (null: no birth year). Derived at logging
+   * from the birth year, which is never stored (D55).
+   */
+  @Enumerated(EnumType.STRING)
+  @Column(name = "age_group", length = 20)
+  private AgeGroup ageGroup;
 
   /** Team of a team WOD score (members share the performance), or null. */
   @ManyToOne(fetch = FetchType.LAZY)

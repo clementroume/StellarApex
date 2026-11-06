@@ -47,7 +47,8 @@ class AthleteProfileIT extends BaseIntegrationTest {
     mockMvc
         .perform(get("/antares/auth/verify/api").cookie(cookies))
         .andExpect(status().isOk())
-        .andExpect(header().string("X-Auth-User-Division", ""));
+        .andExpect(header().string("X-Auth-User-Division", ""))
+        .andExpect(header().string("X-Auth-User-Birth-Year", ""));
 
     putProfile(new AthleteProfileRequest(Division.WOMEN, 1992, 168))
         .andExpect(status().isOk())
@@ -60,7 +61,8 @@ class AthleteProfileIT extends BaseIntegrationTest {
         .andExpect(jsonPath("$.division").value("WOMEN"));
     mockMvc
         .perform(get("/antares/auth/verify/api").cookie(cookies))
-        .andExpect(header().string("X-Auth-User-Division", "WOMEN"));
+        .andExpect(header().string("X-Auth-User-Division", "WOMEN"))
+        .andExpect(header().string("X-Auth-User-Birth-Year", "1992"));
 
     // Null clears
     putProfile(new AthleteProfileRequest(null, null, null))
@@ -120,9 +122,9 @@ class AthleteProfileIT extends BaseIntegrationTest {
   }
 
   @Test
-  @DisplayName("internal API: a user's division only, with the secret; 404 for an unknown user")
+  @DisplayName("internal API: a user's division and birth year only, with the secret; 404 for an unknown user")
   void internalDivision() throws Exception {
-    putProfile(new AthleteProfileRequest(Division.MEN, null, null)).andExpect(status().isOk());
+    putProfile(new AthleteProfileRequest(Division.MEN, 1988, null)).andExpect(status().isOk());
     String me =
         mockMvc
             .perform(get("/antares/users/me").cookie(cookies))
@@ -136,6 +138,8 @@ class AthleteProfileIT extends BaseIntegrationTest {
         .perform(get(url).header("X-Internal-Secret", "test-internal-secret"))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.division").value("MEN"))
+        .andExpect(jsonPath("$.birthYear").value(1988))
+        .andExpect(jsonPath("$.heightCm").doesNotExist())
         .andExpect(jsonPath("$.email").doesNotExist());
     mockMvc.perform(get(url)).andExpect(status().isNotFound());
     mockMvc

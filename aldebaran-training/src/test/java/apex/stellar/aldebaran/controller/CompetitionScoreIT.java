@@ -9,6 +9,7 @@ import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import apex.stellar.aldebaran.client.AntaresClient.AthleteFacts;
 import apex.stellar.aldebaran.config.BaseIntegrationTest;
 import apex.stellar.aldebaran.dto.ScoreRequest;
 import apex.stellar.aldebaran.dto.WodCopyRequest;
@@ -167,7 +168,7 @@ class CompetitionScoreIT extends BaseIntegrationTest {
   @DisplayName("Division: own score copies the header, a judge's score the athlete's division")
   void divisionCopiedAtLogging() throws Exception {
     when(antaresClient.isGymMember(GYM, ATHLETE)).thenReturn(true);
-    when(antaresClient.getUserDivision(ATHLETE)).thenReturn(Division.WOMEN);
+    when(antaresClient.getAthleteFacts(ATHLETE)).thenReturn(new AthleteFacts(Division.WOMEN, null));
     // An older score of the athlete, logged before they chose a division
     Score older = saveScore(ATHLETE, false);
 

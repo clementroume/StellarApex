@@ -146,6 +146,73 @@
     "WOMEN": "Femmes",
     "MIXED": "Mixte"
   },
+  "AGE_GROUP": {
+    "LABEL": "Âge",
+    "ALL": "Tous âges",
+    "AGE_15_AND_UNDER": "15 ans et moins",
+    "AGE_16_17": "16-17 ans",
+    "AGE_18_34": "18-34 ans",
+    "AGE_35_39": "35-39 ans",
+    "AGE_40_44": "40-44 ans",
+    "AGE_45_49": "45-49 ans",
+    "AGE_50_54": "50-54 ans",
+    "AGE_55_59": "55-59 ans",
+    "AGE_60_64": "60-64 ans",
+    "AGE_65_PLUS": "65 ans et plus"
+  },
+  "RECORDS": {
+    "SUBTITLE": "Tes meilleures charges par mouvement : chaque série complète compte (un 3RM sorti d'un 3×3), comme chaque test N RM.",
+    "LOAD_ERROR": "Impossible de charger les records. Réessaie plus tard.",
+    "RM": "{{reps}}RM",
+    "NO_BASE": "Pas encore de record sur la version de base.",
+    "TOTAL": "CrossFit Total",
+    "EMPTY": "Pas encore de record : saisis un test N RM ou tes séries de force.",
+    "TO_TEST": "Tester un RM",
+    "MY_MOVEMENT": "Mes records",
+    "PERCENT": {
+      "OF": "{{percent}} % du {{reps}}RM",
+      "NO_RECORD": "saisir mon {{reps}}RM",
+      "SOURCE": "{{percent}} % de ton {{reps}}RM ({{load}}, {{date}})",
+      "SOURCE_BASE": "{{percent}} % du {{reps}}RM de {{movement}} ({{load}})",
+      "SOURCE_ESTIMATED": "{{percent}} % du 1RM estimé ({{load}})"
+    },
+    "BOARD": {
+      "SUBTITLE": "Les records des membres de ta box sur les grands lifts, où qu'ils aient été faits.",
+      "GYM": "Box / prog",
+      "LIFT": "Lift",
+      "REPS": "Répétitions",
+      "EMPTY": "Aucun record sur ce lift pour l'instant.",
+      "LOG_MINE": "Saisir mon {{reps}}RM",
+      "FILTERS": "Filtres",
+      "ME": "Toi",
+      "RANK": "{{rank}}e",
+      "GAP": "à {{gap}} du {{rank}}e"
+    },
+    "FAMILY": "Famille de lifts",
+    "FAMILIES": {
+      "ALL": "Tous",
+      "SQUAT": "Squats",
+      "HINGE": "Hinge",
+      "PRESS": "Press",
+      "WEIGHTLIFTING": "Haltéro",
+      "OTHER": "Autres"
+    },
+    "ESTIMATED_FROM": "estimé · {{reps}}RM",
+    "PR": "PR",
+    "UNTESTED": "{{count}} lifts sans record",
+    "LIFT": {
+      "SUBTITLE": "Tes RM, la table des % et ta progression.",
+      "MOVEMENT": "Fiche du mouvement",
+      "TEST": "Tester",
+      "ESTIMATED": "estimé",
+      "PERCENTS": "Table des %",
+      "BASE": "base 1RM {{load}}",
+      "BASE_ESTIMATED": "base 1RM estimé {{load}}",
+      "VARIANTS": "Variantes",
+      "PROGRESS": "Progression du 1RM",
+      "PROGRESS_LABEL": "Le 1RM est passé de {{from}} à {{to}}"
+    }
+  },
   "SETTINGS": {
     "TITLE": "Sécurité",
     "PASSWORD_SUBTITLE": "Changez votre mot de passe. Il doit contenir au moins 8 caractères.",
@@ -585,7 +652,9 @@
       "SCOPE": "Portée",
       "SETS": "Séries",
       "STRUCTURE": "Sous-catégorie",
-      "DURATION_SHORT": "Durée"
+      "DURATION_SHORT": "Durée",
+      "REP_MAX": "Test N RM (N)",
+      "REP_MAX_HINT": "Un seul mouvement : le score devient le record N RM de l’athlète (vide sinon)."
     },
     "PLACEHOLDERS": {
       "TITLE": "Ex : Fran",
@@ -721,7 +790,8 @@
       "LADDER_PYRAMID": "Valeurs / pyramide",
       "ADD_BUY_IN": "Ajouter un buy-in",
       "ADD_CASH_OUT": "Ajouter un cash-out",
-      "SEGMENT": "Partie du WOD"
+      "SEGMENT": "Partie du WOD",
+      "PERCENT": "% du 1RM"
     },
     "CATALOGUE_SUBTITLE": "Les WODs de référence : Girls, Hero, benchmarks, Open… Programme-les dans une séance de ta box.",
     "SEGMENTS": {
@@ -1058,8 +1128,7 @@
       "SCORES": "Scores"
     },
     "RECORDS": {
-      "TITLE": "Records",
-      "COMING": "Tes records par mouvement (1RM, 3RM, max reps…) et leur progression arriveront ici."
+      "TITLE": "Records"
     },
     "REVIEW": {
       "TITLE": "Bilan",
@@ -1078,8 +1147,7 @@
       "TITLE": "Séances"
     },
     "LEADERBOARDS": {
-      "TITLE": "Classements",
-      "COMING": "Les classements de ta box ou ta prog arriveront ici. En attendant, ils sont sur chaque WOD."
+      "TITLE": "Classements"
     },
     "MEMBERS": {
       "TITLE": "Membres",

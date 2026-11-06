@@ -48,4 +48,8 @@ public record WodMovementResponse(
     Integer complexGroup,
 
     // --- Team WOD: TOTAL, EACH or TOGETHER ---
-    TeamSplit teamSplit) {}
+    TeamSplit teamSplit,
+
+    // --- Load as a percentage of the athlete's rmReps RM (base version), or null ---
+    Double percentOfRm,
+    Integer rmReps) {}

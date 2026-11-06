@@ -75,6 +75,9 @@ type MovementRow = FormGroup<{
   techniques: FormControl<string[]>;
   segment: FormControl<WodSegment>;
   teamSplit: FormControl<TeamSplit>;
+  // For Load: load as a percentage of the RM of rmReps reps (1RM unless set elsewhere)
+  percentOfRm: FormControl<number | null>;
+  rmReps: FormControl<number | null>;
 }>;
 
 /**
@@ -458,7 +461,9 @@ export class WodQuickFormComponent implements OnInit {
         techniques: r.techniques,
         segment: segments ? r.segment : 'MAIN',
         teamSplit: this.showTeam() ? r.teamSplit : 'TOTAL',
-        complexGroup: complex ? 1 : null
+        complexGroup: complex ? 1 : null,
+        percentOfRm: category === 'FOR_LOAD' ? r.percentOfRm ?? null : null,
+        rmReps: category === 'FOR_LOAD' && r.percentOfRm != null ? r.rmReps ?? 1 : null
       };
     });
     const minutes = v.minutes != null && v.minutes > 0 ? Math.round(v.minutes * 60) : undefined;
@@ -619,7 +624,9 @@ export class WodQuickFormComponent implements OnInit {
         height: wm.height ?? null, heightFemale: wm.heightFemale ?? null,
         equipment: wm.equipment ?? [], techniques: wm.techniques ?? [],
         segment: wm.segment ?? 'MAIN',
-        teamSplit: wm.teamSplit ?? 'TOTAL'
+        teamSplit: wm.teamSplit ?? 'TOTAL',
+        percentOfRm: wm.percentOfRm ?? null,
+        rmReps: wm.rmReps ?? null
       }));
       this.loadDetail(wm.movement.id);
     });
@@ -647,7 +654,9 @@ export class WodQuickFormComponent implements OnInit {
       equipment: new FormControl<string[]>(v.equipment ?? [], {nonNullable: true}),
       techniques: new FormControl<string[]>(v.techniques ?? [], {nonNullable: true}),
       segment: new FormControl<WodSegment>(v.segment ?? 'MAIN', {nonNullable: true}),
-      teamSplit: new FormControl<TeamSplit>(v.teamSplit ?? 'TOTAL', {nonNullable: true})
+      teamSplit: new FormControl<TeamSplit>(v.teamSplit ?? 'TOTAL', {nonNullable: true}),
+      percentOfRm: new FormControl<number | null>(v.percentOfRm ?? null, [Validators.min(1), Validators.max(150)]),
+      rmReps: new FormControl<number | null>(v.rmReps ?? null)
     });
   }
 
