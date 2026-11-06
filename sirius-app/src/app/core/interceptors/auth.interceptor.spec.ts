@@ -22,6 +22,7 @@ describe('authInterceptor', () => {
     authServiceSpy = {
       refreshToken: vi.fn().mockName("AuthService.refreshToken"),
       logout: vi.fn().mockName("AuthService.logout"),
+      ensureCsrfToken: vi.fn().mockName("AuthService.ensureCsrfToken").mockReturnValue(of(undefined)),
       isAuthenticated: vi.fn().mockName("AuthService.isAuthenticated").mockReturnValue(true)
     } as any;
     supportSessionSpy = {handleExpired: vi.fn().mockName('SupportSessionService.handleExpired')};
@@ -135,5 +136,41 @@ describe('authInterceptor', () => {
     expect(authServiceSpy.refreshToken).toHaveBeenCalledTimes(1);
     expect(authServiceSpy.logout).not.toHaveBeenCalled();
     expect(routerSpy.navigate).not.toHaveBeenCalled();
+  });
+
+  it('should fetch a CSRF token and retry once on 403 CSRF_INVALID, without logout', () => {
+    let result: unknown;
+    httpClient.post(`${baseApiUrl}/gyms/join`, {}).subscribe(r => result = r);
+
+    httpMock.expectOne(`${baseApiUrl}/gyms/join`)
+      .flush({code: 'CSRF_INVALID'}, {status: 403, statusText: 'Forbidden'});
+    expect(authServiceSpy.ensureCsrfToken).toHaveBeenCalledTimes(1);
+
+    httpMock.expectOne(`${baseApiUrl}/gyms/join`).flush({ok: true});
+    expect(result).toEqual({ok: true});
+    expect(authServiceSpy.refreshToken).not.toHaveBeenCalled();
+    expect(authServiceSpy.logout).not.toHaveBeenCalled();
+  });
+
+  it('should not retry twice nor logout when the retry is rejected again', () => {
+    let status = 0;
+    httpClient.post(`${baseApiUrl}/gyms/join`, {}).subscribe({error: (err: HttpErrorResponse) => status = err.status});
+
+    httpMock.expectOne(`${baseApiUrl}/gyms/join`)
+      .flush({code: 'CSRF_INVALID'}, {status: 403, statusText: 'Forbidden'});
+    httpMock.expectOne(`${baseApiUrl}/gyms/join`)
+      .flush({code: 'CSRF_INVALID'}, {status: 403, statusText: 'Forbidden'});
+
+    expect(status).toBe(403);
+    expect(authServiceSpy.ensureCsrfToken).toHaveBeenCalledTimes(1);
+    expect(authServiceSpy.logout).not.toHaveBeenCalled();
+  });
+
+  it('should leave other 403 errors untouched', () => {
+    let status = 0;
+    httpClient.get(`${baseApiUrl}/gyms`).subscribe({error: (err: HttpErrorResponse) => status = err.status});
+    httpMock.expectOne(`${baseApiUrl}/gyms`).flush({}, {status: 403, statusText: 'Forbidden'});
+    expect(status).toBe(403);
+    expect(authServiceSpy.ensureCsrfToken).not.toHaveBeenCalled();
   });
 });
