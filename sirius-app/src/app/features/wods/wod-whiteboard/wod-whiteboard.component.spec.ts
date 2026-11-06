@@ -80,7 +80,7 @@ describe('WodWhiteboardComponent', () => {
 
     recordService.getMyRecords.mockReturnValue(of([{movementId: 1, movementName: 'Thruster', variants: [
       {variantKey: '', base: true, equipment: [], techniques: [], estimatedOneRepMaxKg: 110,
-        records: [{reps: 3, weightKg: 100, date: '2026-11-01', scoreId: 1, wodId: 1, wodTitle: 'W'}]}
+        records: [{reps: 3, weightKg: 100, date: '2026-11-01', scoreId: 1, wodId: 1, wodTitle: 'W'}], estimates: []}
     ]}]));
     const wod = buildWod({wodType: 'FOR_LOAD', movements: [
       {id: 11, movement: movement(1, 'Thruster'), orderIndex: 1, repsScheme: '3', sets: 5, percentOfRm: 80, rmReps: 1},
@@ -90,12 +90,15 @@ describe('WodWhiteboardComponent', () => {
     init(wod);
 
     expect(recordService.getMyRecords).toHaveBeenCalledTimes(1);
-    expect(component.percentLoad(wod.movements[0])).toEqual({text: '88 kg', estimated: true});
-    expect(component.percentLoad(wod.movements[1])).toEqual({text: '90 kg', estimated: false});
+    expect(component.percentLoad(wod.movements[0])).toMatchObject({text: '88 kg', estimated: true, source: 'RECORDS.PERCENT.SOURCE_ESTIMATED'});
+    expect(component.percentLoad(wod.movements[1])).toMatchObject({text: '90 kg', estimated: false, source: 'RECORDS.PERCENT.SOURCE'});
     expect(component.percentLoad(wod.movements[2])).toBeNull();
+    // A variant line refers to the record of the base version, and says so
+    expect(component.percentLoad({...wod.movements[1], techniques: ['PAUSED']})?.source).toBe('RECORDS.PERCENT.SOURCE_BASE');
     const percents = fixture.nativeElement.querySelectorAll('[data-slot="percent"]');
-    expect(percents.length).toBe(3);
-    expect(percents[0].textContent).toContain('88 kg');
+    expect(percents.length).toBe(2);
+    expect(percents[0].textContent).toContain('≈ 88 kg');
+    expect(fixture.nativeElement.querySelectorAll('[data-slot="percent-source"]').length).toBe(3);
     expect(fixture.nativeElement.querySelector('[data-slot="percent-no-record"]')).not.toBeNull();
 
     // A new score: the records are asked again

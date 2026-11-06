@@ -57,6 +57,10 @@ public class MovementRecord {
   @Column(name = "weight_kg", nullable = false)
   private Double weightKg;
 
+  /** Best load done before the day of the record (the record it beat), or null for a first one. */
+  @Column(name = "previous_weight_kg")
+  private Double previousWeightKg;
+
   /** Day of the score that set the record. */
   @Column(nullable = false)
   private LocalDate date;

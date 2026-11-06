@@ -49,13 +49,37 @@ describe('BoxRecordsComponent', () => {
     fixture.detectChanges();
   });
 
-  it('should open on the back squat 1RM of the first box, with names', () => {
+  it('should open on the back squat 1RM of the first box, with a podium, names and my line', () => {
     expect(recordService.getGymBoard).toHaveBeenCalledWith(5, 1, expect.anything());
-    const rows = fixture.nativeElement.querySelectorAll('[data-slot="board"] li');
-    expect(rows.length).toBe(2);
-    expect(rows[0].textContent).toContain('Anne L.');
-    expect(rows[0].textContent).toContain('150 kg');
+    const podium = Array.from(fixture.nativeElement.querySelectorAll('[data-slot="podium"] li')) as HTMLElement[];
+    expect(podium.length).toBe(2);
+    // Visual order: 2nd, then 1st
+    expect(podium[0].textContent).toContain('RECORDS.BOARD.ME');
+    expect(podium[1].textContent).toContain('Anne L.');
+    expect(podium[1].textContent).toContain('150 kg');
+    // On the podium: no pinned line
+    expect(component.mine()).toMatchObject({rank: 2, gapKg: 50});
+    expect(fixture.nativeElement.querySelector('[data-slot="mine"]')).toBeNull();
     expect(component.repsOptions()).toEqual([1, 3, 5]);
+  });
+
+  it('should pin my line under the board, with the gap to the athlete above, when off the podium', () => {
+    recordService.getGymBoard.mockReturnValue(of([150, 140, 130, 120, 100].map((kg, i) => (
+      {userId: i === 4 ? 8 : 20 + i, reps: 1, weightKg: kg, date: '2026-11-01', division: 'WOMEN', ageGroup: null}))));
+    component.onGymChange('6');
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelectorAll('[data-slot="board"] li').length).toBe(2);
+    const mine = fixture.nativeElement.querySelector('[data-slot="mine"]') as HTMLElement;
+    expect(mine.textContent).toContain('5');
+    expect(mine.textContent).toContain('RECORDS.BOARD.GAP');
+  });
+
+  it('should open the filters, with the gym picker when the navbar shows every box', () => {
+    expect(fixture.nativeElement.querySelector('[data-slot="filters"]')).toBeNull();
+    (fixture.nativeElement.querySelector('#board-filters') as HTMLButtonElement).click();
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('#board-gym')).not.toBeNull();
+    expect(fixture.nativeElement.querySelector('#board-age')).not.toBeNull();
   });
 
   it('should filter by reps, division and age group, and follow the gym picked', () => {
@@ -80,6 +104,8 @@ describe('BoxRecordsComponent', () => {
     displayGymId.set(6);
     fixture.detectChanges();
     expect(recordService.getGymBoard).toHaveBeenLastCalledWith(6, 1, expect.anything());
+    component.toggleFilters();
+    fixture.detectChanges();
     expect(fixture.nativeElement.querySelector('#board-gym')).toBeNull();
   });
 });

@@ -164,22 +164,17 @@
     "SUBTITLE": "Tes meilleures charges par mouvement : chaque série complète compte (un 3RM sorti d'un 3×3), comme chaque test N RM.",
     "LOAD_ERROR": "Impossible de charger les records. Réessaie plus tard.",
     "RM": "{{reps}}RM",
-    "ESTIMATED_1RM": "1RM estimé (Epley) :",
     "NO_BASE": "Pas encore de record sur la version de base.",
-    "VARIANTS": "Variantes ({{count}})",
-    "TEST": "Tester :",
     "TOTAL": "CrossFit Total",
-    "TOTAL_HINT": "Somme de tes 1RM de back squat, shoulder press et deadlift.",
-    "MINE": "Mes records",
-    "MINE_HINT": "Version de base en tête, variantes repliées dessous. Le 1RM estimé est indicatif, jamais un record.",
     "EMPTY": "Pas encore de record : saisis un test N RM ou tes séries de force.",
     "TO_TEST": "Tester un RM",
-    "TO_TEST_HINT": "Les tests du catalogue : ton score devient ton record et te classe sur le lift.",
     "MY_MOVEMENT": "Mes records",
     "PERCENT": {
-      "OF": "@ {{percent}} % {{reps}}RM",
-      "ESTIMATED": "1RM estimé",
-      "NO_RECORD": "saisir mon {{reps}}RM"
+      "OF": "{{percent}} % du {{reps}}RM",
+      "NO_RECORD": "saisir mon {{reps}}RM",
+      "SOURCE": "{{percent}} % de ton {{reps}}RM ({{load}}, {{date}})",
+      "SOURCE_BASE": "{{percent}} % du {{reps}}RM de {{movement}} ({{load}})",
+      "SOURCE_ESTIMATED": "{{percent}} % du 1RM estimé ({{load}})"
     },
     "BOARD": {
       "SUBTITLE": "Les records des membres de ta box sur les grands lifts, où qu'ils aient été faits.",
@@ -187,7 +182,35 @@
       "LIFT": "Lift",
       "REPS": "Répétitions",
       "EMPTY": "Aucun record sur ce lift pour l'instant.",
-      "LOG_MINE": "Saisir mon {{reps}}RM"
+      "LOG_MINE": "Saisir mon {{reps}}RM",
+      "FILTERS": "Filtres",
+      "ME": "Toi",
+      "RANK": "{{rank}}e",
+      "GAP": "à {{gap}} du {{rank}}e"
+    },
+    "FAMILY": "Famille de lifts",
+    "FAMILIES": {
+      "ALL": "Tous",
+      "SQUAT": "Squats",
+      "HINGE": "Hinge",
+      "PRESS": "Press",
+      "WEIGHTLIFTING": "Haltéro",
+      "OTHER": "Autres"
+    },
+    "ESTIMATED_FROM": "estimé · {{reps}}RM",
+    "PR": "PR",
+    "UNTESTED": "{{count}} lifts sans record",
+    "LIFT": {
+      "SUBTITLE": "Tes RM, la table des % et ta progression.",
+      "MOVEMENT": "Fiche du mouvement",
+      "TEST": "Tester",
+      "ESTIMATED": "estimé",
+      "PERCENTS": "Table des %",
+      "BASE": "base 1RM {{load}}",
+      "BASE_ESTIMATED": "base 1RM estimé {{load}}",
+      "VARIANTS": "Variantes",
+      "PROGRESS": "Progression du 1RM",
+      "PROGRESS_LABEL": "Le 1RM est passé de {{from}} à {{to}}"
     }
   },
   "SETTINGS": {

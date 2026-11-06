@@ -3,7 +3,7 @@ import {HttpClient, HttpContext, HttpParams} from '@angular/common/http';
 import {Observable, shareReplay, tap} from 'rxjs';
 import {environment} from '../../../../environments/environment';
 import {AccessService} from '../../../core/services/access.service';
-import {BoardRecord, CanonicalLift, MovementRecords} from '../models/record.model';
+import {BoardRecord, CanonicalLift, MovementRecords, RecordPoint} from '../models/record.model';
 
 /** Per-movement records (Aldebaran `/records`, lot C): own records, canonical lifts, box boards. */
 @Injectable({providedIn: 'root'})
@@ -37,6 +37,12 @@ export class RecordService {
   getMyMovementRecords(movementId: number, context?: HttpContext): Observable<MovementRecords[]> {
     const params = new HttpParams().set('movementId', movementId);
     return this.http.get<MovementRecords[]>(this.buildUrl('/me'), {params, context});
+  }
+
+  /** Progression of my N RM on the base version of a movement: each day a new best was set. */
+  getMyProgress(movementId: number, reps: number = 1, context?: HttpContext): Observable<RecordPoint[]> {
+    const params = new HttpParams().set('movementId', movementId).set('reps', reps);
+    return this.http.get<RecordPoint[]>(this.buildUrl('/me/progress'), {params, context});
   }
 
   /** The canonical "N RM" lifts of the catalogue, cached. */

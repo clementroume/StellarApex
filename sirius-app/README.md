@@ -58,15 +58,18 @@ src/spartan.css       # spartan tokens and Tailwind colours mapped to the palett
   My box (`/box`, members only: sessions, records board; members and settings for staff holding `MANAGE_MEMBERSHIPS` /
   `MANAGE_SETTINGS`) · Catalogue (`/wods`, `/movements`, `/muscles`) · Admin (`/admin`, admins).
   Desktop: spaces in the top bar, the space's pages as tabs below it. Mobile: bottom tab bar.
-* **Records** (`features/records`, lot C): My training › Records lists the user's records per movement
-  (`GET /aldebaran/records/me`: base version first with each N RM and its day, the estimated 1RM, the
-  variants folded), the CrossFit Total computed from the three 1RMs, and the canonical "N RM" tests to
-  log (`GET /aldebaran/records/lifts`). The movement page shows the same card. My box › Leaderboards is
-  the records board of the box (`GET /aldebaran/records/gyms/{id}`): one lift, one N RM, division and
-  age group filters, names from Antares. WOD leaderboards also filter by age group (CrossFit Open
+* **Records** (`features/records`, lot C): My training › Records is the user's records board: one tile
+  per lift (1RM, else the estimated 1RM, with "+5" or "PR" for a record of the last 30 days), family
+  chips, the CrossFit Total with its three lifts, and the lifts not tested yet. A tile opens the lift
+  (`/training/records/:id`, also on the movement page): RM table (estimates muted), % table of the
+  1RM, variants, 1RM progression (`GET /aldebaran/records/me/progress`) and the canonical tests.
+  My box › Leaderboards is the records board of the box (`GET /aldebaran/records/gyms/{id}`): lift
+  chips, RM segments, folded division / age group filters, podium, the user's line pinned with the
+  gap to the athlete above, names from Antares. WOD leaderboards also filter by age group (CrossFit Open
   brackets). A line prescribed as a percentage (`percentOfRm`, written in the quick editor's For Load
-  lines) shows "@ 80% 1RM → 96 kg" from the user's record of the base version (else the estimated 1RM,
-  marked), rounded to 1 kg / 2.5 lb, or a link to log the RM.
+  lines) shows the user's load as a pill ("96 kg", dashed "≈ 94 kg" from the estimated 1RM) with its
+  source under the line ("80% of your 1RM (120 kg, 12 Oct)"), rounded to 1 kg / 2.5 lb, or a link to
+  log the RM.
 * **Displayed box/prog** (`core/services/display-gym.service.ts`): selector in the top bar when the
   user has several usable memberships; one box/prog or all, remembered on the device. A display
   filter only (Today, journal): never sent to the APIs, rights stay per resource.

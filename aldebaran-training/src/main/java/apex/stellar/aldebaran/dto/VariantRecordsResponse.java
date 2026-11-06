@@ -13,6 +13,8 @@ import java.util.Set;
  * @param estimatedOneRepMaxKg The Epley estimate from the records of 2 to 10 reps (D57), in kg, or
  *     null; displayed only, never a record.
  * @param records The records, by number of reps.
+ * @param estimates Displayed estimates of the usual N RM without a record (1, 2, 3, 5, 10), from
+ *     the 1RM (real, else estimated); never records.
  */
 public record VariantRecordsResponse(
     String variantKey,
@@ -20,4 +22,5 @@ public record VariantRecordsResponse(
     Set<String> equipment,
     Set<String> techniques,
     Double estimatedOneRepMaxKg,
-    List<RecordEntryResponse> records) {}
+    List<RecordEntryResponse> records,
+    List<RecordEstimateResponse> estimates) {}

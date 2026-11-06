@@ -14,6 +14,8 @@ export const AGE_GROUPS: AgeGroup[] = [
 export interface RecordEntry {
   reps: number;
   weightKg: number;
+  // Best load before the record's day (the record it beat), null for a first record
+  previousWeightKg?: number | null;
   date: string;
   scoreId: number;
   wodId: number;
@@ -30,12 +32,28 @@ export interface VariantRecords {
   // Epley estimate from the records of 2 to 10 reps, displayed only (never a record)
   estimatedOneRepMaxKg?: number | null;
   records: RecordEntry[];
+  // Usual N RM without a record (1, 2, 3, 5, 10), estimated from the 1RM: display only
+  estimates: RecordEstimate[];
+}
+
+/** An estimated N RM (RecordEstimateResponse), never a record. */
+export interface RecordEstimate {
+  reps: number;
+  weightKg: number;
+}
+
+/** A day a new best load was set (RecordPointResponse). */
+export interface RecordPoint {
+  date: string;
+  weightKg: number;
 }
 
 /** Records of one movement, base version first (MovementRecordsResponse). */
 export interface MovementRecords {
   movementId: number;
   movementName: string;
+  // Catalogue category (SQUAT, DEADLIFT, PRESS_AND_JERK, CLEAN...), for the families
+  category?: string | null;
   variants: VariantRecords[];
 }
 

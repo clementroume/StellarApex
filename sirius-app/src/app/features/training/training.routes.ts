@@ -24,6 +24,10 @@ export const TRAINING_ROUTES: Routes = [
   // Per-movement records (lot C)
   {path: 'records', loadComponent: () => import('../records/my-records.component').then(c => c.MyRecordsComponent)},
   {
+    path: 'records/:movementId', data: {page: true},
+    loadComponent: () => import('../records/lift-records.component').then(c => c.LiftRecordsComponent)
+  },
+  {
     path: 'review', component: SpacePlaceholderComponent,
     data: {titleKey: 'TRAINING.REVIEW.TITLE', descriptionKey: 'TRAINING.REVIEW.COMING', icon: 'heroArrowTrendingUp'}
   },

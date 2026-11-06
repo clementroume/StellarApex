@@ -3,7 +3,7 @@ import {HttpContext} from '@angular/common/http';
 import {RouterLink} from '@angular/router';
 import {TranslatePipe} from '@ngx-translate/core';
 import {HlmButton} from '@spartan-ng/helm/button';
-import {HlmCardImports} from '@spartan-ng/helm/card';
+import {NgIconComponent} from '@ng-icons/core';
 import {HlmSpinner} from '@spartan-ng/helm/spinner';
 import {AGE_GROUPS, AgeGroup, BoardRecord, CanonicalLift} from '../../api/aldebaran/models/record.model';
 import {RecordService} from '../../api/aldebaran/services/record.service';
@@ -31,7 +31,7 @@ interface BoardLift {
 @Component({
   selector: 'app-box-records',
   standalone: true,
-  imports: [RouterLink, TranslatePipe, HlmButton, HlmCardImports, HlmSpinner, NativeSelectDirective, PageComponent],
+  imports: [RouterLink, TranslatePipe, NgIconComponent, HlmButton, HlmSpinner, NativeSelectDirective, PageComponent],
   templateUrl: './box-records.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
@@ -55,8 +55,10 @@ export class BoxRecordsComponent {
   readonly ageGroup = signal<AgeGroup | null>(null);
   readonly board = signal<BoardRecord[]>([]);
   readonly names = signal<Record<number, string>>({});
-  readonly isLoading = signal<boolean>(false);
+  // Until the lifts and the first board are loaded
+  readonly isLoading = signal<boolean>(true);
   readonly failed = signal<boolean>(false);
+  readonly filtersOpen = signal<boolean>(false);
 
   // --- COMPUTED STATE ---
   readonly gyms = computed(() => this.accessService.memberships());
@@ -83,6 +85,22 @@ export class BoxRecordsComponent {
     && (this.division() === null || r.division === this.division())
     && (this.ageGroup() === null || r.ageGroup === this.ageGroup())));
 
+  /** Podium in visual order (2nd, 1st, 3rd) with each rank. */
+  readonly podium = computed(() => {
+    const top = this.rows().slice(0, 3).map((r, i) => ({row: r, rank: i + 1}));
+    return top.length < 2 ? top : [top[1], top[0], ...top.slice(2)];
+  });
+  readonly others = computed(() => this.rows().slice(3).map((r, i) => ({row: r, rank: i + 4})));
+  /** The user's line, its rank and the load to beat the athlete just above. */
+  readonly mine = computed(() => {
+    const rows = this.rows();
+    const index = rows.findIndex(r => r.userId === this.myId());
+    if (index < 0) return null;
+    const above = index > 0 ? rows[index - 1] : null;
+    return {row: rows[index], rank: index + 1, gapKg: above ? above.weightKg - rows[index].weightKg : null};
+  });
+  readonly activeFilters = computed(() => (this.division() !== null ? 1 : 0) + (this.ageGroup() !== null ? 1 : 0));
+
   // --- LIFECYCLE ---
   constructor() {
     this.recordService.getCanonicalLifts(new HttpContext().set(BYPASS_LOADER, true)).subscribe({
@@ -90,8 +108,12 @@ export class BoxRecordsComponent {
         this.lifts.set(lifts);
         const first = this.boardLifts().find(l => l.movementName === 'Back Squat') ?? this.boardLifts()[0];
         if (first && this.movementId() === null) this.movementId.set(first.movementId);
+        if (!first) this.isLoading.set(false);
       },
-      error: () => this.failed.set(true)
+      error: () => {
+        this.failed.set(true);
+        this.isLoading.set(false);
+      }
     });
     effect(() => {
       const gymId = this.gymId();
@@ -129,6 +151,10 @@ export class BoxRecordsComponent {
   }
 
   // --- ACTIONS & EVENTS ---
+  toggleFilters(): void {
+    this.filtersOpen.update(open => !open);
+  }
+
   onGymChange(value: string): void {
     this.chosenGymId.set(Number(value));
   }
@@ -153,6 +179,10 @@ export class BoxRecordsComponent {
   // --- HELPERS ---
   loadText(r: BoardRecord): string {
     return this.unitService.formatScoreLoad(r.weightKg, 'KG');
+  }
+
+  kg(value: number): string {
+    return this.unitService.formatScoreLoad(value, 'KG');
   }
 
   name(r: BoardRecord): string | null {

@@ -200,7 +200,13 @@ class MovementRecordIT extends BaseIntegrationTest {
         .andExpect(jsonPath("$[0].variants[0].records[2].reps").value(5))
         .andExpect(jsonPath("$[0].variants[0].records[2].weightKg").value(110.0))
         // Epley: max(120 x 1.1, 110 x 1.1667) = 132
-        .andExpect(jsonPath("$[0].variants[0].estimatedOneRepMaxKg").value(132.0));
+        .andExpect(jsonPath("$[0].variants[0].estimatedOneRepMaxKg").value(132.0))
+        .andExpect(jsonPath("$[0].category").value("SQUAT"))
+        // Usual N RM without a record, from the real 1RM (140): 2RM and 10RM
+        .andExpect(jsonPath("$[0].variants[0].estimates", hasSize(2)))
+        .andExpect(jsonPath("$[0].variants[0].estimates[0].reps").value(2))
+        .andExpect(jsonPath("$[0].variants[0].estimates[1].reps").value(10))
+        .andExpect(jsonPath("$[0].variants[0].estimates[1].weightKg").value(105.0));
 
     // Another athlete's records stay theirs
     mockMvc
@@ -241,7 +247,18 @@ class MovementRecordIT extends BaseIntegrationTest {
         .andExpect(status().isOk());
     mockMvc
         .perform(as(get("/aldebaran/records/me"), ANNE))
-        .andExpect(jsonPath("$[0].variants[0].records[0].weightKg").value(190.0));
+        .andExpect(jsonPath("$[0].variants[0].records[0].weightKg").value(190.0))
+        .andExpect(jsonPath("$[0].variants[0].records[0].previousWeightKg").value(180.0));
+    // Progression of the 1RM: 180 then 190
+    mockMvc
+        .perform(
+            as(get("/aldebaran/records/me/progress"), ANNE)
+                .param("movementId", deadlift.getId().toString()))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$", hasSize(2)))
+        .andExpect(jsonPath("$[0].weightKg").value(180.0))
+        .andExpect(jsonPath("$[1].weightKg").value(190.0))
+        .andExpect(jsonPath("$[1].date").value(early.plusDays(5).toString()));
 
     mockMvc.perform(as(delete("/aldebaran/scores/" + second), ANNE)).andExpect(status().isNoContent());
     mockMvc

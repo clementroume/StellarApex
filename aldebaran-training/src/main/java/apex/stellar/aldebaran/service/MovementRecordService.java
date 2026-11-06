@@ -5,6 +5,8 @@ import apex.stellar.aldebaran.dto.BoardRecordResponse;
 import apex.stellar.aldebaran.dto.CanonicalLiftResponse;
 import apex.stellar.aldebaran.dto.MovementRecordsResponse;
 import apex.stellar.aldebaran.dto.RecordEntryResponse;
+import apex.stellar.aldebaran.dto.RecordEstimateResponse;
+import apex.stellar.aldebaran.dto.RecordPointResponse;
 import apex.stellar.aldebaran.dto.VariantRecordsResponse;
 import apex.stellar.aldebaran.model.entities.Movement;
 import apex.stellar.aldebaran.model.entities.MovementRecord;
@@ -88,7 +90,44 @@ public class MovementRecordService {
   @Transactional
   public void rebuild(Long userId, Long movementId) {
     recordRepository.lockAthlete(userId);
-    Map<String, Candidate> best = new HashMap<>();
+    Candidates found = collect(userId, movementId);
+
+    recordRepository.deleteByUserAndMovement(userId, movementId);
+    if (found.byKey().isEmpty()) {
+      return;
+    }
+    List<MovementRecord> records = new ArrayList<>();
+    for (List<Candidate> group : found.byKey().values()) {
+      Candidate c = group.stream().min(BEST_FIRST).orElseThrow();
+      // Best load done before the day of the record (the record it beat), if any
+      Double previous =
+          group.stream()
+              .filter(other -> other.score().getDate().isBefore(c.score().getDate()))
+              .map(Candidate::weightKg)
+              .max(Double::compare)
+              .orElse(null);
+      records.add(
+          MovementRecord.builder()
+              .userId(userId)
+              .movement(found.movement())
+              .variantKey(c.variantKey())
+              .reps(c.reps())
+              .weightKg(c.weightKg())
+              .previousWeightKg(previous)
+              .date(c.score().getDate())
+              .score(c.score())
+              .division(c.score().getDivision())
+              .ageGroup(c.score().getAgeGroup())
+              .build());
+    }
+    recordRepository.saveAll(records);
+  }
+
+  /** Record candidates of an athlete on a movement, grouped by variant key and reps. */
+  private record Candidates(@Nullable Movement movement, Map<String, List<Candidate>> byKey) {}
+
+  private Candidates collect(Long userId, Long movementId) {
+    Map<String, List<Candidate>> byKey = new HashMap<>();
     Movement movement = null;
     for (Score score :
         scoreRepository.findRecordCandidates(userId, movementId, LiftVariant.LOAD_TYPES)) {
@@ -101,33 +140,47 @@ public class MovementRecordService {
       }
       movement = lift.get().movement();
       for (Candidate candidate : candidates(score, lift.get().variantKey())) {
-        best.merge(
-            candidate.variantKey() + "#" + candidate.reps(),
-            candidate,
-            (a, b) -> BEST_FIRST.compare(a, b) <= 0 ? a : b);
+        byKey
+            .computeIfAbsent(candidate.variantKey() + "#" + candidate.reps(), k -> new ArrayList<>())
+            .add(candidate);
       }
     }
+    return new Candidates(movement, byKey);
+  }
 
-    recordRepository.deleteByUserAndMovement(userId, movementId);
-    if (best.isEmpty()) {
-      return;
+  /**
+   * Progression of the current user's N RM on the base version of a movement: each day a new best
+   * load was set, oldest first.
+   *
+   * @param movementId The movement.
+   * @param reps N of the N RM.
+   * @return The successive bests.
+   */
+  @Transactional(readOnly = true)
+  public List<RecordPointResponse> getMyProgress(Long movementId, int reps) {
+    Long userId = securityService.getCurrentUserId();
+    List<Candidate> group =
+        collect(userId, movementId).byKey().getOrDefault(LiftVariant.BASE + "#" + reps, List.of());
+    List<Candidate> chronological =
+        group.stream()
+            .sorted(
+                Comparator.comparing((Candidate c) -> c.score().getDate())
+                    .thenComparing(c -> c.score().getId()))
+            .toList();
+    List<RecordPointResponse> points = new ArrayList<>();
+    double best = 0;
+    for (Candidate c : chronological) {
+      if (c.weightKg() > best) {
+        best = c.weightKg();
+        RecordPointResponse point = new RecordPointResponse(c.score().getDate(), best);
+        if (!points.isEmpty() && points.getLast().date().equals(point.date())) {
+          points.set(points.size() - 1, point);
+        } else {
+          points.add(point);
+        }
+      }
     }
-    List<MovementRecord> records = new ArrayList<>();
-    for (Candidate c : best.values()) {
-      records.add(
-          MovementRecord.builder()
-              .userId(userId)
-              .movement(movement)
-              .variantKey(c.variantKey())
-              .reps(c.reps())
-              .weightKg(c.weightKg())
-              .date(c.score().getDate())
-              .score(c.score())
-              .division(c.score().getDivision())
-              .ageGroup(c.score().getAgeGroup())
-              .build());
-    }
-    recordRepository.saveAll(records);
+    return points;
   }
 
   /**
@@ -201,7 +254,13 @@ public class MovementRecordService {
 
     return movements.values().stream()
         .sorted(Comparator.comparing(Movement::getName, String.CASE_INSENSITIVE_ORDER))
-        .map(m -> new MovementRecordsResponse(m.getId(), m.getName(), variants(grouped.get(m.getId()))))
+        .map(
+            m ->
+                new MovementRecordsResponse(
+                    m.getId(),
+                    m.getName(),
+                    m.getCategory() == null ? null : m.getCategory().name(),
+                    variants(grouped.get(m.getId()))))
         .toList();
   }
 
@@ -225,7 +284,8 @@ public class MovementRecordService {
                   LiftVariant.equipmentOf(key),
                   LiftVariant.techniquesOf(key),
                   estimate,
-                  sorted.stream().map(MovementRecordService::entry).toList()));
+                  sorted.stream().map(MovementRecordService::entry).toList(),
+                  estimates(sorted, estimate)));
         });
     return list;
   }
@@ -233,7 +293,39 @@ public class MovementRecordService {
   private static RecordEntryResponse entry(MovementRecord r) {
     Wod wod = r.getScore().getWod();
     return new RecordEntryResponse(
-        r.getReps(), r.getWeightKg(), r.getDate(), r.getScore().getId(), wod.getId(), wod.getTitle());
+        r.getReps(),
+        r.getWeightKg(),
+        r.getPreviousWeightKg(),
+        r.getDate(),
+        r.getScore().getId(),
+        wod.getId(),
+        wod.getTitle());
+  }
+
+  /**
+   * Displayed estimates of the usual N RM the athlete has no record for (D63): Epley from the real
+   * 1RM, else from the estimated 1RM. Never stored, never ranked.
+   */
+  private static List<RecordEstimateResponse> estimates(
+      List<MovementRecord> records, @Nullable Double estimatedOneRepMax) {
+    Double oneRm =
+        records.stream()
+            .filter(r -> r.getReps() == 1)
+            .map(MovementRecord::getWeightKg)
+            .findFirst()
+            .orElse(estimatedOneRepMax);
+    if (oneRm == null) {
+      return List.of();
+    }
+    Set<Integer> held = new HashSet<>();
+    records.forEach(r -> held.add(r.getReps()));
+    List<RecordEstimateResponse> list = new ArrayList<>();
+    for (int reps : LiftVariant.USUAL_REPS) {
+      if (!held.contains(reps)) {
+        list.add(new RecordEstimateResponse(reps, LiftVariant.fromOneRepMax(oneRm, reps)));
+      }
+    }
+    return list;
   }
 
   /**

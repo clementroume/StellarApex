@@ -4,50 +4,87 @@
   } @else if (failed()) {
     <p class="py-8 text-center text-sm text-muted-foreground">{{ 'RECORDS.LOAD_ERROR' | translate }}</p>
   } @else {
+    @if (usedFamilies().length > 1) {
+      <div class="flex flex-wrap gap-2" role="group" [attr.aria-label]="'RECORDS.FAMILY' | translate" data-slot="families">
+        <button type="button" hlmBtn variant="outline" size="sm" class="rounded-full aria-pressed:bg-secondary/20 aria-pressed:border-secondary"
+                [attr.aria-pressed]="family() === null" (click)="onFamily(null)">{{ 'RECORDS.FAMILIES.ALL' | translate }}</button>
+        @for (f of usedFamilies(); track f) {
+          <button type="button" hlmBtn variant="outline" size="sm" class="rounded-full aria-pressed:bg-secondary/20 aria-pressed:border-secondary"
+                  [attr.aria-pressed]="family() === f" (click)="onFamily(f)">{{ 'RECORDS.FAMILIES.' + f | translate }}</button>
+        }
+      </div>
+    }
+
     @if (total(); as t) {
-      <section hlmCard data-slot="crossfit-total">
-        <div hlmCardContent class="flex items-baseline justify-between gap-2">
-          <span class="font-semibold">{{ 'RECORDS.TOTAL' | translate }}</span>
-          <span class="text-2xl font-bold text-secondary">{{ unitService.formatScoreLoad(t.kg, 'KG') }}</span>
+      <section class="rounded-xl bg-secondary/15 px-4 py-3 flex flex-col gap-2" data-slot="crossfit-total">
+        <div class="flex items-baseline justify-between gap-2">
+          <h2 class="font-semibold">{{ 'RECORDS.TOTAL' | translate }}</h2>
+          <span class="text-2xl font-bold">{{ unitService.formatScoreLoad(t.kg, 'KG') }}</span>
         </div>
-        <p hlmCardContent class="text-xs text-muted-foreground">{{ 'RECORDS.TOTAL_HINT' | translate }}</p>
+        <div class="flex h-2 gap-0.5 overflow-hidden rounded-full" aria-hidden="true">
+          @for (p of t.parts; track p.name; let i = $index) {
+            <div class="h-full" [style.flex]="p.kg" [class]="i === 0 ? 'bg-secondary' : i === 1 ? 'bg-secondary/20' : 'bg-secondary/10'"></div>
+          }
+        </div>
+        <div class="flex justify-between text-xs text-muted-foreground">
+          @for (p of t.parts; track p.name) {
+            <span>{{ p.name }} {{ value(p.kg, false) }}</span>
+          }
+        </div>
       </section>
     }
-    <section hlmCard>
-      <div hlmCardHeader>
-        <h2 hlmCardTitle>{{ 'RECORDS.MINE' | translate }}</h2>
-        <p hlmCardDescription>{{ 'RECORDS.MINE_HINT' | translate }}</p>
-      </div>
-      <div hlmCardContent>
-        <ul class="flex flex-col divide-y">
-          @for (row of withRecords(); track row.movementId) {
-            <li class="py-4 first:pt-0">
-              <app-movement-records-card [movementId]="row.movementId" [movementName]="row.movementName"
-                                         [records]="row.records" [lifts]="row.lifts"/>
+
+    @if (tiles().length > 0) {
+      <ul class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3" data-slot="lift-tiles">
+        @for (tile of shownTiles(); track tile.movementId) {
+          @let s = tile.summary;
+          <li>
+            <a [routerLink]="['/training/records', tile.movementId]" data-slot="lift-tile"
+               class="flex h-full flex-col gap-0.5 rounded-xl border bg-card px-3 py-2.5 transition-colors hover:border-secondary">
+              <span class="truncate text-xs text-muted-foreground">{{ tile.movementName }}</span>
+              <span class="text-2xl font-bold" [class.text-muted-foreground]="s.estimated">
+                @if (s.estimated) {≈ }{{ value(s.kg, s.estimated) }}
+                <span class="text-xs font-normal text-muted-foreground">{{ unitService.massUnit() === 'KG' ? 'kg' : 'lb' }}</span>
+              </span>
+              <span class="flex items-center justify-between gap-1 text-xs text-muted-foreground">
+                @if (s.estimated) {
+                  <span>{{ 'RECORDS.ESTIMATED_FROM' | translate: {reps: s.from?.reps} }} {{ value(s.from!.weightKg, false) }}</span>
+                } @else {
+                  <span>{{ 'RECORDS.RM' | translate: {reps: s.reps} }} · {{ day(s.record!.date) }}</span>
+                }
+                @if (s.recent && !s.estimated) {
+                  <span hlmBadge class="bg-secondary/20 text-foreground px-1.5" data-slot="gain">
+                    {{ gain(s) ? '+' + gain(s) : ('RECORDS.PR' | translate) }}
+                  </span>
+                }
+              </span>
+            </a>
+          </li>
+        }
+      </ul>
+    } @else {
+      <p class="rounded-xl border px-4 py-8 text-center text-sm text-muted-foreground">{{ 'RECORDS.EMPTY' | translate }}</p>
+    }
+
+    @if (untested().length > 0) {
+      <details class="rounded-xl border px-4 py-3" data-slot="untested">
+        <summary class="flex cursor-pointer items-center justify-between gap-2 text-sm">
+          <span class="text-muted-foreground">{{ 'RECORDS.UNTESTED' | translate: {count: untested().length} }}</span>
+          <span class="font-medium text-primary">{{ 'RECORDS.TO_TEST' | translate }}</span>
+        </summary>
+        <ul class="flex flex-col divide-y pt-2">
+          @for (row of untested(); track row.movementId) {
+            <li class="flex flex-wrap items-center justify-between gap-2 py-2">
+              <span class="text-sm font-medium">{{ row.movementName }}</span>
+              <span class="flex flex-wrap gap-1">
+                @for (lift of row.lifts; track lift.wodId) {
+                  <a [routerLink]="['/wods', lift.wodId]" hlmBadge variant="outline" class="hover:bg-muted">{{ 'RECORDS.RM' | translate: {reps: lift.repMax} }}</a>
+                }
+              </span>
             </li>
-          } @empty {
-            <li class="py-8 text-center text-sm text-muted-foreground">{{ 'RECORDS.EMPTY' | translate }}</li>
           }
         </ul>
-      </div>
-    </section>
-    @if (toTest().length > 0) {
-      <section hlmCard>
-        <div hlmCardHeader>
-          <h2 hlmCardTitle>{{ 'RECORDS.TO_TEST' | translate }}</h2>
-          <p hlmCardDescription>{{ 'RECORDS.TO_TEST_HINT' | translate }}</p>
-        </div>
-        <div hlmCardContent>
-          <ul class="flex flex-col divide-y">
-            @for (row of toTest(); track row.movementId) {
-              <li class="py-3 first:pt-0 flex flex-col gap-2">
-                <app-movement-records-card [movementId]="row.movementId" [movementName]="row.movementName"
-                                           [lifts]="row.lifts" [showEmpty]="false"/>
-              </li>
-            }
-          </ul>
-        </div>
-      </section>
+      </details>
     }
   }
 </app-page>

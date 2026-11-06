@@ -132,11 +132,16 @@ the dev proxy targets the local Traefik `https://localhost` with `Host: stellar.
   full `wod-form` is for public WODs (admins). Both pick movements with `app-movement-combobox`.
 - Records (`features/records`, lot C): `RecordService` (`api/aldebaran`) caches `getMyRecords` per user
   until `invalidate()` (called by `WodScoresStore` after any score change) and the canonical lifts;
-  `record.utils.ts` (`percentBase`: base version only, real N RM else estimated 1RM; CrossFit Total);
-  `app-movement-records-card` (records page and movement page); `my-records` (`/training/records`) and
-  `box-records` (`/box/leaderboards`, members board). The whiteboard loads the records only for a WOD
-  with a `percentOfRm` line and rounds with `UnitService.formatPercentLoad` (1 kg / 2.5 lb). Age groups:
-  `AGE_GROUPS` / `AGE_GROUP.*` keys.
+  `record.utils.ts` (`percentBase`: base version only, real N RM else estimated 1RM; families, tile
+  summary, RM rows, CrossFit Total); `my-records` (`/training/records`: tiles per lift, families, gain of a
+  record of the last 30 days), `lift-records` (`/training/records/:movementId` with route data `page`, and the
+  movement page: RM table with muted estimates, % table, variants, 1RM progression bars, tests) and
+  `box-records` (`/box/leaderboards`: lift chips, RM segments, folded filters, podium, own line pinned off
+  the podium). `RecordService.version` is bumped on every score change: screens deriving data from the
+  records read it to reload. The whiteboard loads the records only for a WOD with a `percentOfRm` line,
+  shows the load as a pill (dashed when estimated) and its source, rounded with
+  `UnitService.formatPercentLoad` (1 kg / 2.5 lb). Tailwind utilities are global CSS (initial bundle):
+  reuse the opacities already used (`bg-secondary/10|15|20`). Age groups: `AGE_GROUPS` / `AGE_GROUP.*` keys.
 - WOD catalogue (`/wods`) = public WODs only: family chips with counts (`WodFacets.categoryCounts`),
   format then sub-category chips, rows with a movement preview, competitions grouped by edition
   (`editionYear`, latest first, `sort=title,desc`), numbered pagination (`GET /wods/count`; page and
@@ -179,7 +184,7 @@ the dev proxy targets the local Traefik `https://localhost` with `Host: stellar.
 
 ## Known state
 
-- Initial bundle budget (`angular.json`): warning at 600 kB (raised from 500 kB in lot 0): ~597.4 kB after lot C
+- Initial bundle budget (`angular.json`): warning at 600 kB (raised from 500 kB in lot 0): ~597.9 kB after lot C
   (140 kB transferred after brain 1.9.0; 520 kB before lot 0). New screens stay lazy (sessions: own chunks). Tailwind generates the utilities of every helm file
   (~145 kB of CSS) and helm in the shell brings `tailwind-merge` (~37 kB). Keep heavy brain modules out of the shell
   (sonner is loaded on first toast and its toaster is `@defer (on idle)`).

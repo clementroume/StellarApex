@@ -37,6 +37,9 @@ public final class LiftVariant {
   /** Most reps an estimated 1RM is computed from (Epley, D57). */
   public static final int MAX_ESTIMATE_REPS = 10;
 
+  /** The N RM shown on a lift, estimated when the athlete has no record for them (D63). */
+  public static final List<Integer> USUAL_REPS = List.of(1, 2, 3, 5, 10);
+
   private LiftVariant() {}
 
   /**
@@ -125,6 +128,17 @@ public final class LiftVariant {
       return null;
     }
     return weightKg * (1 + reps / 30.0);
+  }
+
+  /**
+   * Epley inverted: the load an athlete with this 1RM should lift for N reps (display only).
+   *
+   * @param oneRepMaxKg The 1RM (real or estimated).
+   * @param reps N, from 1 to {@value #MAX_ESTIMATE_REPS}.
+   * @return The estimated N RM.
+   */
+  public static double fromOneRepMax(double oneRepMaxKg, int reps) {
+    return reps <= 1 ? oneRepMaxKg : oneRepMaxKg / (1 + reps / 30.0);
   }
 
   private static @Nullable String impliedEquipment(Movement movement) {

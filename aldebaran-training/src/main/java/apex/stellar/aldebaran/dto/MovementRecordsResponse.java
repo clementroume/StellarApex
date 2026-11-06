@@ -7,7 +7,8 @@ import java.util.List;
  *
  * @param movementId The movement.
  * @param movementName Its catalog name.
+ * @param category Its catalog category (squat, deadlift, press and jerk...), for the families.
  * @param variants The variants.
  */
 public record MovementRecordsResponse(
-    Long movementId, String movementName, List<VariantRecordsResponse> variants) {}
+    Long movementId, String movementName, String category, List<VariantRecordsResponse> variants) {}

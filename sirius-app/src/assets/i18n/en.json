@@ -164,22 +164,17 @@
     "SUBTITLE": "Your best loads per movement: every complete set counts (a 3RM out of a 3×3), as does every N RM test.",
     "LOAD_ERROR": "Records could not be loaded. Try again later.",
     "RM": "{{reps}}RM",
-    "ESTIMATED_1RM": "Estimated 1RM (Epley):",
     "NO_BASE": "No record on the base version yet.",
-    "VARIANTS": "Variants ({{count}})",
-    "TEST": "Test:",
     "TOTAL": "CrossFit Total",
-    "TOTAL_HINT": "Sum of your back squat, shoulder press and deadlift 1RMs.",
-    "MINE": "My records",
-    "MINE_HINT": "Base version first, variants folded below. The estimated 1RM is a guide, never a record.",
     "EMPTY": "No record yet: log an N RM test or your strength sets.",
     "TO_TEST": "Test an RM",
-    "TO_TEST_HINT": "The catalogue tests: your score sets your record and ranks you on the lift.",
     "MY_MOVEMENT": "My records",
     "PERCENT": {
-      "OF": "@ {{percent}}% {{reps}}RM",
-      "ESTIMATED": "estimated 1RM",
-      "NO_RECORD": "log my {{reps}}RM"
+      "OF": "{{percent}}% of {{reps}}RM",
+      "NO_RECORD": "log my {{reps}}RM",
+      "SOURCE": "{{percent}}% of your {{reps}}RM ({{load}}, {{date}})",
+      "SOURCE_BASE": "{{percent}}% of the {{movement}} {{reps}}RM ({{load}})",
+      "SOURCE_ESTIMATED": "{{percent}}% of the estimated 1RM ({{load}})"
     },
     "BOARD": {
       "SUBTITLE": "Your box members' records on the main lifts, wherever they were set.",
@@ -187,7 +182,35 @@
       "LIFT": "Lift",
       "REPS": "Reps",
       "EMPTY": "No record on this lift yet.",
-      "LOG_MINE": "Log my {{reps}}RM"
+      "LOG_MINE": "Log my {{reps}}RM",
+      "FILTERS": "Filters",
+      "ME": "You",
+      "RANK": "#{{rank}}",
+      "GAP": "{{gap}} behind #{{rank}}"
+    },
+    "FAMILY": "Lift family",
+    "FAMILIES": {
+      "ALL": "All",
+      "SQUAT": "Squats",
+      "HINGE": "Hinge",
+      "PRESS": "Press",
+      "WEIGHTLIFTING": "Weightlifting",
+      "OTHER": "Other"
+    },
+    "ESTIMATED_FROM": "estimated · {{reps}}RM",
+    "PR": "PR",
+    "UNTESTED": "{{count}} lifts without a record",
+    "LIFT": {
+      "SUBTITLE": "Your RMs, the % table and your progress.",
+      "MOVEMENT": "Movement page",
+      "TEST": "Test",
+      "ESTIMATED": "estimated",
+      "PERCENTS": "% table",
+      "BASE": "1RM {{load}}",
+      "BASE_ESTIMATED": "estimated 1RM {{load}}",
+      "VARIANTS": "Variants",
+      "PROGRESS": "1RM progress",
+      "PROGRESS_LABEL": "The 1RM went from {{from}} to {{to}}"
     }
   },
   "SETTINGS": {

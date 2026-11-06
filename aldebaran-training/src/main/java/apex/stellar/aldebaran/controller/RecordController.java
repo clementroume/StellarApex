@@ -3,6 +3,7 @@ package apex.stellar.aldebaran.controller;
 import apex.stellar.aldebaran.dto.BoardRecordResponse;
 import apex.stellar.aldebaran.dto.CanonicalLiftResponse;
 import apex.stellar.aldebaran.dto.MovementRecordsResponse;
+import apex.stellar.aldebaran.dto.RecordPointResponse;
 import apex.stellar.aldebaran.service.MovementRecordService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.List;
@@ -38,6 +39,20 @@ public class RecordController {
   public ResponseEntity<List<MovementRecordsResponse>> getMyRecords(
       @RequestParam(required = false) Long movementId) {
     return ResponseEntity.ok(recordService.getMyRecords(movementId));
+  }
+
+  /**
+   * Retrieves the progression of the current user's N RM on the base version of a movement: each
+   * day a new best load was set, oldest first.
+   *
+   * @param movementId The movement.
+   * @param reps N of the N RM (1 by default).
+   * @return The successive bests.
+   */
+  @GetMapping("/me/progress")
+  public ResponseEntity<List<RecordPointResponse>> getMyProgress(
+      @RequestParam Long movementId, @RequestParam(defaultValue = "1") int reps) {
+    return ResponseEntity.ok(recordService.getMyProgress(movementId, reps));
   }
 
   /**

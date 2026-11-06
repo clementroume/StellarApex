@@ -251,8 +251,11 @@ deletion, and once at startup when the table is empty (`config/MovementRecordBac
 * Variant key (`service/LiftVariant`): sorted equipment `;` sorted techniques of the WOD line, the
   implied equipment removed (the barbell when the movement allows it, else its only equipment); `''`
   is the base version.
-* `GET /me[?movementId=]`: the caller's records by movement (name order) and variant (base first),
-  with `estimatedOneRepMaxKg` (Epley from the 2-10 rep records, displayed only, never stored).
+* `GET /me[?movementId=]`: the caller's records by movement (name order, with its `category`) and
+  variant (base first), with `estimatedOneRepMaxKg` (Epley from the 2-10 rep records), `estimates`
+  (the usual 1/2/3/5/10 RM without a record, Epley from the real 1RM else the estimated one) and, per
+  record, `previousWeightKg` (best load before its day, V19); estimates are displayed only, never stored.
+* `GET /me/progress?movementId=&reps=1`: each day the caller set a new best N RM on the base version.
 * `GET /lifts`: canonical lifts, i.e. public "N RM" tests of a base-version movement (one per movement
   and N); their WOD leaderboard is the lift leaderboard.
 * `GET /gyms/{gymId}?movementId=`: records board of a box: base-version records of the gym's current

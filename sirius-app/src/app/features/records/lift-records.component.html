@@ -1,0 +1,104 @@
+@if (page()) {
+  <app-page [title]="name()" [subtitle]="'RECORDS.LIFT.SUBTITLE' | translate">
+    <ng-container *ngTemplateOutlet="content"/>
+  </app-page>
+} @else {
+  <ng-container *ngTemplateOutlet="content"/>
+}
+
+<ng-template #content>
+  <div class="flex flex-col gap-4" data-slot="lift-records">
+    <div class="flex flex-wrap items-center justify-between gap-2">
+      @if (page()) {
+        <a [routerLink]="['/movements', id()]" class="text-sm text-primary hover:underline">{{ 'RECORDS.LIFT.MOVEMENT' | translate }}</a>
+      } @else {
+        <span></span>
+      }
+      @if (lifts().length > 0) {
+        <details class="relative" data-slot="tests">
+          <summary class="cursor-pointer list-none rounded-full border px-3 py-1 text-sm">{{ 'RECORDS.LIFT.TEST' | translate }} ▾</summary>
+          <div class="absolute right-0 z-10 mt-1 flex min-w-32 flex-col rounded-md border bg-popover p-1 shadow-md">
+            @for (lift of lifts(); track lift.wodId) {
+              <a [routerLink]="['/wods', lift.wodId]" class="rounded px-3 py-1.5 text-sm hover:bg-muted">{{ 'RECORDS.RM' | translate: {reps: lift.repMax} }}</a>
+            }
+          </div>
+        </details>
+      }
+    </div>
+
+    @if (isLoading()) {
+      <div class="flex justify-center py-6"><hlm-spinner/></div>
+    } @else if (rows().length === 0) {
+      <p class="text-sm text-muted-foreground">{{ 'RECORDS.NO_BASE' | translate }}</p>
+    } @else {
+      <table class="w-full text-sm" data-slot="rm-table">
+        <tbody>
+          @for (row of rows(); track row.reps) {
+            <tr class="border-b last:border-0">
+              <th scope="row" class="w-14 py-2 text-left font-normal text-muted-foreground">{{ 'RECORDS.RM' | translate: {reps: row.reps} }}</th>
+              @if (row.record; as r) {
+                <td class="py-2"><a [routerLink]="['/wods', r.wodId]" class="font-bold hover:text-primary">{{ load(row.kg) }}</a></td>
+                <td class="py-2 text-right text-xs text-muted-foreground">{{ day(r.date) }}</td>
+              } @else {
+                <td class="py-2 text-muted-foreground" data-slot="estimate">≈ {{ estimate(row.kg) }}</td>
+                <td class="py-2 text-right text-xs text-muted-foreground">{{ 'RECORDS.LIFT.ESTIMATED' | translate }}</td>
+              }
+            </tr>
+          }
+        </tbody>
+      </table>
+
+      @if (oneRm(); as base) {
+        <section class="flex flex-col gap-2" data-slot="percent-table">
+          <div class="flex items-baseline justify-between gap-2">
+            <h3 class="text-sm font-semibold">{{ 'RECORDS.LIFT.PERCENTS' | translate }}</h3>
+            <span class="text-xs text-muted-foreground">
+              {{ (base.estimated ? 'RECORDS.LIFT.BASE_ESTIMATED' : 'RECORDS.LIFT.BASE') | translate: {load: estimate(base.kg)} }}
+            </span>
+          </div>
+          <ul class="grid grid-cols-3 gap-2 sm:grid-cols-5">
+            @for (p of percentSteps; track p) {
+              <li class="flex flex-col items-center rounded-md px-2 py-1.5" [class]="p === 80 ? 'bg-secondary/20' : 'bg-muted/50'">
+                <span class="text-xs text-muted-foreground">{{ p }} %</span>
+                <span class="font-semibold">{{ estimate(base.kg * p / 100) }}</span>
+              </li>
+            }
+          </ul>
+        </section>
+      }
+
+      @if (variants().length > 0) {
+        <section class="flex flex-col gap-1" data-slot="variants">
+          <h3 class="text-sm font-semibold">{{ 'RECORDS.LIFT.VARIANTS' | translate }}</h3>
+          @for (v of variants(); track v.variantKey) {
+            <div class="flex flex-wrap items-baseline justify-between gap-2 border-b py-1.5 text-sm last:border-0">
+              <span>{{ label(v) }}</span>
+              <span class="flex flex-wrap gap-1">
+                @for (r of v.records; track r.reps) {
+                  <span hlmBadge variant="outline">{{ 'RECORDS.RM' | translate: {reps: r.reps} }} · {{ load(r.weightKg) }}</span>
+                }
+              </span>
+            </div>
+          }
+        </section>
+      }
+
+      @if (bars().length > 0) {
+        <section class="flex flex-col gap-1" data-slot="progress">
+          <h3 class="text-sm font-semibold">{{ 'RECORDS.LIFT.PROGRESS' | translate }}</h3>
+          <div class="flex h-20 items-end gap-1" role="img"
+               [attr.aria-label]="'RECORDS.LIFT.PROGRESS_LABEL' | translate: {from: load(bars()[0].weightKg), to: load(bars()[bars().length - 1].weightKg)}">
+            @for (b of bars(); track b.date) {
+              <div class="flex-1 rounded-t" [class]="b.last ? 'bg-secondary' : 'bg-muted'" [style.height.%]="b.height"
+                   [title]="day(b.date) + ' · ' + load(b.weightKg)"></div>
+            }
+          </div>
+          <div class="flex justify-between text-xs text-muted-foreground">
+            <span>{{ shortDay(bars()[0].date) }} · {{ load(bars()[0].weightKg) }}</span>
+            <span>{{ shortDay(bars()[bars().length - 1].date) }} · {{ load(bars()[bars().length - 1].weightKg) }}</span>
+          </div>
+        </section>
+      }
+    }
+  </div>
+</ng-template>
