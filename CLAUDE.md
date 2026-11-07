@@ -213,6 +213,10 @@ Rules common to every lot session (the brief of a lot only lists what is specifi
 
 - Backend code, comments, Javadoc and commit messages in English. User-facing text is translated
   (FR + EN) on both sides: `messages*.properties` in backends, `sirius-app/src/assets/i18n/{fr,en}.json`.
+- Lombok is limited to its current uses (`@RequiredArgsConstructor`, `@Slf4j`, `@Getter` / `@Setter` /
+  `@Builder` on entities); never `@Data`, `@EqualsAndHashCode` or `@Value` on a JPA entity, and keep
+  relations out of `@ToString`. New DTOs are Java records. MapStruct stays. A gradual exit from Lombok
+  is to be considered at lot I.
 - Schema changes go through new Flyway migrations (`src/main/resources/db/migration`, schemas
   `antares` / `aldebaran`, `ddl-auto=validate`); never edit an applied migration. **Temporary exception
   (D67):** while there is no real database, the history is folded into `V1__Baseline.sql` per service
