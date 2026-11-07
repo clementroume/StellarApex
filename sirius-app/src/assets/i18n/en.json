@@ -60,7 +60,15 @@
     "SUBTITLE": "Log in to access your dashboard.",
     "SIGN_IN": "Log in",
     "NO_ACCOUNT": "No account yet? Sign up",
-    "FORGOT_PASSWORD": "Forgot your password?"
+    "FORGOT_PASSWORD": "Forgot your password?",
+    "DEMO": {
+      "TITLE": "Try the demo",
+      "HINT": "Sign in with a demo account to explore the app with sample data.",
+      "OWNER": "Box Owner",
+      "COACH": "Coach",
+      "ATHLETE": "Athlete",
+      "PROGRAMMER": "Program Programmer"
+    }
   },
   "REGISTER": {
     "TITLE": "Join Stellar Apex!",

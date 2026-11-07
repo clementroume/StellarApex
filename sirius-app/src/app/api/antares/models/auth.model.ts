@@ -36,3 +36,8 @@ export interface ResetPasswordRequest {
 export interface VerifyEmailRequest {
   token: string;
 }
+
+/** Shared password of the demo accounts; the endpoint answers 404 when the deployment offers no demo. */
+export interface DemoAccess {
+  password: string;
+}

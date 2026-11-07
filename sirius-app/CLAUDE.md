@@ -168,8 +168,9 @@ the dev proxy targets the local Traefik `https://localhost` with `Host: stellar.
 
 - `npm run e2e` (config `playwright.config.ts`, journeys `e2e/tests/*.spec.ts`, helpers `e2e/support`): Chromium,
   `desktop` + `mobile` (375 px) projects, `webServer` = `npm start` (reused when already running), local Docker
-  stack required. Credentials in the git-ignored `e2e/local.env` (template `local.env.example`), sessions per role in
-  git-ignored `e2e/.auth/` (global setup). Missing variable = immediate error.
+  stack required. The journeys depend on no demo data: they sign in with the fixtures of Antares' `e2e` profile (`e2e/support/env.ts`:
+  box "E2E Box", Owner, judge, athlete; password from Antares' `application-e2e.properties` or `E2E_PASSWORD`), sessions per
+  role in git-ignored `e2e/.auth/` (global setup).
 - Journeys create their own data (timestamp in names), never depend on order, never log in through the UI except the
   sign-in journey. Selectors: roles and labels through `t('KEY')` (`support/i18n.ts`, matches FR and EN from the
   i18n files); `data-slot` / ids only where no accessible name exists. Use `asRole(browser, role)` for extra contexts.
@@ -177,7 +178,7 @@ the dev proxy targets the local Traefik `https://localhost` with `Host: stellar.
   local `docker-compose.yml` raises Antares' per-IP registration limit to 100 per hour): `support/fixtures.ts` retries
   the 429s of Aldebaran calls.
 - Data: titles start with "E2E "; `global-setup` and `global-teardown` purge the E2E WODs, sessions, scores and registered accounts through
-  `e2e/cleanup/purge-e2e-data.sh` (psql in `castor-db`, local only, double-keyed on title "E2E " + test-account author;
+  `e2e/cleanup/purge-e2e-data.sh` (psql in `castor-db`, local only, double-keyed on title "E2E " + demo-account author;
   dry run unless `--apply`; `E2E_KEEP_DATA=1` skips; `npm run e2e:clean`).
   Only Aldebaran responses are re-served for the 429 retry: re-serving Antares ones garbled its cookies.
 - Type-check with `npx tsc -p e2e`.

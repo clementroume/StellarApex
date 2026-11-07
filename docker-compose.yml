@@ -80,8 +80,9 @@ services:
     container_name: antares-auth
     env_file: ./.env
     environment:
-      # Dev test accounts (DevDataSeeder): temporary, TO BE REMOVED
-      SPRING_PROFILES_ACTIVE: dev
+      # `demo`: demo gyms and accounts (package antares.demo), `e2e`: fixtures of the Playwright journeys
+      # (package antares.e2e). Both seed test accounts: never set them on a deployment that must not have them.
+      SPRING_PROFILES_ACTIVE: demo,e2e
       # Local only: the Playwright journeys register one account per run (default: 10 per hour per IP)
       APPLICATION_SECURITY_REGISTRATION_MAX_PER_IP: 100
     depends_on:
@@ -102,8 +103,8 @@ services:
     container_name: aldebaran-training
     env_file: ./.env
     environment:
-      # Dev test data (dev profile seeder): temporary, TO BE REMOVED
-      SPRING_PROFILES_ACTIVE: dev
+      # `demo`: WODs and scores of the demo gyms (package aldebaran.demo)
+      SPRING_PROFILES_ACTIVE: demo
     depends_on:
       castor-db:
         condition: service_healthy

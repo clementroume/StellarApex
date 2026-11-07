@@ -226,7 +226,7 @@ http://localhost:8025). Tokens (`AccountTokenService`): 256 random bits, SHA-256
 a TTL, single use (`GETDEL`), one per user and purpose, bound to the address they were sent to.
 
 An unverified account can sign in, log personal scores and edit its profile, but joining a gym or
-requesting one answers 403 `code=EMAIL_NOT_VERIFIED`. Accounts created before migration V8 (and the
+requesting one answers 403 `code=EMAIL_NOT_VERIFIED`. Accounts created before the former V8 migration (and the
 dev seed accounts) are verified. Per-IP throttles read the last `X-Forwarded-For` entry, appended by
 Traefik (`ClientIpResolver`).
 
@@ -239,7 +239,7 @@ Traefik (`ClientIpResolver`).
   OWNER and PROGRAMMER hold every permission, a COACH holds the granted ones, an ATHLETE holds none.
 * Roles by gym type: a physical gym has exactly one OWNER plus coaches and athletes; a virtual
   (programming) gym has exactly one PROGRAMMER plus athletes. `PUT /memberships/{id}` never assigns
-  or removes OWNER/PROGRAMMER (400); only `transfer-ownership` does. A partial unique index (V4)
+  or removes OWNER/PROGRAMMER (400); only `transfer-ownership` does. A partial unique index (former V4)
   enforces one holder per gym.
 * A membership is sent to Aldebaran only when it is usable: status ACTIVE and gym ACTIVE (or role
   OWNER/PROGRAMMER while the gym is pending approval); a suspended or rejected gym opens access to
@@ -268,12 +268,30 @@ An admin can act as a real (non-admin) user, e.g. to reproduce a bug a gym repor
 At startup, the platform admin defined by the `ADMIN_*` environment variables is created if no
 admin exists (`ApplicationConfig`).
 
-**Temporary (to be removed):** with the `dev` profile (`SPRING_PROFILES_ACTIVE: dev` in the root
-`docker-compose.yml`), `DevDataSeeder` creates test gyms (Spartacus CrossFit, Zeus Programming,
-Pending Box) and accounts (`owner@sparta.com`, `coach@sparta.com`, `programmer@zeus.com`, ... see
-its Javadoc), all with the admin's default password and a verified address; `free@athlete.com`
-shows its name on public leaderboards. Some get a division (set only while empty) for the division
-leaderboards. Aldebaran's dev seeders (WODs, scores) rely on these names.
+**Demo accounts (roadmap D68), package `apex.stellar.antares.demo`:** with the `demo` profile
+(`SPRING_PROFILES_ACTIVE: demo,e2e` in the root `docker-compose.yml`), `demo/DevDataSeeder` creates the demo gyms (Spartacus CrossFit, Zeus Programming,
+Pending Box) and accounts (`owner.sparta@demo.test`, `coach.sparta@demo.test`, `programmer.zeus@demo.test`, ... see
+its Javadoc). They are flagged `users.demo`, have a verified address in the reserved `.test` domain
+(no mail can leave) and share a **known password**, the property `application.demo.password` (in `application-demo.properties` for the
+`demo` profile, `APPLICATION_DEMO_PASSWORD` in another deployment; empty = nothing seeded): it is
+public on purpose (the repository is public, the accounts are meant to stay in production) and has
+nothing to do with `application.admin.default-password`, which only the admin uses.
+`free@demo.test` shows its name on public leaderboards. Some get a division (set only while empty)
+for the division leaderboards. Aldebaran's dev seeders (WODs, scores) rely on these names.
+
+`GET /antares/auth/demo` (public, 404 without the property) returns the shared password for the Sirius sign-in
+page, which offers one button per persona; `UserResponse.demo` tells a client the account is a demo account.
+The reserved `.test` domain is refused at registration (400 `error.email.reserved.domain`), so a demo
+address cannot be taken before the seeder, and the seeder refuses to adopt an existing non-demo account.
+
+**A demo account can never be a platform administrator**, whoever asks (four layers):
+`users.demo` + the database CHECK `chk_users_demo_not_admin`; `User.setPlatformRole` / `setDemo` and
+the JPA lifecycle refuse the combination (`DemoAccountException`, 403 `error.demo.account.admin`);
+`User.getPlatformRole()` reports USER for a demo account whatever is stored, so `verify/api` never
+sends `ADMIN` and `verify/admin` answers 403; no request can set the flag or a role (`DemoAccountIT`).
+Writes are refused (loud failure), reads degrade to USER (the account stays usable, never elevated).
+Not done yet (to design before production): blocking password, e-mail and deletion changes on demo
+accounts, and resetting their data.
 
 ## Database Migrations
 
@@ -281,3 +299,9 @@ Flyway manages database schema changes (schema `antares`, `ddl-auto=validate`). 
 `src/main/resources/db/migration`.
 
 Flyway runs automatically on application startup to apply any pending migrations.
+
+**Temporary rule (roadmap D67):** there is no real database yet, so the former V1-V9 were condensed
+into `V1__Baseline.sql` (schema checked equal to the old one with `pg_dump --schema-only`) and the
+local database was wiped. The history is condensed once more at the end of the roadmap, before the
+first production release; from then on, "never edit an applied migration" applies again. `V2` adds
+`users.demo`.

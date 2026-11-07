@@ -18,11 +18,11 @@ describe('SupportComponent', () => {
   let notificationService: any;
 
   const athlete: any = {
-    id: 4, firstName: 'Ath', lastName: 'Lete', email: 'athlete@sparta.com', platformRole: 'USER',
+    id: 4, firstName: 'Ath', lastName: 'Lete', email: 'athlete.sparta@demo.test', platformRole: 'USER',
     memberships: [{gymId: 1, gymName: 'Spartacus CrossFit', gymStatus: 'ACTIVE', gymRole: 'ATHLETE', status: 'BANNED', permissions: []}]
   };
   const coach: any = {
-    id: 5, firstName: 'Co', lastName: 'Ach', email: 'coach@sparta.com', platformRole: 'USER',
+    id: 5, firstName: 'Co', lastName: 'Ach', email: 'coach.sparta@demo.test', platformRole: 'USER',
     memberships: [{gymId: 1, gymName: 'Spartacus CrossFit', gymStatus: 'ACTIVE', gymRole: 'COACH', status: 'ACTIVE', permissions: ['WOD_WRITE']}]
   };
   const admin: any = {id: 1, firstName: 'Ad', lastName: 'Min', email: 'admin@apex.com', platformRole: 'ADMIN', memberships: []};
@@ -73,7 +73,7 @@ describe('SupportComponent', () => {
 
     const text = fixture.nativeElement.textContent;
     expect(text).toContain('ADMIN.SUPPORT.RECENT');
-    expect(text).toContain('athlete@sparta.com');
+    expect(text).toContain('athlete.sparta@demo.test');
     expect(text).toContain('GYM.STATUS.BANNED');
     expect(text).toContain('GYM.PERMISSIONS.WOD_WRITE.LABEL');
   });
@@ -157,7 +157,7 @@ describe('SupportComponent', () => {
     expect(component.selectedUser()).toBe(athlete);
     const selected = fixture.nativeElement.querySelector('[data-slot="support-user"][aria-pressed="true"]');
     expect(selected.classList).toContain('ring-2');
-    expect(selected.textContent).toContain('athlete@sparta.com');
+    expect(selected.textContent).toContain('athlete.sparta@demo.test');
   });
 
   it('should close the start panel by clicking the user again, the close button or Escape', () => {

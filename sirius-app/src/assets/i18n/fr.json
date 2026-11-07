@@ -60,7 +60,15 @@
     "SUBTITLE": "Connecte-toi pour accéder à ton journal de bord.",
     "SIGN_IN": "Se connecter",
     "NO_ACCOUNT": "Pas encore de compte ? S'inscrire",
-    "FORGOT_PASSWORD": "Mot de passe oublié ?"
+    "FORGOT_PASSWORD": "Mot de passe oublié ?",
+    "DEMO": {
+      "TITLE": "Essayer la démo",
+      "HINT": "Connecte-toi avec un compte de démo pour explorer l'app avec des données d'exemple.",
+      "OWNER": "Owner de box",
+      "COACH": "Coach",
+      "ATHLETE": "Athlète",
+      "PROGRAMMER": "Programmer de prog"
+    }
   },
   "REGISTER": {
     "TITLE": "Rejoins Stellar Apex !",

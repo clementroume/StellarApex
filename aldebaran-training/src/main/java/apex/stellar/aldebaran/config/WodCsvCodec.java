@@ -433,7 +433,7 @@ public final class WodCsvCodec {
       return null;
     }
     String name = value.trim().toUpperCase();
-    // The former "box benchmark" category no longer exists (V13)
+    // The former "box benchmark" category no longer exists (former V13)
     return "CUSTOM_BENCHMARK".equals(name) ? null : WodCategory.valueOf(name);
   }
 

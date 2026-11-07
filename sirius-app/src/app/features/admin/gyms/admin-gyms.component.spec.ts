@@ -18,7 +18,7 @@ describe('AdminGymsComponent', () => {
 
   const gym = (id: number, status: AdminGymResponse['status']): AdminGymResponse => ({
     id, name: `Gym ${id}`, isProgramming: false, status, createdAt: '2026-10-01T10:00:00', memberCount: 2,
-    holder: {id: 7, firstName: 'Wait', lastName: 'User', email: 'wait@box.com', platformRole: 'USER'}
+    holder: {id: 7, firstName: 'Wait', lastName: 'User', email: 'wait.pending@demo.test', platformRole: 'USER'}
   });
 
   beforeEach(async () => {
@@ -46,7 +46,7 @@ describe('AdminGymsComponent', () => {
   it('should open on the approval queue with the holder', () => {
     expect(adminService.searchGyms).toHaveBeenCalledWith('', 'PENDING_APPROVAL', 0, ADMIN_GYM_PAGE_SIZE);
     const row = fixture.nativeElement.querySelector('[data-slot="admin-gym"]');
-    expect(row.textContent).toContain('wait@box.com');
+    expect(row.textContent).toContain('wait.pending@demo.test');
     expect(row.textContent).toContain('ADMIN.GYMS.APPROVE');
   });
 

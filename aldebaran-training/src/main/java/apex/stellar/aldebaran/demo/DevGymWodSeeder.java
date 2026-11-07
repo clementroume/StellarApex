@@ -1,5 +1,6 @@
-package apex.stellar.aldebaran.config;
+package apex.stellar.aldebaran.demo;
 
+import apex.stellar.aldebaran.config.WodCsvCodec;
 import apex.stellar.aldebaran.model.entities.Movement;
 import apex.stellar.aldebaran.model.entities.Wod;
 import apex.stellar.aldebaran.model.entities.Wod.ScoreType;
@@ -29,9 +30,9 @@ import org.springframework.transaction.support.TransactionTemplate;
  * gyms seeded by Antares, so the UI can be checked with real rights.
  *
  * <ul>
- *   <li>"Spartacus CrossFit" (physical gym), authored by {@code owner@sparta.com};
- *   <li>"Zeus Programming" (virtual gym), authored by {@code programmer@zeus.com};
- *   <li>one personal private WOD for {@code athlete@sparta.com}.
+ *   <li>"Spartacus CrossFit" (physical gym), authored by {@code owner.sparta@demo.test};
+ *   <li>"Zeus Programming" (virtual gym), authored by {@code programmer.zeus@demo.test};
+ *   <li>one personal private WOD for {@code athlete.sparta@demo.test}.
  * </ul>
  *
  * <p>Then {@link DevScoreSeeder} logs scores for the test accounts (its own idempotency check, so
@@ -43,15 +44,15 @@ import org.springframework.transaction.support.TransactionTemplate;
  * gym already has WODs.
  */
 @Component
-@Profile("dev")
+@Profile("demo")
 @Slf4j
 public class DevGymWodSeeder implements ApplicationRunner {
 
   static final String SPARTA_GYM = "Spartacus CrossFit";
   static final String ZEUS_GYM = "Zeus Programming";
-  static final String SPARTA_OWNER = "owner@sparta.com";
-  static final String ZEUS_PROGRAMMER = "programmer@zeus.com";
-  static final String SPARTA_ATHLETE = "athlete@sparta.com";
+  static final String SPARTA_OWNER = "owner.sparta@demo.test";
+  static final String ZEUS_PROGRAMMER = "programmer.zeus@demo.test";
+  static final String SPARTA_ATHLETE = "athlete.sparta@demo.test";
 
   private final JdbcTemplate jdbcTemplate;
   private final WodRepository wodRepository;

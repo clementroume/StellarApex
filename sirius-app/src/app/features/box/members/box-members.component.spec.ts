@@ -22,7 +22,7 @@ describe('BoxMembersComponent', () => {
   };
   const member = (id: number, overrides: Partial<MembershipResponse> = {}): MembershipResponse => ({
     id,
-    user: {id: id * 10, firstName: 'User', lastName: String(id), email: `u${id}@box.com`, platformRole: 'USER'},
+    user: {id: id * 10, firstName: 'User', lastName: String(id), email: `u${id}@demo.test`, platformRole: 'USER'},
     gymRole: 'ATHLETE', status: 'ACTIVE', permissions: [], createdAt: '2026-10-01T10:00:00', capabilities: none,
     ...overrides
   });

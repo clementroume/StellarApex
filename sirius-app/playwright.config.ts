@@ -1,8 +1,4 @@
 import {defineConfig, devices} from '@playwright/test';
-import {loadLocalEnv} from './e2e/support/env';
-
-// Credentials of the local test accounts come from e2e/local.env (git-ignored).
-loadLocalEnv();
 
 /**
  * End-to-end journeys against the local Docker stack (see "End-to-end tests" in README.md).

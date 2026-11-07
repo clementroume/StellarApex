@@ -1,4 +1,4 @@
-import {ChangeDetectionStrategy, Component, DOCUMENT, Inject, inject, OnInit} from '@angular/core';
+import {ChangeDetectionStrategy, Component, DOCUMENT, Inject, inject, OnInit, signal} from '@angular/core';
 import {CommonModule} from '@angular/common';
 import {FormBuilder, FormGroup, ReactiveFormsModule, Validators} from '@angular/forms';
 import {ActivatedRoute, Router, RouterModule} from '@angular/router';
@@ -12,6 +12,14 @@ import {HlmCardImports} from '@spartan-ng/helm/card';
 import {HlmInputGroupImports} from '@spartan-ng/helm/input-group';
 import {FormFieldComponent} from '../../../shared/component/form-field/form-field.component';
 import {DEFAULT_RETURN_URL, forwardableReturnUrl, resolveReturnUrl, ReturnTarget} from '../return-url';
+
+/** Demo accounts offered on the sign-in page (seeded by Antares' DevDataSeeder, roadmap D68). */
+export const DEMO_PERSONAS = [
+  {key: 'OWNER', email: 'owner.sparta@demo.test'},
+  {key: 'COACH', email: 'coach.sparta@demo.test'},
+  {key: 'ATHLETE', email: 'athlete.sparta@demo.test'},
+  {key: 'PROGRAMMER', email: 'programmer.zeus@demo.test'},
+] as const;
 
 @Component({
   selector: 'app-login',
@@ -33,6 +41,9 @@ export class LoginComponent implements OnInit {
   private target: ReturnTarget = {kind: 'internal', url: DEFAULT_RETURN_URL};
   /** App path handed to the sign-up page, so an invitation link survives creating an account. */
   protected forwardReturnUrl: string | null = null;
+  /** Shared demo password; null (nothing shown) when the deployment offers no demo accounts. */
+  protected readonly demoPassword = signal<string | null>(null);
+  protected readonly demoPersonas = DEMO_PERSONAS;
 
   constructor(@Inject(DOCUMENT) private readonly document: Document) {
     this.loginForm = this.fb.group({
@@ -45,6 +56,7 @@ export class LoginComponent implements OnInit {
     const raw = this.route.snapshot.queryParams['returnUrl'];
     this.target = resolveReturnUrl(raw, this.document.location.hostname);
     this.forwardReturnUrl = forwardableReturnUrl(raw, this.document.location.hostname);
+    this.authService.demoAccess().subscribe(access => this.demoPassword.set(access?.password ?? null));
   }
 
   onSubmit(): void {
@@ -52,7 +64,19 @@ export class LoginComponent implements OnInit {
       return;
     }
 
-    this.authService.login(this.loginForm.value).subscribe({
+    this.signIn(this.loginForm.value);
+  }
+
+  /** One-click sign-in with a demo account. */
+  protected signInDemo(email: string): void {
+    const password = this.demoPassword();
+    if (password) {
+      this.signIn({email, password});
+    }
+  }
+
+  private signIn(credentials: {email: string; password: string}): void {
+    this.authService.login(credentials).subscribe({
       next: () => {
         if (this.target.kind === 'external') {
           // Native browser redirect for the admin tools behind Traefik (subdomains of this host)

@@ -100,7 +100,7 @@ of them:
   Logging a score for someone else is admin-only, except on competition WODs (below). Each score
   carries `capabilities {canModify, canVerify}`; other athletes' comments and scaling notes are hidden
   from viewers who cannot moderate the score.
-* **Team WODs** (V16): `teamSize` (2–6) and `teamMode` (`YOU_GO_I_GO`, `SPLIT`, `SYNCHRO`) on the WOD,
+* **Team WODs** (former V16): `teamSize` (2–6) and `teamMode` (`YOU_GO_I_GO`, `SPLIT`, `SYNCHRO`) on the WOD,
   `teamSplit` (`TOTAL` default, `EACH`, `TOGETHER`) on each line; never on a program (400). A team
   score names teammates of the box (`teammateIds`, at most `teamSize`: an odd athlete mirrors a team;
   members checked with Antares, a program refused): one `score_teams` row, one score per member
@@ -129,7 +129,7 @@ from `@PreAuthorize`.
 
 ## Sessions (lot B)
 
-A session (`sessions`, V11) is an ordered container of blocks (`session_blocks`) proposed on a day
+A session (`sessions`, former V11) is an ordered container of blocks (`session_blocks`) proposed on a day
 (`type = WOD`, run in several slots) or a week (`type = SPECIALTY`, `date` = its Monday, `endDate` its
 Sunday); the same blocks at two dates are two sessions. Disciplines: `CROSSFIT`, `WEIGHTLIFTING`,
 `STRENGTH`, `GYMNASTICS`, `ENDURANCE`, `HYROX`, `MOBILITY`, `BODYBUILDING`, `STRONGMAN`, `OTHER`.
@@ -152,13 +152,13 @@ Sunday); the same blocks at two dates are two sessions. Disciplines: `CROSSFIT`,
   hidden content is null in responses and session WODs and their leaderboards answer 403.
 * Gym settings (`gym_session_settings`): `defaultVisibility` (built-in: `AFTER_PARTICIPANTS` for a
   box, `ADVANCE` for a program, read from Antares) and `timeZone` (default `Europe/Paris`).
-* Journal (V12, `session_logs` + `session_log_blocks`): "Séance faite" creates the athlete's journal
+* Journal (former V12, `session_logs` + `session_log_blocks`): "Séance faite" creates the athlete's journal
   (one per session, on one of its days, never in the future) with every block checked; blocks can be
   unchecked; `source` `MANUAL` (`PLANNING` reserved for the planning service). A score on a session
   WOD joins the athlete's journal (created when missing, e.g. by a judge); a borrowed WOD's score
   joins it with `sessionLogId`. A journal makes its athlete a participant; it cannot be deleted while scores are linked.
   **Lock per block** (`SessionService`, `BlockLocks`): a block holding scores (`scores.session_block_id`,
-  V17, set with the journal: `ScoreRequest.sessionBlockId`, else the first block of the session
+  former V17, set with the journal: `ScoreRequest.sessionBlockId`, else the first block of the session
   holding the WOD; two blocks may borrow the same WOD) is *frozen* (kind, WOD written or borrowed, removal: 409); a block *checked*
   in a journal (`session_log_blocks.done`) without score cannot be removed (409) but stays fully
   editable, its prescription may change (lot D recomputes the muscle balance); free blocks, title,
@@ -181,17 +181,17 @@ Sunday); the same blocks at two dates are two sessions. Disciplines: `CROSSFIT`,
   (`WodMovement.checkVariantsAllowed`): 400 on create/update, also enforced when reading the CSVs.
   Conversely, a movement update cannot remove an equipment or technique that any WOD (public, gym
   or personal) still prescribes for it: 409 naming the value and the number of WODs.
-* **WOD format and category** (formats v3, V15): `wodType` is the format category (`FOR_TIME`, `AMRAP`,
+* **WOD format and category** (formats v3, former V15): `wodType` is the format category (`FOR_TIME`, `AMRAP`,
   `EMOM`, `TABATA`, `FOR_LOAD`, `FOR_QUALITY`) and `structure` its sub-category (`Wod.WodStructure`,
   `allowedIn(type)`, 400 `error.wod.structure.mismatch` otherwise; listed per format in
   `GET /wods/reference-data` `structures`); a weightlifting complex groups its lines with
-  `wod_movements.complex_group`. V15 moved the former types (CHIPPER, LADDER, INTERVALS, DEATH_BY,
+  `wod_movements.complex_group`. The former V15 migration moved the former types (CHIPPER, LADDER, INTERVALS, DEATH_BY,
   STRENGTH, SKILL, ACCESSORY, CUSTOM) to a category and a sub-category; the optional `category` is the family
   (`GIRLS`, `HERO`, `BENCHMARK` = official CrossFit benchmarks such as Fight Gone Bad, `OPEN`,
-  `QUARTERFINALS`, `SEMIFINALS`, `GAMES`): categories of public WODs (V13 dropped the former box
+  `QUARTERFINALS`, `SEMIFINALS`, `GAMES`): categories of public WODs (former V13 dropped the former box
   benchmark category; box programming goes through sessions).
   Fran is a `FOR_TIME` / `SCHEME` WOD (`repScheme` 21-15-9) of the `GIRLS` category.
-* **WOD structure** (V14, written by the Sirius quick editor): `rounds` (a "rounds for time": Helen
+* **WOD structure** (former V14, written by the Sirius quick editor): `rounds` (a "rounds for time": Helen
   = `FOR_TIME` + 3), `restSeconds` (between rounds, or the rest of an interval), `workSeconds`
   (intervals, Tabata 20 s), `ladderStart` / `ladderStep` (ascending ladder 3-6-9..., Death by 1 + 1),
   weight vest `vestWeight` / `vestWeightFemale` / `vestWeightUnit` (Murph), and per WOD movement
@@ -234,13 +234,13 @@ Sunday); the same blocks at two dates are two sessions. Disciplines: `CROSSFIT`,
 * `POST /`, `PUT /{id}`, `DELETE /{id}`: manage a WOD (rules above). A session WOD answers 400
   (edited through its session); a WOD borrowed by a session block cannot be deleted (409).
 * `GET /reference-data`: WOD formats, categories, score types and unit groups.
-* `repMax` (V18): N of an "N RM" test, only on an individual For Load WOD with one movement (400
+* `repMax` (former V18): N of an "N RM" test, only on an individual For Load WOD with one movement (400
   otherwise). Per line, `percentOfRm` (0-150) and `rmReps` (default 1 with a percentage, dropped
   without): the load as a percentage of the athlete's RM of the base version of the movement.
 
 ### Records (`/aldebaran/records`, lot C)
 
-`movement_records` (V18) holds each athlete's best load per movement, variant key and number of reps,
+`movement_records` (former V18) holds each athlete's best load per movement, variant key and number of reps,
 rebuilt by `MovementRecordService.rebuild(userId, movementId)` after every score write, correction or
 deletion, and once at startup when the table is empty (`config/MovementRecordBackfill`).
 
@@ -254,7 +254,7 @@ deletion, and once at startup when the table is empty (`config/MovementRecordBac
 * `GET /me[?movementId=]`: the caller's records by movement (name order, with its `category`) and
   variant (base first), with `estimatedOneRepMaxKg` (Epley from the 2-10 rep records), `estimates`
   (the usual 1/2/3/5/10 RM without a record, Epley from the real 1RM else the estimated one) and, per
-  record, `previousWeightKg` (best load before its day, V19); estimates are displayed only, never stored.
+  record, `previousWeightKg` (best load before its day, former V19); estimates are displayed only, never stored.
 * `GET /me/progress?movementId=&reps=1`: each day the caller set a new best N RM on the base version.
 * `GET /lifts`: canonical lifts, i.e. public "N RM" tests of a base-version movement (one per movement
   and N, official competition events excluded: an Open 1RM still feeds the records but is never the
@@ -277,8 +277,7 @@ deletion, and once at startup when the table is empty (`config/MovementRecordBac
   a 5-ft lunge section counts as a rep, as in the Open) lets clients enter and show the total as
   rounds + reps. A score sent as `rounds` + `reps` is stored as `rounds * repsPerRound + reps`
   (400 if the WOD has no fixed round). Ladders, chippers and rounds that differ for men and women
-  (Open 18.1) have none. Migration V7 converted the former `ROUNDS_REPS` WODs and scores; V9 adds
-  competition WODs, WOD copies and score verification.
+  (Open 18.1) have none. The former V7 migration converted the former `ROUNDS_REPS` WODs and scores.
 * Tiebreak: a WOD may define its official tiebreak (`tiebreakEn` / `tiebreakFr`, e.g. Open
   workouts); a score's `tiebreakSeconds` is always optional, kept only for such WODs (and for a TIME
   WOD only when time-capped), and only separates equal scores in compare and leaderboards.
@@ -295,12 +294,12 @@ deletion, and once at startup when the table is empty (`config/MovementRecordBac
   to the caller, `SessionSecurity.canReadContent`, 403 otherwise). Filters apply before choosing each athlete's best score: an athlete is ranked by
   their best kept score, which may not be their PR (done in another gym, or not verified yet).
   Filtered leaderboards are ranked in memory in `ScoreService`, the worldwide one in the database.
-* Division (V10, `scores.division`): copied at logging from `X-Auth-User-Division` for one's own
+* Division (former V10, `scores.division`): copied at logging from `X-Auth-User-Division` for one's own
   score; for a score staff log for an athlete, the athlete's, read from Antares
   (`GET /antares/internal/users/{id}/division`, 503 if unavailable), never the judge's. A score logged
   with a division also classifies the athlete's older scores without one. A division change applies
   to the scores logged afterwards; scores without a division only appear on the "all" leaderboard.
-* Age group (V18, `scores.age_group`): age = year of the score − birth year, CrossFit Open brackets,
+* Age group (former V18, `scores.age_group`): age = year of the score − birth year, CrossFit Open brackets,
   computed at logging from `X-Auth-User-Birth-Year` (own score) or Antares' `birthYear` (staff score);
   the birth year is never stored. Older scores without a group get the group of their own year at the
   athlete's next score. Team scores have none.
@@ -357,15 +356,18 @@ starts empty. This mechanism (export endpoints, source volume, CSV seeding) is t
   `movement_name` is the exact movement name; an unknown one is logged and the row skipped.
   Blank cell = `null`, so the export → seed round-trip is lossless (`config/WodCsvCodec`).
 
-With the `dev` Spring profile, `config/DevGymWodSeeder` (temporary) also creates private WODs for
-the Antares test gyms "Spartacus CrossFit" (author `owner@sparta.com`) and "Zeus Programming"
-(author `programmer@zeus.com`), plus a personal WOD for `athlete@sparta.com`. IDs are read from the
+With the `demo` Spring profile, `demo/DevGymWodSeeder` (package `aldebaran.demo`, removable as a whole) also creates private WODs for
+the Antares test gyms "Spartacus CrossFit" (author `owner.sparta@demo.test`) and "Zeus Programming"
+(author `programmer.zeus@demo.test`), plus a personal WOD for `athlete.sparta@demo.test`. IDs are read from the
 `antares` schema of the same database, retried in the background for about 60 s; skipped if Sparta
-already has WODs. `config/DevScoreSeeder` then logs about 80 scores for the test accounts (gym WODs,
+already has WODs. `demo/DevScoreSeeder` then logs about 80 scores for the test accounts (gym WODs,
 Fran, Chelsea, Cindy, Grace, Murph, Open 25.1/25.2, CrossFit Total; several levels and gyms, some
-repeated attempts) so histories and leaderboards can be checked; skipped if `owner@sparta.com`
-already has scores, so an existing database gets them on the next start. At every start it also
-gives the scores without a division their athlete's Antares division (dev data only).
+repeated attempts) so histories and leaderboards can be checked; skipped if `owner.sparta@demo.test`
+already has scores, so an existing database gets them on the next start. A second step logs about 45 scores on the public "N RM" tests (Back Squat, Deadlift, Clean and Jerk,
+Snatch, Shoulder Press, Bench Press, Front Squat), so the records, lift leaderboards and box board have
+data; it is marked by the owner's score on "Back Squat 1RM", so an older database gets it on the next start.
+At every start it also gives the scores and records without a division their athlete's Antares division
+(dev data only).
 
 ## API Documentation
 

@@ -154,8 +154,9 @@ docker compose -f docker-compose.observability.yml up -d
 ```
 
 At startup, Antares creates the platform admin defined by the `ADMIN_*` variables. While the
-software is in development, the `dev` Spring profile (set in `docker-compose.yml`) also seeds test
-gyms, test accounts, gym WODs and their scores; this is temporary (see the Antares and Aldebaran READMEs).
+software is in development, the `demo` Spring profile (set in `docker-compose.yml`) also seeds demo
+gyms, demo accounts (`*.test` addresses, a known password, never admin), gym WODs and their scores; the
+`demo` sub-packages are removable as a whole (see the Antares and Aldebaran READMEs).
 
 ### 5. Access the Application
 

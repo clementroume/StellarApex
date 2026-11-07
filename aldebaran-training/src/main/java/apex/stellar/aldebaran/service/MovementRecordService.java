@@ -191,7 +191,7 @@ public class MovementRecordService {
 
   /**
    * Rebuilds every record from the scores, once, when the table is empty and scores may feed it
-   * (first start after V18, or a restored database).
+   * (first start after former V18, or a restored database).
    *
    * @return The number of (athlete, movement) pairs rebuilt.
    */

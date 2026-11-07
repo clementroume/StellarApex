@@ -18,8 +18,10 @@ describe('LoginComponent', () => {
 
   beforeEach(async () => {
     authServiceSpy = {
-      login: vi.fn().mockName("AuthService.login")
+      login: vi.fn().mockName("AuthService.login"),
+      demoAccess: vi.fn().mockName("AuthService.demoAccess")
     } as any;
+    authServiceSpy.demoAccess.mockReturnValue(of(null));
     authServiceSpy.login.mockReturnValue(of({} as any));
     await TestBed.configureTestingModule({
       imports: [LoginComponent],
@@ -89,5 +91,23 @@ describe('LoginComponent', () => {
 
     const link: HTMLAnchorElement = fixture.nativeElement.querySelector('a[href^="/auth/register"]');
     expect(decodeURIComponent(link.getAttribute('href')!)).toBe('/auth/register?returnUrl=/join?gym=4&code=X');
+  });
+
+  it('should offer no demo access when the deployment has none', () => {
+    expect(fixture.nativeElement.querySelector('[data-slot="demo-access"]')).toBeNull();
+  });
+
+  it('should offer the demo accounts and sign in with one of them in one click', () => {
+    authServiceSpy.demoAccess.mockReturnValue(of({password: 'shared-pw'}));
+    vi.spyOn(TestBed.inject(Router), 'navigateByUrl').mockResolvedValue(true);
+    component.ngOnInit();
+    fixture.changeDetectorRef.markForCheck();
+    fixture.detectChanges();
+
+    const buttons = fixture.nativeElement.querySelectorAll('[data-slot="demo-access"] button');
+    expect(buttons.length).toBe(4);
+    fixture.nativeElement.querySelector('[data-persona="ATHLETE"]').click();
+
+    expect(authServiceSpy.login).toHaveBeenCalledWith({email: 'athlete.sparta@demo.test', password: 'shared-pw'});
   });
 });

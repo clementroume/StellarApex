@@ -11,7 +11,7 @@ import org.springframework.stereotype.Component;
 
 /**
  * Rebuilds {@code movement_records} from the existing scores at startup when the table is empty
- * (first start after V18, restored database; D62). Idempotent: nothing happens once records exist,
+ * (first start after former V18, restored database; D62). Idempotent: nothing happens once records exist,
  * and the scores written afterwards keep them up to date.
  */
 @Component

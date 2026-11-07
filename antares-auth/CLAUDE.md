@@ -35,7 +35,7 @@ HttpOnly cookies, XSRF cookie `XSRF-TOKEN`). `./mvnw verify` runs unit tests and
   `X-Internal-Secret`, constant-time, 404 otherwise), excluded from the Traefik route. Never expose
   user data there beyond what a caller needs to enforce its own rule.
 - Gym holder: exactly one OWNER (physical) / PROGRAMMER (virtual) per gym (`Gym.holderRole`,
-  `Gym.allowsRole`, unique index V4); changed only by `MembershipService.transferOwnership`; transfer
+  `Gym.allowsRole`, unique index former V4); changed only by `MembershipService.transferOwnership`; transfer
   and gym deletion are `@security.isGymHolder`. Gym creation is open (`PENDING_APPROVAL`, one waiting
   request per user, no creation token); discovery `GET /gyms` returns `GymPublicResponse` only.
 - Account e-mails: `AccountTokenService` (Redis, hashed single-use tokens bound to the address) +
@@ -48,8 +48,11 @@ HttpOnly cookies, XSRF cookie `XSRF-TOKEN`). `./mvnw verify` runs unit tests and
   `register()` marks the account verified, `registerUnverified()` does not).
 - Athlete profile: `AthleteProfileService` (division shared through `X-Auth-User-Division` and the
   internal `GET /internal/users/{id}/division`; birth year, height, `body_weights` private).
-- Bootstrap: the admin from `ApplicationConfig.adminUserInitializer`. `config/DevDataSeeder`
-  (`dev` profile, temporary, TO BE REMOVED) seeds test accounts; Aldebaran relies on its names.
+- Bootstrap: the admin from `ApplicationConfig.adminUserInitializer`. `demo/DevDataSeeder`
+  (profile `demo`) seeds the demo gyms and accounts (`<role>.<box>@demo.test`, `users.demo`, never admin), Aldebaran's
+  `demo` seeders rely on their names; the whole `apex.stellar.antares.demo` package (+ its `GET /auth/demo`) is what
+  to delete to retire the demo. `e2e/E2eFixtureSeeder` (profile `e2e`) seeds the Playwright fixtures, independent of
+  the demo.
 
 ## Code conventions
 

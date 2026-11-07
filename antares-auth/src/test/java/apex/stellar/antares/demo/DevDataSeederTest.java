@@ -1,10 +1,13 @@
-package apex.stellar.antares.config;
+package apex.stellar.antares.demo;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 import apex.stellar.antares.model.Division;
 import apex.stellar.antares.model.Gym;
@@ -12,6 +15,7 @@ import apex.stellar.antares.model.Gym.GymStatus;
 import apex.stellar.antares.model.GymRole;
 import apex.stellar.antares.model.Membership;
 import apex.stellar.antares.model.Membership.MembershipStatus;
+import apex.stellar.antares.model.PlatformRole;
 import apex.stellar.antares.model.User;
 import apex.stellar.antares.repository.jpa.GymRepository;
 import apex.stellar.antares.repository.jpa.MembershipRepository;
@@ -57,7 +61,7 @@ class DevDataSeederTest {
 
   @BeforeEach
   void setUp() {
-    ReflectionTestUtils.setField(seeder, "password", "secret");
+    ReflectionTestUtils.setField(seeder, "password", "demo-pw");
     lenient().when(passwordEncoder.encode(anyString())).thenReturn("encoded");
 
     lenient()
@@ -105,18 +109,52 @@ class DevDataSeederTest {
         .containsExactlyInAnyOrder("Spartacus CrossFit", "Zeus Programming", "Pending Box");
     assertThat(users).hasSize(ACCOUNTS);
     assertThat(memberships).hasSize(MEMBERSHIPS);
-    assertThat(membership("banned@sparta.com", "Spartacus CrossFit").getStatus())
+    assertThat(membership("banned.sparta@demo.test", "Spartacus CrossFit").getStatus())
         .isEqualTo(MembershipStatus.BANNED);
-    assertThat(account("athlete@sparta.com").getDivision()).isEqualTo(Division.WOMEN);
-    assertThat(account("owner@sparta.com").getDivision()).isEqualTo(Division.MEN);
-    assertThat(account("pending@sparta.com").getDivision()).isNull();
+    assertThat(account("athlete.sparta@demo.test").getDivision()).isEqualTo(Division.WOMEN);
+    assertThat(account("owner.sparta@demo.test").getDivision()).isEqualTo(Division.MEN);
+    assertThat(account("pending.sparta@demo.test").getDivision()).isNull();
     assertThat(users).allMatch(User::isEmailVerified);
+  }
+
+  @Test
+  @DisplayName("run: every seeded account is a demo account, a plain USER, with the demo password")
+  void testRun_AccountsAreDemoUsers() {
+    seeder.run();
+
+    assertThat(users).hasSize(ACCOUNTS).allMatch(User::isDemo);
+    assertThat(users).allMatch(u -> u.getPlatformRole() == PlatformRole.USER);
+    assertThat(users).allMatch(u -> u.getEmail().endsWith(".test"));
+    assertThat(users).allMatch(u -> "METRIC".equals(u.getUnitSystem()));
+    verify(passwordEncoder, times(ACCOUNTS)).encode("demo-pw");
+  }
+
+  @Test
+  @DisplayName("run: nothing is seeded without a configured demo password")
+  void testRun_NoPassword_SeedsNothing() {
+    ReflectionTestUtils.setField(seeder, "password", "");
+
+    seeder.run();
+
+    assertThat(users).isEmpty();
+    assertThat(gyms).isEmpty();
+  }
+
+  @Test
+  @DisplayName("run: an existing account that is not a demo account is never adopted")
+  void testRun_ExistingNonDemoAccount_IsRefused() {
+    store(User.builder().email("owner.sparta@demo.test").firstName("x").lastName("User").build(), users);
+
+    assertThatThrownBy(() -> seeder.run())
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("owner.sparta@demo.test");
+    assertThat(memberships).isEmpty();
   }
 
   @Test
   @DisplayName("run: a division chosen in the application is kept")
   void testRun_KeepsChosenDivision() {
-    User athlete = user("athlete@sparta.com");
+    User athlete = user("athlete.sparta@demo.test");
     athlete.setDivision(Division.MEN);
 
     seeder.run();
@@ -145,10 +183,10 @@ class DevDataSeederTest {
     Gym sparta = gym("Spartacus CrossFit", false);
     Gym zeus = gym("Zeus Programming", true);
     // A manual change made in the application must survive the seeder
-    User owner = user("owner@sparta.com");
+    User owner = user("owner.sparta@demo.test");
     owner.setFirstName("Renamed");
     member(owner, sparta, GymRole.OWNER);
-    member(user("programmer@zeus.com"), zeus, GymRole.PROGRAMMER);
+    member(user("programmer.zeus@demo.test"), zeus, GymRole.PROGRAMMER);
 
     seeder.run();
 
@@ -157,9 +195,9 @@ class DevDataSeederTest {
     assertThat(users).hasSize(ACCOUNTS);
     assertThat(owner.getFirstName()).isEqualTo("Renamed");
     assertThat(memberships).hasSize(MEMBERSHIPS);
-    assertThat(membership("multi@athlete.com", "Zeus Programming").getGymRole())
+    assertThat(membership("multi@demo.test", "Zeus Programming").getGymRole())
         .isEqualTo(GymRole.ATHLETE);
-    assertThat(membership("hybrid@sparta.com", "Spartacus CrossFit").getGymRole())
+    assertThat(membership("hybrid.sparta@demo.test", "Spartacus CrossFit").getGymRole())
         .isEqualTo(GymRole.COACH);
   }
 
@@ -181,7 +219,7 @@ class DevDataSeederTest {
   }
 
   private User user(String email) {
-    return store(User.builder().email(email).firstName("x").lastName("User").build(), users);
+    return store(User.builder().email(email).firstName("x").lastName("User").demo(true).build(), users);
   }
 
   private void member(User user, Gym gym, GymRole role) {

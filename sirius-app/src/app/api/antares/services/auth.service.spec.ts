@@ -73,6 +73,22 @@ describe('AuthService', () => {
     });
   });
 
+  describe('demoAccess', () => {
+    it('returns the shared demo password', () => {
+      let result: any;
+      service.demoAccess().subscribe(r => result = r);
+      httpMock.expectOne(`${base}/auth/demo`).flush({password: 'pw'});
+      expect(result).toEqual({password: 'pw'});
+    });
+
+    it('returns null when the deployment has no demo (404)', () => {
+      let result: any = 'unset';
+      service.demoAccess().subscribe(r => result = r);
+      httpMock.expectOne(`${base}/auth/demo`).flush({}, {status: 404, statusText: 'Not Found'});
+      expect(result).toBeNull();
+    });
+  });
+
   describe('login', () => {
     it('should POST and set current user', () => {
       const payload: AuthenticationRequest = {email: 'john.doe@test.com', password: 'secret'};
