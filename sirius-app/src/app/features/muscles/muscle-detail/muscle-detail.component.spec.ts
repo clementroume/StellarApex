@@ -41,10 +41,16 @@ describe('MuscleDetailComponent', () => {
 
     mockMuscleService = {
       getMuscle: vi.fn().mockName("MuscleService.getMuscle"),
+      getUsage: vi.fn().mockName("MuscleService.getUsage"),
       deleteMuscle: vi.fn().mockName("MuscleService.deleteMuscle"),
       notifyRefresh: vi.fn().mockName("MuscleService.notifyRefresh")
     } as any;
     mockMuscleService.getMuscle.mockReturnValue(of(mockMuscle));
+    mockMuscleService.getUsage.mockReturnValue(of([
+      {movementId: 1, movementName: 'Bench Press', category: 'PRESS', role: 'AGONIST'},
+      {movementId: 2, movementName: 'Dip', category: 'DIPS', role: 'AGONIST'},
+      {movementId: 3, movementName: 'Push-up', category: 'PUSH', role: 'SYNERGIST', trigger: 'FEET_ELEVATED'}
+    ]));
 
     mockNotificationService = {
       showSuccess: vi.fn().mockName("NotificationService.showSuccess"),
@@ -81,6 +87,14 @@ describe('MuscleDetailComponent', () => {
     expect(component).toBeTruthy();
     expect(mockMuscleService.getMuscle).toHaveBeenCalledWith(1);
     expect(component.muscle()).toEqual(mockMuscle);
+  });
+
+  it('should list the movements using the muscle, by role', () => {
+    expect(mockMuscleService.getUsage).toHaveBeenCalledWith(1);
+    expect(component.countOf('AGONIST')).toBe(2);
+    expect(component.shownUsage().map(u => u.movementName)).toEqual(['Bench Press', 'Dip']);
+    component.role.set('SYNERGIST');
+    expect(component.shownUsage().map(u => u.trigger)).toEqual(['FEET_ELEVATED']);
   });
 
   it('should go back when goBack is called', () => {

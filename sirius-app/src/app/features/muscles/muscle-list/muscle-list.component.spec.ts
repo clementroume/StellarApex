@@ -51,14 +51,13 @@ describe('MuscleListComponent', () => {
     // 1. Mocking the MuscleService
     const muscleServiceSpyMethods = {
       getMuscles: vi.fn().mockName("MuscleService.getMuscles"),
-      getReferenceData: vi.fn().mockName("MuscleService.getReferenceData"),
-      toggleGroupExpansion: vi.fn().mockName("MuscleService.toggleGroupExpansion")
+      getReferenceData: vi.fn().mockName("MuscleService.getReferenceData")
     };
 
     mockMuscleService = {
       ...muscleServiceSpyMethods,
       refreshNeeded$: new Subject<void>(),
-      savedExpandedGroups: signal(new Set<string>()),
+      savedRegion: signal('CHEST'),
       savedSearchQuery: signal('')
     };
 
@@ -147,9 +146,19 @@ describe('MuscleListComponent', () => {
     // Test search by translated name (FR as default or fallback language)
     translateService.use('fr');
     fixture.detectChanges();
-    component.searchQuery.set('pectoraux');
+    component.searchQuery.set('PÉCTORAUX');
     expect(component.filteredMuscles().length).toBe(1);
     expect(component.filteredMuscles()[0].medicalName).toBe('Pectoralis');
+  });
+
+  it('should show the region picked, and every region while searching', () => {
+    expect(component.shownRows().map(r => r.muscle.id)).toEqual([1, 2]);
+    component.activeRegion.set('LEGS');
+    expect(component.shownRows()).toEqual([]);
+    component.onSearchChange('pect');
+    fixture.detectChanges();
+    expect(component.shownRows().map(r => r.muscle.medicalName)).toEqual(['Pectoralis']);
+    expect(fixture.nativeElement.querySelector('app-body-map')).toBeNull();
   });
 
   it('should update the searchQuery signal on input', () => {

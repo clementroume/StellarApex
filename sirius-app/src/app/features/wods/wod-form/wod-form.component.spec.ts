@@ -15,6 +15,8 @@ import {UnitService} from '../../../core/services/unit.service';
 import {APP_ICONS} from '../../../app.config';
 import {WodResponse} from '../../../api/aldebaran/models/wod.model';
 
+const option = (movementId: number) => ({movementId, movementName: 'M', category: 'PULLING', nameEn: 'M', techniques: [], equipment: []});
+
 describe('WodFormComponent', () => {
   let component: WodFormComponent;
   let fixture: ComponentFixture<WodFormComponent>;
@@ -107,6 +109,8 @@ describe('WodFormComponent', () => {
 
     mockMovementService = {
       getMovements: vi.fn().mockName('MovementService.getMovements'),
+      getUsualNames: vi.fn().mockReturnValue(of([])),
+      getReferenceData: vi.fn().mockReturnValue(of({categoryGroups: {}, equipmentGroups: {}, techniqueGroups: {}, exclusiveTechniqueSets: []})),
       getMovement: vi.fn().mockName('MovementService.getMovement')
     } as any;
     mockMovementService.getMovements.mockReturnValue(of([
@@ -262,13 +266,13 @@ describe('WodFormComponent', () => {
       component.addMovement();
       const row = component.movementsFormArray.at(0);
 
-      component.onMovementChange(0, 20);
+      component.onMovementPicked(0, option(20));
       expect(row.value.movementId).toBe(20);
       expect(mockMovementService.getMovement).toHaveBeenCalledWith(20);
       expect(component.allowedVariants(0, 'equipment')).toEqual(['PULL_UP_BAR', 'RINGS']);
       expect(component.allowedVariants(0, 'techniques')).toEqual(['KIPPING', 'STRICT']);
 
-      component.onMovementChange(0, null);
+      component.onMovementPicked(0, null);
       expect(row.value.movementId).toBeNull();
       expect(row.get('movementId')!.invalid).toBe(true);
       expect(component.allowedVariants(0, 'equipment')).toEqual([]);
@@ -277,8 +281,7 @@ describe('WodFormComponent', () => {
     it('should toggle variants, send them and clear them when the movement changes', () => {
       fillValidForm();
       const row = component.movementsFormArray.at(0);
-      component.onMovementChange(0, 20); // same movement: nothing reset
-
+      
       component.toggleVariant(0, 'equipment', 'RINGS');
       component.toggleVariant(0, 'techniques', 'STRICT');
       component.toggleVariant(0, 'techniques', 'KIPPING');
@@ -286,7 +289,7 @@ describe('WodFormComponent', () => {
       expect(component.isVariantSelected(0, 'equipment', 'RINGS')).toBe(true);
       expect(component.buildPayload().movements[0]).toMatchObject({equipment: ['RINGS'], techniques: ['STRICT']});
 
-      component.onMovementChange(0, 10);
+      component.onMovementPicked(0, option(10));
       expect(component.buildPayload().movements[0]).toMatchObject({movementId: 10, equipment: [], techniques: []});
     });
 

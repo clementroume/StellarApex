@@ -1,8 +1,10 @@
 import {inject, Injectable, signal} from '@angular/core';
-import {HttpClient, HttpContext} from '@angular/common/http';
-import {Observable, Subject} from 'rxjs';
+import {HttpClient, HttpContext, HttpParams} from '@angular/common/http';
+import {Observable, shareReplay, Subject, tap} from 'rxjs';
 import {environment} from '../../../../environments/environment';
 import {
+  MovementVariant,
+  UsualNameOption,
   MovementReferenceData,
   MovementRequest,
   MovementResponse,
@@ -13,6 +15,8 @@ import {
 export class MovementService {
   private readonly http = inject(HttpClient);
   public refreshNeeded$ = new Subject<void>();
+  private referenceData$?: Observable<MovementReferenceData>;
+  private usualNames$?: Observable<UsualNameOption[]>;
 
   getMovements(context?: HttpContext): Observable<MovementSummaryResponse[]> {
     return this.http.get<MovementSummaryResponse[]>(this.buildUrl(), {context});
@@ -34,8 +38,26 @@ export class MovementService {
     return this.http.delete<void>(this.buildUrl(`/${id}`));
   }
 
+  /** Enum groups of the forms: they only change with a release, so one load is enough. */
   getReferenceData(): Observable<MovementReferenceData> {
-    return this.http.get<MovementReferenceData>(this.buildUrl(`/reference-data`));
+    this.referenceData$ ??= this.http.get<MovementReferenceData>(this.buildUrl(`/reference-data`))
+      .pipe(tap({error: () => this.referenceData$ = undefined}), shareReplay({bufferSize: 1, refCount: false}));
+    return this.referenceData$;
+  }
+
+  /** Every usual name of the catalog, for the movement search; reloaded after an admin change. */
+  getUsualNames(context?: HttpContext): Observable<UsualNameOption[]> {
+    this.usualNames$ ??= this.http.get<UsualNameOption[]>(this.buildUrl('/usual-names'), {context})
+      .pipe(tap({error: () => this.usualNames$ = undefined}), shareReplay({bufferSize: 1, refCount: false}));
+    return this.usualNames$;
+  }
+
+  /** A movement for a chosen variant: usual name, roles, description, video. */
+  getVariant(id: number, techniques: string[], equipment: string[], context?: HttpContext): Observable<MovementVariant> {
+    let params = new HttpParams();
+    techniques.forEach(t => params = params.append('techniques', t));
+    equipment.forEach(e => params = params.append('equipment', e));
+    return this.http.get<MovementVariant>(this.buildUrl(`/${id}/variant`), {params, context});
   }
 
   private buildUrl(path: string = ''): string {
@@ -43,21 +65,13 @@ export class MovementService {
   }
 
   notifyRefresh() {
+    this.usualNames$ = undefined;
     this.refreshNeeded$.next();
   }
 
   // --- UI STATE ---
   public readonly savedSearchQuery = signal<string>('');
   public readonly savedActiveTab = signal<string>('');
-  public readonly savedExpandedCategories = signal<Set<string>>(new Set());
-
-  toggleCategoryExpansion(category: string, isExpanded: boolean): void {
-    const currentSet = new Set(this.savedExpandedCategories());
-    if (isExpanded) {
-      currentSet.add(category);
-    } else {
-      currentSet.delete(category);
-    }
-    this.savedExpandedCategories.set(currentSet);
-  }
+  /** Family picked on the catalog, null for all of the discipline. */
+  public readonly savedFamily = signal<string | null>(null);
 }

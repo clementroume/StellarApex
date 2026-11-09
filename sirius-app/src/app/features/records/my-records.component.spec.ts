@@ -12,9 +12,9 @@ describe('MyRecordsComponent', () => {
   let recordService: {getMyRecords: ReturnType<typeof vi.fn>; getCanonicalLifts: ReturnType<typeof vi.fn>};
   const recent = new Date(Date.now() - 2 * 86_400_000).toISOString().slice(0, 10);
   const lift = (name: string, id: number, category: string, reps: number, kg: number, previous: number | null = null,
-                estimate: number | null = null): MovementRecords => ({
+                estimate: number | null = null, variantKey = ''): MovementRecords => ({
     movementId: id, movementName: name, category,
-    variants: [{variantKey: '', base: true, equipment: [], techniques: [], estimatedOneRepMaxKg: estimate, estimates: [],
+    variants: [{variantKey, base: variantKey === '', equipment: [], techniques: [], estimatedOneRepMaxKg: estimate, estimates: [],
       records: [{reps, weightKg: kg, previousWeightKg: previous, date: recent, scoreId: id, wodId: id, wodTitle: 'T'}]}]
   });
 
@@ -40,22 +40,44 @@ describe('MyRecordsComponent', () => {
 
   it('should show one tile per lift with its gain, the CrossFit Total and the lifts to test', () => {
     recordService.getMyRecords.mockReturnValue(of([
-      lift('Back Squat', 1, 'SQUAT', 1, 145, 140), lift('Deadlift', 3, 'DEADLIFT', 1, 180),
+      lift('Squat', 1, 'SQUAT', 1, 145, 140, null, ';BACK_RACK'), lift('Deadlift', 3, 'DEADLIFT', 1, 180),
       lift('Shoulder Press', 2, 'PRESS_AND_JERK', 1, 60), lift('Front Squat', 5, 'SQUAT', 3, 107, null, 118)
     ]));
     recordService.getCanonicalLifts.mockReturnValue(of([
-      {wodId: 10, movementId: 1, movementName: 'Back Squat', repMax: 1},
-      {wodId: 11, movementId: 4, movementName: 'Clean', repMax: 1}
+      {wodId: 10, movementId: 1, movementName: 'Squat', usualNameEn: 'Back Squat', variantKey: ';BACK_RACK', repMax: 1},
+      {wodId: 11, movementId: 4, movementName: 'Clean', variantKey: '', repMax: 1}
     ]));
     init();
     const el: HTMLElement = fixture.nativeElement;
     expect(el.querySelector('[data-slot="crossfit-total"]')?.textContent).toContain('385 kg');
     const tiles = Array.from(el.querySelectorAll('[data-slot="lift-tile"]')) as HTMLAnchorElement[];
     expect(tiles.length).toBe(4);
-    expect(tiles[0].getAttribute('href')).toBe('/training/records/1');
+    expect(tiles[0].textContent).toContain('Back Squat');
+    expect(decodeURIComponent(tiles[0].getAttribute('href')!)).toBe('/training/records/1?variant=;BACK_RACK');
     expect(tiles[0].querySelector('[data-slot="gain"]')?.textContent).toContain('+5');
     expect(tiles[3].textContent).toContain('≈ 118');
     expect(el.querySelector('[data-slot="untested"]')?.textContent).toContain('Clean');
+  });
+
+  it('should give a tile to a named variant without tests, and to a tested one beside its base', () => {
+    recordService.getMyRecords.mockReturnValue(of([
+      {...lift('Squat', 1, 'SQUAT', 3, 120, null, 132, ';ZERCHER'), variants: [
+        {...lift('Squat', 1, 'SQUAT', 3, 120, null, 132, ';ZERCHER').variants[0], usualNameEn: 'Zercher Squat'},
+        {...lift('Squat', 1, 'SQUAT', 3, 90, null, null, ';ZERCHER,PAUSED').variants[0], usualNameEn: null}
+      ]},
+      {...lift('Clean', 4, 'CLEAN', 1, 100), variants: [
+        lift('Clean', 4, 'CLEAN', 1, 100).variants[0],
+        {...lift('Clean', 4, 'CLEAN', 1, 90, null, null, ';POWER').variants[0], usualNameEn: 'Power Clean'},
+        {...lift('Clean', 4, 'CLEAN', 1, 85, null, null, ';HANG').variants[0], usualNameEn: 'Hang Clean'}
+      ]}
+    ]));
+    recordService.getCanonicalLifts.mockReturnValue(of([
+      {wodId: 11, movementId: 4, movementName: 'Clean', usualNameEn: 'Power Clean', variantKey: ';POWER', repMax: 1}
+    ]));
+    init();
+    const tiles = Array.from(fixture.nativeElement.querySelectorAll('[data-slot="lift-tile"]')) as HTMLElement[];
+    expect(tiles.map(t => t.textContent)).toEqual([
+      expect.stringContaining('Zercher Squat'), expect.stringContaining('Clean'), expect.stringContaining('Power Clean')]);
   });
 
   it('should filter the tiles by family, offering only families with lifts', () => {

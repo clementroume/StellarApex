@@ -1,9 +1,17 @@
 import {inject, Injectable, signal} from '@angular/core';
-import {HttpClient, HttpContext, HttpParams} from '@angular/common/http';
+import {HttpClient, HttpContext, HttpParameterCodec, HttpParams} from '@angular/common/http';
 import {Observable, shareReplay, tap} from 'rxjs';
 import {environment} from '../../../../environments/environment';
 import {AccessService} from '../../../core/services/access.service';
 import {BoardRecord, CanonicalLift, MovementRecords, RecordPoint} from '../models/record.model';
+
+/** Encodes every reserved character: a raw `;` in a variant key makes the proxy drop the parameter. */
+const STRICT_ENCODER: HttpParameterCodec = {
+  encodeKey: encodeURIComponent,
+  encodeValue: encodeURIComponent,
+  decodeKey: decodeURIComponent,
+  decodeValue: decodeURIComponent
+};
 
 /** Per-movement records (Aldebaran `/records`, lot C): own records, canonical lifts, box boards. */
 @Injectable({providedIn: 'root'})
@@ -39,9 +47,9 @@ export class RecordService {
     return this.http.get<MovementRecords[]>(this.buildUrl('/me'), {params, context});
   }
 
-  /** Progression of my N RM on the base version of a movement: each day a new best was set. */
-  getMyProgress(movementId: number, reps: number = 1, context?: HttpContext): Observable<RecordPoint[]> {
-    const params = new HttpParams().set('movementId', movementId).set('reps', reps);
+  /** Progression of my N RM on a variant of a movement: each day a new best was set. */
+  getMyProgress(movementId: number, reps: number = 1, context?: HttpContext, variantKey: string = ''): Observable<RecordPoint[]> {
+    const params = new HttpParams({encoder: STRICT_ENCODER}).set('movementId', movementId).set('reps', reps).set('variantKey', variantKey);
     return this.http.get<RecordPoint[]>(this.buildUrl('/me/progress'), {params, context});
   }
 
@@ -52,9 +60,9 @@ export class RecordService {
     return this.lifts$;
   }
 
-  /** The records board of a box for a movement (members of the box only). */
-  getGymBoard(gymId: number, movementId: number, context?: HttpContext): Observable<BoardRecord[]> {
-    const params = new HttpParams().set('movementId', movementId);
+  /** The records board of a box for a variant of a movement (members of the box only). */
+  getGymBoard(gymId: number, movementId: number, context?: HttpContext, variantKey: string = ''): Observable<BoardRecord[]> {
+    const params = new HttpParams({encoder: STRICT_ENCODER}).set('movementId', movementId).set('variantKey', variantKey);
     return this.http.get<BoardRecord[]>(this.buildUrl(`/gyms/${gymId}`), {params, context});
   }
 

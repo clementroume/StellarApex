@@ -1,6 +1,11 @@
 <div class="container mx-auto pb-12">
-  <div class="mt-8 mb-6 text-center md:text-left">
+  <div class="mt-8 mb-6 flex flex-col gap-1 text-center md:flex-row md:items-baseline md:justify-between md:text-left">
     <h1 class="text-3xl font-bold">{{ 'MOVEMENT.TITLE' | translate }}</h1>
+    @if (rawMovements().length > 0) {
+      <p class="text-sm text-muted-foreground" data-slot="catalog-count">
+        {{ 'MOVEMENT.LIST.SUMMARY' | translate: {movements: rawMovements().length, names: usualNames().length} }}
+      </p>
+    }
   </div>
 
   <app-search-input
@@ -16,38 +21,90 @@
     [emptyMessage]="'MOVEMENT.MESSAGES.EMPTY_LIST' | translate"
     [emptySearchMessage]="'MOVEMENT.MESSAGES.EMPTY_LIST_SEARCH' | translate: {name: searchQuery()}">
 
-    <div class="flex justify-center mb-10 w-full px-2 sm:px-0">
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-2 w-full max-w-4xl" role="group"
+    @if (shownNames().length > 0) {
+      <section class="mb-6 px-2 sm:px-0" [attr.aria-label]="'MOVEMENT.USUAL.FOUND' | translate">
+        <h2 class="mb-2 text-sm text-muted-foreground">{{ 'MOVEMENT.USUAL.FOUND' | translate }}</h2>
+        <div class="flex flex-wrap gap-2">
+          @for (o of shownNames(); track o.nameEn) {
+            <a hlmBtn variant="outline" size="sm" class="rounded-full" [routerLink]="['/movements', o.movementId]" [queryParams]="queryOf(o)">
+              {{ (lang() === 'fr' ? o.nameFr : null) || o.nameEn }}
+            </a>
+          }
+        </div>
+      </section>
+    }
+
+    @if (!isSearching()) {
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-2 w-full mb-4 px-2 sm:px-0" role="group"
            [attr.aria-label]="'MOVEMENT.FIELDS.MODALITY' | translate">
         @for (modality of modalityKeys(); track modality) {
           <button hlmBtn variant="outline" type="button"
                   class="h-11 w-full gap-2 aria-pressed:border-secondary aria-pressed:text-secondary aria-pressed:bg-secondary/10"
-                  [attr.aria-pressed]="activeTab() === modality" (click)="activeTab.set(modality)">
+                  [attr.aria-pressed]="activeTab() === modality" (click)="setModality(modality)">
             <ng-icon [name]="getModalityIcon(modality)" size="1.5rem" aria-hidden="true"></ng-icon>
             <span class="truncate text-sm">{{ 'MOVEMENT.MODALITIES.' + modality | translate }}</span>
           </button>
         }
       </div>
-    </div>
 
-    <app-list-grid [items]="populatedCategories()">
+      <div class="flex flex-wrap gap-2 mb-6 px-2 sm:px-0" role="group" data-slot="families"
+           [attr.aria-label]="'MOVEMENT.FIELDS.CATEGORY' | translate">
+        <button hlmBtn variant="outline" size="sm" type="button" class="rounded-full aria-pressed:border-secondary aria-pressed:bg-secondary/15"
+                [attr.aria-pressed]="activeFamily() === null" (click)="activeFamily.set(null)">
+          {{ 'MOVEMENT.LIST.ALL' | translate }}
+        </button>
+        @for (f of families(); track f.category) {
+          <button hlmBtn variant="outline" size="sm" type="button" class="rounded-full aria-pressed:border-secondary aria-pressed:bg-secondary/15"
+                  [attr.aria-pressed]="activeFamily() === f.category" (click)="activeFamily.set(f.category)">
+            {{ 'MOVEMENT.CATEGORIES.' + f.category | translate }} {{ f.count }}
+          </button>
+        }
+      </div>
+    }
 
-      <ng-template let-category>
-        <app-list-group [title]="'MOVEMENT.CATEGORIES.' + category | translate"
-                        [count]="movementsByCategory().get(category)?.length ?? 0"
-                        [expanded]="expandedCategories().has(category)" (expandedChange)="onCategoryToggle(category, $event)">
-          @for (movement of movementsByCategory().get(category); track movement.id) {
-            <app-list-item
-              [title]="movement.name"
-              [badge]="movement.nameAbbreviation"
-              [imageUrl]="movement.imageUrl"
-              [link]="['/movements', movement.id]">
-            </app-list-item>
-          }
-        </app-list-group>
-      </ng-template>
-
-    </app-list-grid>
+    <ul class="cards list-none p-0 px-2 sm:px-0" data-slot="movement-cards">
+      @for (c of cards(); track c.movement.id) {
+        @let m = c.movement;
+        <li>
+          <a [routerLink]="['/movements', m.id]" data-slot="movement-card"
+             class="card rounded-xl border bg-card transition-colors hover:border-secondary">
+            <span class="thumb rounded-lg bg-muted text-muted-foreground">
+              @if (m.imageUrl) {
+                <img [src]="m.imageUrl" alt="" class="h-full w-full object-cover"/>
+              } @else {
+                <ng-icon [name]="iconOf(m)" size="1.75rem" aria-hidden="true"></ng-icon>
+              }
+            </span>
+            <span class="body">
+              <span class="truncate font-semibold">{{ m.name }}</span>
+              <span class="truncate text-xs text-muted-foreground">
+                @if (m.componentNames?.length) {
+                  {{ 'MOVEMENT.LIST.CHAIN' | translate: {names: m.componentNames!.join(' ' + ('MOVEMENT.LIST.THEN' | translate) + ' ')} }}
+                } @else if (m.acceptedNames?.length) {
+                  {{ 'MOVEMENT.LIST.EITHER' | translate: {names: m.acceptedNames!.join(', ')} }}
+                } @else {
+                  {{ c.preview }}
+                }
+              </span>
+              <span class="foot">
+                <span class="text-xs text-muted-foreground">
+                  @if (m.acceptedNames?.length) {
+                    {{ 'MOVEMENT.LIST.EITHER_TAG' | translate }}
+                  } @else if (c.variantCount > 0) {
+                    {{ (c.variantCount === 1 ? 'MOVEMENT.LIST.VARIANT' : 'MOVEMENT.LIST.VARIANTS') | translate: {n: c.variantCount} }}
+                  }
+                </span>
+                @if (c.record; as r) {
+                  <span hlmBadge class="bg-secondary/20 text-foreground" data-slot="card-record">
+                    @if (r.estimated) {≈ }{{ 'RECORDS.RM' | translate: {reps: r.reps} }} {{ recordLoad(r) }}
+                  </span>
+                }
+              </span>
+            </span>
+          </a>
+        </li>
+      }
+    </ul>
   </app-list-state>
 
   @if (isAdmin()) {

@@ -6,13 +6,14 @@ import {HttpErrorResponse} from '@angular/common/http';
 import {TranslatePipe, TranslateService} from '@ngx-translate/core';
 import {NgIconComponent} from '@ng-icons/core';
 import {MovementComboboxComponent} from '../../../shared/component/movement-combobox/movement-combobox.component';
+import {toggleVariant, VariantPickerComponent} from '../../../shared/component/variant-picker/variant-picker.component';
 import {forkJoin} from 'rxjs';
 import {WodService} from '../../../api/aldebaran/services/wod.service';
 import {MovementService} from '../../../api/aldebaran/services/movement.service';
 import {NotificationService} from '../../../core/services/notification.service';
 import {AccessService} from '../../../core/services/access.service';
-import {MovementResponse, MovementSummaryResponse} from '../../../api/aldebaran/models/movement.model';
-import {TeamMode, WodMovementRequest, WodMovementResponse, WodRequest, WodResponse} from '../../../api/aldebaran/models/wod.model';
+import {MovementReferenceData, MovementResponse, MovementSummaryResponse, UsualNameOption} from '../../../api/aldebaran/models/movement.model';
+import {ComponentTechnique, TeamMode, WodMovementRequest, WodMovementResponse, WodRequest, WodResponse} from '../../../api/aldebaran/models/wod.model';
 import {ProblemDetail} from '../../../core/models/problem-detail.model';
 import {UnitService} from '../../../core/services/unit.service';
 
@@ -42,7 +43,7 @@ import {HlmTextarea} from '@spartan-ng/helm/textarea';
 @Component({
   selector: 'app-wod-form',
   standalone: true,
-  imports: [HlmTextarea, HlmInput, HlmCardImports, HlmButton, HlmBadge, NativeSelectDirective, HlmSpinner, ReactiveFormsModule, RouterModule, TranslatePipe, NgIconComponent, MovementComboboxComponent],
+  imports: [HlmTextarea, HlmInput, HlmCardImports, HlmButton, HlmBadge, NativeSelectDirective, HlmSpinner, ReactiveFormsModule, RouterModule, TranslatePipe, NgIconComponent, VariantPickerComponent, MovementComboboxComponent],
   templateUrl: './wod-form.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -71,6 +72,8 @@ export class WodFormComponent implements OnInit {
   scoreTypes = signal<string[]>([]);
   unitGroups = signal<Record<string, string[]>>({});
   availableMovements = signal<MovementSummaryResponse[]>([]);
+  usualNames = signal<UsualNameOption[]>([]);
+  referenceData = signal<MovementReferenceData | null>(null);
   readonly variantFields: readonly WodMovementVariant[] = ['equipment', 'techniques'];
   /** Full movements (allowed equipment and techniques), loaded on demand by id. */
   readonly movementDetails = signal<Record<number, MovementResponse>>({});
@@ -161,8 +164,12 @@ export class WodFormComponent implements OnInit {
   ngOnInit(): void {
     forkJoin({
       wodRef: this.wodService.getReferenceData(),
-      movements: this.movementService.getMovements()
-    }).subscribe(({wodRef, movements}) => {
+      movements: this.movementService.getMovements(),
+      usualNames: this.movementService.getUsualNames(),
+      movementRef: this.movementService.getReferenceData()
+    }).subscribe(({wodRef, movements, usualNames, movementRef}) => {
+      this.usualNames.set(usualNames);
+      this.referenceData.set(movementRef);
       this.wodTypes.set(wodRef.wodTypes);
       this.structuresByType.set(wodRef.structures ?? {});
       this.categories.set(wodRef.categories ?? []);
@@ -268,6 +275,7 @@ export class WodFormComponent implements OnInit {
       // Variants: only values allowed by the movement (checked again by Aldebaran)
       equipment: [source?.equipment ?? null as string[] | null],
       techniques: [source?.techniques ?? null as string[] | null],
+      componentTechniques: [source?.componentTechniques ?? [] as ComponentTechnique[]],
       notesFr: [source?.notesFr ?? '', [Validators.maxLength(4000)]],
       notesEn: [source?.notesEn ?? '', [Validators.maxLength(4000)]],
       scalingOptionsFr: [source?.scalingOptionsFr ?? '', [Validators.maxLength(4000)]],
@@ -278,11 +286,24 @@ export class WodFormComponent implements OnInit {
     }
   }
 
-  /** Movement picked in the combobox; changing the movement clears its variants. */
-  onMovementChange(index: number, movementId: number | null): void {
+  /** Name picked in the combobox: its movement, with the variants the name stands for. */
+  /** The techniques of a line, a component's written 1:POWER as the usual names do. */
+  lineTechniques(line: {techniques?: string[] | null; componentTechniques?: {componentOrder: number; technique: string}[] | null}): string[] {
+    return [...(line.techniques ?? []), ...(line.componentTechniques ?? []).map(c => `${c.componentOrder}:${c.technique}`)];
+  }
+
+  onMovementPicked(index: number, option: UsualNameOption | null): void {
     const group = this.movementsFormArray.at(index);
-    if (movementId === group.get('movementId')?.value) return;
-    group.patchValue({movementId, equipment: [], techniques: []});
+    const movementId = option?.movementId ?? null;
+    group.patchValue({
+      movementId,
+      equipment: [...(option?.equipment ?? [])],
+      techniques: (option?.techniques ?? []).filter(t => !t.includes(':')),
+      componentTechniques: (option?.techniques ?? []).filter(t => t.includes(':')).map(t => {
+        const [order, technique] = t.split(':');
+        return {componentOrder: Number(order), technique};
+      })
+    });
     group.get('movementId')?.markAsTouched();
     if (movementId != null) {
       this.loadMovementDetails(movementId);
@@ -300,6 +321,30 @@ export class WodFormComponent implements OnInit {
     return [...(this.movementDetail(index)?.[field] ?? [])].sort();
   }
 
+  /** Steps of a chained movement with the receptions each one allows, once loaded. */
+  componentsOf(index: number): {order: number; name: string; receptions: string[]}[] {
+    const receptions = this.referenceData()?.techniqueGroups['RECEPTION'] ?? [];
+    return (this.movementDetail(index)?.components ?? []).map(c => ({
+      order: c.componentOrder, name: c.movementName ?? '',
+      receptions: (this.movementDetails()[c.movementId]?.techniques ?? []).filter(t => receptions.includes(t))
+    })).filter(c => c.receptions.length > 0);
+  }
+
+  componentSelected(index: number, order: number): string[] {
+    const values = this.movementsFormArray.at(index).get('componentTechniques')?.value as ComponentTechnique[] | null;
+    return (values ?? []).filter(c => c.componentOrder === order).map(c => c.technique);
+  }
+
+  /** One reception per step. */
+  toggleComponent(index: number, order: number, technique: string): void {
+    const control = this.movementsFormArray.at(index).get('componentTechniques')!;
+    const values = (control.value as ComponentTechnique[] | null) ?? [];
+    const others = values.filter(c => c.componentOrder !== order);
+    const wasOn = values.some(c => c.componentOrder === order && c.technique === technique);
+    control.setValue(wasOn ? others : [...others, {componentOrder: order, technique}]);
+    control.markAsDirty();
+  }
+
   isVariantSelected(index: number, field: WodMovementVariant, value: string): boolean {
     const selected = this.movementsFormArray.at(index).get(field)?.value as string[] | null;
     return selected?.includes(value) ?? false;
@@ -307,8 +352,9 @@ export class WodFormComponent implements OnInit {
 
   toggleVariant(index: number, field: WodMovementVariant, value: string): void {
     const control = this.movementsFormArray.at(index).get(field)!;
-    const selected = (control.value as string[] | null) ?? [];
-    control.setValue(selected.includes(value) ? selected.filter(v => v !== value) : [...selected, value]);
+    const reference = this.referenceData();
+    control.setValue(toggleVariant((control.value as string[] | null) ?? [], value,
+      field === 'techniques' ? reference?.exclusiveTechniqueSets : null));
     control.markAsDirty();
   }
 
@@ -317,6 +363,7 @@ export class WodFormComponent implements OnInit {
     this.movementService.getMovement(id).subscribe(movement => {
       this.movementDetails.update(details => ({...details, [id]: movement}));
       this.dropDisallowedVariants(movement);
+      movement.components?.forEach(c => this.loadMovementDetails(c.movementId));
     });
   }
 
@@ -487,6 +534,7 @@ export class WodFormComponent implements OnInit {
       // --- Characteristics ---
       equipment: m.equipment ?? undefined,
       techniques: m.techniques ?? undefined,
+      componentTechniques: m.componentTechniques ?? undefined,
       // --- Instructions ---
       notesEn: m.notesEn?.trim() || undefined,
       notesFr: m.notesFr?.trim() || undefined,

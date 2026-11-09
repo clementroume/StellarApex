@@ -2,7 +2,7 @@ import {signal} from '@angular/core';
 import {ComponentFixture, TestBed} from '@angular/core/testing';
 import {provideRouter} from '@angular/router';
 import {provideTranslateService} from '@ngx-translate/core';
-import {of} from 'rxjs';
+import {of, Subject} from 'rxjs';
 import {LiftRecordsComponent} from './lift-records.component';
 import {RecordService} from '../../api/aldebaran/services/record.service';
 import {UnitService} from '../../core/services/unit.service';
@@ -39,7 +39,7 @@ describe('LiftRecordsComponent', () => {
   beforeEach(async () => {
     recordService.getMyMovementRecords.mockReturnValue(of([squat]));
     recordService.getCanonicalLifts.mockReturnValue(of([
-      {wodId: 7, movementId: 9, movementName: 'Back Squat', repMax: 1}, {wodId: 20, movementId: 4, movementName: 'Clean', repMax: 1}
+      {wodId: 7, movementId: 9, movementName: 'Back Squat', variantKey: '', repMax: 1}, {wodId: 20, movementId: 4, movementName: 'Clean', variantKey: '', repMax: 1}
     ]));
     recordService.getMyProgress.mockReturnValue(of([
       {date: '2026-03-01', weightKg: 120}, {date: '2026-06-01', weightKg: 130}, {date: '2026-10-12', weightKg: 140}
@@ -55,7 +55,7 @@ describe('LiftRecordsComponent', () => {
   it('should list records and estimates by N, the % table, the variants, the progress and the tests', () => {
     init();
     const el: HTMLElement = fixture.nativeElement;
-    expect(recordService.getMyProgress).toHaveBeenCalledWith(9, 1, expect.anything());
+    expect(recordService.getMyProgress).toHaveBeenCalledWith(9, 1, expect.anything(), '');
     const rows = Array.from(el.querySelectorAll('[data-slot="rm-table"] tr')) as HTMLElement[];
     expect(rows.length).toBe(5);
     expect(rows[0].textContent).toContain('140 kg');
@@ -65,6 +65,18 @@ describe('LiftRecordsComponent', () => {
     expect(el.querySelectorAll('[data-slot="progress"] [title]').length).toBe(3);
     const tests = Array.from(el.querySelectorAll('[data-slot="tests"] a')) as HTMLAnchorElement[];
     expect(tests.map(a => a.getAttribute('href'))).toEqual(['/wods/7']);
+  });
+
+  it('should drop the progress of a variant picked before the current one', () => {
+    const power = new Subject<{date: string; weightKg: number}[]>();
+    const squat = new Subject<{date: string; weightKg: number}[]>();
+    recordService.getMyProgress.mockReturnValueOnce(power).mockReturnValueOnce(squat);
+    init({variant: ';POWER'});
+    fixture.componentRef.setInput('variant', ';SQUAT');
+    fixture.detectChanges();
+    squat.next([{date: '2026-10-12', weightKg: 140}]);
+    power.next([{date: '2026-10-12', weightKg: 100}]);
+    expect((fixture.componentInstance as unknown as {progress: () => unknown}).progress()).toEqual([{date: '2026-10-12', weightKg: 140}]);
   });
 
   it('should reload after a score change, and say when there is no record', () => {

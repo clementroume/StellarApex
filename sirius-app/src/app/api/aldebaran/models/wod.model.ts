@@ -212,6 +212,25 @@ export interface WodMovementRequest {
   // --- Load as a percentage of the athlete's rmReps RM (base version of the movement) ---
   percentOfRm?: number | null;
   rmReps?: number | null;
+  // --- Techniques of one component of a chained line ---
+  componentTechniques?: ComponentTechnique[];
+}
+
+/** A technique of one component of a chained line (Power Clean and Split Jerk: 1 POWER, 2 SPLIT). */
+export interface ComponentTechnique {
+  componentOrder: number;
+  technique: string;
+}
+
+/** How a line reads, decided by the catalog (WodMovementDisplay). */
+export interface WodMovementDisplay {
+  usualNameEn?: string | null;
+  usualNameFr?: string | null;
+  remainingEquipment: string[];
+  remainingTechniques: string[];
+  implementCount?: number | null;
+  variant: boolean;
+  percentBaseKey: string;
 }
 
 export interface WodMovementResponse {
@@ -254,6 +273,8 @@ export interface WodMovementResponse {
   // --- Load as a percentage of the athlete's rmReps RM (base version of the movement) ---
   percentOfRm?: number | null;
   rmReps?: number | null;
+  componentTechniques?: ComponentTechnique[];
+  display?: WodMovementDisplay | null;
 }
 
 export interface WodReferenceData {

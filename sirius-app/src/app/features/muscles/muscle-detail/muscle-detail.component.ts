@@ -3,7 +3,7 @@ import {TranslatePipe, TranslateService} from '@ngx-translate/core';
 import {Router, RouterModule} from '@angular/router';
 import {Location, NgOptimizedImage} from '@angular/common';
 import {NgIconComponent} from '@ng-icons/core';
-import {MuscleRefResponse, MuscleResponse} from '../../../api/aldebaran/models/muscle.model';
+import {MuscleRefResponse, MuscleResponse, MuscleUsage} from '../../../api/aldebaran/models/muscle.model';
 import {AccessService} from '../../../core/services/access.service';
 import {MuscleService} from '../../../api/aldebaran/services/muscle.service';
 import {NotificationService} from '../../../core/services/notification.service';
@@ -16,10 +16,11 @@ import {DetailHeaderComponent} from '../../../shared/component/detail/detail-hea
 import {DetailStateComponent} from '../../../shared/component/detail/detail-state/detail-state.component';
 
 import {HlmBadge} from '@spartan-ng/helm/badge';
+import {HlmButton} from '@spartan-ng/helm/button';
 @Component({
   selector: 'app-muscle-detail',
   standalone: true,
-  imports: [HlmBadge, TranslatePipe, RouterModule, NgIconComponent, NgOptimizedImage, DetailAdminActionsComponent, DetailCardComponent, DetailHeaderComponent, DetailStateComponent],
+  imports: [HlmBadge, HlmButton, TranslatePipe, RouterModule, NgIconComponent, NgOptimizedImage, DetailAdminActionsComponent, DetailCardComponent, DetailHeaderComponent, DetailStateComponent],
   templateUrl: './muscle-detail.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
@@ -38,6 +39,10 @@ export class MuscleDetailComponent {
   isAdmin = this.accessService.isAdmin;
 
   muscle = signal<MuscleResponse | null>(null);
+  usage = signal<MuscleUsage[]>([]);
+  readonly roles = ['AGONIST', 'SYNERGIST', 'STABILIZER'] as const;
+  role = signal<MuscleUsage['role']>('AGONIST');
+  readonly shownUsage = computed(() => this.usage().filter(u => u.role === this.role()));
   isLoading = signal<boolean>(true); // Nouvel état explicite
 
   constructor() {
@@ -45,6 +50,10 @@ export class MuscleDetailComponent {
       const currentId = Number(this.id());
       if (currentId && !Number.isNaN(currentId)) {
         this.loadMuscle(currentId);
+        this.muscleService.getUsage(currentId).subscribe({
+          next: usage => this.usage.set(usage),
+          error: () => this.usage.set([])
+        });
       }
     });
   }
@@ -64,6 +73,17 @@ export class MuscleDetailComponent {
         this.location.back();
       }
     });
+  }
+
+  countOf(role: MuscleUsage['role']): number {
+    return this.usage().filter(u => u.role === role).length;
+  }
+
+  /** The technique or equipment that brings a role, translated. */
+  triggerLabel(trigger: string): string {
+    const technique = 'MOVEMENT.TECHNIQUES.' + trigger;
+    const label = this.translate.instant(technique);
+    return label === technique ? this.translate.instant('MOVEMENT.EQUIPMENT.' + trigger) : label;
   }
 
   // --- ACTIONS ---

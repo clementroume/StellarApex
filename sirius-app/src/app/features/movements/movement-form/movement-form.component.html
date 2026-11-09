@@ -10,8 +10,15 @@
   </div>
 
   <form [formGroup]="movementForm" (ngSubmit)="onSubmit()" class="flex flex-col gap-8">
+    <div class="no-scrollbar flex gap-2 overflow-x-auto" role="group" [attr.aria-label]="'MOVEMENT.SECTIONS.NAV' | translate">
+      @for (t of tabs; track t) {
+        <button type="button" hlmBtn variant="outline" size="sm"
+                class="shrink-0 rounded-full aria-pressed:border-secondary aria-pressed:bg-secondary/15 aria-pressed:text-secondary"
+                [attr.aria-pressed]="tab() === t" (click)="tab.set(t)">{{ 'MOVEMENT.TABS.' + t | translate }}</button>
+      }
+    </div>
 
-    <div hlmCard>
+    <div hlmCard [class.hidden]="tab() !== 'identity'">
       <div hlmCardContent class="flex flex-col gap-4">
         <h2 hlmCardTitle class="text-lg flex items-center gap-2 mb-4">{{ 'MOVEMENT.SECTIONS.BASIC' | translate }}</h2>
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -45,7 +52,7 @@
       </div>
     </div>
 
-    <div hlmCard>
+    <div hlmCard [class.hidden]="tab() !== 'identity'">
       <div hlmCardContent class="flex flex-col gap-4">
         <h2 hlmCardTitle class="text-lg flex items-center gap-2 mb-4">{{ 'MOVEMENT.SECTIONS.DESCRIPTIONS' | translate }}</h2>
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -77,7 +84,7 @@
       </div>
     </div>
 
-    <div hlmCard>
+    <div hlmCard [class.hidden]="tab() !== 'identity'">
       <div hlmCardContent class="flex flex-col gap-4">
         <h2 hlmCardTitle class="text-lg flex items-center gap-2 mb-4">{{ 'MOVEMENT.SECTIONS.MEDIA' | translate }}</h2>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -95,7 +102,7 @@
       </div>
     </div>
 
-    <div hlmCard>
+    <div hlmCard [class.hidden]="tab() !== 'variants'">
       <div hlmCardContent class="flex flex-col gap-4">
         <h2 hlmCardTitle class="text-lg flex items-center gap-2 mb-6">{{ 'MOVEMENT.SECTIONS.TAGS' | translate }}</h2>
 
@@ -146,7 +153,7 @@
       </div>
     </div>
 
-    <div hlmCard>
+    <div hlmCard [class.hidden]="tab() !== 'muscles'">
       <div hlmCardContent class="flex flex-col gap-4">
         <div class="flex justify-between items-center mb-4">
           <h2 hlmCardTitle class="text-lg flex items-center gap-2">{{ 'MOVEMENT.SECTIONS.MUSCLES' | translate }}</h2>
@@ -193,6 +200,164 @@
         </div>
       </div>
     </div>
+
+    <div hlmCard [class.hidden]="tab() !== 'variants'">
+      <div hlmCardContent class="flex flex-col gap-4 pt-6">
+        <h2 hlmCardTitle class="text-lg">{{ 'MOVEMENT.SECTIONS.RULES' | translate }}</h2>
+        <label class="flex flex-col gap-1.5">
+          <span class="text-sm font-medium">{{ 'MOVEMENT.FIELDS.IMPLIED_EQUIPMENT' | translate }}</span>
+          <select formControlName="impliedEquipment" appNativeSelect class="w-full">
+            <option [ngValue]="null">—</option>
+            @for (eq of movementForm.controls.equipment.value; track eq) {
+              <option [ngValue]="eq">{{ 'MOVEMENT.EQUIPMENT.' + eq | translate }}</option>
+            }
+          </select>
+        </label>
+        <label class="flex items-center gap-2 text-sm">
+          <input type="checkbox" formControlName="impliedRequiresPosition"/>
+          {{ 'MOVEMENT.FIELDS.IMPLIED_REQUIRES_POSITION' | translate }}
+        </label>
+        <div role="group" [attr.aria-label]="'MOVEMENT.FIELDS.REQUIRED_RULES' | translate">
+          <div class="mb-2 text-sm font-medium">{{ 'MOVEMENT.FIELDS.REQUIRED_RULES' | translate }}</div>
+          <div class="flex flex-wrap gap-2">
+            @for (rule of requiredRuleValues; track rule) {
+              <button type="button" hlmBtn variant="outline" size="xs" class="aria-pressed:border-secondary aria-pressed:bg-secondary/15"
+                      [attr.aria-pressed]="movementForm.controls.requiredRules.value.includes(rule)" (click)="toggleRule(rule)">
+                {{ 'MOVEMENT.REQUIRED.' + rule | translate }}
+              </button>
+            }
+          </div>
+        </div>
+        <label class="flex flex-col gap-1.5">
+          <span class="text-sm font-medium">{{ 'MOVEMENT.FIELDS.DUMBBELL_BASES' | translate }}</span>
+          <input type="text" formControlName="dumbbellBases" hlmInput class="h-11 md:h-10" placeholder="FRONT_RACK=2, OVERHEAD=1, =2"/>
+        </label>
+      </div>
+    </div>
+
+    <div hlmCard [class.hidden]="tab() !== 'muscles'">
+      <div hlmCardContent class="flex flex-col gap-3 pt-6">
+        <div class="flex items-center justify-between gap-2">
+          <h2 hlmCardTitle class="text-lg">{{ 'MOVEMENT.SECTIONS.ADJUSTMENTS' | translate }}</h2>
+          <button type="button" hlmBtn variant="outline" size="sm" (click)="addAdjustment()">{{ 'GLOBAL.ADD' | translate }}</button>
+        </div>
+        <div formArrayName="roleAdjustments" class="flex flex-col gap-3">
+          @for (ctrl of adjustments.controls; track ctrl; let i = $index) {
+            <div [formGroupName]="i" class="flex flex-col sm:flex-row gap-2 sm:items-center">
+              <select formControlName="trigger" appNativeSelect class="w-full" [attr.aria-label]="'MOVEMENT.FIELDS.TRIGGER' | translate">
+                @for (v of triggerValues(); track v) {
+                  <option [value]="v">{{ triggerLabel(v) | translate }}</option>
+                }
+              </select>
+              <select formControlName="muscleId" appNativeSelect class="w-full" [attr.aria-label]="'MOVEMENT.FIELDS.MUSCLE' | translate">
+                @for (m of availableMuscles(); track m.id) {
+                  <option [ngValue]="m.id">{{ m.medicalName }}</option>
+                }
+              </select>
+              <select formControlName="role" appNativeSelect class="w-full" [attr.aria-label]="'MOVEMENT.FIELDS.ROLE' | translate">
+                @for (r of muscleRoles(); track r) {
+                  <option [value]="r">{{ 'MUSCLE.ROLES.' + r | translate }}</option>
+                }
+              </select>
+              <button type="button" hlmBtn variant="destructive" size="icon-lg" [attr.aria-label]="'GLOBAL.DELETE' | translate" (click)="adjustments.removeAt(i)">
+                <ng-icon name="heroTrash"></ng-icon>
+              </button>
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+
+    <div hlmCard [class.hidden]="tab() !== 'names'">
+      <div hlmCardContent class="flex flex-col gap-3 pt-6">
+        <div class="flex items-center justify-between gap-2">
+          <h2 hlmCardTitle class="text-lg">{{ 'MOVEMENT.USUAL.TITLE' | translate }}</h2>
+          <button type="button" hlmBtn variant="outline" size="sm" (click)="addUsualName()">{{ 'GLOBAL.ADD' | translate }}</button>
+        </div>
+        <div formArrayName="usualNames" class="flex flex-col gap-4">
+          @for (ctrl of usualNamesArray.controls; track ctrl; let i = $index) {
+            <div [formGroupName]="i" class="grid grid-cols-1 sm:grid-cols-2 gap-2 border-b pb-3">
+              <input type="text" formControlName="nameEn" hlmInput [placeholder]="'MOVEMENT.USUAL.NAME_EN' | translate" [attr.aria-label]="'MOVEMENT.USUAL.NAME_EN' | translate"/>
+              <input type="text" formControlName="nameFr" hlmInput [placeholder]="'MOVEMENT.USUAL.NAME_FR' | translate" [attr.aria-label]="'MOVEMENT.USUAL.NAME_FR' | translate"/>
+              <input type="text" formControlName="searchTerms" hlmInput class="sm:col-span-2" [placeholder]="'MOVEMENT.USUAL.SEARCH' | translate" [attr.aria-label]="'MOVEMENT.USUAL.SEARCH' | translate"/>
+              <input type="text" formControlName="techniques" hlmInput placeholder="POWER HANG" [attr.aria-label]="'MOVEMENT.FIELDS.TECHNIQUES' | translate"/>
+              <div class="flex gap-2">
+                <input type="text" formControlName="equipment" hlmInput class="flex-1" placeholder="DUMBBELL" [attr.aria-label]="'MOVEMENT.FIELDS.EQUIPMENT' | translate"/>
+                <button type="button" hlmBtn variant="destructive" size="icon-lg" [attr.aria-label]="'GLOBAL.DELETE' | translate" (click)="usualNamesArray.removeAt(i)">
+                  <ng-icon name="heroTrash"></ng-icon>
+                </button>
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+
+    <div [class.hidden]="tab() !== 'composition'" class="flex flex-col gap-6">
+      <div hlmCard>
+        <div hlmCardContent class="flex flex-col gap-4 pt-6">
+          <div>
+            <h2 hlmCardTitle class="text-lg">{{ 'MOVEMENT.COMPOSITION.CHAIN' | translate }}</h2>
+            <p class="mt-1 text-sm text-muted-foreground">{{ 'MOVEMENT.COMPOSITION.CHAIN_HINT' | translate }}</p>
+          </div>
+          <div formArrayName="components" class="flex flex-col gap-3">
+            @for (ctrl of componentsArray.controls; track ctrl; let i = $index) {
+              <div [formGroupName]="i" class="flex flex-col gap-3 rounded-lg border p-3" data-slot="component">
+                <div class="flex items-center gap-2">
+                  <span class="w-6 shrink-0 text-center font-medium text-muted-foreground">{{ i + 1 }}</span>
+                  <div class="min-w-0 flex-1">
+                    <app-movement-combobox [options]="movementOptions()" [label]="'MOVEMENT.COMPOSITION.STEP' | translate: {n: i + 1}"
+                                           [value]="ctrl.get('movementId')?.value" (picked)="onComponentPicked(i, $event)"/>
+                  </div>
+                  <button type="button" hlmBtn variant="ghost" size="icon-lg" [attr.aria-label]="'GLOBAL.DELETE' | translate" (click)="componentsArray.removeAt(i)">
+                    <ng-icon name="heroTrash"></ng-icon>
+                  </button>
+                </div>
+                @if (componentTechniques(i).length > 0) {
+                  <app-variant-picker [allowed]="componentTechniques(i)" [selected]="ctrl.get('techniques')?.value ?? []" [groups]="techniqueTypes()"
+                                      prefix="MOVEMENT.TECHNIQUES." typePrefix="MOVEMENT.TECHNIQUE_CATEGORIES." (toggled)="toggleComponentTechnique(i, $event)"/>
+                }
+                <label class="flex items-center gap-2 text-sm">
+                  <input type="checkbox" formControlName="countsForRecords"/>
+                  {{ 'MOVEMENT.FIELDS.COUNTS_FOR_RECORDS' | translate }}
+                </label>
+              </div>
+            }
+          </div>
+          <div>
+            <button type="button" hlmBtn variant="outline" size="sm" (click)="addComponent()">{{ 'MOVEMENT.COMPOSITION.ADD_STEP' | translate }}</button>
+          </div>
+        </div>
+      </div>
+
+      <div hlmCard>
+        <div hlmCardContent class="flex flex-col gap-4 pt-6">
+          <div>
+            <h2 hlmCardTitle class="text-lg">{{ 'MOVEMENT.COMPOSITION.EITHER' | translate }}</h2>
+            <p class="mt-1 text-sm text-muted-foreground">{{ 'MOVEMENT.COMPOSITION.EITHER_HINT' | translate }}</p>
+          </div>
+          @if (acceptedMovements().length > 0) {
+            <div class="flex flex-wrap gap-2" data-slot="accepted">
+              @for (m of acceptedMovements(); track m.id) {
+                <span class="inline-flex items-center gap-1 rounded-full border py-1 ps-3 pe-1 text-sm">
+                  {{ m.name }}
+                  <button type="button" hlmBtn variant="ghost" size="icon-xs" [attr.aria-label]="'GLOBAL.DELETE' | translate" (click)="removeAccepted(m.id)">
+                    <ng-icon name="heroXMark"></ng-icon>
+                  </button>
+                </span>
+              }
+            </div>
+          }
+          @for (key of [acceptedPickerKey()]; track key) {
+            <app-movement-combobox [options]="movementOptions()" [label]="'MOVEMENT.COMPOSITION.ADD_ACCEPTED' | translate" (picked)="addAccepted($event)"/>
+          }
+        </div>
+      </div>
+    </div>
+
+    @if (formError(); as error) {
+      <p class="rounded-lg border border-destructive p-3 text-sm text-destructive" role="alert">{{ error }}</p>
+    }
 
     <div class="mt-8 flex justify-end gap-4">
       <a routerLink="/movements" hlmBtn variant="ghost" size="lg">{{ 'GLOBAL.CANCEL' | translate }}</a>

@@ -1,4 +1,5 @@
 import {ChangeDetectionStrategy, Component, computed, inject, OnInit, signal} from '@angular/core';
+import {NgTemplateOutlet} from '@angular/common';
 import {RouterModule} from '@angular/router';
 import {TranslatePipe, TranslateService} from '@ngx-translate/core';
 import {MuscleService} from '../../../api/aldebaran/services/muscle.service';
@@ -11,7 +12,7 @@ import {BYPASS_LOADER} from '../../../core/interceptors/loading.interceptor';
 import {SearchInputComponent} from '../../../shared/component/search-input/search-input.component';
 import {ListStateComponent} from '../../../shared/component/list/list-state/list-state.component';
 import {ListItemComponent} from '../../../shared/component/list/list-item/list-item.component';
-import {ListGridComponent} from '../../../shared/component/list/list-grid/list-grid.component';
+import {BodyMapComponent} from '../../../shared/component/body-map/body-map.component';
 
 /** A row of a region: a top-level muscle (group or standalone) or a member shown under its group. */
 export interface MuscleRow {
@@ -19,14 +20,18 @@ export interface MuscleRow {
   isMember: boolean;
 }
 
-import {ListGroupComponent} from '../../../shared/component/list/list-group/list-group.component';
+import {normalize} from '../../../shared/text.utils';
 import {HlmButton} from '@spartan-ng/helm/button';
 @Component({
   selector: 'app-muscle-list',
   standalone: true,
-  imports: [ListGroupComponent, HlmButton, RouterModule, TranslatePipe, NgIcon, SearchInputComponent, ListStateComponent, ListItemComponent, ListGridComponent],
+  imports: [BodyMapComponent, NgTemplateOutlet, HlmButton, RouterModule, TranslatePipe, NgIcon, SearchInputComponent, ListStateComponent, ListItemComponent],
   templateUrl: './muscle-list.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  styles: `
+    .explorer { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1rem; align-items: start; }
+    @media (min-width: 768px) { .explorer { grid-template-columns: minmax(0, 5fr) minmax(0, 4fr); } }
+  `
 })
 export class MuscleListComponent implements OnInit {
   // --- INJECTIONS ---
@@ -45,20 +50,16 @@ export class MuscleListComponent implements OnInit {
 
   // UI State persisted in service
   searchQuery = this.muscleService.savedSearchQuery;
-  expandedGroups = this.muscleService.savedExpandedGroups;
-  private preSearchState: Set<string> | null = null;
+  activeRegion = this.muscleService.savedRegion;
 
   // --- COMPUTED STATE ---
   isAdmin = this.accessService.isAdmin;
 
   filteredMuscles = computed(() => {
-    const query = this.searchQuery().toLowerCase().trim();
+    const query = normalize(this.searchQuery());
     const list = this.rawMuscles();
     if (!query) return list;
-    return list.filter(m =>
-      m.medicalName.toLowerCase().includes(query) ||
-      this.getLocalizedName(m).toLowerCase().includes(query)
-    );
+    return list.filter(m => normalize(m.medicalName).includes(query) || normalize(this.getLocalizedName(m)).includes(query));
   });
 
   /**
@@ -89,6 +90,13 @@ export class MuscleListComponent implements OnInit {
     });
     return grouped;
   });
+
+  readonly isSearching = computed(() => this.searchQuery().trim() !== '');
+
+  /** The rows shown: every region while searching, else the region picked. */
+  readonly shownRows = computed<MuscleRow[]>(() => this.isSearching()
+    ? this.populatedGroups().flatMap(group => this.groupedMuscles().get(group) ?? [])
+    : this.groupedMuscles().get(this.activeRegion()) ?? []);
 
   populatedGroups = computed(() => {
     const groups = this.muscleGroupKeys();
@@ -125,33 +133,7 @@ export class MuscleListComponent implements OnInit {
 
   // --- ACTIONS & EVENTS ---
   onSearchChange(query: string): void {
-    const trimmedQuery = query.trim();
-    const previousQuery = this.searchQuery().trim();
-
-    if (previousQuery.length === 0 && trimmedQuery.length > 0) {
-      this.preSearchState = new Set(this.expandedGroups());
-    }
-
     this.searchQuery.set(query);
-
-    if (trimmedQuery.length === 0) {
-      if (this.preSearchState) {
-        this.muscleService.savedExpandedGroups.set(new Set(this.preSearchState));
-        this.preSearchState = null;
-      }
-    } else {
-      const expanded = new Set(this.expandedGroups());
-      for (const [group, rows] of this.groupedMuscles().entries()) {
-        if (rows.length > 0) {
-          expanded.add(group);
-        }
-      }
-      this.muscleService.savedExpandedGroups.set(expanded);
-    }
-  }
-
-  onGroupToggle(group: string, isExpanded: boolean): void {
-    this.muscleService.toggleGroupExpansion(group, isExpanded);
   }
 
   exportCsv(): void {

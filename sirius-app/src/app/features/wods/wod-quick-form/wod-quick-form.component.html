@@ -180,8 +180,9 @@
         }
         <div class="flex items-start gap-2">
           <div class="flex-1 min-w-0">
-            <app-movement-combobox [movements]="movements()" [label]="'WOD.FIELDS.MOVEMENT' | translate"
-                                   [value]="row.controls.movementId.value" (valueChange)="onMovement(i, $event)"/>
+            <app-movement-combobox [options]="usualNames()" [label]="'WOD.FIELDS.MOVEMENT' | translate"
+                                   [value]="row.controls.movementId.value" [techniques]="lineTechniques(row.getRawValue())"
+                                   [equipment]="row.controls.equipment.value" (picked)="onPicked(i, $event)"/>
             @if (row.controls.movementId.touched && row.controls.movementId.invalid) {
               <p class="text-sm text-destructive">{{ 'WOD.MESSAGES.MOVEMENT_REQUIRED' | translate }}</p>
             }
@@ -320,15 +321,11 @@
         </div>
         @for (field of variantFields; track field) {
           @if (isVariantsOpen(i, field)) {
-            <div class="flex flex-wrap gap-1.5" role="group"
-                 [attr.aria-label]="(field === 'equipment' ? 'WOD.QUICK.EQUIPMENT' : 'WOD.QUICK.TECHNIQUE') | translate">
-              @for (v of variantsOf(i, field); track v) {
-                <button type="button" class="rounded-full border px-2.5 py-0.5 text-xs aria-pressed:bg-primary aria-pressed:text-primary-foreground"
-                        [attr.aria-pressed]="isVariantSelected(i, field, v)" (click)="toggleVariant(i, field, v)">
-                  {{ variantKey(field, v) | translate }}
-                </button>
-              }
-            </div>
+            <app-variant-picker [allowed]="variantsOf(i, field)" [selected]="row.controls[field].value"
+                                [groups]="field === 'techniques' ? (referenceData()?.techniqueGroups ?? null) : null"
+                                [prefix]="field === 'equipment' ? 'MOVEMENT.EQUIPMENT.' : 'MOVEMENT.TECHNIQUES.'"
+                                [typePrefix]="field === 'techniques' ? 'MOVEMENT.TECHNIQUE_CATEGORIES.' : ''"
+                                (toggled)="toggleVariant(i, field, $event)"/>
           }
         }
       </li>

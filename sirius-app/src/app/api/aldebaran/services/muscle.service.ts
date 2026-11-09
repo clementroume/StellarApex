@@ -2,7 +2,7 @@ import {inject, Injectable, signal} from '@angular/core';
 import {HttpClient, HttpContext} from '@angular/common/http';
 import {Observable, Subject} from 'rxjs';
 import {environment} from '../../../../environments/environment';
-import {MuscleReferenceData, MuscleRequest, MuscleResponse} from '../models/muscle.model';
+import {MuscleReferenceData, MuscleRequest, MuscleResponse, MuscleUsage} from '../models/muscle.model';
 
 @Injectable({providedIn: 'root'})
 export class MuscleService {
@@ -11,6 +11,11 @@ export class MuscleService {
 
   getMuscles(context?: HttpContext): Observable<MuscleResponse[]> {
     return this.http.get<MuscleResponse[]>(this.buildUrl(), {context});
+  }
+
+  /** The movements that work a muscle, with the role each gives. */
+  getUsage(id: number): Observable<MuscleUsage[]> {
+    return this.http.get<MuscleUsage[]>(this.buildUrl(`/${id}/movements`));
   }
 
   getMuscle(id: number): Observable<MuscleResponse> {
@@ -43,15 +48,6 @@ export class MuscleService {
 
   // --- UI STATE ---
   public readonly savedSearchQuery = signal<string>('');
-  public readonly savedExpandedGroups = signal<Set<string>>(new Set());
-
-  toggleGroupExpansion(group: string, isExpanded: boolean): void {
-    const currentSet = new Set(this.savedExpandedGroups());
-    if (isExpanded) {
-      currentSet.add(group);
-    } else {
-      currentSet.delete(group);
-    }
-    this.savedExpandedGroups.set(currentSet);
-  }
+  /** Region shown on the catalog. */
+  public readonly savedRegion = signal<string>('LEGS');
 }

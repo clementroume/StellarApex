@@ -287,9 +287,11 @@
                 <span hlmBadge class="bg-secondary text-secondary-content self-center sm:self-end sm:mb-3">{{ i + 1 }}</span>
                 <div class="flex flex-col gap-1.5 w-full">
                   <span class="text-sm font-medium" aria-hidden="true">{{ 'WOD.FIELDS.MOVEMENT' | translate }} *</span>
-                  <app-movement-combobox [movements]="availableMovements()" [label]="'WOD.FIELDS.MOVEMENT' | translate"
+                  <app-movement-combobox [options]="usualNames()" [label]="'WOD.FIELDS.MOVEMENT' | translate"
                                          [value]="movementCtrl.get('movementId')?.value"
-                                         (valueChange)="onMovementChange(i, $event)"/>
+                                         [techniques]="lineTechniques(movementCtrl.value)"
+                                         [equipment]="movementCtrl.get('equipment')?.value"
+                                         (picked)="onMovementPicked(i, $event)"/>
                   @if (movementCtrl.get('movementId')?.touched && movementCtrl.get('movementId')?.invalid) {
                     <p class="text-sm text-destructive">{{ 'WOD.MESSAGES.MOVEMENT_REQUIRED' | translate }}</p>
                   }
@@ -313,21 +315,23 @@
               @for (field of variantFields; track field) {
                 @if (allowedVariants(i, field); as allowed) {
                   @if (allowed.length > 0) {
-                    <div class="flex flex-wrap items-center gap-2" role="group"
-                         [attr.aria-label]="'WOD.FIELDS.' + (field === 'equipment' ? 'EQUIPMENT' : 'TECHNIQUES') | translate">
-                      <span class="text-sm font-medium w-full sm:w-28">{{ 'WOD.FIELDS.' + (field === 'equipment' ? 'EQUIPMENT' : 'TECHNIQUES') | translate }}</span>
-                      @for (value of allowed; track value) {
-                        <button type="button" hlmBtn variant="outline" size="xs"
-                                [class.bg-primary]="field === 'equipment' && isVariantSelected(i, field, value)" [class.text-primary-foreground]="field === 'equipment' && isVariantSelected(i, field, value)"
-                                [class.bg-secondary]="field === 'techniques' && isVariantSelected(i, field, value)" [class.text-secondary-content]="field === 'techniques' && isVariantSelected(i, field, value)"
-                                [attr.aria-pressed]="isVariantSelected(i, field, value)"
-                                (click)="toggleVariant(i, field, value)">
-                          {{ 'MOVEMENT.' + (field === 'equipment' ? 'EQUIPMENT.' : 'TECHNIQUES.') + value | translate }}
-                        </button>
-                      }
+                    <div class="flex flex-col sm:flex-row gap-2">
+                      <span class="text-sm font-medium sm:w-28 shrink-0">{{ 'WOD.FIELDS.' + (field === 'equipment' ? 'EQUIPMENT' : 'TECHNIQUES') | translate }}</span>
+                      <app-variant-picker [allowed]="allowed" [selected]="movementCtrl.get(field)?.value ?? []"
+                                          [groups]="field === 'techniques' ? (referenceData()?.techniqueGroups ?? null) : null"
+                                          [prefix]="field === 'equipment' ? 'MOVEMENT.EQUIPMENT.' : 'MOVEMENT.TECHNIQUES.'"
+                                          [typePrefix]="field === 'techniques' ? 'MOVEMENT.TECHNIQUE_CATEGORIES.' : ''"
+                                          (toggled)="toggleVariant(i, field, $event)"/>
                     </div>
                   }
                 }
+              }
+              @for (component of componentsOf(i); track component.order) {
+                <div class="flex flex-col sm:flex-row gap-2">
+                  <span class="text-sm font-medium sm:w-28 shrink-0">{{ component.name }}</span>
+                  <app-variant-picker [allowed]="component.receptions" [selected]="componentSelected(i, component.order)"
+                                      prefix="MOVEMENT.TECHNIQUES." (toggled)="toggleComponent(i, component.order, $event)"/>
+                </div>
               }
 
               <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">

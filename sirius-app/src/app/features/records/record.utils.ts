@@ -1,4 +1,4 @@
-import {MovementRecords, RecordEntry, VariantRecords} from '../../api/aldebaran/models/record.model';
+import {MovementRecords, RecordEntry, RecordSource, VariantRecords} from '../../api/aldebaran/models/record.model';
 
 /** Base of a percentage load: a real N RM (with its day), or the estimated 1RM (D58). */
 export interface PercentBase {
@@ -34,12 +34,12 @@ export function baseVariant(records: MovementRecords[] | null | undefined, movem
 }
 
 /**
- * What a percentage refers to (D58-D59): the record of `rmReps` reps of the base version of the movement,
+ * What a percentage refers to (D58-D59): the record of `rmReps` reps of the variant the catalog names,
  * else, for a 1RM, the estimated 1RM; null when the athlete has neither (no fallback to another variant).
  */
 export function percentBase(records: MovementRecords[] | null | undefined, movementId: number,
-                            rmReps: number | null | undefined): PercentBase | null {
-  const variant = baseVariant(records, movementId);
+                            rmReps: number | null | undefined, variantKey: string = ''): PercentBase | null {
+  const variant = records?.find(m => m.movementId === movementId)?.variants.find(v => v.variantKey === variantKey);
   if (!variant) return null;
   const reps = rmReps ?? 1;
   const record = variant.records.find(r => r.reps === reps);
@@ -54,21 +54,32 @@ export function percentLoadKg(base: PercentBase, percent: number): number {
 }
 
 /** "Pause · Trap bar": the variant label shown under the base version, from the catalogue translations. */
-export function variantLabel(variant: VariantRecords, translate: (key: string) => string): string {
+export function variantLabel(variant: Pick<VariantRecords, 'techniques' | 'equipment'>, translate: (key: string) => string): string {
   return [
-    ...variant.techniques.map(t => translate('MOVEMENT.TECHNIQUES.' + t)),
+    // A chain's component technique is written 1:POWER
+    ...variant.techniques.map(t => translate('MOVEMENT.TECHNIQUES.' + t.replace(/^\d+:/, ''))),
     ...variant.equipment.map(e => translate('MOVEMENT.EQUIPMENT.' + e))
   ].join(' · ');
 }
 
+/** "Clean · Power": what an inherited record really is. */
+export function sourceLabel(source: RecordSource, translate: (key: string) => string): string {
+  const label = variantLabel(source, translate);
+  return label ? `${source.movementName} · ${label}` : source.movementName;
+}
+
 /** The three lifts of the CrossFit Total, in order. */
-export const TOTAL_LIFTS = ['Back Squat', 'Shoulder Press', 'Deadlift'];
+export const TOTAL_LIFTS = [
+  {name: 'Back Squat', movement: 'Squat', variantKey: ';BACK_RACK'},
+  {name: 'Shoulder Press', movement: 'Shoulder Press', variantKey: ''},
+  {name: 'Deadlift', movement: 'Deadlift', variantKey: ''}
+];
 
 /** CrossFit Total from the 1RMs of the base versions (D53), with each lift, or null while one is missing. */
 export function crossfitTotal(records: MovementRecords[] | null | undefined): {kg: number; parts: {name: string; kg: number}[]} | null {
   const parts: {name: string; kg: number}[] = [];
-  for (const name of TOTAL_LIFTS) {
-    const variant = records?.find(m => m.movementName === name)?.variants.find(v => v.base);
+  for (const {name, movement, variantKey} of TOTAL_LIFTS) {
+    const variant = records?.find(m => m.movementName === movement)?.variants.find(v => v.variantKey === variantKey);
     const oneRm = variant?.records.find(r => r.reps === 1);
     if (!oneRm) return null;
     parts.push({name, kg: oneRm.weightKg});

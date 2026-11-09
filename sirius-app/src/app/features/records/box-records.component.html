@@ -4,10 +4,10 @@
       <!-- Phones: one swiped row without a scrollbar; wider screens: the chips wrap -->
       <div class="no-scrollbar -mx-4 flex gap-2 overflow-x-auto px-4 md:mx-0 md:flex-wrap md:overflow-visible md:px-0"
            role="group" [attr.aria-label]="'RECORDS.BOARD.LIFT' | translate" data-slot="lift-chips">
-        @for (lift of boardLifts(); track lift.movementId) {
+        @for (lift of boardLifts(); track lift.movementId + lift.variantKey) {
           <button type="button" hlmBtn variant="outline" size="sm"
                   class="shrink-0 rounded-full aria-pressed:bg-secondary/20 aria-pressed:border-secondary"
-                  [attr.aria-pressed]="lift.movementId === movementId()" (click)="onMovementChange('' + lift.movementId)">{{ lift.movementName }}</button>
+                  [attr.aria-pressed]="lift.movementId === movementId() && lift.variantKey === variantKey()" (click)="onLiftChange(lift)">{{ lift.movementName }}</button>
         }
       </div>
       <div class="flex items-center gap-2">
@@ -87,7 +87,12 @@
             @for (o of others(); track o.row.userId) {
               <li class="flex items-center gap-3 py-2" [class.font-semibold]="o.row.userId === myId()">
                 <span class="w-6 text-right text-muted-foreground">{{ o.rank }}</span>
-                <span class="flex-1 truncate">{{ name(o.row) ?? ('SCORE.LEADERBOARD.ANONYMOUS' | translate) }}</span>
+                <span class="min-w-0 flex-1">
+                  <span class="block truncate">{{ name(o.row) ?? ('SCORE.LEADERBOARD.ANONYMOUS' | translate) }}</span>
+                  @if (source(o.row); as via) {
+                    <span class="block truncate text-xs font-normal text-muted-foreground">{{ 'RECORDS.INHERITED' | translate: {source: via} }}</span>
+                  }
+                </span>
                 <span>{{ loadText(o.row) }}</span>
               </li>
             }

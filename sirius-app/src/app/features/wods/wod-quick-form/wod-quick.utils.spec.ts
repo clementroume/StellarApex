@@ -2,7 +2,7 @@ import {defaultExtras, defaultMeasure, ladderValues, monotone, parseSets, rounds
 
 describe('wod-quick utils', () => {
   it('should pick the usual measure of a movement', () => {
-    expect(defaultMeasure('Running', 'CARDIO')).toBe('DISTANCE');
+    expect(defaultMeasure('Run', 'CARDIO')).toBe('DISTANCE');
     expect(defaultMeasure('Handstand Walk', 'INVERTED')).toBe('DISTANCE');
     expect(defaultMeasure('Plank', 'CORE')).toBe('TIME');
     expect(defaultMeasure('Rowing', 'CARDIO_MACHINES')).toBe('CALORIES');

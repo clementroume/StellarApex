@@ -15,7 +15,9 @@ the dev proxy targets the local Traefik `https://localhost` with `Host: stellar.
   services, shared models (`Slice<T>`, `ProblemDetail`).
 - `src/app/features/<feature>`: `<x>-list`, `<x>-detail`, `<x>-form` + `<feature>.routes.ts`, lazy-loaded
   from `app.routes.ts` under the authenticated `MainLayoutComponent`.
-- `src/app/shared/component`: reusable `list-*`, `detail-*`, `search-input`, `movement-combobox`,
+- `src/app/shared/component`: reusable `list-*`, `detail-*`, `search-input`, `movement-combobox`
+  (driven by the usual names, `usualNameOf` finds a line's name), `variant-picker` (chips by type, `toggleVariant` applies `exclusiveTechniqueSets`), `body-map` (front / back SVG by region,
+  paths from MIT `react-native-body-highlighter`, licence in `src/assets/licenses`, kept in the lazy muscles chunk),
   `gym-selector` components (inline templates).
 - `src/app/shared/ui`: spartan/ui helm code (styles copied from the spartan CLI, ours to edit), imported as
   `@spartan-ng/helm/<name>` (`tsconfig.json` paths) on top of `@spartan-ng/brain` (pinned version).
@@ -31,7 +33,7 @@ the dev proxy targets the local Traefik `https://localhost` with `Host: stellar.
   keep the app meaning (`primary`, `secondary` = records/PR yellow, `accent` = brand orange, with
   `*-content` for text on them); in helm code, spartan's subtle `secondary`/`accent` are `muted`.
 - App pieces: `app-page` (page template), `app-form-field` (label + input group + error),
-  `appNativeSelect` (native select keeping `ngValue`), `app-list-group`, `app-section-divider`,
+  `appNativeSelect` (native select keeping `ngValue`), `app-section-divider`,
   `app-coming-soon` / `SpacePlaceholderComponent` (route data), `field-group` and `switch` CSS
   utilities. Toggle filters are buttons with `aria-pressed`; dialogs trap focus (CDK), close on Escape
   and give focus back.
@@ -120,7 +122,7 @@ the dev proxy targets the local Traefik `https://localhost` with `Host: stellar.
   and gym) and `sessionId` (history and the folded "session leaderboard" keep that session's scores). Strength sets: `ScoreRequest.sets` (Aldebaran derives the best set / volume).
 - WOD prescription display: `features/wods/wod-whiteboard` (WOD detail and session blocks). Movement
   names are written in CrossFit English whatever the language (`features/wods/movement-board-name.ts`:
-  variants built into the name, plural for reps: "9 Hang Power Cleans", "Bar Muscle-Ups"), team split
+  usual name and remaining words from `WodMovementResponse.display`, variants built into the name, plural for reps: "9 Hang Power Cleans", "Bar Muscle-Ups"), team split
   after the line ("(each)", "(synchro)", partner carry); a buy-in is written before the format line. Coaches and
   athletes write WODs with `features/wods/wod-quick-form` (`initial`, `defaultFormat`, `(submitted)`
   hands the `WodRequest` back; categories / sub-categories (`CATEGORIES`, `STRUCTURES`),
@@ -132,9 +134,10 @@ the dev proxy targets the local Traefik `https://localhost` with `Host: stellar.
   full `wod-form` is for public WODs (admins). Both pick movements with `app-movement-combobox`.
 - Records (`features/records`, lot C): `RecordService` (`api/aldebaran`) caches `getMyRecords` per user
   until `invalidate()` (called by `WodScoresStore` after any score change) and the canonical lifts;
-  `record.utils.ts` (`percentBase`: base version only, real N RM else estimated 1RM; families, tile
-  summary, RM rows, CrossFit Total); `my-records` (`/training/records`: tiles per lift, families, gain of a
-  record of the last 30 days), `lift-records` (`/training/records/:movementId` with route data `page`, and the
+  `record.utils.ts` (`percentBase`: the line's `display.percentBaseKey`, real N RM else estimated 1RM; families, tile
+  summary, RM rows, CrossFit Total, `sourceLabel` of an inherited record); `my-records` (`/training/records`: a tile
+  for the base version, each variant with its own tests and, without a base, each named variant; families, gain of a
+  record of the last 30 days), `lift-records` (`/training/records/:movementId?variant=` with route data `page`, and the
   movement page: RM table with muted estimates, % table, variants, 1RM progression bars, tests) and
   `box-records` (`/box/leaderboards`: lift chips, RM segments, folded filters, podium, own line pinned off
   the podium). `RecordService.version` is bumped on every score change: screens deriving data from the

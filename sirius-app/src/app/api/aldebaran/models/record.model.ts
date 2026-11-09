@@ -20,12 +20,25 @@ export interface RecordEntry {
   scoreId: number;
   wodId: number;
   wodTitle: string;
+  // Where the record comes from when another variant proves it
+  inheritedFrom?: RecordSource | null;
+}
+
+/** The variant or movement a record really comes from (RecordSourceResponse). */
+export interface RecordSource {
+  movementId: number;
+  movementName: string;
+  variantKey: string;
+  equipment: string[];
+  techniques: string[];
 }
 
 /** Records of one variant set of a movement (VariantRecordsResponse). */
 export interface VariantRecords {
   // Empty for the base version
   variantKey: string;
+  // Usual name of the variant in the catalog ("Zercher Squat"), if it has one
+  usualNameEn?: string | null;
   base: boolean;
   equipment: string[];
   techniques: string[];
@@ -63,6 +76,10 @@ export interface CanonicalLift {
   movementId: number;
   movementName: string;
   repMax: number;
+  // The variant tested, and its usual name
+  variantKey: string;
+  usualNameEn?: string | null;
+  usualNameFr?: string | null;
 }
 
 /** One line of a box records board (BoardRecordResponse); the name comes from Antares. */
@@ -73,4 +90,5 @@ export interface BoardRecord {
   date: string;
   division?: Division | null;
   ageGroup?: AgeGroup | null;
+  inheritedFrom?: RecordSource | null;
 }

@@ -5,12 +5,12 @@ import {RouterLink} from '@angular/router';
 import {TranslatePipe, TranslateService} from '@ngx-translate/core';
 import {HlmBadge} from '@spartan-ng/helm/badge';
 import {HlmSpinner} from '@spartan-ng/helm/spinner';
-import {CanonicalLift, MovementRecords, RecordPoint, VariantRecords} from '../../api/aldebaran/models/record.model';
+import {CanonicalLift, MovementRecords, RecordPoint, VariantRecords, RecordEntry} from '../../api/aldebaran/models/record.model';
 import {RecordService} from '../../api/aldebaran/services/record.service';
 import {BYPASS_LOADER} from '../../core/interceptors/loading.interceptor';
 import {UnitService} from '../../core/services/unit.service';
 import {PageComponent} from '../../shared/component/page/page.component';
-import {PERCENT_STEPS, percentBase, rmRows, variantLabel} from './record.utils';
+import {PERCENT_STEPS, percentBase, rmRows, sourceLabel, variantLabel} from './record.utils';
 
 /** Bars of the progression chart (the latest bests). */
 const PROGRESS_BARS = 12;
@@ -39,6 +39,8 @@ export class LiftRecordsComponent {
   readonly movementName = input<string>();
   /** Route data: shown as a page of My training. */
   readonly page = input<boolean>(false);
+  /** Variant shown (query parameter on the page, the chosen variant on a movement page). */
+  readonly variant = input<string | null | undefined>('');
 
   // --- STATE (SIGNALS & VARIABLES) ---
   readonly percentSteps = PERCENT_STEPS;
@@ -50,14 +52,17 @@ export class LiftRecordsComponent {
   // --- COMPUTED STATE ---
   readonly id = computed(() => Number(this.movementId()));
   readonly lang = computed(() => this.translate.currentLang() ?? this.translate.fallbackLang() ?? 'en');
-  readonly name = computed(() => this.movementName() ?? this.records()?.movementName ?? this.lifts()[0]?.movementName ?? '');
-  readonly base = computed<VariantRecords | undefined>(() => this.records()?.variants.find(v => v.base));
-  readonly variants = computed<VariantRecords[]>(() => this.records()?.variants.filter(v => !v.base) ?? []);
+  readonly key = computed(() => this.variant() ?? '');
+  readonly name = computed(() => this.movementName() ?? this.lifts().find(l => l.variantKey === this.key())?.usualNameEn
+    ?? this.base()?.usualNameEn ?? this.records()?.movementName ?? this.lifts()[0]?.movementName ?? '');
+  /** The variant the page is about. */
+  readonly base = computed<VariantRecords | undefined>(() => this.records()?.variants.find(v => v.variantKey === this.key()));
+  readonly variants = computed<VariantRecords[]>(() => this.records()?.variants.filter(v => v.variantKey !== this.key()) ?? []);
   readonly rows = computed(() => rmRows(this.base()));
   /** Base of the % table: the real 1RM, else the estimated one (same rule as the whiteboard). */
   readonly oneRm = computed(() => {
     const records = this.records();
-    return percentBase(records ? [records] : [], this.id(), 1);
+    return percentBase(records ? [records] : [], this.id(), 1, this.key());
   });
   readonly bars = computed(() => {
     const points = this.progress().slice(-PROGRESS_BARS);
@@ -73,42 +78,44 @@ export class LiftRecordsComponent {
   constructor() {
     effect(() => {
       const id = this.id();
+      const key = this.key();
       this.recordService.version();
-      if (id && !Number.isNaN(id)) untracked(() => this.fetch(id));
+      if (id && !Number.isNaN(id)) untracked(() => this.fetch(id, key));
     });
   }
 
   // --- DATA FETCHING ---
-  private fetch(id: number): void {
+  private fetch(id: number, key: string): void {
     const context = new HttpContext().set(BYPASS_LOADER, true);
+    // A later pick (movement, variant) is already loading: drop this answer
+    const isCurrent = () => this.id() === id && this.key() === key;
     this.isLoading.set(true);
     this.recordService.getMyMovementRecords(id, context).subscribe({
       next: records => {
-        // Another movement is already loading: drop this answer
-        if (this.id() !== id) return;
+        if (!isCurrent()) return;
         this.records.set(records[0]);
         this.isLoading.set(false);
       },
       error: () => {
-        if (this.id() !== id) return;
+        if (!isCurrent()) return;
         this.records.set(undefined);
         this.isLoading.set(false);
       }
     });
     this.recordService.getCanonicalLifts(context).subscribe({
       next: lifts => {
-        if (this.id() === id) this.lifts.set(lifts.filter(l => l.movementId === id));
+        if (isCurrent()) this.lifts.set(lifts.filter(l => l.movementId === id && l.variantKey === key));
       },
       error: () => {
-        if (this.id() === id) this.lifts.set([]);
+        if (isCurrent()) this.lifts.set([]);
       }
     });
-    this.recordService.getMyProgress(id, 1, context).subscribe({
+    this.recordService.getMyProgress(id, 1, context, key).subscribe({
       next: points => {
-        if (this.id() === id) this.progress.set(points);
+        if (isCurrent()) this.progress.set(points);
       },
       error: () => {
-        if (this.id() === id) this.progress.set([]);
+        if (isCurrent()) this.progress.set([]);
       }
     });
   }
@@ -132,5 +139,10 @@ export class LiftRecordsComponent {
 
   label(v: VariantRecords): string {
     return variantLabel(v, key => this.translate.instant(key));
+  }
+
+  /** What an inherited record really is ("Clean · Power"). */
+  source(record: RecordEntry): string {
+    return record.inheritedFrom ? sourceLabel(record.inheritedFrom, key => this.translate.instant(key)) : '';
   }
 }

@@ -37,7 +37,8 @@
     "CONFIRM": "Confirmer",
     "COPY": "Copier",
     "COPIED": "Copié dans le presse-papiers.",
-    "LOAD_MORE": "Charger plus"
+    "LOAD_MORE": "Charger plus",
+    "ADD": "Ajouter"
   },
   "NAVBAR": {
     "WODS": "WODs",
@@ -173,6 +174,7 @@
     "LOAD_ERROR": "Impossible de charger les records. Réessaie plus tard.",
     "RM": "{{reps}}RM",
     "NO_BASE": "Pas encore de record sur la version de base.",
+    "NO_VARIANT": "Pas encore de record sur cette variante.",
     "TOTAL": "CrossFit Total",
     "EMPTY": "Pas encore de record : saisis un test N RM ou tes séries de force.",
     "TO_TEST": "Tester un RM",
@@ -219,7 +221,8 @@
       "VARIANTS": "Variantes",
       "PROGRESS": "Progression du 1RM",
       "PROGRESS_LABEL": "Le 1RM est passé de {{from}} à {{to}}"
-    }
+    },
+    "INHERITED": "via {{source}}"
   },
   "SETTINGS": {
     "TITLE": "Sécurité",
@@ -279,6 +282,10 @@
     "EXPORT_ERROR": "Erreur lors de l'export CSV."
   },
   "MUSCLE": {
+    "LIST": {
+      "FRONT": "Face",
+      "BACK": "Dos"
+    },
     "TITLE": "Catalogue Anatomique",
     "TITLES": {
       "ADD": "Ajouter un muscle",
@@ -339,6 +346,12 @@
       "AGONIST": "Agoniste (Principal)",
       "SYNERGIST": "Synergiste (Assistant)",
       "STABILIZER": "Stabilisateur"
+    },
+    "USAGE": {
+      "TITLE": "Sollicité dans",
+      "ROLE": "Rôle",
+      "EMPTY": "Aucun mouvement avec ce rôle.",
+      "ONLY": "{{value}} seulement"
     }
   },
   "MOVEMENT": {
@@ -358,7 +371,14 @@
       "TAGS": "Équipement & Techniques",
       "MUSCLES": "Muscles Ciblés",
       "DESCRIPTIONS": "Descriptions & Coaching",
-      "MEDIA": "Liens Médias (Images & Vidéos)"
+      "MEDIA": "Liens Médias (Images & Vidéos)",
+      "VARIANT": "Choisir la variante",
+      "COMPOSITION": "Composition",
+      "ACCEPTED": "Mouvements acceptés",
+      "HOW_TO": "Comment le faire",
+      "RULES": "Règles du catalogue",
+      "ADJUSTMENTS": "Ajustements de rôles",
+      "NAV": "Parties du formulaire"
     },
     "FIELDS": {
       "NAME": "Nom du mouvement",
@@ -367,7 +387,7 @@
       "EQUIPMENT": "Équipement Requis",
       "TECHNIQUES": "Techniques & Styles",
       "COACHING_CUES": "Conseils d'exécution (Cues)",
-      "MUSCLE": "Muscle (Anatomie)",
+      "MUSCLE": "Muscle",
       "ROLE": "Rôle dans le mouvement",
       "DESC_FR": "Description (FR)",
       "DESC_EN": "Description (EN)",
@@ -375,7 +395,13 @@
       "COACHING_CUES_EN": "Coaching Cues (EN)",
       "IMAGE_URL": "URL de l'image",
       "VIDEO_URL": "URL de la vidéo (YouTube/Vimeo)",
-      "MODALITY": "Modalité"
+      "MODALITY": "Modalité",
+      "IMPLIED_EQUIPMENT": "Équipement implicite",
+      "IMPLIED_REQUIRES_POSITION": "Seulement avec une position de charge",
+      "REQUIRED_RULES": "À préciser sur une ligne",
+      "DUMBBELL_BASES": "Haltères de la version de base",
+      "TRIGGER": "Déclencheur",
+      "COUNTS_FOR_RECORDS": "Compte pour les records"
     },
     "PLACEHOLDERS": {
       "NAME": "Ex: Back Squat",
@@ -475,7 +501,9 @@
       "TIRE": "Pneu",
       "ATLAS_STONE": "Atlas Stone",
       "KEG": "Fût (Keg)",
-      "LOG": "Log"
+      "LOG": "Log",
+      "HEAVY_ROPE": "Corde lestée",
+      "MACHINE": "Machine"
     },
     "TECHNIQUE_CATEGORIES": {
       "STYLE": "Style d'exécution & Tempo",
@@ -485,7 +513,10 @@
       "BODY_POSITION": "Position du corps",
       "LATERALITY": "Latéralité",
       "DIRECTION": "Direction",
-      "MODIFIER": "Modificateurs spécifiques"
+      "MODIFIER": "Modificateurs spécifiques",
+      "RECEPTION": "Réception",
+      "AMPLITUDE": "Amplitude",
+      "ROTATIONS": "Rotations"
     },
     "TECHNIQUES": {
       "STRICT": "Strict",
@@ -497,14 +528,11 @@
       "DEAD_STOP": "Dead Stop",
       "HAND_RELEASE": "Hand Release",
       "TOUCH_AND_GO": "Touch and Go",
-      "EXPLOSIVE": "Explosif",
       "JUMPING": "Sauté",
       "CLOSE_GRIP": "Prise serrée",
       "WIDE_GRIP": "Prise large",
       "SNATCH_GRIP": "Prise d'arraché",
       "HAMMER": "Prise marteau",
-      "MIXED_GRIP": "Prise mixte",
-      "HOOK_GRIP": "Hook Grip",
       "CONVENTIONAL": "Conventionnel",
       "SUMO": "Sumo",
       "HANG": "Suspendu (Hang)",
@@ -530,25 +558,17 @@
       "GOBLET": "Goblet",
       "FARMERS_CARRY": "Farmer's Carry",
       "SEATED": "Assis",
-      "STANDING": "Debout",
       "INCLINED": "Incliné",
       "DECLINED": "Décliné",
-      "INVERTED": "Inversé",
       "L_SIT": "L-Sit",
       "TUCK": "Tuck",
       "PIKE": "Pique",
-      "HOLLOW": "Hollow",
-      "ARCH": "Arch",
       "KNEES": "Sur les genoux",
-      "HOLD": "Maintien statique (Hold)",
       "ROCK": "Bascule (Rocking)",
-      "BILATERAL": "Bilatéral",
-      "UNILATERAL": "Unilatéral",
       "ALTERNATING": "Alterné",
       "ONE_ARM": "Un bras",
       "SINGLE_LEG": "Jambe seule",
       "DOUBLE": "Double (2 objets)",
-      "FORWARD": "En avant",
       "BACKWARD": "En arrière",
       "LATERAL": "Latéral",
       "FACING": "Face à",
@@ -560,13 +580,68 @@
       "BREASTSTROKE": "Brasse",
       "LEGLESS": "Sans les jambes",
       "WEIGHTED": "Lesté",
-      "BODYWEIGHT": "Poids du corps",
       "ASSISTED": "Assisté",
-      "CONTINENTAL_CLEAN": "Continental Clean",
-      "RING": "Aux anneaux",
       "PIROUETTE": "Pirouette",
-      "CLEAN_AND_PRESS": "Clean & Press",
-      "CLEAN_AND_JERK": "Clean & Jerk"
+      "MUSCLE": "Muscle",
+      "POWER": "Power",
+      "SQUAT": "Squat",
+      "SPLIT": "Split",
+      "PUSH": "Push",
+      "RUSSIAN": "Russian",
+      "AMERICAN": "American",
+      "STEP": "Step",
+      "CHEST_TO_BAR": "Chest-to-Bar",
+      "KNEE_RAISE": "Knee Raise",
+      "KNEES_TO_ELBOWS": "Knees-to-Elbows",
+      "TOES_TO_BAR": "Toes-to-Bar",
+      "HALF": "Demi",
+      "SINGLE_UNDER": "Single-under",
+      "DOUBLE_UNDER": "Double-under",
+      "TRIPLE_UNDER": "Triple-under",
+      "OVER": "Par-dessus",
+      "SHUTTLE": "Navette",
+      "CLOSE_STANCE": "Pieds serrés"
+    },
+    "COMPOSITION": {
+      "CHAIN": "Enchaînement",
+      "CHAIN_HINT": "Si ce mouvement en enchaîne plusieurs (Clean and Jerk = Clean puis Jerk), liste ses étapes dans l'ordre. Une étape cochée transmet ses records au mouvement qu'elle contient. Sinon, laisse vide.",
+      "EITHER": "Mouvement au choix",
+      "EITHER_HINT": "Si l'athlète choisit comment réaliser ce mouvement (Shoulder-to-Overhead = Press, Push Press ou Jerk), liste les mouvements acceptés : leurs records comptent ici. Sinon, laisse vide.",
+      "STEP": "Étape {{n}}",
+      "ADD_STEP": "Ajouter une étape",
+      "ADD_ACCEPTED": "Ajouter un mouvement accepté"
+    },
+    "LIST": {
+      "SUMMARY": "{{movements}} mouvements, {{names}} noms usuels",
+      "ALL": "Toutes",
+      "VARIANT": "{{n}} variante",
+      "VARIANTS": "{{n}} variantes",
+      "CHAIN": "Enchaînement : {{names}}",
+      "THEN": "puis",
+      "EITHER": "Au choix : {{names}}",
+      "EITHER_TAG": "Au choix"
+    },
+    "TABS": {
+      "identity": "Identité",
+      "variants": "Variantes",
+      "muscles": "Muscles",
+      "names": "Noms usuels",
+      "composition": "Composition"
+    },
+    "USUAL": {
+      "TITLE": "Noms usuels",
+      "FOUND": "Noms trouvés",
+      "IMPLEMENTS": "{{count}} objet(s)",
+      "NAME_EN": "Nom anglais",
+      "NAME_FR": "Nom français, si différent",
+      "SEARCH": "Termes de recherche"
+    },
+    "REQUIRED": {
+      "LOAD_POSITION_IF_EQUIPMENT": "Position si équipement",
+      "AMPLITUDE": "Amplitude",
+      "ROTATIONS": "Rotations",
+      "SWING_STYLE": "Russian ou American",
+      "EQUIPMENT": "Équipement"
     }
   },
   "WOD": {

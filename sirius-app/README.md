@@ -59,10 +59,11 @@ src/spartan.css       # spartan tokens and Tailwind colours mapped to the palett
   `MANAGE_SETTINGS`) · Catalogue (`/wods`, `/movements`, `/muscles`) · Admin (`/admin`, admins).
   Desktop: spaces in the top bar, the space's pages as tabs below it. Mobile: bottom tab bar.
 * **Records** (`features/records`, lot C): My training › Records is the user's records board: one tile
-  per lift (1RM, else the estimated 1RM, with "+5" or "PR" for a record of the last 30 days), family
+  per lift or named variant (1RM, else the estimated 1RM, with "+5" or "PR" for a record of the last 30 days), family
   chips, the CrossFit Total with its three lifts, and the lifts not tested yet. A tile opens the lift
   (`/training/records/:id`, also on the movement page): RM table (estimates muted), % table of the
-  1RM, variants, 1RM progression (`GET /aldebaran/records/me/progress`) and the canonical tests.
+  1RM, variants, 1RM progression (`GET /aldebaran/records/me/progress`) and the canonical tests. A record
+  proved by another variant (a Power Clean for the Clean) names its source.
   My box › Leaderboards is the records board of the box (`GET /aldebaran/records/gyms/{id}`): lift
   chips, RM segments, folded division / age group filters, podium, the user's line pinned with the
   gap to the athlete above, names from Antares. WOD leaderboards also filter by age group (CrossFit Open
@@ -183,14 +184,23 @@ The backends enforce every rule; Sirius only adapts what it shows:
   60/50 cm, 10/9 ft = 3/2.7 m) and distances (metric converts every imperial distance; imperial keeps
   runs and rows in m/km and converts only distances under 100 m to feet).
 
-* **WOD form**: the movement is picked in a combobox (spartan/ui, name or abbreviation); each movement
-  can prescribe a number of sets (shown as "5 x 5" on the whiteboard).
-  The movement's allowed equipment and techniques then appear as toggle chips (loaded from
-  `GET /aldebaran/movements/{id}`); changing the movement clears them. Aldebaran rejects any other
-  value.
+* **WOD form**: the movement is picked in a combobox listing the catalog's usual names
+  (`GET /aldebaran/movements/usual-names`: "Power Clean" selects the Clean with its POWER technique); each
+  movement can prescribe a number of sets (shown as "5 x 5" on the whiteboard).
+  The movement's allowed equipment and techniques then appear as toggle chips grouped by type, one value per
+  exclusive type (loaded from `GET /aldebaran/movements/{id}`); changing the movement clears them. Aldebaran
+  rejects any other value.
+* **Catalog homes**: Movements shows discipline buttons, family chips and cards (image or icon, simple variants or
+  what a chain / either movement is made of, number of variants, the user's record); the search spans the whole catalog.
+  Muscles shows region chips and a clickable front / back body map beside the muscles of the region.
+* **Movements**: the search also finds usual names and their search terms. A movement page picks a variant
+  (chips or usual-name shortcuts) and shows its name, description and adjusted roles
+  (`GET /aldebaran/movements/{id}/variant`), its composition and its records. The admin form has tabs for the
+  identity, variants, muscles and role adjustments, usual names, and chain components.
 * **Muscles**: the list groups muscles by region, each functional group followed by its muscles; the
   form picks the group among the top-level muscles of the same region; a movement detail explains a
-  group (its muscles) or a member (its group) in a tooltip. Coaching cues keep their line breaks.
+  group (its muscles) or a member (its group) in a tooltip. A muscle page lists the movements using it by
+  role, with what brings the role (`GET /aldebaran/muscles/{id}/movements`). Coaching cues keep their line breaks.
 
 ## End-to-end tests
 
