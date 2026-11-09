@@ -111,6 +111,7 @@ test.http
 /aldebaran-training/src/main/resources/muscles.csv
 /aldebaran-training/src/main/resources/wods.csv
 /aldebaran-training/src/main/resources/wod_movements.csv
+/aldebaran-training/src/main/resources/movement_usual_names.csv
 
 # Sirius e2e (Playwright): saved sessions, reports
 sirius-app/e2e/.auth/

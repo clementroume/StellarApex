@@ -170,6 +170,15 @@ Sunday); the same blocks at two dates are two sessions. Disciplines: `CROSSFIT`,
 
 ## Catalog Model
 
+Lot M: a movement has equipment and typed techniques. Each technique type states what it counts for
+(`service/VariantDominance`). A movement can be a chain (`movement_components`, with a "counts for records"
+flag) or an "either" movement (`movement_accepted`). It holds role adjustments per technique or equipment
+(`movement_role_adjustments`, lowest role wins), usual names with no identity of their own
+(`movement_usual_names`), required values (`movement_required_rules`), the number of dumbbells of its base
+version (`movement_dumbbell_bases`), and a joint layer that controls the roles (`movement_joint_actions`,
+`muscle_joint_actions`). A WOD line is written in one canonical form and checked by `service/CatalogRules`;
+`WodMovementResponse.display` says how it reads.
+
 * **Muscles**: a region (`muscleGroup`: `LEGS`, `BACK`, `CHEST`, `SHOULDERS`, `ARMS`, `CORE`) and an
   optional functional group (`parent`, e.g. Rectus Femoris in Quadriceps Femoris). One level only,
   same region as the group (409 otherwise). A movement targets a group, or one of its muscles when
@@ -208,7 +217,10 @@ Sunday); the same blocks at two dates are two sessions. Disciplines: `CROSSFIT`,
 
 ### Muscles (`/aldebaran/muscles`) and Movements (`/aldebaran/movements`)
 
-* `GET /`, `GET /{id}`, `GET /reference-data`: catalog and form reference data.
+* `GET /`, `GET /{id}`, `GET /reference-data`: catalog and form reference data. Movement summaries carry `componentNames` and `acceptedNames`; `reference-data` carries `exclusiveTechniqueSets`.
+* `GET /usual-names`: every usual name (Power Clean = Clean + `POWER`), each one a movement with techniques and equipment; the movement search of the WOD forms.
+* `GET /movements/{id}/variant?techniques=&equipment=`: one variant of a movement: usual name, description, video, implement count, variant key and adjusted roles.
+* `GET /muscles/{id}/movements`: movements working a muscle (with its group or members), by role, with the technique or equipment that brings an adjusted role.
 * `POST /`, `PUT /{id}`, `DELETE /{id}`: [ADMIN] manage the catalog.
 
 ### WODs (`/aldebaran/wods`)
@@ -240,6 +252,12 @@ Sunday); the same blocks at two dates are two sessions. Disciplines: `CROSSFIT`,
 
 ### Records (`/aldebaran/records`, lot C)
 
+Lot M: records are stored at the most precise variant and read through the single "counts for" rule
+(`service/VariantDominance`, `service/RecordInheritance`): a Power Clean counts for the Clean, a Clean and
+Jerk for the Clean and the Jerk, a Jerk for Shoulder-to-Overhead. An entry another variant proves carries
+`inheritedFrom`. `GET /me/progress` and `GET /gyms/{gymId}` take an optional `variantKey` (base version by
+default); `GET /lifts` returns one test per movement, variant and N, with its usual name.
+
 `movement_records` (former V18) holds each athlete's best load per movement, variant key and number of reps,
 rebuilt by `MovementRecordService.rebuild(userId, movementId)` after every score write, correction or
 deletion, and once at startup when the table is empty (`config/MovementRecordBackfill`).
@@ -249,18 +267,18 @@ deletion, and once at startup when the table is empty (`config/MovementRecordBac
   "N RM" test (`repMax`) is a candidate for N. Every scaling level and unverified scores count; team
   scores and multi-movement WODs never do. On a tie the earliest day keeps the record.
 * Variant key (`service/LiftVariant`): sorted equipment `;` sorted techniques of the WOD line, the
-  implied equipment removed (the barbell when the movement allows it, else its only equipment); `''`
-  is the base version.
+  implied equipment removed (`movements.implied_equipment`; for the Squat only with a load position),
+  a component technique written `1:POWER`; `''` is the base version.
 * `GET /me[?movementId=]`: the caller's records by movement (name order, with its `category`) and
-  variant (base first), with `estimatedOneRepMaxKg` (Epley from the 2-10 rep records), `estimates`
+  variant (base first, each with its `usualNameEn`), with `estimatedOneRepMaxKg` (Epley from the 2-10 rep records), `estimates`
   (the usual 1/2/3/5/10 RM without a record, Epley from the real 1RM else the estimated one) and, per
   record, `previousWeightKg` (best load before its day, former V19); estimates are displayed only, never stored.
-* `GET /me/progress?movementId=&reps=1`: each day the caller set a new best N RM on the base version.
-* `GET /lifts`: canonical lifts, i.e. public "N RM" tests of a base-version movement (one per movement
-  and N, official competition events excluded: an Open 1RM still feeds the records but is never the
+* `GET /me/progress?movementId=&reps=1[&variantKey=]`: each day the caller set a new best N RM on that variant.
+* `GET /lifts`: canonical lifts, i.e. public "N RM" tests (one per movement, variant and N, with the
+  usual name, official competition events excluded: an Open 1RM still feeds the records but is never the
   lift's test); their WOD leaderboard is the lift leaderboard.
-* `GET /gyms/{gymId}?movementId=`: records board of a box: base-version records of the gym's current
-  usable members (Antares `member-ids`, 503 if unavailable), wherever set; members of the gym or admin.
+* `GET /gyms/{gymId}?movementId=[&variantKey=]`: records board of a box for that variant (base version
+  by default): effective records of the gym's current usable members (Antares `member-ids`, 503 if unavailable), wherever set; members of the gym or admin.
 
 ### Scores (`/aldebaran/scores`)
 

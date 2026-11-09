@@ -44,7 +44,7 @@ class WodCsvCodecTest {
           .id(3L)
           .name("Running")
           .category(Category.CARDIO)
-          .techniques(Set.of(Technique.FORWARD, Technique.WEIGHTED))
+          .techniques(Set.of(Technique.BACKWARD, Technique.WEIGHTED))
           .build();
 
   static final Map<String, Movement> CATALOG =

@@ -1,5 +1,6 @@
 package apex.stellar.aldebaran.dto;
 
+import apex.stellar.aldebaran.model.entities.ComponentTechnique;
 import apex.stellar.aldebaran.model.entities.WodMovement.Segment;
 import apex.stellar.aldebaran.model.entities.WodMovement.TeamSplit;
 import apex.stellar.aldebaran.model.enums.Unit;
@@ -62,10 +63,53 @@ public record WodMovementRequest(
         Double percentOfRm,
     @Min(value = 1, message = "{validation.wod.rmReps.range}")
         @Max(value = 50, message = "{validation.wod.rmReps.range}")
-        Integer rmReps) {
+        Integer rmReps,
+
+    // --- Techniques of one component of a chained line (receptions), optional ---
+    Set<ComponentTechnique> componentTechniques) {
+
+  /** Line without per-component techniques. */
+  @SuppressWarnings("java:S107") // Mirrors the record components
+  public WodMovementRequest(
+      Long movementId,
+      Integer orderIndex,
+      String repsScheme,
+      Double weight,
+      Double weightFemale,
+      Unit weightUnit,
+      Integer durationSeconds,
+      Unit durationDisplayUnit,
+      Double distance,
+      Unit distanceUnit,
+      Integer calories,
+      Integer caloriesFemale,
+      Double height,
+      Double heightFemale,
+      Unit heightUnit,
+      Set<String> equipment,
+      Set<String> techniques,
+      String notesEn,
+      String notesFr,
+      String scalingOptionsEn,
+      String scalingOptionsFr,
+      Integer sets,
+      Segment segment,
+      Integer complexGroup,
+      TeamSplit teamSplit,
+      Double percentOfRm,
+      Integer rmReps) {
+    this(
+        movementId, orderIndex, repsScheme, weight, weightFemale, weightUnit, durationSeconds,
+        durationDisplayUnit, distance, distanceUnit, calories, caloriesFemale, height, heightFemale,
+        heightUnit, equipment, techniques, notesEn, notesFr, scalingOptionsEn, scalingOptionsFr,
+        sets, segment, complexGroup, teamSplit, percentOfRm, rmReps, null);
+  }
 
   /** Defaults the segment to the rounds and the team split to the total. */
   public WodMovementRequest {
+    if (componentTechniques == null) {
+      componentTechniques = Set.of();
+    }
     if (segment == null) {
       segment = Segment.MAIN;
     }

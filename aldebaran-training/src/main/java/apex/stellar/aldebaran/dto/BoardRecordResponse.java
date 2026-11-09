@@ -14,6 +14,7 @@ import java.time.LocalDate;
  * @param date The day it was set.
  * @param division The division of the score that set it, or null.
  * @param ageGroup The age group of the score that set it, or null.
+ * @param inheritedFrom Where the record comes from when another variant proves it, or null.
  */
 public record BoardRecordResponse(
     Long userId,
@@ -21,4 +22,5 @@ public record BoardRecordResponse(
     double weightKg,
     LocalDate date,
     Division division,
-    AgeGroup ageGroup) {}
+    AgeGroup ageGroup,
+    RecordSourceResponse inheritedFrom) {}

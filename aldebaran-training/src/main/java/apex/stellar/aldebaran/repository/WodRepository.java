@@ -4,6 +4,7 @@ import apex.stellar.aldebaran.model.entities.Wod;
 import apex.stellar.aldebaran.model.entities.Wod.WodCategory;
 import apex.stellar.aldebaran.model.entities.Wod.WodStructure;
 import apex.stellar.aldebaran.model.entities.Wod.WodType;
+import apex.stellar.aldebaran.model.entities.WodMovement;
 import apex.stellar.aldebaran.repository.projection.WodSummary;
 import java.util.Collection;
 import java.util.List;
@@ -305,15 +306,16 @@ public interface WodRepository extends JpaRepository<Wod, Long> {
       @Param("isAdmin") boolean isAdmin);
 
   /**
-   * Movement names of the given WODs in order (catalogue preview).
+   * Lines of the given WODs in order, with their movement (catalogue preview).
    *
    * @param wodIds The WODs of a page.
-   * @return Rows of [wod ID, movement name], by WOD then order index.
+   * @return The lines, by WOD then order index.
    */
   @Query(
-      "SELECT wm.wod.id, wm.movement.name FROM WodMovement wm WHERE wm.wod.id IN :wodIds"
+      "SELECT DISTINCT wm FROM WodMovement wm JOIN FETCH wm.wod JOIN FETCH wm.movement m"
+          + " LEFT JOIN FETCH m.usualNames WHERE wm.wod.id IN :wodIds"
           + " ORDER BY wm.wod.id, wm.orderIndex")
-  List<Object[]> findMovementNames(@Param("wodIds") Collection<Long> wodIds);
+  List<WodMovement> findPreviewLines(@Param("wodIds") Collection<Long> wodIds);
 
   // -------------------------------------------------------------------------
   // CATALOG CONSISTENCY

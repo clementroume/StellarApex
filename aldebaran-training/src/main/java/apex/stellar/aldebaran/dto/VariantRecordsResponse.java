@@ -7,6 +7,7 @@ import java.util.Set;
  * An athlete's records for one variant set of a movement (D61).
  *
  * @param variantKey The variant key (empty for the base version).
+ * @param usualNameEn Usual name of the variant in the catalog ("Zercher Squat"), or null.
  * @param base Whether this is the base version (shown first, used by % loads and the boards).
  * @param equipment The equipment of the variant (implied equipment excluded).
  * @param techniques The techniques of the variant.
@@ -18,6 +19,7 @@ import java.util.Set;
  */
 public record VariantRecordsResponse(
     String variantKey,
+    String usualNameEn,
     boolean base,
     Set<String> equipment,
     Set<String> techniques,

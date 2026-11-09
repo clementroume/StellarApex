@@ -2,6 +2,7 @@ package apex.stellar.aldebaran.demo;
 
 import apex.stellar.aldebaran.config.WodCsvCodec;
 import apex.stellar.aldebaran.model.entities.Movement;
+import apex.stellar.aldebaran.model.entities.MovementUsualName;
 import apex.stellar.aldebaran.model.entities.Wod;
 import apex.stellar.aldebaran.model.entities.Wod.ScoreType;
 import apex.stellar.aldebaran.model.entities.Wod.WodType;
@@ -11,6 +12,7 @@ import apex.stellar.aldebaran.repository.MovementRepository;
 import apex.stellar.aldebaran.repository.WodRepository;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -311,10 +313,17 @@ public class DevGymWodSeeder implements ApplicationRunner {
     for (WodMovement.WodMovementBuilder spec : specs) {
       WodMovement wm = spec.build();
       String name = wm.getMovement().getName();
-      Movement movement = catalog.get(name);
+      MovementUsualName usual = usualNames(catalog).get(name);
+      Movement movement = usual != null ? usual.getMovement() : catalog.get(name);
       if (movement == null) {
         log.warn("Dev gym WOD '{}': unknown movement '{}', skipped", wod.getTitle(), name);
         continue;
+      }
+      wm.setEquipment(new HashSet<>(wm.getEquipment()));
+      wm.setTechniques(new HashSet<>(wm.getTechniques()));
+      if (usual != null) {
+        wm.getEquipment().addAll(usual.getEquipment());
+        wm.getTechniques().addAll(usual.getTechniques());
       }
       wm.checkVariantsAllowed(
           movement.getName(), movement.getEquipment(), movement.getTechniques());
@@ -327,6 +336,13 @@ public class DevGymWodSeeder implements ApplicationRunner {
       }
     }
     return wod;
+  }
+
+  /** The catalog's usual names: demo WODs are written the way athletes name movements. */
+  private static Map<String, MovementUsualName> usualNames(Map<String, Movement> catalog) {
+    Map<String, MovementUsualName> names = new HashMap<>();
+    catalog.values().forEach(m -> m.getUsualNames().forEach(u -> names.put(u.getNameEn(), u)));
+    return names;
   }
 
   private record Ids(Long sparta, Long zeus, Long owner, Long programmer, Long athlete) {}

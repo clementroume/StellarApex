@@ -27,6 +27,7 @@ public enum Equipment {
   SLAM_BALL(EquipmentCategory.WEIGHTLIFTING_STRENGTH),
   WEIGHT(EquipmentCategory.WEIGHTLIFTING_STRENGTH),
   BENCH(EquipmentCategory.WEIGHTLIFTING_STRENGTH),
+  MACHINE(EquipmentCategory.WEIGHTLIFTING_STRENGTH),
 
   // --- Gymnastics & Bodyweight Rig ---
   PULL_UP_BAR(EquipmentCategory.GYMNASTICS_BODYWEIGHT),
@@ -50,6 +51,7 @@ public enum Equipment {
   TREADMILL(EquipmentCategory.MONOSTRUCTURAL_CARDIO_MACHINES),
   GHD(EquipmentCategory.MONOSTRUCTURAL_CARDIO_MACHINES),
   JUMP_ROPE(EquipmentCategory.MONOSTRUCTURAL_CARDIO_MACHINES),
+  HEAVY_ROPE(EquipmentCategory.MONOSTRUCTURAL_CARDIO_MACHINES),
 
   // --- Strongman & Odd Objects---
   SLED(EquipmentCategory.STRONGMAN_ODD_OBJECT),

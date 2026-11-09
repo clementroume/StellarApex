@@ -1,8 +1,10 @@
 package apex.stellar.aldebaran.controller;
 
+import apex.stellar.aldebaran.config.CatalogCsv;
 import apex.stellar.aldebaran.config.WodCsvCodec;
 import apex.stellar.aldebaran.model.entities.Movement;
 import apex.stellar.aldebaran.model.entities.MovementMuscle;
+import apex.stellar.aldebaran.model.entities.MovementUsualName;
 import apex.stellar.aldebaran.model.entities.Muscle;
 import apex.stellar.aldebaran.model.entities.Wod;
 import apex.stellar.aldebaran.repository.MovementRepository;
@@ -15,6 +17,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
@@ -107,7 +110,8 @@ public class Exporter {
         "common_name_fr",
         "description_en",
         "description_fr",
-        "image_url"
+        "image_url",
+        "joint_actions"
       };
 
       Path musclesCsvPath = directory.resolve("muscles.csv");
@@ -128,7 +132,8 @@ public class Exporter {
                 m.getCommonNameFr(),
                 m.getDescriptionEn(),
                 m.getDescriptionFr(),
-                m.getImageUrl());
+                m.getImageUrl(),
+                m.getJointActions().stream().map(Enum::name).sorted().collect(Collectors.joining(", ")));
           }
           log.info(
               "Successfully exported {} muscles to {}",
@@ -159,7 +164,9 @@ public class Exporter {
       String[] headers = {
         "name", "name_abbreviation", "category", "equipment", "techniques",
         "agonists", "synergists", "stabilizers", "description_en", "description_fr",
-        "coaching_cues_en", "coaching_cues_fr", "video_url", "image_url"
+        "coaching_cues_en", "coaching_cues_fr", "video_url", "image_url",
+        "implied_equipment", "implied_requires_position", "required_rules", "dumbbell_bases",
+        "components", "accepted", "role_adjustments", "joint_actions"
       };
 
       Path movementsCsvPath = directory.resolve("movements.csv");
@@ -195,8 +202,17 @@ public class Exporter {
                 m.getCoachingCuesEn(),
                 m.getCoachingCuesFr(),
                 m.getVideoUrl(),
-                m.getImageUrl());
+                m.getImageUrl(),
+                m.getImpliedEquipment(),
+                m.isImpliedRequiresPosition() ? "true" : null,
+                m.getRequiredRules().stream().map(Enum::name).sorted().collect(Collectors.joining(", ")),
+                CatalogCsv.formatBases(m.getDumbbellBases()),
+                CatalogCsv.formatComponents(m.getComponents()),
+                m.getAcceptedMovements().stream().map(Movement::getName).sorted().collect(Collectors.joining("; ")),
+                CatalogCsv.formatAdjustments(m.getRoleAdjustments()),
+                CatalogCsv.formatJoints(m.getJointActions()));
           }
+          exportUsualNames(directory, movements);
           log.info(
               "Successfully exported {} movements to {}",
               movements.size(),
@@ -205,6 +221,32 @@ public class Exporter {
       } catch (IOException e) {
         log.error("Failed to export movements to CSV at {}", movementsCsvPath.toAbsolutePath(), e);
         throw new RuntimeException("Erreur lors de l'export des mouvements", e);
+      }
+    }
+
+    private void exportUsualNames(Path directory, List<Movement> movements) throws IOException {
+      Path path = directory.resolve(CatalogCsv.USUAL_NAMES_FILE);
+      try (FileWriter out = new FileWriter(path.toFile());
+          CSVPrinter printer =
+              new CSVPrinter(
+                  out, CSVFormat.DEFAULT.builder().setHeader(CatalogCsv.USUAL_NAME_HEADERS).get())) {
+        for (Movement m : movements) {
+          for (MovementUsualName u :
+              m.getUsualNames().stream()
+                  .sorted(Comparator.comparing(MovementUsualName::getNameEn))
+                  .toList()) {
+            printer.printRecord(
+                m.getName(),
+                u.getNameEn(),
+                u.getNameFr(),
+                u.getSearchTerms(),
+                String.join(" ", u.getTechniques()),
+                String.join(" ", u.getEquipment()),
+                u.getDescriptionEn(),
+                u.getDescriptionFr(),
+                u.getVideoUrl());
+          }
+        }
       }
     }
 

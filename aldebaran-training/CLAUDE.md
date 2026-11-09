@@ -4,7 +4,7 @@ Spring Boot 4.1 / Java 25 service, base path `/aldebaran`, port 8081, schema `al
 Domain: muscles, movements, WODs (`Wod` + `WodMovement`), scores and sessions (`Session` +
 `SessionBlock`, journal `SessionLog`, lot B; model and rules in `README.md` § Sessions).
 Dev-only catalog backup (temporary, git-ignored CSVs, see root `CLAUDE.md`): `controller/Exporter`
-(admin only) writes `src/main/resources/{muscles,movements,wods,wod_movements}.csv` through the source
+(admin only) writes `src/main/resources/{muscles,movements,movement_usual_names,wods,wod_movements}.csv` through the source
 volume mounted in `docker-compose.yml`; `config/DataSeeder` reloads them into empty tables (WODs:
 when no public WOD exists). `muscles.csv` has a `parent` column (functional group, by medical name).
 WOD CSV format lives in `config/WodCsvCodec` (blank = null, lossless round-trip; movements by exact
@@ -12,7 +12,7 @@ name; WOD movement variants joined by `|`, whereas `movements.csv` lists use `, 
 columns `*_en` / `*_fr`, the former single-language columns still read as English; optional trailing
 `tiebreak_en` ... `reps_per_round` then the former V14 structure columns `rounds` ... `vest_weight_unit`, former V15
 `structure`, former V16 `team_size` / `team_mode`, former V18 `rep_max`, and `sets` / `segment` / `complex_group` /
-`team_split` / `percent_of_rm` / `rm_reps` for WOD movements; former `wod_type` values read
+`team_split` / `percent_of_rm` / `rm_reps` / `component_techniques` for WOD movements; catalog-model columns of `movements.csv` in `config/CatalogCsv`; former `wod_type` values read
 as a category + sub-category; a former `ROUNDS_REPS` score type reads as `REPS`).
 `demo/DevGymWodSeeder` (`@Profile("demo")`, package `aldebaran.demo` = what to delete to retire the demo) seeds WODs for the Antares test gyms,
 resolving IDs from the `antares` schema with `JdbcTemplate`, then calls `demo/DevScoreSeeder`
@@ -70,8 +70,10 @@ resolving IDs from the `antares` schema with `JdbcTemplate`, then calls `demo/De
   `BaseIntegrationTest`.
 - Records (lot C): `service/MovementRecordService` rebuilds `movement_records` for (athlete, movement)
   from `ScoreService` after each log / update / delete (`rebuildFor(wod, userId)`), never from a
-  request; `service/LiftVariant` says whether a WOD feeds records and builds the variant key. The
-  canonical "N RM" WODs live in the catalog CSVs (`rep_max`), frozen in a migration at lot E.
+  request; `service/LiftVariant` says whether a WOD feeds records and builds the variant key. Records
+  are stored at the most precise variant and read through `service/RecordInheritance` (best of what
+  counts for the slot, with `inheritedFrom`). The canonical "N RM" WODs live in the catalog CSVs
+  (`rep_max`), one per movement, variant and N, frozen in a migration at lot E.
 - Support session: `X-Auth-Actor-Id` (nullable `actorId`) = the admin acting as the user; rights stay
   the user's. `security/SupportSessionAuditFilter` logs every non-GET request with an actor at INFO.
 
@@ -84,8 +86,14 @@ resolving IDs from the `antares` schema with `JdbcTemplate`, then calls `demo/De
   `*Response`, `*Summary*`); MapStruct mappers in `mapper` (`unmappedTargetPolicy = IGNORE`).
 - Lombok (`@RequiredArgsConstructor`, `@Slf4j`, builders on entities). Javadoc on public classes and
   methods, 2-space indentation, Google Java style.
+- Catalog model (lot M): movement + equipment + typed techniques. `service/VariantDominance` = the
+  single "counts for" rule (exhaustive test: add every new technique there). `service/CatalogRules` =
+  line normalization and checks (one written form, `Technique.exclusiveSets`, required values, component
+  techniques), `display` (usual name + remaining words, sent as `WodMovementResponse.display`),
+  `effectiveRoles` (adjustments, lowest role wins; for lot D), `checkMovement` (no cycle, no muscle with
+  its group, roles against the joint layer).
 - Catalog rules: `WodMovement.checkVariantsAllowed` (variants allowed by the movement; used by
-  `WodService`, `WodCsvCodec`, `DevGymWodSeeder`; `InvalidWodMovementException` → 400), its
+  `CatalogRules`, `WodCsvCodec`, `DevGymWodSeeder`; `InvalidWodMovementException` → 400), its
   converse in `MovementService.updateMovement` (a variant used by any WOD cannot be removed;
   `WodRepository.countByMovementEquipment/Technique`; 409 `error.movement.variant.in.use`) and
   `MuscleService.applyParent` (one-level functional groups, same region; 409).

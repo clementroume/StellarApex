@@ -94,7 +94,7 @@ public final class WodCsvCodecTestSupport {
                 .durationSeconds(45)
                 .durationDisplayUnit(Unit.SECONDS)
                 .calories(10)
-                .techniques(Set.of("FORWARD", "WEIGHTED"))
+                .techniques(Set.of("BACKWARD", "WEIGHTED"))
                 .build());
     return List.of(fran, chelsea);
   }

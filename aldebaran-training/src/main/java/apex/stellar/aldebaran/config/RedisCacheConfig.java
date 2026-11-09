@@ -3,6 +3,7 @@ package apex.stellar.aldebaran.config;
 import apex.stellar.aldebaran.dto.MovementResponse;
 import apex.stellar.aldebaran.dto.MovementSummaryResponse;
 import apex.stellar.aldebaran.dto.MuscleResponse;
+import apex.stellar.aldebaran.dto.UsualNameOptionResponse;
 import apex.stellar.aldebaran.dto.WodResponse;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
@@ -37,6 +38,9 @@ public class RedisCacheConfig {
 
   /** Cache name for movement master data (Lists). */
   public static final String CACHE_MOVEMENTS = "movements";
+
+  /** Cache name for the usual names of the catalog (their own value type). */
+  public static final String CACHE_USUAL_NAMES = "usual-names";
 
   /** Cache name for a single movement detail. */
   public static final String CACHE_MOVEMENT = "movement";
@@ -75,6 +79,11 @@ public class RedisCacheConfig {
     JacksonJsonRedisSerializer<Object> movementsSerializer =
         new JacksonJsonRedisSerializer<>(objectMapper, movementsType);
 
+    CollectionType usualNamesType =
+        tf.constructCollectionType(List.class, UsualNameOptionResponse.class);
+    JacksonJsonRedisSerializer<Object> usualNamesSerializer =
+        new JacksonJsonRedisSerializer<>(objectMapper, usualNamesType);
+
     JavaType singleMovementType = tf.constructType(MovementResponse.class);
     JacksonJsonRedisSerializer<Object> singleMovementSerializer =
         new JacksonJsonRedisSerializer<>(objectMapper, singleMovementType);
@@ -108,6 +117,12 @@ public class RedisCacheConfig {
                 .serializeValuesWith(
                     RedisSerializationContext.SerializationPair.fromSerializer(
                         movementsSerializer)),
+            CACHE_USUAL_NAMES,
+            baseConfig
+                .entryTtl(Duration.ofMillis(properties.masterDataTtl()))
+                .serializeValuesWith(
+                    RedisSerializationContext.SerializationPair.fromSerializer(
+                        usualNamesSerializer)),
             CACHE_MOVEMENT,
             baseConfig
                 .entryTtl(Duration.ofMillis(properties.masterDataTtl()))

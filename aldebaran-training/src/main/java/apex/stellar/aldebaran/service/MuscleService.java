@@ -7,6 +7,7 @@ import static apex.stellar.aldebaran.config.RedisCacheConfig.CACHE_MUSCLES;
 import apex.stellar.aldebaran.dto.MuscleReferenceData;
 import apex.stellar.aldebaran.dto.MuscleRequest;
 import apex.stellar.aldebaran.dto.MuscleResponse;
+import apex.stellar.aldebaran.dto.MuscleUsageResponse;
 import apex.stellar.aldebaran.exception.DataConflictException;
 import apex.stellar.aldebaran.exception.ResourceNotFoundException;
 import apex.stellar.aldebaran.mapper.MuscleMapper;
@@ -15,7 +16,11 @@ import apex.stellar.aldebaran.model.entities.Muscle;
 import apex.stellar.aldebaran.model.entities.Muscle.MuscleGroup;
 import apex.stellar.aldebaran.repository.MuscleRepository;
 import java.util.Arrays;
+import java.util.Comparator;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;
@@ -196,6 +201,56 @@ public class MuscleService {
       throw new DataConflictException("error.muscle.parent.region");
     }
     muscle.setParent(parent);
+  }
+
+  /**
+   * The movements that work a muscle, its functional group or one of its members, each with the
+   * role it gives; a role that a technique or equipment brings says which one.
+   *
+   * @param id The muscle.
+   * @return The movements, by role then name.
+   * @throws ResourceNotFoundException if the muscle does not exist.
+   */
+  @Transactional(readOnly = true)
+  public List<MuscleUsageResponse> getUsage(Long id) {
+    Muscle muscle =
+        muscleRepository
+            .findById(id)
+            .orElseThrow(() -> new ResourceNotFoundException("error.muscle.not.found", id));
+    Set<Long> ids = new HashSet<>();
+    ids.add(muscle.getId());
+    muscle.getMembers().forEach(m -> ids.add(m.getId()));
+    if (muscle.getParent() != null) {
+      ids.add(muscle.getParent().getId());
+    }
+    Set<MuscleUsageResponse> usage = new LinkedHashSet<>();
+    muscleRepository
+        .findMovementUses(ids)
+        .forEach(
+            mm ->
+                usage.add(
+                    new MuscleUsageResponse(
+                        mm.getMovement().getId(),
+                        mm.getMovement().getName(),
+                        mm.getMovement().getCategory(),
+                        mm.getRole(),
+                        null)));
+    muscleRepository
+        .findAdjustmentUses(ids)
+        .forEach(
+            a ->
+                usage.add(
+                    new MuscleUsageResponse(
+                        a.getMovement().getId(),
+                        a.getMovement().getName(),
+                        a.getMovement().getCategory(),
+                        a.getRole(),
+                        a.getTrigger())));
+    return usage.stream()
+        .sorted(
+            Comparator.comparing(MuscleUsageResponse::role)
+                .thenComparing(MuscleUsageResponse::movementName))
+        .toList();
   }
 
   /** Retrieves reference data for Muscle forms. */

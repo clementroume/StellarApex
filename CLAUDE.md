@@ -130,16 +130,16 @@ and a virtual programming); there is no "active gym" in requests.
   judges. `SessionResponse.capabilities {canModify, canDelete, contentVisible, canLog}`, per block
   `SessionBlockResponse.capabilities {canModify, canDelete, frozen}`.
 - Records (lot C, D47-D62): Aldebaran `movement_records` = best load per athlete, movement, variant key
-  (equipment + techniques, implied barbell removed) and reps, rebuilt on every score write from the
+  (equipment + techniques, implied equipment removed) and reps, rebuilt on every score write from the
   individual single-movement lift WODs (`WEIGHT` / `LOAD` / `NONE` with sets): every complete set
   feeds its N RM, a score without sets on an "N RM" test (`wods.rep_max`) feeds N; every scaling and
   unverified scores count, team scores never. `GET /records/me` (with Epley 1RM estimate, 2-10 reps,
   never stored; `estimates` of the usual 1/2/3/5/10 RM without a record, `previousWeightKg` per record),
   `GET /records/me/progress` (successive bests), `GET /records/lifts` (public N RM tests, competition
   events such as Open 18.2a excluded = lift leaderboards, with `ageGroup` filter),
-  `GET /records/gyms/{gymId}` (members of that gym or admin: current usable members' base records,
+  `GET /records/gyms/{gymId}` (members of that gym or admin: current usable members' records of a variant, base by default,
   list from Antares `GET /internal/gyms/{id}/member-ids`). Sirius shows `percentOfRm` / `rmReps` loads
-  from the base version's record (else the estimated 1RM), rounded to 1 kg / 2.5 lb.
+  from the record of the line's `display.percentBaseKey` (base + required techniques, else the estimated 1RM), rounded to 1 kg / 2.5 lb.
 - Internal API: Antares `/antares/internal/**` (membership check, gym type; Aldebaran → `http://antares-auth:8080`,
   `X-Internal-Secret`, 404 without it, excluded from the Traefik `/antares` route). Aldebaran calls it
   through `client/AntaresClient` only.
@@ -225,7 +225,9 @@ Rules common to every lot session (the brief of a lot only lists what is specifi
 - Default branch `main`; dependabot opens most PRs. Branch before committing; commit only when asked.
 - Frontend DTOs in `sirius-app/src/app/api/**/models` mirror backend DTOs: change both together.
 - Catalog: a movement variant is the `equipment` / `techniques` of the movement and of the WOD movement
-  (Aldebaran rejects values the movement does not allow), never a new movement or a note. Muscles have
+  (Aldebaran rejects values the movement does not allow), never a new movement or a note. Lot M model:
+  one "counts for" rule per technique type, chained and "either" movements, role adjustments per
+  technique, usual names with no identity of their own, records read through what counts for them. Muscles have
   one functional group level (`parent`, same region). Never use a movement name absent from the catalog.
 - WODs: `wodType` = category of format (`FOR_TIME`, `AMRAP`, `EMOM`, `TABATA`, `FOR_LOAD`, `FOR_QUALITY`)
   with a sub-category `structure` (For Time: `ROUNDS`, `SINGLE`, `SCHEME` = Fran 21-15-9, `CHIPPER`,

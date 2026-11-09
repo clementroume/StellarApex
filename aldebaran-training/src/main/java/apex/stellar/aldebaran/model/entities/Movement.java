@@ -3,6 +3,7 @@ package apex.stellar.aldebaran.model.entities;
 import apex.stellar.aldebaran.model.enums.Category;
 import apex.stellar.aldebaran.model.enums.Category.Modality;
 import apex.stellar.aldebaran.model.enums.Equipment;
+import apex.stellar.aldebaran.model.enums.RequiredRule;
 import apex.stellar.aldebaran.model.enums.Technique;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.CollectionTable;
@@ -17,14 +18,19 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
+import jakarta.persistence.JoinTable;
+import jakarta.persistence.ManyToMany;
 import jakarta.persistence.OneToMany;
+import jakarta.persistence.OrderBy;
 import jakarta.persistence.Table;
 import jakarta.persistence.Transient;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -87,6 +93,56 @@ public class Movement {
   @Builder.Default
   private Set<MovementMuscle> targetedMuscles = new HashSet<>();
 
+  // --- Catalog model (lot M) ---
+  /** Equipment understood when a line writes none, or null. */
+  @Enumerated(EnumType.STRING)
+  @Column(name = "implied_equipment", length = 50)
+  private Equipment impliedEquipment;
+
+  /** The implied equipment applies only with a load position (Air Squat has none). */
+  @Column(name = "implied_requires_position", nullable = false)
+  private boolean impliedRequiresPosition;
+
+  @ElementCollection(fetch = FetchType.LAZY)
+  @CollectionTable(name = "movement_required_rules", joinColumns = @JoinColumn(name = "movement_id"))
+  @Column(name = "rule", nullable = false, length = 30)
+  @Enumerated(EnumType.STRING)
+  @Builder.Default
+  private Set<RequiredRule> requiredRules = new HashSet<>();
+
+  @ElementCollection(fetch = FetchType.LAZY)
+  @CollectionTable(name = "movement_dumbbell_bases", joinColumns = @JoinColumn(name = "movement_id"))
+  @Builder.Default
+  private Set<DumbbellBase> dumbbellBases = new HashSet<>();
+
+  /** Steps of a chained movement, in order; empty otherwise. */
+  @OneToMany(mappedBy = "chain", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+  @OrderBy("componentOrder ASC")
+  @Builder.Default
+  private List<MovementComponent> components = new ArrayList<>();
+
+  /** Movements an "either" movement accepts; empty otherwise. */
+  @ManyToMany(fetch = FetchType.LAZY)
+  @JoinTable(
+      name = "movement_accepted",
+      joinColumns = @JoinColumn(name = "choice_id"),
+      inverseJoinColumns = @JoinColumn(name = "accepted_id"))
+  @Builder.Default
+  private Set<Movement> acceptedMovements = new HashSet<>();
+
+  @OneToMany(mappedBy = "movement", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+  @Builder.Default
+  private Set<MovementRoleAdjustment> roleAdjustments = new HashSet<>();
+
+  @ElementCollection(fetch = FetchType.LAZY)
+  @CollectionTable(name = "movement_joint_actions", joinColumns = @JoinColumn(name = "movement_id"))
+  @Builder.Default
+  private Set<MovementJointAction> jointActions = new HashSet<>();
+
+  @OneToMany(mappedBy = "movement", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+  @Builder.Default
+  private Set<MovementUsualName> usualNames = new HashSet<>();
+
   // --- Internationalized Content ---
   @Column(name = "description_en", columnDefinition = "TEXT")
   private String descriptionEn;
@@ -139,6 +195,7 @@ public class Movement {
 
   @Override
   public int hashCode() {
-    return getClass().hashCode();
+    // Not getClass(): a Hibernate proxy and its entity must hash alike
+    return Movement.class.hashCode();
   }
 }

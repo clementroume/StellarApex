@@ -128,8 +128,12 @@ class WodServiceTest {
             new WodSummaryResponse(
                 1L, "Fran", WodType.FOR_TIME, null, null, null, null, null, null, null, null, true,
                 false, null, null));
-    when(wodRepository.findMovementNames(List.of(1L)))
-        .thenReturn(List.<Object[]>of(new Object[] {1L, "Thruster"}, new Object[] {1L, "Pull-up"}));
+    Wod fran = Wod.builder().id(1L).build();
+    when(wodRepository.findPreviewLines(List.of(1L)))
+        .thenReturn(
+            List.of(
+                WodMovement.builder().wod(fran).movement(Movement.builder().name("Thruster").build()).build(),
+                WodMovement.builder().wod(fran).movement(Movement.builder().name("Pull-up").build()).build()));
 
     // When
     Slice<WodSummaryResponse> results =
@@ -652,7 +656,7 @@ class WodServiceTest {
         new WodMovementResponse(
             3L, movementDto, 1, "21-15-9", 43.0, 29.0, null, null, null, null, null, null, null,
             null, null, null, Set.of(), Set.of(), null, null, null, null, null, null, null, null, null,
-            null);
+            null, Set.of(), null);
     WodResponse sourceDto = mock(WodResponse.class);
     when(sourceDto.title()).thenReturn("26.1");
     when(sourceDto.movements()).thenReturn(List.of(sourceMovement));

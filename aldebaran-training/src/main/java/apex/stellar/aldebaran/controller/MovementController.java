@@ -4,10 +4,13 @@ import apex.stellar.aldebaran.dto.MovementReferenceData;
 import apex.stellar.aldebaran.dto.MovementRequest;
 import apex.stellar.aldebaran.dto.MovementResponse;
 import apex.stellar.aldebaran.dto.MovementSummaryResponse;
+import apex.stellar.aldebaran.dto.MovementVariantResponse;
+import apex.stellar.aldebaran.dto.UsualNameOptionResponse;
 import apex.stellar.aldebaran.service.MovementService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.List;
+import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -19,6 +22,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
@@ -45,6 +49,32 @@ public class MovementController {
   public ResponseEntity<List<MovementSummaryResponse>> getMovements() {
 
     return ResponseEntity.ok(movementService.getAllMovements());
+  }
+
+  /**
+   * Reads a movement for a chosen variant: usual name, roles, description and video.
+   *
+   * @param id The movement.
+   * @param techniques The chosen techniques.
+   * @param equipment The chosen equipment.
+   * @return The variant.
+   */
+  @GetMapping("/{id}/variant")
+  public ResponseEntity<MovementVariantResponse> getVariant(
+      @PathVariable Long id,
+      @RequestParam(defaultValue = "") Set<String> techniques,
+      @RequestParam(defaultValue = "") Set<String> equipment) {
+    return ResponseEntity.ok(movementService.getVariant(id, techniques, equipment));
+  }
+
+  /**
+   * Lists the usual names of the catalog, for the movement search of the WOD forms.
+   *
+   * @return The usual names, each one a movement with techniques and equipment.
+   */
+  @GetMapping("/usual-names")
+  public ResponseEntity<List<UsualNameOptionResponse>> getUsualNames() {
+    return ResponseEntity.ok(movementService.getUsualNames());
   }
 
   /**

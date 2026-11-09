@@ -362,7 +362,7 @@ class WodControllerIT extends BaseIntegrationTest {
   @DisplayName("GET/PUT /wods/{id}: a movement with several variants is returned and merged once")
   void testWodMovementWithSeveralVariants_NotDuplicated() throws Exception {
     pullUp.getEquipment().add(Equipment.RINGS);
-    pullUp.getTechniques().addAll(Set.of(Technique.STRICT, Technique.KIPPING));
+    pullUp.getTechniques().addAll(Set.of(Technique.STRICT, Technique.PAUSED));
     movementRepository.save(pullUp);
     WodRequest request =
         new WodRequest(
@@ -387,7 +387,7 @@ class WodControllerIT extends BaseIntegrationTest {
                     "50",
                     null, null, null, null, null, null, null, null, null, null, null, null,
                     Set.of("RINGS"),
-                    Set.of("STRICT", "KIPPING"),
+                    Set.of("STRICT", "PAUSED"),
                     null, null,
                     null, null)));
     String body =

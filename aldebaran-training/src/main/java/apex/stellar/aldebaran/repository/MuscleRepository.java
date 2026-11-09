@@ -1,9 +1,13 @@
 package apex.stellar.aldebaran.repository;
 
+import apex.stellar.aldebaran.model.entities.MovementMuscle;
+import apex.stellar.aldebaran.model.entities.MovementRoleAdjustment;
 import apex.stellar.aldebaran.model.entities.Muscle;
+import java.util.Collection;
 import java.util.List;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 /**
@@ -31,4 +35,22 @@ public interface MuscleRepository extends JpaRepository<Muscle, Long> {
    * @return {@code true} if a muscle with the given medical name exists, {@code false} otherwise.
    */
   boolean existsByMedicalNameIgnoreCase(String medicalName);
+
+  /**
+   * Links between some muscles and the movements that list them.
+   *
+   * @param muscleIds The muscles.
+   * @return The links, with their movement.
+   */
+  @Query("SELECT mm FROM MovementMuscle mm JOIN FETCH mm.movement WHERE mm.muscle.id IN :muscleIds")
+  List<MovementMuscle> findMovementUses(Collection<Long> muscleIds);
+
+  /**
+   * Role adjustments on some muscles.
+   *
+   * @param muscleIds The muscles.
+   * @return The adjustments, with their movement.
+   */
+  @Query("SELECT a FROM MovementRoleAdjustment a JOIN FETCH a.movement WHERE a.muscle.id IN :muscleIds")
+  List<MovementRoleAdjustment> findAdjustmentUses(Collection<Long> muscleIds);
 }
