@@ -7,18 +7,24 @@ import apex.stellar.aldebaran.dto.MovementRecordsResponse;
 import apex.stellar.aldebaran.dto.RecordEntryResponse;
 import apex.stellar.aldebaran.dto.RecordEstimateResponse;
 import apex.stellar.aldebaran.dto.RecordPointResponse;
+import apex.stellar.aldebaran.dto.RecordSourceResponse;
 import apex.stellar.aldebaran.dto.VariantRecordsResponse;
 import apex.stellar.aldebaran.model.entities.Movement;
 import apex.stellar.aldebaran.model.entities.MovementRecord;
+import apex.stellar.aldebaran.model.entities.MovementUsualName;
 import apex.stellar.aldebaran.model.entities.Score;
 import apex.stellar.aldebaran.model.entities.ScoreSet;
 import apex.stellar.aldebaran.model.entities.Wod;
 import apex.stellar.aldebaran.model.entities.Wod.WodCategory;
+import apex.stellar.aldebaran.model.entities.WodMovement;
 import apex.stellar.aldebaran.repository.MovementRecordRepository;
+import apex.stellar.aldebaran.repository.MovementRepository;
 import apex.stellar.aldebaran.repository.ScoreRepository;
 import apex.stellar.aldebaran.repository.WodRepository;
 import apex.stellar.aldebaran.security.SecurityService;
 import apex.stellar.aldebaran.service.LiftVariant.Lift;
+import apex.stellar.aldebaran.service.RecordInheritance.Effective;
+import apex.stellar.aldebaran.service.RecordInheritance.Target;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.EnumSet;
@@ -55,6 +61,7 @@ public class MovementRecordService {
   private final MovementRecordRepository recordRepository;
   private final ScoreRepository scoreRepository;
   private final WodRepository wodRepository;
+  private final MovementRepository movementRepository;
   private final SecurityService securityService;
   private final AntaresClient antaresClient;
 
@@ -155,18 +162,33 @@ public class MovementRecordService {
   }
 
   /**
-   * Progression of the current user's N RM on the base version of a movement: each day a new best
-   * load was set, oldest first.
+   * Progression of the current user's N RM on a variant of a movement: each day a new best load was
+   * set, oldest first, performances that count for that variant included.
    *
    * @param movementId The movement.
    * @param reps N of the N RM.
+   * @param variantKey The variant.
    * @return The successive bests.
    */
   @Transactional(readOnly = true)
-  public List<RecordPointResponse> getMyProgress(Long movementId, int reps) {
+  public List<RecordPointResponse> getMyProgress(Long movementId, int reps, String variantKey) {
     Long userId = securityService.getCurrentUserId();
-    List<Candidate> group =
-        collect(userId, movementId).byKey().getOrDefault(LiftVariant.BASE + "#" + reps, List.of());
+    Optional<Movement> movement = movementRepository.findById(movementId);
+    if (movement.isEmpty()) {
+      return List.of();
+    }
+    Target wanted = new Target(movement.get(), variantKey);
+    List<Movement> choices = movementRepository.findChoices();
+    List<Candidate> group = new ArrayList<>();
+    for (Movement source : sourcesOf(movement.get())) {
+      for (List<Candidate> candidates : collect(userId, source.getId()).byKey().values()) {
+        Candidate first = candidates.getFirst();
+        if (first.reps() == reps
+            && RecordInheritance.expand(source, first.variantKey(), choices).contains(wanted)) {
+          group.addAll(candidates);
+        }
+      }
+    }
     List<Candidate> chronological =
         group.stream()
             .sorted(
@@ -187,6 +209,11 @@ public class MovementRecordService {
       }
     }
     return points;
+  }
+
+  private Set<Movement> sourcesOf(Movement movement) {
+    return RecordInheritance.sources(
+        movement, m -> movementRepository.findChainsCountingFor(m.getId()));
   }
 
   /**
@@ -236,6 +263,8 @@ public class MovementRecordService {
 
   /**
    * The current user's records, grouped by movement (by name) and variant (base version first).
+   * Records are read through the "counts for" rule: an entry that another variant proves carries
+   * its source.
    *
    * @param movementId Only this movement, or null for every movement.
    * @return The records.
@@ -243,18 +272,20 @@ public class MovementRecordService {
   @Transactional(readOnly = true)
   public List<MovementRecordsResponse> getMyRecords(@Nullable Long movementId) {
     Long userId = securityService.getCurrentUserId();
-    List<MovementRecord> records =
-        movementId == null
-            ? recordRepository.findByUserId(userId)
-            : recordRepository.findByUserIdAndMovementId(userId, movementId);
+    List<Effective> records =
+        RecordInheritance.effective(
+            recordRepository.findByUserId(userId), movementRepository.findChoices());
 
     Map<Long, Movement> movements = new HashMap<>();
-    Map<Long, Map<String, List<MovementRecord>>> grouped = new HashMap<>();
-    for (MovementRecord r : records) {
-      movements.putIfAbsent(r.getMovement().getId(), r.getMovement());
+    Map<Long, Map<String, List<Effective>>> grouped = new HashMap<>();
+    for (Effective r : records) {
+      if (movementId != null && !movementId.equals(r.movement().getId())) {
+        continue;
+      }
+      movements.putIfAbsent(r.movement().getId(), r.movement());
       grouped
-          .computeIfAbsent(r.getMovement().getId(), id -> new TreeMap<>())
-          .computeIfAbsent(r.getVariantKey(), k -> new ArrayList<>())
+          .computeIfAbsent(r.movement().getId(), id -> new TreeMap<>())
+          .computeIfAbsent(r.variantKey(), k -> new ArrayList<>())
           .add(r);
     }
 
@@ -266,46 +297,66 @@ public class MovementRecordService {
                     m.getId(),
                     m.getName(),
                     m.getCategory() == null ? null : m.getCategory().name(),
-                    variants(grouped.get(m.getId()))))
+                    variants(m, grouped.get(m.getId()))))
         .toList();
   }
 
   /** Variants in key order: the base version (empty key) sorts first. */
-  private static List<VariantRecordsResponse> variants(Map<String, List<MovementRecord>> byKey) {
+  private static List<VariantRecordsResponse> variants(
+      Movement movement, Map<String, List<Effective>> byKey) {
     List<VariantRecordsResponse> list = new ArrayList<>();
     byKey.forEach(
         (key, records) -> {
-          List<MovementRecord> sorted =
-              records.stream().sorted(Comparator.comparing(MovementRecord::getReps)).toList();
+          List<Effective> sorted =
+              records.stream().sorted(Comparator.comparing(e -> e.source().getReps())).toList();
           Double estimate =
               sorted.stream()
-                  .map(r -> LiftVariant.epley(r.getWeightKg(), r.getReps()))
+                  .map(e -> LiftVariant.epley(e.source().getWeightKg(), e.source().getReps()))
                   .filter(Objects::nonNull)
                   .max(Double::compare)
                   .orElse(null);
           list.add(
               new VariantRecordsResponse(
                   key,
+                  CatalogRules.usualName(
+                          movement, LiftVariant.equipmentOf(key), LiftVariant.techniquesOf(key))
+                      .map(MovementUsualName::getNameEn)
+                      .orElse(null),
                   LiftVariant.BASE.equals(key),
                   LiftVariant.equipmentOf(key),
                   LiftVariant.techniquesOf(key),
                   estimate,
                   sorted.stream().map(MovementRecordService::entry).toList(),
-                  estimates(sorted, estimate)));
+                  estimates(sorted.stream().map(Effective::source).toList(), estimate)));
         });
     return list;
   }
 
-  private static RecordEntryResponse entry(MovementRecord r) {
+  private static RecordEntryResponse entry(Effective e) {
+    MovementRecord r = e.source();
     Wod wod = r.getScore().getWod();
     return new RecordEntryResponse(
         r.getReps(),
         r.getWeightKg(),
-        r.getPreviousWeightKg(),
+        e.inherited() ? null : r.getPreviousWeightKg(),
         r.getDate(),
         r.getScore().getId(),
         wod.getId(),
-        wod.getTitle());
+        wod.getTitle(),
+        source(e));
+  }
+
+  private static @Nullable RecordSourceResponse source(Effective e) {
+    if (!e.inherited()) {
+      return null;
+    }
+    MovementRecord r = e.source();
+    return new RecordSourceResponse(
+        r.getMovement().getId(),
+        r.getMovement().getName(),
+        r.getVariantKey(),
+        LiftVariant.equipmentOf(r.getVariantKey()),
+        LiftVariant.techniquesOf(r.getVariantKey()));
   }
 
   /**
@@ -335,10 +386,10 @@ public class MovementRecordService {
   }
 
   /**
-   * The canonical lifts of the catalog (D51, D65): public "N RM" tests of a base-version movement,
-   * one per movement and N (the oldest when duplicated), by movement name then N. Official
-   * competition events (an Open 1RM clean in a time window) are not free tests: their scores still
-   * feed the records, but they are never the lift's test nor its leaderboard.
+   * The canonical lifts of the catalog (D51, D65): public "N RM" tests, one per movement, variant
+   * and N (the oldest when duplicated), by movement name, variant then N. Official competition
+   * events (an Open 1RM clean in a time window) are not free tests: their scores still feed the
+   * records, but they are never the lift's test nor its leaderboard.
    *
    * @return The lifts.
    */
@@ -350,50 +401,79 @@ public class MovementRecordService {
         continue;
       }
       LiftVariant.of(wod)
-          .filter(lift -> LiftVariant.BASE.equals(lift.variantKey()))
           .ifPresent(
-              lift ->
-                  lifts.putIfAbsent(
-                      lift.movement().getId() + "#" + wod.getRepMax(),
-                      new CanonicalLiftResponse(
-                          wod.getId(),
-                          lift.movement().getId(),
-                          lift.movement().getName(),
-                          wod.getRepMax())));
+              lift -> {
+                WodMovement line = wod.getMovements().getFirst();
+                Optional<MovementUsualName> usual = usualNameOf(line);
+                lifts.putIfAbsent(
+                    lift.movement().getId() + "#" + lift.variantKey() + "#" + wod.getRepMax(),
+                    new CanonicalLiftResponse(
+                        wod.getId(),
+                        lift.movement().getId(),
+                        lift.movement().getName(),
+                        wod.getRepMax(),
+                        lift.variantKey(),
+                        usual.map(MovementUsualName::getNameEn).orElse(null),
+                        usual.map(MovementUsualName::getNameFr).orElse(null)));
+              });
     }
     return lifts.values().stream()
         .sorted(
             Comparator.comparing(CanonicalLiftResponse::movementName, String.CASE_INSENSITIVE_ORDER)
+                .thenComparing(CanonicalLiftResponse::variantKey)
                 .thenComparing(CanonicalLiftResponse::repMax))
         .toList();
   }
 
+  private static Optional<MovementUsualName> usualNameOf(WodMovement line) {
+    String wanted = line.getMovement().getUsualNames().isEmpty() ? null : LiftVariant.key(line);
+    return line.getMovement().getUsualNames().stream()
+        .filter(u -> LiftVariant.key(line.getMovement(), u.getEquipment(), u.getTechniques()).equals(wanted))
+        .findFirst();
+  }
+
   /**
-   * The records board of a box (D56): the base-version records of a movement of its current usable
-   * members (Antares), wherever they were set, heaviest first for each number of reps.
+   * The records board of a box (D56): the records of a variant of a movement of its current usable
+   * members (Antares), wherever they were set, performances that count for it included, heaviest
+   * first for each number of reps.
    *
    * @param gymId The box (the caller is a member, checked by the controller).
    * @param movementId The movement.
+   * @param variantKey The variant.
    * @return The board lines.
    * @throws apex.stellar.aldebaran.exception.AntaresUnavailableException if Antares cannot list
    *     the members (503).
    */
   @Transactional(readOnly = true)
-  public List<BoardRecordResponse> getGymBoard(Long gymId, Long movementId) {
+  public List<BoardRecordResponse> getGymBoard(Long gymId, Long movementId, String variantKey) {
     Set<Long> members = new HashSet<>(antaresClient.getGymMemberIds(gymId));
-    if (members.isEmpty()) {
+    Optional<Movement> movement = movementRepository.findById(movementId);
+    if (members.isEmpty() || movement.isEmpty()) {
       return List.of();
     }
-    return recordRepository.findBaseRecords(movementId, members).stream()
+    List<Long> sources = sourcesOf(movement.get()).stream().map(Movement::getId).toList();
+    Map<Long, List<MovementRecord>> byUser = new HashMap<>();
+    recordRepository
+        .findForBoard(sources, members)
+        .forEach(r -> byUser.computeIfAbsent(r.getUserId(), id -> new ArrayList<>()).add(r));
+    List<Movement> choices = movementRepository.findChoices();
+    return byUser.values().stream()
+        .flatMap(stored -> RecordInheritance.effective(stored, choices).stream())
+        .filter(e -> movementId.equals(e.movement().getId()) && variantKey.equals(e.variantKey()))
+        .sorted(
+            Comparator.comparingInt((Effective e) -> e.source().getReps())
+                .thenComparing(e -> -e.source().getWeightKg())
+                .thenComparing(e -> e.source().getDate()))
         .map(
-            r ->
+            e ->
                 new BoardRecordResponse(
-                    r.getUserId(),
-                    r.getReps(),
-                    r.getWeightKg(),
-                    r.getDate(),
-                    r.getDivision(),
-                    r.getAgeGroup()))
+                    e.source().getUserId(),
+                    e.source().getReps(),
+                    e.source().getWeightKg(),
+                    e.source().getDate(),
+                    e.source().getDivision(),
+                    e.source().getAgeGroup(),
+                    source(e)))
         .toList();
   }
 }

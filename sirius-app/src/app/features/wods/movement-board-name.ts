@@ -1,3 +1,5 @@
+import {WodMovementDisplay} from '../../api/aldebaran/models/wod.model';
+
 /**
  * Name of a WOD movement as written on a box whiteboard, in CrossFit English jargon whatever the
  * language shown: its variants built into the name ("Hang Power Clean", "Bar Muscle-Up", "Single-Arm
@@ -6,8 +8,7 @@
 
 // Words of the techniques written before the equipment: limbs, then style ("Single-Arm Strict ...")
 const LIMB_WORDS: Record<string, string> = {
-  ONE_ARM: 'Single-Arm', UNILATERAL: 'Single-Arm', SINGLE_LEG: 'Single-Leg', ALTERNATING: 'Alternating',
-  DOUBLE: 'Double', BILATERAL: ''
+  ONE_ARM: 'Single-Arm', SINGLE_LEG: 'Single-Leg', ALTERNATING: 'Alternating', DOUBLE: 'Double'
 };
 // Words of the techniques written between the equipment and the name ("Dumbbell Hang Clean")
 const POSITION_WORDS: Record<string, string> = {
@@ -16,20 +17,21 @@ const POSITION_WORDS: Record<string, string> = {
   LOW_BAR: 'Low-Bar', BEAR_HUG: 'Bear Hug', ZERCHER: 'Zercher', ON_SHOULDER: 'Shouldered',
   OVER_SHOULDER: 'Over-the-Shoulder', GOBLET: 'Goblet', FARMERS_CARRY: "Farmer's", CONVENTIONAL: '', SUMO: 'Sumo',
   CLOSE_GRIP: 'Close-Grip', WIDE_GRIP: 'Wide-Grip', SNATCH_GRIP: 'Snatch-Grip', HAMMER: 'Hammer',
-  MIXED_GRIP: 'Mixed-Grip', HOOK_GRIP: 'Hook-Grip', WALK: 'Walking', CONTINENTAL_CLEAN: 'Continental',
-  CLEAN_AND_PRESS: 'Clean & Press'
+  WALK: 'Walking', CLOSE_STANCE: 'Close-Stance'
 };
+// Words of the reception, right before the name ("Hang Power Clean")
+const RECEPTION_WORDS: Record<string, string> = {MUSCLE: 'Muscle', POWER: 'Power', SQUAT: 'Squat', SPLIT: 'Split'};
 const STYLE_WORDS: Record<string, string> = {
   STRICT: 'Strict', KIPPING: 'Kipping', BUTTERFLY: 'Butterfly', TEMPO: 'Tempo', PAUSED: 'Paused',
   NEGATIVES: 'Negative', DEAD_STOP: 'Dead-Stop', HAND_RELEASE: 'Hand-Release', TOUCH_AND_GO: 'Touch-and-Go',
-  EXPLOSIVE: 'Explosive', JUMPING: 'Jumping', DEFICIT: 'Deficit', TO_PLATFORM: 'Platform',
+  JUMPING: 'Jumping', PUSH: 'Push', RUSSIAN: 'Russian', AMERICAN: 'American', STEP: 'Step', HALF: 'Half',
+  DEFICIT: 'Deficit', TO_PLATFORM: 'Platform',
   FEET_ELEVATED: 'Feet-Elevated', CHEST_TO_WALL: 'Chest-to-Wall', FREESTANDING: 'Freestanding', BOX: 'Box',
-  SEATED: 'Seated', STANDING: 'Standing', INCLINED: 'Incline', DECLINED: 'Decline', INVERTED: 'Inverted',
-  L_SIT: 'L-Sit', TUCK: 'Tuck', PIKE: 'Pike', HOLLOW: 'Hollow', ARCH: 'Arch', KNEES: 'Kneeling',
-  ROCK: 'Rocking', FORWARD: '', BACKWARD: 'Backward', LATERAL: 'Lateral', FACING: 'Facing',
+  SEATED: 'Seated', INCLINED: 'Incline', DECLINED: 'Decline',
+  L_SIT: 'L-Sit', TUCK: 'Tuck', PIKE: 'Pike', KNEES: 'Kneeling',
+  ROCK: 'Rocking', BACKWARD: 'Backward', OVER: 'Over', SHUTTLE: 'Shuttle', LATERAL: 'Lateral', FACING: 'Facing',
   CROSSOVER: 'Crossover', CROSS_BODY: 'Cross-Body', CRAWL: 'Freestyle', BACKSTROKE: 'Backstroke',
-  BREASTSTROKE: 'Breaststroke', LEGLESS: 'Legless', WEIGHTED: 'Weighted', BODYWEIGHT: 'Bodyweight',
-  ASSISTED: 'Assisted', RING: 'Ring', PIROUETTE: 'Pirouette', HOLD: ''
+  BREASTSTROKE: 'Breaststroke', LEGLESS: 'Legless', WEIGHTED: 'Weighted', ASSISTED: 'Assisted', PIROUETTE: 'Pirouette'
 };
 const EQUIPMENT_WORDS: Record<string, string> = {
   BARBELL: 'Barbell', PLATES: 'Plate', DUMBBELL: 'Dumbbell', KETTLEBELL: 'Kettlebell', TRAP_BAR: 'Trap Bar',
@@ -57,6 +59,8 @@ export interface BoardMovement {
   allowed?: string[] | null;
   equipment?: string[] | null;
   techniques?: string[] | null;
+  /** What the catalog says about the line: its usual name and what the name does not say. */
+  display?: Pick<WodMovementDisplay, 'usualNameEn' | 'remainingEquipment' | 'remainingTechniques'> | null;
 }
 
 /**
@@ -64,13 +68,14 @@ export interface BoardMovement {
  * Equipment already in the catalogue name ("Box Step-up", "Rope Climb") is not repeated.
  */
 export function boardName(movement: BoardMovement, plural = false): string {
-  const equipment = movement.equipment ?? [];
-  const techniques = movement.techniques ?? [];
-  const special = specialName(movement.name, equipment, techniques);
-  if (special) return plural ? special.plural : special.singular;
+  const usual = movement.display?.usualNameEn;
+  const equipment = (usual ? movement.display?.remainingEquipment : movement.equipment) ?? [];
+  // A chain's component technique is written 1:POWER
+  const techniques = ((usual ? movement.display?.remainingTechniques : movement.techniques) ?? [])
+    .map(t => t.replace(/^\d+:/, ''));
 
-  const machine = equipment.map(eq => MACHINE_WORDS[eq]).find(Boolean);
-  const base = capitalizeHyphens(machine ?? ALIASES[movement.name] ?? movement.name);
+  const machine = usual ? undefined : equipment.map(eq => MACHINE_WORDS[eq]).find(Boolean);
+  const base = capitalizeHyphens(usual ?? machine ?? ALIASES[movement.name] ?? movement.name);
   const inName = (word: string) => base.toLowerCase().includes(word.toLowerCase());
   const words = (map: Record<string, string>, values: string[]) =>
     values.filter(v => v in map).map(v => map[v]).filter(w => w && !inName(w));
@@ -79,7 +84,7 @@ export function boardName(movement: BoardMovement, plural = false): string {
   const styles = words(STYLE_WORDS, techniques);
   const implied = movement.allowed?.length === 1 ? movement.allowed[0] : null;
   const gear = machine ? [] : words(EQUIPMENT_WORDS, equipment.filter(eq => eq !== implied));
-  const positions = words(POSITION_WORDS, techniques);
+  const positions = [...words(POSITION_WORDS, techniques), ...words(RECEPTION_WORDS, techniques)];
   // "Bar Muscle-Up", "Burpee Bar Muscle-Up": the bar or the rings sit right before "Muscle-Up"
   let name = base;
   if (/muscle-up/i.test(base)) {
@@ -93,8 +98,7 @@ export function boardName(movement: BoardMovement, plural = false): string {
     gear.splice(0, gear.length, ...gear.filter(w => w !== 'Ring'));
   }
   const pluralName = plural ? pluralize(name) : name;
-  const held = techniques.includes('HOLD') && !/hold\b/i.test(pluralName) ? ' Hold' : '';
-  return [...unique([...limbs, ...styles, ...gear, ...positions]), pluralName].join(' ') + held;
+  return [...unique([...limbs, ...styles, ...gear, ...positions]), pluralName].join(' ');
 }
 
 /** Plural of the last word of a name: "Snatches", "Muscle-Ups", "Carries", "Knees-to-Elbows" unchanged. */
@@ -112,20 +116,6 @@ export function pluralize(name: string): string {
 function capitalizeHyphens(name: string): string {
   return name.replace(/-([a-z]+)/g, (all, word: string) =>
     SMALL_WORDS.includes(word) ? all : `-${word[0].toUpperCase()}${word.slice(1)}`);
-}
-
-/** Names the generic order cannot say: burpees over an implement. */
-function specialName(name: string, equipment: string[], techniques: string[]): {singular: string; plural: string} | null {
-  if (name !== 'Burpee Over') return null;
-  const lateral = techniques.includes('LATERAL') ? 'Lateral ' : '';
-  if (equipment.includes('BARBELL') && techniques.includes('FACING')) {
-    return {singular: `${lateral}Bar-Facing Burpee`, plural: `${lateral}Bar-Facing Burpees`};
-  }
-  const implement = equipment.includes('BARBELL') ? 'the Bar'
-    : equipment.includes('DUMBBELL') ? 'the Dumbbell'
-      : equipment.includes('BOX') ? 'the Box' : '';
-  const over = implement ? ` Over ${implement}` : ' Over';
-  return {singular: `${lateral}Burpee${over}`, plural: `${lateral}Burpees${over}`};
 }
 
 function unique(words: string[]): string[] {

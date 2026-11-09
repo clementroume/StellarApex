@@ -5,7 +5,6 @@ import apex.stellar.aldebaran.model.entities.Wod;
 import apex.stellar.aldebaran.model.entities.Wod.ScoreType;
 import apex.stellar.aldebaran.model.entities.WodMovement;
 import apex.stellar.aldebaran.model.entities.WodMovement.Segment;
-import apex.stellar.aldebaran.model.enums.Equipment;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.EnumSet;
@@ -21,9 +20,8 @@ import org.jspecify.annotations.Nullable;
  * set of its line. Pure functions, shared by the record rebuild and the canonical lift lookup.
  *
  * <p>Variant key: the line's equipment then its techniques, each sorted and joined by {@code ,},
- * separated by {@code ;}; the implied equipment is removed (the barbell when the movement allows
- * it, else its only equipment), so "Deadlift" and "Deadlift [barbell]" are the same record. The
- * empty key is the base version.
+ * separated by {@code ;}; the equipment the movement implies is removed, so "Deadlift" and
+ * "Deadlift [barbell]" are the same record. The empty key is the base version.
  */
 public final class LiftVariant {
 
@@ -70,30 +68,55 @@ public final class LiftVariant {
       return Optional.empty();
     }
     Movement movement = line.getMovement();
-    return Optional.of(
-        new Lift(movement, key(movement, line.getEquipment(), line.getTechniques())));
+    return Optional.of(new Lift(movement, key(line)));
   }
 
   /**
-   * Variant key of a WOD line.
+   * Variant key of a WOD line, per-component techniques included ({@code 1:POWER}).
    *
-   * @param movement The movement (its allowed equipment decides the implied one).
-   * @param equipment The line's equipment.
-   * @param techniques The line's techniques.
+   * @param line The line, with its movement.
+   * @return The key, {@link #BASE} for the base version.
+   */
+  public static String key(WodMovement line) {
+    Set<String> techniques = new TreeSet<>(line.getTechniques());
+    line.getComponentTechniques()
+        .forEach(c -> techniques.add(c.componentOrder() + ":" + c.technique()));
+    return key(line.getMovement(), line.getEquipment(), techniques);
+  }
+
+  /**
+   * Variant key of a movement, equipment and techniques.
+   *
+   * @param movement The movement (it decides the implied equipment).
+   * @param equipment The equipment.
+   * @param techniques The techniques.
    * @return The key, {@link #BASE} for the base version.
    */
   public static String key(
-      Movement movement, @Nullable Collection<String> equipment, @Nullable Collection<String> techniques) {
-    String implied = impliedEquipment(movement);
-    Set<String> eq = new TreeSet<>(equipment == null ? Set.of() : equipment);
-    if (implied != null) {
-      eq.remove(implied);
-    }
+      Movement movement,
+      @Nullable Collection<String> equipment,
+      @Nullable Collection<String> techniques) {
     Set<String> tech = new TreeSet<>(techniques == null ? Set.of() : techniques);
-    if (eq.isEmpty() && tech.isEmpty()) {
+    return compose(
+        CatalogRules.visibleEquipment(
+            CatalogRules.Spec.of(movement), equipment == null ? Set.of() : equipment, tech),
+        tech);
+  }
+
+  /**
+   * A key from what is left once the implied equipment is removed.
+   *
+   * @param equipment The visible equipment.
+   * @param techniques The techniques.
+   * @return The key.
+   */
+  static String compose(Collection<String> equipment, Collection<String> techniques) {
+    if (equipment.isEmpty() && techniques.isEmpty()) {
       return BASE;
     }
-    return String.join(",", eq) + ";" + String.join(",", tech);
+    return String.join(",", new TreeSet<>(equipment))
+        + ";"
+        + String.join(",", new TreeSet<>(techniques));
   }
 
   /**
@@ -139,17 +162,6 @@ public final class LiftVariant {
    */
   public static double fromOneRepMax(double oneRepMaxKg, int reps) {
     return reps <= 1 ? oneRepMaxKg : oneRepMaxKg / (1 + reps / 30.0);
-  }
-
-  private static @Nullable String impliedEquipment(Movement movement) {
-    Set<Equipment> allowed = movement.getEquipment();
-    if (allowed == null || allowed.isEmpty()) {
-      return null;
-    }
-    if (allowed.contains(Equipment.BARBELL)) {
-      return Equipment.BARBELL.name();
-    }
-    return allowed.size() == 1 ? allowed.iterator().next().name() : null;
   }
 
   private static Set<String> part(String key, int index) {

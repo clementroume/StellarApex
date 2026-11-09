@@ -2,17 +2,28 @@ package apex.stellar.aldebaran.service;
 
 import static apex.stellar.aldebaran.config.RedisCacheConfig.CACHE_MOVEMENT;
 import static apex.stellar.aldebaran.config.RedisCacheConfig.CACHE_MOVEMENTS;
+import static apex.stellar.aldebaran.config.RedisCacheConfig.CACHE_USUAL_NAMES;
+import static apex.stellar.aldebaran.config.RedisCacheConfig.CACHE_WODS;
 
+import apex.stellar.aldebaran.dto.MovementComponentDto;
 import apex.stellar.aldebaran.dto.MovementMuscleRequest;
 import apex.stellar.aldebaran.dto.MovementReferenceData;
 import apex.stellar.aldebaran.dto.MovementRequest;
 import apex.stellar.aldebaran.dto.MovementResponse;
 import apex.stellar.aldebaran.dto.MovementSummaryResponse;
+import apex.stellar.aldebaran.dto.MovementVariantResponse;
+import apex.stellar.aldebaran.dto.RoleAdjustmentDto;
+import apex.stellar.aldebaran.dto.UsualNameDto;
+import apex.stellar.aldebaran.dto.UsualNameOptionResponse;
+import apex.stellar.aldebaran.dto.VariantMuscleResponse;
 import apex.stellar.aldebaran.exception.DataConflictException;
 import apex.stellar.aldebaran.exception.ResourceNotFoundException;
 import apex.stellar.aldebaran.mapper.MovementMapper;
 import apex.stellar.aldebaran.model.entities.Movement;
+import apex.stellar.aldebaran.model.entities.MovementComponent;
 import apex.stellar.aldebaran.model.entities.MovementMuscle;
+import apex.stellar.aldebaran.model.entities.MovementRoleAdjustment;
+import apex.stellar.aldebaran.model.entities.MovementUsualName;
 import apex.stellar.aldebaran.model.entities.Muscle;
 import apex.stellar.aldebaran.model.enums.Category;
 import apex.stellar.aldebaran.model.enums.Equipment;
@@ -21,14 +32,21 @@ import apex.stellar.aldebaran.repository.MovementRepository;
 import apex.stellar.aldebaran.repository.MuscleRepository;
 import apex.stellar.aldebaran.repository.WodRepository;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -64,10 +82,82 @@ public class MovementService {
    * @return A list of summarized movement data.
    */
   @Transactional(readOnly = true)
-  @Cacheable(value = CACHE_MOVEMENTS, key = "'all'")
+  @Cacheable(value = CACHE_MOVEMENTS, key = "'summaries'")
   public List<MovementSummaryResponse> getAllMovements() {
 
-    return movementRepository.findAllProjectedBy().stream().map(movementMapper::toSummary).toList();
+    Map<Long, List<String>> components = namesById(movementRepository.findComponentNames());
+    Map<Long, List<String>> accepted = namesById(movementRepository.findAcceptedNames());
+    return movementRepository.findAllProjectedBy().stream()
+        .map(movementMapper::toSummary)
+        .map(
+            s ->
+                s.withComposition(
+                    components.getOrDefault(s.id(), List.of()),
+                    accepted.getOrDefault(s.id(), List.of())))
+        .toList();
+  }
+
+  /**
+   * A movement for a chosen variant: its usual name, its roles and what to show about it.
+   *
+   * @param id The movement.
+   * @param techniques The chosen techniques.
+   * @param equipment The chosen equipment.
+   * @return The variant.
+   * @throws ResourceNotFoundException if the movement does not exist.
+   */
+  @Transactional(readOnly = true)
+  public MovementVariantResponse getVariant(
+      Long id, Set<String> requestedTechniques, Set<String> equipment) {
+    Movement movement = findMovement(id);
+    // A value the movement does not allow is no variant of it (1:POWER belongs to a component)
+    Set<String> techniques = new LinkedHashSet<>(requestedTechniques);
+    techniques.removeIf(
+        t -> !t.contains(":") && movement.getTechniques().stream().noneMatch(a -> a.name().equals(t)));
+    CatalogRules.Spec spec = CatalogRules.Spec.of(movement);
+    Optional<MovementUsualName> usual =
+        CatalogRules.usualName(
+            movement, CatalogRules.visibleEquipment(spec, equipment, techniques), techniques);
+    Comparator<VariantMuscleResponse> order =
+        Comparator.comparing(VariantMuscleResponse::role)
+            .thenComparing(VariantMuscleResponse::medicalName);
+    List<VariantMuscleResponse> muscles =
+        CatalogRules.effectiveRoles(movement, techniques, equipment).entrySet().stream()
+            .map(
+                e ->
+                    new VariantMuscleResponse(
+                        e.getKey().getId(),
+                        e.getKey().getMedicalName(),
+                        e.getKey().getCommonNameEn(),
+                        e.getKey().getCommonNameFr(),
+                        e.getValue()))
+            .sorted(order)
+            .toList();
+    String descriptionEn = usual.map(MovementUsualName::getDescriptionEn).orElse(null);
+    String descriptionFr = usual.map(MovementUsualName::getDescriptionFr).orElse(null);
+    String video = usual.map(MovementUsualName::getVideoUrl).orElse(null);
+    return new MovementVariantResponse(
+        usual.map(MovementUsualName::getNameEn).orElse(null),
+        usual.map(MovementUsualName::getNameFr).orElse(null),
+        descriptionEn != null ? descriptionEn : movement.getDescriptionEn(),
+        descriptionFr != null ? descriptionFr : movement.getDescriptionFr(),
+        video != null ? video : movement.getVideoUrl(),
+        CatalogRules.implementCount(spec, equipment, techniques),
+        LiftVariant.key(movement, equipment, techniques),
+        muscles);
+  }
+
+  /**
+   * Lists the usual names of the catalog: what the movement search of the WOD forms offers.
+   *
+   * @return The usual names, by English name.
+   */
+  @Transactional(readOnly = true)
+  @Cacheable(value = CACHE_USUAL_NAMES, key = "'all'")
+  public List<UsualNameOptionResponse> getUsualNames() {
+    return movementRepository.findAllUsualNames().stream()
+        .map(movementMapper::toUsualNameOption)
+        .toList();
   }
 
   /**
@@ -105,7 +195,7 @@ public class MovementService {
    */
   @Transactional
   @CacheEvict(
-      value = {CACHE_MOVEMENTS, CACHE_MOVEMENT},
+      value = {CACHE_MOVEMENTS, CACHE_USUAL_NAMES, CACHE_MOVEMENT},
       allEntries = true)
   public MovementResponse createMovement(MovementRequest request) {
 
@@ -122,6 +212,8 @@ public class MovementService {
         linkMuscleToMovement(movement, mmRequest);
       }
     }
+
+    applyCatalogModel(movement, request);
 
     Movement saved = movementRepository.save(movement);
     log.info("Created new movement: {} ({})", saved.getName(), saved.getId());
@@ -145,7 +237,7 @@ public class MovementService {
    */
   @Transactional
   @CacheEvict(
-      value = {CACHE_MOVEMENTS, CACHE_MOVEMENT},
+      value = {CACHE_MOVEMENTS, CACHE_USUAL_NAMES, CACHE_MOVEMENT, CACHE_WODS},
       allEntries = true)
   public MovementResponse updateMovement(Long id, MovementRequest request) {
     Movement movement =
@@ -168,6 +260,13 @@ public class MovementService {
       }
     }
 
+    // Unique keys: the old rows must be gone before the new ones are inserted
+    movement.getComponents().clear();
+    movement.getRoleAdjustments().clear();
+    movement.getUsualNames().clear();
+    movementRepository.flush();
+    applyCatalogModel(movement, request);
+
     Movement saved = movementRepository.save(movement);
     log.info("Updated movement: {} ({})", saved.getName(), saved.getId());
     return movementMapper.toResponse(saved);
@@ -182,7 +281,7 @@ public class MovementService {
    */
   @Transactional
   @CacheEvict(
-      value = {CACHE_MOVEMENTS, CACHE_MOVEMENT},
+      value = {CACHE_MOVEMENTS, CACHE_USUAL_NAMES, CACHE_MOVEMENT, CACHE_WODS},
       allEntries = true)
   public void deleteMovement(Long id) {
 
@@ -190,7 +289,12 @@ public class MovementService {
     if (!movementRepository.existsById(id)) {
       throw new ResourceNotFoundException("error.movement.not.found", id);
     }
-    movementRepository.deleteById(id);
+    try {
+      movementRepository.deleteById(id);
+      movementRepository.flush();
+    } catch (DataIntegrityViolationException e) {
+      throw new DataConflictException("error.movement.in.use", id);
+    }
   }
 
   /**
@@ -220,7 +324,11 @@ public class MovementService {
           .add(t.name());
     }
 
-    return new MovementReferenceData(categoryGroups, equipmentGroups, techniqueGroups);
+    List<List<String>> exclusive =
+        Technique.exclusiveSets().stream()
+            .map(set -> set.stream().map(Enum::name).toList())
+            .toList();
+    return new MovementReferenceData(categoryGroups, equipmentGroups, techniqueGroups, exclusive);
   }
 
   // -------------------------------------------------------------------------
@@ -262,6 +370,79 @@ public class MovementService {
       throw new DataConflictException(
           "error.movement.variant.in.use", variant.name(), movement.getName(), wodCount);
     }
+  }
+
+  /** Rebuilds the relations of the catalog model from the request, then checks the movement. */
+  private void applyCatalogModel(Movement movement, MovementRequest request) {
+    for (MovementComponentDto dto : request.components()) {
+      movement
+          .getComponents()
+          .add(
+              MovementComponent.builder()
+                  .chain(movement)
+                  .componentOrder(dto.componentOrder())
+                  .component(findMovement(dto.movementId()))
+                  .countsForRecords(dto.countsForRecords())
+                  .techniques(orEmpty(dto.techniques()))
+                  .equipment(orEmpty(dto.equipment()))
+                  .build());
+    }
+    movement.getAcceptedMovements().clear();
+    request.acceptedMovementIds().stream()
+        .map(this::findMovement)
+        .forEach(movement.getAcceptedMovements()::add);
+    for (RoleAdjustmentDto dto : request.roleAdjustments()) {
+      Muscle muscle =
+          muscleRepository
+              .findById(dto.muscleId())
+              .orElseThrow(
+                  () -> new ResourceNotFoundException("error.muscle.not.found", dto.muscleId()));
+      movement
+          .getRoleAdjustments()
+          .add(
+              MovementRoleAdjustment.builder()
+                  .movement(movement)
+                  .triggerKind(dto.triggerKind())
+                  .trigger(dto.trigger())
+                  .muscle(muscle)
+                  .role(dto.role())
+                  .build());
+    }
+    for (UsualNameDto dto : request.usualNames()) {
+      movement
+          .getUsualNames()
+          .add(
+              MovementUsualName.builder()
+                  .movement(movement)
+                  .nameEn(dto.nameEn())
+                  .nameFr(dto.nameFr())
+                  .searchTerms(dto.searchTerms())
+                  .techniques(orEmpty(dto.techniques()))
+                  .equipment(orEmpty(dto.equipment()))
+                  .descriptionEn(dto.descriptionEn())
+                  .descriptionFr(dto.descriptionFr())
+                  .videoUrl(dto.videoUrl())
+                  .build());
+    }
+    CatalogRules.checkMovement(movement);
+  }
+
+  private static Map<Long, List<String>> namesById(List<Object[]> rows) {
+    Map<Long, List<String>> names = new HashMap<>();
+    for (Object[] row : rows) {
+      names.computeIfAbsent((Long) row[0], k -> new ArrayList<>()).add((String) row[1]);
+    }
+    return names;
+  }
+
+  private Movement findMovement(Long id) {
+    return movementRepository
+        .findById(id)
+        .orElseThrow(() -> new ResourceNotFoundException("error.movement.not.found", id));
+  }
+
+  private static Set<String> orEmpty(Set<String> values) {
+    return values == null ? new LinkedHashSet<>() : new LinkedHashSet<>(values);
   }
 
   /**

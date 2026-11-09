@@ -1,12 +1,20 @@
 package apex.stellar.aldebaran.mapper;
 
+import apex.stellar.aldebaran.dto.AcceptedMovementResponse;
+import apex.stellar.aldebaran.dto.MovementComponentDto;
 import apex.stellar.aldebaran.dto.MovementMuscleRequest;
 import apex.stellar.aldebaran.dto.MovementMuscleResponse;
 import apex.stellar.aldebaran.dto.MovementRequest;
 import apex.stellar.aldebaran.dto.MovementResponse;
 import apex.stellar.aldebaran.dto.MovementSummaryResponse;
+import apex.stellar.aldebaran.dto.RoleAdjustmentDto;
+import apex.stellar.aldebaran.dto.UsualNameDto;
+import apex.stellar.aldebaran.dto.UsualNameOptionResponse;
 import apex.stellar.aldebaran.model.entities.Movement;
+import apex.stellar.aldebaran.model.entities.MovementComponent;
 import apex.stellar.aldebaran.model.entities.MovementMuscle;
+import apex.stellar.aldebaran.model.entities.MovementRoleAdjustment;
+import apex.stellar.aldebaran.model.entities.MovementUsualName;
 import apex.stellar.aldebaran.repository.projection.MovementSummary;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
@@ -70,6 +78,10 @@ public interface MovementMapper {
    */
   @Mapping(target = "id", ignore = true) // Generated Business Key
   @Mapping(target = "targetedMuscles", ignore = true) // Handled by Service
+  @Mapping(target = "components", ignore = true) // Handled by Service
+  @Mapping(target = "acceptedMovements", ignore = true) // Handled by Service
+  @Mapping(target = "roleAdjustments", ignore = true) // Handled by Service
+  @Mapping(target = "usualNames", ignore = true) // Handled by Service
   @Mapping(target = "createdAt", ignore = true)
   @Mapping(target = "updatedAt", ignore = true)
   Movement toEntity(MovementRequest request);
@@ -82,6 +94,10 @@ public interface MovementMapper {
    */
   @Mapping(target = "id", ignore = true)
   @Mapping(target = "targetedMuscles", ignore = true) // Handled by Service
+  @Mapping(target = "components", ignore = true) // Handled by Service
+  @Mapping(target = "acceptedMovements", ignore = true) // Handled by Service
+  @Mapping(target = "roleAdjustments", ignore = true) // Handled by Service
+  @Mapping(target = "usualNames", ignore = true) // Handled by Service
   @Mapping(target = "createdAt", ignore = true)
   @Mapping(target = "updatedAt", ignore = true)
   void updateEntity(MovementRequest request, @MappingTarget Movement entity);
@@ -99,6 +115,58 @@ public interface MovementMapper {
   @SuppressWarnings("unused")
   @Mapping(target = "muscle", source = "muscle")
   MovementMuscleResponse toMuscleResponse(MovementMuscle movementMuscle);
+
+  /**
+   * Converts a chain step to its DTO.
+   *
+   * @param component The step.
+   * @return The DTO.
+   */
+  @SuppressWarnings("unused")
+  @Mapping(target = "movementId", source = "component.id")
+  @Mapping(target = "movementName", source = "component.name")
+  MovementComponentDto toComponentDto(MovementComponent component);
+
+  /**
+   * Converts an accepted movement to its DTO.
+   *
+   * @param movement The accepted movement.
+   * @return The DTO.
+   */
+  @SuppressWarnings("unused")
+  AcceptedMovementResponse toAccepted(Movement movement);
+
+  /**
+   * Converts a role adjustment to its DTO.
+   *
+   * @param adjustment The adjustment.
+   * @return The DTO.
+   */
+  @SuppressWarnings("unused")
+  @Mapping(target = "muscleId", source = "muscle.id")
+  @Mapping(target = "muscleName", source = "muscle.medicalName")
+  RoleAdjustmentDto toAdjustmentDto(MovementRoleAdjustment adjustment);
+
+  /**
+   * Converts a usual name to its DTO.
+   *
+   * @param name The usual name.
+   * @return The DTO.
+   */
+  @SuppressWarnings("unused")
+  UsualNameDto toUsualNameDto(MovementUsualName name);
+
+  /**
+   * Converts a usual name to an entry of the movement search.
+   *
+   * @param name The usual name, with its movement.
+   * @return The entry.
+   */
+  @Mapping(target = "movementId", source = "movement.id")
+  @Mapping(target = "movementName", source = "movement.name")
+  @Mapping(target = "category", source = "movement.category")
+  @Mapping(target = "impliedEquipment", source = "movement.impliedEquipment")
+  UsualNameOptionResponse toUsualNameOption(MovementUsualName name);
 
   /**
    * Maps a nested muscle request to the join entity.

@@ -19,7 +19,12 @@ import org.junit.jupiter.api.Test;
 class LiftVariantTest {
 
   private static Movement movement(Equipment... equipment) {
-    return Movement.builder().id(1L).name("Lift").equipment(Set.of(equipment)).build();
+    return Movement.builder()
+        .id(1L)
+        .name("Lift")
+        .equipment(Set.of(equipment))
+        .impliedEquipment(equipment[0] == Equipment.BARBELL || equipment.length == 1 ? equipment[0] : null)
+        .build();
   }
 
   @Test
@@ -35,6 +40,22 @@ class LiftVariantTest {
     assertEquals(LiftVariant.BASE, LiftVariant.key(goblet, Set.of("KETTLEBELL"), Set.of()));
     Movement split = movement(Equipment.KETTLEBELL, Equipment.DUMBBELL);
     assertEquals("DUMBBELL;", LiftVariant.key(split, Set.of("DUMBBELL"), Set.of()));
+  }
+
+  @Test
+  @DisplayName("Key: an implied equipment that needs a position stays until there is one")
+  void key_impliedNeedsPosition() {
+    Movement squat =
+        Movement.builder()
+            .id(1L)
+            .name("Squat")
+            .equipment(Set.of(Equipment.BARBELL))
+            .impliedEquipment(Equipment.BARBELL)
+            .impliedRequiresPosition(true)
+            .build();
+    assertEquals(LiftVariant.BASE, LiftVariant.key(squat, Set.of(), Set.of()));
+    assertEquals("BARBELL;", LiftVariant.key(squat, Set.of("BARBELL"), Set.of()));
+    assertEquals(";BACK_RACK", LiftVariant.key(squat, Set.of("BARBELL"), Set.of("BACK_RACK")));
   }
 
   @Test

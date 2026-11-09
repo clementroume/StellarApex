@@ -3,6 +3,7 @@ package apex.stellar.aldebaran.service;
 import static apex.stellar.aldebaran.config.RedisCacheConfig.CACHE_WODS;
 
 import apex.stellar.aldebaran.client.AntaresClient;
+import apex.stellar.aldebaran.dto.MovementComponentDto;
 import apex.stellar.aldebaran.dto.MovementResponse;
 import apex.stellar.aldebaran.dto.WodCopyRequest;
 import apex.stellar.aldebaran.dto.WodFacetsResponse;
@@ -25,6 +26,7 @@ import apex.stellar.aldebaran.model.entities.Wod.WodStructure;
 import apex.stellar.aldebaran.model.entities.Wod.WodType;
 import apex.stellar.aldebaran.model.entities.WodMovement;
 import apex.stellar.aldebaran.model.enums.Category.Modality;
+import apex.stellar.aldebaran.model.enums.Technique;
 import apex.stellar.aldebaran.model.enums.Unit;
 import apex.stellar.aldebaran.model.enums.WodScope;
 import apex.stellar.aldebaran.repository.MovementRepository;
@@ -35,6 +37,7 @@ import apex.stellar.aldebaran.repository.projection.WodSummary;
 import apex.stellar.aldebaran.security.SecurityService;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -132,9 +135,11 @@ public class WodService {
       return page;
     }
     Map<Long, List<String>> names = new HashMap<>();
-    for (Object[] row :
-        wodRepository.findMovementNames(page.getContent().stream().map(WodSummaryResponse::id).toList())) {
-      names.computeIfAbsent((Long) row[0], k -> new ArrayList<>()).add((String) row[1]);
+    for (WodMovement line :
+        wodRepository.findPreviewLines(page.getContent().stream().map(WodSummaryResponse::id).toList())) {
+      names
+          .computeIfAbsent(line.getWod().getId(), k -> new ArrayList<>())
+          .add(CatalogRules.listName(line));
     }
     return page.map(w -> w.withMovementNames(names.getOrDefault(w.id(), List.of())));
   }
@@ -451,7 +456,10 @@ public class WodService {
         wm.sets(),
         wm.segment(),
         wm.complexGroup(),
-        wm.teamSplit());
+        wm.teamSplit(),
+        wm.percentOfRm(),
+        wm.rmReps(),
+        wm.componentTechniques());
   }
 
   /**
@@ -493,10 +501,7 @@ public class WodService {
               Movement movement = movementRepository.getReferenceById(item.movementId());
 
               WodMovement wm = wodMapper.toWodMovementEntity(item);
-              wm.checkVariantsAllowed(
-                  movementResponse.name(),
-                  movementResponse.equipment(),
-                  movementResponse.techniques());
+              applyCatalogRules(wm, movementResponse);
               wm.setWod(wod);
               wm.setMovement(movement);
 
@@ -760,8 +765,7 @@ public class WodService {
         target.setWod(wod);
       }
 
-      target.checkVariantsAllowed(
-          movementResponse.name(), movementResponse.equipment(), movementResponse.techniques());
+      applyCatalogRules(target, movementResponse);
       target.setMovement(movement);
       updatedList.add(target);
 
@@ -778,6 +782,18 @@ public class WodService {
     // 4. Update Aggregated Modalities
     wod.getModalities().clear();
     wod.getModalities().addAll(newModalities);
+  }
+
+  /** Writes a line in its canonical form and checks it against its catalog movement. */
+  private void applyCatalogRules(WodMovement line, MovementResponse movement) {
+    List<Set<Technique>> components =
+        line.getComponentTechniques().isEmpty() || movement.components() == null
+            ? List.of()
+            : movement.components().stream()
+                .sorted(Comparator.comparing(MovementComponentDto::componentOrder))
+                .map(c -> movementService.getMovement(c.movementId()).techniques())
+                .toList();
+    CatalogRules.normalizeAndCheck(CatalogRules.Spec.of(movement), line, components);
   }
 
   /**
@@ -809,6 +825,9 @@ public class WodService {
     target.setScalingOptionsFr(temp.getScalingOptionsFr());
     target.setOrderIndex(temp.getOrderIndex());
     target.setSets(temp.getSets());
+    target.setSegment(temp.getSegment());
+    target.setComplexGroup(temp.getComplexGroup());
+    target.setTeamSplit(temp.getTeamSplit());
     target.setPercentOfRm(temp.getPercentOfRm());
     target.setRmReps(temp.getRmReps());
 
@@ -820,6 +839,11 @@ public class WodService {
     target.getTechniques().clear();
     if (temp.getTechniques() != null) {
       target.getTechniques().addAll(temp.getTechniques());
+    }
+
+    target.getComponentTechniques().clear();
+    if (temp.getComponentTechniques() != null) {
+      target.getComponentTechniques().addAll(temp.getComponentTechniques());
     }
   }
 }

@@ -21,6 +21,7 @@ describe('MovementFormComponent', () => {
   beforeEach(async () => {
     movementServiceSpy = {
       getMovement: vi.fn().mockName("MovementService.getMovement"),
+      getMovements: vi.fn().mockName("MovementService.getMovements").mockReturnValue(of([])),
       createMovement: vi.fn().mockName("MovementService.createMovement"),
       updateMovement: vi.fn().mockName("MovementService.updateMovement"),
       getReferenceData: vi.fn().mockName("MovementService.getReferenceData")
@@ -31,7 +32,8 @@ describe('MovementFormComponent', () => {
     movementServiceSpy.getReferenceData.mockReturnValue(of({
       categoryGroups: {'WEIGHTLIFTING': ['DEADLIFT']},
       equipmentGroups: {'NONE': ['BODYWEIGHT']},
-      techniqueGroups: {'STYLE': ['STRICT']}
+      techniqueGroups: {'STYLE': ['STRICT'], 'RECEPTION': ['POWER', 'SQUAT']},
+      exclusiveTechniqueSets: [['POWER', 'SQUAT']]
     } as any));
 
     movementServiceSpy.getMovement.mockReturnValue(of({
@@ -44,6 +46,9 @@ describe('MovementFormComponent', () => {
         {muscle: {id: 1, medicalName: 'Quads'}, role: 'AGONIST', impactFactor: 1.0}
       ]
     } as any));
+    movementServiceSpy.getMovements.mockReturnValue(of([
+      {id: 2, name: 'Clean', category: 'CLEAN'}, {id: 3, name: 'Jerk', category: 'PRESS_AND_JERK'}
+    ] as any));
 
     muscleServiceSpy = {
       getMuscles: vi.fn().mockName("MuscleService.getMuscles"),
@@ -133,6 +138,34 @@ describe('MovementFormComponent', () => {
 
         component.removeMuscle(0);
         expect(component.musclesFormArray.length).toBe(1);
+      });
+    });
+
+    describe('Composition', () => {
+      const option = (movementId: number, nameEn: string) =>
+        ({movementId, movementName: nameEn, category: 'CLEAN', nameEn, techniques: [], equipment: []});
+
+      it('should write a step with the techniques its movement allows, one reception at a time', () => {
+        movementServiceSpy.getMovement.mockReturnValue(of({id: 2, name: 'Clean', techniques: ['POWER', 'SQUAT']} as any));
+        component.addComponent();
+        component.onComponentPicked(0, option(2, 'Clean'));
+        expect(component.componentTechniques(0)).toEqual(['POWER', 'SQUAT']);
+
+        component.toggleComponentTechnique(0, 'POWER');
+        component.toggleComponentTechnique(0, 'SQUAT');
+        expect(component.componentsArray.at(0).value).toMatchObject({movementId: 2, techniques: ['SQUAT']});
+      });
+
+      it('should add accepted movements once, remove them and empty the search for the next one', () => {
+        const key = component.acceptedPickerKey();
+        component.addAccepted(option(3, 'Jerk'));
+        component.addAccepted(option(3, 'Jerk'));
+        expect(component.acceptedMovements().map(m => m.name)).toEqual(['Jerk']);
+        expect(component.acceptedPickerKey()).toBeGreaterThan(key);
+
+        component.removeAccepted(3);
+        expect(component.acceptedMovements()).toEqual([]);
+        expect(component.movementForm.controls.acceptedMovementIds.value).toEqual([]);
       });
     });
 

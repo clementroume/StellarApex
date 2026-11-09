@@ -77,6 +77,35 @@
 
       </div>
 
+      <section class="mb-8 rounded-xl border bg-card p-4 md:p-6" [attr.aria-label]="'MUSCLE.USAGE.TITLE' | translate">
+        <h2 class="mb-3 text-lg font-semibold">{{ 'MUSCLE.USAGE.TITLE' | translate }}</h2>
+        <div class="mb-3 flex flex-wrap gap-2" role="group" [attr.aria-label]="'MUSCLE.USAGE.ROLE' | translate">
+          @for (r of roles; track r) {
+            <button type="button" hlmBtn variant="outline" size="sm"
+                    class="rounded-full aria-pressed:border-secondary aria-pressed:bg-secondary/15 aria-pressed:text-secondary"
+                    [attr.aria-pressed]="role() === r" (click)="role.set(r)">
+              {{ 'MUSCLE.ROLES.' + r | translate }} {{ countOf(r) }}
+            </button>
+          }
+        </div>
+        @if (shownUsage().length === 0) {
+          <p class="text-sm text-muted-foreground">{{ 'MUSCLE.USAGE.EMPTY' | translate }}</p>
+        } @else {
+          <ul class="divide-y">
+            @for (u of shownUsage(); track u.movementId + (u.trigger ?? '')) {
+              <li>
+                <a [routerLink]="['/movements', u.movementId]" class="flex items-center justify-between gap-3 py-2.5 hover:text-primary">
+                  <span class="min-w-0 truncate">{{ u.movementName }}</span>
+                  @if (u.trigger) {
+                    <span class="shrink-0 text-xs text-muted-foreground">{{ 'MUSCLE.USAGE.ONLY' | translate: {value: triggerLabel(u.trigger)} }}</span>
+                  }
+                </a>
+              </li>
+            }
+          </ul>
+        }
+      </section>
+
       @if (isAdmin()) {
         <app-detail-admin-actions
           [editLink]="['/muscles/edit', m.id]"

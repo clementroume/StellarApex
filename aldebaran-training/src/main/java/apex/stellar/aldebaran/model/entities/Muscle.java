@@ -1,13 +1,16 @@
 package apex.stellar.aldebaran.model.entities;
 
+import apex.stellar.aldebaran.model.enums.JointAction;
+import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
+import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EntityListeners;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
-import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
@@ -18,7 +21,9 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -64,6 +69,14 @@ public class Muscle {
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "parent_id")
   private Muscle parent;
+
+  /** Joint actions this muscle can produce (control of the catalog roles). */
+  @ElementCollection(fetch = FetchType.LAZY)
+  @CollectionTable(name = "muscle_joint_actions", joinColumns = @JoinColumn(name = "muscle_id"))
+  @Column(name = "action", nullable = false, length = 20)
+  @Enumerated(EnumType.STRING)
+  @Builder.Default
+  private Set<JointAction> jointActions = new HashSet<>();
 
   /** Muscles of this functional group; empty unless this muscle is a group. */
   @OneToMany(mappedBy = "parent")

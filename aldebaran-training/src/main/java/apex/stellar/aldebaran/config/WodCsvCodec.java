@@ -1,5 +1,6 @@
 package apex.stellar.aldebaran.config;
 
+import apex.stellar.aldebaran.model.entities.ComponentTechnique;
 import apex.stellar.aldebaran.model.entities.Movement;
 import apex.stellar.aldebaran.model.entities.Wod;
 import apex.stellar.aldebaran.model.entities.Wod.ScoreType;
@@ -113,7 +114,9 @@ public final class WodCsvCodec {
     "team_split",
     // Load as a percentage of the athlete's RM (base version), and the N of that RM
     "percent_of_rm",
-    "rm_reps"
+    "rm_reps",
+    // Techniques of one component of a chained line: 1:POWER|2:SPLIT
+    "component_techniques"
   };
 
   /** Separator of the equipment / technique lists (free text, so not a comma). */
@@ -232,6 +235,7 @@ public final class WodCsvCodec {
                       WodMovement.TeamSplit.TOTAL))
               .percentOfRm(decimal(row, "percent_of_rm"))
               .rmReps(integer(row, "rm_reps"))
+              .componentTechniques(componentTechniques(row))
               .build();
       wodMovement.checkVariantsAllowed(
           movement.getName(), movement.getEquipment(), movement.getTechniques());
@@ -320,10 +324,28 @@ public final class WodCsvCodec {
               wm.getComplexGroup(),
               wm.getTeamSplit() == WodMovement.TeamSplit.TOTAL ? null : wm.getTeamSplit().name(),
               wm.getPercentOfRm(),
-              wm.getRmReps());
+              wm.getRmReps(),
+              joinComponents(wm.getComponentTechniques()));
         }
       }
     }
+  }
+
+  private static Set<ComponentTechnique> componentTechniques(CSVRecord row) {
+    return list(row, "component_techniques").stream()
+        .map(
+            value -> {
+              String[] parts = value.split(":", 2);
+              return new ComponentTechnique(Integer.valueOf(parts[0]), parts[1]);
+            })
+        .collect(Collectors.toCollection(HashSet::new));
+  }
+
+  private static String joinComponents(Set<ComponentTechnique> values) {
+    return join(
+        values.stream()
+            .map(v -> v.componentOrder() + ":" + v.technique())
+            .collect(Collectors.toSet()));
   }
 
   /**

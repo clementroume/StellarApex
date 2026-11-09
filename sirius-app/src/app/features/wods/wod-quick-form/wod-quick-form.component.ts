@@ -7,7 +7,7 @@ import {HlmButton} from '@spartan-ng/helm/button';
 import {HlmInput} from '@spartan-ng/helm/input';
 import {HlmTextarea} from '@spartan-ng/helm/textarea';
 import {MovementService} from '../../../api/aldebaran/services/movement.service';
-import {MovementResponse, MovementSummaryResponse} from '../../../api/aldebaran/models/movement.model';
+import {MovementReferenceData, MovementResponse, MovementSummaryResponse, UsualNameOption} from '../../../api/aldebaran/models/movement.model';
 import {
   WodMovementRequest,
   WodMovementResponse,
@@ -15,10 +15,12 @@ import {
   WodResponse,
   TeamMode,
   TeamSplit,
-  WodSegment
+  WodSegment,
+  ComponentTechnique
 } from '../../../api/aldebaran/models/wod.model';
 import {UnitService} from '../../../core/services/unit.service';
-import {MovementComboboxComponent} from '../../../shared/component/movement-combobox/movement-combobox.component';
+import {MovementComboboxComponent, usualNameOf} from '../../../shared/component/movement-combobox/movement-combobox.component';
+import {toggleVariant, VariantPickerComponent} from '../../../shared/component/variant-picker/variant-picker.component';
 import {NativeSelectDirective} from '../../../shared/component/native-select/native-select.directive';
 import {
   ALL_EXTRAS,
@@ -73,6 +75,7 @@ type MovementRow = FormGroup<{
   heightFemale: FormControl<number | null>;
   equipment: FormControl<string[]>;
   techniques: FormControl<string[]>;
+  componentTechniques: FormControl<ComponentTechnique[]>;
   segment: FormControl<WodSegment>;
   teamSplit: FormControl<TeamSplit>;
   // For Load: load as a percentage of the RM of rmReps reps (1RM unless set elsewhere)
@@ -95,7 +98,7 @@ type MovementRow = FormGroup<{
 @Component({
   selector: 'app-wod-quick-form',
   standalone: true,
-  imports: [ReactiveFormsModule, TranslatePipe, NgIcon, HlmButton, HlmInput, HlmTextarea, MovementComboboxComponent,
+  imports: [ReactiveFormsModule, TranslatePipe, NgIcon, HlmButton, HlmInput, HlmTextarea, MovementComboboxComponent, VariantPickerComponent,
     NativeSelectDirective],
   templateUrl: './wod-quick-form.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -120,6 +123,8 @@ export class WodQuickFormComponent implements OnInit {
   protected readonly ladderHints = LADDER_HINTS;
   protected readonly pyramidHints = PYRAMID_HINTS;
   protected readonly movements = signal<MovementSummaryResponse[]>([]);
+  protected readonly usualNames = signal<UsualNameOption[]>([]);
+  protected readonly referenceData = signal<MovementReferenceData | null>(null);
   /** Full movements (allowed variants), loaded when picked. */
   private readonly details = signal<Record<number, MovementResponse>>({});
   protected readonly showScoreType = signal(false);
@@ -209,6 +214,8 @@ export class WodQuickFormComponent implements OnInit {
   ngOnInit(): void {
     this.movementService.getMovements().subscribe(list =>
       this.movements.set([...list].sort((a, b) => a.name.localeCompare(b.name))));
+    this.movementService.getUsualNames().subscribe(list => this.usualNames.set(list));
+    this.movementService.getReferenceData().subscribe(reference => this.referenceData.set(reference));
     const initial = this.initial();
     if (initial) {
       this.fill(initial);
@@ -280,22 +287,27 @@ export class WodQuickFormComponent implements OnInit {
     this.shiftRowState(index, -1);
   }
 
-  /** Picking another movement clears its variants, brings its usual measure and loads the allowed variants. */
-  onMovement(index: number, movementId: number | null): void {
+  /** Name picked: its movement and variants, its usual measure, and the allowed variants loaded. */
+  onPicked(index: number, option: UsualNameOption | null): void {
     const row = this.form.controls.rows.at(index);
-    if (row.controls.movementId.value === movementId) return;
-    const movement = this.movements().find(m => m.id === movementId);
+    const movementId = option?.movementId ?? null;
     const r = row.getRawValue();
     const untouched = !r.reps.trim() && r.distance == null && r.calories == null && r.durationSeconds == null;
     row.patchValue({
-      movementId, equipment: [], techniques: [],
-      ...(untouched ? {measure: defaultMeasure(movement?.name, movement?.category)} : {})
+      movementId,
+      equipment: [...(option?.equipment ?? [])],
+      techniques: (option?.techniques ?? []).filter(t => !t.includes(':')),
+      componentTechniques: (option?.techniques ?? []).filter(t => t.includes(':')).map(t => {
+        const [order, technique] = t.split(':');
+        return {componentOrder: Number(order), technique};
+      }),
+      ...(untouched ? {measure: defaultMeasure(option?.nameEn, option?.category)} : {})
     });
     if (movementId != null) {
       // The equipment the movement implies is picked at once (kettlebell swing, box jump)
       this.loadDetail(movementId, detail => {
         if (row.controls.movementId.value === movementId && row.controls.equipment.value.length === 0) {
-          row.controls.equipment.setValue(obviousEquipment(detail.name, detail.equipment));
+          row.controls.equipment.setValue(obviousEquipment(option?.nameEn ?? detail.name, detail.equipment));
         }
       });
     }
@@ -325,8 +337,9 @@ export class WodQuickFormComponent implements OnInit {
 
   toggleVariant(index: number, field: VariantField, value: string): void {
     const control = this.form.controls.rows.at(index).controls[field];
-    const selected = control.value;
-    control.setValue(selected.includes(value) ? selected.filter(v => v !== value) : [...selected, value]);
+    const reference = this.referenceData();
+    control.setValue(toggleVariant(control.value, value,
+      field === 'techniques' ? reference?.exclusiveTechniqueSets : null));
   }
 
   onSubmit(): void {
@@ -399,6 +412,11 @@ export class WodQuickFormComponent implements OnInit {
   }
 
   /** Equipment or techniques the row's movement allows, once loaded. */
+  /** The techniques of a line, a component's written 1:POWER as the usual names do. */
+  lineTechniques(line: {techniques?: string[] | null; componentTechniques?: {componentOrder: number; technique: string}[] | null}): string[] {
+    return [...(line.techniques ?? []), ...(line.componentTechniques ?? []).map(c => `${c.componentOrder}:${c.technique}`)];
+  }
+
   variantsOf(index: number, field: VariantField): string[] {
     const id = this.form.controls.rows.at(index).controls.movementId.value;
     const detail = id == null ? null : this.details()[id];
@@ -459,6 +477,7 @@ export class WodQuickFormComponent implements OnInit {
         heightUnit: height ? (metric ? 'CENTIMETERS' : 'INCHES') : undefined,
         equipment: r.equipment,
         techniques: r.techniques,
+        componentTechniques: r.componentTechniques,
         segment: segments ? r.segment : 'MAIN',
         teamSplit: this.showTeam() ? r.teamSplit : 'TOTAL',
         complexGroup: complex ? 1 : null,
@@ -541,7 +560,8 @@ export class WodQuickFormComponent implements OnInit {
   private generateTitle(): string {
     const v = this.form.getRawValue();
     const names = v.rows
-      .map(r => this.movements().find(m => m.id === r.movementId)?.name)
+      .map(r => usualNameOf(this.usualNames(), r.movementId, this.lineTechniques(r), r.equipment)?.nameEn
+        ?? this.movements().find(m => m.id === r.movementId)?.name)
       .filter((n): n is string => !!n);
     const formatName = this.translate.instant('WOD.WOD_TYPES.' + v.category);
     const structure = this.structureLabel();
@@ -623,6 +643,7 @@ export class WodQuickFormComponent implements OnInit {
         weight: wm.weight ?? null, weightFemale: wm.weightFemale ?? null,
         height: wm.height ?? null, heightFemale: wm.heightFemale ?? null,
         equipment: wm.equipment ?? [], techniques: wm.techniques ?? [],
+        componentTechniques: wm.componentTechniques ?? [],
         segment: wm.segment ?? 'MAIN',
         teamSplit: wm.teamSplit ?? 'TOTAL',
         percentOfRm: wm.percentOfRm ?? null,
@@ -653,6 +674,7 @@ export class WodQuickFormComponent implements OnInit {
       height: number(v.height), heightFemale: number(v.heightFemale),
       equipment: new FormControl<string[]>(v.equipment ?? [], {nonNullable: true}),
       techniques: new FormControl<string[]>(v.techniques ?? [], {nonNullable: true}),
+      componentTechniques: new FormControl<ComponentTechnique[]>(v.componentTechniques ?? [], {nonNullable: true}),
       segment: new FormControl<WodSegment>(v.segment ?? 'MAIN', {nonNullable: true}),
       teamSplit: new FormControl<TeamSplit>(v.teamSplit ?? 'TOTAL', {nonNullable: true}),
       percentOfRm: new FormControl<number | null>(v.percentOfRm ?? null, [Validators.min(1), Validators.max(150)]),

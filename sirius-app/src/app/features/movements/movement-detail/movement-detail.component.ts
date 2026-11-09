@@ -1,10 +1,10 @@
 import {ChangeDetectionStrategy, Component, computed, effect, inject, input, signal} from '@angular/core';
 import {TranslatePipe, TranslateService} from '@ngx-translate/core';
 import {Router, RouterModule} from '@angular/router';
-import {Location, NgOptimizedImage, NgTemplateOutlet} from '@angular/common';
+import {Location, NgOptimizedImage} from '@angular/common';
 import {NgIconComponent} from '@ng-icons/core';
-import {MovementResponse} from '../../../api/aldebaran/models/movement.model';
-import {MuscleRefResponse, MuscleResponse} from '../../../api/aldebaran/models/muscle.model';
+import {MovementReferenceData, MovementResponse, MovementVariant, UsualName, VariantMuscle} from '../../../api/aldebaran/models/movement.model';
+import {toggleVariant, VariantPickerComponent} from '../../../shared/component/variant-picker/variant-picker.component';
 import {AccessService} from '../../../core/services/access.service';
 import {MovementService} from '../../../api/aldebaran/services/movement.service';
 import {NotificationService} from '../../../core/services/notification.service';
@@ -25,13 +25,16 @@ import {HlmButton} from '@spartan-ng/helm/button';
 @Component({
   selector: 'app-movement-detail',
   standalone: true,
-  imports: [HlmButton, HlmBadge, TranslatePipe, RouterModule, NgIconComponent, NgOptimizedImage, NgTemplateOutlet, DetailAdminActionsComponent, DetailCardComponent, DetailHeaderComponent, DetailStateComponent, LiftRecordsComponent],
+  imports: [VariantPickerComponent, HlmButton, HlmBadge, TranslatePipe, RouterModule, NgIconComponent, NgOptimizedImage, DetailAdminActionsComponent, DetailCardComponent, DetailHeaderComponent, DetailStateComponent, LiftRecordsComponent],
   templateUrl: './movement-detail.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class MovementDetailComponent {
   // --- INJECTIONS ---
   id = input.required<string>();
+  /** Query parameters: what a usual name stands for (comma-separated). */
+  techniques = input<string>();
+  equipment = input<string>();
   private readonly translate = inject(TranslateService);
   private readonly accessService = inject(AccessService);
   private readonly movementService = inject(MovementService);
@@ -43,11 +46,27 @@ export class MovementDetailComponent {
   // --- STATE (SIGNALS) ---
   activeLang = computed(() => this.translate.currentLang() ?? this.translate.fallbackLang() ?? 'en');
   isAdmin = this.accessService.isAdmin;
+  private variantRequest = 0;
 
   movement = signal<MovementResponse | null>(null);
   isLoading = signal<boolean>(true); // Nouvel état explicite
   /** Shows the user's records block when they hold one on this movement or it has canonical tests (lot C). */
   readonly showRecords = signal<boolean>(false);
+  readonly referenceData = signal<MovementReferenceData | null>(null);
+  readonly chosenTechniques = signal<string[]>([]);
+  readonly chosenEquipment = signal<string[]>([]);
+  readonly variant = signal<MovementVariant | null>(null);
+  readonly roles = ['AGONIST', 'SYNERGIST', 'STABILIZER'] as const;
+
+  // --- COMPUTED STATE ---
+  readonly displayName = computed(() => {
+    const v = this.variant();
+    return (this.activeLang() === 'fr' ? v?.usualNameFr : null) || v?.usualNameEn || this.movement()?.name || '';
+  });
+  /** Variants worth a shortcut: every usual name but the plain movement. */
+  readonly usualNames = computed(() => (this.movement()?.usualNames ?? [])
+    .filter(u => (u.techniques?.length ?? 0) + (u.equipment?.length ?? 0) > 0)
+    .sort((a, b) => a.nameEn.localeCompare(b.nameEn)));
 
   constructor() {
     effect(() => {
@@ -57,6 +76,23 @@ export class MovementDetailComponent {
         this.loadRecords(currentId);
       }
     });
+    // The catalog says what a variant is called and which roles it gives
+    effect(() => {
+      const movement = this.movement();
+      const techniques = this.chosenTechniques();
+      const equipment = this.chosenEquipment();
+      if (!movement) return;
+      const asked = ++this.variantRequest;
+      this.movementService.getVariant(movement.id, techniques, equipment, new HttpContext().set(BYPASS_LOADER, true)).subscribe({
+        next: variant => {
+          if (asked === this.variantRequest) this.variant.set(variant);
+        },
+        error: () => {
+          if (asked === this.variantRequest) this.variant.set(null);
+        }
+      });
+    });
+    this.movementService.getReferenceData().subscribe(reference => this.referenceData.set(reference));
   }
 
   // --- DATA FETCHING ---
@@ -65,6 +101,8 @@ export class MovementDetailComponent {
 
     this.movementService.getMovement(id).subscribe({
       next: (m) => {
+        this.chosenTechniques.set(this.fromQuery(this.techniques(), m.techniques));
+        this.chosenEquipment.set(this.fromQuery(this.equipment(), m.equipment));
         this.movement.set(m);
         this.isLoading.set(false);
       },
@@ -88,6 +126,28 @@ export class MovementDetailComponent {
   }
 
   // --- ACTIONS ---
+  toggleTechnique(value: string): void {
+    this.chosenTechniques.update(selected => toggleVariant(selected, value, this.referenceData()?.exclusiveTechniqueSets));
+  }
+
+  /** One equipment at a time: each one is another record. */
+  toggleEquipment(value: string): void {
+    this.chosenEquipment.update(selected => selected.includes(value) ? [] : [value]);
+  }
+
+  /** A usual name is a shortcut for its techniques and equipment. */
+  applyUsualName(name: UsualName): void {
+    // Tapping the name shown again leaves it
+    if (this.isUsualNameOn(name)) {
+      this.chosenTechniques.update(selected => selected.filter(v => !name.techniques?.includes(v)));
+      this.chosenEquipment.update(selected => selected.filter(v => !name.equipment?.includes(v)));
+      return;
+    }
+    // A chain's component technique (1:POWER) has no chip but names the variant
+    this.chosenTechniques.set([...(name.techniques ?? [])]);
+    this.chosenEquipment.set([...(name.equipment ?? [])]);
+  }
+
   goBack(): void {
     this.location.back();
   }
@@ -114,27 +174,31 @@ export class MovementDetailComponent {
   }
 
   // --- HELPERS ---
+  /** Whether a shortcut is the name of the variant shown. */
+  isUsualNameOn(usual: {nameEn: string}): boolean {
+    return this.variant()?.usualNameEn === usual.nameEn;
+  }
+
+  private fromQuery(value: string | undefined, allowed: string[]): string[] {
+    return (value ?? '').split(',').filter(v => allowed.includes(v) || v.includes(':'));
+  }
+
+  musclesOf(role: VariantMuscle['role']): VariantMuscle[] {
+    return (this.variant()?.muscles ?? []).filter(m => m.role === role);
+  }
+
+  variantMuscleName(muscle: VariantMuscle): string {
+    return (this.activeLang() === 'fr' ? muscle.commonNameFr : muscle.commonNameEn) || muscle.medicalName;
+  }
+
   getLocalizedDescription(movement: MovementResponse): string {
-    return this.activeLang() === 'fr' ? (movement.descriptionFr || '') : (movement.descriptionEn || '');
+    const variant = this.variant();
+    return this.activeLang() === 'fr'
+      ? (variant?.descriptionFr || movement.descriptionFr || '')
+      : (variant?.descriptionEn || movement.descriptionEn || '');
   }
 
   getLocalizedCues(movement: MovementResponse): string {
     return this.activeLang() === 'fr' ? (movement.coachingCuesFr || '') : (movement.coachingCuesEn || '');
-  }
-
-  getLocalizedMuscleName(muscle: MuscleResponse | MuscleRefResponse): string {
-    const isFr = this.activeLang() === 'fr';
-    return (isFr ? muscle.commonNameFr : muscle.commonNameEn) || muscle.medicalName;
-  }
-
-  /** Tooltip of a targeted muscle: the muscles of a functional group, or the group of a member. */
-  getMuscleHint(muscle: MuscleResponse): string | null {
-    if (muscle.members?.length) {
-      return `${this.translate.instant('MUSCLE.FIELDS.MEMBERS')} : ${muscle.members.map(m => this.getLocalizedMuscleName(m)).join(', ')}`;
-    }
-    if (muscle.parent) {
-      return `${this.translate.instant('MUSCLE.FIELDS.FUNCTIONAL_GROUP')} : ${this.getLocalizedMuscleName(muscle.parent)}`;
-    }
-    return null;
   }
 }

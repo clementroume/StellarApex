@@ -12,9 +12,11 @@ import java.time.LocalDate;
  * @param scoreId The score that set it.
  * @param wodId The WOD of that score.
  * @param wodTitle The title of that WOD.
+ * @param inheritedFrom Where the record comes from when another variant proves it, or null.
  */
 public record RecordEntryResponse(
     int reps,
     double weightKg,
     Double previousWeightKg,
-    LocalDate date, Long scoreId, Long wodId, String wodTitle) {}
+    LocalDate date, Long scoreId, Long wodId, String wodTitle,
+    RecordSourceResponse inheritedFrom) {}

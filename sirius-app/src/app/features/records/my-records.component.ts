@@ -16,6 +16,7 @@ import {crossfitTotal, familyOf, LIFT_FAMILIES, LiftFamily, LiftSummary, liftSum
 /** A tile of the board: a movement with records. */
 interface LiftTile {
   movementId: number;
+  variantKey: string;
   movementName: string;
   family: LiftFamily;
   summary: LiftSummary;
@@ -55,23 +56,30 @@ export class MyRecordsComponent {
   readonly failed = signal<boolean>(false);
 
   // --- COMPUTED STATE ---
+  /** One tile per lift: the base version, each variant with its own tests, and without a base (a squat is always in a position) each named variant. */
   readonly tiles = computed<LiftTile[]>(() => this.records()
-    .map(r => ({
-      movementId: r.movementId, movementName: r.movementName, family: familyOf(r.category),
-      summary: liftSummary(r.variants.find(v => v.base))
-    }))
+    .flatMap(r => {
+      const base = r.variants.find(v => v.base);
+      const shown = r.variants.filter(v => v === base || this.liftOf(r.movementId, v.variantKey) || (!base && v.usualNameEn));
+      return shown.map(v => ({
+        movementId: r.movementId, variantKey: v.variantKey, family: familyOf(r.category),
+        movementName: v.usualNameEn ?? this.liftOf(r.movementId, v.variantKey)?.usualNameEn ?? r.movementName,
+        summary: liftSummary(v)
+      }));
+    })
     .filter((t): t is LiftTile => t.summary !== null));
   readonly shownTiles = computed(() => this.tiles().filter(t => this.family() === null || t.family === this.family()));
   /** Families that have tiles, so no chip is empty. */
   readonly usedFamilies = computed(() => this.families.filter(f => this.tiles().some(t => t.family === f)));
   readonly untested = computed<UntestedLift[]>(() => {
-    const done = new Set(this.tiles().map(t => t.movementId));
-    const rows = new Map<number, UntestedLift>();
+    const done = new Set(this.records().flatMap(r => r.variants.map(v => `${r.movementId}#${v.variantKey}`)));
+    const rows = new Map<string, UntestedLift>();
     for (const lift of this.lifts()) {
-      if (done.has(lift.movementId)) continue;
-      const row = rows.get(lift.movementId) ?? {movementId: lift.movementId, movementName: lift.movementName, lifts: []};
+      const key = `${lift.movementId}#${lift.variantKey}`;
+      if (done.has(key)) continue;
+      const row = rows.get(key) ?? {movementId: lift.movementId, movementName: lift.usualNameEn ?? lift.movementName, lifts: []};
       row.lifts.push(lift);
-      rows.set(lift.movementId, row);
+      rows.set(key, row);
     }
     return [...rows.values()];
   });
@@ -107,6 +115,10 @@ export class MyRecordsComponent {
   }
 
   // --- HELPERS ---
+  private liftOf(movementId: number, variantKey: string): CanonicalLift | undefined {
+    return this.lifts().find(l => l.movementId === movementId && l.variantKey === variantKey);
+  }
+
   /** Rounded load without its unit, as written on a whiteboard ("140"). */
   value(kg: number, estimated: boolean): string {
     const text = estimated ? this.unitService.formatPercentLoad(kg) : this.unitService.formatScoreLoad(kg, 'KG');

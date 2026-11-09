@@ -3,6 +3,7 @@ package apex.stellar.aldebaran.controller;
 import apex.stellar.aldebaran.dto.MuscleReferenceData;
 import apex.stellar.aldebaran.dto.MuscleRequest;
 import apex.stellar.aldebaran.dto.MuscleResponse;
+import apex.stellar.aldebaran.dto.MuscleUsageResponse;
 import apex.stellar.aldebaran.service.MuscleService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -87,6 +88,17 @@ public class MuscleController {
 
     muscleService.deleteMuscle(id);
     return ResponseEntity.noContent().build();
+  }
+
+  /**
+   * Lists the movements that work a muscle, each with the role it gives.
+   *
+   * @param id The muscle.
+   * @return The movements, by role then name.
+   */
+  @GetMapping("/{id}/movements")
+  public ResponseEntity<List<MuscleUsageResponse>> getUsage(@PathVariable Long id) {
+    return ResponseEntity.ok(muscleService.getUsage(id));
   }
 
   /**

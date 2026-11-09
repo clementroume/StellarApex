@@ -47,12 +47,15 @@ public class RecordController {
    *
    * @param movementId The movement.
    * @param reps N of the N RM (1 by default).
+   * @param variantKey The variant (the base version by default).
    * @return The successive bests.
    */
   @GetMapping("/me/progress")
   public ResponseEntity<List<RecordPointResponse>> getMyProgress(
-      @RequestParam Long movementId, @RequestParam(defaultValue = "1") int reps) {
-    return ResponseEntity.ok(recordService.getMyProgress(movementId, reps));
+      @RequestParam Long movementId,
+      @RequestParam(defaultValue = "1") int reps,
+      @RequestParam(defaultValue = "") String variantKey) {
+    return ResponseEntity.ok(recordService.getMyProgress(movementId, reps, variantKey));
   }
 
   /**
@@ -72,12 +75,15 @@ public class RecordController {
    *
    * @param gymId The box.
    * @param movementId The movement.
+   * @param variantKey The variant (the base version by default).
    * @return The board lines (user IDs; names from Antares), heaviest first for each N.
    */
   @GetMapping("/gyms/{gymId}")
   @PreAuthorize("@securityService.isAdmin(principal) or principal.isMemberOf(#gymId)")
   public ResponseEntity<List<BoardRecordResponse>> getGymBoard(
-      @PathVariable Long gymId, @RequestParam Long movementId) {
-    return ResponseEntity.ok(recordService.getGymBoard(gymId, movementId));
+      @PathVariable Long gymId,
+      @RequestParam Long movementId,
+      @RequestParam(defaultValue = "") String variantKey) {
+    return ResponseEntity.ok(recordService.getGymBoard(gymId, movementId, variantKey));
   }
 }

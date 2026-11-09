@@ -164,6 +164,9 @@ public interface WodMapper {
    */
   @SuppressWarnings("unused")
   @Mapping(target = "movement", source = "movement") // Delegates to MovementMapper
+  @Mapping(
+      target = "display",
+      expression = "java(apex.stellar.aldebaran.service.CatalogRules.display(wodMovement))")
   WodMovementResponse toWodMovementResponse(WodMovement wodMovement);
 
   /**

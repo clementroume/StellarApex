@@ -56,12 +56,16 @@ describe('record utils', () => {
   });
 
   it('should label a variant with its techniques then its equipment', () => {
-    expect(variantLabel({variantKey: 'TRAP_BAR;PAUSED', base: false, equipment: ['TRAP_BAR'], techniques: ['PAUSED'], records: [], estimates: []},
+    expect(variantLabel({equipment: ['TRAP_BAR'], techniques: ['PAUSED']},
       key => key.split('.').pop()!)).toBe('PAUSED · TRAP_BAR');
   });
 
   it('should add the three 1RMs of the CrossFit Total, or nothing while one is missing', () => {
-    const lifts = [records('Back Squat', 1, [[1, 140]]), records('Shoulder Press', 2, [[1, 60]]), records('Deadlift', 3, [[1, 180]])];
+    const squat: MovementRecords = {movementId: 1, movementName: 'Squat', category: 'SQUAT', variants: [
+      {variantKey: ';BACK_RACK', base: false, equipment: [], techniques: ['BACK_RACK'], records: [entry(1, 140)], estimates: []},
+      {variantKey: ';FRONT_RACK', base: false, equipment: [], techniques: ['FRONT_RACK'], records: [entry(1, 110)], estimates: []}
+    ]};
+    const lifts = [squat, records('Shoulder Press', 2, [[1, 60]]), records('Deadlift', 3, [[1, 180]])];
     expect(crossfitTotal(lifts)).toEqual({kg: 380, parts: [
       {name: 'Back Squat', kg: 140}, {name: 'Shoulder Press', kg: 60}, {name: 'Deadlift', kg: 180}]});
     expect(crossfitTotal(lifts.slice(0, 2))).toBeNull();

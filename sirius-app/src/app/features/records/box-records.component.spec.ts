@@ -22,9 +22,10 @@ describe('BoxRecordsComponent', () => {
 
   beforeEach(async () => {
     recordService.getCanonicalLifts.mockReturnValue(of([
-      {wodId: 10, movementId: 2, movementName: 'Deadlift', repMax: 1},
-      {wodId: 11, movementId: 1, movementName: 'Back Squat', repMax: 1},
-      {wodId: 12, movementId: 1, movementName: 'Back Squat', repMax: 5}
+      {wodId: 10, movementId: 2, movementName: 'Deadlift', variantKey: '', repMax: 1},
+      {wodId: 11, movementId: 1, movementName: 'Squat', usualNameEn: 'Back Squat', variantKey: ';BACK_RACK', repMax: 1},
+      {wodId: 12, movementId: 1, movementName: 'Squat', usualNameEn: 'Back Squat', variantKey: ';BACK_RACK', repMax: 5},
+      {wodId: 13, movementId: 3, movementName: 'Clean', variantKey: '', repMax: 1}
     ]));
     recordService.getGymBoard.mockReturnValue(of([
       {userId: 7, reps: 1, weightKg: 150, date: '2026-11-01', division: 'MEN', ageGroup: 'AGE_35_39'},
@@ -50,7 +51,7 @@ describe('BoxRecordsComponent', () => {
   });
 
   it('should open on the back squat 1RM of the first box, with a podium, names and my line', () => {
-    expect(recordService.getGymBoard).toHaveBeenCalledWith(5, 1, expect.anything());
+    expect(recordService.getGymBoard).toHaveBeenCalledWith(5, 1, expect.anything(), ';BACK_RACK');
     const podium = Array.from(fixture.nativeElement.querySelectorAll('[data-slot="podium"] li')) as HTMLElement[];
     expect(podium.length).toBe(2);
     // Visual order: 2nd, then 1st
@@ -61,6 +62,7 @@ describe('BoxRecordsComponent', () => {
     expect(component.mine()).toMatchObject({rank: 2, gapKg: 50});
     expect(fixture.nativeElement.querySelector('[data-slot="mine"]')).toBeNull();
     expect(component.repsOptions()).toEqual([1, 3, 5]);
+    expect(component.boardLifts().map(l => l.movementName)).toEqual(['Back Squat', 'Clean', 'Deadlift']);
   });
 
   it('should pin my line under the board, with the gap to the athlete above, when off the podium', () => {
@@ -78,9 +80,9 @@ describe('BoxRecordsComponent', () => {
     const squat = new Subject<unknown[]>();
     const deadlift = new Subject<unknown[]>();
     recordService.getGymBoard.mockReturnValueOnce(squat).mockReturnValueOnce(deadlift);
-    component.onMovementChange('3');
+    component.onLiftChange(component.boardLifts().find(l => l.movementId === 3)!);
     fixture.detectChanges();
-    component.onMovementChange('2');
+    component.onLiftChange(component.boardLifts().find(l => l.movementId === 2)!);
     fixture.detectChanges();
     deadlift.next([{userId: 7, reps: 1, weightKg: 200, date: '2026-11-01', division: 'MEN', ageGroup: null}]);
     squat.next([{userId: 7, reps: 1, weightKg: 120, date: '2026-11-01', division: 'MEN', ageGroup: null}]);
@@ -107,16 +109,16 @@ describe('BoxRecordsComponent', () => {
 
     component.onGymChange('6');
     fixture.detectChanges();
-    expect(recordService.getGymBoard).toHaveBeenLastCalledWith(6, 1, expect.anything());
-    component.onMovementChange('2');
+    expect(recordService.getGymBoard).toHaveBeenLastCalledWith(6, 1, expect.anything(), ';BACK_RACK');
+    component.onLiftChange(component.boardLifts().find(l => l.movementId === 2)!);
     fixture.detectChanges();
-    expect(recordService.getGymBoard).toHaveBeenLastCalledWith(6, 2, expect.anything());
+    expect(recordService.getGymBoard).toHaveBeenLastCalledWith(6, 2, expect.anything(), '');
   });
 
   it('should follow the box chosen in the navbar, without its own picker', () => {
     displayGymId.set(6);
     fixture.detectChanges();
-    expect(recordService.getGymBoard).toHaveBeenLastCalledWith(6, 1, expect.anything());
+    expect(recordService.getGymBoard).toHaveBeenLastCalledWith(6, 1, expect.anything(), ';BACK_RACK');
     component.toggleFilters();
     fixture.detectChanges();
     expect(fixture.nativeElement.querySelector('#board-gym')).toBeNull();

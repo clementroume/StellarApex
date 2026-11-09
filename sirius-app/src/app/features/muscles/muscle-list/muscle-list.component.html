@@ -16,26 +16,42 @@
     [emptyMessage]="'MUSCLE.MESSAGES.EMPTY_LIST' | translate"
     [emptySearchMessage]="'MUSCLE.MESSAGES.EMPTY_LIST_SEARCH' | translate: {name: searchQuery()}">
 
-    <app-list-grid [items]="populatedGroups()">
+    @if (isSearching()) {
+      <div class="px-2 sm:px-0">
+        <ng-container [ngTemplateOutlet]="rows"/>
+      </div>
+    } @else {
+      <div class="flex flex-wrap gap-2 mb-4 px-2 sm:px-0" role="group" data-slot="regions"
+           [attr.aria-label]="'MUSCLE.FIELDS.GROUP' | translate">
+        @for (region of muscleGroupKeys(); track region) {
+          <button hlmBtn variant="outline" size="sm" type="button" class="rounded-full aria-pressed:border-secondary aria-pressed:bg-secondary/15"
+                  [attr.aria-pressed]="activeRegion() === region" (click)="activeRegion.set(region)">
+            {{ 'MUSCLE.GROUPS.' + region | translate }}
+          </button>
+        }
+      </div>
+      <div class="explorer px-2 sm:px-0">
+        <div class="rounded-xl border bg-card p-3">
+          <app-body-map [selected]="activeRegion()" (regionPicked)="activeRegion.set($event)"/>
+        </div>
+        <ng-container [ngTemplateOutlet]="rows"/>
+      </div>
+    }
 
-      <ng-template let-group>
-        <app-list-group [title]="'MUSCLE.GROUPS.' + group | translate"
-                        [count]="groupedMuscles().get(group)?.length ?? 0"
-                        [expanded]="expandedGroups().has(group)" (expandedChange)="onGroupToggle(group, $event)">
-          @for (row of groupedMuscles().get(group); track row.muscle.id) {
-            <app-list-item
-              [class]="row.isMember ? 'block pl-8 border-l-4 border-muted' : 'block'"
-              [title]="getLocalizedName(row.muscle) || row.muscle.medicalName"
-              [subtitle]="getLocalizedName(row.muscle) !== row.muscle.medicalName ? row.muscle.medicalName : undefined"
-              [badge]="groupBadge(row.muscle)"
-              [imageUrl]="row.muscle.imageUrl"
-              [link]="['/muscles', row.muscle.id]">
-            </app-list-item>
-          }
-        </app-list-group>
-      </ng-template>
-
-    </app-list-grid>
+    <ng-template #rows>
+      <ul class="flex flex-col gap-1 list-none p-0" data-slot="muscle-rows">
+        @for (row of shownRows(); track row.muscle.id) {
+          <app-list-item
+            [class]="row.isMember ? 'block pl-8 border-l-4 border-muted' : 'block'"
+            [title]="getLocalizedName(row.muscle) || row.muscle.medicalName"
+            [subtitle]="getLocalizedName(row.muscle) !== row.muscle.medicalName ? row.muscle.medicalName : undefined"
+            [badge]="groupBadge(row.muscle)"
+            [imageUrl]="row.muscle.imageUrl"
+            [link]="['/muscles', row.muscle.id]">
+          </app-list-item>
+        }
+      </ul>
+    </ng-template>
   </app-list-state>
 
   @if (isAdmin()) {

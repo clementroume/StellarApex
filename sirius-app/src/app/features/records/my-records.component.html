@@ -37,10 +37,10 @@
 
       @if (tiles().length > 0) {
         <ul class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3" data-slot="lift-tiles">
-          @for (tile of shownTiles(); track tile.movementId) {
+          @for (tile of shownTiles(); track tile.movementId + tile.variantKey) {
             @let s = tile.summary;
             <li>
-              <a [routerLink]="['/training/records', tile.movementId]" data-slot="lift-tile"
+              <a [routerLink]="['/training/records', tile.movementId]" [queryParams]="tile.variantKey ? {variant: tile.variantKey} : {}" data-slot="lift-tile"
                  class="flex h-full flex-col gap-0.5 rounded-xl border bg-card px-3 py-2.5 transition-colors hover:border-secondary">
                 <span class="truncate text-xs text-muted-foreground">{{ tile.movementName }}</span>
                 <span class="text-2xl font-bold" [class.text-muted-foreground]="s.estimated">
@@ -74,7 +74,7 @@
             <span class="font-medium text-primary">{{ 'RECORDS.TO_TEST' | translate }}</span>
           </summary>
           <ul class="flex flex-col divide-y pt-2">
-            @for (row of untested(); track row.movementId) {
+            @for (row of untested(); track row.movementName) {
               <li class="flex flex-wrap items-center justify-between gap-2 py-2">
                 <span class="text-sm font-medium">{{ row.movementName }}</span>
                 <span class="flex flex-wrap gap-1">

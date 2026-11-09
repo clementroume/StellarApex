@@ -29,7 +29,7 @@
     @if (isLoading()) {
       <div class="flex justify-center py-6"><hlm-spinner/></div>
     } @else if (rows().length === 0) {
-      <p class="text-sm text-muted-foreground">{{ 'RECORDS.NO_BASE' | translate }}</p>
+      <p class="text-sm text-muted-foreground">{{ (key() ? 'RECORDS.NO_VARIANT' : 'RECORDS.NO_BASE') | translate }}</p>
     } @else {
       <table class="w-full text-sm" data-slot="rm-table">
         <tbody>
@@ -38,7 +38,12 @@
               <th scope="row" class="w-14 py-2 text-left font-normal text-muted-foreground">{{ 'RECORDS.RM' | translate: {reps: row.reps} }}</th>
               @if (row.record; as r) {
                 <td class="py-2"><a [routerLink]="['/wods', r.wodId]" class="font-bold hover:text-primary">{{ load(row.kg) }}</a></td>
-                <td class="py-2 text-right text-xs text-muted-foreground">{{ day(r.date) }}</td>
+                <td class="py-2 text-right text-xs text-muted-foreground">
+                  {{ day(r.date) }}
+                  @if (source(r); as via) {
+                    <span class="block">{{ 'RECORDS.INHERITED' | translate: {source: via} }}</span>
+                  }
+                </td>
               } @else {
                 <td class="py-2 text-muted-foreground" data-slot="estimate">≈ {{ estimate(row.kg) }}</td>
                 <td class="py-2 text-right text-xs text-muted-foreground">{{ 'RECORDS.LIFT.ESTIMATED' | translate }}</td>

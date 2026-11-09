@@ -88,7 +88,7 @@ export class WodWhiteboardComponent {
    */
   percentLoad(wm: WodMovementResponse): {text: string; estimated: boolean; source: string} | null {
     if (!wm.percentOfRm) return null;
-    const base = percentBase(this.myRecords(), wm.movement.id, wm.rmReps);
+    const base = percentBase(this.myRecords(), wm.movement.id, wm.rmReps, wm.display?.percentBaseKey ?? '');
     if (!base) return null;
     const params = {
       percent: wm.percentOfRm, reps: wm.rmReps ?? 1, movement: wm.movement.name,
@@ -96,19 +96,12 @@ export class WodWhiteboardComponent {
       date: base.date ? new Date(`${base.date}T00:00:00`).toLocaleDateString(this.activeLang(), {day: 'numeric', month: 'short'}) : ''
     };
     const key = base.estimated ? 'RECORDS.PERCENT.SOURCE_ESTIMATED'
-      : this.isVariantLine(wm) ? 'RECORDS.PERCENT.SOURCE_BASE' : 'RECORDS.PERCENT.SOURCE';
+      : wm.display?.variant ? 'RECORDS.PERCENT.SOURCE_BASE' : 'RECORDS.PERCENT.SOURCE';
     return {
       text: this.unitService.formatPercentLoad(percentLoadKg(base, wm.percentOfRm)),
       estimated: base.estimated,
       source: this.translate.instant(key, params)
     };
-  }
-
-  /** A line of a variant (Pause Squat, trap bar): its % still refers to the base version's record (D59). */
-  private isVariantLine(wm: WodMovementResponse): boolean {
-    const allowed = wm.movement.equipment ?? [];
-    const implied = allowed.includes('BARBELL') ? 'BARBELL' : allowed.length === 1 ? allowed[0] : null;
-    return (wm.techniques?.length ?? 0) > 0 || (wm.equipment ?? []).some(e => e !== implied);
   }
 
   /** Movements of one part of the WOD, or null when it has none. */
@@ -230,7 +223,7 @@ export class WodWhiteboardComponent {
     const measured = wm.distance != null || wm.calories != null || (!reps && wm.durationSeconds != null);
     const plural = !!reps && !measured && !/^1(?![\d-])/.test(reps);
     const name = boardName(
-      {name: wm.movement.name, allowed: wm.movement.equipment, equipment: wm.equipment, techniques: wm.techniques}, plural);
+      {name: wm.movement.name, allowed: wm.movement.equipment, equipment: wm.equipment, techniques: wm.techniques, display: wm.display}, plural);
     return this.partnerCarry(wm, wod) ? `${this.translate.instant('WOD.BOARD.SPLITS.PARTNER')} ${name}` : name;
   }
 

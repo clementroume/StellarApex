@@ -78,6 +78,7 @@ class MovementRecordIT extends BaseIntegrationTest {
             .category(Category.SQUAT)
             .equipment(new HashSet<>(equipment))
             .techniques(new HashSet<>(techniques))
+            .impliedEquipment(equipment.contains(Equipment.BARBELL) ? Equipment.BARBELL : null)
             .targetedMuscles(new HashSet<>())
             .build());
   }
@@ -299,7 +300,7 @@ class MovementRecordIT extends BaseIntegrationTest {
   }
 
   @Test
-  @DisplayName("Canonical lifts: public base-version N RM tests only, one per movement and N")
+  @DisplayName("Canonical lifts: public N RM tests only, one per movement, variant and N")
   void canonicalLifts() throws Exception {
     // An older Open event with a 1RM is not the lift's test (D65)
     Wod open = wod("Open 18.2a", ScoreType.WEIGHT, 1, true, squat);
@@ -314,10 +315,11 @@ class MovementRecordIT extends BaseIntegrationTest {
     mockMvc
         .perform(as(get("/aldebaran/records/lifts"), ANNE))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$", hasSize(2)))
+        .andExpect(jsonPath("$", hasSize(3)))
         .andExpect(jsonPath("$[0].wodId").value(squat1.getId()))
         .andExpect(jsonPath("$[0].repMax").value(1))
-        .andExpect(jsonPath("$[1].repMax").value(5));
+        .andExpect(jsonPath("$[1].repMax").value(5))
+        .andExpect(jsonPath("$[2].variantKey").value(";PAUSED"));
   }
 
   @Test

@@ -13,7 +13,16 @@ import {WodRequest, WodResponse} from '../../../api/aldebaran/models/wod.model';
 describe('WodQuickFormComponent', () => {
   let fixture: ComponentFixture<WodQuickFormComponent>;
   let component: WodQuickFormComponent;
+  /** Picks a movement the way the search does: its usual name is the movement's name here. */
+  const pick = (index: number, id: number) => {
+    let list: {id: number; name: string; category: string}[] = [];
+    movementService.getMovements().subscribe((l: typeof list) => list = l);
+    const m = list.find(x => x.id === id)!;
+    component.onPicked(index, {movementId: id, movementName: m.name, category: m.category, nameEn: m.name === 'Running' ? 'Run' : m.name, techniques: [], equipment: []});
+  };
   const movementService = {
+    getUsualNames: vi.fn().mockReturnValue(of([])),
+    getReferenceData: vi.fn().mockReturnValue(of({categoryGroups: {}, equipmentGroups: {}, techniqueGroups: {SWING_STYLE: ['KIPPING', 'BUTTERFLY', 'STRICT']}, exclusiveTechniqueSets: []})),
     getMovements: vi.fn().mockReturnValue(of([
       {id: 1, name: 'Thruster', category: 'COMPLEXES'},
       {id: 2, name: 'Pull-up', category: 'PULLING'},
@@ -51,9 +60,9 @@ describe('WodQuickFormComponent', () => {
     component.setCategory('FOR_TIME');
     component.setStructure('SCHEME');
     component.form.patchValue({minutes: 10});
-    component.onMovement(0, 1);
+    pick(0, 1);
     component.addRow();
-    component.onMovement(1, 2);
+    pick(1, 2);
     fixture.detectChanges();
 
     expect(fixture.nativeElement.querySelectorAll('input[formControlName="reps"]').length).toBe(0);
@@ -73,7 +82,7 @@ describe('WodQuickFormComponent', () => {
     init({defaultFormat: 'FOR_LOAD'});
     expect(component.form.controls.scoreType.value).toBe('WEIGHT');
     component.setSets('5x5');
-    component.onMovement(0, 3);
+    pick(0, 3);
     component.form.controls.rows.at(0).patchValue({weight: 100});
     const submitted = vi.fn();
     component.submitted.subscribe(submitted);
@@ -87,7 +96,7 @@ describe('WodQuickFormComponent', () => {
   it('should write a For Load line as a percentage of the 1RM, and keep it when editing', () => {
     init({defaultFormat: 'FOR_LOAD'});
     component.setSets('5x3');
-    component.onMovement(0, 3);
+    pick(0, 3);
     fixture.detectChanges();
     const input = fixture.nativeElement.querySelector('.percent-input') as HTMLInputElement;
     expect(input).not.toBeNull();
@@ -110,9 +119,9 @@ describe('WodQuickFormComponent', () => {
     init();
     component.setCategory('AMRAP');
     component.form.patchValue({minutes: 12});
-    component.onMovement(0, 4);
+    pick(0, 4);
     component.addRow();
-    component.onMovement(1, 5);
+    pick(1, 5);
     component.form.controls.rows.at(0).patchValue({calories: 15});
     component.form.controls.rows.at(1).patchValue({reps: '20', weight: 9, weightFemale: 6, height: 3, heightFemale: 2.7});
     fixture.detectChanges();
@@ -130,7 +139,7 @@ describe('WodQuickFormComponent', () => {
     init();
     component.setCategory('FOR_TIME');
     component.form.patchValue({rounds: 20, minutes: 60});
-    component.onMovement(0, 2);
+    pick(0, 2);
     component.form.controls.rows.at(0).patchValue({reps: '5'});
     // The cash-out goes last, the buy-in first, a new line of the rounds before the cash-out
     component.addRow('BUY_OUT');
@@ -139,8 +148,8 @@ describe('WodQuickFormComponent', () => {
     expect(component.form.controls.rows.controls.map(r => r.controls.segment.value))
       .toEqual(['BUY_IN', 'MAIN', 'MAIN', 'BUY_OUT']);
     component.removeRow(2);
-    component.onMovement(0, 6);
-    component.onMovement(2, 6);
+    pick(0, 6);
+    pick(2, 6);
     component.form.controls.rows.at(0).patchValue({distance: 1600});
     component.form.controls.rows.at(2).patchValue({distance: 1600});
     component.form.patchValue({vestWeight: 9, vestWeightFemale: 6});
@@ -162,7 +171,7 @@ describe('WodQuickFormComponent', () => {
     component.setCategory('AMRAP');
     component.setStructure('LADDER');
     component.form.patchValue({ladderStart: 3, ladderStep: 3, minutes: 12});
-    component.onMovement(0, 7);
+    pick(0, 7);
     expect(component.buildRequest()).toMatchObject({wodType: 'AMRAP', structure: 'LADDER', scoreType: 'REPS', ladderStart: 3,
       ladderStep: 3, repScheme: undefined, title: 'Burpee 3-6-9…'});
 
@@ -177,7 +186,7 @@ describe('WodQuickFormComponent', () => {
   it('should preset a Tabata and turn an EMOM with work / rest into intervals', () => {
     init();
     component.setCategory('TABATA');
-    component.onMovement(0, 7);
+    pick(0, 7);
     expect(component.buildRequest()).toMatchObject({wodType: 'TABATA', scoreType: 'REPS', emomRounds: 8,
       workSeconds: 20, restSeconds: 10});
 
@@ -192,7 +201,7 @@ describe('WodQuickFormComponent', () => {
 
   it('should fold equipment, technique and the other measures until asked', () => {
     init();
-    component.onMovement(0, 2);
+    pick(0, 2);
     fixture.detectChanges();
     const toggles = [...fixture.nativeElement.querySelectorAll('.variant-toggle')] as HTMLButtonElement[];
     expect(toggles.map(t => t.textContent)).toEqual([expect.stringContaining('WOD.QUICK.EQUIPMENT'),
@@ -215,6 +224,20 @@ describe('WodQuickFormComponent', () => {
     fixture.detectChanges();
     expect(fixture.nativeElement.querySelector('#add-buy-in')).toBeNull();
     expect(fixture.nativeElement.querySelector('#add-cash-out')).toBeNull();
+  });
+
+  it('should title a WOD with the usual names of its lines', () => {
+    movementService.getUsualNames.mockReturnValueOnce(of([
+      {movementId: 10, movementName: 'Snatch', category: 'SNATCH', nameEn: 'Snatch', techniques: [], equipment: []},
+      {movementId: 10, movementName: 'Snatch', category: 'SNATCH', nameEn: 'Power Snatch', techniques: ['POWER'], equipment: []}
+    ]));
+    init();
+    component.setCategory('FOR_TIME');
+    component.setStructure('SCHEME');
+    component.onPicked(0, {movementId: 10, movementName: 'Snatch', category: 'SNATCH', nameEn: 'Power Snatch', techniques: ['POWER'], equipment: []});
+    expect(component.buildRequest().title).toBe('Power Snatch 21-15-9');
+    expect(component.lineTechniques({techniques: ['HANG'], componentTechniques: [{componentOrder: 1, technique: 'POWER'}]}))
+      .toEqual(['HANG', '1:POWER']);
   });
 
   it('should refuse a movement line without movement, and fill a saved WOD back', () => {
@@ -260,9 +283,9 @@ describe('WodQuickFormComponent', () => {
 
     component.setStructure('COMPLEX');
     component.setSets('5x1');
-    component.onMovement(0, 3);
+    pick(0, 3);
     component.addRow();
-    component.onMovement(1, 1);
+    pick(1, 1);
     const request = component.buildRequest();
     expect(request).toMatchObject({wodType: 'FOR_LOAD', structure: 'COMPLEX', scoreType: 'WEIGHT', repScheme: '5x1'});
     expect(request.movements.map(m => m.complexGroup)).toEqual([1, 1]);
@@ -285,7 +308,7 @@ describe('WodQuickFormComponent', () => {
     fixture.nativeElement.querySelector('#show-team').click();
     fixture.detectChanges();
     component.form.patchValue({teamSize: 3, teamMode: 'SPLIT'});
-    component.onMovement(0, 2);
+    pick(0, 2);
     component.form.controls.rows.at(0).patchValue({reps: '50', teamSplit: 'EACH'});
 
     const request = component.buildRequest();
@@ -295,11 +318,11 @@ describe('WodQuickFormComponent', () => {
   });
   it('should offer standard kettlebell and dumbbell weights and the three box heights', () => {
     init();
-    component.onMovement(0, 8);
+    pick(0, 8);
     component.addRow();
-    component.onMovement(1, 9);
+    pick(1, 9);
     component.addRow();
-    component.onMovement(2, 10);
+    pick(2, 10);
     fixture.detectChanges();
 
     // The implied equipment is picked at once

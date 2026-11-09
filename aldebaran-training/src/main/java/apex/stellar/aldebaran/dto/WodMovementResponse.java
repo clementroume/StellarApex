@@ -1,5 +1,6 @@
 package apex.stellar.aldebaran.dto;
 
+import apex.stellar.aldebaran.model.entities.ComponentTechnique;
 import apex.stellar.aldebaran.model.entities.WodMovement.Segment;
 import apex.stellar.aldebaran.model.entities.WodMovement.TeamSplit;
 import apex.stellar.aldebaran.model.enums.Unit;
@@ -52,4 +53,10 @@ public record WodMovementResponse(
 
     // --- Load as a percentage of the athlete's rmReps RM (base version), or null ---
     Double percentOfRm,
-    Integer rmReps) {}
+    Integer rmReps,
+
+    // --- Techniques of one component of a chained line ---
+    Set<ComponentTechnique> componentTechniques,
+
+    // --- How the line reads, decided by the catalog ---
+    WodMovementDisplay display) {}

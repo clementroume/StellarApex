@@ -56,14 +56,14 @@ public interface MovementRecordRepository extends JpaRepository<MovementRecord, 
   List<MovementRecord> findByUserIdAndMovementId(Long userId, Long movementId);
 
   /**
-   * The base-version records of a movement for some athletes (records board of a box).
+   * The records of some athletes on some movements (records board of a box).
    *
-   * @param movementId The movement.
+   * @param movementIds The movements.
    * @param userIds The athletes (never empty).
-   * @return The records, heaviest first for each number of reps.
+   * @return The records.
    */
   @Query(
-      "SELECT r FROM MovementRecord r WHERE r.movement.id = :movementId AND r.variantKey = ''"
-          + " AND r.userId IN :userIds ORDER BY r.reps, r.weightKg DESC, r.date, r.id")
-  List<MovementRecord> findBaseRecords(Long movementId, Collection<Long> userIds);
+      "SELECT r FROM MovementRecord r JOIN FETCH r.movement"
+          + " WHERE r.movement.id IN :movementIds AND r.userId IN :userIds")
+  List<MovementRecord> findForBoard(Collection<Long> movementIds, Collection<Long> userIds);
 }

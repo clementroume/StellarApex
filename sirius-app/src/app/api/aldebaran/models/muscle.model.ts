@@ -44,3 +44,12 @@ export interface MuscleReferenceData {
   // --- Muscle Role ---
   muscleRoles: string[];
 }
+
+/** A movement that works a muscle (MuscleUsageResponse); `trigger` = the technique or equipment that brings the role. */
+export interface MuscleUsage {
+  movementId: number;
+  movementName: string;
+  category: string;
+  role: 'AGONIST' | 'SYNERGIST' | 'STABILIZER';
+  trigger?: string | null;
+}

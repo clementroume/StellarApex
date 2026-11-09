@@ -80,6 +80,8 @@ class MovementServiceTest {
     // Given
     MovementSummary projection = mock(MovementSummary.class);
     when(movementRepository.findAllProjectedBy()).thenReturn(List.of(projection));
+    when(movementMapper.toSummary(any()))
+        .thenReturn(new MovementSummaryResponse(1L, "Clean", null, null, null, null, null));
 
     // When
     List<MovementSummaryResponse> results = movementService.getAllMovements();

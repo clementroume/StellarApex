@@ -94,7 +94,7 @@ describe('WodWhiteboardComponent', () => {
     expect(component.percentLoad(wod.movements[1])).toMatchObject({text: '90 kg', estimated: false, source: 'RECORDS.PERCENT.SOURCE'});
     expect(component.percentLoad(wod.movements[2])).toBeNull();
     // A variant line refers to the record of the base version, and says so
-    expect(component.percentLoad({...wod.movements[1], techniques: ['PAUSED']})?.source).toBe('RECORDS.PERCENT.SOURCE_BASE');
+    expect(component.percentLoad({...wod.movements[1], techniques: ['PAUSED'], display: {variant: true, percentBaseKey: ''}} as never)?.source).toBe('RECORDS.PERCENT.SOURCE_BASE');
     const percents = fixture.nativeElement.querySelectorAll('[data-slot="percent"]');
     expect(percents.length).toBe(2);
     expect(percents[0].textContent).toContain('≈ 88 kg');

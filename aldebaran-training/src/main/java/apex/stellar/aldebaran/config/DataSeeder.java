@@ -3,11 +3,14 @@ package apex.stellar.aldebaran.config;
 import apex.stellar.aldebaran.model.entities.Movement;
 import apex.stellar.aldebaran.model.entities.MovementMuscle;
 import apex.stellar.aldebaran.model.entities.MovementMuscle.MuscleRole;
+import apex.stellar.aldebaran.model.entities.MovementUsualName;
 import apex.stellar.aldebaran.model.entities.Muscle;
 import apex.stellar.aldebaran.model.entities.Muscle.MuscleGroup;
 import apex.stellar.aldebaran.model.entities.Wod;
 import apex.stellar.aldebaran.model.enums.Category;
 import apex.stellar.aldebaran.model.enums.Equipment;
+import apex.stellar.aldebaran.model.enums.JointAction;
+import apex.stellar.aldebaran.model.enums.RequiredRule;
 import apex.stellar.aldebaran.model.enums.Technique;
 import apex.stellar.aldebaran.repository.MovementRepository;
 import apex.stellar.aldebaran.repository.MuscleRepository;
@@ -16,7 +19,9 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -109,6 +114,7 @@ public class DataSeeder implements CommandLineRunner {
               .descriptionEn(getOptionalStr(csvRecord, "description_en"))
               .descriptionFr(getOptionalStr(csvRecord, "description_fr"))
               .imageUrl(getOptionalStr(csvRecord, "image_url"))
+              .jointActions(optionalEnums(csvRecord, "joint_actions", JointAction.class))
               .build();
       byName.put(muscle.getMedicalName(), muscle);
       String parentName = getOptionalStr(csvRecord, "parent");
@@ -147,20 +153,28 @@ public class DataSeeder implements CommandLineRunner {
       Iterable<CSVRecord> records =
           CSVFormat.DEFAULT.builder().setHeader().setSkipHeaderRecord(true).get().parse(reader);
 
+      Map<String, Movement> byName = new LinkedHashMap<>();
+      List<CSVRecord> rows = new ArrayList<>();
       for (CSVRecord csvRecord : records) {
         Movement movement =
             Movement.builder()
                 .name(csvRecord.get("name").trim())
                 .nameAbbreviation(getOptionalStr(csvRecord, "name_abbreviation"))
                 .category(Category.valueOf(csvRecord.get("category").trim().toUpperCase()))
-                .equipment(parseEnums(csvRecord.get("equipment"), Equipment.class))
-                .techniques(parseEnums(csvRecord.get("techniques"), Technique.class))
+                .equipment(new HashSet<>(parseEnums(csvRecord.get("equipment"), Equipment.class)))
+                .techniques(new HashSet<>(parseEnums(csvRecord.get("techniques"), Technique.class)))
                 .descriptionEn(getOptionalStr(csvRecord, "description_en"))
                 .descriptionFr(getOptionalStr(csvRecord, "description_fr"))
                 .coachingCuesEn(getOptionalStr(csvRecord, "coaching_cues_en"))
                 .coachingCuesFr(getOptionalStr(csvRecord, "coaching_cues_fr"))
                 .videoUrl(getOptionalStr(csvRecord, "video_url"))
                 .imageUrl(getOptionalStr(csvRecord, "image_url"))
+                .impliedEquipment(optionalEnum(csvRecord, "implied_equipment", Equipment.class))
+                .impliedRequiresPosition(
+                    Boolean.parseBoolean(getOptionalStr(csvRecord, "implied_requires_position")))
+                .requiredRules(optionalEnums(csvRecord, "required_rules", RequiredRule.class))
+                .dumbbellBases(CatalogCsv.parseBases(getOptionalStr(csvRecord, "dumbbell_bases")))
+                .jointActions(CatalogCsv.parseJoints(getOptionalStr(csvRecord, "joint_actions")))
                 .build();
 
         // Ajout des relations musculaires
@@ -170,12 +184,62 @@ public class DataSeeder implements CommandLineRunner {
             movement, csvRecord.get("synergists"), MuscleRole.SYNERGIST, 0.5, muscleCache);
         addMusclesToMovement(
             movement, csvRecord.get("stabilizers"), MuscleRole.STABILIZER, 0.2, muscleCache);
+        movement
+            .getRoleAdjustments()
+            .addAll(
+                CatalogCsv.parseAdjustments(
+                    getOptionalStr(csvRecord, "role_adjustments"), movement, muscleCache));
 
-        movementRepository.save(movement);
+        byName.put(movement.getName(), movementRepository.save(movement));
+        rows.add(csvRecord);
       }
+      // Chains and "either" movements refer to movements that may come later in the file
+      for (CSVRecord csvRecord : rows) {
+        Movement movement = byName.get(csvRecord.get("name").trim());
+        movement
+            .getComponents()
+            .addAll(
+                CatalogCsv.parseComponents(
+                    getOptionalStr(csvRecord, "components"), movement, byName::get));
+        CatalogCsv.items(getOptionalStr(csvRecord, "accepted"), ";")
+            .forEach(name -> movement.getAcceptedMovements().add(byName.get(name)));
+      }
+      seedUsualNames(byName);
       log.info("Successfully seeded Movements.");
     } catch (Exception e) {
       log.error("Failed to seed movements", e);
+    }
+  }
+
+  private void seedUsualNames(Map<String, Movement> movements) throws IOException {
+    ClassPathResource resource = new ClassPathResource(CatalogCsv.USUAL_NAMES_FILE);
+    if (!resource.exists()) {
+      log.warn("{} doesn't exist, no usual names", CatalogCsv.USUAL_NAMES_FILE);
+      return;
+    }
+    try (Reader reader = new InputStreamReader(resource.getInputStream(), StandardCharsets.UTF_8)) {
+      for (CSVRecord row :
+          CSVFormat.DEFAULT.builder().setHeader().setSkipHeaderRecord(true).get().parse(reader)) {
+        Movement movement = movements.get(row.get("movement").trim());
+        if (movement == null) {
+          log.warn("Usual name '{}': unknown movement", row.get("name_en"));
+          continue;
+        }
+        movement
+            .getUsualNames()
+            .add(
+                MovementUsualName.builder()
+                    .movement(movement)
+                    .nameEn(row.get("name_en").trim())
+                    .nameFr(getOptionalStr(row, "name_fr"))
+                    .searchTerms(getOptionalStr(row, "search_terms"))
+                    .techniques(CatalogCsv.words(row.get("techniques")))
+                    .equipment(CatalogCsv.words(row.get("equipment")))
+                    .descriptionEn(getOptionalStr(row, "description_en"))
+                    .descriptionFr(getOptionalStr(row, "description_fr"))
+                    .videoUrl(getOptionalStr(row, "video_url"))
+                    .build());
+      }
     }
   }
 
@@ -224,6 +288,17 @@ public class DataSeeder implements CommandLineRunner {
       return null;
     }
     return csvRecord.get(header).trim();
+  }
+
+  private <E extends Enum<E>> Set<E> optionalEnums(
+      CSVRecord csvRecord, String header, Class<E> enumClass) {
+    return new HashSet<>(parseEnums(getOptionalStr(csvRecord, header), enumClass));
+  }
+
+  private <E extends Enum<E>> E optionalEnum(
+      CSVRecord csvRecord, String header, Class<E> enumClass) {
+    String value = getOptionalStr(csvRecord, header);
+    return value == null ? null : Enum.valueOf(enumClass, value);
   }
 
   private <E extends Enum<E>> Set<E> parseEnums(String csvField, Class<E> enumClass) {

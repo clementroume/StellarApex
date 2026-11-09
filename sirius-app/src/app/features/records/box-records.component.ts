@@ -1,7 +1,8 @@
 import {ChangeDetectionStrategy, Component, computed, effect, inject, signal, untracked} from '@angular/core';
 import {HttpContext} from '@angular/common/http';
 import {RouterLink} from '@angular/router';
-import {TranslatePipe} from '@ngx-translate/core';
+import {TranslatePipe, TranslateService} from '@ngx-translate/core';
+import {sourceLabel} from './record.utils';
 import {HlmButton} from '@spartan-ng/helm/button';
 import {NgIconComponent} from '@ng-icons/core';
 import {HlmSpinner} from '@spartan-ng/helm/spinner';
@@ -19,6 +20,7 @@ import {PageComponent} from '../../shared/component/page/page.component';
 /** A movement offered on the board, with the N RM that have a canonical test. */
 interface BoardLift {
   movementId: number;
+  variantKey: string;
   movementName: string;
   reps: number[];
 }
@@ -38,6 +40,7 @@ interface BoardLift {
 export class BoxRecordsComponent {
   // --- INJECTIONS ---
   private readonly recordService = inject(RecordService);
+  private readonly translate = inject(TranslateService);
   private readonly userService = inject(UserService);
   private readonly accessService = inject(AccessService);
   private readonly displayGym = inject(DisplayGymService);
@@ -50,6 +53,7 @@ export class BoxRecordsComponent {
   /** Box picked on this page when the navbar shows every box/prog. */
   readonly chosenGymId = signal<number | null>(null);
   readonly movementId = signal<number | null>(null);
+  readonly variantKey = signal<string>('');
   readonly reps = signal<number>(1);
   readonly division = signal<Division | null>(null);
   readonly ageGroup = signal<AgeGroup | null>(null);
@@ -68,15 +72,18 @@ export class BoxRecordsComponent {
   readonly displayGymChosen = computed(() => this.displayGym.gymId() !== null);
   /** Movements with canonical tests, by name, each with its N RM. */
   readonly boardLifts = computed<BoardLift[]>(() => {
-    const byMovement = new Map<number, BoardLift>();
+    const byMovement = new Map<string, BoardLift>();
     for (const lift of this.lifts()) {
-      const row = byMovement.get(lift.movementId) ?? {movementId: lift.movementId, movementName: lift.movementName, reps: []};
+      const key = `${lift.movementId}#${lift.variantKey}`;
+      const row = byMovement.get(key) ?? {
+        movementId: lift.movementId, variantKey: lift.variantKey, movementName: lift.usualNameEn ?? lift.movementName, reps: []
+      };
       row.reps.push(lift.repMax);
-      byMovement.set(lift.movementId, row);
+      byMovement.set(key, row);
     }
-    return [...byMovement.values()];
+    return [...byMovement.values()].sort((a, b) => a.movementName.localeCompare(b.movementName));
   });
-  readonly selectedLift = computed(() => this.boardLifts().find(l => l.movementId === this.movementId()) ?? null);
+  readonly selectedLift = computed(() => this.boardLifts().find(l => l.movementId === this.movementId() && l.variantKey === this.variantKey()) ?? null);
   /** N RM offered: the canonical ones, plus any N a member holds a record for. */
   readonly repsOptions = computed(() =>
     [...new Set([...(this.selectedLift()?.reps ?? []), ...this.board().map(r => r.reps)])].sort((a, b) => a - b));
@@ -107,7 +114,10 @@ export class BoxRecordsComponent {
       next: lifts => {
         this.lifts.set(lifts);
         const first = this.boardLifts().find(l => l.movementName === 'Back Squat') ?? this.boardLifts()[0];
-        if (first && this.movementId() === null) this.movementId.set(first.movementId);
+        if (first && this.movementId() === null) {
+          this.variantKey.set(first.variantKey);
+          this.movementId.set(first.movementId);
+        }
         if (!first) this.isLoading.set(false);
       },
       error: () => {
@@ -118,24 +128,25 @@ export class BoxRecordsComponent {
     effect(() => {
       const gymId = this.gymId();
       const movementId = this.movementId();
-      if (gymId !== null && movementId !== null) untracked(() => this.fetchBoard(gymId, movementId));
+      const variantKey = this.variantKey();
+      if (gymId !== null && movementId !== null) untracked(() => this.fetchBoard(gymId, movementId, variantKey));
     });
   }
 
   // --- DATA FETCHING ---
-  private fetchBoard(gymId: number, movementId: number): void {
+  private fetchBoard(gymId: number, movementId: number, variantKey: string): void {
     this.isLoading.set(true);
-    this.recordService.getGymBoard(gymId, movementId, new HttpContext().set(BYPASS_LOADER, true)).subscribe({
+    this.recordService.getGymBoard(gymId, movementId, new HttpContext().set(BYPASS_LOADER, true), variantKey).subscribe({
       next: board => {
         // A later pick (lift chip, box) is already loading: drop this answer
-        if (this.gymId() !== gymId || this.movementId() !== movementId) return;
+        if (this.gymId() !== gymId || this.movementId() !== movementId || this.variantKey() !== variantKey) return;
         this.board.set(board);
         this.failed.set(false);
         this.isLoading.set(false);
         this.loadNames(board);
       },
       error: () => {
-        if (this.gymId() !== gymId || this.movementId() !== movementId) return;
+        if (this.gymId() !== gymId || this.movementId() !== movementId || this.variantKey() !== variantKey) return;
         this.board.set([]);
         this.failed.set(true);
         this.isLoading.set(false);
@@ -162,8 +173,9 @@ export class BoxRecordsComponent {
     this.chosenGymId.set(Number(value));
   }
 
-  onMovementChange(value: string): void {
-    this.movementId.set(Number(value));
+  onLiftChange(lift: BoardLift): void {
+    this.variantKey.set(lift.variantKey);
+    this.movementId.set(lift.movementId);
     this.reps.set(1);
   }
 
@@ -188,12 +200,18 @@ export class BoxRecordsComponent {
     return this.unitService.formatScoreLoad(value, 'KG');
   }
 
+  /** What an inherited record really is ("Clean · Power"). */
+  source(r: BoardRecord): string {
+    return r.inheritedFrom ? sourceLabel(r.inheritedFrom, key => this.translate.instant(key)) : '';
+  }
+
   name(r: BoardRecord): string | null {
     return this.names()[r.userId] ?? null;
   }
 
   /** The canonical test of the selected lift and N, to log one's own. */
   testWodId(): number | null {
-    return this.lifts().find(l => l.movementId === this.movementId() && l.repMax === this.reps())?.wodId ?? null;
+    return this.lifts().find(l => l.movementId === this.movementId() && l.variantKey === this.variantKey()
+      && l.repMax === this.reps())?.wodId ?? null;
   }
 }

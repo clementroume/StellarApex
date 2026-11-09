@@ -62,9 +62,9 @@ export const ALL_EXTRAS: Extra[] = ['LOAD', 'HEIGHT'];
 
 const LOAD_CATEGORIES = ['DEADLIFT', 'SQUAT', 'PRESS_AND_JERK', 'CLEAN', 'SNATCH', 'COMPLEXES', 'SWING', 'OTHER_LIFTS',
   'STRONGMAN_LIFTS', 'CARRY', 'SLED'];
-// Catalogue movements done over a distance or held for a time (exact catalogue names)
-const DISTANCE_MOVEMENTS = ['Running', 'Swimming', 'Handstand Walk', 'Bear Crawl', 'Crab Walk', 'Alligator Walk'];
-const TIME_MOVEMENTS = ['Plank', 'L-Sit', 'Hollow Position', 'Arch Position', 'Handstand'];
+// Catalogue movements done over a distance or held for a time (exact usual names)
+const DISTANCE_MOVEMENTS = ['Run', 'Shuttle Run', 'Treadmill Run', 'Swim', 'Handstand Walk', 'Bear Crawl', 'Crab Walk', 'Alligator Walk'];
+const TIME_MOVEMENTS = ['Plank', 'Side Plank', 'L-Sit', 'Hollow Hold', 'Arch Hold', 'Handstand Hold', 'Dead Hang'];
 
 /**
  * Usual quantity of a movement: a distance for running, swimming, walks, carries and sleds,

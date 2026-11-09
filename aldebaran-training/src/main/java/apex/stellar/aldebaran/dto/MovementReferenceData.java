@@ -14,4 +14,6 @@ public record MovementReferenceData(
     // --- Equipment
     Map<String, List<String>> equipmentGroups,
     // --- Techniques ---
-    Map<String, List<String>> techniqueGroups) {}
+    Map<String, List<String>> techniqueGroups,
+    // --- Technique types a line can only hold one value of ---
+    List<List<String>> exclusiveTechniqueSets) {}

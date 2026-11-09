@@ -181,6 +181,15 @@ public class WodMovement {
   @Builder.Default
   private Set<String> techniques = new HashSet<>();
 
+  /** Techniques of one component of a chained line (receptions); empty otherwise. */
+  @ElementCollection
+  @CollectionTable(
+      name = "wod_movement_component_techniques",
+      joinColumns = @JoinColumn(name = "wod_movement_id"))
+  @BatchSize(size = 50)
+  @Builder.Default
+  private Set<ComponentTechnique> componentTechniques = new HashSet<>();
+
   // --- Instructions (EN / FR) ---
   @Column(name = "notes_en", columnDefinition = "TEXT")
   private String notesEn;

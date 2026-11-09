@@ -12,6 +12,8 @@ import {ExporterService} from '../../../api/aldebaran/services/exporter.service'
 import {NotificationService} from '../../../core/services/notification.service';
 import {HttpContext} from '@angular/common/http';
 import {vi} from 'vitest';
+import {RecordService} from '../../../api/aldebaran/services/record.service';
+import {UnitService} from '../../../core/services/unit.service';
 
 describe('MovementListComponent', () => {
   let component: MovementListComponent;
@@ -45,8 +47,8 @@ describe('MovementListComponent', () => {
     // 1. Update the spy to use 'getMovements' instead of 'searchMovements'
     const movementServiceSpyMethods = {
       getMovements: vi.fn().mockName("MovementService.getMovements"),
-      getReferenceData: vi.fn().mockName("MovementService.getReferenceData"),
-      toggleCategoryExpansion: vi.fn().mockName("MovementService.toggleCategoryExpansion")
+      getUsualNames: vi.fn().mockName("MovementService.getUsualNames"),
+      getReferenceData: vi.fn().mockName("MovementService.getReferenceData")
     };
 
     mockMovementService = {
@@ -54,11 +56,16 @@ describe('MovementListComponent', () => {
       refreshNeeded$: new Subject<void>(),
       savedSearchQuery: signal(''),
       savedActiveTab: signal('WEIGHTLIFTING'),
-      savedExpandedCategories: signal(new Set<string>())
+      savedFamily: signal<string | null>(null)
     };
 
     // 2. Mock the new method
     mockMovementService.getMovements.mockReturnValue(of(mockMovements));
+    mockMovementService.getUsualNames.mockReturnValue(of([
+      {movementId: 2, movementName: 'Front Squat', category: 'SQUAT', nameEn: 'Front Squat', techniques: [], equipment: []},
+      {movementId: 1, movementName: 'Back Squat', category: 'SQUAT', nameEn: 'Pause Squat', nameFr: 'Squat pausé', searchTerms: 'tempo',
+        techniques: ['PAUSED'], equipment: []}
+    ]));
 
     mockMovementService.getReferenceData.mockReturnValue(of({
       categoryGroups: {
@@ -89,7 +96,14 @@ describe('MovementListComponent', () => {
         {provide: MovementService, useValue: mockMovementService},
         {provide: AuthService, useValue: mockAuthService},
         {provide: ExporterService, useValue: mockExporterService},
-        {provide: NotificationService, useValue: mockNotificationService}
+        {provide: NotificationService, useValue: mockNotificationService},
+        {provide: RecordService, useValue: {getMyRecords: vi.fn().mockReturnValue(of([
+          {movementId: 1, movementName: 'Back Squat', category: 'SQUAT', variants: [
+            {variantKey: '', base: true, equipment: [], techniques: [], estimates: [],
+              records: [{reps: 1, weightKg: 90, date: '2026-01-01', scoreId: 1, wodId: 1, wodTitle: 'T'}]}
+          ]}
+        ]))}},
+        {provide: UnitService, useValue: {formatScoreLoad: (v: number) => `${v} kg`, formatPercentLoad: (v: number) => `${v} kg`}}
       ]
     }).compileComponents();
 
@@ -122,6 +136,41 @@ describe('MovementListComponent', () => {
     component.searchQuery.set('back');
     expect(component.filteredMovements().length).toBe(1);
     expect(component.filteredMovements()[0].nameAbbreviation).toBe('BS');
+  });
+
+  it('should find a movement through its usual names, and show only those that are not its own name', () => {
+    component.searchQuery.set('pausé');
+    expect(component.filteredMovements().map(m => m.id)).toEqual([1]);
+    expect(component.shownNames().map(o => o.nameEn)).toEqual(['Pause Squat']);
+
+    component.searchQuery.set('front');
+    expect(component.filteredMovements().map(m => m.id)).toEqual([2]);
+    expect(component.shownNames()).toEqual([]);
+
+    component.searchQuery.set('tempo');
+    expect(component.filteredMovements().map(m => m.id)).toEqual([1]);
+  });
+
+  it('should build a card with its variants and my record, and filter by family', () => {
+    component.activeTab.set('WEIGHTLIFTING');
+    fixture.detectChanges();
+    const cards = [...fixture.nativeElement.querySelectorAll('[data-slot="movement-card"]')] as HTMLElement[];
+    expect(cards.map(c => c.querySelector('.font-semibold')?.textContent)).toEqual(['Back Squat', 'Front Squat']);
+    expect(component.cards()[0]).toMatchObject({variantCount: 1, preview: 'Pause Squat'});
+    expect(cards[0].querySelector('[data-slot="card-record"]')?.textContent).toContain('90 kg');
+    expect(cards[1].querySelector('[data-slot="card-record"]')).toBeNull();
+
+    component.activeFamily.set('PULL');
+    expect(component.cards()).toEqual([]);
+    component.setModality('GYMNASTICS');
+    expect(component.activeFamily()).toBeNull();
+  });
+
+  it('should search the whole catalog, whatever the discipline', () => {
+    component.setModality('GYMNASTICS');
+    expect(component.cards()).toEqual([]);
+    component.onSearchChange('front');
+    expect(component.cards().map(c => c.movement.name)).toEqual(['Front Squat']);
   });
 
   it('should not call the backend on input change (onSearchChange)', () => {

@@ -55,6 +55,12 @@ describe('RecordService', () => {
     service.getCanonicalLifts().subscribe();
     httpMock.expectOne(`${base}/lifts`).flush([]);
     service.getGymBoard(12, 4).subscribe();
-    httpMock.expectOne(`${base}/gyms/12?movementId=4`).flush([]);
+    httpMock.expectOne(`${base}/gyms/12?movementId=4&variantKey=`).flush([]);
+
+    // A raw `;` would be dropped by the proxy
+    service.getGymBoard(12, 4, undefined, ';BACK_RACK').subscribe();
+    httpMock.expectOne(`${base}/gyms/12?movementId=4&variantKey=%3BBACK_RACK`).flush([]);
+    service.getMyProgress(4, 1, undefined, ';ZERCHER').subscribe();
+    httpMock.expectOne(`${base}/me/progress?movementId=4&reps=1&variantKey=%3BZERCHER`).flush([]);
   });
 });

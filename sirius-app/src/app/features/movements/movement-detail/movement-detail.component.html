@@ -25,174 +25,112 @@
 
 
     @if (movement(); as mov) {
-
       <app-detail-header
-        [title]="mov.name"
-        [subtitle]="mov.nameAbbreviation"
+        [title]="displayName()"
+        [subtitle]="displayName() !== mov.name ? mov.name : mov.nameAbbreviation"
         [badgeText]="'MOVEMENT.CATEGORIES.' + mov.category | translate"
         (back)="goBack()">
       </app-detail-header>
 
-      @if (showRecords()) {
-        <div class="mb-6" id="movement-records">
-          <app-detail-card [title]="'RECORDS.MY_MOVEMENT' | translate">
-            <app-lift-records [movementId]="mov.id" [movementName]="mov.name"/>
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8 items-start">
+        <div class="flex flex-col gap-6 min-w-0">
+          <app-detail-card [title]="'MOVEMENT.SECTIONS.VARIANT' | translate">
+            @if (usualNames().length > 0) {
+              <div class="flex gap-2 overflow-x-auto pb-1 md:flex-wrap md:overflow-visible md:pb-0" role="group" [attr.aria-label]="'MOVEMENT.USUAL.TITLE' | translate">
+                @for (u of usualNames(); track u.nameEn) {
+                  <button type="button" hlmBtn variant="outline" size="xs" class="shrink-0 rounded-full aria-pressed:border-secondary aria-pressed:bg-secondary/15"
+                          [attr.aria-pressed]="isUsualNameOn(u)" (click)="applyUsualName(u)">
+                    {{ (activeLang() === 'fr' ? u.nameFr : null) || u.nameEn }}
+                  </button>
+                }
+              </div>
+            }
+            @if (mov.equipment.length > 0) {
+              <app-variant-picker [allowed]="mov.equipment" [selected]="chosenEquipment()" prefix="MOVEMENT.EQUIPMENT."
+                                  (toggled)="toggleEquipment($event)"/>
+            }
+            @if (mov.techniques.length > 0) {
+              <app-variant-picker [allowed]="mov.techniques" [selected]="chosenTechniques()"
+                                  [groups]="referenceData()?.techniqueGroups ?? null" prefix="MOVEMENT.TECHNIQUES."
+                                  typePrefix="MOVEMENT.TECHNIQUE_CATEGORIES." (toggled)="toggleTechnique($event)"/>
+            }
+            @if (variant()?.implementCount; as count) {
+              <p class="text-sm text-muted-foreground">{{ 'MOVEMENT.USUAL.IMPLEMENTS' | translate: {count} }}</p>
+            }
+          </app-detail-card>
+
+          @if (mov.components?.length) {
+            <app-detail-card [title]="'MOVEMENT.SECTIONS.COMPOSITION' | translate">
+              <ol class="flex flex-col gap-2">
+                @for (c of mov.components; track c.componentOrder) {
+                  <li><a class="hover:text-primary" [routerLink]="['/movements', c.movementId]">{{ c.componentOrder }}. {{ c.movementName }}</a></li>
+                }
+              </ol>
+            </app-detail-card>
+          }
+          @if (mov.acceptedMovements?.length) {
+            <app-detail-card [title]="'MOVEMENT.SECTIONS.ACCEPTED' | translate">
+              <ul class="flex flex-col gap-2">
+                @for (a of mov.acceptedMovements; track a.id) {
+                  <li><a class="hover:text-primary" [routerLink]="['/movements', a.id]">{{ a.name }}</a></li>
+                }
+              </ul>
+            </app-detail-card>
+          }
+
+          <app-detail-card [title]="'MOVEMENT.SECTIONS.MUSCLES' | translate">
+            @if (variant()?.muscles?.length) {
+              <div class="flex flex-col gap-4">
+                @for (role of roles; track role) {
+                  @if (musclesOf(role).length > 0) {
+                    <div>
+                      <h3 class="mb-2 text-sm font-semibold text-muted-foreground">{{ 'MUSCLE.ROLES.' + role | translate }}</h3>
+                      <div class="flex flex-wrap gap-2">
+                        @for (m of musclesOf(role); track m.muscleId) {
+                          <a [routerLink]="['/muscles', m.muscleId]" hlmBadge variant="outline"
+                             [class.border-primary]="role === 'AGONIST'" [class.border-secondary]="role === 'SYNERGIST'">{{ variantMuscleName(m) }}</a>
+                        }
+                      </div>
+                    </div>
+                  }
+                }
+              </div>
+            } @else {
+              <p class="italic opacity-80">{{ 'MOVEMENT.MESSAGES.NO_MUSCLES' | translate }}</p>
+            }
           </app-detail-card>
         </div>
-      }
 
-      <ng-template #mediaBox>
-        <app-detail-card [title]="'MOVEMENT.SECTIONS.MEDIA' | translate">
-          <div
-            class="w-full aspect-video bg-muted rounded flex flex-col items-center justify-center overflow-hidden relative border"
-            [class.border-border]="!!mov.imageUrl" [class.border-secondary]="!mov.imageUrl">
-            @if (mov.imageUrl) {
-              <img [ngSrc]="mov.imageUrl" [alt]="mov.name" fill class="object-cover rounded"/>
-            } @else {
-              <ng-icon name="heroEye" class="text-4xl text-secondary/50 mb-2"></ng-icon>
-              <span class="text-secondary font-bold">{{ 'GLOBAL.NO_IMAGE' | translate }}</span>
-            }
-          </div>
-          @if (mov.videoUrl) {
-            <a [href]="mov.videoUrl" target="_blank" hlmBtn size="lg" class="w-full mt-4">
-              <ng-icon name="heroPlay" size="1.5rem"></ng-icon>
-              {{ 'GLOBAL.VIDEO' | translate }}
-            </a>
-          } @else {
-            <button hlmBtn variant="outline" size="lg" class="w-full mt-4" disabled>
-              <ng-icon name="heroVideoCameraSlash" size="1.5rem" aria-hidden="true"></ng-icon>
-              {{ 'GLOBAL.NO_VIDEO' | translate }}
-            </button>
+        <div class="flex flex-col gap-6 min-w-0">
+          @if (showRecords()) {
+            <div id="movement-records">
+              <app-detail-card [title]="'RECORDS.MY_MOVEMENT' | translate">
+                <app-lift-records [movementId]="mov.id" [movementName]="displayName()" [variant]="variant()?.variantKey ?? ''"/>
+              </app-detail-card>
+            </div>
           }
-        </app-detail-card>
-      </ng-template>
-
-      <ng-template #descriptionsBox>
-        <app-detail-card [title]="'MOVEMENT.SECTIONS.DESCRIPTIONS' | translate">
-          <div>
-            <h4 class="text-sm font-semibold text-muted-foreground mb-2">{{ 'GLOBAL.DESCRIPTION' | translate }}</h4>
-            <p [class.italic]="!getLocalizedDescription(mov)" [class.opacity-80]="!getLocalizedDescription(mov)"
-               class="leading-relaxed text-sm md:text-base">
+          <app-detail-card [title]="'MOVEMENT.SECTIONS.HOW_TO' | translate">
+            @if (mov.imageUrl) {
+              <div class="relative w-full aspect-video overflow-hidden rounded bg-muted">
+                <img [ngSrc]="mov.imageUrl" [alt]="displayName()" fill class="object-cover"/>
+              </div>
+            }
+            @if (variant()?.videoUrl ?? mov.videoUrl; as video) {
+              <a [href]="video" target="_blank" rel="noopener" hlmBtn size="lg" class="w-full">
+                <ng-icon name="heroPlay" size="1.5rem" aria-hidden="true"></ng-icon>
+                {{ 'GLOBAL.VIDEO' | translate }}
+              </a>
+            }
+            <p [class.italic]="!getLocalizedDescription(mov)" class="leading-relaxed text-sm md:text-base">
               {{ getLocalizedDescription(mov) || ('GLOBAL.NO_DESCRIPTION' | translate) }}
             </p>
-          </div>
-          <div>
-            <h4
-              class="text-sm font-semibold text-muted-foreground mb-2">{{ 'MOVEMENT.FIELDS.COACHING_CUES' | translate }}</h4>
-            <p [class.italic]="!getLocalizedCues(mov)" [class.opacity-80]="!getLocalizedCues(mov)"
-               class="leading-relaxed text-sm md:text-base whitespace-pre-line">{{ getLocalizedCues(mov) || ('MOVEMENT.MESSAGES.NO_CUES' | translate) }}</p>
-          </div>
-        </app-detail-card>
-      </ng-template>
-
-      <ng-template #tagsBox>
-        <app-detail-card [title]="'MOVEMENT.SECTIONS.TAGS' | translate">
-          <div>
-            <h4
-              class="text-sm font-semibold text-muted-foreground mb-3">{{ 'MOVEMENT.FIELDS.EQUIPMENT' | translate }}</h4>
-            @if (mov.equipment && mov.equipment.length > 0) {
-              <div class="flex flex-wrap gap-2 justify-center">
-                @for (eq of mov.equipment; track eq) {
-                  <div hlmBadge class="bg-primary/15 text-primary h-7 px-3 text-sm">{{ 'MOVEMENT.EQUIPMENT.' + eq | translate }}
-                  </div>
-                }
+            @if (getLocalizedCues(mov)) {
+              <div>
+                <h3 class="mb-2 text-sm font-semibold text-muted-foreground">{{ 'MOVEMENT.FIELDS.COACHING_CUES' | translate }}</h3>
+                <p class="leading-relaxed text-sm md:text-base whitespace-pre-line">{{ getLocalizedCues(mov) }}</p>
               </div>
-            } @else {
-              <p class="italic opacity-80 text-sm">{{ 'MOVEMENT.MESSAGES.NO_EQUIPMENT' | translate }}</p>
             }
-          </div>
-          <div>
-            <h4
-              class="text-sm font-semibold text-muted-foreground mb-3">{{ 'MOVEMENT.FIELDS.TECHNIQUES' | translate }}</h4>
-            @if (mov.techniques && mov.techniques.length > 0) {
-              <div class="flex flex-wrap gap-2 justify-center">
-                @for (tech of mov.techniques; track tech) {
-                  <div
-                    hlmBadge class="bg-secondary/15 text-secondary h-7 px-3 text-sm">{{ 'MOVEMENT.TECHNIQUES.' + tech | translate }}
-                  </div>
-                }
-              </div>
-            } @else {
-              <p class="italic opacity-80 text-sm">{{ 'MOVEMENT.MESSAGES.NO_TECHNIQUES' | translate }}</p>
-            }
-          </div>
-        </app-detail-card>
-      </ng-template>
-
-      <ng-template #musclesBox>
-        <app-detail-card [title]="'MOVEMENT.SECTIONS.MUSCLES' | translate">
-          @if (mov.targetedMuscles.length > 0) {
-            <div class="flex flex-col gap-8">
-
-              <div class="flex flex-col gap-3">
-                <h4 class="font-semibold text-primary text-center pb-1">{{ 'MUSCLE.ROLES.AGONIST' | translate }}</h4>
-                <div class="flex flex-wrap gap-2 justify-center">
-                  @for (target of mov.targetedMuscles; track target.muscle.id) {
-                    @if (target.role === 'AGONIST') {
-                      <a [routerLink]="['/muscles', target.muscle.id]" [attr.title]="getMuscleHint(target.muscle)"
-                         hlmBadge variant="outline" class=" hover:bg-primary/10 hover:border-primary transition-all cursor-pointer gap-1 pr-2">
-                        {{ getLocalizedMuscleName(target.muscle) }}
-                        <ng-icon name="heroChevronRight" size="1.2em" class="opacity-50"></ng-icon>
-                      </a>
-                    }
-                  }
-                </div>
-              </div>
-
-              <div class="flex flex-col gap-3">
-                <h4
-                  class="font-semibold text-secondary text-center pb-1">{{ 'MUSCLE.ROLES.SYNERGIST' | translate }}</h4>
-                <div class="flex flex-wrap gap-2 justify-center">
-                  @for (target of mov.targetedMuscles; track target.muscle.id) {
-                    @if (target.role === 'SYNERGIST') {
-                      <a [routerLink]="['/muscles', target.muscle.id]" [attr.title]="getMuscleHint(target.muscle)"
-                         hlmBadge variant="outline" class=" hover:bg-secondary/10 hover:border-secondary transition-all cursor-pointer gap-1 pr-2">
-                        {{ getLocalizedMuscleName(target.muscle) }}
-                        <ng-icon name="heroChevronRight" size="1.2em" class="opacity-50"></ng-icon>
-                      </a>
-                    }
-                  }
-                </div>
-              </div>
-
-              <div class="flex flex-col gap-3">
-                <h4 class="font-semibold text-accent text-center pb-1">{{ 'MUSCLE.ROLES.STABILIZER' | translate }}</h4>
-                <div class="flex flex-wrap gap-2 justify-center">
-                  @for (target of mov.targetedMuscles; track target.muscle.id) {
-                    @if (target.role === 'STABILIZER') {
-                      <a [routerLink]="['/muscles', target.muscle.id]" [attr.title]="getMuscleHint(target.muscle)"
-                         hlmBadge variant="outline" class=" hover:bg-accent/10 hover:border-accent transition-all cursor-pointer gap-1 pr-2">
-                        {{ getLocalizedMuscleName(target.muscle) }}
-                        <ng-icon name="heroChevronRight" size="1.2em" class="opacity-50"></ng-icon>
-                      </a>
-                    }
-                  }
-                </div>
-              </div>
-
-            </div>
-          } @else {
-            <p class="italic opacity-80">{{ 'MOVEMENT.MESSAGES.NO_MUSCLES' | translate }}</p>
-          }
-        </app-detail-card>
-      </ng-template>
-
-
-      <div class="flex flex-col gap-8 w-full md:hidden mb-8">
-        <ng-container *ngTemplateOutlet="mediaBox"></ng-container>
-        <ng-container *ngTemplateOutlet="descriptionsBox"></ng-container>
-        <ng-container *ngTemplateOutlet="tagsBox"></ng-container>
-        <ng-container *ngTemplateOutlet="musclesBox"></ng-container>
-      </div>
-
-      <div class="hidden md:flex flex-row gap-8 items-start w-full mb-8">
-        <div class="flex-1 flex flex-col gap-8 w-full">
-          <ng-container *ngTemplateOutlet="mediaBox"></ng-container>
-          <ng-container *ngTemplateOutlet="tagsBox"></ng-container>
-        </div>
-        <div class="flex-1 flex flex-col gap-8 w-full">
-          <ng-container *ngTemplateOutlet="descriptionsBox"></ng-container>
-          <ng-container *ngTemplateOutlet="musclesBox"></ng-container>
+          </app-detail-card>
         </div>
       </div>
 
