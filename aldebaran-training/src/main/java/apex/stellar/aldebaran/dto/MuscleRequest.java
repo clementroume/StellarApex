@@ -1,6 +1,6 @@
 package apex.stellar.aldebaran.dto;
 
-import apex.stellar.aldebaran.model.entities.Muscle.MuscleGroup;
+import apex.stellar.aldebaran.model.entities.Muscle.MuscleRegion;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -18,7 +18,7 @@ public record MuscleRequest(
         String medicalName,
 
     // --- Characteristics ---
-    @NotNull(message = "{validation.muscle.group.required}") MuscleGroup muscleGroup,
+    @NotNull(message = "{validation.muscle.region.required}") MuscleRegion region,
 
     // Functional group of the muscle (null for a group or a standalone muscle)
     Long parentId,

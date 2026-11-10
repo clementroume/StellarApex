@@ -1,6 +1,6 @@
 <div class="container mx-auto px-4 py-8 max-w-5xl">
 
-  <app-detail-state [isLoading]="isLoading()">
+  <app-detail-state [isLoading]="isLoading() && !muscle()">
 
     <div skeleton class="animate-pulse">
       <div class="flex items-center gap-4 mb-8">
@@ -8,7 +8,7 @@
         <div class="h-10 bg-muted rounded w-1/3"></div>
       </div>
       <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-6">
-        <div class="w-full aspect-video bg-muted rounded-xl"></div>
+        <div class="w-full aspect-square bg-muted rounded-xl"></div>
         <div class="bg-muted rounded-xl h-72 md:h-auto w-full"></div>
       </div>
       <div class="flex justify-end gap-4">
@@ -21,90 +21,74 @@
 
       <app-detail-header
         [title]="getLocalizedName(m)"
-        [badgeText]="'MUSCLE.GROUPS.' + m.muscleGroup | translate"
+        [subtitle]="medicalNameShown(m)"
+        [plainSubtitle]="true"
+        [badgeText]="'MUSCLE.REGIONS.' + m.region | translate"
         (back)="goBack()">
       </app-detail-header>
 
       <div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-start mb-8">
 
-        <div
-          class="w-full aspect-video bg-card rounded-xl flex flex-col items-center justify-center overflow-hidden relative border"
-          [class.border-border]="!!m.imageUrl"
-          [class.border-secondary]="!m.imageUrl">
-          @if (m.imageUrl) {
-            <img [ngSrc]="m.imageUrl" [alt]="getLocalizedName(m)" fill class="object-cover rounded-xl"/>
-          } @else {
-            <ng-icon name="heroEye" class="text-4xl text-secondary/50 mb-2"></ng-icon>
-            <span class="text-secondary font-bold">{{ 'GLOBAL.NO_IMAGE' | translate }}</span>
+        <div class="flex min-w-0 flex-col gap-3">
+          <app-muscle-scene [code]="m.code" [imageUrl]="m.imageUrl" [alt]="'MUSCLE.SCENE.ALT' | translate: {name: getLocalizedName(m)}"/>
+
+          @if (tiles().length) {
+            <nav class="tiles" data-slot="muscle-members" [attr.aria-label]="'MUSCLE.FIELDS.MEMBERS' | translate">
+              @for (tile of tiles(); track tile.id; let isGroup = $first) {
+                <a class="tile hover:text-primary" [routerLink]="['/muscles', tile.id]" [replaceUrl]="true"
+                   [attr.aria-current]="tile.id === m.id ? 'page' : null">
+                  @if (thumbOf(tile); as thumb) {
+                    <img [src]="thumb" alt="" width="160" height="160" class="aspect-square w-full" style="object-fit: contain"/>
+                  } @else {
+                    <span class="flex aspect-square w-full items-center justify-center text-xl font-bold text-muted-foreground" aria-hidden="true">{{ getLocalizedName(tile).charAt(0) }}</span>
+                  }
+                  <span>{{ isGroup ? ('MUSCLE.MESSAGES.GROUP_BADGE' | translate) : getLocalizedName(tile) }}</span>
+                </a>
+              }
+            </nav>
+            @if (!hasModel(m)) {
+              <div class="text-center"><app-muscle-credit/></div>
+            }
           }
         </div>
 
-        <app-detail-card paddingClass="p-6 md:p-8" gapClass="gap-8 justify-center">
-          <div class="rounded-lg border bg-muted/50 p-4 text-center">
-            <div class="text-sm font-semibold uppercase tracking-wider text-muted-foreground">{{ 'MUSCLE.FIELDS.MEDICAL_NAME' | translate }}</div>
-            <div class="text-2xl md:text-3xl font-bold text-primary mt-2">{{ m.medicalName }}</div>
-          </div>
+        <div class="flex flex-col gap-4 rounded-xl border bg-card p-4 md:p-6">
+          <p [class.italic]="!getLocalizedDescription(m)" [class.opacity-80]="!getLocalizedDescription(m)"
+             class="leading-relaxed text-base">
+            {{ getLocalizedDescription(m) || ('GLOBAL.NO_DESCRIPTION' | translate) }}
+          </p>
 
-          @if (m.parent; as parent) {
-            <div>
-              <h3 class="font-semibold text-lg pb-2 mb-2 border-b border-border">{{ 'MUSCLE.FIELDS.FUNCTIONAL_GROUP' | translate }}</h3>
-              <a [routerLink]="['/muscles', parent.id]" class="text-primary hover:underline">{{ getLocalizedName(parent) }}</a>
+          <section class="border-t pt-4" [attr.aria-label]="'MUSCLE.USAGE.TITLE' | translate">
+            <h2 class="mb-3 text-lg font-semibold">{{ 'MUSCLE.USAGE.TITLE' | translate }}</h2>
+            <div class="mb-3 flex flex-wrap gap-2" role="group" [attr.aria-label]="'MUSCLE.USAGE.ROLE' | translate">
+              @for (r of roles; track r) {
+                <button type="button" hlmBtn variant="outline" size="sm"
+                        class="rounded-full aria-pressed:border-secondary aria-pressed:bg-secondary/15 aria-pressed:text-secondary"
+                        [attr.aria-pressed]="role() === r" (click)="role.set(r)">
+                  {{ 'MUSCLE.ROLES.' + r | translate }} {{ countOf(r) }}
+                </button>
+              }
             </div>
-          }
-
-          @if (m.members?.length) {
-            <div>
-              <h3 class="font-semibold text-lg pb-2 mb-2 border-b border-border">{{ 'MUSCLE.FIELDS.MEMBERS' | translate }}</h3>
-              <ul class="flex flex-wrap gap-2">
-                @for (member of m.members; track member.id) {
+            @if (shownUsage().length === 0) {
+              <p class="text-sm text-muted-foreground">{{ 'MUSCLE.USAGE.EMPTY' | translate }}</p>
+            } @else {
+              <ul class="divide-y">
+                @for (u of shownUsage(); track u.movementId + (u.trigger ?? '')) {
                   <li>
-                    <a [routerLink]="['/muscles', member.id]" hlmBadge class="bg-primary/15 text-primary">{{ getLocalizedName(member) }}</a>
+                    <a [routerLink]="['/movements', u.movementId]" class="flex items-center justify-between gap-3 py-2.5 hover:text-primary">
+                      <span class="min-w-0 truncate">{{ u.movementName }}</span>
+                      @if (u.trigger) {
+                        <span class="shrink-0 text-xs text-muted-foreground">{{ 'MUSCLE.USAGE.ONLY' | translate: {value: triggerLabel(u.trigger)} }}</span>
+                      }
+                    </a>
                   </li>
                 }
               </ul>
-            </div>
-          }
-
-          <div>
-            <h3
-              class="font-semibold text-lg pb-2 mb-2 border-b border-border">{{ 'GLOBAL.DESCRIPTION' | translate }}</h3>
-            <p [class.italic]="!getLocalizedDescription(m)" [class.opacity-80]="!getLocalizedDescription(m)"
-               class="leading-relaxed text-base">
-              {{ getLocalizedDescription(m) || ('GLOBAL.NO_DESCRIPTION' | translate) }}
-            </p>
-          </div>
-        </app-detail-card>
+            }
+          </section>
+        </div>
 
       </div>
-
-      <section class="mb-8 rounded-xl border bg-card p-4 md:p-6" [attr.aria-label]="'MUSCLE.USAGE.TITLE' | translate">
-        <h2 class="mb-3 text-lg font-semibold">{{ 'MUSCLE.USAGE.TITLE' | translate }}</h2>
-        <div class="mb-3 flex flex-wrap gap-2" role="group" [attr.aria-label]="'MUSCLE.USAGE.ROLE' | translate">
-          @for (r of roles; track r) {
-            <button type="button" hlmBtn variant="outline" size="sm"
-                    class="rounded-full aria-pressed:border-secondary aria-pressed:bg-secondary/15 aria-pressed:text-secondary"
-                    [attr.aria-pressed]="role() === r" (click)="role.set(r)">
-              {{ 'MUSCLE.ROLES.' + r | translate }} {{ countOf(r) }}
-            </button>
-          }
-        </div>
-        @if (shownUsage().length === 0) {
-          <p class="text-sm text-muted-foreground">{{ 'MUSCLE.USAGE.EMPTY' | translate }}</p>
-        } @else {
-          <ul class="divide-y">
-            @for (u of shownUsage(); track u.movementId + (u.trigger ?? '')) {
-              <li>
-                <a [routerLink]="['/movements', u.movementId]" class="flex items-center justify-between gap-3 py-2.5 hover:text-primary">
-                  <span class="min-w-0 truncate">{{ u.movementName }}</span>
-                  @if (u.trigger) {
-                    <span class="shrink-0 text-xs text-muted-foreground">{{ 'MUSCLE.USAGE.ONLY' | translate: {value: triggerLabel(u.trigger)} }}</span>
-                  }
-                </a>
-              </li>
-            }
-          </ul>
-        }
-      </section>
 
       @if (isAdmin()) {
         <app-detail-admin-actions

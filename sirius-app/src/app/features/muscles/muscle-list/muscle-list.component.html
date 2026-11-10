@@ -1,13 +1,15 @@
-<div class="container mx-auto pb-12">
-  <div class="mt-8 mb-6 text-center md:text-left">
+<div class="container mx-auto pb-12 px-2 sm:px-0">
+  <div class="head">
     <h1 class="text-3xl font-bold">{{ 'MUSCLE.TITLE' | translate }}</h1>
+    <div class="search">
+      <app-search-input
+        [compact]="true"
+        [placeholder]="'MUSCLE.ACTIONS.SEARCH' | translate"
+        [value]="searchQuery()"
+        (valueChange)="onSearchChange($event)">
+      </app-search-input>
+    </div>
   </div>
-
-  <app-search-input
-    [placeholder]="'MUSCLE.ACTIONS.SEARCH' | translate"
-    [value]="searchQuery()"
-    (valueChange)="onSearchChange($event)">
-  </app-search-input>
 
   <app-list-state
     [isLoading]="isLoading()"
@@ -17,42 +19,54 @@
     [emptySearchMessage]="'MUSCLE.MESSAGES.EMPTY_LIST_SEARCH' | translate: {name: searchQuery()}">
 
     @if (isSearching()) {
-      <div class="px-2 sm:px-0">
-        <ng-container [ngTemplateOutlet]="rows"/>
-      </div>
+      <ng-container [ngTemplateOutlet]="rows"/>
     } @else {
-      <div class="flex flex-wrap gap-2 mb-4 px-2 sm:px-0" role="group" data-slot="regions"
-           [attr.aria-label]="'MUSCLE.FIELDS.GROUP' | translate">
-        @for (region of muscleGroupKeys(); track region) {
+      <div #regions class="regions mb-4" role="group" data-slot="regions" [attr.aria-label]="'MUSCLE.FIELDS.REGION' | translate">
+        @for (region of regionKeys(); track region) {
           <button hlmBtn variant="outline" size="sm" type="button" class="rounded-full aria-pressed:border-secondary aria-pressed:bg-secondary/15"
                   [attr.aria-pressed]="activeRegion() === region" (click)="activeRegion.set(region)">
-            {{ 'MUSCLE.GROUPS.' + region | translate }}
+            {{ 'MUSCLE.REGIONS.' + region | translate }}
           </button>
         }
       </div>
-      <div class="explorer px-2 sm:px-0">
-        <div class="rounded-xl border bg-card p-3">
-          <app-body-map [selected]="activeRegion()" (regionPicked)="activeRegion.set($event)"/>
-        </div>
+      <div class="explorer">
+        <app-muscle-scene data-slot="region-scene" [region]="activeRegion()"
+                          [alt]="'MUSCLE.SCENE.REGION_ALT' | translate: {region: 'MUSCLE.REGIONS.' + activeRegion() | translate}"/>
         <ng-container [ngTemplateOutlet]="rows"/>
       </div>
     }
 
     <ng-template #rows>
-      <ul class="flex flex-col gap-1 list-none p-0" data-slot="muscle-rows">
+      <ul class="list-none p-0" data-slot="muscle-rows">
         @for (row of shownRows(); track row.muscle.id) {
-          <app-list-item
-            [class]="row.isMember ? 'block pl-8 border-l-4 border-muted' : 'block'"
-            [title]="getLocalizedName(row.muscle) || row.muscle.medicalName"
-            [subtitle]="getLocalizedName(row.muscle) !== row.muscle.medicalName ? row.muscle.medicalName : undefined"
-            [badge]="groupBadge(row.muscle)"
-            [imageUrl]="row.muscle.imageUrl"
-            [link]="['/muscles', row.muscle.id]">
-          </app-list-item>
+          <li [class.member]="row.isMember">
+            <a class="row hover:text-primary" [routerLink]="['/muscles', row.muscle.id]">
+              @if (imageOf(row.muscle); as image) {
+                <img [src]="image" alt="" width="160" height="160" loading="lazy" class="thumb"/>
+              } @else {
+                <span class="thumb flex items-center justify-center text-xl font-bold text-muted-foreground" aria-hidden="true">{{ getLocalizedName(row.muscle).charAt(0) }}</span>
+              }
+              <span class="min-w-0 flex-1">
+                <span class="block truncate font-semibold">{{ getLocalizedName(row.muscle) }}</span>
+                @if (isSearching() && getLocalizedName(row.muscle) !== row.muscle.medicalName) {
+                  <span class="block truncate text-sm text-muted-foreground">{{ row.muscle.medicalName }}</span>
+                }
+              </span>
+              @if (row.muscle.members?.length; as count) {
+                <span class="shrink-0 text-sm text-muted-foreground">{{ 'MUSCLE.MESSAGES.MEMBER_COUNT' | translate: {count} }}</span>
+              }
+            </a>
+          </li>
         }
       </ul>
     </ng-template>
   </app-list-state>
+
+  @if (isSearching()) {
+    <div class="mt-6 text-center">
+      <app-muscle-credit/>
+    </div>
+  }
 
   @if (isAdmin()) {
     <div class="pt-8 flex flex-col md:flex-row justify-end gap-4">

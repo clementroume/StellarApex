@@ -8,7 +8,7 @@ describe('BodyMapComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({imports: [BodyMapComponent], providers: [provideTranslateService()]}).compileComponents();
     fixture = TestBed.createComponent(BodyMapComponent);
-    fixture.componentRef.setInput('selected', 'CHEST');
+    fixture.componentRef.setInput('selected', 'THORAX');
     fixture.detectChanges();
   });
 
@@ -26,6 +26,6 @@ describe('BodyMapComponent', () => {
     paths('path.other')[0].dispatchEvent(new MouseEvent('click'));
     expect(picked).not.toHaveBeenCalled();
     paths('path.region.on')[0].dispatchEvent(new MouseEvent('click'));
-    expect(picked).toHaveBeenCalledWith('CHEST');
+    expect(picked).toHaveBeenCalledWith('THORAX');
   });
 });

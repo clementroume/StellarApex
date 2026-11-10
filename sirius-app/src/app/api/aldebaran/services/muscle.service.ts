@@ -14,12 +14,12 @@ export class MuscleService {
   }
 
   /** The movements that work a muscle, with the role each gives. */
-  getUsage(id: number): Observable<MuscleUsage[]> {
-    return this.http.get<MuscleUsage[]>(this.buildUrl(`/${id}/movements`));
+  getUsage(id: number, context?: HttpContext): Observable<MuscleUsage[]> {
+    return this.http.get<MuscleUsage[]>(this.buildUrl(`/${id}/movements`), {context});
   }
 
-  getMuscle(id: number): Observable<MuscleResponse> {
-    return this.http.get<MuscleResponse>(this.buildUrl(`/${id}`));
+  getMuscle(id: number, context?: HttpContext): Observable<MuscleResponse> {
+    return this.http.get<MuscleResponse>(this.buildUrl(`/${id}`), {context});
   }
 
   createMuscle(request: MuscleRequest): Observable<MuscleResponse> {
@@ -49,5 +49,5 @@ export class MuscleService {
   // --- UI STATE ---
   public readonly savedSearchQuery = signal<string>('');
   /** Region shown on the catalog. */
-  public readonly savedRegion = signal<string>('LEGS');
+  public readonly savedRegion = signal<string>('THORAX');
 }

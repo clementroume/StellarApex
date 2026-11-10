@@ -13,7 +13,7 @@ import apex.stellar.aldebaran.exception.ResourceNotFoundException;
 import apex.stellar.aldebaran.mapper.MuscleMapper;
 import apex.stellar.aldebaran.model.entities.MovementMuscle.MuscleRole;
 import apex.stellar.aldebaran.model.entities.Muscle;
-import apex.stellar.aldebaran.model.entities.Muscle.MuscleGroup;
+import apex.stellar.aldebaran.model.entities.Muscle.MuscleRegion;
 import apex.stellar.aldebaran.repository.MuscleRepository;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -104,6 +104,7 @@ public class MuscleService {
     }
 
     Muscle muscle = muscleMapper.toEntity(request);
+    muscle.setCode(freeCode(request.medicalName()));
     applyParent(muscle, request.parentId());
     Muscle savedMuscle = muscleRepository.save(muscle);
     log.info("Created new muscle: {} (ID: {})", savedMuscle.getMedicalName(), savedMuscle.getId());
@@ -140,7 +141,7 @@ public class MuscleService {
       throw new DataConflictException("error.muscle.name.exists", request.medicalName());
     }
 
-    if (!muscle.getMembers().isEmpty() && muscle.getMuscleGroup() != request.muscleGroup()) {
+    if (!muscle.getMembers().isEmpty() && muscle.getRegion() != request.region()) {
       throw new DataConflictException("error.muscle.group.region", muscle.getMedicalName());
     }
     muscleMapper.updateEntity(request, muscle);
@@ -171,6 +172,22 @@ public class MuscleService {
   }
 
   /**
+   * The code of a new muscle: the one its name gives, numbered when two names give the same code
+   * (e.g. "Foo (Bar)" and "Foo Bar").
+   *
+   * @param medicalName The name of the new muscle.
+   * @return A code no other muscle holds.
+   */
+  private String freeCode(String medicalName) {
+    String base = Muscle.codeOf(medicalName);
+    String code = base;
+    for (int n = 2; muscleRepository.existsByCode(code); n++) {
+      code = base + "-" + n;
+    }
+    return code;
+  }
+
+  /**
    * Links a muscle to its functional group. Groups do not nest: the parent must not belong to a
    * group itself, a group cannot join another group, and both must be in the same region.
    *
@@ -197,7 +214,7 @@ public class MuscleService {
     if (!muscle.getMembers().isEmpty()) {
       throw new DataConflictException("error.muscle.parent.group", muscle.getMedicalName());
     }
-    if (parent.getMuscleGroup() != muscle.getMuscleGroup()) {
+    if (parent.getRegion() != muscle.getRegion()) {
       throw new DataConflictException("error.muscle.parent.region");
     }
     muscle.setParent(parent);
@@ -255,7 +272,7 @@ public class MuscleService {
 
   /** Retrieves reference data for Muscle forms. */
   public MuscleReferenceData getReferenceData() {
-    List<String> groups = Arrays.stream(MuscleGroup.values()).map(Enum::name).toList();
+    List<String> groups = Arrays.stream(MuscleRegion.values()).map(Enum::name).toList();
     List<String> roles = Arrays.stream(MuscleRole.values()).map(Enum::name).toList();
 
     return new MuscleReferenceData(groups, roles);

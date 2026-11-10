@@ -12,9 +12,10 @@ describe('MuscleService', () => {
 
   const mockMuscleResponse: MuscleResponse = {
     id: 1,
+    code: 'pectoralis-major',
     medicalName: 'Pectoralis Major',
     commonNameEn: 'Chest',
-    muscleGroup: 'CHEST',
+    region: 'THORAX',
   };
 
   beforeEach(() => {
@@ -53,7 +54,7 @@ describe('MuscleService', () => {
   });
 
   it('createMuscle should POST to /muscles', () => {
-    const payload: MuscleRequest = {medicalName: 'Deltoid', muscleGroup: 'SHOULDERS'};
+    const payload: MuscleRequest = {medicalName: 'Deltoid', region: 'SHOULDER'};
     service.createMuscle(payload).subscribe();
     const req = httpMock.expectOne(`${base}/muscles`);
     expect(req.request.method).toBe('POST');
@@ -63,7 +64,7 @@ describe('MuscleService', () => {
 
   it('updateMuscle should PUT to /muscles/{id}', () => {
     const muscleId = 1;
-    const payload: MuscleRequest = {medicalName: 'Pectoralis Major', muscleGroup: 'CHEST'};
+    const payload: MuscleRequest = {medicalName: 'Pectoralis Major', region: 'THORAX'};
     service.updateMuscle(muscleId, payload).subscribe();
     const req = httpMock.expectOne(`${base}/muscles/${muscleId}`);
     expect(req.request.method).toBe('PUT');

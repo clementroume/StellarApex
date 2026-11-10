@@ -29,21 +29,21 @@ describe('MuscleFormComponent', () => {
     } as any;
 
     muscleServiceSpy.getMuscles.mockReturnValue(of([
-      {id: 10, medicalName: 'Quadriceps Femoris', muscleGroup: 'LEGS', parent: null},
-      {id: 11, medicalName: 'Rectus Femoris', muscleGroup: 'LEGS', parent: {id: 10, medicalName: 'Quadriceps Femoris'}},
-      {id: 20, medicalName: 'Deltoids', muscleGroup: 'SHOULDERS', parent: null},
-      {id: 1, medicalName: 'Test', muscleGroup: 'CHEST'}
+      {id: 10, medicalName: 'Quadriceps Femoris', region: 'THIGH_LEG', parent: null},
+      {id: 11, medicalName: 'Rectus Femoris', region: 'THIGH_LEG', parent: {id: 10, medicalName: 'Quadriceps Femoris'}},
+      {id: 20, medicalName: 'Deltoids', region: 'SHOULDER', parent: null},
+      {id: 1, medicalName: 'Test', region: 'THORAX'}
     ] as any));
 
     muscleServiceSpy.getMuscle.mockReturnValue(of({
-      id: 1, medicalName: 'Test', muscleGroup: 'CHEST'
+      id: 1, medicalName: 'Test', region: 'THORAX'
     } as any));
 
     muscleServiceSpy.createMuscle.mockReturnValue(of({} as any));
     muscleServiceSpy.updateMuscle.mockReturnValue(of({} as any));
 
     muscleServiceSpy.getReferenceData.mockReturnValue(of({
-      muscleGroups: ['CHEST', 'BACK', 'LEGS', 'ARMS', 'SHOULDERS', 'CORE']
+      regions: ['THORAX', 'BACK', 'THIGH_LEG', 'ARM_FOREARM', 'SHOULDER', 'ABDOMEN_PELVIS']
     } as any));
 
     notificationServiceSpy = {
@@ -101,7 +101,7 @@ describe('MuscleFormComponent', () => {
 
     component.muscleForm.patchValue({
       medicalName: 'NewMuscle',
-      muscleGroup: 'LEGS'
+      region: 'THIGH_LEG'
     });
 
     component.onSubmit();
@@ -131,7 +131,7 @@ describe('MuscleFormComponent', () => {
     vi.spyOn(router, 'navigate').mockResolvedValue(true);
     fixture.detectChanges();
 
-    component.muscleForm.patchValue({medicalName: 'Vastus Lateralis', muscleGroup: 'LEGS'});
+    component.muscleForm.patchValue({medicalName: 'Vastus Lateralis', region: 'THIGH_LEG'});
     expect(component.groupCandidates().map(m => m.medicalName)).toEqual(['Quadriceps Femoris']);
 
     component.muscleForm.patchValue({parentId: 10});
@@ -141,9 +141,9 @@ describe('MuscleFormComponent', () => {
 
   it('should drop the functional group when the region changes', () => {
     fixture.detectChanges();
-    component.muscleForm.patchValue({muscleGroup: 'LEGS', parentId: 10});
+    component.muscleForm.patchValue({region: 'THIGH_LEG', parentId: 10});
 
-    component.muscleForm.patchValue({muscleGroup: 'SHOULDERS'});
+    component.muscleForm.patchValue({region: 'SHOULDER'});
 
     expect(component.groupCandidates().map(m => m.medicalName)).toEqual(['Deltoids']);
     expect(component.muscleForm.controls.parentId.value).toBeNull();
@@ -151,7 +151,7 @@ describe('MuscleFormComponent', () => {
 
   it('should lock the functional group of a muscle that is itself a group', () => {
     muscleServiceSpy.getMuscle.mockReturnValue(of({
-      id: 10, medicalName: 'Quadriceps Femoris', muscleGroup: 'LEGS', parent: null,
+      id: 10, medicalName: 'Quadriceps Femoris', region: 'THIGH_LEG', parent: null,
       members: [{id: 11, medicalName: 'Rectus Femoris'}]
     } as any));
     mockActivatedRoute.snapshot.paramMap.get = () => '10';

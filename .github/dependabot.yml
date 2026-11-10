@@ -36,6 +36,9 @@ updates:
     ignore:
       - dependency-name: "typescript"
         update-types: [ "version-update:semver-major" ]
+      # Pinned on purpose: no test exercises WebGL, a bump is checked by hand on the muscle page.
+      - dependency-name: "three"
+      - dependency-name: "@types/three"
     groups:
       minor-and-patch:
         update-types: [ "minor", "patch" ]

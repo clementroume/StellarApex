@@ -5,7 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import apex.stellar.aldebaran.config.BaseIntegrationTest;
 import apex.stellar.aldebaran.controller.Exporter.CsvExportService;
 import apex.stellar.aldebaran.model.entities.Muscle;
-import apex.stellar.aldebaran.model.entities.Muscle.MuscleGroup;
+import apex.stellar.aldebaran.model.entities.Muscle.MuscleRegion;
 import apex.stellar.aldebaran.repository.MuscleRepository;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -35,24 +35,24 @@ class CsvExportServiceIT extends BaseIntegrationTest {
         muscleRepository.save(
             Muscle.builder()
                 .medicalName("Adductor Test Group")
-                .muscleGroup(MuscleGroup.LEGS)
+                .region(MuscleRegion.THIGH_LEG)
                 .imageUrl("https://example.com/adductors.png")
                 .build());
     muscleRepository.save(
         Muscle.builder()
             .medicalName("Adductor Test Member")
-            .muscleGroup(MuscleGroup.LEGS)
+            .region(MuscleRegion.THIGH_LEG)
             .parent(group)
             .build());
 
     exportService.exportMuscles(tempDir);
 
     String csv = Files.readString(tempDir.resolve("muscles.csv"), StandardCharsets.UTF_8);
-    assertThat(csv).startsWith("medical_name,muscle_group,parent,");
+    assertThat(csv).startsWith("medical_name,region,parent,");
     assertThat(csv)
-        .contains("Adductor Test Group,LEGS,,")
+        .contains("Adductor Test Group,THIGH_LEG,,")
         .contains("https://example.com/adductors.png")
-        .contains("Adductor Test Member,LEGS,Adductor Test Group,");
+        .contains("Adductor Test Member,THIGH_LEG,Adductor Test Group,");
   }
 
   @Test

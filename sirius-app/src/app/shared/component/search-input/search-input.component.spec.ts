@@ -33,6 +33,14 @@ describe('SearchInputComponent', () => {
     expect(inputElement.value).toBe('Biceps');
   });
 
+  it('should drop its bottom margin when compact', () => {
+    const wrapper = () => fixture.nativeElement.firstElementChild as HTMLElement;
+    expect(wrapper().classList.contains('mb-8')).toBe(true);
+    fixture.componentRef.setInput('compact', true);
+    fixture.detectChanges();
+    expect(wrapper().classList.contains('mb-8')).toBe(false);
+  });
+
   it('should emit the new value when the user types in the input', () => {
     vi.spyOn(component.valueChange, 'emit');
 

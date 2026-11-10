@@ -224,6 +224,8 @@ Rules common to every lot session (the brief of a lot only lists what is specifi
   of the roadmap, before the first production release, then the rule applies without exception.
 - Default branch `main`; dependabot opens most PRs. Branch before committing; commit only when asked.
 - Frontend DTOs in `sirius-app/src/app/api/**/models` mirror backend DTOs: change both together.
+- Muscle 3D model: `muscles.code` (frozen, derived once from the medical name, never `medical_name`) links a muscle to
+  the Sirius model. The table, the pipeline and the procedure to add a muscle are in `sirius-app/tools/muscle-model`.
 - Catalog: a movement variant is the `equipment` / `techniques` of the movement and of the WOD movement
   (Aldebaran rejects values the movement does not allow), never a new movement or a note. Lot M model:
   one "counts for" rule per technique type, chained and "either" movements, role adjustments per

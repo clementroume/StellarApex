@@ -24,7 +24,7 @@ import apex.stellar.aldebaran.model.entities.MovementRoleAdjustment;
 import apex.stellar.aldebaran.model.entities.MovementRoleAdjustment.TriggerKind;
 import apex.stellar.aldebaran.model.entities.MovementUsualName;
 import apex.stellar.aldebaran.model.entities.Muscle;
-import apex.stellar.aldebaran.model.entities.Muscle.MuscleGroup;
+import apex.stellar.aldebaran.model.entities.Muscle.MuscleRegion;
 import apex.stellar.aldebaran.model.entities.Wod;
 import apex.stellar.aldebaran.model.entities.Wod.ScoreType;
 import apex.stellar.aldebaran.model.entities.Wod.WodStructure;
@@ -324,7 +324,7 @@ class CatalogModelIT extends BaseIntegrationTest {
   private Muscle roleFixture() {
     Muscle hamstrings =
         muscleRepository.save(
-            Muscle.builder().medicalName("Hamstrings").muscleGroup(MuscleGroup.LEGS).build());
+            Muscle.builder().medicalName("Hamstrings").region(MuscleRegion.THIGH_LEG).build());
     clean
         .getTargetedMuscles()
         .add(

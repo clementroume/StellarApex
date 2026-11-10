@@ -6,7 +6,15 @@
       "name": "app",
       "installMode": "prefetch",
       "resources": {
-        "files": ["/favicon.ico", "/index.html", "/manifest.webmanifest", "/*.css", "/*.js"]
+        "files": ["/favicon.ico", "/index.html", "/manifest.webmanifest", "/*.css", "/*.js", "!/*muscle-viewer*.js"]
+      }
+    },
+    {
+      "name": "muscle-viewer",
+      "installMode": "lazy",
+      "updateMode": "lazy",
+      "resources": {
+        "files": ["/*muscle-viewer*.js"]
       }
     },
     {

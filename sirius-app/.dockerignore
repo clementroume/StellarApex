@@ -24,3 +24,6 @@ Thumbs.db
 # (use .env in docker-compose.yml instead)
 .env
 .env.*.local
+
+# Muscle model pipeline (Blender, atlas): not part of the image
+tools/

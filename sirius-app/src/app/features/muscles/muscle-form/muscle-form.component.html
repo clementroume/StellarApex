@@ -25,12 +25,12 @@
         </div>
 
         <div class="flex flex-col gap-1.5 w-full">
-          <label hlmLabel for="muscleGroup">{{ 'MUSCLE.FIELDS.GROUP' | translate }} *</label>
-          <select id="muscleGroup" formControlName="muscleGroup" appNativeSelect class="w-full"
-                  [attr.aria-invalid]="muscleForm.controls.muscleGroup.invalid && muscleForm.controls.muscleGroup.touched">
-            <option value="" disabled selected>{{ 'MUSCLE.ACTIONS.SELECT_GROUP' | translate }}</option>
-            @for (group of muscleGroups(); track group) {
-              <option [value]="group">{{ 'MUSCLE.GROUPS.' + group | translate }}</option>
+          <label hlmLabel for="region">{{ 'MUSCLE.FIELDS.REGION' | translate }} *</label>
+          <select id="region" formControlName="region" appNativeSelect class="w-full"
+                  [attr.aria-invalid]="muscleForm.controls.region.invalid && muscleForm.controls.region.touched">
+            <option value="" disabled selected>{{ 'MUSCLE.ACTIONS.SELECT_REGION' | translate }}</option>
+            @for (option of regions(); track option) {
+              <option [value]="option">{{ 'MUSCLE.REGIONS.' + option | translate }}</option>
             }
           </select>
         </div>

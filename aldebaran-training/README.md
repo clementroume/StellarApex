@@ -179,7 +179,10 @@ version (`movement_dumbbell_bases`), and a joint layer that controls the roles (
 `muscle_joint_actions`). A WOD line is written in one canonical form and checked by `service/CatalogRules`;
 `WodMovementResponse.display` says how it reads.
 
-* **Muscles**: a region (`muscleGroup`: `LEGS`, `BACK`, `CHEST`, `SHOULDERS`, `ARMS`, `CORE`) and an
+* **Muscle code**: `code` is the stable key of a muscle in the 3D model of Sirius (`sirius-app/tools/muscle-model`),
+  returned in `MuscleResponse` and `MuscleRefResponse`. Derived once from the medical name (`Quadriceps Femoris` gives
+  `quadriceps-femoris`, numbered if taken), never changed: `medical_name` stays editable.
+* **Muscles**: a `region` (`THORAX`, `BACK`, `ABDOMEN_PELVIS`, `SHOULDER`, `ARM_FOREARM`, `HIP`, `THIGH_LEG`) and an
   optional functional group (`parent`, e.g. Rectus Femoris in Quadriceps Femoris). One level only,
   same region as the group (409 otherwise). A movement targets a group, or one of its muscles when
   that muscle has its own action (e.g. Rectus Femoris as synergist of hip flexion).
@@ -362,8 +365,9 @@ reloads muscles and movements into empty tables, then the WODs when no public WO
 no author, no gym). The CSV files are git-ignored (never pushed); on a fresh clone the catalog
 starts empty. This mechanism (export endpoints, source volume, CSV seeding) is temporary.
 
-* `muscles.csv`: `medical_name,muscle_group,parent,common_name_en,common_name_fr,description_en,description_fr,image_url`
-  (`parent` = medical name of the functional group, linked once every muscle is saved).
+* `muscles.csv`: `medical_name,region,parent,common_name_en,common_name_fr,description_en,description_fr,image_url,joint_actions,code`
+  (`parent` = medical name of the functional group, linked once every muscle is saved; `code` keeps the 3D model link
+  of a renamed muscle, derived from the name when empty).
 * `movements.csv`: equipment, techniques and muscles (`agonists`, `synergists`, `stabilizers`) are
   lists separated by `, `.
 * `wods.csv`: `title,wod_type,category,score_type,rep_scheme,time_cap_seconds,emom_interval,emom_rounds,description_en,description_fr,notes_en,notes_fr,tiebreak_en,tiebreak_fr,reps_per_round,rounds,rest_seconds,work_seconds,ladder_start,ladder_step,vest_weight,vest_weight_female,vest_weight_unit,structure` (from `tiebreak_en` on optional; former `wod_type` values read as a category + sub-category; a former `ROUNDS_REPS` score type reads as `REPS`)

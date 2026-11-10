@@ -19,7 +19,7 @@ import {TranslatePipe} from '@ngx-translate/core';
         <h1 class="text-3xl font-bold">
           {{ title() }}
           @if (subtitle()) {
-            <span class="text-xl text-muted-foreground font-normal ml-2">({{ subtitle() }})</span>
+            <span class="text-xl text-muted-foreground font-normal ml-2">{{ plainSubtitle() ? subtitle() : '(' + subtitle() + ')' }}</span>
           }
         </h1>
       </div>
@@ -36,6 +36,8 @@ import {TranslatePipe} from '@ngx-translate/core';
 export class DetailHeaderComponent {
   title = input.required<string>();
   subtitle = input<string>();
+  /** Shows the subtitle without its parentheses. */
+  plainSubtitle = input<boolean>(false);
   badgeText = input<string>();
   back = output<void>();
 }

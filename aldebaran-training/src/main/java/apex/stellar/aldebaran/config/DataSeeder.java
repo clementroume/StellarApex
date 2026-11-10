@@ -5,7 +5,7 @@ import apex.stellar.aldebaran.model.entities.MovementMuscle;
 import apex.stellar.aldebaran.model.entities.MovementMuscle.MuscleRole;
 import apex.stellar.aldebaran.model.entities.MovementUsualName;
 import apex.stellar.aldebaran.model.entities.Muscle;
-import apex.stellar.aldebaran.model.entities.Muscle.MuscleGroup;
+import apex.stellar.aldebaran.model.entities.Muscle.MuscleRegion;
 import apex.stellar.aldebaran.model.entities.Wod;
 import apex.stellar.aldebaran.model.enums.Category;
 import apex.stellar.aldebaran.model.enums.Equipment;
@@ -107,8 +107,9 @@ public class DataSeeder implements CommandLineRunner {
       Muscle muscle =
           Muscle.builder()
               .medicalName(csvRecord.get("medical_name").trim())
-              .muscleGroup(
-                  MuscleGroup.valueOf(csvRecord.get("muscle_group").trim().toUpperCase()))
+              .code(getOptionalStr(csvRecord, "code"))
+              .region(
+                  MuscleRegion.valueOf(csvRecord.get("region").trim().toUpperCase()))
               .commonNameEn(getOptionalStr(csvRecord, "common_name_en"))
               .commonNameFr(getOptionalStr(csvRecord, "common_name_fr"))
               .descriptionEn(getOptionalStr(csvRecord, "description_en"))

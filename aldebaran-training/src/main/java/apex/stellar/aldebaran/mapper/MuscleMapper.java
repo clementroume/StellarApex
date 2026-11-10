@@ -49,6 +49,7 @@ public interface MuscleMapper {
    * @return A new transient Muscle entity.
    */
   @Mapping(target = "id", ignore = true)
+  @Mapping(target = "code", ignore = true)
   @Mapping(target = "createdAt", ignore = true)
   @Mapping(target = "updatedAt", ignore = true)
   @Mapping(target = "parent", ignore = true)
@@ -64,6 +65,7 @@ public interface MuscleMapper {
    * @param entity The existing Muscle entity to be modified.
    */
   @Mapping(target = "id", ignore = true)
+  @Mapping(target = "code", ignore = true)
   @Mapping(target = "createdAt", ignore = true)
   @Mapping(target = "updatedAt", ignore = true)
   @Mapping(target = "parent", ignore = true)

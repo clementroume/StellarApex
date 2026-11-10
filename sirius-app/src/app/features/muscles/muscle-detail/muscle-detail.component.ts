@@ -1,28 +1,41 @@
 import {ChangeDetectionStrategy, Component, computed, effect, inject, input, signal} from '@angular/core';
 import {TranslatePipe, TranslateService} from '@ngx-translate/core';
 import {Router, RouterModule} from '@angular/router';
-import {Location, NgOptimizedImage} from '@angular/common';
-import {NgIconComponent} from '@ng-icons/core';
+import {Location} from '@angular/common';
 import {MuscleRefResponse, MuscleResponse, MuscleUsage} from '../../../api/aldebaran/models/muscle.model';
 import {AccessService} from '../../../core/services/access.service';
 import {MuscleService} from '../../../api/aldebaran/services/muscle.service';
 import {NotificationService} from '../../../core/services/notification.service';
-import {HttpErrorResponse} from '@angular/common/http';
+import {HttpContext, HttpErrorResponse} from '@angular/common/http';
+import {BYPASS_LOADER} from '../../../core/interceptors/loading.interceptor';
 import {
   DetailAdminActionsComponent
 } from '../../../shared/component/detail/detail-admin-actions/detail-admin-actions.component';
-import {DetailCardComponent} from '../../../shared/component/detail/detail-card/detail-card.component';
 import {DetailHeaderComponent} from '../../../shared/component/detail/detail-header/detail-header.component';
 import {DetailStateComponent} from '../../../shared/component/detail/detail-state/detail-state.component';
 
-import {HlmBadge} from '@spartan-ng/helm/badge';
+import {ThemeService} from '../../../core/services/theme.service';
+import {MuscleCreditComponent} from '../muscle-credit/muscle-credit.component';
+import {muscleModelEntry, muscleThumbUrl} from '../muscle-model/muscle-model';
+import {normalize} from '../../../shared/text.utils';
+import {MuscleSceneComponent} from '../muscle-scene/muscle-scene.component';
 import {HlmButton} from '@spartan-ng/helm/button';
 @Component({
   selector: 'app-muscle-detail',
   standalone: true,
-  imports: [HlmBadge, HlmButton, TranslatePipe, RouterModule, NgIconComponent, NgOptimizedImage, DetailAdminActionsComponent, DetailCardComponent, DetailHeaderComponent, DetailStateComponent],
+  imports: [HlmButton, TranslatePipe, RouterModule, MuscleSceneComponent, MuscleCreditComponent, DetailAdminActionsComponent, DetailHeaderComponent, DetailStateComponent],
   templateUrl: './muscle-detail.component.html',
-  changeDetection: ChangeDetectionStrategy.OnPush
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  styles: `
+    .tiles { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.5rem; }
+    .tile {
+      display: flex; flex-direction: column; align-items: center; gap: 0.25rem; width: 4.5rem; padding: 0.25rem;
+      border: 2px solid var(--sa-base-300); border-radius: 0.625rem; background: var(--sa-base-100);
+      font-size: 0.6875rem; font-weight: 500; line-height: 1.2; text-align: center;
+    }
+    .tile[aria-current='page'] { border-color: var(--sa-secondary); }
+    @media (min-width: 768px) { .tile { width: 5.25rem; } }
+  `
 })
 export class MuscleDetailComponent {
   // --- INJECTIONS ---
@@ -33,6 +46,7 @@ export class MuscleDetailComponent {
   private readonly notificationService = inject(NotificationService);
   private readonly router = inject(Router);
   private readonly location = inject(Location);
+  private readonly themeService = inject(ThemeService);
 
   // --- STATE (SIGNALS) ---
   activeLang = computed(() => this.translate.currentLang() ?? this.translate.fallbackLang() ?? 'en');
@@ -44,15 +58,29 @@ export class MuscleDetailComponent {
   role = signal<MuscleUsage['role']>('AGONIST');
   readonly shownUsage = computed(() => this.usage().filter(u => u.role === this.role()));
   isLoading = signal<boolean>(true); // Nouvel état explicite
+  /** The group shown as tiles: the muscle when it is one, else its parent. Kept while moving between its tiles. */
+  private readonly family = signal<MuscleResponse | null>(null);
+  private requestedId = 0;
+  private readonly noLoader = new HttpContext().set(BYPASS_LOADER, true);
+
+  readonly tiles = computed<MuscleRefResponse[]>(() => {
+    const family = this.family();
+    return family ? [family, ...(family.members ?? [])] : [];
+  });
 
   constructor() {
     effect(() => {
       const currentId = Number(this.id());
       if (currentId && !Number.isNaN(currentId)) {
+        this.requestedId = currentId;
         this.loadMuscle(currentId);
-        this.muscleService.getUsage(currentId).subscribe({
-          next: usage => this.usage.set(usage),
-          error: () => this.usage.set([])
+        this.muscleService.getUsage(currentId, this.noLoader).subscribe({
+          next: usage => {
+            if (this.requestedId === currentId) this.usage.set(usage);
+          },
+          error: () => {
+            if (this.requestedId === currentId) this.usage.set([]);
+          }
         });
       }
     });
@@ -62,15 +90,40 @@ export class MuscleDetailComponent {
   private loadMuscle(id: number): void {
     this.isLoading.set(true);
 
-    this.muscleService.getMuscle(id).subscribe({
+    this.muscleService.getMuscle(id, this.noLoader).subscribe({
       next: (m) => {
+        if (this.requestedId !== id) return;
         this.muscle.set(m);
         this.isLoading.set(false);
+        this.loadFamily(m);
       },
       error: () => {
+        if (this.requestedId !== id) return;
         this.notificationService.showError(this.translate.instant('MUSCLE.MESSAGES.NOT_FOUND'));
         this.isLoading.set(false);
         this.location.back();
+      }
+    });
+  }
+
+  private loadFamily(muscle: MuscleResponse): void {
+    if (muscle.members?.length) {
+      this.family.set(muscle);
+      return;
+    }
+    const parentId = muscle.parent?.id;
+    if (parentId === undefined) {
+      this.family.set(null);
+      return;
+    }
+    if (this.family()?.id === parentId) return;
+    this.family.set(null);
+    this.muscleService.getMuscle(parentId, this.noLoader).subscribe({
+      next: parent => {
+        if (this.muscle()?.parent?.id === parentId) this.family.set(parent);
+      },
+      error: () => {
+        if (this.muscle()?.parent?.id === parentId) this.family.set(null);
       }
     });
   }
@@ -114,6 +167,20 @@ export class MuscleDetailComponent {
   }
 
   // --- HELPERS ---
+  /** The scene credits the model; without it the tiles still show its images. */
+  hasModel(muscle: MuscleResponse): boolean {
+    return !!muscleModelEntry(muscle.code);
+  }
+
+  thumbOf(muscle: MuscleRefResponse): string | undefined {
+    return muscleThumbUrl(muscle.code, this.themeService.currentTheme());
+  }
+
+  /** The medical name beside the title, unless the title already says it. */
+  medicalNameShown(muscle: MuscleResponse): string | undefined {
+    return normalize(this.getLocalizedName(muscle)).includes(normalize(muscle.medicalName)) ? undefined : muscle.medicalName;
+  }
+
   getLocalizedName(muscle: MuscleResponse | MuscleRefResponse): string {
     const isFr = this.activeLang() === 'fr';
     return (isFr ? muscle.commonNameFr : muscle.commonNameEn) || muscle.medicalName;

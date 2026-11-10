@@ -55,11 +55,11 @@ describe('MovementFormComponent', () => {
       getReferenceData: vi.fn().mockName("MuscleService.getReferenceData")
     } as any;
     muscleServiceSpy.getMuscles.mockReturnValue(of([
-      {id: 1, medicalName: 'Pectoralis Major', muscleGroup: 'CHEST'}
+      {id: 1, code: 'pectoralis-major', medicalName: 'Pectoralis Major', region: 'THORAX'}
     ]));
     muscleServiceSpy.getReferenceData.mockReturnValue(of({
       muscleRoles: ['AGONIST', 'SYNERGIST', 'STABILIZER'],
-      muscleGroups: ['CHEST', 'BACK']
+      regions: ['THORAX', 'BACK']
     } as any));
 
     notificationServiceSpy = {

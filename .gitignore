@@ -117,3 +117,7 @@ test.http
 sirius-app/e2e/.auth/
 sirius-app/test-results/
 sirius-app/playwright-report/
+
+# Muscle model pipeline: Blender and the Z-Anatomy atlas (downloaded by fetch.sh)
+sirius-app/tools/muscle-model/.work/
+__pycache__/

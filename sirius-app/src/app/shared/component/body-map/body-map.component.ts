@@ -2,11 +2,11 @@ import {ChangeDetectionStrategy, Component, input, output} from '@angular/core';
 import {TranslatePipe} from '@ngx-translate/core';
 import {BODY_BACK, BODY_BACK_VIEW_BOX, BODY_FRONT, BODY_FRONT_VIEW_BOX} from './body-map.data';
 
-/** Region (`Muscle.muscleGroup`) of each part of the drawing; the others are not muscles of the catalog. */
+/** Region (`Muscle.region`) of each part of the drawing; the others are not muscles of the catalog. */
 const REGION_OF_PART: Record<string, string> = {
-  chest: 'CHEST', abs: 'CORE', obliques: 'CORE', 'lower-back': 'CORE', trapezius: 'BACK', 'upper-back': 'BACK',
-  deltoids: 'SHOULDERS', biceps: 'ARMS', triceps: 'ARMS', forearm: 'ARMS', quadriceps: 'LEGS', adductors: 'LEGS',
-  hamstring: 'LEGS', gluteal: 'LEGS', calves: 'LEGS', tibialis: 'LEGS'
+  chest: 'THORAX', abs: 'ABDOMEN_PELVIS', obliques: 'ABDOMEN_PELVIS', 'lower-back': 'BACK', trapezius: 'BACK', 'upper-back': 'BACK',
+  deltoids: 'SHOULDER', biceps: 'ARM_FOREARM', triceps: 'ARM_FOREARM', forearm: 'ARM_FOREARM', quadriceps: 'THIGH_LEG', adductors: 'THIGH_LEG',
+  hamstring: 'THIGH_LEG', gluteal: 'HIP', calves: 'THIGH_LEG', tibialis: 'THIGH_LEG'
 };
 
 /**
