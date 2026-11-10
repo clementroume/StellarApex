@@ -293,7 +293,7 @@
     },
     "ACTIONS": {
       "ADD": "Add a muscle",
-      "SELECT_GROUP": "Select a region",
+      "SELECT_REGION": "Select a region",
       "NO_FUNCTIONAL_GROUP": "None (group or standalone muscle)",
       "SEARCH": "Search muscles..."
     },
@@ -305,7 +305,7 @@
     "FIELDS": {
       "MEDICAL_NAME": "Medical Name (Latin)",
       "COMMON_NAME": "Common Name",
-      "GROUP": "Region",
+      "REGION": "Region",
       "FUNCTIONAL_GROUP": "Functional group",
       "MEMBERS": "Muscles of the group",
       "NAME_FR": "French Name",
@@ -326,6 +326,7 @@
       "IS_GROUP": "Functional group of {{count}} muscles: it cannot belong to another group.",
       "FUNCTIONAL_GROUP_HINT": "Only groups of the same region.",
       "GROUP_BADGE": "Group",
+      "MEMBER_COUNT": "{{count}} muscles",
       "NOT_FOUND": "Muscle not found.",
       "EMPTY_LIST": "No muscle found.",
       "EMPTY_LIST_SEARCH": "No muscle found for \"{{name}}\".",
@@ -334,13 +335,14 @@
       "SUCCESS_UPDATE": "Muscle updated successfully.",
       "DELETE_CONFLICT": "Impossible to delete \"{{name}}\" because it is used in one or more movements."
     },
-    "GROUPS": {
-      "LEGS": "Legs",
+    "REGIONS": {
+      "THORAX": "Thorax",
       "BACK": "Back",
-      "CHEST": "Chest",
-      "SHOULDERS": "Shoulders",
-      "ARMS": "Arms",
-      "CORE": "Core / Abs"
+      "ABDOMEN_PELVIS": "Abdomen / Pelvis",
+      "SHOULDER": "Shoulders",
+      "ARM_FOREARM": "Arm / Forearm",
+      "HIP": "Hip",
+      "THIGH_LEG": "Thigh / Leg"
     },
     "ROLES": {
       "AGONIST": "Agonist",
@@ -352,6 +354,14 @@
       "ROLE": "Role",
       "EMPTY": "No movement with this role.",
       "ONLY": "{{value}} only"
+    },
+    "SCENE": {
+      "ALT": "{{name}} in red, the rest of the body see-through",
+      "REGION_ALT": "Muscles of the {{region}} region in red",
+      "RECENTER": "Reset the view"
+    },
+    "CREDIT": {
+      "INTRO": "3D model adapted from"
     }
   },
   "MOVEMENT": {

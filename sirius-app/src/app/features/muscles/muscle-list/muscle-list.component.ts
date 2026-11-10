@@ -1,4 +1,4 @@
-import {ChangeDetectionStrategy, Component, computed, inject, OnInit, signal} from '@angular/core';
+import {afterRenderEffect, ChangeDetectionStrategy, Component, computed, ElementRef, inject, OnInit, signal, viewChild} from '@angular/core';
 import {NgTemplateOutlet} from '@angular/common';
 import {RouterModule} from '@angular/router';
 import {TranslatePipe, TranslateService} from '@ngx-translate/core';
@@ -11,8 +11,10 @@ import {HttpContext} from '@angular/common/http';
 import {BYPASS_LOADER} from '../../../core/interceptors/loading.interceptor';
 import {SearchInputComponent} from '../../../shared/component/search-input/search-input.component';
 import {ListStateComponent} from '../../../shared/component/list/list-state/list-state.component';
-import {ListItemComponent} from '../../../shared/component/list/list-item/list-item.component';
-import {BodyMapComponent} from '../../../shared/component/body-map/body-map.component';
+import {ThemeService} from '../../../core/services/theme.service';
+import {MuscleCreditComponent} from '../muscle-credit/muscle-credit.component';
+import {muscleThumbUrl} from '../muscle-model/muscle-model';
+import {MuscleSceneComponent} from '../muscle-scene/muscle-scene.component';
 
 /** A row of a region: a top-level muscle (group or standalone) or a member shown under its group. */
 export interface MuscleRow {
@@ -25,12 +27,23 @@ import {HlmButton} from '@spartan-ng/helm/button';
 @Component({
   selector: 'app-muscle-list',
   standalone: true,
-  imports: [BodyMapComponent, NgTemplateOutlet, HlmButton, RouterModule, TranslatePipe, NgIcon, SearchInputComponent, ListStateComponent, ListItemComponent],
+  imports: [MuscleCreditComponent, MuscleSceneComponent, NgTemplateOutlet, HlmButton, RouterModule, TranslatePipe, NgIcon, SearchInputComponent, ListStateComponent],
   templateUrl: './muscle-list.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: `
+    .head { display: flex; flex-direction: column; gap: 0.75rem; margin: 2rem 0 1rem; }
+    .regions { display: flex; gap: 0.5rem; overflow-x: auto; scrollbar-width: none; }
+    .regions button { flex: none; min-height: 2.75rem; }
     .explorer { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1rem; align-items: start; }
-    @media (min-width: 768px) { .explorer { grid-template-columns: minmax(0, 5fr) minmax(0, 4fr); } }
+    .row { display: flex; align-items: center; gap: 0.75rem; padding: 0.375rem 0; border-top: 1px solid var(--sa-base-300); }
+    .thumb { flex: none; width: 4rem; height: 4rem; object-fit: contain; }
+    .member { padding-left: 2rem; }
+    @media (min-width: 768px) {
+      .head { flex-direction: row; align-items: center; justify-content: space-between; gap: 1.5rem; }
+      .search { width: 20rem; flex: none; }
+      .regions { flex-wrap: wrap; overflow-x: visible; }
+      .explorer { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 2rem; }
+    }
   `
 })
 export class MuscleListComponent implements OnInit {
@@ -39,6 +52,8 @@ export class MuscleListComponent implements OnInit {
   private readonly accessService = inject(AccessService);
   private readonly translate = inject(TranslateService);
   private readonly exporterService = inject(ExporterService);
+  private readonly themeService = inject(ThemeService);
+  private readonly regions = viewChild<ElementRef<HTMLElement>>('regions');
 
   // --- STATE (SIGNALS & VARIABLES) ---
   isLoading = signal<boolean>(false);
@@ -46,7 +61,7 @@ export class MuscleListComponent implements OnInit {
   activeLang = computed(() => this.translate.currentLang() ?? this.translate.fallbackLang() ?? 'en');
 
   rawMuscles = signal<MuscleResponse[]>([]);
-  muscleGroupKeys = signal<string[]>([]);
+  regionKeys = signal<string[]>([]);
 
   // UI State persisted in service
   searchQuery = this.muscleService.savedSearchQuery;
@@ -70,21 +85,21 @@ export class MuscleListComponent implements OnInit {
     const all = this.rawMuscles();
     const matched = new Set(this.filteredMuscles().map(m => m.id));
     const ids = new Set(all.map(m => m.id));
-    const byName = (a: MuscleResponse, b: MuscleResponse) => a.medicalName.localeCompare(b.medicalName);
+    const byName = (a: MuscleResponse, b: MuscleResponse) => this.getLocalizedName(a).localeCompare(this.getLocalizedName(b));
     const membersOf = new Map<number, MuscleResponse[]>();
     all.filter(m => m.parent && ids.has(m.parent.id)).forEach(m => {
       membersOf.set(m.parent!.id, [...(membersOf.get(m.parent!.id) ?? []), m]);
     });
 
     const grouped = new Map<string, MuscleRow[]>();
-    this.muscleGroupKeys().forEach(g => grouped.set(g, []));
+    this.regionKeys().forEach(g => grouped.set(g, []));
     all.filter(m => !m.parent || !ids.has(m.parent.id)).sort(byName).forEach(top => {
       const members = (membersOf.get(top.id) ?? []).filter(m => matched.has(m.id)).sort(byName);
       if (!matched.has(top.id) && members.length === 0) return;
-      if (!grouped.has(top.muscleGroup)) {
-        grouped.set(top.muscleGroup, []);
+      if (!grouped.has(top.region)) {
+        grouped.set(top.region, []);
       }
-      grouped.get(top.muscleGroup)!.push(
+      grouped.get(top.region)!.push(
         {muscle: top, isMember: false},
         ...members.map(muscle => ({muscle, isMember: true})));
     });
@@ -93,24 +108,33 @@ export class MuscleListComponent implements OnInit {
 
   readonly isSearching = computed(() => this.searchQuery().trim() !== '');
 
-  /** The rows shown: every region while searching, else the region picked. */
+  /** The rows shown: every muscle matching a search, else the groups and standalone muscles of the region picked. */
   readonly shownRows = computed<MuscleRow[]>(() => this.isSearching()
     ? this.populatedGroups().flatMap(group => this.groupedMuscles().get(group) ?? [])
-    : this.groupedMuscles().get(this.activeRegion()) ?? []);
+    : (this.groupedMuscles().get(this.activeRegion()) ?? []).filter(row => !row.isMember));
 
   populatedGroups = computed(() => {
-    const groups = this.muscleGroupKeys();
+    const groups = this.regionKeys();
     const map = this.groupedMuscles();
     return groups.filter(group => map.has(group) && map.get(group)!.length > 0);
   });
 
   // --- LIFECYCLE ---
+  constructor() {
+    // On a phone the pills scroll sideways: the one of the saved region must be in view.
+    afterRenderEffect(() => {
+      this.activeRegion();
+      this.regionKeys();
+      this.showPressedRegion();
+    });
+  }
+
   ngOnInit(): void {
     this.muscleService.refreshNeeded$.subscribe(() => {
       this.loadMuscles();
     });
     this.muscleService.getReferenceData().subscribe(ref => {
-      this.muscleGroupKeys.set(ref.muscleGroups);
+      this.regionKeys.set(ref.regions);
       this.loadMuscles();
     });
   }
@@ -144,10 +168,19 @@ export class MuscleListComponent implements OnInit {
   }
 
   // --- HELPERS ---
-  /** Badge of a functional group: "Group · 4". */
-  groupBadge(muscle: MuscleResponse): string | undefined {
-    const count = muscle.members?.length ?? 0;
-    return count > 0 ? `${this.translate.instant('MUSCLE.MESSAGES.GROUP_BADGE')} · ${count}` : undefined;
+  /** Scrolls the row of pills only, never the page. */
+  private showPressedRegion(): void {
+    const row = this.regions()?.nativeElement;
+    const pill = row?.querySelector<HTMLElement>('[aria-pressed="true"]');
+    if (!row || !pill) return;
+    const left = pill.offsetLeft - row.offsetLeft;
+    if (left < row.scrollLeft) row.scrollLeft = left;
+    else if (left + pill.offsetWidth > row.scrollLeft + row.clientWidth) row.scrollLeft = left + pill.offsetWidth - row.clientWidth;
+  }
+
+  /** The thumbnail of the 3D model when the muscle is in it, else the image set in the catalog. */
+  imageOf(muscle: MuscleResponse): string | undefined {
+    return muscleThumbUrl(muscle.code, this.themeService.currentTheme()) ?? muscle.imageUrl;
   }
 
   getLocalizedName(muscle: MuscleResponse): string {

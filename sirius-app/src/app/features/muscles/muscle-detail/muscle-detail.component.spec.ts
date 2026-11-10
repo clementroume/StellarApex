@@ -8,10 +8,11 @@ import {signal} from '@angular/core';
 import {provideRouter, Router} from '@angular/router';
 import {MuscleService} from '../../../api/aldebaran/services/muscle.service';
 import {NotificationService} from '../../../core/services/notification.service';
-import {of, throwError} from 'rxjs';
+import {NEVER, of, throwError} from 'rxjs';
 import {Location} from '@angular/common';
 import {provideIcons} from '@ng-icons/core';
 import {APP_ICONS} from '../../../app.config';
+import {ThemeService} from '../../../core/services/theme.service';
 
 describe('MuscleDetailComponent', () => {
   let component: MuscleDetailComponent;
@@ -31,7 +32,7 @@ describe('MuscleDetailComponent', () => {
     commonNameEn: 'Chest',
     descriptionFr: 'Desc FR',
     descriptionEn: 'Desc EN',
-    muscleGroup: 'CHEST'
+    region: 'THORAX'
   };
 
   beforeEach(async () => {
@@ -68,6 +69,7 @@ describe('MuscleDetailComponent', () => {
         provideTranslateService(),
         {provide: AuthService, useValue: mockAuthService},
         {provide: MuscleService, useValue: mockMuscleService},
+        {provide: ThemeService, useValue: {currentTheme: signal('dark')}},
         {provide: NotificationService, useValue: mockNotificationService},
         {provide: Location, useValue: mockLocation}
       ]
@@ -85,12 +87,12 @@ describe('MuscleDetailComponent', () => {
 
   it('should create and load muscle data', () => {
     expect(component).toBeTruthy();
-    expect(mockMuscleService.getMuscle).toHaveBeenCalledWith(1);
+    expect(mockMuscleService.getMuscle.mock.calls[0][0]).toBe(1);
     expect(component.muscle()).toEqual(mockMuscle);
   });
 
   it('should list the movements using the muscle, by role', () => {
-    expect(mockMuscleService.getUsage).toHaveBeenCalledWith(1);
+    expect(mockMuscleService.getUsage.mock.calls[0][0]).toBe(1);
     expect(component.countOf('AGONIST')).toBe(2);
     expect(component.shownUsage().map(u => u.movementName)).toEqual(['Bench Press', 'Dip']);
     component.role.set('SYNERGIST');
@@ -147,5 +149,64 @@ describe('MuscleDetailComponent', () => {
       expect(mockMuscleService.deleteMuscle).toHaveBeenCalledWith(1);
       expect(mockNotificationService.showError).toHaveBeenCalled();
     });
+  });
+
+  it('shows the group and its members as tiles on a group page', () => {
+    mockMuscleService.getMuscle.mockReturnValue(of({...mockMuscle, id: 2, members: [{id: 3, medicalName: 'A'}, {id: 4, medicalName: 'B'}]}));
+    fixture.componentRef.setInput('id', '2');
+    fixture.detectChanges();
+    expect(component.tiles().map(t => t.id)).toEqual([2, 3, 4]);
+    expect(fixture.nativeElement.querySelectorAll('[data-slot="muscle-members"] a').length).toBe(3);
+    expect(fixture.nativeElement.querySelector('[aria-current="page"]')).not.toBeNull();
+  });
+
+  it('shows the tiles of the parent on a member page, without reloading them between members', () => {
+    const group = {...mockMuscle, id: 2, members: [{id: 3, medicalName: 'A'}, {id: 4, medicalName: 'B'}]};
+    const memberOf = (id: number) => ({...mockMuscle, id, parent: {id: 2, medicalName: 'G'}});
+    mockMuscleService.getMuscle.mockImplementation((id: number) => of(id === 2 ? group : memberOf(id)));
+
+    fixture.componentRef.setInput('id', '3');
+    fixture.detectChanges();
+    expect(component.tiles().map(t => t.id)).toEqual([2, 3, 4]);
+
+    mockMuscleService.getMuscle.mockClear();
+    fixture.componentRef.setInput('id', '4');
+    fixture.detectChanges();
+    expect(mockMuscleService.getMuscle.mock.calls.map(c => c[0])).toEqual([4]);
+    expect(component.tiles().map(t => t.id)).toEqual([2, 3, 4]);
+  });
+
+  it('keeps the scene on screen while another muscle loads', () => {
+    mockMuscleService.getMuscle.mockReturnValue(NEVER);
+    fixture.componentRef.setInput('id', '5');
+    fixture.detectChanges();
+    expect(component.isLoading()).toBe(true);
+    expect(fixture.nativeElement.querySelector('app-muscle-scene')).not.toBeNull();
+  });
+
+  it('credits the model under the tiles of a muscle absent from it', () => {
+    mockMuscleService.getMuscle.mockReturnValue(of({...mockMuscle, id: 2, members: [{id: 3, medicalName: 'A'}]}));
+    fixture.componentRef.setInput('id', '2');
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('app-muscle-credit')).not.toBeNull();
+  });
+
+  it('shows the medical name beside the title only when the title does not say it', () => {
+    translateService.use('fr');
+    expect(component.medicalNameShown({...mockMuscle, commonNameFr: 'Droit fémoral', medicalName: 'Rectus Femoris'})).toBe('Rectus Femoris');
+    expect(component.medicalNameShown({...mockMuscle, commonNameFr: 'Latissimus Dorsi (Lats)', medicalName: 'Latissimus Dorsi'})).toBeUndefined();
+    expect(component.medicalNameShown({...mockMuscle, commonNameFr: null, medicalName: 'Sartorius'})).toBeUndefined();
+  });
+
+  it('has no tile for a standalone muscle', () => {
+    expect(component.tiles()).toEqual([]);
+    expect(fixture.nativeElement.querySelector('[data-slot="muscle-members"]')).toBeNull();
+  });
+
+  it('shows no credit for a muscle absent from the 3D model', async () => {
+    await fixture.whenStable();
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('app-muscle-credit')).toBeNull();
+    expect(fixture.nativeElement.querySelector('[data-slot="muscle-scene-empty"]')).not.toBeNull();
   });
 });

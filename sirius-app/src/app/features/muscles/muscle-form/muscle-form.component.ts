@@ -36,7 +36,7 @@ export class MuscleFormComponent implements OnInit {
   isLoading = signal<boolean>(false);
   private readonly muscleId = signal<number | null>(null);
 
-  muscleGroups = signal<string[]>([]);
+  regions = signal<string[]>([]);
   private readonly allMuscles = signal<MuscleResponse[]>([]);
   /** Number of muscles of the edited muscle when it is a functional group (it cannot join another group). */
   membersCount = signal<number>(0);
@@ -45,7 +45,7 @@ export class MuscleFormComponent implements OnInit {
     // --- Identification ---
     medicalName: ['', [Validators.required, Validators.maxLength(100)]],
     // --- Characteristics ---
-    muscleGroup: ['', [Validators.required]],
+    region: ['', [Validators.required]],
     parentId: [null as number | null],
     // --- Internationalized Content ---
     commonNameEn: ['', [Validators.maxLength(100)]],
@@ -56,18 +56,18 @@ export class MuscleFormComponent implements OnInit {
     imageUrl: ['', [Validators.maxLength(512)]],
   });
 
-  private readonly region = toSignal(this.muscleForm.controls.muscleGroup.valueChanges, {initialValue: ''});
+  private readonly region = toSignal(this.muscleForm.controls.region.valueChanges, {initialValue: ''});
 
   /** Possible functional groups: top-level muscles of the same region, except the muscle itself. */
   groupCandidates = computed(() => this.allMuscles()
-    .filter(m => !m.parent && m.muscleGroup === this.region() && m.id !== this.muscleId())
+    .filter(m => !m.parent && m.region === this.region() && m.id !== this.muscleId())
     .sort((a, b) => a.medicalName.localeCompare(b.medicalName)));
 
   ngOnInit(): void {
-    this.muscleService.getReferenceData().subscribe(ref => this.muscleGroups.set(ref.muscleGroups));
+    this.muscleService.getReferenceData().subscribe(ref => this.regions.set(ref.regions));
     this.muscleService.getMuscles().subscribe(muscles => this.allMuscles.set(muscles));
     // A functional group must be in the same region: changing the region drops a group that no longer fits
-    this.muscleForm.controls.muscleGroup.valueChanges.subscribe(() => {
+    this.muscleForm.controls.region.valueChanges.subscribe(() => {
       const parentId = this.muscleForm.controls.parentId.value;
       if (parentId != null && this.allMuscles().length > 0 && !this.groupCandidates().some(g => g.id === parentId)) {
         this.muscleForm.controls.parentId.setValue(null);
@@ -92,7 +92,7 @@ export class MuscleFormComponent implements OnInit {
           // --- Identification ---
           medicalName: muscle.medicalName,
           // --- Characteristics ---
-          muscleGroup: muscle.muscleGroup,
+          region: muscle.region,
           parentId: muscle.parent?.id ?? null,
           // --- Internationalized Content ---
           commonNameEn: muscle.commonNameEn || '',

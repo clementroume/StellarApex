@@ -38,6 +38,14 @@ describe('DetailHeaderComponent', () => {
     expect(subtitleSpan.textContent).toContain('(Subtitle)');
   });
 
+  it('should drop the parentheses of a plain subtitle', () => {
+    fixture.componentRef.setInput('title', 'Title');
+    fixture.componentRef.setInput('subtitle', 'Subtitle');
+    fixture.componentRef.setInput('plainSubtitle', true);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('h1 span').textContent.trim()).toBe('Subtitle');
+  });
+
   it('should emit back event on button click', () => {
     vi.spyOn(component.back, 'emit');
     const button = fixture.nativeElement.querySelector('button');

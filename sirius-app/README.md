@@ -150,6 +150,13 @@ The backends enforce every rule; Sirius only adapts what it shows:
 
 ## Catalog Screens
 
+* **Muscle page**: a square scene with the image of the muscle, then the 3D model (three.js, `@defer`) takes over: drag to
+  rotate, pinch or Ctrl + wheel to zoom, one finger still scrolls the page vertically. The image stays without WebGL, in
+  data saver mode or if the model fails; a muscle absent from the model shows its `imageUrl` or the "no image" icon. Under the
+  scene, centred tiles for the group and its muscles, on the page of the group and of each muscle: the camera flies to the
+  muscle picked without reloading the scene. Beside it, one box with the description and the movements using the muscle. The medical name follows the title when it differs. Short credit Z-Anatomy / BodyParts3D
+  under the scene (CC BY-SA 4.0, sources and changes in `public/muscle-model/LICENSE.txt`). The model, its table and the procedure to add a muscle are in
+  [tools/muscle-model](tools/muscle-model/README.md).
 * **WOD detail**: the title, then two boxes that never repeat an information. Left: visibility,
   category, modalities and locked badges, score type, "My best score" (the PR with its level and rank, or a
   "Log my score" button), description and notes. Right, the gym whiteboard: the format with its duration ("AMRAP 20 minutes",
@@ -192,7 +199,7 @@ The backends enforce every rule; Sirius only adapts what it shows:
   rejects any other value.
 * **Catalog homes**: Movements shows discipline buttons, family chips and cards (image or icon, simple variants or
   what a chain / either movement is made of, number of variants, the user's record); the search spans the whole catalog.
-  Muscles shows region chips and a clickable front / back body map beside the muscles of the region.
+  Muscles shows region chips, the 3D model with the region in red and its groups and standalone muscles; the search spans every muscle.
 * **Movements**: the search also finds usual names and their search terms. A movement page picks a variant
   (chips or usual-name shortcuts) and shows its name, description and adjusted roles
   (`GET /aldebaran/movements/{id}/variant`), its composition and its records. The admin form has tabs for the

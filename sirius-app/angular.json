@@ -21,6 +21,11 @@
                 "glob": "**/*",
                 "input": "public"
               },
+              {
+                "glob": "draco_{decoder.wasm,wasm_wrapper.js}",
+                "input": "node_modules/three/examples/jsm/libs/draco/gltf",
+                "output": "muscle-model/draco"
+              },
               "src/assets"
             ],
             "styles": [
@@ -49,7 +54,8 @@
                   "inlineCritical": false
                 }
               },
-              "serviceWorker": "ngsw-config.json"
+              "serviceWorker": "ngsw-config.json",
+              "namedChunks": true
             },
             "development": {
               "optimization": false,

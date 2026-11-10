@@ -8,7 +8,7 @@ import {HlmInputGroupImports} from '@spartan-ng/helm/input-group';
   imports: [NgIconComponent, HlmInputGroupImports],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="flex justify-center mb-8 w-full">
+    <div class="flex justify-center w-full" [class.mb-8]="!compact()">
       <div hlmInputGroup class="w-full max-w-md h-11 md:h-10 bg-card">
         <div hlmInputGroupAddon>
           <ng-icon name="heroMagnifyingGlass" aria-hidden="true"/>
@@ -25,6 +25,8 @@ import {HlmInputGroupImports} from '@spartan-ng/helm/input-group';
 export class SearchInputComponent {
   placeholder = input<string>('');
   value = input<string>('');
+  /** Without the bottom margin, when the parent lays the input out. */
+  compact = input<boolean>(false);
   valueChange = output<string>();
 
   onInput(event: Event): void {

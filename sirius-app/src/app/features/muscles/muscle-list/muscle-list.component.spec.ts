@@ -7,6 +7,7 @@ import {signal, WritableSignal} from '@angular/core';
 import {provideRouter} from '@angular/router';
 import {provideTranslateService, TranslateService} from '@ngx-translate/core';
 import {APP_ICONS} from '../../../app.config';
+import {ThemeService} from '../../../core/services/theme.service';
 import {provideIcons} from '@ng-icons/core';
 import {ExporterService} from '../../../api/aldebaran/services/exporter.service';
 import {NotificationService} from '../../../core/services/notification.service';
@@ -34,7 +35,7 @@ describe('MuscleListComponent', () => {
       commonNameEn: 'Zygomaticus',
       descriptionFr: 'Desc FR Z',
       descriptionEn: 'Desc EN Z',
-      muscleGroup: 'CHEST'
+      region: 'THORAX'
     },
     {
       id: 1,
@@ -43,7 +44,7 @@ describe('MuscleListComponent', () => {
       commonNameEn: 'Chest',
       descriptionFr: 'Desc FR',
       descriptionEn: 'Desc EN',
-      muscleGroup: 'CHEST'
+      region: 'THORAX'
     }
   ];
 
@@ -57,13 +58,13 @@ describe('MuscleListComponent', () => {
     mockMuscleService = {
       ...muscleServiceSpyMethods,
       refreshNeeded$: new Subject<void>(),
-      savedRegion: signal('CHEST'),
+      savedRegion: signal('THORAX'),
       savedSearchQuery: signal('')
     };
 
     mockMuscleService.getMuscles.mockReturnValue(of(mockMuscles));
     mockMuscleService.getReferenceData.mockReturnValue(of({
-      muscleGroups: ['CHEST', 'BACK', 'LEGS'],
+      regions: ['THORAX', 'BACK', 'THIGH_LEG'],
       muscleRoles: ['AGONIST', 'SYNERGIST']
     }));
 
@@ -89,6 +90,7 @@ describe('MuscleListComponent', () => {
         provideIcons(APP_ICONS),
         provideTranslateService(),
         {provide: MuscleService, useValue: mockMuscleService},
+        {provide: ThemeService, useValue: {currentTheme: signal('dark')}},
         {provide: AuthService, useValue: mockAuthService},
         {provide: ExporterService, useValue: mockExporterService},
         {provide: NotificationService, useValue: mockNotificationService}
@@ -112,29 +114,37 @@ describe('MuscleListComponent', () => {
   it('should pre-initialize all groups even if they are empty', () => {
     const grouped = component.groupedMuscles();
     // LEGS and BACK were returned by getReferenceData but have no muscles in the mock data
-    expect(grouped.has('LEGS')).toBe(true);
-    expect(grouped.get('LEGS')?.length).toBe(0);
+    expect(grouped.has('THIGH_LEG')).toBe(true);
+    expect(grouped.get('THIGH_LEG')?.length).toBe(0);
     expect(grouped.has('BACK')).toBe(true);
   });
 
   it('should list each functional group followed by its members, and keep the group for a member match', () => {
-    const quads = {id: 10, medicalName: 'Quadriceps Femoris', muscleGroup: 'LEGS', parent: null,
+    const quads = {id: 10, medicalName: 'Quadriceps Femoris', region: 'THIGH_LEG', parent: null,
       members: [{id: 12, medicalName: 'Vastus Lateralis'}, {id: 11, medicalName: 'Rectus Femoris'}]};
     component.rawMuscles.set([
-      {id: 12, medicalName: 'Vastus Lateralis', muscleGroup: 'LEGS', parent: {id: 10, medicalName: 'Quadriceps Femoris'}},
+      {id: 12, medicalName: 'Vastus Lateralis', region: 'THIGH_LEG', parent: {id: 10, medicalName: 'Quadriceps Femoris'}},
       quads,
-      {id: 11, medicalName: 'Rectus Femoris', muscleGroup: 'LEGS', parent: {id: 10, medicalName: 'Quadriceps Femoris'}},
-      {id: 13, medicalName: 'Tibialis Anterior', muscleGroup: 'LEGS'}
+      {id: 11, medicalName: 'Rectus Femoris', region: 'THIGH_LEG', parent: {id: 10, medicalName: 'Quadriceps Femoris'}},
+      {id: 13, medicalName: 'Tibialis Anterior', region: 'THIGH_LEG'}
     ] as any);
 
-    expect(component.groupedMuscles().get('LEGS')!.map(r => [r.muscle.medicalName, r.isMember])).toEqual([
+    expect(component.groupedMuscles().get('THIGH_LEG')!.map(r => [r.muscle.medicalName, r.isMember])).toEqual([
       ['Quadriceps Femoris', false], ['Rectus Femoris', true], ['Vastus Lateralis', true], ['Tibialis Anterior', false]
     ]);
-    expect(component.groupBadge(quads as any)).toBe('MUSCLE.MESSAGES.GROUP_BADGE · 2');
 
     component.searchQuery.set('vastus');
-    expect(component.groupedMuscles().get('LEGS')!.map(r => r.muscle.medicalName))
+    expect(component.groupedMuscles().get('THIGH_LEG')!.map(r => r.muscle.medicalName))
       .toEqual(['Quadriceps Femoris', 'Vastus Lateralis']);
+  });
+
+  it('should sort the rows on the name shown, not the medical name', () => {
+    component.rawMuscles.set([
+      {id: 1, medicalName: 'A Medical', commonNameEn: 'Zed', region: 'THIGH_LEG'},
+      {id: 2, medicalName: 'Z Medical', commonNameEn: 'Abs', region: 'THIGH_LEG'}
+    ] as any);
+    translateService.use('en');
+    expect(component.groupedMuscles().get('THIGH_LEG')!.map(r => r.muscle.id)).toEqual([2, 1]);
   });
 
   it('should filter muscles locally based on the search query (case-insensitive)', () => {
@@ -153,12 +163,24 @@ describe('MuscleListComponent', () => {
 
   it('should show the region picked, and every region while searching', () => {
     expect(component.shownRows().map(r => r.muscle.id)).toEqual([1, 2]);
-    component.activeRegion.set('LEGS');
+    component.activeRegion.set('THIGH_LEG');
     expect(component.shownRows()).toEqual([]);
     component.onSearchChange('pect');
     fixture.detectChanges();
     expect(component.shownRows().map(r => r.muscle.medicalName)).toEqual(['Pectoralis']);
-    expect(fixture.nativeElement.querySelector('app-body-map')).toBeNull();
+    expect(fixture.nativeElement.querySelector('[data-slot="region-scene"]')).toBeNull();
+  });
+
+  it('should show only the groups of a region, and their members while searching', () => {
+    component.rawMuscles.set([
+      {id: 10, medicalName: 'Quadriceps Femoris', region: 'THIGH_LEG', members: [{id: 11, medicalName: 'Rectus Femoris'}]},
+      {id: 11, medicalName: 'Rectus Femoris', region: 'THIGH_LEG', parent: {id: 10, medicalName: 'Quadriceps Femoris'}}
+    ] as any);
+    component.activeRegion.set('THIGH_LEG');
+    expect(component.shownRows().map(r => r.muscle.id)).toEqual([10]);
+
+    component.onSearchChange('rectus');
+    expect(component.shownRows().map(r => r.muscle.id)).toEqual([10, 11]);
   });
 
   it('should update the searchQuery signal on input', () => {

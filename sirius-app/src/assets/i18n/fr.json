@@ -293,7 +293,7 @@
     },
     "ACTIONS": {
       "ADD": "Ajouter un muscle",
-      "SELECT_GROUP": "Sélectionner une région",
+      "SELECT_REGION": "Sélectionner une région",
       "NO_FUNCTIONAL_GROUP": "Aucun (groupe ou muscle seul)",
       "SEARCH": "Rechercher un muscle..."
     },
@@ -305,7 +305,7 @@
     "FIELDS": {
       "MEDICAL_NAME": "Nom Médical (Latin)",
       "COMMON_NAME": "Nom Commun",
-      "GROUP": "Région",
+      "REGION": "Région",
       "FUNCTIONAL_GROUP": "Groupe fonctionnel",
       "MEMBERS": "Muscles du groupe",
       "NAME_FR": "Nom Français",
@@ -326,6 +326,7 @@
       "IS_GROUP": "Groupe fonctionnel de {{count}} muscles : il ne peut pas appartenir à un autre groupe.",
       "FUNCTIONAL_GROUP_HINT": "Uniquement les groupes de la même région.",
       "GROUP_BADGE": "Groupe",
+      "MEMBER_COUNT": "{{count}} muscles",
       "NOT_FOUND": "Muscle introuvable.",
       "EMPTY_LIST": "Aucun muscle trouvé.",
       "EMPTY_LIST_SEARCH": "Aucun muscle trouvé pour \"{{name}}\".",
@@ -334,13 +335,14 @@
       "SUCCESS_UPDATE": "Muscle mis à jour avec succès.",
       "DELETE_CONFLICT": "Impossible de supprimer \"{{name}}\" car il est utilisé dans un ou plusieurs mouvements."
     },
-    "GROUPS": {
-      "LEGS": "Jambes",
+    "REGIONS": {
+      "THORAX": "Thorax",
       "BACK": "Dos",
-      "CHEST": "Torse",
-      "SHOULDERS": "Épaules",
-      "ARMS": "Bras",
-      "CORE": "Tronc / Abdos"
+      "ABDOMEN_PELVIS": "Abdomen / Pelvis",
+      "SHOULDER": "Épaules",
+      "ARM_FOREARM": "Bras / Avant-bras",
+      "HIP": "Hanche",
+      "THIGH_LEG": "Cuisse / Jambe"
     },
     "ROLES": {
       "AGONIST": "Agoniste (Principal)",
@@ -352,6 +354,14 @@
       "ROLE": "Rôle",
       "EMPTY": "Aucun mouvement avec ce rôle.",
       "ONLY": "{{value}} seulement"
+    },
+    "SCENE": {
+      "ALT": "{{name}} en rouge, le reste du corps en transparence",
+      "REGION_ALT": "Muscles de la région {{region}} en rouge",
+      "RECENTER": "Recentrer la vue"
+    },
+    "CREDIT": {
+      "INTRO": "Modèle 3D adapté de"
     }
   },
   "MOVEMENT": {

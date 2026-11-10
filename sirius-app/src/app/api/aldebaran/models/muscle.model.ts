@@ -1,8 +1,8 @@
 export interface MuscleRequest {
   // Identification
   medicalName: string;
-  // Characteristics (muscleGroup = region; parentId = functional group, null for a group or a standalone muscle)
-  muscleGroup: string;
+  // Characteristics (parentId = functional group, null for a group or a standalone muscle)
+  region: string;
   parentId?: number | null;
   // Internationalized Content
   commonNameEn?: string;
@@ -16,6 +16,8 @@ export interface MuscleRequest {
 /** Lightweight muscle reference used for functional group links. */
 export interface MuscleRefResponse {
   id: number;
+  /** Stable key of the muscle in the 3D model; never changes when the muscle is renamed. */
+  code: string;
   medicalName: string;
   commonNameEn?: string;
   commonNameFr?: string;
@@ -24,9 +26,11 @@ export interface MuscleRefResponse {
 export interface MuscleResponse {
   // Identification
   id: number;
+  /** Stable key of the muscle in the 3D model; never changes when the muscle is renamed. */
+  code: string;
   medicalName: string;
   // Characteristics
-  muscleGroup: string;
+  region: string;
   parent?: MuscleRefResponse | null;
   members?: MuscleRefResponse[];
   // Internationalized Content
@@ -40,7 +44,7 @@ export interface MuscleResponse {
 
 export interface MuscleReferenceData {
   // --- Muscle Group ---
-  muscleGroups: string[];
+  regions: string[];
   // --- Muscle Role ---
   muscleRoles: string[];
 }
