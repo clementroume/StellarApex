@@ -37,6 +37,14 @@ public interface MuscleRepository extends JpaRepository<Muscle, Long> {
   boolean existsByMedicalNameIgnoreCase(String medicalName);
 
   /**
+   * Checks if a muscle already holds this code.
+   *
+   * @param code The stable key of a muscle.
+   * @return {@code true} if the code is taken.
+   */
+  boolean existsByCode(String code);
+
+  /**
    * Links between some muscles and the movements that list them.
    *
    * @param muscleIds The muscles.

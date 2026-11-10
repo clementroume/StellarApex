@@ -16,6 +16,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.OrderBy;
+import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -23,12 +24,12 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
@@ -59,11 +60,19 @@ public class Muscle {
   @NotBlank
   private String medicalName;
 
+  /**
+   * Stable key linking this muscle to its 3D model and images (see {@code
+   * sirius-app/tools/muscle-model}). Derived once from the medical name, never changed afterwards,
+   * so renaming a muscle keeps the link.
+   */
+  @Column(name = "code", unique = true, nullable = false, updatable = false, length = 100)
+  private String code;
+
   // --- Characteristics ---
   @Enumerated(EnumType.STRING)
-  @Column(name = "muscle_group", nullable = false, length = 50)
+  @Column(name = "region", nullable = false, length = 50)
   @NotNull
-  private MuscleGroup muscleGroup;
+  private MuscleRegion region;
 
   /** Functional group of this muscle; null for a group or a standalone muscle. */
   @ManyToOne(fetch = FetchType.LAZY)
@@ -110,6 +119,26 @@ public class Muscle {
   @Column(name = "updated_at", nullable = false)
   private LocalDateTime updatedAt;
 
+  /**
+   * The code a medical name gives: lower case, every run of other characters replaced by one dash
+   * (same rule as the model pipeline).
+   *
+   * @param medicalName The medical name.
+   * @return The code, {@code "muscle"} when the name holds no latin letter or digit.
+   */
+  public static String codeOf(String medicalName) {
+    String code =
+        medicalName.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9]+", "-").replaceAll("^-|-$", "");
+    return code.isEmpty() ? "muscle" : code;
+  }
+
+  @PrePersist
+  void assignCode() {
+    if (code == null) {
+      code = codeOf(medicalName);
+    }
+  }
+
   // --- Equality & Hashing ---
   @Override
   public boolean equals(Object o) {
@@ -127,15 +156,14 @@ public class Muscle {
     return getClass().hashCode();
   }
 
-  /** MuscleGroup Inner Enum. */
-  @Getter
-  @RequiredArgsConstructor
-  public enum MuscleGroup {
-    LEGS,
+  /** Region of the body a muscle belongs to, by its proximal attachment. */
+  public enum MuscleRegion {
+    THORAX,
     BACK,
-    CHEST,
-    SHOULDERS,
-    ARMS,
-    CORE
+    ABDOMEN_PELVIS,
+    SHOULDER,
+    ARM_FOREARM,
+    HIP,
+    THIGH_LEG
   }
 }

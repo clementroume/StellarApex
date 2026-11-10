@@ -102,7 +102,7 @@ public class MuscleController {
   }
 
   /**
-   * Retrieves reference data (muscleGroups and muscleRoles) for UI forms.
+   * Retrieves reference data (regions and muscleRoles) for UI forms.
    *
    * @return The {@link MuscleReferenceData}.
    */

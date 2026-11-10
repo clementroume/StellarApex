@@ -3,7 +3,7 @@ package apex.stellar.aldebaran.dto;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import apex.stellar.aldebaran.model.entities.MovementMuscle.MuscleRole;
-import apex.stellar.aldebaran.model.entities.Muscle.MuscleGroup;
+import apex.stellar.aldebaran.model.entities.Muscle.MuscleRegion;
 import apex.stellar.aldebaran.model.entities.Score.ScalingLevel;
 import apex.stellar.aldebaran.model.entities.Wod.ScoreType;
 import apex.stellar.aldebaran.model.entities.Wod.WodType;
@@ -94,7 +94,7 @@ class DtoLocalizationTest {
       assertViolationEnAndFr(
           request, "medicalName", "Medical name is required.", "Le nom médical est requis.");
       assertViolationEnAndFr(
-          request, "muscleGroup", "Muscle group is required.", "Le groupe musculaire est requis.");
+          request, "region", "Muscle group is required.", "Le groupe musculaire est requis.");
     }
 
     @Test
@@ -104,7 +104,7 @@ class DtoLocalizationTest {
       String long2001 = "A".repeat(2001);
 
       MuscleRequest request =
-          new MuscleRequest(long101, MuscleGroup.CHEST, null, long101, null, long2001, null, null);
+          new MuscleRequest(long101, MuscleRegion.THORAX, null, long101, null, long2001, null, null);
 
       assertViolationEnAndFr(
           request,

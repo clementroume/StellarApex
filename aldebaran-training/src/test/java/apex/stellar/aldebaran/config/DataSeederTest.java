@@ -63,10 +63,10 @@ class DataSeederTest {
   void shouldSeedMusclesWithFunctionalGroups() throws Exception {
     String csv =
         """
-        medical_name,muscle_group,parent,common_name_en
-        Rectus Femoris,LEGS,Quadriceps Femoris,
-        Quadriceps Femoris,LEGS,,Quads
-        Vastus Ghost,LEGS,Unknown Group,
+        medical_name,region,parent,common_name_en
+        Rectus Femoris,THIGH_LEG,Quadriceps Femoris,
+        Quadriceps Femoris,THIGH_LEG,,Quads
+        Vastus Ghost,THIGH_LEG,Unknown Group,
         """;
 
     dataSeeder.seedMuscles(new StringReader(csv));
@@ -79,6 +79,26 @@ class DataSeederTest {
     assertSame(saved.get("Quadriceps Femoris"), saved.get("Rectus Femoris").getParent());
     assertNull(saved.get("Quadriceps Femoris").getParent());
     assertNull(saved.get("Vastus Ghost").getParent());
+  }
+
+  @Test
+  @DisplayName("Keeps the code of the CSV, so that a renamed muscle stays linked after a reset")
+  void shouldKeepTheExportedCode() throws Exception {
+    String csv =
+        """
+        medical_name,region,parent,code
+        Renamed Muscle,THIGH_LEG,,original-name
+        Plain Muscle,THIGH_LEG,,
+        """;
+
+    dataSeeder.seedMuscles(new StringReader(csv));
+
+    ArgumentCaptor<Collection<Muscle>> captor = ArgumentCaptor.captor();
+    verify(muscleRepository).saveAll(captor.capture());
+    Map<String, Muscle> saved =
+        captor.getValue().stream().collect(Collectors.toMap(Muscle::getMedicalName, m -> m));
+    assertEquals("original-name", saved.get("Renamed Muscle").getCode());
+    assertNull(saved.get("Plain Muscle").getCode()); // assigned from the name at persist
   }
 
   @Test

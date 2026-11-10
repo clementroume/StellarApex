@@ -10,7 +10,7 @@ import apex.stellar.aldebaran.exception.DataConflictException;
 import apex.stellar.aldebaran.exception.ResourceNotFoundException;
 import apex.stellar.aldebaran.mapper.MuscleMapper;
 import apex.stellar.aldebaran.model.entities.Muscle;
-import apex.stellar.aldebaran.model.entities.Muscle.MuscleGroup;
+import apex.stellar.aldebaran.model.entities.Muscle.MuscleRegion;
 import apex.stellar.aldebaran.repository.MuscleRepository;
 import java.util.List;
 import java.util.Optional;
@@ -41,13 +41,13 @@ class MuscleServiceTest {
         Muscle.builder()
             .id(1L)
             .medicalName("Pectoralis Major")
-            .muscleGroup(MuscleGroup.CHEST)
+            .region(MuscleRegion.THORAX)
             .build();
 
     muscleRequest =
         new MuscleRequest(
             "Pectoralis Major",
-            MuscleGroup.CHEST,
+            MuscleRegion.THORAX,
             null,
             "Chest",
             "Pectoraux",
@@ -58,8 +58,9 @@ class MuscleServiceTest {
     muscleResponse =
         new MuscleResponse(
             1L,
+            "pectoralis-major",
             "Pectoralis Major",
-            MuscleGroup.CHEST,
+            MuscleRegion.THORAX,
             null,
             List.of(),
             "Chest",
@@ -67,6 +68,29 @@ class MuscleServiceTest {
             "Desc EN",
             "Desc FR",
             null);
+  }
+
+  @Test
+  @DisplayName("codeOf: should turn a medical name into a stable key")
+  void testCodeOf() {
+    assertEquals("quadriceps-femoris", Muscle.codeOf("Quadriceps Femoris"));
+    assertEquals("triceps-brachii-long-head", Muscle.codeOf("Triceps Brachii (Long Head)"));
+    assertEquals("muscle", Muscle.codeOf("***"));
+  }
+
+  @Test
+  @DisplayName("createMuscle: should derive the code from the name and number it when taken")
+  void testCreateMuscle_NumbersATakenCode() {
+    Muscle mapped = Muscle.builder().medicalName("Pectoralis Major").region(MuscleRegion.THORAX).build();
+    when(muscleRepository.existsByMedicalNameIgnoreCase("Pectoralis Major")).thenReturn(false);
+    when(muscleMapper.toEntity(muscleRequest)).thenReturn(mapped);
+    when(muscleRepository.existsByCode("pectoralis-major")).thenReturn(true);
+    when(muscleRepository.existsByCode("pectoralis-major-2")).thenReturn(false);
+    when(muscleRepository.save(mapped)).thenReturn(mapped);
+
+    muscleService.createMuscle(muscleRequest);
+
+    assertEquals("pectoralis-major-2", mapped.getCode());
   }
 
   @Test
@@ -190,7 +214,7 @@ class MuscleServiceTest {
     Long id = 1L;
     Muscle existing = Muscle.builder().id(id).medicalName("Old Name").build();
     MuscleRequest renameRequest =
-        new MuscleRequest("New Name", MuscleGroup.CHEST, null, "Common", "Commun", "Desc", "Desc", null);
+        new MuscleRequest("New Name", MuscleRegion.THORAX, null, "Common", "Commun", "Desc", "Desc", null);
     when(muscleRepository.findById(id)).thenReturn(Optional.of(existing));
     when(muscleRepository.existsByMedicalNameIgnoreCase("New Name")).thenReturn(false);
 
@@ -252,20 +276,20 @@ class MuscleServiceTest {
   // Functional groups (parent / members)
   // =========================================================================
 
-  private static MuscleRequest memberRequest(MuscleGroup region, Long parentId) {
+  private static MuscleRequest memberRequest(MuscleRegion region, Long parentId) {
     return new MuscleRequest("Vastus Lateralis", region, parentId, null, null, null, null, null);
   }
 
   private static Muscle quadriceps() {
-    return Muscle.builder().id(10L).medicalName("Quadriceps Femoris").muscleGroup(MuscleGroup.LEGS).build();
+    return Muscle.builder().id(10L).medicalName("Quadriceps Femoris").region(MuscleRegion.THIGH_LEG).build();
   }
 
   @Test
   @DisplayName("createMuscle: should link the muscle to its functional group")
   void testCreateMuscle_WithParent() {
-    Muscle vastus = Muscle.builder().medicalName("Vastus Lateralis").muscleGroup(MuscleGroup.LEGS).build();
+    Muscle vastus = Muscle.builder().medicalName("Vastus Lateralis").region(MuscleRegion.THIGH_LEG).build();
     Muscle quads = quadriceps();
-    MuscleRequest request = memberRequest(MuscleGroup.LEGS, 10L);
+    MuscleRequest request = memberRequest(MuscleRegion.THIGH_LEG, 10L);
     when(muscleRepository.existsByMedicalNameIgnoreCase("Vastus Lateralis")).thenReturn(false);
     when(muscleMapper.toEntity(request)).thenReturn(vastus);
     when(muscleRepository.findById(10L)).thenReturn(Optional.of(quads));
@@ -280,7 +304,7 @@ class MuscleServiceTest {
   @Test
   @DisplayName("createMuscle: should return 404 when the functional group does not exist")
   void testCreateMuscle_ParentNotFound() {
-    MuscleRequest request = memberRequest(MuscleGroup.LEGS, 99L);
+    MuscleRequest request = memberRequest(MuscleRegion.THIGH_LEG, 99L);
     when(muscleRepository.existsByMedicalNameIgnoreCase("Vastus Lateralis")).thenReturn(false);
     when(muscleMapper.toEntity(request)).thenReturn(new Muscle());
     when(muscleRepository.findById(99L)).thenReturn(Optional.empty());
@@ -293,12 +317,12 @@ class MuscleServiceTest {
   @DisplayName("createMuscle: should reject a parent that already belongs to a group (no nesting)")
   void testCreateMuscle_NestedParent() {
     Muscle rectusFemoris =
-        Muscle.builder().id(11L).medicalName("Rectus Femoris").muscleGroup(MuscleGroup.LEGS)
+        Muscle.builder().id(11L).medicalName("Rectus Femoris").region(MuscleRegion.THIGH_LEG)
             .parent(quadriceps()).build();
-    MuscleRequest request = memberRequest(MuscleGroup.LEGS, 11L);
+    MuscleRequest request = memberRequest(MuscleRegion.THIGH_LEG, 11L);
     when(muscleRepository.existsByMedicalNameIgnoreCase("Vastus Lateralis")).thenReturn(false);
     when(muscleMapper.toEntity(request))
-        .thenReturn(Muscle.builder().muscleGroup(MuscleGroup.LEGS).build());
+        .thenReturn(Muscle.builder().region(MuscleRegion.THIGH_LEG).build());
     when(muscleRepository.findById(11L)).thenReturn(Optional.of(rectusFemoris));
 
     DataConflictException ex =
@@ -311,10 +335,10 @@ class MuscleServiceTest {
   @Test
   @DisplayName("createMuscle: should reject a functional group in another region")
   void testCreateMuscle_ParentOtherRegion() {
-    MuscleRequest request = memberRequest(MuscleGroup.ARMS, 10L);
+    MuscleRequest request = memberRequest(MuscleRegion.ARM_FOREARM, 10L);
     when(muscleRepository.existsByMedicalNameIgnoreCase("Vastus Lateralis")).thenReturn(false);
     when(muscleMapper.toEntity(request))
-        .thenReturn(Muscle.builder().muscleGroup(MuscleGroup.ARMS).build());
+        .thenReturn(Muscle.builder().region(MuscleRegion.ARM_FOREARM).build());
     when(muscleRepository.findById(10L)).thenReturn(Optional.of(quadriceps()));
 
     DataConflictException ex =
@@ -328,7 +352,7 @@ class MuscleServiceTest {
   void testUpdateMuscle_SelfParent() {
     Muscle quads = quadriceps();
     MuscleRequest request =
-        new MuscleRequest("Quadriceps Femoris", MuscleGroup.LEGS, 10L, null, null, null, null, null);
+        new MuscleRequest("Quadriceps Femoris", MuscleRegion.THIGH_LEG, 10L, null, null, null, null, null);
     when(muscleRepository.findById(10L)).thenReturn(Optional.of(quads));
 
     DataConflictException ex =
@@ -342,9 +366,9 @@ class MuscleServiceTest {
   void testUpdateMuscle_GroupCannotJoinGroup() {
     Muscle quads = quadriceps();
     quads.getMembers().add(Muscle.builder().id(11L).medicalName("Rectus Femoris").build());
-    Muscle legs = Muscle.builder().id(20L).medicalName("Legs").muscleGroup(MuscleGroup.LEGS).build();
+    Muscle legs = Muscle.builder().id(20L).medicalName("Legs").region(MuscleRegion.THIGH_LEG).build();
     MuscleRequest request =
-        new MuscleRequest("Quadriceps Femoris", MuscleGroup.LEGS, 20L, null, null, null, null, null);
+        new MuscleRequest("Quadriceps Femoris", MuscleRegion.THIGH_LEG, 20L, null, null, null, null, null);
     when(muscleRepository.findById(10L)).thenReturn(Optional.of(quads));
     when(muscleRepository.findById(20L)).thenReturn(Optional.of(legs));
 
@@ -361,7 +385,7 @@ class MuscleServiceTest {
     Muscle quads = quadriceps();
     quads.getMembers().add(Muscle.builder().id(11L).medicalName("Rectus Femoris").build());
     MuscleRequest request =
-        new MuscleRequest("Quadriceps Femoris", MuscleGroup.CORE, null, null, null, null, null, null);
+        new MuscleRequest("Quadriceps Femoris", MuscleRegion.ABDOMEN_PELVIS, null, null, null, null, null, null);
     when(muscleRepository.findById(10L)).thenReturn(Optional.of(quads));
 
     DataConflictException ex =

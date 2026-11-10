@@ -16,7 +16,7 @@ import apex.stellar.aldebaran.dto.MovementRequest;
 import apex.stellar.aldebaran.model.entities.Movement;
 import apex.stellar.aldebaran.model.entities.MovementMuscle.MuscleRole;
 import apex.stellar.aldebaran.model.entities.Muscle;
-import apex.stellar.aldebaran.model.entities.Muscle.MuscleGroup;
+import apex.stellar.aldebaran.model.entities.Muscle.MuscleRegion;
 import apex.stellar.aldebaran.model.entities.Wod;
 import apex.stellar.aldebaran.model.entities.Wod.ScoreType;
 import apex.stellar.aldebaran.model.entities.Wod.WodType;
@@ -63,7 +63,7 @@ class MovementControllerIT extends BaseIntegrationTest {
         Muscle.builder()
             .medicalName("Fake Muscle")
             .commonNameEn("Fake")
-            .muscleGroup(MuscleGroup.LEGS)
+            .region(MuscleRegion.THIGH_LEG)
             .build();
     muscleRepository.save(quadriceps);
     testMuscleId = quadriceps.getId();

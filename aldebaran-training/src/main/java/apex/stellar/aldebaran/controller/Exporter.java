@@ -100,18 +100,19 @@ public class Exporter {
       // JPA property names (not column names): Spring Data validates them against the entity
       List<Muscle> muscles =
           muscleRepository.findAll(
-              Sort.by(Sort.Direction.ASC, "muscleGroup")
+              Sort.by(Sort.Direction.ASC, "region")
                   .and(Sort.by(Sort.Direction.ASC, "medicalName")));
       String[] headers = {
         "medical_name",
-        "muscle_group",
+        "region",
         "parent",
         "common_name_en",
         "common_name_fr",
         "description_en",
         "description_fr",
         "image_url",
-        "joint_actions"
+        "joint_actions",
+        "code"
       };
 
       Path musclesCsvPath = directory.resolve("muscles.csv");
@@ -126,14 +127,15 @@ public class Exporter {
           for (Muscle m : muscles) {
             printer.printRecord(
                 m.getMedicalName(),
-                m.getMuscleGroup().name(),
+                m.getRegion().name(),
                 m.getParent() == null ? null : m.getParent().getMedicalName(),
                 m.getCommonNameEn(),
                 m.getCommonNameFr(),
                 m.getDescriptionEn(),
                 m.getDescriptionFr(),
                 m.getImageUrl(),
-                m.getJointActions().stream().map(Enum::name).sorted().collect(Collectors.joining(", ")));
+                m.getJointActions().stream().map(Enum::name).sorted().collect(Collectors.joining(", ")),
+                m.getCode());
           }
           log.info(
               "Successfully exported {} muscles to {}",
