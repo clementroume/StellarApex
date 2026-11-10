@@ -94,7 +94,7 @@ class DtoLocalizationTest {
       assertViolationEnAndFr(
           request, "medicalName", "Medical name is required.", "Le nom médical est requis.");
       assertViolationEnAndFr(
-          request, "region", "Muscle group is required.", "Le groupe musculaire est requis.");
+          request, "region", "Region is required.", "La région est requise.");
     }
 
     @Test
