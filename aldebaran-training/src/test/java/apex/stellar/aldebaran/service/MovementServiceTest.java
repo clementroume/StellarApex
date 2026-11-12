@@ -56,7 +56,7 @@ class MovementServiceTest {
     muscle = Muscle.builder().id(1L).medicalName("Quadriceps").build();
 
     Set<MovementMuscleRequest> muscleRequests =
-        Set.of(new MovementMuscleRequest(1L, MovementMuscle.MuscleRole.AGONIST, 1.0));
+        Set.of(new MovementMuscleRequest(1L, MovementMuscle.MuscleRole.AGONIST));
 
     request =
         new MovementRequest(

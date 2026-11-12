@@ -43,8 +43,10 @@ describe('MovementFormComponent', () => {
       equipment: ['BARBELL'],
       techniques: [],
       targetedMuscles: [
-        {muscle: {id: 1, medicalName: 'Quads'}, role: 'AGONIST', impactFactor: 1.0}
-      ]
+        {muscle: {id: 1, medicalName: 'Quads'}, role: 'AGONIST'}
+      ],
+      perSet: {reps: 10, meters: null, seconds: 60, calories: null},
+      usualNames: [{nameEn: 'Air Squat', techniques: [], equipment: [], perSet: {reps: 20}, modality: 'GYMNASTICS'}]
     } as any));
     movementServiceSpy.getMovements.mockReturnValue(of([
       {id: 2, name: 'Clean', category: 'CLEAN'}, {id: 3, name: 'Jerk', category: 'PRESS_AND_JERK'}
@@ -211,6 +213,14 @@ describe('MovementFormComponent', () => {
       component.onSubmit();
       expect(movementServiceSpy.updateMovement).toHaveBeenCalled();
       expect(notificationServiceSpy.showSuccess).toHaveBeenCalled();
+    });
+
+    it('should load and send the value of a set and the usual name modality', () => {
+      component.onSubmit();
+      const payload = movementServiceSpy.updateMovement.mock.calls[0][1];
+      expect(payload.perSet).toEqual({reps: 10, meters: null, seconds: 60, calories: null});
+      expect(payload.usualNames![0].perSet).toEqual({reps: 20, meters: null, seconds: null, calories: null});
+      expect(payload.usualNames![0].modality).toBe('GYMNASTICS');
     });
   });
 });

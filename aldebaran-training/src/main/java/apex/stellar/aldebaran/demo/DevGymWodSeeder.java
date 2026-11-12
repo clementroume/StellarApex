@@ -7,6 +7,7 @@ import apex.stellar.aldebaran.model.entities.Wod;
 import apex.stellar.aldebaran.model.entities.Wod.ScoreType;
 import apex.stellar.aldebaran.model.entities.Wod.WodType;
 import apex.stellar.aldebaran.model.entities.WodMovement;
+import apex.stellar.aldebaran.service.CatalogRules;
 import apex.stellar.aldebaran.model.enums.Unit;
 import apex.stellar.aldebaran.repository.MovementRepository;
 import apex.stellar.aldebaran.repository.WodRepository;
@@ -331,10 +332,8 @@ public class DevGymWodSeeder implements ApplicationRunner {
       wm.setWod(wod);
       wm.setOrderIndex(order++);
       wod.getMovements().add(wm);
-      if (movement.getCategory() != null && movement.getCategory().getModality() != null) {
-        wod.getModalities().add(movement.getCategory().getModality());
-      }
     }
+    wod.getModalities().addAll(CatalogRules.modalities(wod.getMovements()));
     return wod;
   }
 

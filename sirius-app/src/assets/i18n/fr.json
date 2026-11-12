@@ -437,8 +437,7 @@
     "MODALITIES": {
       "WEIGHTLIFTING": "Haltérophilie",
       "GYMNASTICS": "Gymnastique",
-      "MONOSTRUCTURAL": "Cardio",
-      "STRONGMAN": "Strongman"
+      "MONOSTRUCTURAL": "Monostructural"
     },
     "CATEGORIES": {
       "DEADLIFT": "Soulevé de terre",
@@ -645,6 +644,15 @@
       "NAME_EN": "Nom anglais",
       "NAME_FR": "Nom français, si différent",
       "SEARCH": "Termes de recherche"
+    },
+    "PER_SET": {
+      "TITLE": "Valeur d'une série (bilan)",
+      "reps": "Reps",
+      "meters": "Mètres",
+      "seconds": "Secondes",
+      "calories": "Calories",
+      "MODALITY": "Modalité",
+      "MODALITY_INHERITED": "Modalité du mouvement"
     },
     "REQUIRED": {
       "LOAD_POSITION_IF_EQUIPMENT": "Position si équipement",

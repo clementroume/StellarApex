@@ -232,6 +232,7 @@
           <span class="text-sm font-medium">{{ 'MOVEMENT.FIELDS.DUMBBELL_BASES' | translate }}</span>
           <input type="text" formControlName="dumbbellBases" hlmInput class="h-11 md:h-10" placeholder="FRONT_RACK=2, OVERHEAD=1, =2"/>
         </label>
+        <ng-container *ngTemplateOutlet="perSetFields; context: {group: movementForm.controls.perSet}"></ng-container>
       </div>
     </div>
 
@@ -286,6 +287,15 @@
                 <button type="button" hlmBtn variant="destructive" size="icon-lg" [attr.aria-label]="'GLOBAL.DELETE' | translate" (click)="usualNamesArray.removeAt(i)">
                   <ng-icon name="heroTrash"></ng-icon>
                 </button>
+              </div>
+              <select formControlName="modality" appNativeSelect class="w-full sm:col-span-2" [attr.aria-label]="'MOVEMENT.PER_SET.MODALITY' | translate">
+                <option [ngValue]="null">{{ 'MOVEMENT.PER_SET.MODALITY_INHERITED' | translate }}</option>
+                @for (m of modalities; track m) {
+                  <option [ngValue]="m">{{ 'MOVEMENT.MODALITIES.' + m | translate }}</option>
+                }
+              </select>
+              <div class="sm:col-span-2">
+                <ng-container *ngTemplateOutlet="perSetFields; context: {group: ctrl.get('perSet')}"></ng-container>
               </div>
             </div>
           }
@@ -371,3 +381,16 @@
 
   </form>
 </div>
+
+<!-- Value of one set, unit by unit (weekly balance, D126); shared by the movement and its usual names -->
+<ng-template #perSetFields let-group="group">
+  <fieldset [formGroup]="group" class="flex flex-col gap-1.5">
+    <legend class="text-sm font-medium">{{ 'MOVEMENT.PER_SET.TITLE' | translate }}</legend>
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+      @for (unit of perSetUnits; track unit) {
+        <input type="number" min="1" [formControlName]="unit" hlmInput class="h-11 md:h-10"
+               [placeholder]="'MOVEMENT.PER_SET.' + unit | translate" [attr.aria-label]="'MOVEMENT.PER_SET.' + unit | translate"/>
+      }
+    </div>
+  </fieldset>
+</ng-template>

@@ -179,6 +179,18 @@ version (`movement_dumbbell_bases`), and a joint layer that controls the roles (
 `muscle_joint_actions`). A WOD line is written in one canonical form and checked by `service/CatalogRules`;
 `WodMovementResponse.display` says how it reads.
 
+* **Value of one set** (lot D, D126): `reps_per_set`, `meters_per_set`, `seconds_per_set`, `calories_per_set` on
+  a movement and, for a variant whose set differs (Single-under 100, Handstand Walk 15 m, Air Squat 20), on a
+  usual name (`PerSet`, `MovementResponse.perSet`, `UsualNameDto.perSet`). The weekly balance divides a line by the
+  value of its unit, read on its most precise usual name then on the movement (`CatalogRules.perSet`); nothing =
+  the line counts 0. All in the catalog, no default in the code.
+* **Modality of a line** (D127, `CatalogRules.modality`): the usual name's (`UsualNameDto.modality`, Air Squat =
+  gymnastics), else the family's (`Category.Modality`: weightlifting, gymnastics, monostructural as in the CrossFit
+  Level 1; strongman is a session discipline, not a modality); a gymnastics or cardio line carrying a load (weight,
+  % of RM, load position, `WEIGHTED`) is weightlifting. Equipment alone never decides (deficit plates, assistance
+  band, rings are apparatus). `wods.modalities` is computed with the same rule (Cindy: gymnastics only).
+* **Roles** weigh a muscle alone: `impact_factor` was dropped (D130, it counted the role twice).
+
 * **Muscle code**: `code` is the stable key of a muscle in the 3D model of Sirius (`sirius-app/tools/muscle-model`),
   returned in `MuscleResponse` and `MuscleRefResponse`. Derived once from the medical name (`Quadriceps Femoris` gives
   `quadriceps-femoris`, numbered if taken), never changed: `medical_name` stays editable.

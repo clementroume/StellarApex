@@ -9,7 +9,7 @@ import {MovementService} from '../../../api/aldebaran/services/movement.service'
 import {MuscleService} from '../../../api/aldebaran/services/muscle.service';
 import {NotificationService} from '../../../core/services/notification.service';
 import {MuscleResponse} from '../../../api/aldebaran/models/muscle.model';
-import {MovementRequest, MovementComponent, MovementJointAction, MovementResponse, MovementSummaryResponse, RoleAdjustment, UsualName, UsualNameOption} from '../../../api/aldebaran/models/movement.model';
+import {MovementRequest, MovementComponent, MovementJointAction, MovementResponse, MovementSummaryResponse, PerSet, RoleAdjustment, UsualName, UsualNameOption} from '../../../api/aldebaran/models/movement.model';
 import {ProblemDetail} from '../../../core/models/problem-detail.model';
 import {forkJoin} from 'rxjs';
 import {MovementComboboxComponent} from '../../../shared/component/movement-combobox/movement-combobox.component';
@@ -69,6 +69,10 @@ export class MovementFormComponent implements OnInit {
   equipmentGroups = signal<{ category: string; items: string[] }[]>([]);
   techniqueGroups = signal<{ category: string; items: string[] }[]>([]);
   muscleRoles = signal<string[]>([]);
+  /** Modalities a usual name may set (CrossFit Level 1). */
+  readonly modalities = ['WEIGHTLIFTING', 'GYMNASTICS', 'MONOSTRUCTURAL'] as const;
+  /** Units of one set's value, in the order of the inputs. */
+  readonly perSetUnits = ['reps', 'meters', 'seconds', 'calories'] as const;
 
   movementForm = this.fb.nonNullable.group({
     // --- Identification ---
@@ -86,6 +90,7 @@ export class MovementFormComponent implements OnInit {
     roleAdjustments: this.fb.array([]),
     usualNames: this.fb.array([]),
     components: this.fb.array([]),
+    perSet: this.perSetGroup(),
     acceptedMovementIds: [[] as number[]],
     // --- Internationalized Content ---
     descriptionEn: ['', [Validators.maxLength(2000)]],
@@ -177,12 +182,25 @@ export class MovementFormComponent implements OnInit {
       nameEn: [value?.nameEn ?? '', [Validators.required, Validators.maxLength(80)]],
       nameFr: [value?.nameFr ?? '', Validators.maxLength(80)],
       searchTerms: [value?.searchTerms ?? '', Validators.maxLength(255)],
-      techniques: [[...(value?.techniques ?? [])] as string[]],
-      equipment: [[...(value?.equipment ?? [])] as string[]],
+      // Edited as space-separated words (POWER HANG), sent back as lists
+      techniques: [(value?.techniques ?? []).join(' ')],
+      equipment: [(value?.equipment ?? []).join(' ')],
       descriptionEn: [value?.descriptionEn ?? null],
       descriptionFr: [value?.descriptionFr ?? null],
-      videoUrl: [value?.videoUrl ?? null]
+      videoUrl: [value?.videoUrl ?? null],
+      perSet: this.perSetGroup(value?.perSet),
+      modality: [value?.modality ?? null as string | null]
     }));
+  }
+
+  /** The value of one set, unit by unit (weekly balance, D126). */
+  private perSetGroup(value?: PerSet | null) {
+    return this.fb.group({
+      reps: [value?.reps ?? null as number | null, Validators.min(1)],
+      meters: [value?.meters ?? null as number | null, Validators.min(1)],
+      seconds: [value?.seconds ?? null as number | null, Validators.min(1)],
+      calories: [value?.calories ?? null as number | null, Validators.min(1)]
+    });
   }
 
   addComponent(value?: MovementComponent): void {
@@ -235,8 +253,7 @@ export class MovementFormComponent implements OnInit {
   addMuscle(): void {
     this.musclesFormArray.push(this.fb.group({
       muscleId: [null as number | null, Validators.required],
-      role: ['AGONIST', Validators.required],
-      impactFactor: [1]
+      role: ['AGONIST', Validators.required]
     }));
   }
 
@@ -290,7 +307,13 @@ export class MovementFormComponent implements OnInit {
           requiredRules: movement.requiredRules ?? [],
           dumbbellBases: (movement.dumbbellBases ?? [])
             .map(b => `${b.loadPosition}=${b.implementCount ?? ''}`).join(', '),
-          acceptedMovementIds: (movement.acceptedMovements ?? []).map(a => a.id)
+          acceptedMovementIds: (movement.acceptedMovements ?? []).map(a => a.id),
+          perSet: {
+            reps: movement.perSet?.reps ?? null,
+            meters: movement.perSet?.meters ?? null,
+            seconds: movement.perSet?.seconds ?? null,
+            calories: movement.perSet?.calories ?? null
+          }
         });
         this.jointActions = movement.jointActions ?? [];
         (movement.roleAdjustments ?? []).forEach(a => this.addAdjustment(a));
@@ -305,8 +328,7 @@ export class MovementFormComponent implements OnInit {
           movement.targetedMuscles.forEach(tm => {
             this.musclesFormArray.push(this.fb.group({
               muscleId: [tm.muscle.id, Validators.required],
-              role: [tm.role, Validators.required],
-              impactFactor: [tm.impactFactor]
+              role: [tm.role, Validators.required]
             }));
           });
         }

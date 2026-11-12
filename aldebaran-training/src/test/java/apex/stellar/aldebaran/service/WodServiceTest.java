@@ -240,7 +240,6 @@ class WodServiceTest {
     // Mock Redis Hit
     apex.stellar.aldebaran.dto.MovementResponse mockMovementDto =
         mock(apex.stellar.aldebaran.dto.MovementResponse.class);
-    when(mockMovementDto.category()).thenReturn(Category.PULLING);
     when(movementService.getMovement(1L)).thenReturn(mockMovementDto);
 
     // Mock Proxy JPA
@@ -292,18 +291,24 @@ class WodServiceTest {
     // DTO Mocks
     apex.stellar.aldebaran.dto.MovementResponse mockGymDto =
         mock(apex.stellar.aldebaran.dto.MovementResponse.class);
-    when(mockGymDto.category()).thenReturn(Category.PULLING);
     apex.stellar.aldebaran.dto.MovementResponse mockWlDto =
         mock(apex.stellar.aldebaran.dto.MovementResponse.class);
-    when(mockWlDto.category()).thenReturn(Category.DEADLIFT);
 
-    when(movementService.getMovement(1L)).thenReturn(mockGymDto);
-    when(movementService.getMovement(2L)).thenReturn(mockWlDto);
+    when(movementService.getMovement(1L)).thenReturn(mockWlDto);
+    when(movementService.getMovement(2L)).thenReturn(mockGymDto);
 
-    when(movementRepository.getReferenceById(anyLong())).thenReturn(new Movement());
+    // The line's modality comes from the catalog movement (D127): deadlift then a bodyweight pull
+    Movement deadlift = new Movement();
+    deadlift.setCategory(Category.DEADLIFT);
+    Movement pullUp = new Movement();
+    pullUp.setCategory(Category.PULLING);
+    when(movementRepository.getReferenceById(1L)).thenReturn(deadlift);
+    when(movementRepository.getReferenceById(2L)).thenReturn(pullUp);
 
     when(wodMapper.toEntity(any())).thenReturn(wod);
-    when(wodMapper.toWodMovementEntity(any())).thenReturn(new WodMovement());
+    when(wodMapper.toWodMovementEntity(any()))
+        .thenAnswer(invocation -> new WodMovement())
+        .thenAnswer(invocation -> new WodMovement());
     when(wodRepository.save(wod)).thenReturn(wod);
 
     // When
@@ -647,7 +652,6 @@ class WodServiceTest {
     apex.stellar.aldebaran.dto.MovementResponse movementDto =
         mock(apex.stellar.aldebaran.dto.MovementResponse.class);
     when(movementDto.id()).thenReturn(1L);
-    when(movementDto.category()).thenReturn(Category.PULLING);
     when(movementService.getMovement(1L)).thenReturn(movementDto);
     when(movementRepository.getReferenceById(1L)).thenReturn(movement);
 

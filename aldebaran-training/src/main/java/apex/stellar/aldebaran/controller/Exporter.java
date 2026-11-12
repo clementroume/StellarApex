@@ -17,6 +17,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -168,7 +169,8 @@ public class Exporter {
         "agonists", "synergists", "stabilizers", "description_en", "description_fr",
         "coaching_cues_en", "coaching_cues_fr", "video_url", "image_url",
         "implied_equipment", "implied_requires_position", "required_rules", "dumbbell_bases",
-        "components", "accepted", "role_adjustments", "joint_actions"
+        "components", "accepted", "role_adjustments", "joint_actions",
+        "reps_per_set", "meters_per_set", "seconds_per_set", "calories_per_set"
       };
 
       Path movementsCsvPath = directory.resolve("movements.csv");
@@ -190,7 +192,9 @@ public class Exporter {
             String synergists = filterMusclesByRole(m, MovementMuscle.MuscleRole.SYNERGIST);
             String stabilizers = filterMusclesByRole(m, MovementMuscle.MuscleRole.STABILIZER);
 
-            printer.printRecord(
+            List<Object> cells = new ArrayList<>();
+            java.util.Collections.addAll(
+                cells,
                 m.getName(),
                 m.getNameAbbreviation(),
                 m.getCategory(),
@@ -213,6 +217,8 @@ public class Exporter {
                 m.getAcceptedMovements().stream().map(Movement::getName).sorted().collect(Collectors.joining("; ")),
                 CatalogCsv.formatAdjustments(m.getRoleAdjustments()),
                 CatalogCsv.formatJoints(m.getJointActions()));
+            cells.addAll(CatalogCsv.formatPerSet(m.getPerSet()));
+            printer.printRecord(cells);
           }
           exportUsualNames(directory, movements);
           log.info(
@@ -246,7 +252,12 @@ public class Exporter {
                 String.join(" ", u.getEquipment()),
                 u.getDescriptionEn(),
                 u.getDescriptionFr(),
-                u.getVideoUrl());
+                u.getVideoUrl(),
+                u.getPerSet().reps(),
+                u.getPerSet().meters(),
+                u.getPerSet().seconds(),
+                u.getPerSet().calories(),
+                u.getModality());
           }
         }
       }

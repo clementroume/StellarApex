@@ -249,8 +249,6 @@ export class MovementListComponent implements OnInit {
         return 'hugeGymnastic';
       case 'MONOSTRUCTURAL':
         return 'hugeCardiogram02';
-      case 'STRONGMAN':
-        return 'hugeBodyPartSixPack';
       default:
         return '';
     }

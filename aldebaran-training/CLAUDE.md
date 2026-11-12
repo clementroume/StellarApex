@@ -90,7 +90,8 @@ resolving IDs from the `antares` schema with `JdbcTemplate`, then calls `demo/De
   single "counts for" rule (exhaustive test: add every new technique there). `service/CatalogRules` =
   line normalization and checks (one written form, `Technique.exclusiveSets`, required values, component
   techniques), `display` (usual name + remaining words, sent as `WodMovementResponse.display`),
-  `effectiveRoles` (adjustments, lowest role wins; for lot D), `checkMovement` (no cycle, no muscle with
+  `effectiveRoles` (adjustments, lowest role wins; for lot D), `perSet` (value of one set by unit, usual name then
+  movement, D126), `modality` / `modalities` (per line: usual name, family, load; also `wods.modalities`, D127), `checkMovement` (no cycle, no muscle with
   its group, roles against the joint layer).
 - Catalog rules: `WodMovement.checkVariantsAllowed` (variants allowed by the movement; used by
   `CatalogRules`, `WodCsvCodec`, `DevGymWodSeeder`; `InvalidWodMovementException` → 400), its

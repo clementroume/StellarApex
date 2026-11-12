@@ -8,6 +8,7 @@ import apex.stellar.aldebaran.model.entities.Muscle;
 import apex.stellar.aldebaran.model.entities.Muscle.MuscleRegion;
 import apex.stellar.aldebaran.model.entities.Wod;
 import apex.stellar.aldebaran.model.enums.Category;
+import apex.stellar.aldebaran.model.enums.Category.Modality;
 import apex.stellar.aldebaran.model.enums.Equipment;
 import apex.stellar.aldebaran.model.enums.JointAction;
 import apex.stellar.aldebaran.model.enums.RequiredRule;
@@ -176,15 +177,15 @@ public class DataSeeder implements CommandLineRunner {
                 .requiredRules(optionalEnums(csvRecord, "required_rules", RequiredRule.class))
                 .dumbbellBases(CatalogCsv.parseBases(getOptionalStr(csvRecord, "dumbbell_bases")))
                 .jointActions(CatalogCsv.parseJoints(getOptionalStr(csvRecord, "joint_actions")))
+                .perSet(CatalogCsv.parsePerSet(header -> getOptionalStr(csvRecord, header)))
                 .build();
 
         // Ajout des relations musculaires
+        addMusclesToMovement(movement, csvRecord.get("agonists"), MuscleRole.AGONIST, muscleCache);
         addMusclesToMovement(
-            movement, csvRecord.get("agonists"), MuscleRole.AGONIST, 1.0, muscleCache);
+            movement, csvRecord.get("synergists"), MuscleRole.SYNERGIST, muscleCache);
         addMusclesToMovement(
-            movement, csvRecord.get("synergists"), MuscleRole.SYNERGIST, 0.5, muscleCache);
-        addMusclesToMovement(
-            movement, csvRecord.get("stabilizers"), MuscleRole.STABILIZER, 0.2, muscleCache);
+            movement, csvRecord.get("stabilizers"), MuscleRole.STABILIZER, muscleCache);
         movement
             .getRoleAdjustments()
             .addAll(
@@ -239,6 +240,8 @@ public class DataSeeder implements CommandLineRunner {
                     .descriptionEn(getOptionalStr(row, "description_en"))
                     .descriptionFr(getOptionalStr(row, "description_fr"))
                     .videoUrl(getOptionalStr(row, "video_url"))
+                    .perSet(CatalogCsv.parsePerSet(header -> getOptionalStr(row, header)))
+                    .modality(optionalEnum(row, "modality", Modality.class))
                     .build());
       }
     }
@@ -318,7 +321,6 @@ public class DataSeeder implements CommandLineRunner {
       Movement movement,
       String csvField,
       MuscleRole role,
-      Double impact,
       Map<String, Muscle> cache) {
     if (csvField == null || csvField.isBlank()) {
       return;
@@ -338,7 +340,6 @@ public class DataSeeder implements CommandLineRunner {
                             .movement(movement)
                             .muscle(muscle)
                             .role(role)
-                            .impactFactor(impact)
                             .build());
               } else {
                 log.warn("Muscle not found in DB during seeding: {}", muscleName);

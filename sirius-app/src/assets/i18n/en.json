@@ -437,8 +437,7 @@
     "MODALITIES": {
       "WEIGHTLIFTING": "Weightlifting",
       "GYMNASTICS": "Gymnastics",
-      "MONOSTRUCTURAL": "Monostructural",
-      "STRONGMAN": "Strongman"
+      "MONOSTRUCTURAL": "Monostructural"
     },
     "CATEGORIES": {
       "DEADLIFT": "Deadlift",
@@ -645,6 +644,15 @@
       "NAME_EN": "English name",
       "NAME_FR": "French name, if different",
       "SEARCH": "Search terms"
+    },
+    "PER_SET": {
+      "TITLE": "Value of one set (balance)",
+      "reps": "Reps",
+      "meters": "Metres",
+      "seconds": "Seconds",
+      "calories": "Calories",
+      "MODALITY": "Modality",
+      "MODALITY_INHERITED": "Movement's modality"
     },
     "REQUIRED": {
       "LOAD_POSITION_IF_EQUIPMENT": "Position if equipment",

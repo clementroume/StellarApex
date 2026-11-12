@@ -80,7 +80,8 @@ public final class WodCsvCodecTestSupport {
             .emomRounds(30)
             .notesEn("Score \"rounds\" completed")
             .isPublic(true)
-            .modalities(Set.of(Modality.MONOSTRUCTURAL))
+            // A WEIGHTED run carries a load: weightlifting (D127, Clarkson's ruck march)
+            .modalities(Set.of(Modality.WEIGHTLIFTING))
             .build();
     chelsea
         .getMovements()

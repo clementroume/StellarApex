@@ -422,6 +422,8 @@ public class MovementService {
                   .descriptionEn(dto.descriptionEn())
                   .descriptionFr(dto.descriptionFr())
                   .videoUrl(dto.videoUrl())
+                  .perSet(dto.perSet())
+                  .modality(dto.modality())
                   .build());
     }
     CatalogRules.checkMovement(movement);

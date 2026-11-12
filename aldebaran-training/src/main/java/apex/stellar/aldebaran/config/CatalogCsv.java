@@ -8,6 +8,7 @@ import apex.stellar.aldebaran.model.entities.MovementMuscle.MuscleRole;
 import apex.stellar.aldebaran.model.entities.MovementRoleAdjustment;
 import apex.stellar.aldebaran.model.entities.MovementRoleAdjustment.TriggerKind;
 import apex.stellar.aldebaran.model.entities.Muscle;
+import apex.stellar.aldebaran.model.entities.PerSet;
 import apex.stellar.aldebaran.model.enums.JointAction;
 import apex.stellar.aldebaran.model.enums.JointAction.Regime;
 import java.util.Arrays;
@@ -30,7 +31,13 @@ public final class CatalogCsv {
   /** Columns of the usual names file. */
   public static final String[] USUAL_NAME_HEADERS = {
     "movement", "name_en", "name_fr", "search_terms", "techniques", "equipment",
-    "description_en", "description_fr", "video_url"
+    "description_en", "description_fr", "video_url",
+    "reps_per_set", "meters_per_set", "seconds_per_set", "calories_per_set", "modality"
+  };
+
+  /** Columns of one set's value (D126), in {@code movements.csv} and the usual names file. */
+  public static final String[] PER_SET_HEADERS = {
+    "reps_per_set", "meters_per_set", "seconds_per_set", "calories_per_set"
   };
 
   private CatalogCsv() {}
@@ -200,6 +207,35 @@ public final class CatalogCsv {
                     + a.getRole().name())
         .sorted()
         .collect(Collectors.joining("; "));
+  }
+
+  /**
+   * Reads one set's value; missing columns (an older file) read as none.
+   *
+   * @param cell Reads a column, null when missing or blank.
+   * @return The values.
+   */
+  public static PerSet parsePerSet(Function<String, String> cell) {
+    return new PerSet(
+        integer(cell.apply("reps_per_set")),
+        integer(cell.apply("meters_per_set")),
+        integer(cell.apply("seconds_per_set")),
+        integer(cell.apply("calories_per_set")));
+  }
+
+  /**
+   * Writes one set's value, in the order of {@link #PER_SET_HEADERS}.
+   *
+   * @param values The values.
+   * @return The cells.
+   */
+  public static List<Integer> formatPerSet(PerSet values) {
+    return java.util.Arrays.asList(
+        values.reps(), values.meters(), values.seconds(), values.calories());
+  }
+
+  private static Integer integer(String cell) {
+    return cell == null || cell.isBlank() ? null : Integer.valueOf(cell.trim());
   }
 
   /**

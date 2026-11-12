@@ -8,6 +8,7 @@ import apex.stellar.aldebaran.model.entities.Wod.WodCategory;
 import apex.stellar.aldebaran.model.entities.Wod.WodStructure;
 import apex.stellar.aldebaran.model.entities.Wod.WodType;
 import apex.stellar.aldebaran.model.entities.WodMovement;
+import apex.stellar.aldebaran.service.CatalogRules;
 import apex.stellar.aldebaran.model.entities.WodMovement.Segment;
 import apex.stellar.aldebaran.model.enums.Unit;
 import java.io.IOException;
@@ -36,7 +37,7 @@ import org.apache.commons.csv.CSVRecord;
  *
  * <p>WODs are keyed by title, movements by their exact catalog name. Blank cells map to {@code
  * null} and {@code null} values to blank cells, so a database → CSV → database round-trip is
- * lossless. WOD modalities are not stored: they are recomputed from the movements' categories.
+ * lossless. WOD modalities are not stored: they are recomputed from the lines (D127).
  */
 @Slf4j
 public final class WodCsvCodec {
@@ -240,14 +241,13 @@ public final class WodCsvCodec {
       wodMovement.checkVariantsAllowed(
           movement.getName(), movement.getEquipment(), movement.getTechniques());
       wod.getMovements().add(wodMovement);
-      if (movement.getCategory() != null && movement.getCategory().getModality() != null) {
-        wod.getModalities().add(movement.getCategory().getModality());
-      }
     }
 
     wodsByTitle
         .values()
         .forEach(w -> w.getMovements().sort(Comparator.comparing(WodMovement::getOrderIndex)));
+    // One modality per line: family, usual name, load (D127)
+    wodsByTitle.values().forEach(w -> w.getModalities().addAll(CatalogRules.modalities(w.getMovements())));
     return new ArrayList<>(wodsByTitle.values());
   }
 
