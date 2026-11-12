@@ -2,8 +2,8 @@
  * spartan/ui (D42) wiring, imported by styles.css. Brain primitives come from npm, helm styles are
  * copied in src/app/shared/ui. The spartan preset is not imported (its `container` and colour mapping
  * differ): this file keeps its state variants and maps every token to the palette variables of
- * palettes.css. Brand colours keep the app's meaning: primary, secondary = records (PR), accent = brand
- * orange; helm code therefore uses `muted` where spartan uses a subtle secondary/accent.
+ * palettes.css. Brand colours keep the app's meaning: primary, secondary = records (PR), accent = third
+ * chart colour (distinct from the two others in every palette); helm code therefore uses `muted` where spartan uses a subtle secondary/accent.
  */
 @import "@angular/cdk/overlay-prebuilt.css";
 @import "tw-animate-css";

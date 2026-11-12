@@ -185,6 +185,8 @@ The backends enforce every rule; Sirius only adapts what it shows:
 * **Palettes**: My account → Settings → Appearance offers four colour palettes (Ocean by default,
   Chalk and iron, Volt, Rig red), each in light and dark, saved in the account (`palette`). Defined in
   `src/palettes.css` (`data-palette` + `data-theme` on `<html>`, `core/services/theme.service.ts`).
+  `primary`, `secondary` and `accent` stay distinct in every palette: the weekly balance draws its three
+  modalities with them (lot D, D88 bis).
 * **Units**: a "Units" tab in My account (metric or imperial, `core/services/unit.service.ts`), saved
   in the account (`unitSystem`); without a choice it follows the language (French: metric). Values are
   converted for display only, rounded as gyms write them: loads (95 lb = 43 kg), heights (24/20 in =

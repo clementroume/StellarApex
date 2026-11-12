@@ -30,7 +30,7 @@ the dev proxy targets the local Traefik `https://localhost` with `Host: stellar.
   use spartan brain + helm, wrapped in `shared/component`; never hand-write ARIA/keyboard handling.
 - No DaisyUI any more. The spartan preset is NOT imported: `src/spartan.css` keeps its state variants
   and maps every Tailwind colour and spartan token to the palette variables (`--sa-*`). Brand colours
-  keep the app meaning (`primary`, `secondary` = records/PR yellow, `accent` = brand orange, with
+  keep the app meaning (`primary`, `secondary` = records/PR, `accent` = third chart colour, the three distinct in every palette, with
   `*-content` for text on them); in helm code, spartan's subtle `secondary`/`accent` are `muted`.
 - App pieces: `app-page` (page template), `app-form-field` (label + input group + error),
   `appNativeSelect` (native select keeping `ngValue`), `app-section-divider`,
