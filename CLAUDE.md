@@ -140,6 +140,11 @@ and a virtual programming); there is no "active gym" in requests.
   `GET /records/gyms/{gymId}` (members of that gym or admin: current usable members' records of a variant, base by default,
   list from Antares `GET /internal/gyms/{id}/member-ids`). Sirius shows `percentOfRm` / `rmReps` loads
   from the record of the line's `display.percentBaseKey` (base + required techniques, else the estimated 1RM), rounded to 1 kg / 2.5 lb.
+- Weekly balance (lot D, D81-D130): Aldebaran `GET /balance/me?week=` = the athlete's own muscles (moving /
+  holding sets), metcon minutes per time domain, strength sets per lift ("near the record" = 80 % of the 1RM of
+  the set's day) and modalities over the week and the 3 before, volume over 8 weeks; computed on first display
+  from scores and checked journal blocks, writes only mark weeks stale. Facts only, never an alert or a ratio to
+  the athlete; coach alerts belong to lot D' (on the coach's programming). Sirius `/training/review`.
 - Internal API: Antares `/antares/internal/**` (membership check, gym type; Aldebaran → `http://antares-auth:8080`,
   `X-Internal-Secret`, 404 without it, excluded from the Traefik `/antares` route). Aldebaran calls it
   through `client/AntaresClient` only.
@@ -211,6 +216,21 @@ Rules common to every lot session (the brief of a lot only lists what is specifi
 
 ## Conventions
 
+- Backends (Antares, Aldebaran), decided at lot D (2026-11-15):
+  - Packages by layer, flat: `controller` → `service` → `repository`, `model/entities`, `model/enums`, `dto`,
+    `mapper`. No feature sub-package except `demo` / `e2e` (deleted in one go) and the technical split of
+    `repository` (`jpa` / `redis` in Antares). If `service` grows too much, the whole service is reorganized
+    at once (architecture audit of lot I), never one lot at a time.
+  - Every table has an entity in `model/entities` and a Spring Data repository (`ddl-auto=validate` then checks
+    its schema at startup); upserts and bulk marks are `@Modifying` queries (native `ON CONFLICT` if needed).
+    `JdbcTemplate` only in `demo` (reads another schema).
+  - Pure rules (`CatalogRules`, `BalanceCalculator`...): `final` classes with static methods, flat in `service`,
+    no Spring nor database, unit tested; their internal objects are package-private, and what leaves them for a
+    DTO is a record (or the service converts it).
+  - Dependencies: `dto` and `model` never depend on `service`, `controller` or `repository`; domain enums live
+    in `model/enums`.
+  - Sirius keeps its own layout by feature (`sirius-app/CLAUDE.md`); shared with the backends: the direction of
+    dependencies and rights decided by the backend.
 - Backend code, comments, Javadoc and commit messages in English. User-facing text is translated
   (FR + EN) on both sides: `messages*.properties` in backends, `sirius-app/src/assets/i18n/{fr,en}.json`.
 - Lombok is limited to its current uses (`@RequiredArgsConstructor`, `@Slf4j`, `@Getter` / `@Setter` /
