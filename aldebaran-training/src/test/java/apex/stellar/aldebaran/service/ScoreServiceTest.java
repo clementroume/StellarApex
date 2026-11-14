@@ -4,8 +4,8 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
-import apex.stellar.aldebaran.client.AntaresClient;
 import apex.stellar.aldebaran.client.AntaresClient.AthleteFacts;
+import apex.stellar.aldebaran.client.AntaresClient;
 import apex.stellar.aldebaran.dto.ScoreComparisonResponse;
 import apex.stellar.aldebaran.dto.ScoreRequest;
 import apex.stellar.aldebaran.dto.ScoreResponse;
@@ -14,16 +14,17 @@ import apex.stellar.aldebaran.exception.AntaresUnavailableException;
 import apex.stellar.aldebaran.exception.InvalidScoreException;
 import apex.stellar.aldebaran.exception.ResourceNotFoundException;
 import apex.stellar.aldebaran.mapper.ScoreMapper;
-import apex.stellar.aldebaran.model.entities.Score;
 import apex.stellar.aldebaran.model.entities.Score.ScalingLevel;
-import apex.stellar.aldebaran.model.entities.Wod;
+import apex.stellar.aldebaran.model.entities.Score;
 import apex.stellar.aldebaran.model.entities.Wod.ScoreType;
+import apex.stellar.aldebaran.model.entities.Wod;
 import apex.stellar.aldebaran.model.enums.Division;
 import apex.stellar.aldebaran.repository.ScoreRepository;
 import apex.stellar.aldebaran.repository.SessionBlockRepository;
 import apex.stellar.aldebaran.repository.SessionLogRepository;
 import apex.stellar.aldebaran.repository.WodRepository;
 import apex.stellar.aldebaran.security.SecurityService;
+import apex.stellar.aldebaran.service.BalanceMaintenanceService;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
@@ -55,6 +56,7 @@ class ScoreServiceTest {
   @Mock private SessionBlockRepository sessionBlockRepository;
   @Mock private SessionLogService sessionLogService;
   @Mock private MovementRecordService movementRecordService;
+  @Mock private BalanceMaintenanceService balanceMaintenance;
   @InjectMocks private ScoreService scoreService;
 
   private Wod wodProxy;

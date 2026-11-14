@@ -20,13 +20,13 @@ import apex.stellar.aldebaran.exception.ResourceNotFoundException;
 import apex.stellar.aldebaran.exception.WodLockedException;
 import apex.stellar.aldebaran.mapper.WodMapper;
 import apex.stellar.aldebaran.model.entities.Movement;
-import apex.stellar.aldebaran.model.entities.Wod;
 import apex.stellar.aldebaran.model.entities.Wod.ScoreType;
 import apex.stellar.aldebaran.model.entities.Wod.WodCategory;
 import apex.stellar.aldebaran.model.entities.Wod.WodType;
+import apex.stellar.aldebaran.model.entities.Wod;
 import apex.stellar.aldebaran.model.entities.WodMovement;
-import apex.stellar.aldebaran.model.enums.Category;
 import apex.stellar.aldebaran.model.enums.Category.Modality;
+import apex.stellar.aldebaran.model.enums.Category;
 import apex.stellar.aldebaran.model.enums.Equipment;
 import apex.stellar.aldebaran.model.enums.Technique;
 import apex.stellar.aldebaran.model.enums.WodScope;
@@ -36,6 +36,7 @@ import apex.stellar.aldebaran.repository.SessionBlockRepository;
 import apex.stellar.aldebaran.repository.WodRepository;
 import apex.stellar.aldebaran.repository.projection.WodSummary;
 import apex.stellar.aldebaran.security.SecurityService;
+import apex.stellar.aldebaran.service.BalanceMaintenanceService;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
@@ -64,6 +65,7 @@ class WodServiceTest {
   @Mock private AntaresClient antaresClient;
   @Mock private SessionBlockRepository sessionBlockRepository;
 
+  @Mock private BalanceMaintenanceService balanceMaintenance;
   @InjectMocks private WodService wodService;
 
   private Wod wod;

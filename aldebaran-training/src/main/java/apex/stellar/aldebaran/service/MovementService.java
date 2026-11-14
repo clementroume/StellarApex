@@ -72,6 +72,7 @@ public class MovementService {
   private final MuscleRepository muscleRepository;
   private final WodRepository wodRepository;
   private final MovementMapper movementMapper;
+  private final BalanceMaintenanceService balanceMaintenance;
 
   /**
    * Retrieves a lightweight list of movements.
@@ -268,6 +269,8 @@ public class MovementService {
     applyCatalogModel(movement, request);
 
     Movement saved = movementRepository.save(movement);
+    // Roles, values of a set or modality may have changed: every stored week is rebuilt
+    balanceMaintenance.catalogChanged();
     log.info("Updated movement: {} ({})", saved.getName(), saved.getId());
     return movementMapper.toResponse(saved);
   }

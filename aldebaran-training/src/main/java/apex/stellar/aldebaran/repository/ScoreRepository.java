@@ -1,11 +1,12 @@
 package apex.stellar.aldebaran.repository;
 
-import apex.stellar.aldebaran.model.entities.Score;
 import apex.stellar.aldebaran.model.entities.Score.ScalingLevel;
+import apex.stellar.aldebaran.model.entities.Score;
 import apex.stellar.aldebaran.model.entities.Wod.ScoreType;
 import apex.stellar.aldebaran.model.enums.AgeGroup;
 import apex.stellar.aldebaran.model.enums.Division;
 import jakarta.persistence.LockModeType;
+import java.time.LocalDate;
 import java.util.Collection;
 import java.util.List;
 import org.springframework.data.domain.Pageable;
@@ -258,4 +259,17 @@ public interface ScoreRepository extends JpaRepository<Score, Long> {
    */
   @Query("SELECT s FROM Score s WHERE s.team.id = :teamId")
   List<Score> findByTeamId(@Param("teamId") Long teamId);
+
+  /**
+   * An athlete's scores of some days, with their WODs (weekly balance, D82).
+   *
+   * @param userId The athlete.
+   * @param from First day.
+   * @param to Last day.
+   * @return The scores.
+   */
+  @Query(
+      "SELECT s FROM Score s JOIN FETCH s.wod "
+          + "WHERE s.userId = :userId AND s.date BETWEEN :from AND :to")
+  List<Score> findByUserIdAndDateBetween(Long userId, LocalDate from, LocalDate to);
 }

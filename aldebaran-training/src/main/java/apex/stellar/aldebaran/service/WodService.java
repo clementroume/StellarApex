@@ -19,11 +19,11 @@ import apex.stellar.aldebaran.exception.ResourceNotFoundException;
 import apex.stellar.aldebaran.exception.WodLockedException;
 import apex.stellar.aldebaran.mapper.WodMapper;
 import apex.stellar.aldebaran.model.entities.Movement;
-import apex.stellar.aldebaran.model.entities.Wod;
 import apex.stellar.aldebaran.model.entities.Wod.ScoreType;
 import apex.stellar.aldebaran.model.entities.Wod.WodCategory;
 import apex.stellar.aldebaran.model.entities.Wod.WodStructure;
 import apex.stellar.aldebaran.model.entities.Wod.WodType;
+import apex.stellar.aldebaran.model.entities.Wod;
 import apex.stellar.aldebaran.model.entities.WodMovement;
 import apex.stellar.aldebaran.model.enums.Technique;
 import apex.stellar.aldebaran.model.enums.Unit;
@@ -83,6 +83,7 @@ public class WodService {
   private final SecurityService securityService;
   private final AntaresClient antaresClient;
   private final SessionBlockRepository sessionBlockRepository;
+  private final BalanceMaintenanceService balanceMaintenance;
 
   /**
    * Retrieves the WOD list with a sub-category filter, each summary carrying the names of its
@@ -414,6 +415,7 @@ public class WodService {
     if (scoreRepository.existsByWodId(id)) {
       throw new WodLockedException("error.wod.locked", id);
     }
+    balanceMaintenance.wodChanged(id);
     return update(id, request);
   }
 
@@ -623,6 +625,7 @@ public class WodService {
       throw new WodLockedException("error.wod.locked", id);
     }
     checkStandalone(id);
+    balanceMaintenance.wodChanged(id);
     return wodMapper.toResponse(update(id, request));
   }
 

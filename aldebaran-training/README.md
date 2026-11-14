@@ -295,6 +295,37 @@ deletion, and once at startup when the table is empty (`config/MovementRecordBac
 * `GET /gyms/{gymId}?movementId=[&variantKey=]`: records board of a box for that variant (base version
   by default): effective records of the gym's current usable members (Antares `member-ids`, 503 if unavailable), wherever set; members of the gym or admin.
 
+### Weekly balance (`/aldebaran/balance`, lot D)
+
+The athlete's own balance, from their scores and the session blocks checked in a journal without a score
+(prescription). Facts only: no alert and no ratio (D89).
+
+* `GET /me?week=yyyy-MM-dd` (any day of the week; Sirius sends the Monday of the athlete's local week): muscles,
+  metcon minutes per time domain, strength sets per lift ("near the record" = a set at 80 % of the 1RM of its day)
+  and modalities over the chosen week and the 3 before, equivalent sets of the chosen week and the 7 before.
+* `POST /recompute` (`ADMIN`): every stored week to rebuild, `wods.modalities` recomputed (calibration).
+
+Storage (Flyway V7, D120): `balance_weeks` (per athlete and Monday: volume, modalities, seconds per domain,
+`rules_version`, `stale`), `balance_week_muscles` (moving / holding sets per exact muscle), `balance_week_lifts`,
+entities `BalanceWeek`, `BalanceWeekMuscle`, `BalanceWeekLift` and their repositories.
+A write only marks weeks stale (`service/BalanceMaintenanceService`: score logged / corrected / re-dated /
+deleted for the whole team, and every later week on a WOD feeding records; journal created / deleted / block
+toggled; a checked WOD or session edited; a movement updated = every week); the display rebuilds the stale,
+missing or older-rules weeks it needs (`WeeklyBalanceService`, advisory lock per athlete). Rules in
+`service/BalanceCalculator` (`RULES_VERSION`; bump it when a rule changes):
+
+* a line of `s` equivalent sets gives agonists `s`, synergists `s / 2` in movement and stabilizers `s` in holding
+  (roles adjusted by the line's techniques); `s` = the line's amount ÷ the catalog's value of one set in its unit
+  (`CatalogRules.perSet`, D126);
+* metcons (`MetconVolume`, D121): readable prescription of a finished WOD; else the score unrolled in line order
+  (AMRAP, capped For Time, open ladder; a distance line is worth the rest of `repsPerRound`); `max` lines share the
+  score; else one set per minute of work; unreadable text counts 0. A team line `TOTAL` is divided by the smaller of
+  the team size and the members (D128). Minutes outside Skill / Accessory blocks: For Time = the time (cap when
+  capped), AMRAP = its duration, EMOM / Tabata / rests / team turns = intervals;
+* strength (For Load, scored by load, or any score with sets, D122): completed sets, warm-ups under half the best set
+  left out, a set of 1 to 5 reps worth half; one movement or one complex reads the athlete's sets, several lines
+  the prescription.
+
 ### Scores (`/aldebaran/scores`)
 
 * `GET /me`: the current user's scores (optional `wodId`, paginated; with `sessionId` too, only the

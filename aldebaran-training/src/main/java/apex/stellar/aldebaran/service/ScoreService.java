@@ -1,9 +1,7 @@
 package apex.stellar.aldebaran.service;
 
-import apex.stellar.aldebaran.repository.ScoreTeamRepository;
-import apex.stellar.aldebaran.model.entities.ScoreTeam;
-import apex.stellar.aldebaran.client.AntaresClient;
 import apex.stellar.aldebaran.client.AntaresClient.AthleteFacts;
+import apex.stellar.aldebaran.client.AntaresClient;
 import apex.stellar.aldebaran.dto.ScoreComparisonResponse;
 import apex.stellar.aldebaran.dto.ScoreReferenceData;
 import apex.stellar.aldebaran.dto.ScoreRequest;
@@ -14,22 +12,25 @@ import apex.stellar.aldebaran.exception.AntaresUnavailableException;
 import apex.stellar.aldebaran.exception.InvalidScoreException;
 import apex.stellar.aldebaran.exception.ResourceNotFoundException;
 import apex.stellar.aldebaran.mapper.ScoreMapper;
-import apex.stellar.aldebaran.model.entities.Score;
 import apex.stellar.aldebaran.model.entities.Score.ScalingLevel;
+import apex.stellar.aldebaran.model.entities.Score;
 import apex.stellar.aldebaran.model.entities.ScoreSet;
+import apex.stellar.aldebaran.model.entities.ScoreTeam;
 import apex.stellar.aldebaran.model.entities.Session;
+import apex.stellar.aldebaran.model.entities.SessionBlock;
 import apex.stellar.aldebaran.model.entities.SessionLog;
-import apex.stellar.aldebaran.model.entities.Wod;
 import apex.stellar.aldebaran.model.entities.Wod.ScoreType;
+import apex.stellar.aldebaran.model.entities.Wod;
 import apex.stellar.aldebaran.model.enums.AgeGroup;
 import apex.stellar.aldebaran.model.enums.Division;
 import apex.stellar.aldebaran.model.enums.Unit;
 import apex.stellar.aldebaran.repository.ScoreRepository;
-import apex.stellar.aldebaran.model.entities.SessionBlock;
+import apex.stellar.aldebaran.repository.ScoreTeamRepository;
 import apex.stellar.aldebaran.repository.SessionBlockRepository;
 import apex.stellar.aldebaran.repository.SessionLogRepository;
 import apex.stellar.aldebaran.repository.WodRepository;
 import apex.stellar.aldebaran.security.SecurityService;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -72,6 +73,7 @@ public class ScoreService {
   private final SessionLogService sessionLogService;
   private final ScoreTeamRepository scoreTeamRepository;
   private final MovementRecordService movementRecordService;
+  private final BalanceMaintenanceService balanceMaintenance;
 
   /**
    * Retrieves the current user's scores, optionally only those on a WOD logged in a session (the
@@ -160,6 +162,9 @@ public class ScoreService {
     recalculatePrsForUser(wod, targetUserId);
     teammates.forEach(mate -> recalculatePrsForUser(wod, mate));
     movementRecordService.rebuildFor(wod, targetUserId);
+    List<Long> athletes = new ArrayList<>(teammates);
+    athletes.add(targetUserId);
+    balanceMaintenance.scoreChanged(athletes, savedScore.getDate(), wod);
 
     if (savedScore.getDivision() != null && savedScore.getTeam() == null) {
       // Scores logged before the athlete chose a division join it now (after the PR update, which
@@ -209,7 +214,8 @@ public class ScoreService {
       throw new InvalidScoreException("error.score.wod.mismatch", id, wod.getId());
     }
 
-    Integer previousYear = existingScore.getDate() == null ? null : existingScore.getDate().getYear();
+    LocalDate previousDate = existingScore.getDate();
+    Integer previousYear = previousDate == null ? null : previousDate.getYear();
     scoreMapper.updateEntity(request, existingScore);
     existingScore.setGymId(wod.getGymId() != null ? wod.getGymId() : request.gymId());
     if (wod.isCompetition() && !existingScore.isVerified()) {
@@ -244,6 +250,7 @@ public class ScoreService {
 
     recalculatePrsForUser(wod, savedScore.getUserId());
     movementRecordService.rebuildFor(wod, savedScore.getUserId());
+    List<Long> athletes = new ArrayList<>(List.of(savedScore.getUserId()));
     if (savedScore.getTeam() != null) {
       // One shared performance: every member's row follows the correction
       for (Score other : scoreRepository.findByTeamId(savedScore.getTeam().getId())) {
@@ -251,8 +258,13 @@ public class ScoreService {
           copyPerformance(savedScore, other);
           scoreRepository.save(other);
           recalculatePrsForUser(wod, other.getUserId());
+          athletes.add(other.getUserId());
         }
       }
+    }
+    balanceMaintenance.scoreChanged(athletes, previousDate, wod);
+    if (!Objects.equals(previousDate, savedScore.getDate())) {
+      balanceMaintenance.scoreChanged(athletes, savedScore.getDate(), wod);
     }
 
     return scoreMapper.toResponse(savedScore);
@@ -280,6 +292,7 @@ public class ScoreService {
       scoreTeamRepository.delete(team);
       scoreRepository.flush();
       rows.forEach(row -> recalculatePrsForUser(wod, row.getUserId()));
+      balanceMaintenance.scoreChanged(rows.stream().map(Score::getUserId).toList(), score.getDate(), wod);
       return;
     }
     if (team != null) {
@@ -293,6 +306,7 @@ public class ScoreService {
 
     recalculatePrsForUser(wod, userId);
     movementRecordService.rebuildFor(wod, userId);
+    balanceMaintenance.scoreChanged(List.of(userId), score.getDate(), wod);
   }
 
   /**
