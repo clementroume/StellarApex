@@ -1,0 +1,16 @@
+<app-review-section heading="REVIEW.MODALITIES.TITLE" headingId="review-modalities">
+  @if (isEmpty()) {
+    <p class="text-sm text-muted-foreground" data-slot="modalities-empty">{{ 'REVIEW.MODALITIES.EMPTY' | translate }}</p>
+  } @else {
+    <div class="flex h-4 overflow-hidden rounded-full bg-muted" aria-hidden="true" data-slot="modalities-bar">
+      @for (p of parts(); track p.key) {
+        <span class="h-full" [class]="p.colour" [style.width.%]="p.width"></span>
+      }
+    </div>
+    <ul class="flex flex-wrap gap-3 text-xs text-muted-foreground">
+      @for (p of parts(); track p.key) {
+        <li class="flex items-center gap-1"><i class="size-2.5 rounded-sm" [class]="p.colour"></i>{{ 'MOVEMENT.MODALITIES.' + p.key | translate }}</li>
+      }
+    </ul>
+  }
+</app-review-section>

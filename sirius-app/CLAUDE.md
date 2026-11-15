@@ -17,12 +17,15 @@ the dev proxy targets the local Traefik `https://localhost` with `Host: stellar.
   from `app.routes.ts` under the authenticated `MainLayoutComponent`.
 - `src/app/shared/component`: reusable `list-*`, `detail-*`, `search-input`, `movement-combobox`
   (driven by the usual names, `usualNameOf` finds a line's name), `variant-picker` (chips by type, `toggleVariant` applies `exclusiveTechniqueSets`), `body-map` (front / back SVG by region,
-  paths from MIT `react-native-body-highlighter`, licence in `src/assets/licenses`; unused since the catalog home shows the 3D model, kept for lot D),
+  paths from MIT `react-native-body-highlighter`, licence in `src/assets/licenses`; `heat` mode = parts shaded 0 to 5 in the
+  primary colour or the inherited `--heat-colour`, a picture without clicks; used by the weekly balance),
   `gym-selector` components (inline templates).
 - `src/app/shared/ui`: spartan/ui helm code (styles copied from the spartan CLI, ours to edit), imported as
   `@spartan-ng/helm/<name>` (`tsconfig.json` paths) on top of `@spartan-ng/brain` (pinned version).
   A brain bump (also inside a Dependabot group PR) can break the copies (1.9.0: `BrnAvatar` lost `_image`):
   diff the copies against `libs/helm/<name>/src/lib` of the spartan repo at that tag and fix them in the same PR.
+  Keep the local fixes then: `accordion-trigger` puts its chevron visibility classes on a `span` (ng-icon's unlayered
+  host style beats a layered `hidden`, both chevrons showed).
 
 ## UI primitives (D42: spartan/ui)
 
@@ -32,7 +35,7 @@ the dev proxy targets the local Traefik `https://localhost` with `Host: stellar.
   and maps every Tailwind colour and spartan token to the palette variables (`--sa-*`). Brand colours
   keep the app meaning (`primary`, `secondary` = records/PR, `accent` = third chart colour, the three distinct in every palette, with
   `*-content` for text on them); in helm code, spartan's subtle `secondary`/`accent` are `muted`.
-- App pieces: `app-page` (page template), `app-form-field` (label + input group + error),
+- App pieces: `app-page` (page template, `[pageTitleAside]` slot next to the title), `app-form-field` (label + input group + error),
   `appNativeSelect` (native select keeping `ngValue`), `app-section-divider`,
   `app-coming-soon` / `SpacePlaceholderComponent` (route data), `field-group` and `switch` CSS
   utilities. Toggle filters are buttons with `aria-pressed`; dialogs trap focus (CDK), close on Escape
@@ -145,6 +148,17 @@ the dev proxy targets the local Traefik `https://localhost` with `Host: stellar.
   shows the load as a pill (dashed when estimated) and its source, rounded with
   `UnitService.formatPercentLoad` (1 kg / 2.5 lb). Tailwind utilities are global CSS (initial bundle):
   reuse the opacities already used (`bg-secondary/10|15|20`). Age groups: `AGE_GROUPS` / `AGE_GROUP.*` keys.
+- Weekly balance (`features/review`, lot D, `/training/review`): `BalanceService.getMyBalance(monday)` (the
+  current week = Monday of the device's local day, never decided by the server); page `weekly-review` + one
+  component per section (`review-muscles`, `-volume`, `-metcons`, `-force`, `-modalities`, each under the 4 kB style
+  budget) framed by `review-section` (inputs `heading` / `headingId`, never `title` / `id`: a host attribute would
+  show a raw key as a tooltip or duplicate the id). All explanations in one spartan dialog (`REVIEW.HELP.*`) opened by the
+  "?" next to the page title, in plain words for leisure athletes. The drawing is a picture (no click); the region
+  bars are a spartan accordion that opens each region's muscles right under it. Muscle → drawing zone table by
+  `Muscle.code` in `muscle-zones.ts` (D123, an unknown code = not drawn, still in its region bar); shades and sums in
+  `review.utils.ts`. Few numbers (metcon minutes only), facts only, no alert. Colours: the three theme colours for the
+  modalities (G / H / M = primary / secondary / accent); the strength ring the three colours, then primary and secondary half transparent; the holding tab of the
+  muscles uses the accent (`--heat-colour` read by `body-map`).
 - WOD catalogue (`/wods`) = public WODs only: family chips with counts (`WodFacets.categoryCounts`),
   format then sub-category chips, rows with a movement preview, competitions grouped by edition
   (`editionYear`, latest first, `sort=title,desc`), numbered pagination (`GET /wods/count`; page and

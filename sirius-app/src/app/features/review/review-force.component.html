@@ -1,0 +1,23 @@
+<app-review-section heading="REVIEW.FORCE.TITLE" headingId="review-force">
+  @if (slices().length === 0) {
+    <p class="text-sm text-muted-foreground" data-slot="force-empty">{{ 'REVIEW.FORCE.EMPTY' | translate }}</p>
+  } @else {
+    <div class="flex items-center gap-5">
+      <svg viewBox="0 0 42 42" class="size-32 flex-none -rotate-90" aria-hidden="true">
+        <circle class="ring" r="15.915" cx="21" cy="21" fill="none" stroke-width="6"/>
+        @for (s of slices(); track s.label) {
+          <circle [class]="'c' + s.colour" r="15.915" cx="21" cy="21" fill="none" stroke-width="6"
+                  [attr.stroke-dasharray]="s.dash + ' ' + (100 - s.dash)" [attr.stroke-dashoffset]="-s.offset"/>
+        }
+      </svg>
+      <ul class="flex flex-col gap-2 text-sm" data-slot="force-legend">
+        @for (s of slices(); track s.label) {
+          <li class="flex items-center gap-2"><i class="size-3 flex-none rounded-sm" [class]="'c' + s.colour"></i>{{ s.label }}</li>
+        }
+      </ul>
+    </div>
+    @if (nearRecord(); as sentence) {
+      <p class="text-sm text-muted-foreground" data-slot="near-record">{{ sentence }}</p>
+    }
+  }
+</app-review-section>

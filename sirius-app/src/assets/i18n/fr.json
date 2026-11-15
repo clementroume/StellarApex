@@ -1232,8 +1232,7 @@
       "TITLE": "Records"
     },
     "REVIEW": {
-      "TITLE": "Bilan",
-      "COMING": "Ton bilan (volume, sollicitation musculaire, répartition par modalité) arrivera ici."
+      "TITLE": "Bilan"
     },
     "WODS": {
       "TITLE": "Mes WODs",
@@ -1562,5 +1561,84 @@
       "EMPTY": "Pas encore de séance faite."
     },
     "SESSION_LEADERBOARD": "Classement de la séance"
+  },
+  "REVIEW": {
+    "SUBTITLE": "Ce que tu as fait, semaine après semaine",
+    "PREVIOUS_WEEK": "Semaine précédente",
+    "NEXT_WEEK": "Semaine suivante",
+    "CURRENT": "en cours",
+    "WINDOW": "Du {{from}} au {{to}}",
+    "HELP": {
+      "OPEN": "Comment lire ton bilan",
+      "TITLE": "Comment lire ton bilan",
+      "INTRO": "Ton bilan se remplit tout seul avec tes scores et les séances que tu coches dans ton journal. Ce sont des estimations : elles montrent des tendances, pas un compte au rep près.",
+      "MUSCLES": "Plus une zone est foncée, plus ses muscles ont travaillé. « En mouvement » : les muscles qui font bouger, comme les cuisses sur un squat. « En maintien » : ceux qui te gardent gainé, comme les abdos sur ce même squat. Touche une région pour voir le détail de ses muscles.",
+      "VOLUME": "La quantité de travail de chaque semaine, comparée aux 7 précédentes. Toutes les séances comptent, quel que soit le niveau (RX ou scaled). Une semaine surtout faite d'endurance peut paraître plus légère qu'elle ne l'a été.",
+      "METCONS": "Le temps passé en metcon, rangé par durée : des efforts très courts (moins de 5 minutes) aux efforts longs (plus de 20 minutes), les EMOM et Tabata à part.",
+      "FORCE": "Les mouvements de force que tu as le plus travaillés, échauffement non compté. « Près de ton record » : une série lourde, à 80 % ou plus de ton maximum.",
+      "MODALITIES": "La répartition entre les trois familles du CrossFit : gymnastique (le poids du corps), haltérophilie (une charge : barre, kettlebell, wall-ball…) et monostructural (course, rameur, vélo, corde à sauter).",
+      "WINDOW": "Chaque section couvre la semaine sélectionnée et les 3 d'avant, sauf le volume, qui montre 8 semaines."
+    },
+    "LOAD_ERROR": "Impossible de charger ton bilan. Réessaie plus tard.",
+    "EMPTY_TITLE": "Pas encore d'entraînement sur ces 4 semaines",
+    "EMPTY_TEXT": "Saisis un score ou coche une séance faite : ton bilan se remplit tout seul.",
+    "EMPTY_WODS": "Voir les WODs",
+    "EMPTY_JOURNAL": "Mon journal",
+    "MUSCLES": {
+      "TITLE": "Muscles sollicités",
+      "MOVING": "En mouvement",
+      "HOLDING": "En maintien",
+      "MOVING_WHAT": "Les muscles qui produisent le mouvement.",
+      "HOLDING_WHAT": "Les muscles qui tiennent la position (gainage, tenue).",
+      "LESS": "moins",
+      "MORE": "plus",
+      "SORTED": "De la plus à la moins sollicitée. Touche une région pour voir ses muscles.",
+      "EMPTY_MOVING": "Aucun muscle sollicité en mouvement sur ces 4 semaines.",
+      "EMPTY_HOLDING": "Aucun muscle sollicité en maintien sur ces 4 semaines."
+    },
+    "LEVEL": {
+      "0": "pas sollicité",
+      "1": "peu sollicité",
+      "2": "un peu sollicité",
+      "3": "moyennement sollicité",
+      "4": "très sollicité",
+      "5": "le plus sollicité"
+    },
+    "VOLUME": {
+      "TITLE": "Volume",
+      "PAST": "semaines précédentes",
+      "SELECTED": "semaine sélectionnée",
+      "WEEK": "Semaine du {{day}} : {{level}}",
+      "LEVEL": {
+        "0": "aucun volume",
+        "1": "volume faible",
+        "2": "volume modéré",
+        "3": "volume moyen",
+        "4": "volume élevé",
+        "5": "le plus gros volume des 8 semaines"
+      }
+    },
+    "METCONS": {
+      "TITLE": "Metcons",
+      "VERY_SHORT": "Très courts (moins de 5 min)",
+      "SHORT": "Courts (5 à 10 min)",
+      "MEDIUM": "Moyens (11 à 20 min)",
+      "LONG": "Longs (plus de 20 min)",
+      "INTERVALS": "Intervalles (EMOM, Tabata, en alternance)",
+      "MINUTES": "{{count}} min",
+      "EMPTY": "Pas de metcon sur ces 4 semaines."
+    },
+    "FORCE": {
+      "TITLE": "Force",
+      "OTHERS": "Autres",
+      "NEAR": "Près de ton record : {{lifts}}.",
+      "AND": "et",
+      "EMPTY": "Pas de série de force sur ces 4 semaines."
+    },
+    "MODALITIES": {
+      "TITLE": "Modalités",
+      "EMPTY": "Rien à répartir sur ces 4 semaines."
+    },
+    "NAMED_LEVEL": "{{name}} : {{level}}"
   }
 }

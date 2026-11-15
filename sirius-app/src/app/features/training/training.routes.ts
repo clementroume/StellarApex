@@ -1,5 +1,4 @@
 import {Routes} from '@angular/router';
-import {SpacePlaceholderComponent} from '../../shared/component/coming-soon/space-placeholder.component';
 
 export const TRAINING_ROUTES: Routes = [
   {path: '', redirectTo: 'journal', pathMatch: 'full'},
@@ -27,8 +26,6 @@ export const TRAINING_ROUTES: Routes = [
     path: 'records/:movementId', data: {page: true},
     loadComponent: () => import('../records/lift-records.component').then(c => c.LiftRecordsComponent)
   },
-  {
-    path: 'review', component: SpacePlaceholderComponent,
-    data: {titleKey: 'TRAINING.REVIEW.TITLE', descriptionKey: 'TRAINING.REVIEW.COMING', icon: 'heroArrowTrendingUp'}
-  },
+  // Weekly balance (lot D)
+  {path: 'review', loadComponent: () => import('../review/weekly-review.component').then(c => c.WeeklyReviewComponent)},
 ];

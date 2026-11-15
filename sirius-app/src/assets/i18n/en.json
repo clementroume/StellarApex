@@ -1232,8 +1232,7 @@
       "TITLE": "Records"
     },
     "REVIEW": {
-      "TITLE": "Review",
-      "COMING": "Your review (volume, muscle load, split by modality) will show here."
+      "TITLE": "Review"
     },
     "WODS": {
       "TITLE": "My WODs",
@@ -1562,5 +1561,84 @@
       "EMPTY": "No session done yet."
     },
     "SESSION_LEADERBOARD": "Session leaderboard"
+  },
+  "REVIEW": {
+    "SUBTITLE": "What you did, week after week",
+    "PREVIOUS_WEEK": "Previous week",
+    "NEXT_WEEK": "Next week",
+    "CURRENT": "current",
+    "WINDOW": "From {{from}} to {{to}}",
+    "HELP": {
+      "OPEN": "How to read your balance",
+      "TITLE": "How to read your balance",
+      "INTRO": "Your balance fills itself from your scores and the sessions you check in your journal. These are estimates: they show trends, not a count to the rep.",
+      "MUSCLES": "The darker a zone, the more its muscles worked. \"Moving\": the muscles that make you move, like your thighs in a squat. \"Holding\": the ones that keep you braced, like your abs in that same squat. Tap a region to see its muscles.",
+      "VOLUME": "How much work each week, compared with the 7 before. Every session counts, whatever the level (RX or scaled). A week made mostly of endurance may look lighter than it felt.",
+      "METCONS": "The time spent in metcons, sorted by length: from very short efforts (under 5 minutes) to long ones (over 20 minutes), EMOMs and Tabatas apart.",
+      "FORCE": "The strength movements you worked the most, warm-ups left out. \"Close to your record\": a heavy set, at 80 % or more of your max.",
+      "MODALITIES": "The split between the three families of CrossFit: gymnastics (your body weight), weightlifting (a load: barbell, kettlebell, wall-ball…) and monostructural (running, rowing, biking, jump rope).",
+      "WINDOW": "Each section covers the selected week and the 3 before, except the volume, which shows 8 weeks."
+    },
+    "LOAD_ERROR": "Your balance could not be loaded. Try again later.",
+    "EMPTY_TITLE": "No training yet over these 4 weeks",
+    "EMPTY_TEXT": "Log a score or check a session as done: your balance fills itself.",
+    "EMPTY_WODS": "Browse WODs",
+    "EMPTY_JOURNAL": "My journal",
+    "MUSCLES": {
+      "TITLE": "Muscles worked",
+      "MOVING": "Moving",
+      "HOLDING": "Holding",
+      "MOVING_WHAT": "The muscles that produce the movement.",
+      "HOLDING_WHAT": "The muscles that hold the position (core, bracing).",
+      "LESS": "less",
+      "MORE": "more",
+      "SORTED": "From the most to the least worked. Tap a region to see its muscles.",
+      "EMPTY_MOVING": "No muscle worked in movement over these 4 weeks.",
+      "EMPTY_HOLDING": "No muscle worked in holding over these 4 weeks."
+    },
+    "LEVEL": {
+      "0": "not worked",
+      "1": "barely worked",
+      "2": "lightly worked",
+      "3": "moderately worked",
+      "4": "heavily worked",
+      "5": "the most worked"
+    },
+    "VOLUME": {
+      "TITLE": "Volume",
+      "PAST": "previous weeks",
+      "SELECTED": "selected week",
+      "WEEK": "Week of {{day}}: {{level}}",
+      "LEVEL": {
+        "0": "no volume",
+        "1": "low volume",
+        "2": "moderate volume",
+        "3": "medium volume",
+        "4": "high volume",
+        "5": "the biggest volume of the 8 weeks"
+      }
+    },
+    "METCONS": {
+      "TITLE": "Metcons",
+      "VERY_SHORT": "Very short (under 5 min)",
+      "SHORT": "Short (5 to 10 min)",
+      "MEDIUM": "Medium (11 to 20 min)",
+      "LONG": "Long (over 20 min)",
+      "INTERVALS": "Intervals (EMOM, Tabata, taking turns)",
+      "MINUTES": "{{count}} min",
+      "EMPTY": "No metcon over these 4 weeks."
+    },
+    "FORCE": {
+      "TITLE": "Strength",
+      "OTHERS": "Others",
+      "NEAR": "Close to your record: {{lifts}}.",
+      "AND": "and",
+      "EMPTY": "No strength set over these 4 weeks."
+    },
+    "MODALITIES": {
+      "TITLE": "Modalities",
+      "EMPTY": "Nothing to split over these 4 weeks."
+    },
+    "NAMED_LEVEL": "{{name}}: {{level}}"
   }
 }

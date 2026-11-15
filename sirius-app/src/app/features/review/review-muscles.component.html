@@ -1,0 +1,56 @@
+<app-review-section heading="REVIEW.MUSCLES.TITLE" headingId="review-muscles">
+  <div class="grid grid-cols-2 gap-1 rounded-lg bg-muted p-1" role="group" [attr.aria-label]="'REVIEW.MUSCLES.TITLE' | translate">
+    @for (t of tabs; track t) {
+      <button type="button" class="rounded-md py-1.5 text-sm font-semibold text-muted-foreground aria-pressed:bg-card aria-pressed:text-foreground aria-pressed:shadow-sm"
+              [attr.aria-pressed]="tab() === t" (click)="pickTab(t)">
+        {{ (t === 'moving' ? 'REVIEW.MUSCLES.MOVING' : 'REVIEW.MUSCLES.HOLDING') | translate }}
+      </button>
+    }
+  </div>
+  <p class="text-center text-xs text-muted-foreground">
+    {{ (tab() === 'moving' ? 'REVIEW.MUSCLES.MOVING_WHAT' : 'REVIEW.MUSCLES.HOLDING_WHAT') | translate }}
+  </p>
+
+  <app-body-map [heat]="heat()"/>
+
+  @if (isEmpty()) {
+    <p class="text-center text-sm text-muted-foreground" data-slot="muscles-empty">
+      {{ (tab() === 'moving' ? 'REVIEW.MUSCLES.EMPTY_MOVING' : 'REVIEW.MUSCLES.EMPTY_HOLDING') | translate }}
+    </p>
+  } @else {
+    <div class="scale flex items-center justify-center gap-1 text-xs text-muted-foreground" aria-hidden="true">
+      <span>{{ 'REVIEW.MUSCLES.LESS' | translate }}</span>
+      <i class="s1"></i><i class="s2"></i><i class="s3"></i><i class="s4"></i><i class="s5"></i>
+      <span>{{ 'REVIEW.MUSCLES.MORE' | translate }}</span>
+    </div>
+
+    <hlm-accordion type="single" data-slot="region-bars">
+      @for (bar of regionBars(); track bar.key) {
+        <hlm-accordion-item>
+          <hlm-accordion-trigger triggerClass="items-center gap-2 py-1.5 px-1 hover:no-underline hover:bg-muted">
+            <span class="flex flex-1 flex-col gap-1">
+              <span class="text-sm font-normal">{{ bar.label | translate }}<span class="sr-only">, {{ 'REVIEW.LEVEL.' + bar.level | translate }}</span></span>
+              <span class="h-2.5 rounded-full bg-muted" aria-hidden="true"><span class="block h-full rounded-full" [class]="barColour()" [style.width.%]="bar.width"></span></span>
+            </span>
+          </hlm-accordion-trigger>
+          <hlm-accordion-content>
+            <ul class="flex flex-col gap-1 border-l-2 ml-1 pl-3 pt-1" [attr.data-slot]="'muscles-' + bar.key">
+              @for (m of musclesByRegion()[bar.key]; track m.key) {
+                <li>
+                  <a class="flex flex-col gap-1 rounded-md px-1 py-0.5 no-underline! hover:bg-muted" [routerLink]="['/muscles', m.muscleId]"
+                     [attr.aria-label]="'REVIEW.NAMED_LEVEL' | translate: {name: m.label, level: ('REVIEW.LEVEL.' + m.level | translate)}">
+                    <span class="text-sm">{{ m.label }}</span>
+                    <span class="h-1.5 rounded-full bg-muted" aria-hidden="true"><span class="block h-full rounded-full" [class]="barColour()" [style.width.%]="m.width"></span></span>
+                  </a>
+                </li>
+              } @empty {
+                <li class="text-sm text-muted-foreground">{{ (tab() === 'moving' ? 'REVIEW.MUSCLES.EMPTY_MOVING' : 'REVIEW.MUSCLES.EMPTY_HOLDING') | translate }}</li>
+              }
+            </ul>
+          </hlm-accordion-content>
+        </hlm-accordion-item>
+      }
+    </hlm-accordion>
+    <p class="text-xs text-muted-foreground">{{ 'REVIEW.MUSCLES.SORTED' | translate }}</p>
+  }
+</app-review-section>

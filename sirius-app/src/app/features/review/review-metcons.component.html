@@ -1,0 +1,15 @@
+<app-review-section heading="REVIEW.METCONS.TITLE" headingId="review-metcons">
+  @if (isEmpty()) {
+    <p class="text-sm text-muted-foreground" data-slot="metcons-empty">{{ 'REVIEW.METCONS.EMPTY' | translate }}</p>
+  } @else {
+    @for (row of rows(); track row.domain) {
+      <div class="flex flex-col gap-1">
+        <div class="flex justify-between gap-2 text-sm">
+          <span>{{ 'REVIEW.METCONS.' + row.domain | translate }}</span>
+          <span class="text-muted-foreground">{{ 'REVIEW.METCONS.MINUTES' | translate: {count: row.minutes} }}</span>
+        </div>
+        <div class="h-2.5 rounded-full bg-muted" aria-hidden="true"><div class="h-full rounded-full bg-primary" [style.width.%]="row.width"></div></div>
+      </div>
+    }
+  }
+</app-review-section>

@@ -15,16 +15,20 @@ import type { ClassValue } from 'clsx';
 		<h3 brnAccordionHeader class="flex">
 			<button brnAccordionTrigger data-slot="accordion-trigger" [class]="_computedTriggerClass()">
 				<ng-content />
-				<ng-icon
-					name="lucideChevronDown"
+				<!-- Local change: the visibility classes sit on a span, since ng-icon's own (unlayered) host style
+				     beats the layered Tailwind utilities and both chevrons showed. -->
+				<span
 					data-slot="accordion-trigger-icon"
-					class="pointer-events-none shrink-0 group-aria-expanded/accordion-trigger:hidden"
-				/>
-				<ng-icon
-					name="lucideChevronUp"
+					class="pointer-events-none flex shrink-0 group-aria-expanded/accordion-trigger:hidden"
+				>
+					<ng-icon name="lucideChevronDown" />
+				</span>
+				<span
 					data-slot="accordion-trigger-icon"
-					class="pointer-events-none shrink-0 group-aria-expanded/accordion-trigger:inline group-aria-[expanded=false]/accordion-trigger:hidden"
-				/>
+					class="pointer-events-none flex shrink-0 group-aria-expanded/accordion-trigger:flex group-aria-[expanded=false]/accordion-trigger:hidden"
+				>
+					<ng-icon name="lucideChevronUp" />
+				</span>
 			</button>
 		</h3>
 	`,
