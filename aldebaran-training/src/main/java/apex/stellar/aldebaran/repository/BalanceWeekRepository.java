@@ -31,12 +31,13 @@ public interface BalanceWeekRepository extends JpaRepository<BalanceWeek, Balanc
   List<BalanceWeek> findWeeks(Long userId, LocalDate from, LocalDate to);
 
   /**
-   * Serializes the rebuilds of one athlete's weeks until the end of the transaction.
+   * Serializes the rebuilds of one athlete's weeks until the end of the transaction. Its own key
+   * (hashed with "balance"), apart from the records' lock on the plain user id.
    *
    * @param userId The athlete.
    * @return Nothing useful.
    */
-  @Query(value = "SELECT pg_advisory_xact_lock(:userId)", nativeQuery = true)
+  @Query(value = "SELECT pg_advisory_xact_lock(hashtextextended('balance', :userId))", nativeQuery = true)
   Object lockAthlete(Long userId);
 
   /**

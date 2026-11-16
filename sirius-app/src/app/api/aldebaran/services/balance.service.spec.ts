@@ -25,10 +25,10 @@ describe('BalanceService', () => {
 
   it('checks the line texts in one call', () => {
     let flags: boolean[] = [];
-    service.readableTexts(['21-15-9', 'abc']).subscribe(f => flags = f);
+    service.readableTexts({texts: ['21-15-9', 'abc'], wodType: 'FOR_TIME'}).subscribe(f => flags = f);
     const req = http.expectOne(`${environment.trainingUrl}/balance/readable-texts`);
     expect(req.request.method).toBe('POST');
-    expect(req.request.body).toEqual({texts: ['21-15-9', 'abc']});
+    expect(req.request.body).toEqual({texts: ['21-15-9', 'abc'], wodType: 'FOR_TIME'});
     req.flush([true, false]);
     expect(flags).toEqual([true, false]);
   });

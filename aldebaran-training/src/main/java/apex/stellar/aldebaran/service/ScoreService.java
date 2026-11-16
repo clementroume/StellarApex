@@ -306,7 +306,12 @@ public class ScoreService {
 
     recalculatePrsForUser(wod, userId);
     movementRecordService.rebuildFor(wod, userId);
-    balanceMaintenance.scoreChanged(List.of(userId), score.getDate(), wod);
+    List<Long> athletes = new ArrayList<>(List.of(userId));
+    if (team != null) {
+      // The others' share of each TOTAL line follows the new team size (D128)
+      athletes.addAll(team.getMemberIds());
+    }
+    balanceMaintenance.scoreChanged(athletes, score.getDate(), wod);
   }
 
   /**

@@ -7,7 +7,7 @@ import {TranslatePipe, TranslateService} from '@ngx-translate/core';
 import {NgIconComponent} from '@ng-icons/core';
 import {MovementComboboxComponent} from '../../../shared/component/movement-combobox/movement-combobox.component';
 import {toggleVariant, VariantPickerComponent} from '../../../shared/component/variant-picker/variant-picker.component';
-import {catchError, debounceTime, distinctUntilChanged, forkJoin, map, of, switchMap} from 'rxjs';
+import {catchError, debounceTime, distinctUntilChanged, forkJoin, map, of, switchMap, tap} from 'rxjs';
 import {WodService} from '../../../api/aldebaran/services/wod.service';
 import {BalanceService} from '../../../api/aldebaran/services/balance.service';
 import {BYPASS_LOADER} from '../../../core/interceptors/loading.interceptor';
@@ -205,17 +205,28 @@ export class WodFormComponent implements OnInit {
   }
 
   /**
-   * Asks Aldebaran which line texts the weekly balance cannot read (D121): a warning under the field,
-   * never a block. Blank texts are not asked (their measures count); a failed check warns nothing.
+   * Asks Aldebaran which line texts the weekly balance cannot read, as this WOD counts them (D121:
+   * repetitions for strength, the ladder of a Death by): a warning under the field, never a block.
+   * Blank texts are not asked (their measures count); a failed check warns nothing. Warnings are
+   * cleared as soon as the lines change, so none sits under the wrong line while the check runs.
    */
   private watchLineTexts(): void {
-    this.movementsFormArray.valueChanges.pipe(
-      map(() => (this.movementsFormArray.getRawValue() as {repsScheme?: string | null}[]).map(m => (m.repsScheme ?? '').trim())),
-      distinctUntilChanged((a, b) => a.length === b.length && a.every((t, i) => t === b[i])),
+    this.wodForm.valueChanges.pipe(
+      map(() => {
+        const v = this.wodForm.getRawValue();
+        const texts = (v.movements as {repsScheme?: string | null}[]).map(m => (m.repsScheme ?? '').trim());
+        return {
+          texts, wodType: v.wodType || null, scoreType: v.scoreType || null,
+          ladderStart: v.ladderStart ?? null, ladderStep: v.ladderStep ?? null, repMax: v.repMax ?? null
+        };
+      }),
+      distinctUntilChanged((a, b) => JSON.stringify(a) === JSON.stringify(b)),
+      tap(() => this.unreadableLines.set([])),
       debounceTime(400),
-      switchMap(texts => texts.some(t => t)
-        ? this.balanceService.readableTexts(texts, new HttpContext().set(BYPASS_LOADER, true)).pipe(catchError(() => of(texts.map(() => true))))
-        : of(texts.map(() => true))),
+      switchMap(check => check.texts.some(t => t)
+        ? this.balanceService.readableTexts(check, new HttpContext().set(BYPASS_LOADER, true))
+          .pipe(catchError(() => of(check.texts.map(() => true))))
+        : of(check.texts.map(() => true))),
       takeUntilDestroyed(this.destroyRef)
     ).subscribe(flags => this.unreadableLines.set(flags.map(readable => !readable)));
   }

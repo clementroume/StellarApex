@@ -55,6 +55,10 @@ public final class BalanceCalculator {
   /** A set at or above this share of the 1RM is near the record (D124). */
   public static final double NEAR_RECORD = 0.8;
 
+  /** Lines in WOD order; a line without position goes last instead of failing the whole week. */
+  public static final Comparator<WodMovement> LINE_ORDER =
+      Comparator.comparing(WodMovement::getOrderIndex, Comparator.nullsLast(Comparator.naturalOrder()));
+
   /** A set lighter than this share of the best set of its score is a warm-up (D82). */
   static final double WARM_UP = 0.5;
 
@@ -86,35 +90,49 @@ public final class BalanceCalculator {
 
   /**
    * Whether a line's text is one of the forms the balance reads (D121): {@code 21}, {@code 21-15-9},
-   * {@code max}, {@code 1 min}, {@code 3-6-9-...}, {@code 5 x 5}. A blank text reads the line's
-   * measures instead, so it is not judged here.
+   * {@code max}, {@code 1 min}, {@code 3-6-9-...}, {@code 5 x 5}, as the WOD counts it (repetitions
+   * for strength, the ladder of a Death by). A blank text reads the line's measures instead, so it
+   * is not judged here.
    *
+   * @param wod The WOD being edited (format, score type, ladder, "N RM"), lines not needed.
    * @param text The text of the line ({@code repsScheme}).
    * @return False only for a written text that cannot be read.
    */
-  public static boolean readableText(@Nullable String text) {
+  public static boolean readableText(Wod wod, @Nullable String text) {
     if (text == null || text.isBlank()) {
       return true;
     }
-    return LinePrescription.of(WodMovement.builder().repsScheme(text).build(), null).readable();
+    return readable(wod, WodMovement.builder().repsScheme(text).build());
+  }
+
+  /**
+   * Whether the balance reads a line the way it counts it: a strength WOD needs repetitions (or the
+   * WOD's "N RM", D122), a metcon any readable form (a Death by line climbs the WOD's ladder, D121).
+   */
+  private static boolean readable(Wod wod, WodMovement line) {
+    if (isStrength(wod, null)) {
+      LinePrescription p = LinePrescription.of(line, null);
+      return (p.readable() && p.measure() == Measure.REPS) || wod.getRepMax() != null;
+    }
+    return MetconVolume.prescription(wod, line, null).readable();
   }
 
   /**
    * Why a line of a WOD counts nothing in the balance (D121 rule 5, D126), for the admin control. A
-   * strength WOD counts its sets: only an unreadable text is reported there.
+   * strength WOD counts repetitions, never the value of one set: only its text is judged there.
    *
    * @param wod The WOD (a Death by line without text climbs its ladder).
    * @param line The line, with its movement and usual names.
    * @return The reason, or null when the line counts.
    */
   public static @Nullable UncountedReason uncounted(Wod wod, WodMovement line) {
-    LinePrescription p = MetconVolume.prescription(wod, line, null);
-    if (!p.readable()) {
+    if (!readable(wod, line)) {
       return UncountedReason.UNREADABLE;
     }
     if (isStrength(wod, null)) {
       return null; // strength counts sets, never the value of one set
     }
+    LinePrescription p = MetconVolume.prescription(wod, line, null);
     return p.measure().of(CatalogRules.perSet(line)) == null ? UncountedReason.NO_SET_VALUE : null;
   }
 
@@ -237,7 +255,7 @@ public final class BalanceCalculator {
     Wod wod = workout.wod();
     Score score = workout.score();
     List<WodMovement> lines =
-        wod.getMovements().stream().sorted(Comparator.comparing(WodMovement::getOrderIndex)).toList();
+        wod.getMovements().stream().sorted(LINE_ORDER).toList();
     Map<Object, List<WodMovement>> groups = new LinkedHashMap<>();
     for (WodMovement line : lines) {
       Object key = line.getComplexGroup() != null ? "complex:" + line.getComplexGroup() : line;

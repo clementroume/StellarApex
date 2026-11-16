@@ -16,16 +16,19 @@ import apex.stellar.aldebaran.exception.ResourceNotFoundException;
 import apex.stellar.aldebaran.mapper.ScoreMapper;
 import apex.stellar.aldebaran.model.entities.Score.ScalingLevel;
 import apex.stellar.aldebaran.model.entities.Score;
+import apex.stellar.aldebaran.model.entities.ScoreTeam;
 import apex.stellar.aldebaran.model.entities.Wod.ScoreType;
 import apex.stellar.aldebaran.model.entities.Wod;
 import apex.stellar.aldebaran.model.enums.Division;
 import apex.stellar.aldebaran.repository.ScoreRepository;
+import apex.stellar.aldebaran.repository.ScoreTeamRepository;
 import apex.stellar.aldebaran.repository.SessionBlockRepository;
 import apex.stellar.aldebaran.repository.SessionLogRepository;
 import apex.stellar.aldebaran.repository.WodRepository;
 import apex.stellar.aldebaran.security.SecurityService;
 import apex.stellar.aldebaran.service.BalanceMaintenanceService;
 import java.time.LocalDate;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -57,6 +60,7 @@ class ScoreServiceTest {
   @Mock private SessionLogService sessionLogService;
   @Mock private MovementRecordService movementRecordService;
   @Mock private BalanceMaintenanceService balanceMaintenance;
+  @Mock private ScoreTeamRepository scoreTeamRepository;
   @InjectMocks private ScoreService scoreService;
 
   private Wod wodProxy;
@@ -314,6 +318,29 @@ class ScoreServiceTest {
 
     verify(scoreRepository).delete(scoreEntityTime);
     verify(scoreRepository).flush();
+  }
+
+  @Test
+  @DisplayName("deleteScore: a member leaving a team marks the weeks of the members who stay (D128)")
+  void testDeleteScore_MemberLeavesTeam() {
+    var team =
+        ScoreTeam.builder()
+            .id(9L)
+            .createdBy(7L)
+            .memberIds(new LinkedHashSet<>(List.of(userId, 7L, 8L)))
+            .build();
+    scoreEntityTime.setTeam(team);
+    when(securityService.getCurrentUserId()).thenReturn(userId);
+    when(scoreRepository.findById(50L)).thenReturn(Optional.of(scoreEntityTime));
+    when(scoreRepository.findByWodIdAndUserId(1L, userId)).thenReturn(List.of());
+
+    scoreService.deleteScore(50L);
+
+    verify(balanceMaintenance)
+        .scoreChanged(
+            argThat(ids -> ids.containsAll(List.of(userId, 7L, 8L)) && ids.size() == 3),
+            any(),
+            any());
   }
 
   @Test

@@ -78,7 +78,8 @@ resolving IDs from the `antares` schema with `JdbcTemplate`, then calls `demo/De
   `service/BalanceMaintenanceService` (mark weeks stale, never compute in the write); the display rebuilds
   (`WeeklyBalanceService`). Rules live in `BalanceCalculator` / `MetconVolume` / `LinePrescription` (pure, unit
   tested); bump `BalanceCalculator.RULES_VERSION` when one changes. Tables `balance_*` = entities `BalanceWeek*`
-  and their repositories; stale marks never clear the persistence context (they run inside score and journal
+  and their repositories (rebuild lock: its own advisory key, hashed with "balance", apart from the records' lock;
+  an empty week never stored is not written); stale marks never clear the persistence context (they run inside score and journal
   writes), the rebuild's upsert does. Native queries name the schema (`aldebaran.`). No alert, no ratio (D89).
   Contract for lot D': `BalanceCalculator.vectorOf` (workouts done or prescribed → vector) and `sum` (linear).
   Lines that count nothing (D121 rule 5): `BalanceCalculator.readableText` (WOD form warning, `POST /balance/readable-texts`)

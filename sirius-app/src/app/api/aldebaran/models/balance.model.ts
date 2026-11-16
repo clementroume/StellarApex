@@ -65,3 +65,13 @@ export interface UncountedLine {
   repsScheme?: string | null;
   reason: UncountedReason;
 }
+
+/** Line texts of a WOD being edited and what of the WOD decides how they count (`ReadableTextsRequest`). */
+export interface ReadableTextsCheck {
+  texts: string[];
+  wodType?: string | null;
+  scoreType?: string | null;
+  ladderStart?: number | null;
+  ladderStep?: number | null;
+  repMax?: number | null;
+}

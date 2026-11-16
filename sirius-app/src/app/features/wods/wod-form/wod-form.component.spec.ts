@@ -91,7 +91,7 @@ describe('WodFormComponent', () => {
 
   beforeEach(() => {
     writableGyms = signal<any[]>([]);
-    readableTexts = vi.fn().mockName('BalanceService.readableTexts').mockImplementation((texts: string[]) => of(texts.map(t => t !== 'abc')));
+    readableTexts = vi.fn().mockName('BalanceService.readableTexts').mockImplementation((check: {texts: string[]}) => of(check.texts.map(t => t !== 'abc')));
 
     mockWodService = {
       getWod: vi.fn().mockName('WodService.getWod'),
@@ -297,22 +297,24 @@ describe('WodFormComponent', () => {
       expect(component.buildPayload().movements[0]).toMatchObject({movementId: 10, equipment: [], techniques: []});
     });
 
-    it('should warn under a line text the weekly balance cannot read, without blocking', () => {
-      vi.useFakeTimers();
-      try {
-        fillValidForm();
-        component.addMovement();
-        component.movementsFormArray.at(1).patchValue({movementId: 10, repsScheme: 'abc'});
-        vi.advanceTimersByTime(500);
-        fixture.detectChanges();
-        expect(readableTexts).toHaveBeenLastCalledWith(['5', 'abc'], expect.anything());
-        expect(component.unreadableLines()).toEqual([false, true]);
-        const warnings = fixture.nativeElement.querySelectorAll('[data-slot="reps-unreadable"]');
-        expect(warnings).toHaveLength(1);
-        expect(component.wodForm.valid).toBe(true);
-      } finally {
-        vi.useRealTimers();
-      }
+    it('should warn under a line text the weekly balance cannot read, without blocking', async () => {
+      // The check is debounced (400 ms, real timers: the stream started with the form)
+      const settle = () => new Promise(resolve => setTimeout(resolve, 450));
+      fillValidForm();
+      component.addMovement();
+      component.movementsFormArray.at(1).patchValue({movementId: 10, repsScheme: 'abc'});
+      await settle();
+      fixture.detectChanges();
+      expect(readableTexts).toHaveBeenLastCalledWith(
+        expect.objectContaining({texts: ['5', 'abc'], wodType: 'AMRAP', scoreType: 'REPS'}), expect.anything());
+      expect(component.unreadableLines()).toEqual([false, true]);
+      expect(fixture.nativeElement.querySelectorAll('[data-slot="reps-unreadable"]')).toHaveLength(1);
+      expect(component.wodForm.valid).toBe(true);
+      // Removing a line clears the warnings until the new check answers
+      component.removeMovement(0);
+      expect(component.unreadableLines()).toEqual([]);
+      await settle();
+      expect(component.unreadableLines()).toEqual([true]);
     });
 
     it('should display the backend error on failure', () => {

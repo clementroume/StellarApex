@@ -1,5 +1,6 @@
 package apex.stellar.aldebaran.controller;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.closeTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
@@ -23,6 +24,7 @@ import apex.stellar.aldebaran.model.entities.WodMovement;
 import apex.stellar.aldebaran.model.enums.Category;
 import apex.stellar.aldebaran.repository.MovementRepository;
 import apex.stellar.aldebaran.repository.MuscleRepository;
+import apex.stellar.aldebaran.repository.BalanceWeekRepository;
 import apex.stellar.aldebaran.repository.WodRepository;
 import apex.stellar.aldebaran.service.WeeklyBalanceService;
 import java.time.LocalDate;
@@ -48,6 +50,7 @@ class BalanceIT extends BaseIntegrationTest {
   @Autowired private MuscleRepository muscleRepository;
   @Autowired private MovementRepository movementRepository;
   @Autowired private WodRepository wodRepository;
+  @Autowired private BalanceWeekRepository weekRepository;
 
   private Wod wod;
   private LocalDate monday;
@@ -202,5 +205,28 @@ class BalanceIT extends BaseIntegrationTest {
         .andExpect(jsonPath("$[0].movementName").value("Balance Squat"))
         .andExpect(jsonPath("$[0].repsScheme").value("20 each side"))
         .andExpect(jsonPath("$[0].reason").value("UNREADABLE"));
+  }
+
+  @Test
+  @DisplayName("A week with nothing done is never stored: any requested week writes nothing")
+  void emptyWeeksNotStored() throws Exception {
+    LocalDate far = monday.plusYears(80);
+    mockMvc
+        .perform(as(get("/aldebaran/balance/me").param("week", far.toString()), ANNE))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.muscles", hasSize(0)));
+    assertThat(weekRepository.findWeeks(ANNE, far.minusWeeks(7), far)).isEmpty();
+  }
+
+  @Test
+  @DisplayName("The form check follows the WOD: a strength line needs repetitions")
+  void readableTextsInContext() throws Exception {
+    mockMvc
+        .perform(
+            as(post("/aldebaran/balance/readable-texts"), ANNE)
+                .content("{\"texts\": [\"5 x 5\", \"1 min\"], \"wodType\": \"FOR_LOAD\", \"scoreType\": \"WEIGHT\"}"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$[0]").value(true))
+        .andExpect(jsonPath("$[1]").value(false));
   }
 }

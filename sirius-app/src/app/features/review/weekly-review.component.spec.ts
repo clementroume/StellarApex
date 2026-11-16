@@ -73,6 +73,21 @@ describe('WeeklyReviewComponent', () => {
     expect(help.textContent).toContain('REVIEW.HELP.FORCE');
   });
 
+  it('reads the device day again when the page comes back, for a page left open past Sunday', async () => {
+    vi.useFakeTimers({toFake: ['Date']});
+    try {
+      vi.setSystemTime(new Date('2026-11-15T23:50:00'));
+      await setup(of(balance(4)));
+      expect(fixture.componentInstance.currentMonday()).toBe('2026-11-09');
+      vi.setSystemTime(new Date('2026-11-16T08:00:00'));
+      window.dispatchEvent(new Event('focus'));
+      expect(fixture.componentInstance.currentMonday()).toBe('2026-11-16');
+      expect(fixture.componentInstance.isCurrent()).toBe(false);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('says so when the balance cannot be loaded', async () => {
     await setup(throwError(() => new Error('down')));
     expect(fixture.nativeElement.textContent).toContain('REVIEW.LOAD_ERROR');

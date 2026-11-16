@@ -34,7 +34,8 @@ import {weekLabel} from './review.utils';
     ReviewMusclesComponent, ReviewVolumeComponent, ReviewMetconsComponent, ReviewForceComponent, ReviewModalitiesComponent
   ],
   templateUrl: './weekly-review.component.html',
-  changeDetection: ChangeDetectionStrategy.OnPush
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  host: {'(document:visibilitychange)': 'refreshToday()', '(window:focus)': 'refreshToday()'}
 })
 export class WeeklyReviewComponent {
   // --- INJECTIONS ---
@@ -42,9 +43,11 @@ export class WeeklyReviewComponent {
   private readonly translate = inject(TranslateService);
 
   // --- STATE (SIGNALS & VARIABLES) ---
+  /** The device's day, read again when the page comes back to the foreground (a new week may start). */
+  private readonly today = signal(localDate());
   /** Monday of the current week, on the device's calendar. */
-  readonly currentMonday = mondayOf(localDate());
-  readonly monday = signal(this.currentMonday);
+  readonly currentMonday = computed(() => mondayOf(this.today()));
+  readonly monday = signal(mondayOf(localDate()));
   readonly balance = signal<WeeklyBalance | null>(null);
   readonly isLoading = signal(true);
   readonly failed = signal(false);
@@ -54,7 +57,7 @@ export class WeeklyReviewComponent {
 
   // --- COMPUTED STATE ---
   readonly lang = computed(() => this.translate.currentLang() ?? this.translate.fallbackLang() ?? 'en');
-  readonly isCurrent = computed(() => this.monday() >= this.currentMonday);
+  readonly isCurrent = computed(() => this.monday() >= this.currentMonday());
   readonly weekText = computed(() => weekLabel(this.monday(), this.lang()));
   /** "Du 19 oct. au 15 nov.": the window of the sections. */
   readonly windowText = computed(() => {
@@ -97,6 +100,11 @@ export class WeeklyReviewComponent {
   // --- ACTIONS & EVENTS ---
   previous(): void {
     this.monday.update(m => addDays(m, -7));
+  }
+
+  /** Reads the device's day again: a page left open past Sunday midnight gets its new current week. */
+  refreshToday(): void {
+    this.today.set(localDate());
   }
 
   next(): void {

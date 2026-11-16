@@ -3,6 +3,7 @@ package apex.stellar.aldebaran.controller;
 import apex.stellar.aldebaran.dto.ReadableTextsRequest;
 import apex.stellar.aldebaran.dto.UncountedLineResponse;
 import apex.stellar.aldebaran.dto.WeeklyBalanceResponse;
+import apex.stellar.aldebaran.model.entities.Wod;
 import apex.stellar.aldebaran.service.BalanceCalculator;
 import apex.stellar.aldebaran.service.BalanceMaintenanceService;
 import apex.stellar.aldebaran.service.WeeklyBalanceService;
@@ -62,15 +63,26 @@ public class BalanceController {
   }
 
   /**
-   * Says, for each text of a WOD line being edited, whether the balance can read it (D121): the
-   * WOD form warns under the field, never blocks. A blank text reads the line's measures: true.
+   * Says, for each text of a WOD line being edited, whether the balance can read it as that WOD
+   * counts it (D121): the WOD form warns under the field, never blocks. A blank text reads the
+   * line's measures: true.
    *
-   * @param request The texts, in the order of the lines.
+   * @param request The texts, in the order of the lines, and the WOD's format, score type, ladder
+   *     and "N RM".
    * @return One flag per text.
    */
   @PostMapping("/readable-texts")
   public ResponseEntity<List<Boolean>> readableTexts(@Valid @RequestBody ReadableTextsRequest request) {
-    return ResponseEntity.ok(request.texts().stream().map(BalanceCalculator::readableText).toList());
+    Wod wod =
+        Wod.builder()
+            .wodType(request.wodType())
+            .scoreType(request.scoreType())
+            .ladderStart(request.ladderStart())
+            .ladderStep(request.ladderStep())
+            .repMax(request.repMax())
+            .build();
+    return ResponseEntity.ok(
+        request.texts().stream().map(text -> BalanceCalculator.readableText(wod, text)).toList());
   }
 
   /**

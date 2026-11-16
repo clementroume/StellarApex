@@ -2,7 +2,7 @@ import {inject, Injectable} from '@angular/core';
 import {HttpClient, HttpContext} from '@angular/common/http';
 import {Observable} from 'rxjs';
 import {environment} from '../../../../environments/environment';
-import {UncountedLine, WeeklyBalance} from '../models/balance.model';
+import {ReadableTextsCheck, UncountedLine, WeeklyBalance} from '../models/balance.model';
 
 /**
  * The athlete's weekly balance (Aldebaran `/balance`, lot D): only one's own; plus the checks of the
@@ -22,13 +22,14 @@ export class BalanceService {
   }
 
   /**
-   * Whether the balance reads each text of a WOD line (D121): the WOD form warns, never blocks.
+   * Whether the balance reads each text of a WOD line as that WOD counts it (D121): the WOD form
+   * warns, never blocks.
    *
-   * @param texts The texts of the lines, in order.
+   * @param check The texts of the lines, in order, and the WOD's format, score type, ladder and N RM.
    * @return One flag per text; a blank text is readable (its measures count).
    */
-  readableTexts(texts: string[], context?: HttpContext): Observable<boolean[]> {
-    return this.http.post<boolean[]>(`${environment.trainingUrl}/balance/readable-texts`, {texts}, {context});
+  readableTexts(check: ReadableTextsCheck, context?: HttpContext): Observable<boolean[]> {
+    return this.http.post<boolean[]>(`${environment.trainingUrl}/balance/readable-texts`, check, {context});
   }
 
   /** Every WOD line that counts nothing in the balance (platform admins). */

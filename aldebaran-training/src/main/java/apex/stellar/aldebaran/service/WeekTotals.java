@@ -83,6 +83,15 @@ public final class WeekTotals {
     return lifts;
   }
 
+  /**
+   * Whether nothing at all was added.
+   *
+   * @return True for an empty week.
+   */
+  public boolean isEmpty() {
+    return muscles.isEmpty() && lifts.isEmpty() && totalSets() <= 0 && seconds.values().stream().allMatch(s -> s == 0);
+  }
+
   public double totalSets() {
     return totalSets;
   }

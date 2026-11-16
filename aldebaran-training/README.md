@@ -304,9 +304,10 @@ The athlete's own balance, from their scores and the session blocks checked in a
   metcon minutes per time domain, strength sets per lift ("near the record" = a set at 80 % of the 1RM of its day)
   and modalities over the selected week and the 3 before, equivalent sets of the selected week and the 7 before.
 * `POST /recompute` (`ADMIN`): every stored week to rebuild, `wods.modalities` recomputed (calibration).
-* `POST /readable-texts {texts}` (any user): one flag per line text, false when the balance cannot read it (D121:
-  `21`, `21-15-9`, `max`, `1 min`, `3-6-9-...`, `5 x 5`; blank = the line's measures). The WOD form warns, never
-  blocks.
+* `POST /readable-texts {texts, wodType, scoreType, ladderStart, ladderStep, repMax}` (any user): one flag per line
+  text, false when the balance cannot read it as that WOD counts it (D121: `21`, `21-15-9`, `max`, `1 min`,
+  `3-6-9-...`, `5 x 5`; strength needs repetitions or the WOD's N RM; a Death by line climbs the ladder; blank = the
+  line's measures). The WOD form warns, never blocks.
 * `GET /uncounted-lines` (`ADMIN`): every WOD line that counts nothing (`UNREADABLE` text, or `NO_SET_VALUE` = no
   value of one set for its unit in the catalog; a strength WOD counts sets, so only its text is judged), rules
   `BalanceCalculator.readableText` / `uncounted`.
@@ -314,6 +315,7 @@ The athlete's own balance, from their scores and the session blocks checked in a
 Storage (Flyway V7, D120): `balance_weeks` (per athlete and Monday: volume, modalities, seconds per domain,
 `rules_version`, `stale`), `balance_week_muscles` (moving / holding sets per exact muscle), `balance_week_lifts`,
 entities `BalanceWeek`, `BalanceWeekMuscle`, `BalanceWeekLift` and their repositories.
+A week with nothing done and no row is never stored (any requested week writes nothing).
 A write only marks weeks stale (`service/BalanceMaintenanceService`: score logged / corrected / re-dated /
 deleted for the whole team, and every later week on a WOD feeding records; journal created / deleted / block
 toggled; a checked WOD or session edited; a movement updated = every week); the display rebuilds the stale,

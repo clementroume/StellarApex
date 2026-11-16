@@ -149,7 +149,12 @@ public class WeeklyBalanceService {
     Division division = securityService.getCurrentUserDivision();
     NearRecord records = nearRecord(userId);
     for (LocalDate monday : todo) {
-      save(userId, monday, compute(userId, monday, division, records));
+      WeekTotals totals = compute(userId, monday, division, records);
+      if (states.containsKey(monday) || !totals.isEmpty()) {
+        // A week with nothing done and no row is not stored: any requested week, past or future,
+        // writes nothing (a write that empties a week leaves its stale row, updated here)
+        save(userId, monday, totals);
+      }
     }
   }
 

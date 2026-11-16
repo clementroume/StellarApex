@@ -384,17 +384,33 @@ class BalanceCalculatorTest {
   @Test
   @DisplayName("D121: the six written forms read, anything else does not; a blank text is not judged")
   void readableText() {
+    Wod metcon = wod(WodType.FOR_TIME, ScoreType.TIME);
     for (String text : List.of("21", "21-15-9", "max", "1 min", "3-6-9-...", "5 x 5", "8 x 20 s", "  ")) {
-      assertThat(BalanceCalculator.readableText(text)).as(text).isTrue();
+      assertThat(BalanceCalculator.readableText(metcon, text)).as(text).isTrue();
     }
-    assertThat(BalanceCalculator.readableText(null)).isTrue();
+    assertThat(BalanceCalculator.readableText(metcon, null)).isTrue();
     for (String text : List.of("10 each side", "AMRAP", "21/15/9", "2 rounds")) {
-      assertThat(BalanceCalculator.readableText(text)).as(text).isFalse();
+      assertThat(BalanceCalculator.readableText(metcon, text)).as(text).isFalse();
     }
   }
 
   @Test
-  @DisplayName("Admin control: an unreadable line, a unit without set value, strength judged on its text only")
+  @DisplayName("D121: the form judges a text as its WOD counts it (strength reps, N RM, Death by ladder)")
+  void readableTextInContext() {
+    Wod strength = wod(WodType.FOR_LOAD, ScoreType.WEIGHT);
+    assertThat(BalanceCalculator.readableText(strength, "5 x 5")).isTrue();
+    assertThat(BalanceCalculator.readableText(strength, "1 min")).isFalse();
+    assertThat(BalanceCalculator.readableText(strength, "5RM")).isFalse();
+    strength.setRepMax(5);
+    assertThat(BalanceCalculator.readableText(strength, "5RM")).isTrue();
+    Wod deathBy = wod(WodType.EMOM, ScoreType.ROUNDS);
+    assertThat(BalanceCalculator.readableText(deathBy, "+1 each minute")).isFalse();
+    deathBy.setLadderStart(1);
+    assertThat(BalanceCalculator.readableText(deathBy, "+1 each minute")).isTrue();
+  }
+
+  @Test
+  @DisplayName("Admin control: an unreadable line, a unit without set value, strength judged as it counts")
   void uncounted() {
     Wod metcon = wod(WodType.FOR_TIME, ScoreType.TIME);
     WodMovement fine = line(metcon, THRUSTER, "21-15-9");
@@ -413,6 +429,19 @@ class BalanceCalculatorTest {
 
     Wod strength = wod(WodType.FOR_LOAD, ScoreType.WEIGHT);
     assertThat(BalanceCalculator.uncounted(strength, line(strength, RUNNING, "5 x 5"))).isNull();
-    assertThat(BalanceCalculator.uncounted(strength, line(strength, SQUAT, "5RM"))).isEqualTo(UncountedReason.UNREADABLE);
+    assertThat(BalanceCalculator.uncounted(strength, line(strength, SQUAT, "1 min"))).isEqualTo(UncountedReason.UNREADABLE);
+    Wod fiveRm = wod(WodType.FOR_LOAD, ScoreType.WEIGHT);
+    fiveRm.setRepMax(5);
+    assertThat(BalanceCalculator.uncounted(fiveRm, line(fiveRm, SQUAT, "5RM"))).isNull();
+  }
+
+  @Test
+  @DisplayName("A line without position goes last instead of failing the week")
+  void lineWithoutPosition() {
+    Wod strength = wod(WodType.FOR_LOAD, ScoreType.WEIGHT);
+    line(strength, SQUAT, "5 x 5").setOrderIndex(null);
+    line(strength, THRUSTER, "3 x 3");
+    WeekTotals totals = totals(new Workout(strength, null, DAY, null, null, 0));
+    assertThat(totals.lifts()).containsKeys("Squat", "Thruster");
   }
 }

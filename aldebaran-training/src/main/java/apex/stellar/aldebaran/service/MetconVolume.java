@@ -57,7 +57,7 @@ final class MetconVolume {
   static Map<WodMovement, Double> sets(Wod wod, @Nullable Score score, @Nullable Division division) {
     List<Line> lines = new ArrayList<>();
     for (WodMovement line :
-        wod.getMovements().stream().sorted(Comparator.comparing(WodMovement::getOrderIndex)).toList()) {
+        wod.getMovements().stream().sorted(BalanceCalculator.LINE_ORDER).toList()) {
       lines.add(new Line(line, prescription(wod, line, division), CatalogRules.perSet(line)));
     }
     Map<WodMovement, Double> sets = new LinkedHashMap<>();
