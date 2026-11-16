@@ -42,7 +42,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/block-claude-attribution.sh"
+            "command": "bash \"${CLAUDE_PROJECT_DIR}/.claude/hooks/block-claude-attribution.sh\""
           }
         ]
       }
