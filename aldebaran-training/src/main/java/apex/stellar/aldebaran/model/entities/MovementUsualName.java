@@ -1,8 +1,12 @@
 package apex.stellar.aldebaran.model.entities;
 
+import apex.stellar.aldebaran.model.enums.Category.Modality;
 import jakarta.persistence.Column;
 import jakarta.persistence.Convert;
+import jakarta.persistence.Embedded;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -20,7 +24,8 @@ import lombok.Setter;
 
 /**
  * A name athletes use for a movement with given techniques and equipment (Power Clean = Clean +
- * POWER). It has no identity of its own: records and roles belong to the movement. Techniques of a
+ * POWER). It has no identity of its own: records and roles belong to the movement; it may only say
+ * what one of its sets is worth and its modality, for the weekly balance. Techniques of a
  * chained movement's component are written {@code 1:POWER}.
  */
 @Getter
@@ -67,6 +72,23 @@ public class MovementUsualName {
 
   @Column(name = "video_url", length = 512)
   private String videoUrl;
+
+  /** Value of one set of this variant (Single-under 100), else the movement's (D126). */
+  @Embedded private PerSet perSet;
+
+  /** Modality of this variant (Air Squat: gymnastics), else the movement's family (D127). */
+  @Enumerated(EnumType.STRING)
+  @Column(name = "modality", length = 30)
+  private Modality modality;
+
+  /**
+   * Value of one set, never null.
+   *
+   * @return The values, possibly all null.
+   */
+  public PerSet getPerSet() {
+    return PerSet.orNone(perSet);
+  }
 
   @Override
   public boolean equals(Object o) {

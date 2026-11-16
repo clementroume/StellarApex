@@ -66,7 +66,6 @@ import {
 } from '@ng-icons/heroicons/outline';
 import {
   hugeBodyPartMuscle,
-  hugeBodyPartSixPack,
   hugeCardiogram02,
   hugeCircleArrowLeft02,
   hugeDumbbell01,
@@ -104,7 +103,6 @@ export const APP_ICONS = {
   hugeGymnastic,
   hugeCardiogram02,
   hugeDumbbell01,
-  hugeBodyPartSixPack,
   heroVideoCameraSlash,
   heroArrowUp,
   heroArrowDown,

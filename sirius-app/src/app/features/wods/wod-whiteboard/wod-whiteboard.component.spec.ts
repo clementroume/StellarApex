@@ -172,6 +172,9 @@ describe('WodWhiteboardComponent', () => {
     expect(component.measures(thruster)).toEqual([{values: ['43', '30'], unit: 'KG', mine: null}]);
     expect(component.measures({...thruster, weight: undefined, weightFemale: undefined, height: 24, heightFemale: 20, heightUnit: 'INCHES'}))
       .toEqual([{values: ['24', '20'], unit: 'INCHES', mine: null}]);
+    // A shuttle run shows its length after the movement, like a height
+    expect(component.measures({...thruster, weight: undefined, weightFemale: undefined, length: 25, lengthUnit: 'FEET'}))
+      .toEqual([{values: ['25'], unit: 'FEET', mine: null}]);
     expect(fixture.nativeElement.textContent).toContain('43 KG');
     expect(fixture.nativeElement.textContent).not.toContain('@');
   });

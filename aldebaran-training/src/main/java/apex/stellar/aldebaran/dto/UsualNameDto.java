@@ -1,5 +1,8 @@
 package apex.stellar.aldebaran.dto;
 
+import apex.stellar.aldebaran.model.entities.PerSet;
+import apex.stellar.aldebaran.model.enums.Category.Modality;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import java.util.Set;
@@ -16,6 +19,8 @@ import java.util.Set;
  * @param descriptionEn English description, or null.
  * @param descriptionFr French description, or null.
  * @param videoUrl Demonstration video, or null.
+ * @param perSet Value of one set of this variant, null values = the movement's (D126).
+ * @param modality Modality of this variant, or null = the movement's family (D127).
  */
 public record UsualNameDto(
     @NotBlank @Size(max = 80) String nameEn,
@@ -25,4 +30,6 @@ public record UsualNameDto(
     Set<String> equipment,
     @Size(max = 4000) String descriptionEn,
     @Size(max = 4000) String descriptionFr,
-    @Size(max = 512) String videoUrl) {}
+    @Size(max = 512) String videoUrl,
+    @Valid PerSet perSet,
+    Modality modality) {}

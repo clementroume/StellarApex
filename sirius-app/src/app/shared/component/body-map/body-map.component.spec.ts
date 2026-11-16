@@ -28,4 +28,16 @@ describe('BodyMapComponent', () => {
     paths('path.region.on')[0].dispatchEvent(new MouseEvent('click'));
     expect(picked).toHaveBeenCalledWith('THORAX');
   });
+
+  it('should shade each part in heat mode, a picture without any click', () => {
+    fixture.componentRef.setInput('heat', {quadriceps: 5, chest: 2});
+    fixture.detectChanges();
+    expect(paths('path.heat.h5').length).toBeGreaterThan(0);
+    expect(paths('path.heat.h2').length).toBeGreaterThan(0);
+    expect(paths('path.heat.h0').length).toBeGreaterThan(0);
+    const region = vi.fn();
+    fixture.componentInstance.regionPicked.subscribe(region);
+    paths('path.heat.h5')[0].dispatchEvent(new MouseEvent('click'));
+    expect(region).not.toHaveBeenCalled();
+  });
 });

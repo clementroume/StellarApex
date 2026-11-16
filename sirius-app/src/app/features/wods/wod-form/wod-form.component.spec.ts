@@ -1,7 +1,7 @@
 import type {MockedObject} from 'vitest';
 import {vi} from 'vitest';
 import {ComponentFixture, TestBed} from '@angular/core/testing';
-import {signal, WritableSignal} from '@angular/core';
+import {ChangeDetectorRef, signal, WritableSignal} from '@angular/core';
 import {ActivatedRoute, provideRouter, Router} from '@angular/router';
 import {provideTranslateService} from '@ngx-translate/core';
 import {provideIcons} from '@ng-icons/core';
@@ -9,6 +9,7 @@ import {of, throwError} from 'rxjs';
 import {WodFormComponent} from './wod-form.component';
 import {WodService} from '../../../api/aldebaran/services/wod.service';
 import {MovementService} from '../../../api/aldebaran/services/movement.service';
+import {BalanceService} from '../../../api/aldebaran/services/balance.service';
 import {NotificationService} from '../../../core/services/notification.service';
 import {AccessService} from '../../../core/services/access.service';
 import {UnitService} from '../../../core/services/unit.service';
@@ -25,6 +26,7 @@ describe('WodFormComponent', () => {
   let mockWodService: MockedObject<WodService>;
   let mockMovementService: MockedObject<MovementService>;
   let mockNotificationService: MockedObject<NotificationService>;
+  let readableTexts: ReturnType<typeof vi.fn>;
   let writableGyms: WritableSignal<any[]>;
 
   const existingWod: WodResponse = {
@@ -56,6 +58,7 @@ describe('WodFormComponent', () => {
         provideTranslateService(),
         {provide: WodService, useValue: mockWodService},
         {provide: MovementService, useValue: mockMovementService},
+        {provide: BalanceService, useValue: {readableTexts}},
         {provide: UnitService, useValue: {massUnit: signal('KG')}},
         {
           provide: AccessService,
@@ -88,6 +91,7 @@ describe('WodFormComponent', () => {
 
   beforeEach(() => {
     writableGyms = signal<any[]>([]);
+    readableTexts = vi.fn().mockName('BalanceService.readableTexts').mockImplementation((check: {texts: string[]}) => of(check.texts.map(t => t !== 'abc')));
 
     mockWodService = {
       getWod: vi.fn().mockName('WodService.getWod'),
@@ -291,6 +295,40 @@ describe('WodFormComponent', () => {
 
       component.onMovementPicked(0, option(10));
       expect(component.buildPayload().movements[0]).toMatchObject({movementId: 10, equipment: [], techniques: []});
+    });
+
+    it('should warn under a line text the weekly balance cannot read, without blocking', async () => {
+      // The check is debounced (400 ms, real timers: the stream started with the form)
+      const settle = () => new Promise(resolve => setTimeout(resolve, 450));
+      fillValidForm();
+      component.addMovement();
+      component.movementsFormArray.at(1).patchValue({movementId: 10, repsScheme: 'abc'});
+      await settle();
+      fixture.detectChanges();
+      expect(readableTexts).toHaveBeenLastCalledWith(
+        expect.objectContaining({texts: ['5', 'abc'], wodType: 'AMRAP', scoreType: 'REPS'}), expect.anything());
+      expect(component.unreadableLines()).toEqual([false, true]);
+      expect(fixture.nativeElement.querySelectorAll('[data-slot="reps-unreadable"]')).toHaveLength(1);
+      expect(component.wodForm.valid).toBe(true);
+      // Removing a line clears the warnings until the new check answers
+      component.removeMovement(0);
+      expect(component.unreadableLines()).toEqual([]);
+      await settle();
+      expect(component.unreadableLines()).toEqual([true]);
+    });
+
+    it('should offer the shuttle length only for a shuttle run, and send it with its unit', () => {
+      fillValidForm();
+      fixture.detectChanges();
+      expect(fixture.nativeElement.querySelector('[data-slot="shuttle-length"]')).toBeNull();
+      component.movementsFormArray.at(0).patchValue({techniques: ['SHUTTLE'], length: 25, lengthUnit: 'FEET'});
+      fixture.componentRef.injector.get(ChangeDetectorRef).markForCheck(); // OnPush: a click on the variant does it in the app
+      fixture.detectChanges();
+      expect(fixture.nativeElement.querySelector('[data-slot="shuttle-length"]')).not.toBeNull();
+      mockWodService.createWod.mockReturnValue(of({id: 1} as any));
+      component.onSubmit();
+      const sent = mockWodService.createWod.mock.calls[0][0];
+      expect(sent.movements[0]).toEqual(expect.objectContaining({length: 25, lengthUnit: 'FEET'}));
     });
 
     it('should display the backend error on failure', () => {

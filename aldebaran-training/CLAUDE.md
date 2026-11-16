@@ -12,7 +12,7 @@ name; WOD movement variants joined by `|`, whereas `movements.csv` lists use `, 
 columns `*_en` / `*_fr`, the former single-language columns still read as English; optional trailing
 `tiebreak_en` ... `reps_per_round` then the former V14 structure columns `rounds` ... `vest_weight_unit`, former V15
 `structure`, former V16 `team_size` / `team_mode`, former V18 `rep_max`, and `sets` / `segment` / `complex_group` /
-`team_split` / `percent_of_rm` / `rm_reps` / `component_techniques` for WOD movements; catalog-model columns of `movements.csv` in `config/CatalogCsv`; former `wod_type` values read
+`team_split` / `percent_of_rm` / `rm_reps` / `component_techniques` / `length` / `length_unit` for WOD movements; catalog-model columns of `movements.csv` in `config/CatalogCsv`; former `wod_type` values read
 as a category + sub-category; a former `ROUNDS_REPS` score type reads as `REPS`).
 `demo/DevGymWodSeeder` (`@Profile("demo")`, package `aldebaran.demo` = what to delete to retire the demo) seeds WODs for the Antares test gyms,
 resolving IDs from the `antares` schema with `JdbcTemplate`, then calls `demo/DevScoreSeeder`
@@ -74,6 +74,16 @@ resolving IDs from the `antares` schema with `JdbcTemplate`, then calls `demo/De
   are stored at the most precise variant and read through `service/RecordInheritance` (best of what
   counts for the slot, with `inheritedFrom`). The canonical "N RM" WODs live in the catalog CSVs
   (`rep_max`), one per movement, variant and N, frozen in a migration at lot E.
+- Weekly balance (lot D): own balance only (`GET /balance/me`). Every write that changes what an athlete did calls
+  `service/BalanceMaintenanceService` (mark weeks stale, never compute in the write); the display rebuilds
+  (`WeeklyBalanceService`). Rules live in `BalanceCalculator` / `MetconVolume` / `LinePrescription` (pure, unit
+  tested); bump `BalanceCalculator.RULES_VERSION` when one changes. Tables `balance_*` = entities `BalanceWeek*`
+  and their repositories (rebuild lock: its own advisory key, hashed with "balance", apart from the records' lock;
+  an empty week never stored is not written); stale marks never clear the persistence context (they run inside score and journal
+  writes), the rebuild's upsert does. Native queries name the schema (`aldebaran.`). No alert, no ratio (D89).
+  Contract for lot D': `BalanceCalculator.vectorOf` (workouts done or prescribed → vector) and `sum` (linear).
+  Lines that count nothing (D121 rule 5): `BalanceCalculator.readableText` (WOD form warning, `POST /balance/readable-texts`)
+  and `uncounted` (admin control `GET /balance/uncounted-lines`, `model/enums/UncountedReason`).
 - Support session: `X-Auth-Actor-Id` (nullable `actorId`) = the admin acting as the user; rights stay
   the user's. `security/SupportSessionAuditFilter` logs every non-GET request with an actor at INFO.
 
@@ -90,7 +100,8 @@ resolving IDs from the `antares` schema with `JdbcTemplate`, then calls `demo/De
   single "counts for" rule (exhaustive test: add every new technique there). `service/CatalogRules` =
   line normalization and checks (one written form, `Technique.exclusiveSets`, required values, component
   techniques), `display` (usual name + remaining words, sent as `WodMovementResponse.display`),
-  `effectiveRoles` (adjustments, lowest role wins; for lot D), `checkMovement` (no cycle, no muscle with
+  `effectiveRoles` (adjustments, lowest role wins; for lot D), `perSet` (value of one set by unit, usual name then
+  movement, D126), `modality` / `modalities` (per line: usual name, family, load; also `wods.modalities`, D127), `checkMovement` (no cycle, no muscle with
   its group, roles against the joint layer).
 - Catalog rules: `WodMovement.checkVariantsAllowed` (variants allowed by the movement; used by
   `CatalogRules`, `WodCsvCodec`, `DevGymWodSeeder`; `InvalidWodMovementException` → 400), its

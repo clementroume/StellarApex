@@ -2,13 +2,15 @@ import {ChangeDetectionStrategy, Component, computed, DestroyRef, inject, OnInit
 import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
 import {AbstractControl, FormArray, FormBuilder, ReactiveFormsModule, ValidationErrors, Validators} from '@angular/forms';
 import {ActivatedRoute, Router, RouterModule} from '@angular/router';
-import {HttpErrorResponse} from '@angular/common/http';
+import {HttpContext, HttpErrorResponse} from '@angular/common/http';
 import {TranslatePipe, TranslateService} from '@ngx-translate/core';
 import {NgIconComponent} from '@ng-icons/core';
 import {MovementComboboxComponent} from '../../../shared/component/movement-combobox/movement-combobox.component';
 import {toggleVariant, VariantPickerComponent} from '../../../shared/component/variant-picker/variant-picker.component';
-import {forkJoin} from 'rxjs';
+import {catchError, debounceTime, distinctUntilChanged, forkJoin, map, of, switchMap, tap} from 'rxjs';
 import {WodService} from '../../../api/aldebaran/services/wod.service';
+import {BalanceService} from '../../../api/aldebaran/services/balance.service';
+import {BYPASS_LOADER} from '../../../core/interceptors/loading.interceptor';
 import {MovementService} from '../../../api/aldebaran/services/movement.service';
 import {NotificationService} from '../../../core/services/notification.service';
 import {AccessService} from '../../../core/services/access.service';
@@ -52,6 +54,7 @@ export class WodFormComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly wodService = inject(WodService);
+  private readonly balanceService = inject(BalanceService);
   private readonly movementService = inject(MovementService);
   private readonly accessService = inject(AccessService);
   private readonly notificationService = inject(NotificationService);
@@ -75,6 +78,9 @@ export class WodFormComponent implements OnInit {
   usualNames = signal<UsualNameOption[]>([]);
   referenceData = signal<MovementReferenceData | null>(null);
   readonly variantFields: readonly WodMovementVariant[] = ['equipment', 'techniques'];
+  /** Per line: true when the weekly balance cannot read its text (D121, warning only). */
+  readonly unreadableLines = signal<boolean[]>([]);
+
   /** Full movements (allowed equipment and techniques), loaded on demand by id. */
   readonly movementDetails = signal<Record<number, MovementResponse>>({});
 
@@ -93,6 +99,8 @@ export class WodFormComponent implements OnInit {
   // Box and target heights: cm / in for boxes, m / ft for wall-ball targets
   heightUnits = computed(() =>
     ['CENTIMETERS', 'INCHES', 'METERS', 'FEET'].filter(u => this.distanceUnits().includes(u)));
+  // Shuttle lengths: m / ft / yd
+  lengthUnits = computed(() => ['METERS', 'FEET', 'YARDS'].filter(u => this.distanceUnits().includes(u)));
 
   /** Gyms where the user may program WODs (WOD_WRITE), as Aldebaran checks on creation. */
   writableGyms = computed(() => this.accessService.gymsWithPermission('WOD_WRITE'));
@@ -178,6 +186,8 @@ export class WodFormComponent implements OnInit {
       this.availableMovements.set([...movements].sort((a, b) => a.name.localeCompare(b.name)));
     });
 
+    this.watchLineTexts();
+
     // A new WOD gets the usual score type of its format until the user picks one
     this.wodForm.controls.wodType.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(wodType => {
       const scoreType = this.wodForm.controls.scoreType;
@@ -194,6 +204,33 @@ export class WodFormComponent implements OnInit {
     } else {
       this.applyCreationPreset();
     }
+  }
+
+  /**
+   * Asks Aldebaran which line texts the weekly balance cannot read, as this WOD counts them (D121:
+   * repetitions for strength, the ladder of a Death by): a warning under the field, never a block.
+   * Blank texts are not asked (their measures count); a failed check warns nothing. Warnings are
+   * cleared as soon as the lines change, so none sits under the wrong line while the check runs.
+   */
+  private watchLineTexts(): void {
+    this.wodForm.valueChanges.pipe(
+      map(() => {
+        const v = this.wodForm.getRawValue();
+        const texts = (v.movements as {repsScheme?: string | null}[]).map(m => (m.repsScheme ?? '').trim());
+        return {
+          texts, wodType: v.wodType || null, scoreType: v.scoreType || null,
+          ladderStart: v.ladderStart ?? null, ladderStep: v.ladderStep ?? null, repMax: v.repMax ?? null
+        };
+      }),
+      distinctUntilChanged((a, b) => JSON.stringify(a) === JSON.stringify(b)),
+      tap(() => this.unreadableLines.set([])),
+      debounceTime(400),
+      switchMap(check => check.texts.some(t => t)
+        ? this.balanceService.readableTexts(check, new HttpContext().set(BYPASS_LOADER, true))
+          .pipe(catchError(() => of(check.texts.map(() => true))))
+        : of(check.texts.map(() => true))),
+      takeUntilDestroyed(this.destroyRef)
+    ).subscribe(flags => this.unreadableLines.set(flags.map(readable => !readable)));
   }
 
   /**
@@ -272,6 +309,8 @@ export class WodFormComponent implements OnInit {
       height: [source?.height ?? null as number | null, [Validators.min(0)]],
       heightFemale: [source?.heightFemale ?? null as number | null, [Validators.min(0)]],
       heightUnit: [source?.heightUnit ?? (this.unitService.massUnit() === 'KG' ? 'CENTIMETERS' : 'INCHES')],
+      length: [source?.length ?? null as number | null, [Validators.min(0)]],
+      lengthUnit: [source?.lengthUnit ?? (this.unitService.massUnit() === 'KG' ? 'METERS' : 'FEET')],
       // Variants: only values allowed by the movement (checked again by Aldebaran)
       equipment: [source?.equipment ?? null as string[] | null],
       techniques: [source?.techniques ?? null as string[] | null],
@@ -531,6 +570,8 @@ export class WodFormComponent implements OnInit {
       height: m.height ?? undefined,
       heightFemale: m.heightFemale ?? undefined,
       heightUnit: m.height == null && m.heightFemale == null ? undefined : m.heightUnit,
+      length: m.length ?? undefined,
+      lengthUnit: m.length == null ? undefined : m.lengthUnit,
       // --- Characteristics ---
       equipment: m.equipment ?? undefined,
       techniques: m.techniques ?? undefined,

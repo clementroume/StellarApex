@@ -20,13 +20,13 @@ import apex.stellar.aldebaran.exception.ResourceNotFoundException;
 import apex.stellar.aldebaran.exception.WodLockedException;
 import apex.stellar.aldebaran.mapper.WodMapper;
 import apex.stellar.aldebaran.model.entities.Movement;
-import apex.stellar.aldebaran.model.entities.Wod;
 import apex.stellar.aldebaran.model.entities.Wod.ScoreType;
 import apex.stellar.aldebaran.model.entities.Wod.WodCategory;
 import apex.stellar.aldebaran.model.entities.Wod.WodType;
+import apex.stellar.aldebaran.model.entities.Wod;
 import apex.stellar.aldebaran.model.entities.WodMovement;
-import apex.stellar.aldebaran.model.enums.Category;
 import apex.stellar.aldebaran.model.enums.Category.Modality;
+import apex.stellar.aldebaran.model.enums.Category;
 import apex.stellar.aldebaran.model.enums.Equipment;
 import apex.stellar.aldebaran.model.enums.Technique;
 import apex.stellar.aldebaran.model.enums.WodScope;
@@ -36,6 +36,7 @@ import apex.stellar.aldebaran.repository.SessionBlockRepository;
 import apex.stellar.aldebaran.repository.WodRepository;
 import apex.stellar.aldebaran.repository.projection.WodSummary;
 import apex.stellar.aldebaran.security.SecurityService;
+import apex.stellar.aldebaran.service.BalanceMaintenanceService;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
@@ -64,6 +65,7 @@ class WodServiceTest {
   @Mock private AntaresClient antaresClient;
   @Mock private SessionBlockRepository sessionBlockRepository;
 
+  @Mock private BalanceMaintenanceService balanceMaintenance;
   @InjectMocks private WodService wodService;
 
   private Wod wod;
@@ -240,7 +242,6 @@ class WodServiceTest {
     // Mock Redis Hit
     apex.stellar.aldebaran.dto.MovementResponse mockMovementDto =
         mock(apex.stellar.aldebaran.dto.MovementResponse.class);
-    when(mockMovementDto.category()).thenReturn(Category.PULLING);
     when(movementService.getMovement(1L)).thenReturn(mockMovementDto);
 
     // Mock Proxy JPA
@@ -292,18 +293,24 @@ class WodServiceTest {
     // DTO Mocks
     apex.stellar.aldebaran.dto.MovementResponse mockGymDto =
         mock(apex.stellar.aldebaran.dto.MovementResponse.class);
-    when(mockGymDto.category()).thenReturn(Category.PULLING);
     apex.stellar.aldebaran.dto.MovementResponse mockWlDto =
         mock(apex.stellar.aldebaran.dto.MovementResponse.class);
-    when(mockWlDto.category()).thenReturn(Category.DEADLIFT);
 
-    when(movementService.getMovement(1L)).thenReturn(mockGymDto);
-    when(movementService.getMovement(2L)).thenReturn(mockWlDto);
+    when(movementService.getMovement(1L)).thenReturn(mockWlDto);
+    when(movementService.getMovement(2L)).thenReturn(mockGymDto);
 
-    when(movementRepository.getReferenceById(anyLong())).thenReturn(new Movement());
+    // The line's modality comes from the catalog movement (D127): deadlift then a bodyweight pull
+    Movement deadlift = new Movement();
+    deadlift.setCategory(Category.DEADLIFT);
+    Movement pullUp = new Movement();
+    pullUp.setCategory(Category.PULLING);
+    when(movementRepository.getReferenceById(1L)).thenReturn(deadlift);
+    when(movementRepository.getReferenceById(2L)).thenReturn(pullUp);
 
     when(wodMapper.toEntity(any())).thenReturn(wod);
-    when(wodMapper.toWodMovementEntity(any())).thenReturn(new WodMovement());
+    when(wodMapper.toWodMovementEntity(any()))
+        .thenAnswer(invocation -> new WodMovement())
+        .thenAnswer(invocation -> new WodMovement());
     when(wodRepository.save(wod)).thenReturn(wod);
 
     // When
@@ -647,7 +654,6 @@ class WodServiceTest {
     apex.stellar.aldebaran.dto.MovementResponse movementDto =
         mock(apex.stellar.aldebaran.dto.MovementResponse.class);
     when(movementDto.id()).thenReturn(1L);
-    when(movementDto.category()).thenReturn(Category.PULLING);
     when(movementService.getMovement(1L)).thenReturn(movementDto);
     when(movementRepository.getReferenceById(1L)).thenReturn(movement);
 
@@ -656,7 +662,7 @@ class WodServiceTest {
         new WodMovementResponse(
             3L, movementDto, 1, "21-15-9", 43.0, 29.0, null, null, null, null, null, null, null,
             null, null, null, Set.of(), Set.of(), null, null, null, null, null, null, null, null, null,
-            null, Set.of(), null);
+            null, Set.of(), null, null, null);
     WodResponse sourceDto = mock(WodResponse.class);
     when(sourceDto.title()).thenReturn("26.1");
     when(sourceDto.movements()).thenReturn(List.of(sourceMovement));

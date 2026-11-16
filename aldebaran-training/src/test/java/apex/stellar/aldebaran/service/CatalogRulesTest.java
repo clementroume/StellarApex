@@ -17,7 +17,10 @@ import apex.stellar.aldebaran.model.entities.MovementRoleAdjustment;
 import apex.stellar.aldebaran.model.entities.MovementRoleAdjustment.TriggerKind;
 import apex.stellar.aldebaran.model.entities.MovementUsualName;
 import apex.stellar.aldebaran.model.entities.Muscle;
+import apex.stellar.aldebaran.model.entities.PerSet;
 import apex.stellar.aldebaran.model.entities.WodMovement;
+import apex.stellar.aldebaran.model.enums.Category;
+import apex.stellar.aldebaran.model.enums.Category.Modality;
 import apex.stellar.aldebaran.model.enums.Equipment;
 import apex.stellar.aldebaran.model.enums.JointAction;
 import apex.stellar.aldebaran.model.enums.JointAction.Regime;
@@ -269,5 +272,73 @@ class CatalogRulesTest {
 
     m.getJointActions().add(new MovementJointAction("", JointAction.HIP_EXT, Regime.DYNAMIC));
     CatalogRules.checkMovement(m);
+  }
+
+  private static Movement family(String name, Category category, PerSet perSet) {
+    return Movement.builder()
+        .id((long) name.hashCode())
+        .name(name)
+        .category(category)
+        .perSet(perSet)
+        .equipment(new HashSet<>(Set.of(Equipment.BARBELL, Equipment.ELASTIC_BAND)))
+        .techniques(new HashSet<>(Set.of(Technique.BACK_RACK, Technique.WEIGHTED)))
+        .build();
+  }
+
+  private static WodMovement on(Movement movement, Set<String> equipment, Set<String> techniques) {
+    WodMovement line = line(equipment, techniques);
+    line.setMovement(movement);
+    return line;
+  }
+
+  @Test
+  @DisplayName("A set's value is the usual name's, unit by unit, else the movement's (D126)")
+  void perSet_usualNameThenMovement() {
+    Movement squat = family("Squat", Category.SQUAT, new PerSet(10, null, 60, null));
+    MovementUsualName air = usual(squat, "Air Squat", Set.of(), Set.of());
+    air.setPerSet(new PerSet(20, null, null, null));
+    squat.getUsualNames().add(air);
+    squat.getUsualNames().add(usual(squat, "Back Squat", Set.of("BACK_RACK"), Set.of("BARBELL")));
+
+    assertThat(CatalogRules.perSet(on(squat, Set.of(), Set.of())))
+        .isEqualTo(new PerSet(20, null, 60, null));
+    // The most precise name has no value: the movement's, never a less precise name's
+    assertThat(CatalogRules.perSet(on(squat, Set.of("BARBELL"), Set.of("BACK_RACK"))))
+        .isEqualTo(new PerSet(10, null, 60, null));
+  }
+
+  @Test
+  @DisplayName("A line's modality: usual name, else family; a load makes it weightlifting (D127)")
+  void modality_perLine() {
+    Movement squat = family("Squat", Category.SQUAT, PerSet.NONE);
+    MovementUsualName air = usual(squat, "Air Squat", Set.of(), Set.of());
+    air.setModality(Modality.GYMNASTICS);
+    squat.getUsualNames().add(air);
+    assertThat(CatalogRules.modality(on(squat, Set.of(), Set.of()))).isEqualTo(Modality.GYMNASTICS);
+    WodMovement weighted = on(squat, Set.of(), Set.of());
+    weighted.setWeight(20.0);
+    assertThat(CatalogRules.modality(weighted)).isEqualTo(Modality.WEIGHTLIFTING);
+    assertThat(CatalogRules.modality(on(squat, Set.of("BARBELL"), Set.of("BACK_RACK"))))
+        .isEqualTo(Modality.WEIGHTLIFTING);
+
+    Movement pullUp = family("Pull-up", Category.PULLING, PerSet.NONE);
+    assertThat(CatalogRules.modality(on(pullUp, Set.of(), Set.of()))).isEqualTo(Modality.GYMNASTICS);
+    // Equipment alone never decides: an assistance band is apparatus
+    assertThat(CatalogRules.modality(on(pullUp, Set.of("ELASTIC_BAND"), Set.of())))
+        .isEqualTo(Modality.GYMNASTICS);
+    assertThat(CatalogRules.modality(on(pullUp, Set.of(), Set.of("WEIGHTED"))))
+        .isEqualTo(Modality.WEIGHTLIFTING);
+    WodMovement noLoad = on(pullUp, Set.of(), Set.of());
+    noLoad.setWeight(0.0);
+    assertThat(CatalogRules.modality(noLoad)).isEqualTo(Modality.GYMNASTICS);
+
+    Movement running = family("Running", Category.CARDIO, PerSet.NONE);
+    assertThat(CatalogRules.modality(on(running, Set.of(), Set.of())))
+        .isEqualTo(Modality.MONOSTRUCTURAL);
+    assertThat(CatalogRules.modality(on(running, Set.of(), Set.of("WEIGHTED"))))
+        .isEqualTo(Modality.WEIGHTLIFTING);
+
+    assertThat(CatalogRules.modalities(List.of(on(running, Set.of(), Set.of()), on(pullUp, Set.of(), Set.of()))))
+        .containsExactlyInAnyOrder(Modality.MONOSTRUCTURAL, Modality.GYMNASTICS);
   }
 }

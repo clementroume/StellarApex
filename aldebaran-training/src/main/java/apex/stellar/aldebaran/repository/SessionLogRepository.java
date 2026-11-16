@@ -86,4 +86,14 @@ public interface SessionLogRepository extends JpaRepository<SessionLog, Long> {
       @Param("from") LocalDate from,
       @Param("to") LocalDate to,
       Pageable pageable);
+
+  /**
+   * An athlete's journals of some days (weekly balance, D82).
+   *
+   * @param userId The athlete.
+   * @param from First day.
+   * @param to Last day.
+   * @return The journals.
+   */
+  List<SessionLog> findByUserIdAndDateBetween(Long userId, LocalDate from, LocalDate to);
 }

@@ -437,8 +437,7 @@
     "MODALITIES": {
       "WEIGHTLIFTING": "Weightlifting",
       "GYMNASTICS": "Gymnastics",
-      "MONOSTRUCTURAL": "Monostructural",
-      "STRONGMAN": "Strongman"
+      "MONOSTRUCTURAL": "Monostructural"
     },
     "CATEGORIES": {
       "DEADLIFT": "Deadlift",
@@ -646,6 +645,15 @@
       "NAME_FR": "French name, if different",
       "SEARCH": "Search terms"
     },
+    "PER_SET": {
+      "TITLE": "Value of one set (balance)",
+      "reps": "Reps",
+      "meters": "Metres",
+      "seconds": "Seconds",
+      "calories": "Calories",
+      "MODALITY": "Modality",
+      "MODALITY_INHERITED": "Movement's modality"
+    },
     "REQUIRED": {
       "LOAD_POSITION_IF_EQUIPMENT": "Position if equipment",
       "AMPLITUDE": "Amplitude",
@@ -747,7 +755,10 @@
       "STRUCTURE": "Sub-category",
       "DURATION_SHORT": "Duration",
       "REP_MAX": "N RM test (N)",
-      "REP_MAX_HINT": "One movement only: the score becomes the athlete’s N RM record (blank otherwise)."
+      "REP_MAX_HINT": "One movement only: the score becomes the athlete’s N RM record (blank otherwise).",
+      "LENGTH": "Shuttle length",
+      "LENGTH_UNIT": "Length unit",
+      "LENGTH_HINT": "Distance between the two lines: one rep = out and back."
     },
     "PLACEHOLDERS": {
       "TITLE": "E.g. Fran",
@@ -960,7 +971,8 @@
         "EACH": "Each",
         "TOGETHER": "Together"
       }
-    }
+    },
+    "REPS_UNREADABLE": "Not counted in the balance: write for example 21, 21-15-9, 5 x 5, max or 1 min."
   },
   "SCORE": {
     "TITLE": "Scores",
@@ -1132,6 +1144,25 @@
       "REJECT_DESC": "The requester will see the request rejected and can delete it to make a new one.",
       "SUSPEND_TITLE": "Suspend {{name}}?",
       "SUSPEND_DESC": "Its members, Owner or Programmer included, lose access until it is reactivated."
+    },
+    "BALANCE": {
+      "TITLE": "Balance control",
+      "INTRO": "The WOD lines that do not count in the weekly balance: to fix in the WOD or in the catalog.",
+      "LOAD_ERROR": "The control could not be loaded. Try again later.",
+      "ALL_COUNTED": "Every WOD line counts in the balance.",
+      "FILTER": "Filter by reason",
+      "HINT": "A line text reads in six forms: 21, 21-15-9, max, 1 min, 3-6-9-..., 5 x 5; without text, its distance, calories or duration.",
+      "SESSION_WOD": "Session WOD",
+      "PUBLIC": "Public",
+      "LINE": "Line {{index}}: {{movement}}",
+      "REASONS": {
+        "UNREADABLE": "Text not recognized",
+        "NO_SET_VALUE": "No value of one set for this unit in the catalog"
+      },
+      "RECOMPUTE": "Recompute all",
+      "RECOMPUTE_HINT": "After a catalog change made outside the forms (a migration), every balance is rebuilt on its next display.",
+      "RECOMPUTED": "Every balance will be rebuilt on its next display.",
+      "RECOMPUTE_ERROR": "The recompute could not be requested. Try again later."
     }
   },
   "GYM": {
@@ -1224,8 +1255,7 @@
       "TITLE": "Records"
     },
     "REVIEW": {
-      "TITLE": "Review",
-      "COMING": "Your review (volume, muscle load, split by modality) will show here."
+      "TITLE": "Review"
     },
     "WODS": {
       "TITLE": "My WODs",
@@ -1554,5 +1584,84 @@
       "EMPTY": "No session done yet."
     },
     "SESSION_LEADERBOARD": "Session leaderboard"
+  },
+  "REVIEW": {
+    "SUBTITLE": "What you did, week after week",
+    "PREVIOUS_WEEK": "Previous week",
+    "NEXT_WEEK": "Next week",
+    "CURRENT": "current",
+    "WINDOW": "From {{from}} to {{to}}",
+    "HELP": {
+      "OPEN": "How to read your balance",
+      "TITLE": "How to read your balance",
+      "INTRO": "Your balance fills itself from your scores and the sessions you check in your journal. These are estimates: they show trends, not a count to the rep.",
+      "MUSCLES": "The darker a zone, the more its muscles worked. \"Moving\": the muscles that make you move, like your thighs in a squat. \"Holding\": the ones that keep you braced, like your abs in that same squat. Tap a region to see its muscles.",
+      "VOLUME": "How much work each week, compared with the 7 before. Every session counts, whatever the level (RX or scaled). A week made mostly of endurance may look lighter than it felt.",
+      "METCONS": "The time spent in metcons, sorted by length: from very short efforts (under 5 minutes) to long ones (over 20 minutes), EMOMs and Tabatas apart.",
+      "FORCE": "The strength movements you worked the most, warm-ups left out. \"Close to your record\": a heavy set, at 80 % or more of your max.",
+      "MODALITIES": "The split between the three families of CrossFit: gymnastics (your body weight), weightlifting (a load: barbell, kettlebell, wall-ball…) and monostructural (running, rowing, biking, jump rope).",
+      "WINDOW": "Each section covers the selected week and the 3 before, except the volume, which shows 8 weeks."
+    },
+    "LOAD_ERROR": "Your balance could not be loaded. Try again later.",
+    "EMPTY_TITLE": "No training yet over these 4 weeks",
+    "EMPTY_TEXT": "Log a score or check a session as done: your balance fills itself.",
+    "EMPTY_WODS": "Browse WODs",
+    "EMPTY_JOURNAL": "My journal",
+    "MUSCLES": {
+      "TITLE": "Muscles worked",
+      "MOVING": "Moving",
+      "HOLDING": "Holding",
+      "MOVING_WHAT": "The muscles that produce the movement.",
+      "HOLDING_WHAT": "The muscles that hold the position (core, bracing).",
+      "LESS": "less",
+      "MORE": "more",
+      "SORTED": "From the most to the least worked. Tap a region to see its muscles.",
+      "EMPTY_MOVING": "No muscle worked in movement over these 4 weeks.",
+      "EMPTY_HOLDING": "No muscle worked in holding over these 4 weeks."
+    },
+    "LEVEL": {
+      "0": "not worked",
+      "1": "barely worked",
+      "2": "lightly worked",
+      "3": "moderately worked",
+      "4": "heavily worked",
+      "5": "the most worked"
+    },
+    "VOLUME": {
+      "TITLE": "Volume",
+      "PAST": "previous weeks",
+      "SELECTED": "selected week",
+      "WEEK": "Week of {{day}}: {{level}}",
+      "LEVEL": {
+        "0": "no volume",
+        "1": "low volume",
+        "2": "moderate volume",
+        "3": "medium volume",
+        "4": "high volume",
+        "5": "the biggest volume of the 8 weeks"
+      }
+    },
+    "METCONS": {
+      "TITLE": "Metcons",
+      "VERY_SHORT": "Very short (under 5 min)",
+      "SHORT": "Short (5 to 10 min)",
+      "MEDIUM": "Medium (11 to 20 min)",
+      "LONG": "Long (over 20 min)",
+      "INTERVALS": "Intervals (EMOM, Tabata, taking turns)",
+      "MINUTES": "{{count}} min",
+      "EMPTY": "No metcon over these 4 weeks."
+    },
+    "FORCE": {
+      "TITLE": "Strength",
+      "OTHERS": "Others",
+      "NEAR": "Close to your record: {{lifts}}.",
+      "AND": "and",
+      "EMPTY": "No strength set over these 4 weeks."
+    },
+    "MODALITIES": {
+      "TITLE": "Modalities",
+      "EMPTY": "Nothing to split over these 4 weeks."
+    },
+    "NAMED_LEVEL": "{{name}}: {{level}}"
   }
 }

@@ -1,0 +1,40 @@
+import {TestBed} from '@angular/core/testing';
+import {provideHttpClient, withXhr} from '@angular/common/http';
+import {HttpTestingController, provideHttpClientTesting} from '@angular/common/http/testing';
+import {environment} from '../../../../environments/environment';
+import {BalanceService} from './balance.service';
+
+describe('BalanceService', () => {
+  let service: BalanceService;
+  let http: HttpTestingController;
+
+  beforeEach(() => {
+    TestBed.configureTestingModule({providers: [provideHttpClient(withXhr()), provideHttpClientTesting()]});
+    service = TestBed.inject(BalanceService);
+    http = TestBed.inject(HttpTestingController);
+  });
+
+  afterEach(() => http.verify());
+
+  it('asks the balance of a week by its Monday', () => {
+    service.getMyBalance('2026-11-09').subscribe();
+    const req = http.expectOne(`${environment.trainingUrl}/balance/me?week=2026-11-09`);
+    expect(req.request.method).toBe('GET');
+    req.flush({});
+  });
+
+  it('checks the line texts in one call', () => {
+    let flags: boolean[] = [];
+    service.readableTexts({texts: ['21-15-9', 'abc'], wodType: 'FOR_TIME'}).subscribe(f => flags = f);
+    const req = http.expectOne(`${environment.trainingUrl}/balance/readable-texts`);
+    expect(req.request.method).toBe('POST');
+    expect(req.request.body).toEqual({texts: ['21-15-9', 'abc'], wodType: 'FOR_TIME'});
+    req.flush([true, false]);
+    expect(flags).toEqual([true, false]);
+  });
+
+  it('lists the uncounted lines', () => {
+    service.getUncountedLines().subscribe();
+    http.expectOne(`${environment.trainingUrl}/balance/uncounted-lines`).flush([]);
+  });
+});

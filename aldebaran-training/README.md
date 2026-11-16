@@ -179,6 +179,18 @@ version (`movement_dumbbell_bases`), and a joint layer that controls the roles (
 `muscle_joint_actions`). A WOD line is written in one canonical form and checked by `service/CatalogRules`;
 `WodMovementResponse.display` says how it reads.
 
+* **Value of one set** (lot D, D126): `reps_per_set`, `meters_per_set`, `seconds_per_set`, `calories_per_set` on
+  a movement and, for a variant whose set differs (Single-under 100, Handstand Walk 15 m, Air Squat 20), on a
+  usual name (`PerSet`, `MovementResponse.perSet`, `UsualNameDto.perSet`). The weekly balance divides a line by the
+  value of its unit, read on its most precise usual name then on the movement (`CatalogRules.perSet`); nothing =
+  the line counts 0. All in the catalog, no default in the code.
+* **Modality of a line** (D127, `CatalogRules.modality`): the usual name's (`UsualNameDto.modality`, Air Squat =
+  gymnastics), else the family's (`Category.Modality`: weightlifting, gymnastics, monostructural as in the CrossFit
+  Level 1; strongman is a session discipline, not a modality); a gymnastics or cardio line carrying a load (weight,
+  % of RM, load position, `WEIGHTED`) is weightlifting. Equipment alone never decides (deficit plates, assistance
+  band, rings are apparatus). `wods.modalities` is computed with the same rule (Cindy: gymnastics only).
+* **Roles** weigh a muscle alone: `impact_factor` was dropped (D130, it counted the role twice).
+
 * **Muscle code**: `code` is the stable key of a muscle in the 3D model of Sirius (`sirius-app/tools/muscle-model`),
   returned in `MuscleResponse` and `MuscleRefResponse`. Derived once from the medical name (`Quadriceps Femoris` gives
   `quadriceps-femoris`, numbered if taken), never changed: `medical_name` stays editable.
@@ -282,6 +294,48 @@ deletion, and once at startup when the table is empty (`config/MovementRecordBac
   lift's test); their WOD leaderboard is the lift leaderboard.
 * `GET /gyms/{gymId}?movementId=[&variantKey=]`: records board of a box for that variant (base version
   by default): effective records of the gym's current usable members (Antares `member-ids`, 503 if unavailable), wherever set; members of the gym or admin.
+
+### Weekly balance (`/aldebaran/balance`, lot D)
+
+The athlete's own balance, from their scores and the session blocks checked in a journal without a score
+(prescription). Facts only: no alert and no ratio (D89).
+
+* `GET /me?week=yyyy-MM-dd` (any day of the week; Sirius sends the Monday of the athlete's local week): muscles,
+  metcon minutes per time domain, strength sets per lift ("near the record" = a set at 80 % of the 1RM of its day)
+  and modalities over the selected week and the 3 before, equivalent sets of the selected week and the 7 before.
+* `POST /recompute` (`ADMIN`): every stored week to rebuild, `wods.modalities` recomputed (calibration).
+* `POST /readable-texts {texts, wodType, scoreType, ladderStart, ladderStep, repMax}` (any user): one flag per line
+  text, false when the balance cannot read it as that WOD counts it (D121: `21`, `21-15-9`, `max`, `1 min`,
+  `3-6-9-...`, `5 x 5`; strength needs repetitions or the WOD's N RM; a Death by line climbs the ladder; blank = the
+  line's measures). The WOD form warns, never blocks.
+* `GET /uncounted-lines` (`ADMIN`): every WOD line that counts nothing (`UNREADABLE` text, or `NO_SET_VALUE` = no
+  value of one set for its unit in the catalog; a strength WOD counts sets, so only its text is judged), rules
+  `BalanceCalculator.readableText` / `uncounted`.
+
+Storage (Flyway V7, D120): `balance_weeks` (per athlete and Monday: volume, modalities, seconds per domain,
+`rules_version`, `stale`), `balance_week_muscles` (moving / holding sets per exact muscle), `balance_week_lifts`,
+entities `BalanceWeek`, `BalanceWeekMuscle`, `BalanceWeekLift` and their repositories.
+A shuttle line with a `length` (between the two lines, one rep = out and back) counts its meters against the
+usual name's `meters_per_set` (Shuttle Run: 450 m = 30 reps of the usual 15 m out and back, V9); without a
+length, its reps against `reps_per_set` (30, V8).
+A week with nothing done and no row is never stored (any requested week writes nothing).
+A write only marks weeks stale (`service/BalanceMaintenanceService`: score logged / corrected / re-dated /
+deleted for the whole team, and every later week on a WOD feeding records; journal created / deleted / block
+toggled; a checked WOD or session edited; a movement updated = every week); the display rebuilds the stale,
+missing or older-rules weeks it needs (`WeeklyBalanceService`, advisory lock per athlete). Rules in
+`service/BalanceCalculator` (`RULES_VERSION`; bump it when a rule changes):
+
+* a line of `s` equivalent sets gives agonists `s`, synergists `s / 2` in movement and stabilizers `s` in holding
+  (roles adjusted by the line's techniques); `s` = the line's amount ÷ the catalog's value of one set in its unit
+  (`CatalogRules.perSet`, D126);
+* metcons (`MetconVolume`, D121): readable prescription of a finished WOD; else the score unrolled in line order
+  (AMRAP, capped For Time, open ladder; a distance line is worth the rest of `repsPerRound`); `max` lines share the
+  score; else one set per minute of work; unreadable text counts 0. A team line `TOTAL` is divided by the smaller of
+  the team size and the members (D128). Minutes outside Skill / Accessory blocks: For Time = the time (cap when
+  capped), AMRAP = its duration, EMOM / Tabata / rests / team turns = intervals;
+* strength (For Load, scored by load, or any score with sets, D122): completed sets, warm-ups under half the best set
+  left out, a set of 1 to 5 reps worth half; one movement or one complex reads the athlete's sets, several lines
+  the prescription.
 
 ### Scores (`/aldebaran/scores`)
 

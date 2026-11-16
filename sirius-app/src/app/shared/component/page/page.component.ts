@@ -1,8 +1,8 @@
 import {ChangeDetectionStrategy, Component, input} from '@angular/core';
 
 /**
- * Page template: title, optional subtitle, actions (`[pageActions]`, stacked full width on mobile)
- * and content in a centred column.
+ * Page template: title (with `[pageTitleAside]` next to it, e.g. a help button), optional subtitle,
+ * actions (`[pageActions]`, stacked full width on mobile) and content in a centred column.
  */
 @Component({
   selector: 'app-page',
@@ -12,7 +12,10 @@ import {ChangeDetectionStrategy, Component, input} from '@angular/core';
     <div class="mx-auto w-full" [class]="width()">
       <header class="mb-6 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
         <div class="min-w-0">
-          <h1 class="text-2xl md:text-3xl font-bold">{{ title() }}</h1>
+          <div class="flex items-center gap-2">
+            <h1 class="text-2xl md:text-3xl font-bold">{{ title() }}</h1>
+            <ng-content select="[pageTitleAside]"/>
+          </div>
           @if (subtitle()) {
             <p class="mt-1 text-muted-foreground">{{ subtitle() }}</p>
           }

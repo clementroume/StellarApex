@@ -12,8 +12,6 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
-import jakarta.validation.constraints.DecimalMax;
-import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -23,7 +21,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
 
-/** Represents the weighted biomechanical relationship between a Movement and a Muscle. */
+/** The role of a muscle in a movement; the role alone weighs it in the weekly balance (D130). */
 @Getter
 @Setter
 @Builder
@@ -55,12 +53,6 @@ public class MovementMuscle {
   @Column(nullable = false, length = 50)
   @NotNull
   private MuscleRole role;
-
-  @Column(name = "impact_factor", nullable = false)
-  @DecimalMin("0.0")
-  @DecimalMax("1.0")
-  @Builder.Default
-  private Double impactFactor = 1.0;
 
   // --- Equality and Hashing ---
   @Override

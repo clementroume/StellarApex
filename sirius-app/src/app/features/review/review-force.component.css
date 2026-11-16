@@ -1,0 +1,8 @@
+/* The three theme colours, then the first two half transparent for the 4th and 5th slices. */
+.c0 { --c: var(--sa-primary); }
+.c1 { --c: var(--sa-secondary); }
+.c2 { --c: var(--sa-accent); }
+.c3 { --c: color-mix(in srgb, var(--sa-primary) 50%, transparent); }
+.c4 { --c: color-mix(in srgb, var(--sa-secondary) 50%, transparent); }
+.c0, .c1, .c2, .c3, .c4 { stroke: var(--c); background: var(--c); }
+.ring { stroke: var(--muted); }

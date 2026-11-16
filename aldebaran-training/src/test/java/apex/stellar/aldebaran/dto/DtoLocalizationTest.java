@@ -135,29 +135,11 @@ class DtoLocalizationTest {
     @Test
     @DisplayName("Required fields")
     void requiredFields() {
-      MovementMuscleRequest request = new MovementMuscleRequest(null, null, null);
+      MovementMuscleRequest request = new MovementMuscleRequest(null, null);
 
       assertViolationEnAndFr(request, "muscleId", "ID is required.", "L'ID est requis.");
       assertViolationEnAndFr(
           request, "role", "Muscle role is required.", "Le rôle du muscle est requis.");
-    }
-
-    @Test
-    @DisplayName("Impact Factor Range")
-    void rangeConstraints() {
-      MovementMuscleRequest reqMax = new MovementMuscleRequest(1L, MuscleRole.AGONIST, 1.1);
-      MovementMuscleRequest reqMin = new MovementMuscleRequest(1L, MuscleRole.AGONIST, -0.1);
-
-      assertViolationEnAndFr(
-          reqMax,
-          "impactFactor",
-          "Impact factor must be at most 1.0.",
-          "Le facteur d'impact doit être au plus de 1.0.");
-      assertViolationEnAndFr(
-          reqMin,
-          "impactFactor",
-          "Impact factor must be at least 0.0.",
-          "Le facteur d'impact doit être au moins de 0.0.");
     }
   }
 

@@ -7,24 +7,24 @@ import apex.stellar.aldebaran.dto.SessionCapabilities;
 import apex.stellar.aldebaran.dto.SessionReferenceData;
 import apex.stellar.aldebaran.dto.SessionRequest;
 import apex.stellar.aldebaran.dto.SessionResponse;
-import apex.stellar.aldebaran.dto.SessionSummaryResponse;
 import apex.stellar.aldebaran.dto.SessionSummaryResponse.BlockFrame;
+import apex.stellar.aldebaran.dto.SessionSummaryResponse;
 import apex.stellar.aldebaran.dto.SessionVisibilityRequest;
 import apex.stellar.aldebaran.dto.WodRequest;
 import apex.stellar.aldebaran.dto.WodResponse;
 import apex.stellar.aldebaran.exception.InvalidSessionException;
 import apex.stellar.aldebaran.exception.ResourceNotFoundException;
 import apex.stellar.aldebaran.exception.WodLockedException;
-import apex.stellar.aldebaran.model.entities.Session;
 import apex.stellar.aldebaran.model.entities.Session.Discipline;
 import apex.stellar.aldebaran.model.entities.Session.SessionType;
 import apex.stellar.aldebaran.model.entities.Session.VisibilityPolicy;
-import apex.stellar.aldebaran.model.entities.SessionBlock;
+import apex.stellar.aldebaran.model.entities.Session;
 import apex.stellar.aldebaran.model.entities.SessionBlock.Kind;
 import apex.stellar.aldebaran.model.entities.SessionBlock.Stimulus;
+import apex.stellar.aldebaran.model.entities.SessionBlock;
 import apex.stellar.aldebaran.model.entities.SessionLog;
-import apex.stellar.aldebaran.model.entities.Wod;
 import apex.stellar.aldebaran.model.entities.Wod.WodType;
+import apex.stellar.aldebaran.model.entities.Wod;
 import apex.stellar.aldebaran.model.enums.SessionScope;
 import apex.stellar.aldebaran.repository.ScoreRepository;
 import apex.stellar.aldebaran.repository.SessionLogRepository;
@@ -93,6 +93,7 @@ public class SessionService {
   private final SessionSettingsService settingsService;
   private final SessionLogService sessionLogService;
   private final SecurityService securityService;
+  private final BalanceMaintenanceService balanceMaintenance;
 
   // -------------------------------------------------------------------------
   // READ
@@ -248,6 +249,9 @@ public class SessionService {
         applyBlocks(session, request.blocks(), principal, locksOf(session, logged));
     Session saved = sessionRepository.saveAndFlush(session);
     orphans.forEach(wodService::deleteSessionWod);
+    if (logged) {
+      balanceMaintenance.sessionChanged(id);
+    }
     log.info("Updated session id={}", id);
     return toResponse(saved, principal);
   }

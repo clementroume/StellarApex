@@ -1,0 +1,22 @@
+<app-review-section heading="REVIEW.VOLUME.TITLE" headingId="review-volume">
+  <div class="grid h-32 grid-cols-8 items-end gap-1.5" aria-hidden="true" data-slot="volume-bars">
+    @for (bar of bars(); track bar.key) {
+      <div class="rounded-t" [style.height.%]="bar.height"
+           [class]="bar.empty ? 'bg-muted' : bar.chosen ? 'bg-secondary' : 'bg-primary'"></div>
+    }
+  </div>
+  <div class="grid grid-cols-8 gap-1.5 text-center text-[10px] text-muted-foreground" aria-hidden="true">
+    @for (bar of bars(); track bar.key) {
+      <span>{{ bar.day }}</span>
+    }
+  </div>
+  <ul class="sr-only">
+    @for (bar of bars(); track bar.key) {
+      <li>{{ 'REVIEW.VOLUME.WEEK' | translate: {day: bar.day, level: ('REVIEW.VOLUME.LEVEL.' + bar.level | translate)} }}</li>
+    }
+  </ul>
+  <div class="flex flex-wrap gap-3 text-xs text-muted-foreground" aria-hidden="true">
+    <span class="flex items-center gap-1"><i class="size-2.5 rounded-sm bg-primary"></i>{{ 'REVIEW.VOLUME.PAST' | translate }}</span>
+    <span class="flex items-center gap-1"><i class="size-2.5 rounded-sm bg-secondary"></i>{{ 'REVIEW.VOLUME.SELECTED' | translate }}</span>
+  </div>
+</app-review-section>

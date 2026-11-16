@@ -193,6 +193,9 @@ export interface WodMovementRequest {
   height?: number;
   heightFemale?: number;
   heightUnit?: string;
+  // Length of the course (shuttle run: between the two lines, one rep = out and back), in lengthUnit
+  length?: number;
+  lengthUnit?: string;
   // --- Characteristics ---
   equipment?: string[];
   techniques?: string[];
@@ -254,6 +257,9 @@ export interface WodMovementResponse {
   height?: number;
   heightFemale?: number;
   heightUnit?: string;
+  // Length of the course (shuttle run: between the two lines, one rep = out and back), in lengthUnit
+  length?: number;
+  lengthUnit?: string;
   // --- Characteristics ---
   equipment?: string[];
   techniques?: string[];

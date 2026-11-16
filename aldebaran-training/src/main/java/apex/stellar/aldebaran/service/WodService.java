@@ -19,13 +19,12 @@ import apex.stellar.aldebaran.exception.ResourceNotFoundException;
 import apex.stellar.aldebaran.exception.WodLockedException;
 import apex.stellar.aldebaran.mapper.WodMapper;
 import apex.stellar.aldebaran.model.entities.Movement;
-import apex.stellar.aldebaran.model.entities.Wod;
 import apex.stellar.aldebaran.model.entities.Wod.ScoreType;
 import apex.stellar.aldebaran.model.entities.Wod.WodCategory;
 import apex.stellar.aldebaran.model.entities.Wod.WodStructure;
 import apex.stellar.aldebaran.model.entities.Wod.WodType;
+import apex.stellar.aldebaran.model.entities.Wod;
 import apex.stellar.aldebaran.model.entities.WodMovement;
-import apex.stellar.aldebaran.model.enums.Category.Modality;
 import apex.stellar.aldebaran.model.enums.Technique;
 import apex.stellar.aldebaran.model.enums.Unit;
 import apex.stellar.aldebaran.model.enums.WodScope;
@@ -84,6 +83,7 @@ public class WodService {
   private final SecurityService securityService;
   private final AntaresClient antaresClient;
   private final SessionBlockRepository sessionBlockRepository;
+  private final BalanceMaintenanceService balanceMaintenance;
 
   /**
    * Retrieves the WOD list with a sub-category filter, each summary carrying the names of its
@@ -415,6 +415,7 @@ public class WodService {
     if (scoreRepository.existsByWodId(id)) {
       throw new WodLockedException("error.wod.locked", id);
     }
+    balanceMaintenance.wodChanged(id);
     return update(id, request);
   }
 
@@ -459,7 +460,9 @@ public class WodService {
         wm.teamSplit(),
         wm.percentOfRm(),
         wm.rmReps(),
-        wm.componentTechniques());
+        wm.componentTechniques(),
+        wm.length(),
+        wm.lengthUnit());
   }
 
   /**
@@ -506,13 +509,10 @@ public class WodService {
               wm.setMovement(movement);
 
               wod.getMovements().add(wm);
-
-              // Aggregate Modality (e.g., Gymnastics, Weightlifting)
-              if (movementResponse.category() != null
-                  && movementResponse.category().getModality() != null) {
-                wod.getModalities().add(movementResponse.category().getModality());
-              }
             });
+    // One modality per line: family, usual name, load (D127)
+    wod.getModalities().clear();
+    wod.getModalities().addAll(CatalogRules.modalities(wod.getMovements()));
 
     checkRecordFields(wod);
 
@@ -627,6 +627,7 @@ public class WodService {
       throw new WodLockedException("error.wod.locked", id);
     }
     checkStandalone(id);
+    balanceMaintenance.wodChanged(id);
     return wodMapper.toResponse(update(id, request));
   }
 
@@ -746,7 +747,6 @@ public class WodService {
             .collect(Collectors.toMap(WodMovement::getOrderIndex, Function.identity()));
 
     List<WodMovement> updatedList = new ArrayList<>();
-    Set<Modality> newModalities = new HashSet<>();
 
     // 2. Process Request Items
     for (WodMovementRequest req : requests) {
@@ -768,20 +768,15 @@ public class WodService {
       applyCatalogRules(target, movementResponse);
       target.setMovement(movement);
       updatedList.add(target);
-
-      if (movementResponse.category() != null
-          && movementResponse.category().getModality() != null) {
-        newModalities.add(movementResponse.category().getModality());
-      }
     }
 
     // 3. Replace List
     wod.getMovements().clear();
     wod.getMovements().addAll(updatedList);
 
-    // 4. Update Aggregated Modalities
+    // 4. One modality per line: family, usual name, load (D127)
     wod.getModalities().clear();
-    wod.getModalities().addAll(newModalities);
+    wod.getModalities().addAll(CatalogRules.modalities(wod.getMovements()));
   }
 
   /** Writes a line in its canonical form and checks it against its catalog movement. */
@@ -818,6 +813,8 @@ public class WodService {
     target.setHeight(temp.getHeight());
     target.setHeightFemale(temp.getHeightFemale());
     target.setHeightUnit(temp.getHeightUnit());
+    target.setLength(temp.getLength());
+    target.setLengthUnit(temp.getLengthUnit());
     target.setWeightFemale(temp.getWeightFemale());
     target.setNotesEn(temp.getNotesEn());
     target.setNotesFr(temp.getNotesFr());

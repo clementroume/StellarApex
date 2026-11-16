@@ -9,6 +9,7 @@ import jakarta.persistence.CascadeType;
 import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
 import jakarta.persistence.ElementCollection;
+import jakarta.persistence.Embedded;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EntityListeners;
 import jakarta.persistence.EnumType;
@@ -143,6 +144,9 @@ public class Movement {
   @Builder.Default
   private Set<MovementUsualName> usualNames = new HashSet<>();
 
+  /** Value of one set in each unit (D126); a usual name may override it. */
+  @Embedded private PerSet perSet;
+
   // --- Internationalized Content ---
   @Column(name = "description_en", columnDefinition = "TEXT")
   private String descriptionEn;
@@ -175,10 +179,22 @@ public class Movement {
   private LocalDateTime updatedAt;
 
   // --- Helper Methods ---
-  /** Retrieves the Modality from the Family. Not stored in DB to avoid redundancy. */
+  /**
+   * The modality of the movement's family: the start of a line's modality, which a usual name or a
+   * load may change (D127, {@code CatalogRules.modality}).
+   */
   @Transient
   public Modality getModality() {
     return category != null ? category.getModality() : null;
+  }
+
+  /**
+   * Value of one set, never null.
+   *
+   * @return The values, possibly all null.
+   */
+  public PerSet getPerSet() {
+    return PerSet.orNone(perSet);
   }
 
   // --- Equality and Hashing ---

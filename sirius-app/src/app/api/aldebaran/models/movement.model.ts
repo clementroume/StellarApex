@@ -39,6 +39,7 @@ export interface MovementRequest {
   roleAdjustments?: RoleAdjustment[];
   jointActions?: MovementJointAction[];
   usualNames?: UsualName[];
+  perSet?: PerSet | null;
 }
 
 export interface MovementResponse {
@@ -69,6 +70,18 @@ export interface MovementResponse {
   roleAdjustments?: RoleAdjustment[];
   jointActions?: MovementJointAction[];
   usualNames?: UsualName[];
+  perSet?: PerSet | null;
+}
+
+/**
+ * What one set is worth in each unit a WOD line can be written in (PerSet, weekly balance D126):
+ * a line is divided by the value of its unit; null = no set in that unit.
+ */
+export interface PerSet {
+  reps?: number | null;
+  meters?: number | null;
+  seconds?: number | null;
+  calories?: number | null;
 }
 
 /** Number of dumbbells of a line without laterality; an empty position = no position, null count = free. */
@@ -118,6 +131,10 @@ export interface UsualName {
   descriptionEn?: string | null;
   descriptionFr?: string | null;
   videoUrl?: string | null;
+  /** Value of one set of this variant; empty values = the movement's. */
+  perSet?: PerSet | null;
+  /** Modality of this variant (Air Squat: GYMNASTICS); null = the movement's family. */
+  modality?: string | null;
 }
 
 /** One entry of the movement search (UsualNameOptionResponse). */
@@ -158,14 +175,12 @@ export interface MovementMuscleRequest {
   // --- Relationships ---
   muscleId: number;
   role: string;
-  impactFactor?: number;
 }
 
 export interface MovementMuscleResponse {
   // --- Relationships ---
   muscle: MuscleResponse;
   role: string;
-  impactFactor: number;
 }
 
 export interface MovementReferenceData {

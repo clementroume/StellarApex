@@ -58,5 +58,9 @@ public record WodMovementResponse(
     // --- Techniques of one component of a chained line ---
     Set<ComponentTechnique> componentTechniques,
 
+    // --- Length of the course (shuttle run: between the two lines), or null ---
+    Double length,
+    Unit lengthUnit,
+
     // --- How the line reads, decided by the catalog ---
     WodMovementDisplay display) {}

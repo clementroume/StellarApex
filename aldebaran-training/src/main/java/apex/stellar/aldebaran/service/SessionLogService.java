@@ -2,8 +2,8 @@ package apex.stellar.aldebaran.service;
 
 import apex.stellar.aldebaran.dto.ScoreResponse;
 import apex.stellar.aldebaran.dto.SessionLogRequest;
-import apex.stellar.aldebaran.dto.SessionLogResponse;
 import apex.stellar.aldebaran.dto.SessionLogResponse.BlockDone;
+import apex.stellar.aldebaran.dto.SessionLogResponse;
 import apex.stellar.aldebaran.exception.DataConflictException;
 import apex.stellar.aldebaran.exception.InvalidSessionException;
 import apex.stellar.aldebaran.exception.ResourceNotFoundException;
@@ -51,6 +51,7 @@ public class SessionLogService {
   private final ScoreCapabilityService scoreCapabilityService;
   private final SessionSecurity sessionSecurity;
   private final SecurityService securityService;
+  private final BalanceMaintenanceService balanceMaintenance;
 
   /**
    * "Séance faite": logs the session for the current user, every block checked. Logging again
@@ -116,6 +117,7 @@ public class SessionLogService {
                       .build();
               session.getBlocks().forEach(b -> journal.getBlocks().put(b.getId(), true));
               SessionLog saved = sessionLogRepository.save(journal);
+              balanceMaintenance.journalChanged(userId, date);
               log.info(
                   "Session id={} logged by user id={} for user id={}",
                   session.getId(),
@@ -169,6 +171,7 @@ public class SessionLogService {
       throw new ResourceNotFoundException("error.session.block.not.found", blockId);
     }
     journal.getBlocks().put(blockId, done);
+    balanceMaintenance.journalChanged(journal.getUserId(), journal.getDate());
     return toResponse(sessionLogRepository.save(journal), principal);
   }
 
@@ -185,6 +188,7 @@ public class SessionLogService {
       throw new DataConflictException("error.session.log.has.scores", logId);
     }
     sessionLogRepository.delete(journal);
+    balanceMaintenance.journalChanged(journal.getUserId(), journal.getDate());
   }
 
   /**

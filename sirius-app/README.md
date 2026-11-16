@@ -58,6 +58,11 @@ src/spartan.css       # spartan tokens and Tailwind colours mapped to the palett
   My box (`/box`, members only: sessions, records board; members and settings for staff holding `MANAGE_MEMBERSHIPS` /
   `MANAGE_SETTINGS`) · Catalogue (`/wods`, `/movements`, `/muscles`) · Admin (`/admin`, admins).
   Desktop: spaces in the top bar, the space's pages as tabs below it. Mobile: bottom tab bar.
+* **Weekly balance** (`features/review`, lot D): My training › Balance shows the selected week and the 3 before
+  (arrows, "current" badge): muscles worked in two tabs (moving / holding, each on its own scale, drawing shaded per
+  zone, 7 region bars, each opening its muscles right under it), volume of 8 weeks, metcon minutes per time domain,
+  strength share per lift with the lifts done close to the record, and the three modalities. One "?" next to the
+  title explains it all in plain words. Facts only: no alert, no ratio. Data from Aldebaran `GET /balance/me`.
 * **Records** (`features/records`, lot C): My training › Records is the user's records board: one tile
   per lift or named variant (1RM, else the estimated 1RM, with "+5" or "PR" for a record of the last 30 days), family
   chips, the CrossFit Total with its three lifts, and the lifts not tested yet. A tile opens the lift
@@ -139,6 +144,9 @@ The backends enforce every rule; Sirius only adapts what it shows:
 * **WOD catalogue** (`/wods`): public WODs only (Girls, Hero, CrossFit benchmarks, Open...), category
   and format filters from `GET /aldebaran/wods/facets`; admins create them. Personal WODs live in My
   training › My WODs (`/training/wods`, quick editor).
+* **Admin › Balance control** (`/admin/balance`, lot D): the WOD lines that count nothing in the weekly balance
+  (text not recognized, or no value of one set for its unit in the catalog), filtered by reason, with a link to the
+  WOD. The WOD form warns under a line text the balance cannot read, without blocking (Aldebaran decides).
 * **Admin support session** (`/admin/support`, admins only): search a user (2 characters minimum),
   filter by gym, role and membership status, or by account (no box or program, e-mail not
   verified, badge on each row), page through results, or pick one of the 5 accounts
@@ -185,6 +193,8 @@ The backends enforce every rule; Sirius only adapts what it shows:
 * **Palettes**: My account → Settings → Appearance offers four colour palettes (Ocean by default,
   Chalk and iron, Volt, Rig red), each in light and dark, saved in the account (`palette`). Defined in
   `src/palettes.css` (`data-palette` + `data-theme` on `<html>`, `core/services/theme.service.ts`).
+  `primary`, `secondary` and `accent` stay distinct in every palette: the weekly balance draws its three
+  modalities with them (lot D, D88 bis).
 * **Units**: a "Units" tab in My account (metric or imperial, `core/services/unit.service.ts`), saved
   in the account (`unitSystem`); without a choice it follows the language (French: metric). Values are
   converted for display only, rounded as gyms write them: loads (95 lb = 43 kg), heights (24/20 in =

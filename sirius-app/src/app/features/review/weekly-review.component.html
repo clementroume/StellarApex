@@ -1,0 +1,74 @@
+<app-page [title]="'TRAINING.REVIEW.TITLE' | translate" [subtitle]="'REVIEW.SUBTITLE' | translate">
+  <hlm-dialog pageTitleAside>
+    <button hlmDialogTrigger type="button" data-slot="review-help"
+            class="flex size-7 flex-none items-center justify-center rounded-full border text-sm font-bold text-muted-foreground hover:bg-muted"
+            [attr.aria-label]="'REVIEW.HELP.OPEN' | translate">?</button>
+    <hlm-dialog-content *hlmDialogPortal="let ctx" class="max-h-[85dvh] overflow-y-auto gap-4 sm:max-w-lg"
+                        [closeLabel]="'GLOBAL.CLOSE' | translate">
+      <hlm-dialog-header>
+        <h2 hlmDialogTitle>{{ 'REVIEW.HELP.TITLE' | translate }}</h2>
+        <p hlmDialogDescription>{{ 'REVIEW.HELP.INTRO' | translate }}</p>
+      </hlm-dialog-header>
+      <dl class="flex flex-col gap-3" data-slot="review-help-text">
+        @for (part of helpParts; track part) {
+          <div>
+            <dt class="font-semibold">{{ 'REVIEW.' + part + '.TITLE' | translate }}</dt>
+            <dd class="text-muted-foreground">{{ 'REVIEW.HELP.' + part | translate }}</dd>
+          </div>
+        }
+      </dl>
+      <p class="text-xs text-muted-foreground">{{ 'REVIEW.HELP.WINDOW' | translate }}</p>
+    </hlm-dialog-content>
+  </hlm-dialog>
+  <div class="flex flex-col gap-4">
+    <nav class="flex items-center gap-2" data-slot="week">
+      <button type="button" hlmBtn variant="outline" size="icon" [attr.aria-label]="'REVIEW.PREVIOUS_WEEK' | translate" (click)="previous()">
+        <ng-icon name="heroChevronLeft"/>
+      </button>
+      <div class="flex flex-1 flex-col items-center">
+        <span class="flex items-center gap-2 font-semibold">
+          {{ weekText() }}
+          @if (isCurrent()) {
+            <span hlmBadge class="bg-primary/15 text-primary">{{ 'REVIEW.CURRENT' | translate }}</span>
+          }
+        </span>
+        @if (windowText()) {
+          <span class="text-xs text-muted-foreground" data-slot="window">{{ windowText() }}</span>
+        }
+      </div>
+      <button type="button" hlmBtn variant="outline" size="icon" [attr.aria-label]="'REVIEW.NEXT_WEEK' | translate"
+              [disabled]="isCurrent()" (click)="next()">
+        <ng-icon name="heroChevronRight"/>
+      </button>
+    </nav>
+
+    @if (isLoading() && !balance()) {
+      <div class="flex justify-center py-8"><hlm-spinner/></div>
+    } @else if (failed()) {
+      <p class="py-8 text-center text-sm text-muted-foreground">{{ 'REVIEW.LOAD_ERROR' | translate }}</p>
+    } @else if (balance(); as b) {
+      @if (isEmpty()) {
+        <div hlmEmpty data-slot="review-empty">
+          <div hlmEmptyHeader>
+            <div hlmEmptyTitle>{{ 'REVIEW.EMPTY_TITLE' | translate }}</div>
+            <p hlmEmptyDescription>{{ 'REVIEW.EMPTY_TEXT' | translate }}</p>
+          </div>
+          <div hlmEmptyContent class="flex flex-row flex-wrap justify-center gap-2">
+            <a hlmBtn variant="outline" size="sm" routerLink="/wods">{{ 'REVIEW.EMPTY_WODS' | translate }}</a>
+            <a hlmBtn variant="outline" size="sm" routerLink="/training/journal">{{ 'REVIEW.EMPTY_JOURNAL' | translate }}</a>
+          </div>
+        </div>
+      } @else {
+        <div class="grid gap-4 lg:grid-cols-2 lg:items-start" [class.opacity-60]="isLoading()">
+          <app-review-muscles [muscles]="b.muscles" [lang]="lang()"/>
+          <div class="flex flex-col gap-4">
+            <app-review-volume [volume]="b.volume" [lang]="lang()"/>
+            <app-review-metcons [minutes]="b.minutes"/>
+            <app-review-force [lifts]="b.lifts"/>
+            <app-review-modalities [modalities]="b.modalities"/>
+          </div>
+        </div>
+      }
+    }
+  </div>
+</app-page>

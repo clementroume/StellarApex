@@ -14,8 +14,8 @@ import apex.stellar.aldebaran.model.entities.MovementRecord;
 import apex.stellar.aldebaran.model.entities.MovementUsualName;
 import apex.stellar.aldebaran.model.entities.Score;
 import apex.stellar.aldebaran.model.entities.ScoreSet;
-import apex.stellar.aldebaran.model.entities.Wod;
 import apex.stellar.aldebaran.model.entities.Wod.WodCategory;
+import apex.stellar.aldebaran.model.entities.Wod;
 import apex.stellar.aldebaran.model.entities.WodMovement;
 import apex.stellar.aldebaran.repository.MovementRecordRepository;
 import apex.stellar.aldebaran.repository.MovementRepository;
@@ -25,6 +25,7 @@ import apex.stellar.aldebaran.security.SecurityService;
 import apex.stellar.aldebaran.service.LiftVariant.Lift;
 import apex.stellar.aldebaran.service.RecordInheritance.Effective;
 import apex.stellar.aldebaran.service.RecordInheritance.Target;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.EnumSet;
@@ -159,6 +160,35 @@ public class MovementRecordService {
       }
     }
     return new Candidates(movement, byKey);
+  }
+
+  /**
+   * A past performance that proves a 1RM: one complete loaded set, or an "N RM" load.
+   *
+   * @param variantKey Variant key of the lift.
+   * @param reps Reps of the set.
+   * @param weightKg Load of the set.
+   * @param date Day of the score.
+   */
+  public record RecordPoint(String variantKey, int reps, double weightKg, LocalDate date) {}
+
+  /**
+   * Every performance of an athlete that feeds a movement's records, all days (weekly balance:
+   * "near the record" against the record of the set's day, D124).
+   *
+   * @param userId The athlete.
+   * @param movementId The movement.
+   * @return The performances.
+   */
+  @Transactional(readOnly = true)
+  public List<RecordPoint> history(Long userId, Long movementId) {
+    List<RecordPoint> points = new ArrayList<>();
+    for (List<Candidate> group : collect(userId, movementId).byKey().values()) {
+      for (Candidate c : group) {
+        points.add(new RecordPoint(c.variantKey(), c.reps(), c.weightKg(), c.score().getDate()));
+      }
+    }
+    return points;
   }
 
   /**

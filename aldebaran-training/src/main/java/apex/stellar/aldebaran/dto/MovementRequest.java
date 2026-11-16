@@ -1,5 +1,6 @@
 package apex.stellar.aldebaran.dto;
 
+import apex.stellar.aldebaran.model.entities.PerSet;
 import apex.stellar.aldebaran.model.entities.DumbbellBase;
 import apex.stellar.aldebaran.model.entities.MovementJointAction;
 import apex.stellar.aldebaran.model.enums.Category;
@@ -49,7 +50,8 @@ public record MovementRequest(
     Set<Long> acceptedMovementIds,
     @Valid Set<RoleAdjustmentDto> roleAdjustments,
     Set<MovementJointAction> jointActions,
-    @Valid Set<UsualNameDto> usualNames) {
+    @Valid Set<UsualNameDto> usualNames,
+    @Valid PerSet perSet) {
 
   /** A plain movement: no chain, no adjustment, no usual name. */
   @SuppressWarnings("java:S107") // Mirrors the record components
@@ -69,7 +71,7 @@ public record MovementRequest(
     this(
         name, nameAbbreviation, category, equipment, techniques, muscles, descriptionEn,
         descriptionFr, coachingCuesEn, coachingCuesFr, videoUrl, imageUrl, null, false, null, null,
-        null, null, null, null, null);
+        null, null, null, null, null, null);
   }
 
   /**

@@ -15,7 +15,9 @@ import apex.stellar.aldebaran.model.entities.MovementRoleAdjustment;
 import apex.stellar.aldebaran.model.entities.MovementRoleAdjustment.TriggerKind;
 import apex.stellar.aldebaran.model.entities.MovementUsualName;
 import apex.stellar.aldebaran.model.entities.Muscle;
+import apex.stellar.aldebaran.model.entities.PerSet;
 import apex.stellar.aldebaran.model.entities.WodMovement;
+import apex.stellar.aldebaran.model.enums.Category.Modality;
 import apex.stellar.aldebaran.model.enums.Equipment;
 import apex.stellar.aldebaran.model.enums.JointAction;
 import apex.stellar.aldebaran.model.enums.RequiredRule;
@@ -324,15 +326,97 @@ public final class CatalogRules {
    * @return The name.
    */
   public static String listName(WodMovement line) {
+    return usualName(line).map(MovementUsualName::getNameEn).orElse(line.getMovement().getName());
+  }
+
+  /**
+   * The most precise usual name of a line, the one it reads under.
+   *
+   * @param line The line, with its movement.
+   * @return The usual name, if any.
+   */
+  public static Optional<MovementUsualName> usualName(WodMovement line) {
     Movement movement = line.getMovement();
     Set<String> techniques = new LinkedHashSet<>(line.getTechniques());
     line.getComponentTechniques()
         .forEach(c -> techniques.add(c.componentOrder() + ":" + c.technique()));
     Set<String> equipment =
         visibleEquipment(Spec.of(movement), line.getEquipment(), line.getTechniques());
-    return usualName(movement, equipment, techniques)
-        .map(MovementUsualName::getNameEn)
-        .orElse(movement.getName());
+    return usualName(movement, equipment, techniques);
+  }
+
+  /**
+   * What one set of a line is worth, unit by unit (D126): the value of its most precise usual name,
+   * else the movement's.
+   *
+   * @param line The line, with its movement.
+   * @return The values, possibly all null.
+   */
+  public static PerSet perSet(WodMovement line) {
+    PerSet own = line.getMovement().getPerSet();
+    PerSet named = usualName(line).map(MovementUsualName::getPerSet).orElse(PerSet.NONE);
+    return new PerSet(
+        named.reps() != null ? named.reps() : own.reps(),
+        named.meters() != null ? named.meters() : own.meters(),
+        named.seconds() != null ? named.seconds() : own.seconds(),
+        named.calories() != null ? named.calories() : own.calories());
+  }
+
+  /**
+   * The modality of a line (D127): its usual name's, else its family's; a gymnastics or cardio line
+   * that carries a load (weight, percentage of RM, load position, {@code WEIGHTED}) is weightlifting.
+   * Equipment alone never decides: deficit plates, an assistance band or rings are apparatus.
+   *
+   * @param line The line, with its movement.
+   * @return The modality, or null when the movement has no family.
+   */
+  public static @Nullable Modality modality(WodMovement line) {
+    Modality start =
+        usualName(line)
+            .map(MovementUsualName::getModality)
+            .orElse(line.getMovement().getModality());
+    if (start == null || start == Modality.WEIGHTLIFTING) {
+      return start;
+    }
+    return carriesLoad(line) ? Modality.WEIGHTLIFTING : start;
+  }
+
+  /**
+   * The modalities of a WOD: one per line (D127).
+   *
+   * @param lines The WOD lines, with their movements.
+   * @return The modalities.
+   */
+  public static Set<Modality> modalities(Collection<WodMovement> lines) {
+    Set<Modality> modalities = EnumSet.noneOf(Modality.class);
+    for (WodMovement line : lines) {
+      Modality modality = modality(line);
+      if (modality != null) {
+        modalities.add(modality);
+      }
+    }
+    return modalities;
+  }
+
+  private static boolean positive(@Nullable Double value) {
+    return value != null && value > 0;
+  }
+
+  /** A load moved with the body, written on the line. */
+  private static boolean carriesLoad(WodMovement line) {
+    if (positive(line.getWeight())
+        || positive(line.getWeightFemale())
+        || positive(line.getPercentOfRm())) {
+      return true;
+    }
+    for (String name : line.getTechniques()) {
+      Technique technique = Technique.valueOf(name);
+      if (technique == Technique.WEIGHTED
+          || technique.getCategory() == TechniqueCategory.LOAD_POSITION) {
+        return true;
+      }
+    }
+    return false;
   }
 
   /**

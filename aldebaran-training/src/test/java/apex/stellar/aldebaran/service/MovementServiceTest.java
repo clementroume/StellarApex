@@ -21,6 +21,7 @@ import apex.stellar.aldebaran.repository.MovementRepository;
 import apex.stellar.aldebaran.repository.MuscleRepository;
 import apex.stellar.aldebaran.repository.WodRepository;
 import apex.stellar.aldebaran.repository.projection.MovementSummary;
+import apex.stellar.aldebaran.service.BalanceMaintenanceService;
 import java.util.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -37,6 +38,7 @@ class MovementServiceTest {
   @Mock private MovementRepository movementRepository;
   @Mock private WodRepository wodRepository;
   @Mock private MovementMapper movementMapper;
+  @Mock private BalanceMaintenanceService balanceMaintenance;
   @InjectMocks private MovementService movementService;
 
   private Movement movement;
@@ -56,7 +58,7 @@ class MovementServiceTest {
     muscle = Muscle.builder().id(1L).medicalName("Quadriceps").build();
 
     Set<MovementMuscleRequest> muscleRequests =
-        Set.of(new MovementMuscleRequest(1L, MovementMuscle.MuscleRole.AGONIST, 1.0));
+        Set.of(new MovementMuscleRequest(1L, MovementMuscle.MuscleRole.AGONIST));
 
     request =
         new MovementRequest(

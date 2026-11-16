@@ -66,7 +66,49 @@ public record WodMovementRequest(
         Integer rmReps,
 
     // --- Techniques of one component of a chained line (receptions), optional ---
-    Set<ComponentTechnique> componentTechniques) {
+    Set<ComponentTechnique> componentTechniques,
+
+    // --- Length of the course (shuttle run: between the two lines), optional ---
+    @DecimalMin(value = "0.0", message = "{validation.value.positive}") Double length,
+    Unit lengthUnit) {
+
+  /** Line without a course length. */
+  @SuppressWarnings("java:S107") // Mirrors the record components
+  public WodMovementRequest(
+      Long movementId,
+      Integer orderIndex,
+      String repsScheme,
+      Double weight,
+      Double weightFemale,
+      Unit weightUnit,
+      Integer durationSeconds,
+      Unit durationDisplayUnit,
+      Double distance,
+      Unit distanceUnit,
+      Integer calories,
+      Integer caloriesFemale,
+      Double height,
+      Double heightFemale,
+      Unit heightUnit,
+      Set<String> equipment,
+      Set<String> techniques,
+      String notesEn,
+      String notesFr,
+      String scalingOptionsEn,
+      String scalingOptionsFr,
+      Integer sets,
+      Segment segment,
+      Integer complexGroup,
+      TeamSplit teamSplit,
+      Double percentOfRm,
+      Integer rmReps,
+      Set<ComponentTechnique> componentTechniques) {
+    this(
+        movementId, orderIndex, repsScheme, weight, weightFemale, weightUnit, durationSeconds,
+        durationDisplayUnit, distance, distanceUnit, calories, caloriesFemale, height, heightFemale,
+        heightUnit, equipment, techniques, notesEn, notesFr, scalingOptionsEn, scalingOptionsFr,
+        sets, segment, complexGroup, teamSplit, percentOfRm, rmReps, componentTechniques, null, null);
+  }
 
   /** Line without per-component techniques. */
   @SuppressWarnings("java:S107") // Mirrors the record components
