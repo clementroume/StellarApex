@@ -49,3 +49,19 @@ export interface WeeklyBalance {
   lifts: LiftBalance[];
   modalities: Record<Modality, number>;
 }
+
+/** Why a WOD line counts nothing in the balance (D121 rule 5, D126). */
+export type UncountedReason = 'UNREADABLE' | 'NO_SET_VALUE';
+
+/** A WOD line that counts nothing in the balance: admin control (`UncountedLineResponse`). */
+export interface UncountedLine {
+  wodId: number;
+  wodTitle: string;
+  isPublic: boolean;
+  /** False for a WOD owned by a session block. */
+  standalone: boolean;
+  orderIndex: number;
+  movementName: string;
+  repsScheme?: string | null;
+  reason: UncountedReason;
+}

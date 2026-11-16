@@ -358,11 +358,15 @@
                   <input type="number" min="1" inputmode="numeric" formControlName="sets" hlmInput class="h-11 md:h-10"
                          [placeholder]="'WOD.PLACEHOLDERS.SETS' | translate"/>
                 </label>
-                <label class="flex flex-col gap-1.5 w-full">
-                  <span class="text-sm font-medium">{{ 'WOD.FIELDS.REPS' | translate }}</span>
-                  <input type="text" formControlName="repsScheme" hlmInput class="h-11 md:h-10"
-                         [placeholder]="'WOD.PLACEHOLDERS.REPS' | translate"/>
-                </label>
+                <div class="flex flex-col gap-1.5 w-full">
+                  <label class="text-sm font-medium" [for]="'reps-' + i">{{ 'WOD.FIELDS.REPS' | translate }}</label>
+                  <input type="text" formControlName="repsScheme" hlmInput class="h-11 md:h-10" [id]="'reps-' + i"
+                         [placeholder]="'WOD.PLACEHOLDERS.REPS' | translate"
+                         [attr.aria-describedby]="unreadableLines()[i] ? 'reps-unread-' + i : null"/>
+                  @if (unreadableLines()[i]) {
+                    <span class="text-xs text-warning" [id]="'reps-unread-' + i" data-slot="reps-unreadable">{{ 'WOD.REPS_UNREADABLE' | translate }}</span>
+                  }
+                </div>
                 <div class="flex flex-col gap-1.5 w-full">
                   <span class="text-sm font-medium">{{ 'WOD.FIELDS.WEIGHT' | translate }} ({{ 'WOD.FIELDS.MEN_WOMEN' | translate }})</span>
                   <div class="field-group w-full">

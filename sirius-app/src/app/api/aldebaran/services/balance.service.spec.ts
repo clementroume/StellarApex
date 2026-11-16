@@ -22,4 +22,19 @@ describe('BalanceService', () => {
     expect(req.request.method).toBe('GET');
     req.flush({});
   });
+
+  it('checks the line texts in one call', () => {
+    let flags: boolean[] = [];
+    service.readableTexts(['21-15-9', 'abc']).subscribe(f => flags = f);
+    const req = http.expectOne(`${environment.trainingUrl}/balance/readable-texts`);
+    expect(req.request.method).toBe('POST');
+    expect(req.request.body).toEqual({texts: ['21-15-9', 'abc']});
+    req.flush([true, false]);
+    expect(flags).toEqual([true, false]);
+  });
+
+  it('lists the uncounted lines', () => {
+    service.getUncountedLines().subscribe();
+    http.expectOne(`${environment.trainingUrl}/balance/uncounted-lines`).flush([]);
+  });
 });

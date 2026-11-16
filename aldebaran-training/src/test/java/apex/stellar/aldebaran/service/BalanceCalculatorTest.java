@@ -22,6 +22,7 @@ import apex.stellar.aldebaran.model.enums.Category.Modality;
 import apex.stellar.aldebaran.model.enums.Category;
 import apex.stellar.aldebaran.model.enums.Equipment;
 import apex.stellar.aldebaran.model.enums.TimeDomain;
+import apex.stellar.aldebaran.model.enums.UncountedReason;
 import apex.stellar.aldebaran.model.enums.Unit;
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -378,5 +379,40 @@ class BalanceCalculatorTest {
     assertThat(summed.lifts().keySet()).isEqualTo(together.lifts().keySet());
     // The prescribed 5 x 5 counts: five half sets
     assertThat(together.lifts().get("Squat").sets()).isCloseTo(2.5, within(1e-9));
+  }
+
+  @Test
+  @DisplayName("D121: the six written forms read, anything else does not; a blank text is not judged")
+  void readableText() {
+    for (String text : List.of("21", "21-15-9", "max", "1 min", "3-6-9-...", "5 x 5", "8 x 20 s", "  ")) {
+      assertThat(BalanceCalculator.readableText(text)).as(text).isTrue();
+    }
+    assertThat(BalanceCalculator.readableText(null)).isTrue();
+    for (String text : List.of("10 each side", "AMRAP", "21/15/9", "2 rounds")) {
+      assertThat(BalanceCalculator.readableText(text)).as(text).isFalse();
+    }
+  }
+
+  @Test
+  @DisplayName("Admin control: an unreadable line, a unit without set value, strength judged on its text only")
+  void uncounted() {
+    Wod metcon = wod(WodType.FOR_TIME, ScoreType.TIME);
+    WodMovement fine = line(metcon, THRUSTER, "21-15-9");
+    WodMovement unreadable = line(metcon, PULL_UP, "10 each side");
+    WodMovement noCalories = line(metcon, RUNNING, null);
+    noCalories.setCalories(20);
+    WodMovement nothing = line(metcon, BURPEE, null);
+    assertThat(BalanceCalculator.uncounted(metcon, fine)).isNull();
+    assertThat(BalanceCalculator.uncounted(metcon, unreadable)).isEqualTo(UncountedReason.UNREADABLE);
+    assertThat(BalanceCalculator.uncounted(metcon, noCalories)).isEqualTo(UncountedReason.NO_SET_VALUE);
+    assertThat(BalanceCalculator.uncounted(metcon, nothing)).isEqualTo(UncountedReason.UNREADABLE);
+
+    Wod deathBy = wod(WodType.EMOM, ScoreType.ROUNDS);
+    deathBy.setLadderStart(1);
+    assertThat(BalanceCalculator.uncounted(deathBy, line(deathBy, BURPEE, null))).isNull();
+
+    Wod strength = wod(WodType.FOR_LOAD, ScoreType.WEIGHT);
+    assertThat(BalanceCalculator.uncounted(strength, line(strength, RUNNING, "5 x 5"))).isNull();
+    assertThat(BalanceCalculator.uncounted(strength, line(strength, SQUAT, "5RM"))).isEqualTo(UncountedReason.UNREADABLE);
   }
 }

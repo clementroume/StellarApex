@@ -968,7 +968,8 @@
         "EACH": "Chacun",
         "TOGETHER": "Ensemble"
       }
-    }
+    },
+    "REPS_UNREADABLE": "Non compté dans le bilan : écris par exemple 21, 21-15-9, 5 x 5, max ou 1 min."
   },
   "SCORE": {
     "TITLE": "Scores",
@@ -1140,6 +1141,21 @@
       "REJECT_DESC": "Le demandeur verra la demande refusée et pourra la supprimer pour en refaire une.",
       "SUSPEND_TITLE": "Suspendre {{name}} ?",
       "SUSPEND_DESC": "Ses membres, Owner ou Programmer compris, perdent l'accès jusqu'à la réactivation."
+    },
+    "BALANCE": {
+      "TITLE": "Contrôle du bilan",
+      "INTRO": "Les lignes de WOD qui ne comptent pas dans le bilan hebdomadaire : à corriger dans le WOD ou dans le catalogue.",
+      "LOAD_ERROR": "Impossible de charger le contrôle. Réessaie plus tard.",
+      "ALL_COUNTED": "Toutes les lignes de WOD comptent dans le bilan.",
+      "FILTER": "Filtrer par raison",
+      "HINT": "Le texte d'une ligne se lit sous six formes : 21, 21-15-9, max, 1 min, 3-6-9-..., 5 x 5 ; sans texte, sa distance, ses calories ou sa durée.",
+      "SESSION_WOD": "WOD de séance",
+      "PUBLIC": "Public",
+      "LINE": "Ligne {{index}} : {{movement}}",
+      "REASONS": {
+        "UNREADABLE": "Texte non reconnu",
+        "NO_SET_VALUE": "Pas de valeur d'une série pour cette unité dans le catalogue"
+      }
     }
   },
   "GYM": {

@@ -52,3 +52,19 @@ test('strength sets → weekly balance: lift share, close to the record, region 
 
   await context.close();
 });
+
+test('a line text the balance cannot read is flagged in the WOD form, without blocking', async ({browser}) => {
+  const context = await asRole(browser, 'athlete');
+  const page = await context.newPage();
+  await page.goto('/wods/new');
+  await page.getByRole('button', {name: t('WOD.ACTIONS.ADD_MOVEMENT')}).click();
+  await page.getByRole('combobox', {name: t('WOD.FIELDS.MOVEMENT')}).fill('Air Squat');
+  await page.getByRole('option', {name: /^Air Squat\b/}).first().click();
+  const reps = page.getByRole('textbox', {name: t('WOD.FIELDS.REPS'), exact: false}).first();
+  await reps.fill('10 each side');
+  await expect(page.getByText(t('WOD.REPS_UNREADABLE'))).toBeVisible();
+  await reps.fill('21-15-9');
+  await expect(page.getByText(t('WOD.REPS_UNREADABLE'))).toBeHidden();
+  await context.close();
+});
+

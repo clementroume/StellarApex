@@ -2,11 +2,17 @@ package apex.stellar.aldebaran.service;
 
 import static apex.stellar.aldebaran.config.RedisCacheConfig.CACHE_WODS;
 
+import apex.stellar.aldebaran.dto.UncountedLineResponse;
 import apex.stellar.aldebaran.model.entities.Wod;
+import apex.stellar.aldebaran.model.entities.WodMovement;
+import apex.stellar.aldebaran.model.enums.UncountedReason;
 import apex.stellar.aldebaran.repository.BalanceWeekRepository;
 import apex.stellar.aldebaran.repository.WodRepository;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Comparator;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.Nullable;
@@ -108,5 +114,37 @@ public class BalanceMaintenanceService {
       wods.clear();
     }
     log.info("Balance recompute: every week marked stale, modalities changed on {} WODs", changed);
+  }
+
+  /**
+   * Lists the WOD lines that count nothing in the balance (D121 rule 5, D126): an unreadable text,
+   * or a unit without the value of one set in the catalog. Admin control, read only.
+   *
+   * @return The lines, by WOD title then position.
+   */
+  @Transactional(readOnly = true)
+  public List<UncountedLineResponse> uncountedLines() {
+    List<UncountedLineResponse> lines = new ArrayList<>();
+    for (Wod wod : wodRepository.findAllWithMovements()) {
+      wod.getMovements().stream()
+          .sorted(Comparator.comparing(WodMovement::getOrderIndex, Comparator.nullsLast(Comparator.naturalOrder())))
+          .forEach(
+              line -> {
+                UncountedReason reason = BalanceCalculator.uncounted(wod, line);
+                if (reason != null) {
+                  lines.add(
+                      new UncountedLineResponse(
+                          wod.getId(),
+                          wod.getTitle(),
+                          wod.isPublic(),
+                          wod.isStandalone(),
+                          line.getOrderIndex() == null ? 0 : line.getOrderIndex(),
+                          line.getMovement().getName(),
+                          line.getRepsScheme(),
+                          reason));
+                }
+              });
+    }
+    return lines;
   }
 }

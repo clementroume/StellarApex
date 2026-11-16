@@ -115,7 +115,7 @@ final class MetconVolume {
   }
 
   /** How a line reads; a Death by line without text climbs the WOD's ladder. */
-  private static LinePrescription prescription(
+  static LinePrescription prescription(
       Wod wod, WodMovement line, @Nullable Division division) {
     LinePrescription read = LinePrescription.of(line, division);
     if (!read.readable() && wod.getLadderStart() != null) {

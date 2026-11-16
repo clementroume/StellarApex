@@ -15,6 +15,7 @@ import apex.stellar.aldebaran.model.entities.WodMovement;
 import apex.stellar.aldebaran.model.enums.Category.Modality;
 import apex.stellar.aldebaran.model.enums.Measure;
 import apex.stellar.aldebaran.model.enums.TimeDomain;
+import apex.stellar.aldebaran.model.enums.UncountedReason;
 import apex.stellar.aldebaran.service.LiftVariant.Lift;
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -82,6 +83,40 @@ public final class BalanceCalculator {
   }
 
   private BalanceCalculator() {}
+
+  /**
+   * Whether a line's text is one of the forms the balance reads (D121): {@code 21}, {@code 21-15-9},
+   * {@code max}, {@code 1 min}, {@code 3-6-9-...}, {@code 5 x 5}. A blank text reads the line's
+   * measures instead, so it is not judged here.
+   *
+   * @param text The text of the line ({@code repsScheme}).
+   * @return False only for a written text that cannot be read.
+   */
+  public static boolean readableText(@Nullable String text) {
+    if (text == null || text.isBlank()) {
+      return true;
+    }
+    return LinePrescription.of(WodMovement.builder().repsScheme(text).build(), null).readable();
+  }
+
+  /**
+   * Why a line of a WOD counts nothing in the balance (D121 rule 5, D126), for the admin control. A
+   * strength WOD counts its sets: only an unreadable text is reported there.
+   *
+   * @param wod The WOD (a Death by line without text climbs its ladder).
+   * @param line The line, with its movement and usual names.
+   * @return The reason, or null when the line counts.
+   */
+  public static @Nullable UncountedReason uncounted(Wod wod, WodMovement line) {
+    LinePrescription p = MetconVolume.prescription(wod, line, null);
+    if (!p.readable()) {
+      return UncountedReason.UNREADABLE;
+    }
+    if (isStrength(wod, null)) {
+      return null; // strength counts sets, never the value of one set
+    }
+    return p.measure().of(CatalogRules.perSet(line)) == null ? UncountedReason.NO_SET_VALUE : null;
+  }
 
   /**
    * The vector of some workouts: sets per muscle (moving, holding), per modality, metcon seconds

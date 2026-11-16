@@ -10,6 +10,11 @@ export const ADMIN_ROUTES: Routes = [
     loadComponent: () => import('./gyms/admin-gyms.component').then(c => c.AdminGymsComponent)
   },
   {
+    path: 'balance',
+    canActivate: [adminGuard],
+    loadComponent: () => import('./balance/admin-balance.component').then(c => c.AdminBalanceComponent)
+  },
+  {
     path: 'support',
     component: SupportComponent,
     canActivate: [adminGuard]

@@ -968,7 +968,8 @@
         "EACH": "Each",
         "TOGETHER": "Together"
       }
-    }
+    },
+    "REPS_UNREADABLE": "Not counted in the balance: write for example 21, 21-15-9, 5 x 5, max or 1 min."
   },
   "SCORE": {
     "TITLE": "Scores",
@@ -1140,6 +1141,21 @@
       "REJECT_DESC": "The requester will see the request rejected and can delete it to make a new one.",
       "SUSPEND_TITLE": "Suspend {{name}}?",
       "SUSPEND_DESC": "Its members, Owner or Programmer included, lose access until it is reactivated."
+    },
+    "BALANCE": {
+      "TITLE": "Balance control",
+      "INTRO": "The WOD lines that do not count in the weekly balance: to fix in the WOD or in the catalog.",
+      "LOAD_ERROR": "The control could not be loaded. Try again later.",
+      "ALL_COUNTED": "Every WOD line counts in the balance.",
+      "FILTER": "Filter by reason",
+      "HINT": "A line text reads in six forms: 21, 21-15-9, max, 1 min, 3-6-9-..., 5 x 5; without text, its distance, calories or duration.",
+      "SESSION_WOD": "Session WOD",
+      "PUBLIC": "Public",
+      "LINE": "Line {{index}}: {{movement}}",
+      "REASONS": {
+        "UNREADABLE": "Text not recognized",
+        "NO_SET_VALUE": "No value of one set for this unit in the catalog"
+      }
     }
   },
   "GYM": {

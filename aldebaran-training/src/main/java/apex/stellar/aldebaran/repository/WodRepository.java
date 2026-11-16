@@ -77,6 +77,15 @@ public interface WodRepository extends JpaRepository<Wod, Long> {
   List<Wod> findAllPublicWithMovements();
 
   /**
+   * Retrieves every WOD with its movements, ordered by title (admin control of the balance, D121).
+   *
+   * @return All the WODs.
+   */
+  @EntityGraph(attributePaths = {"movements", "movements.movement"})
+  @Query("SELECT w FROM Wod w ORDER BY w.title, w.id")
+  List<Wod> findAllWithMovements();
+
+  /**
    * Checks whether at least one public WOD exists (seeding guard).
    *
    * @return true if a public WOD exists.

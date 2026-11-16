@@ -75,6 +75,7 @@ export class SpacesService {
         children: [
           {link: '/admin/gyms', label: 'ADMIN.GYMS.TITLE', icon: 'heroBuildingOffice'},
           {link: '/admin/support', label: 'ADMIN.SUPPORT.TITLE', icon: 'heroLifebuoy'},
+          {link: '/admin/balance', label: 'ADMIN.BALANCE.TITLE', icon: 'heroChartBar'},
         ]
       });
     }

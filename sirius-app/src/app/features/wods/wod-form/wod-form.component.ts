@@ -2,13 +2,15 @@ import {ChangeDetectionStrategy, Component, computed, DestroyRef, inject, OnInit
 import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
 import {AbstractControl, FormArray, FormBuilder, ReactiveFormsModule, ValidationErrors, Validators} from '@angular/forms';
 import {ActivatedRoute, Router, RouterModule} from '@angular/router';
-import {HttpErrorResponse} from '@angular/common/http';
+import {HttpContext, HttpErrorResponse} from '@angular/common/http';
 import {TranslatePipe, TranslateService} from '@ngx-translate/core';
 import {NgIconComponent} from '@ng-icons/core';
 import {MovementComboboxComponent} from '../../../shared/component/movement-combobox/movement-combobox.component';
 import {toggleVariant, VariantPickerComponent} from '../../../shared/component/variant-picker/variant-picker.component';
-import {forkJoin} from 'rxjs';
+import {catchError, debounceTime, distinctUntilChanged, forkJoin, map, of, switchMap} from 'rxjs';
 import {WodService} from '../../../api/aldebaran/services/wod.service';
+import {BalanceService} from '../../../api/aldebaran/services/balance.service';
+import {BYPASS_LOADER} from '../../../core/interceptors/loading.interceptor';
 import {MovementService} from '../../../api/aldebaran/services/movement.service';
 import {NotificationService} from '../../../core/services/notification.service';
 import {AccessService} from '../../../core/services/access.service';
@@ -52,6 +54,7 @@ export class WodFormComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly wodService = inject(WodService);
+  private readonly balanceService = inject(BalanceService);
   private readonly movementService = inject(MovementService);
   private readonly accessService = inject(AccessService);
   private readonly notificationService = inject(NotificationService);
@@ -75,6 +78,9 @@ export class WodFormComponent implements OnInit {
   usualNames = signal<UsualNameOption[]>([]);
   referenceData = signal<MovementReferenceData | null>(null);
   readonly variantFields: readonly WodMovementVariant[] = ['equipment', 'techniques'];
+  /** Per line: true when the weekly balance cannot read its text (D121, warning only). */
+  readonly unreadableLines = signal<boolean[]>([]);
+
   /** Full movements (allowed equipment and techniques), loaded on demand by id. */
   readonly movementDetails = signal<Record<number, MovementResponse>>({});
 
@@ -178,6 +184,8 @@ export class WodFormComponent implements OnInit {
       this.availableMovements.set([...movements].sort((a, b) => a.name.localeCompare(b.name)));
     });
 
+    this.watchLineTexts();
+
     // A new WOD gets the usual score type of its format until the user picks one
     this.wodForm.controls.wodType.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(wodType => {
       const scoreType = this.wodForm.controls.scoreType;
@@ -194,6 +202,22 @@ export class WodFormComponent implements OnInit {
     } else {
       this.applyCreationPreset();
     }
+  }
+
+  /**
+   * Asks Aldebaran which line texts the weekly balance cannot read (D121): a warning under the field,
+   * never a block. Blank texts are not asked (their measures count); a failed check warns nothing.
+   */
+  private watchLineTexts(): void {
+    this.movementsFormArray.valueChanges.pipe(
+      map(() => (this.movementsFormArray.getRawValue() as {repsScheme?: string | null}[]).map(m => (m.repsScheme ?? '').trim())),
+      distinctUntilChanged((a, b) => a.length === b.length && a.every((t, i) => t === b[i])),
+      debounceTime(400),
+      switchMap(texts => texts.some(t => t)
+        ? this.balanceService.readableTexts(texts, new HttpContext().set(BYPASS_LOADER, true)).pipe(catchError(() => of(texts.map(() => true))))
+        : of(texts.map(() => true))),
+      takeUntilDestroyed(this.destroyRef)
+    ).subscribe(flags => this.unreadableLines.set(flags.map(readable => !readable)));
   }
 
   /**

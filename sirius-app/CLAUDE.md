@@ -159,6 +159,8 @@ the dev proxy targets the local Traefik `https://localhost` with `Host: stellar.
   `review.utils.ts`. Few numbers (metcon minutes only), facts only, no alert. Colours: the three theme colours for the
   modalities (G / H / M = primary / secondary / accent); the strength ring the three colours, then primary and secondary half transparent; the holding tab of the
   muscles uses the accent (`--heat-colour` read by `body-map`).
+  Line texts (D121): the WOD form asks `BalanceService.readableTexts` (debounced, blank texts not asked) and warns
+  under the field, never blocks; admins see every uncounted line on `/admin/balance` (`getUncountedLines`).
 - WOD catalogue (`/wods`) = public WODs only: family chips with counts (`WodFacets.categoryCounts`),
   format then sub-category chips, rows with a movement preview, competitions grouped by edition
   (`editionYear`, latest first, `sort=title,desc`), numbered pagination (`GET /wods/count`; page and

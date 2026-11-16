@@ -9,6 +9,7 @@ import {of, throwError} from 'rxjs';
 import {WodFormComponent} from './wod-form.component';
 import {WodService} from '../../../api/aldebaran/services/wod.service';
 import {MovementService} from '../../../api/aldebaran/services/movement.service';
+import {BalanceService} from '../../../api/aldebaran/services/balance.service';
 import {NotificationService} from '../../../core/services/notification.service';
 import {AccessService} from '../../../core/services/access.service';
 import {UnitService} from '../../../core/services/unit.service';
@@ -25,6 +26,7 @@ describe('WodFormComponent', () => {
   let mockWodService: MockedObject<WodService>;
   let mockMovementService: MockedObject<MovementService>;
   let mockNotificationService: MockedObject<NotificationService>;
+  let readableTexts: ReturnType<typeof vi.fn>;
   let writableGyms: WritableSignal<any[]>;
 
   const existingWod: WodResponse = {
@@ -56,6 +58,7 @@ describe('WodFormComponent', () => {
         provideTranslateService(),
         {provide: WodService, useValue: mockWodService},
         {provide: MovementService, useValue: mockMovementService},
+        {provide: BalanceService, useValue: {readableTexts}},
         {provide: UnitService, useValue: {massUnit: signal('KG')}},
         {
           provide: AccessService,
@@ -88,6 +91,7 @@ describe('WodFormComponent', () => {
 
   beforeEach(() => {
     writableGyms = signal<any[]>([]);
+    readableTexts = vi.fn().mockName('BalanceService.readableTexts').mockImplementation((texts: string[]) => of(texts.map(t => t !== 'abc')));
 
     mockWodService = {
       getWod: vi.fn().mockName('WodService.getWod'),
@@ -291,6 +295,24 @@ describe('WodFormComponent', () => {
 
       component.onMovementPicked(0, option(10));
       expect(component.buildPayload().movements[0]).toMatchObject({movementId: 10, equipment: [], techniques: []});
+    });
+
+    it('should warn under a line text the weekly balance cannot read, without blocking', () => {
+      vi.useFakeTimers();
+      try {
+        fillValidForm();
+        component.addMovement();
+        component.movementsFormArray.at(1).patchValue({movementId: 10, repsScheme: 'abc'});
+        vi.advanceTimersByTime(500);
+        fixture.detectChanges();
+        expect(readableTexts).toHaveBeenLastCalledWith(['5', 'abc'], expect.anything());
+        expect(component.unreadableLines()).toEqual([false, true]);
+        const warnings = fixture.nativeElement.querySelectorAll('[data-slot="reps-unreadable"]');
+        expect(warnings).toHaveLength(1);
+        expect(component.wodForm.valid).toBe(true);
+      } finally {
+        vi.useRealTimers();
+      }
     });
 
     it('should display the backend error on failure', () => {

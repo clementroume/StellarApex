@@ -302,8 +302,14 @@ The athlete's own balance, from their scores and the session blocks checked in a
 
 * `GET /me?week=yyyy-MM-dd` (any day of the week; Sirius sends the Monday of the athlete's local week): muscles,
   metcon minutes per time domain, strength sets per lift ("near the record" = a set at 80 % of the 1RM of its day)
-  and modalities over the chosen week and the 3 before, equivalent sets of the chosen week and the 7 before.
+  and modalities over the selected week and the 3 before, equivalent sets of the selected week and the 7 before.
 * `POST /recompute` (`ADMIN`): every stored week to rebuild, `wods.modalities` recomputed (calibration).
+* `POST /readable-texts {texts}` (any user): one flag per line text, false when the balance cannot read it (D121:
+  `21`, `21-15-9`, `max`, `1 min`, `3-6-9-...`, `5 x 5`; blank = the line's measures). The WOD form warns, never
+  blocks.
+* `GET /uncounted-lines` (`ADMIN`): every WOD line that counts nothing (`UNREADABLE` text, or `NO_SET_VALUE` = no
+  value of one set for its unit in the catalog; a strength WOD counts sets, so only its text is judged), rules
+  `BalanceCalculator.readableText` / `uncounted`.
 
 Storage (Flyway V7, D120): `balance_weeks` (per athlete and Monday: volume, modalities, seconds per domain,
 `rules_version`, `stale`), `balance_week_muscles` (moving / holding sets per exact muscle), `balance_week_lifts`,

@@ -173,4 +173,34 @@ class BalanceIT extends BaseIntegrationTest {
         .perform(as(post("/aldebaran/balance/recompute"), 1L, "ADMIN"))
         .andExpect(status().isNoContent());
   }
+
+  @Test
+  @DisplayName("The WOD form learns which line texts the balance cannot read")
+  void readableTexts() throws Exception {
+    mockMvc
+        .perform(
+            as(post("/aldebaran/balance/readable-texts"), ANNE)
+                .content("{\"texts\": [\"21-15-9\", \"10 each side\", \"\"]}"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$[0]").value(true))
+        .andExpect(jsonPath("$[1]").value(false))
+        .andExpect(jsonPath("$[2]").value(true));
+  }
+
+  @Test
+  @DisplayName("Admins list the lines that count nothing; athletes cannot")
+  void uncountedLines() throws Exception {
+    wod.getMovements().getFirst().setRepsScheme("20 each side");
+    wodRepository.save(wod);
+
+    mockMvc.perform(as(get("/aldebaran/balance/uncounted-lines"), ANNE)).andExpect(status().isForbidden());
+    mockMvc
+        .perform(as(get("/aldebaran/balance/uncounted-lines"), 1L, "ADMIN"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$", hasSize(1)))
+        .andExpect(jsonPath("$[0].wodId").value(wod.getId()))
+        .andExpect(jsonPath("$[0].movementName").value("Balance Squat"))
+        .andExpect(jsonPath("$[0].repsScheme").value("20 each side"))
+        .andExpect(jsonPath("$[0].reason").value("UNREADABLE"));
+  }
 }

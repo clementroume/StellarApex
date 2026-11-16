@@ -144,6 +144,9 @@ The backends enforce every rule; Sirius only adapts what it shows:
 * **WOD catalogue** (`/wods`): public WODs only (Girls, Hero, CrossFit benchmarks, Open...), category
   and format filters from `GET /aldebaran/wods/facets`; admins create them. Personal WODs live in My
   training › My WODs (`/training/wods`, quick editor).
+* **Admin › Balance control** (`/admin/balance`, lot D): the WOD lines that count nothing in the weekly balance
+  (text not recognized, or no value of one set for its unit in the catalog), filtered by reason, with a link to the
+  WOD. The WOD form warns under a line text the balance cannot read, without blocking (Aldebaran decides).
 * **Admin support session** (`/admin/support`, admins only): search a user (2 characters minimum),
   filter by gym, role and membership status, or by account (no box or program, e-mail not
   verified, badge on each row), page through results, or pick one of the 5 accounts

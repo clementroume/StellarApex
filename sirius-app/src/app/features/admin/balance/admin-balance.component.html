@@ -1,0 +1,43 @@
+<app-page [title]="'ADMIN.BALANCE.TITLE' | translate" [subtitle]="'ADMIN.BALANCE.INTRO' | translate">
+  @if (isLoading()) {
+    <div class="flex justify-center py-8"><hlm-spinner/></div>
+  } @else if (failed()) {
+    <p class="py-8 text-center text-sm text-muted-foreground">{{ 'ADMIN.BALANCE.LOAD_ERROR' | translate }}</p>
+  } @else if (lines().length === 0) {
+    <p class="py-8 text-center text-sm text-muted-foreground" data-slot="balance-all-counted">{{ 'ADMIN.BALANCE.ALL_COUNTED' | translate }}</p>
+  } @else {
+    <div class="mb-4 flex flex-wrap items-center gap-2" role="group" [attr.aria-label]="'ADMIN.BALANCE.FILTER' | translate">
+      @for (r of reasons; track r) {
+        <button type="button" hlmBadge variant="outline"
+                class="h-9 px-3 text-sm cursor-pointer aria-pressed:border-secondary aria-pressed:bg-secondary aria-pressed:text-secondary-content"
+                [attr.aria-pressed]="reason() === r" (click)="pickReason(r)">
+          {{ 'ADMIN.BALANCE.REASONS.' + r | translate }} ({{ counts()[r] }})
+        </button>
+      }
+    </div>
+    <p class="mb-2 text-sm text-muted-foreground">{{ 'ADMIN.BALANCE.HINT' | translate }}</p>
+    <ul class="bg-card border rounded-xl divide-y">
+      @for (line of shown(); track line.wodId + '-' + line.orderIndex) {
+        <li class="p-4 flex flex-col gap-1" data-slot="uncounted-line">
+          <p class="flex flex-wrap items-center gap-2 font-semibold">
+            @if (line.standalone) {
+              <a class="underline-offset-4 hover:underline" [routerLink]="['/wods', line.wodId]">{{ line.wodTitle }}</a>
+            } @else {
+              {{ line.wodTitle }} <span hlmBadge variant="outline">{{ 'ADMIN.BALANCE.SESSION_WOD' | translate }}</span>
+            }
+            @if (line.isPublic) {
+              <span hlmBadge variant="outline">{{ 'ADMIN.BALANCE.PUBLIC' | translate }}</span>
+            }
+          </p>
+          <p class="text-sm">
+            {{ 'ADMIN.BALANCE.LINE' | translate: {index: line.orderIndex, movement: line.movementName} }}
+            @if (line.repsScheme) {
+              · <code class="rounded bg-muted px-1">{{ line.repsScheme }}</code>
+            }
+          </p>
+          <p class="text-xs text-warning">{{ 'ADMIN.BALANCE.REASONS.' + line.reason | translate }}</p>
+        </li>
+      }
+    </ul>
+  }
+</app-page>

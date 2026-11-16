@@ -81,6 +81,8 @@ resolving IDs from the `antares` schema with `JdbcTemplate`, then calls `demo/De
   and their repositories; stale marks never clear the persistence context (they run inside score and journal
   writes), the rebuild's upsert does. Native queries name the schema (`aldebaran.`). No alert, no ratio (D89).
   Contract for lot D': `BalanceCalculator.vectorOf` (workouts done or prescribed → vector) and `sum` (linear).
+  Lines that count nothing (D121 rule 5): `BalanceCalculator.readableText` (WOD form warning, `POST /balance/readable-texts`)
+  and `uncounted` (admin control `GET /balance/uncounted-lines`, `model/enums/UncountedReason`).
 - Support session: `X-Auth-Actor-Id` (nullable `actorId`) = the admin acting as the user; rights stay
   the user's. `security/SupportSessionAuditFilter` logs every non-GET request with an actor at INFO.
 
