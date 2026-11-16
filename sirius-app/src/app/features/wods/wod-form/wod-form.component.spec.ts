@@ -1,7 +1,7 @@
 import type {MockedObject} from 'vitest';
 import {vi} from 'vitest';
 import {ComponentFixture, TestBed} from '@angular/core/testing';
-import {signal, WritableSignal} from '@angular/core';
+import {ChangeDetectorRef, signal, WritableSignal} from '@angular/core';
 import {ActivatedRoute, provideRouter, Router} from '@angular/router';
 import {provideTranslateService} from '@ngx-translate/core';
 import {provideIcons} from '@ng-icons/core';
@@ -315,6 +315,20 @@ describe('WodFormComponent', () => {
       expect(component.unreadableLines()).toEqual([]);
       await settle();
       expect(component.unreadableLines()).toEqual([true]);
+    });
+
+    it('should offer the shuttle length only for a shuttle run, and send it with its unit', () => {
+      fillValidForm();
+      fixture.detectChanges();
+      expect(fixture.nativeElement.querySelector('[data-slot="shuttle-length"]')).toBeNull();
+      component.movementsFormArray.at(0).patchValue({techniques: ['SHUTTLE'], length: 25, lengthUnit: 'FEET'});
+      fixture.componentRef.injector.get(ChangeDetectorRef).markForCheck(); // OnPush: a click on the variant does it in the app
+      fixture.detectChanges();
+      expect(fixture.nativeElement.querySelector('[data-slot="shuttle-length"]')).not.toBeNull();
+      mockWodService.createWod.mockReturnValue(of({id: 1} as any));
+      component.onSubmit();
+      const sent = mockWodService.createWod.mock.calls[0][0];
+      expect(sent.movements[0]).toEqual(expect.objectContaining({length: 25, lengthUnit: 'FEET'}));
     });
 
     it('should display the backend error on failure', () => {

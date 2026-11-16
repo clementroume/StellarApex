@@ -50,7 +50,7 @@ import org.jspecify.annotations.Nullable;
 public final class BalanceCalculator {
 
   /** Version of these rules: a stored week of another version is rebuilt (D120). */
-  public static final int RULES_VERSION = 1;
+  public static final int RULES_VERSION = 2;
 
   /** A set at or above this share of the 1RM is near the record (D124). */
   public static final double NEAR_RECORD = 0.8;

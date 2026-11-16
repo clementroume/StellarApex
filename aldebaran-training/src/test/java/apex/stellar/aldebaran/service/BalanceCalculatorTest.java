@@ -56,6 +56,8 @@ class BalanceCalculatorTest {
       movement("Running", Category.CARDIO, new PerSet(null, 800, 240, null), QUADS, null, null);
   private static final Movement LUNGE =
       movement("Lunge", Category.LUNGES, new PerSet(10, 10, 60, null), QUADS, GLUTES, null);
+  private static final Movement SHUTTLE =
+      movement("Shuttle", Category.CARDIO, new PerSet(30, 450, 240, null), QUADS, null, null);
   private static final Movement BURPEE =
       movement("Burpee", Category.BURPEES, new PerSet(10, null, 60, null), CHEST, QUADS, null);
 
@@ -443,5 +445,26 @@ class BalanceCalculatorTest {
     line(strength, THRUSTER, "3 x 3");
     WeekTotals totals = totals(new Workout(strength, null, DAY, null, null, 0));
     assertThat(totals.lifts()).containsKeys("Squat", "Thruster");
+  }
+
+  @Test
+  @DisplayName("Shuttle runs: 30 reps of the usual 15 m out and back per set, a longer course in proportion")
+  void shuttleLength() {
+    Wod usual = wod(WodType.FOR_TIME, ScoreType.TIME);
+    WodMovement standard = line(usual, SHUTTLE, "30");
+    standard.setLength(7.5);
+    standard.setLengthUnit(Unit.METERS);
+    assertThat(totals(usual, timed(240)).totalSets()).isCloseTo(1.0, within(1e-9));
+
+    Wod longer = wod(WodType.FOR_TIME, ScoreType.TIME);
+    WodMovement fifty = line(longer, SHUTTLE, "30");
+    fifty.setLength(50.0);
+    fifty.setLengthUnit(Unit.METERS);
+    // 30 x 100 m = 3000 m of shuttles: 3000 / 450
+    assertThat(totals(longer, timed(900)).totalSets()).isCloseTo(3000.0 / 450, within(1e-9));
+
+    Wod noLength = wod(WodType.FOR_TIME, ScoreType.TIME);
+    line(noLength, SHUTTLE, "30");
+    assertThat(totals(noLength, timed(240)).totalSets()).isCloseTo(1.0, within(1e-9));
   }
 }

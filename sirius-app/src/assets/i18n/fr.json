@@ -755,7 +755,10 @@
       "STRUCTURE": "Sous-catégorie",
       "DURATION_SHORT": "Durée",
       "REP_MAX": "Test N RM (N)",
-      "REP_MAX_HINT": "Un seul mouvement : le score devient le record N RM de l’athlète (vide sinon)."
+      "REP_MAX_HINT": "Un seul mouvement : le score devient le record N RM de l’athlète (vide sinon).",
+      "LENGTH": "Longueur de la navette",
+      "LENGTH_UNIT": "Unité de la longueur",
+      "LENGTH_HINT": "Distance entre les deux lignes : une rép = un aller et un retour."
     },
     "PLACEHOLDERS": {
       "TITLE": "Ex : Fran",
@@ -1155,7 +1158,11 @@
       "REASONS": {
         "UNREADABLE": "Texte non reconnu",
         "NO_SET_VALUE": "Pas de valeur d'une série pour cette unité dans le catalogue"
-      }
+      },
+      "RECOMPUTE": "Tout recalculer",
+      "RECOMPUTE_HINT": "Après un changement du catalogue hors des formulaires (migration), chaque bilan sera recalculé à son prochain affichage.",
+      "RECOMPUTED": "Tous les bilans seront recalculés à leur prochain affichage.",
+      "RECOMPUTE_ERROR": "Le recalcul n'a pas pu être demandé. Réessaie plus tard."
     }
   },
   "GYM": {

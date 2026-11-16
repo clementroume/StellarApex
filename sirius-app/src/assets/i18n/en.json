@@ -755,7 +755,10 @@
       "STRUCTURE": "Sub-category",
       "DURATION_SHORT": "Duration",
       "REP_MAX": "N RM test (N)",
-      "REP_MAX_HINT": "One movement only: the score becomes the athlete’s N RM record (blank otherwise)."
+      "REP_MAX_HINT": "One movement only: the score becomes the athlete’s N RM record (blank otherwise).",
+      "LENGTH": "Shuttle length",
+      "LENGTH_UNIT": "Length unit",
+      "LENGTH_HINT": "Distance between the two lines: one rep = out and back."
     },
     "PLACEHOLDERS": {
       "TITLE": "E.g. Fran",
@@ -1155,7 +1158,11 @@
       "REASONS": {
         "UNREADABLE": "Text not recognized",
         "NO_SET_VALUE": "No value of one set for this unit in the catalog"
-      }
+      },
+      "RECOMPUTE": "Recompute all",
+      "RECOMPUTE_HINT": "After a catalog change made outside the forms (a migration), every balance is rebuilt on its next display.",
+      "RECOMPUTED": "Every balance will be rebuilt on its next display.",
+      "RECOMPUTE_ERROR": "The recompute could not be requested. Try again later."
     }
   },
   "GYM": {

@@ -460,7 +460,9 @@ public class WodService {
         wm.teamSplit(),
         wm.percentOfRm(),
         wm.rmReps(),
-        wm.componentTechniques());
+        wm.componentTechniques(),
+        wm.length(),
+        wm.lengthUnit());
   }
 
   /**
@@ -811,6 +813,8 @@ public class WodService {
     target.setHeight(temp.getHeight());
     target.setHeightFemale(temp.getHeightFemale());
     target.setHeightUnit(temp.getHeightUnit());
+    target.setLength(temp.getLength());
+    target.setLengthUnit(temp.getLengthUnit());
     target.setWeightFemale(temp.getWeightFemale());
     target.setNotesEn(temp.getNotesEn());
     target.setNotesFr(temp.getNotesFr());

@@ -32,6 +32,11 @@ export class BalanceService {
     return this.http.post<boolean[]>(`${environment.trainingUrl}/balance/readable-texts`, check, {context});
   }
 
+  /** Marks every stored week to rebuild after a catalog or rules change (platform admins). */
+  recomputeAll(): Observable<void> {
+    return this.http.post<void>(`${environment.trainingUrl}/balance/recompute`, {});
+  }
+
   /** Every WOD line that counts nothing in the balance (platform admins). */
   getUncountedLines(): Observable<UncountedLine[]> {
     return this.http.get<UncountedLine[]>(`${environment.trainingUrl}/balance/uncounted-lines`);

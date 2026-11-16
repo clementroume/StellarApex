@@ -10,6 +10,7 @@ import apex.stellar.aldebaran.model.entities.WodMovement.Segment;
 import apex.stellar.aldebaran.model.entities.WodMovement;
 import apex.stellar.aldebaran.model.enums.Division;
 import apex.stellar.aldebaran.model.enums.Measure;
+import apex.stellar.aldebaran.model.enums.Unit;
 import apex.stellar.aldebaran.service.LinePrescription.Kind;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -40,9 +41,30 @@ final class MetconVolume {
   /** A line and how it reads. */
   private record Line(WodMovement line, LinePrescription prescription, PerSet perSet) {
 
+    /**
+     * Sets of an amount in the line's unit. Repetitions over a course length (a shuttle run, one rep
+     * = out and back) count their meters against the meters of one set, so a longer shuttle weighs
+     * more than the usual 15 m (450 m = 30 reps); without a meters value they count as reps.
+     */
     double sets(double amount) {
+      double meters = metersPerRep();
+      if (meters > 0) {
+        return amount * meters / perSet.meters();
+      }
       Integer value = prescription.measure().of(perSet);
       return value == null || value <= 0 ? 0 : amount / value;
+    }
+
+    private double metersPerRep() {
+      if (prescription.measure() != Measure.REPS
+          || line.getLength() == null
+          || line.getLength() <= 0
+          || perSet.meters() == null
+          || perSet.meters() <= 0) {
+        return 0;
+      }
+      Unit unit = line.getLengthUnit() != null ? line.getLengthUnit() : Unit.METERS;
+      return 2 * unit.toBase(line.getLength());
     }
   }
 

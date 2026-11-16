@@ -12,7 +12,7 @@ name; WOD movement variants joined by `|`, whereas `movements.csv` lists use `, 
 columns `*_en` / `*_fr`, the former single-language columns still read as English; optional trailing
 `tiebreak_en` ... `reps_per_round` then the former V14 structure columns `rounds` ... `vest_weight_unit`, former V15
 `structure`, former V16 `team_size` / `team_mode`, former V18 `rep_max`, and `sets` / `segment` / `complex_group` /
-`team_split` / `percent_of_rm` / `rm_reps` / `component_techniques` for WOD movements; catalog-model columns of `movements.csv` in `config/CatalogCsv`; former `wod_type` values read
+`team_split` / `percent_of_rm` / `rm_reps` / `component_techniques` / `length` / `length_unit` for WOD movements; catalog-model columns of `movements.csv` in `config/CatalogCsv`; former `wod_type` values read
 as a category + sub-category; a former `ROUNDS_REPS` score type reads as `REPS`).
 `demo/DevGymWodSeeder` (`@Profile("demo")`, package `aldebaran.demo` = what to delete to retire the demo) seeds WODs for the Antares test gyms,
 resolving IDs from the `antares` schema with `JdbcTemplate`, then calls `demo/DevScoreSeeder`

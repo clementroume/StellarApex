@@ -315,6 +315,9 @@ The athlete's own balance, from their scores and the session blocks checked in a
 Storage (Flyway V7, D120): `balance_weeks` (per athlete and Monday: volume, modalities, seconds per domain,
 `rules_version`, `stale`), `balance_week_muscles` (moving / holding sets per exact muscle), `balance_week_lifts`,
 entities `BalanceWeek`, `BalanceWeekMuscle`, `BalanceWeekLift` and their repositories.
+A shuttle line with a `length` (between the two lines, one rep = out and back) counts its meters against the
+usual name's `meters_per_set` (Shuttle Run: 450 m = 30 reps of the usual 15 m out and back, V9); without a
+length, its reps against `reps_per_set` (30, V8).
 A week with nothing done and no row is never stored (any requested week writes nothing).
 A write only marks weeks stale (`service/BalanceMaintenanceService`: score logged / corrected / re-dated /
 deleted for the whole team, and every later week on a WOD feeding records; journal created / deleted / block

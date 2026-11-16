@@ -1,4 +1,7 @@
 <app-page [title]="'ADMIN.BALANCE.TITLE' | translate" [subtitle]="'ADMIN.BALANCE.INTRO' | translate">
+  <button pageActions hlmBtn variant="outline" type="button" class="h-11 md:h-10" data-slot="balance-recompute"
+          [disabled]="isRecomputing()" (click)="recompute()">{{ 'ADMIN.BALANCE.RECOMPUTE' | translate }}</button>
+  <p class="-mt-4 mb-4 text-xs text-muted-foreground">{{ 'ADMIN.BALANCE.RECOMPUTE_HINT' | translate }}</p>
   @if (isLoading()) {
     <div class="flex justify-center py-8"><hlm-spinner/></div>
   } @else if (failed()) {

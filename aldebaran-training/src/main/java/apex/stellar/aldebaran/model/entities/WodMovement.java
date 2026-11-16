@@ -162,6 +162,19 @@ public class WodMovement {
   @Column(name = "height_unit", length = 20)
   private Unit heightUnit;
 
+  /**
+   * Length of the course in {@code lengthUnit}: for a shuttle run, the distance between the two
+   * lines (one rep = out and back). Shown after the movement like a height; the weekly balance
+   * counts a rep in proportion to it.
+   */
+  @Column(name = "length")
+  @DecimalMin("0.0")
+  private Double length;
+
+  @Enumerated(EnumType.STRING)
+  @Column(name = "length_unit", length = 20)
+  private Unit lengthUnit;
+
   // --- Characteristics ---
   @ElementCollection
   @CollectionTable(

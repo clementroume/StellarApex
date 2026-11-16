@@ -117,7 +117,10 @@ public final class WodCsvCodec {
     "percent_of_rm",
     "rm_reps",
     // Techniques of one component of a chained line: 1:POWER|2:SPLIT
-    "component_techniques"
+    "component_techniques",
+    // Length of the course (shuttle run: between the two lines)
+    "length",
+    "length_unit"
   };
 
   /** Separator of the equipment / technique lists (free text, so not a comma). */
@@ -237,6 +240,8 @@ public final class WodCsvCodec {
               .percentOfRm(decimal(row, "percent_of_rm"))
               .rmReps(integer(row, "rm_reps"))
               .componentTechniques(componentTechniques(row))
+              .length(decimal(row, "length"))
+              .lengthUnit(unit(row, "length_unit"))
               .build();
       wodMovement.checkVariantsAllowed(
           movement.getName(), movement.getEquipment(), movement.getTechniques());
@@ -325,7 +330,9 @@ public final class WodCsvCodec {
               wm.getTeamSplit() == WodMovement.TeamSplit.TOTAL ? null : wm.getTeamSplit().name(),
               wm.getPercentOfRm(),
               wm.getRmReps(),
-              joinComponents(wm.getComponentTechniques()));
+              joinComponents(wm.getComponentTechniques()),
+              wm.getLength(),
+              name(wm.getLengthUnit()));
         }
       }
     }

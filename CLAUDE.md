@@ -264,7 +264,7 @@ Rules common to every lot session (the brief of a lot only lists what is specifi
   `REPS` stored as total reps, shown/entered as rounds + reps when the WOD has `repsPerRound`),
   optional official tiebreak text (`tiebreakEn/Fr`); a score's tiebreak is always optional.
   WOD texts are FR/EN pairs (`*En` / `*Fr`); men/women pairs for load (`weight`/`weightFemale`), calories and
-  box/target height, stored in the prescribed unit and converted only for display (user preference
+  box/target height, a shuttle `length` (between the two lines, one rep = out and back), stored in the prescribed unit and converted only for display (user preference
   `unitSystem` in Antares, Sirius `UnitService`). Put a measurable prescription in these fields, not in
   the notes.
 

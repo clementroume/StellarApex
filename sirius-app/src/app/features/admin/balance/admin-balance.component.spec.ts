@@ -4,6 +4,7 @@ import {provideTranslateService} from '@ngx-translate/core';
 import {of, throwError} from 'rxjs';
 import {UncountedLine} from '../../../api/aldebaran/models/balance.model';
 import {BalanceService} from '../../../api/aldebaran/services/balance.service';
+import {NotificationService} from '../../../core/services/notification.service';
 import {AdminBalanceComponent} from './admin-balance.component';
 
 const line = (wodId: number, reason: UncountedLine['reason'], standalone = true): UncountedLine => ({
@@ -12,10 +13,14 @@ const line = (wodId: number, reason: UncountedLine['reason'], standalone = true)
 });
 
 describe('AdminBalanceComponent', () => {
+  const recomputeAll = vi.fn(() => of(undefined));
+  const showSuccess = vi.fn();
+
   async function create(response: unknown) {
     await TestBed.configureTestingModule({
       imports: [AdminBalanceComponent],
-      providers: [provideRouter([]), provideTranslateService(), {provide: BalanceService, useValue: {getUncountedLines: () => response}}]
+      providers: [provideRouter([]), provideTranslateService(), {provide: BalanceService, useValue: {getUncountedLines: () => response, recomputeAll}},
+        {provide: NotificationService, useValue: {showSuccess, showError: vi.fn()}}]
     }).compileComponents();
     const fixture = TestBed.createComponent(AdminBalanceComponent);
     fixture.detectChanges();
@@ -44,5 +49,12 @@ describe('AdminBalanceComponent', () => {
   it('says so when the control cannot be loaded', async () => {
     const fixture = await create(throwError(() => new Error('down')));
     expect(fixture.nativeElement.textContent).toContain('ADMIN.BALANCE.LOAD_ERROR');
+  });
+
+  it('asks every balance to be rebuilt', async () => {
+    const fixture = await create(of([]));
+    (fixture.nativeElement.querySelector('[data-slot="balance-recompute"]') as HTMLButtonElement).click();
+    expect(recomputeAll).toHaveBeenCalled();
+    expect(showSuccess).toHaveBeenCalledWith('ADMIN.BALANCE.RECOMPUTED');
   });
 });

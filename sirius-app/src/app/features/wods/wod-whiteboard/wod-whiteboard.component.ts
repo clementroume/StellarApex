@@ -246,14 +246,15 @@ export class WodWhiteboardComponent {
   }
 
   /**
-   * Men's / women's load and height in the user's units, written after the movement: "61/43 kg",
-   * "60/50 cm", the value of the user's division highlighted (D31).
+   * Men's / women's load and height, then the shuttle length, in the user's units, written after the
+   * movement: "61/43 kg", "60/50 cm", "25 ft", the value of the user's division highlighted (D31).
    */
   measures(wm: WodMovementResponse): MeasurePair[] {
     const division = this.authService.currentUser()?.division;
     return [
       this.unitService.loadPair(wm.weight, wm.weightFemale, wm.weightUnit, division),
-      this.unitService.distancePair(wm.height, wm.heightFemale, wm.heightUnit, division)
+      this.unitService.distancePair(wm.height, wm.heightFemale, wm.heightUnit, division),
+      this.unitService.distancePair(wm.length, null, wm.lengthUnit, division)
     ].filter((pair): pair is MeasurePair => pair != null);
   }
 

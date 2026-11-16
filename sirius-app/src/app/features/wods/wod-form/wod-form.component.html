@@ -395,6 +395,21 @@
                     </select>
                   </div>
                 </div>
+                @if (movementCtrl.value.techniques?.includes('SHUTTLE') || movementCtrl.value.length != null) {
+                  <div class="flex flex-col gap-1.5 w-full" data-slot="shuttle-length">
+                    <label class="text-sm font-medium" [for]="'length-' + i">{{ 'WOD.FIELDS.LENGTH' | translate }}</label>
+                    <div class="field-group w-full">
+                      <input type="number" min="0" step="0.5" formControlName="length" hlmInput class="h-11 md:h-10" [id]="'length-' + i"
+                             [attr.aria-describedby]="'length-hint-' + i"/>
+                      <select formControlName="lengthUnit" appNativeSelect class="w-24" [attr.aria-label]="'WOD.FIELDS.LENGTH_UNIT' | translate">
+                        @for (u of lengthUnits(); track u) {
+                          <option [value]="u">{{ 'WOD.UNITS.' + u | translate }}</option>
+                        }
+                      </select>
+                    </div>
+                    <span class="text-xs text-muted-foreground" [id]="'length-hint-' + i">{{ 'WOD.FIELDS.LENGTH_HINT' | translate }}</span>
+                  </div>
+                }
                 <div class="flex flex-col gap-1.5 w-full">
                   <span class="text-sm font-medium">{{ 'WOD.FIELDS.CALORIES' | translate }} ({{ 'WOD.FIELDS.MEN_WOMEN' | translate }})</span>
                   <div class="field-group w-full">
