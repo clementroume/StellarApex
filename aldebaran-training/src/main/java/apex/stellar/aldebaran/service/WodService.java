@@ -8,6 +8,8 @@ import apex.stellar.aldebaran.dto.MovementResponse;
 import apex.stellar.aldebaran.dto.WodCopyRequest;
 import apex.stellar.aldebaran.dto.WodFacetsResponse;
 import apex.stellar.aldebaran.dto.WodMovementRequest;
+import apex.stellar.aldebaran.dto.WodScaledLineRequest;
+import apex.stellar.aldebaran.dto.WodScaledLineResponse;
 import apex.stellar.aldebaran.dto.WodMovementResponse;
 import apex.stellar.aldebaran.dto.WodReferenceData;
 import apex.stellar.aldebaran.dto.WodRequest;
@@ -25,6 +27,7 @@ import apex.stellar.aldebaran.model.entities.Wod.WodStructure;
 import apex.stellar.aldebaran.model.entities.Wod.WodType;
 import apex.stellar.aldebaran.model.entities.Wod;
 import apex.stellar.aldebaran.model.entities.WodMovement;
+import apex.stellar.aldebaran.model.entities.WodScaledLine;
 import apex.stellar.aldebaran.model.enums.Technique;
 import apex.stellar.aldebaran.model.enums.Unit;
 import apex.stellar.aldebaran.model.enums.WodScope;
@@ -43,6 +46,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -452,8 +456,6 @@ public class WodService {
         wm.techniques(),
         wm.notesEn(),
         wm.notesFr(),
-        wm.scalingOptionsEn(),
-        wm.scalingOptionsFr(),
         wm.sets(),
         wm.segment(),
         wm.complexGroup(),
@@ -462,7 +464,31 @@ public class WodService {
         wm.rmReps(),
         wm.componentTechniques(),
         wm.length(),
-        wm.lengthUnit());
+        wm.lengthUnit(),
+        toScaledRequest(wm.scaled()));
+  }
+
+  /** The request that rebuilds a line of the official Scaled version (copy of a WOD). */
+  private static WodScaledLineRequest toScaledRequest(WodScaledLineResponse s) {
+    if (s == null) {
+      return null;
+    }
+    return new WodScaledLineRequest(
+        s.movement().id(),
+        s.equipment(),
+        s.techniques(),
+        s.repsScheme(),
+        s.weight(),
+        s.weightFemale(),
+        s.weightUnit(),
+        s.distance(),
+        s.distanceUnit(),
+        s.calories(),
+        s.caloriesFemale(),
+        s.height(),
+        s.heightFemale(),
+        s.heightUnit(),
+        s.durationSeconds());
   }
 
   /**
@@ -507,6 +533,7 @@ public class WodService {
               applyCatalogRules(wm, movementResponse);
               wm.setWod(wod);
               wm.setMovement(movement);
+              applyScaled(wm, item.scaled());
 
               wod.getMovements().add(wm);
             });
@@ -767,6 +794,7 @@ public class WodService {
 
       applyCatalogRules(target, movementResponse);
       target.setMovement(movement);
+      applyScaled(target, req.scaled());
       updatedList.add(target);
     }
 
@@ -777,6 +805,74 @@ public class WodService {
     // 4. One modality per line: family, usual name, load (D127)
     wod.getModalities().clear();
     wod.getModalities().addAll(CatalogRules.modalities(wod.getMovements()));
+  }
+
+  /**
+   * Sets the line of the official Scaled version (D141), checked like any line: its variant in
+   * canonical form, allowed by its movement. A version identical to the RX line is dropped. An
+   * existing Scaled line is updated in place (one row per line, unique).
+   *
+   * @param line The RX line, with its movement.
+   * @param request The Scaled line, or null (kept RX).
+   */
+  private void applyScaled(WodMovement line, WodScaledLineRequest request) {
+    if (request == null) {
+      line.setScaled(null);
+      return;
+    }
+    WodScaledLine values = wodMapper.toWodScaledLineEntity(request);
+    WodScaledLine scaled = line.getScaled();
+    if (scaled == null) {
+      scaled = new WodScaledLine();
+    }
+    scaled.setMovement(movementRepository.getReferenceById(request.movementId()));
+    scaled.setEquipment(values.getEquipment() != null ? values.getEquipment() : new HashSet<>());
+    scaled.setTechniques(values.getTechniques() != null ? values.getTechniques() : new HashSet<>());
+    scaled.setRepsScheme(values.getRepsScheme());
+    scaled.setWeight(values.getWeight());
+    scaled.setWeightFemale(values.getWeightFemale());
+    scaled.setWeightUnit(values.getWeightUnit());
+    scaled.setDistance(values.getDistance());
+    scaled.setDistanceUnit(values.getDistanceUnit());
+    scaled.setCalories(values.getCalories());
+    scaled.setCaloriesFemale(values.getCaloriesFemale());
+    scaled.setHeight(values.getHeight());
+    scaled.setHeightFemale(values.getHeightFemale());
+    scaled.setHeightUnit(values.getHeightUnit());
+    scaled.setDurationSeconds(values.getDurationSeconds());
+    if (line.getScaled() == null) {
+      line.setScaled(scaled);
+    }
+    // The version of the line is checked like any line, then its canonical variant kept
+    WodMovement version = LineVersions.scaled(line);
+    if (version != line) {
+      applyCatalogRules(version, movementService.getMovement(request.movementId()));
+      scaled.setEquipment(new HashSet<>(version.getEquipment()));
+      scaled.setTechniques(new HashSet<>(version.getTechniques()));
+    }
+    if (sameAsRx(line, scaled)) {
+      line.setScaled(null);
+    }
+  }
+
+  /** Whether a Scaled line changes nothing of its RX line. */
+  private static boolean sameAsRx(WodMovement rx, WodScaledLine s) {
+    boolean sameMovement =
+        s.getMovement() != null
+            && rx.getMovement() != null
+            && Objects.equals(s.getMovement().getId(), rx.getMovement().getId());
+    return sameMovement
+        && s.getEquipment().equals(rx.getEquipment())
+        && s.getTechniques().equals(rx.getTechniques())
+        && s.getRepsScheme() == null
+        && s.getWeight() == null
+        && s.getWeightFemale() == null
+        && s.getDistance() == null
+        && s.getCalories() == null
+        && s.getCaloriesFemale() == null
+        && s.getHeight() == null
+        && s.getHeightFemale() == null
+        && s.getDurationSeconds() == null;
   }
 
   /** Writes a line in its canonical form and checks it against its catalog movement. */
@@ -818,8 +914,6 @@ public class WodService {
     target.setWeightFemale(temp.getWeightFemale());
     target.setNotesEn(temp.getNotesEn());
     target.setNotesFr(temp.getNotesFr());
-    target.setScalingOptionsEn(temp.getScalingOptionsEn());
-    target.setScalingOptionsFr(temp.getScalingOptionsFr());
     target.setOrderIndex(temp.getOrderIndex());
     target.setSets(temp.getSets());
     target.setSegment(temp.getSegment());

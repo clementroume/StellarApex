@@ -71,15 +71,18 @@ public interface ScoreRepository extends JpaRepository<Score, Long> {
   boolean existsByWodId(Long wodId);
 
   /**
-   * Retrieves the worldwide leaderboard (PRs only) for a specific WOD and scaling level.
+   * Retrieves the worldwide leaderboard (PRs only) for a specific WOD and scaling level: RX, or
+   * the scores of the official Scaled version (D141; a free Scaled or an Rx+ is never ranked).
    *
    * @param wodId The WOD ID.
-   * @param scaling The scaling level (RX, SCALED...).
+   * @param scaling The scaling level (RX or SCALED).
    * @param pageable Pagination and Sorting (Sort is handled by Service based on WOD type).
    * @return A page of Personal Record scores.
    */
   @Query(
       "SELECT s FROM Score s WHERE s.wod.id = :wodId AND s.scaling = :scaling"
+          + " AND (s.scaling = apex.stellar.aldebaran.model.entities.Score.ScalingLevel.RX"
+          + " OR s.scaledOfficial = true)"
           + " AND s.personalRecord = true")
   Slice<Score> findLeaderboard(Long wodId, ScalingLevel scaling, Pageable pageable);
 

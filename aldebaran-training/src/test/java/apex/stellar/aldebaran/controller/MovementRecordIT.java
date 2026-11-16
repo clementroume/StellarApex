@@ -219,7 +219,14 @@ class MovementRecordIT extends BaseIntegrationTest {
   @DisplayName("Metcons with several movements and team WODs never feed records")
   void exclusions() throws Exception {
     Wod couplet = wod("Squat + Pull-ups", ScoreType.WEIGHT, null, false, squat, pullUp);
-    log(ANNE, sets(couplet, LocalDate.now(), "{\"reps\": 5, \"weight\": 150}"));
+    // A set names its line when the WOD has several movements (D143)
+    long squatLine = couplet.getMovements().getFirst().getId();
+    log(
+        ANNE,
+        sets(
+            couplet,
+            LocalDate.now(),
+            "{\"reps\": 5, \"weight\": 150, \"wodMovementId\": " + squatLine + "}"));
     Wod team = wod("Partner Squat", ScoreType.WEIGHT, 1, false, squat);
     team.setTeamSize(2);
     wodRepository.save(team);

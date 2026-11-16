@@ -53,7 +53,6 @@ public final class WodCsvCodecTestSupport {
                 .weight(95.0)
                 .weightUnit(Unit.LBS)
                 .notesEn("Women: 65 lb")
-                .scalingOptionsEn("Lighter barbell, dumbbells")
                 .equipment(Set.of("BARBELL"))
                 .build());
     fran.getMovements()

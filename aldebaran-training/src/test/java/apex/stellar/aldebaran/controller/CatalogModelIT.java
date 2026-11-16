@@ -162,7 +162,7 @@ class CatalogModelIT extends BaseIntegrationTest {
   private WodMovementRequest line(Long movementId, Set<String> equipment, Set<String> techniques) {
     return new WodMovementRequest(
         movementId, 1, "50", null, null, null, null, null, null, null, null, null, null, null, null,
-        equipment, techniques, null, null, null, null);
+        equipment, techniques, null, null);
   }
 
   @Test
@@ -405,7 +405,7 @@ class CatalogModelIT extends BaseIntegrationTest {
     WodMovementRequest updated =
         new WodMovementRequest(
             clean.getId(), 1, "50", null, null, null, null, null, null, null, null, null, null, null,
-            null, Set.of(), Set.of(), null, null, null, null, null, Segment.BUY_IN, 2, TeamSplit.EACH);
+            null, Set.of(), Set.of(), null, null, null, Segment.BUY_IN, 2, TeamSplit.EACH);
     mockMvc
         .perform(as(put("/aldebaran/wods/" + id), 20, COACH).content(objectMapper.writeValueAsString(wodRequest(updated))))
         .andExpect(status().isOk())

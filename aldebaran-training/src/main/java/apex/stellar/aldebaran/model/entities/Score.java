@@ -4,9 +4,8 @@ import apex.stellar.aldebaran.model.enums.AgeGroup;
 import apex.stellar.aldebaran.model.enums.Division;
 import apex.stellar.aldebaran.model.enums.Unit;
 import apex.stellar.aldebaran.validation.ValidScore;
-import jakarta.persistence.CollectionTable;
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
-import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EntityListeners;
 import jakarta.persistence.EnumType;
@@ -17,7 +16,8 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
-import jakarta.persistence.OrderColumn;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.OrderBy;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.DecimalMin;
@@ -31,7 +31,6 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
 import org.hibernate.annotations.BatchSize;
@@ -143,12 +142,22 @@ public class Score {
   @Builder.Default
   private boolean personalRecord = false;
 
-  // --- Comments and Scaling notes---
+  /** Scaled score that follows the WOD's official Scaled version (D141), computed when saved. */
+  @Column(name = "scaled_official", nullable = false)
+  @Builder.Default
+  private boolean scaledOfficial = false;
+
+  /**
+   * Rx+ badge (D140): a Scaled score whose lines are all at least RX and one is harder, computed
+   * when saved. Never ranked.
+   */
+  @Column(name = "rx_plus", nullable = false)
+  @Builder.Default
+  private boolean rxPlus = false;
+
+  // --- Comment ---
   @Column(name = "user_comment", columnDefinition = "TEXT")
   private String userComment;
-
-  @Column(name = "scaling_notes", columnDefinition = "TEXT")
-  private String scalingNotes;
 
   /**
    * Division of the athlete when the score was logged (null: not chosen yet). Copied at logging,
@@ -181,13 +190,20 @@ public class Score {
   private Long sessionBlockId;
 
   /** Sets of a strength block, set by set; the best complete set is the performance. */
-  @ElementCollection(fetch = FetchType.LAZY)
-  @CollectionTable(name = "score_sets", joinColumns = @JoinColumn(name = "score_id"))
-  @OrderColumn(name = "set_index")
+  /** Strength sets, each on its line of the WOD (D143), in order. */
+  @OneToMany(mappedBy = "score", cascade = CascadeType.ALL, orphanRemoval = true)
+  @OrderBy("setIndex")
   @BatchSize(size = 50)
   @Builder.Default
   @ToString.Exclude
   private List<ScoreSet> sets = new ArrayList<>();
+
+  /** Lines done otherwise than prescribed (D142). */
+  @OneToMany(mappedBy = "score", cascade = CascadeType.ALL, orphanRemoval = true)
+  @BatchSize(size = 50)
+  @Builder.Default
+  @ToString.Exclude
+  private List<ScoreLine> lines = new ArrayList<>();
 
   // --- Audit ---
   @CreatedDate
@@ -250,14 +266,25 @@ public class Score {
    * Level at which the WOD was performed. {@code tier} orders the levels when picking a personal
    * record: any Rx+ score beats any Rx score, which beats any scaled one.
    */
-  @Getter
-  @RequiredArgsConstructor
+  /**
+   * Level chosen by the athlete (D140): RX = no change to the prescription, SCALED = any change,
+   * detailed per line.
+   */
   public enum ScalingLevel {
-    RX(2),
-    SCALED(1),
-    ELITE(3),
-    CUSTOM(0);
+    RX,
+    SCALED
+  }
 
-    private final int tier;
+  /**
+   * Rank of the score's level for the athlete's PR (D141): RX, then the official Scaled version,
+   * then any other Scaled (Rx+ included).
+   *
+   * @return 2, 1 or 0.
+   */
+  public int tier() {
+    if (scaling == ScalingLevel.RX) {
+      return 2;
+    }
+    return scaledOfficial ? 1 : 0;
   }
 }

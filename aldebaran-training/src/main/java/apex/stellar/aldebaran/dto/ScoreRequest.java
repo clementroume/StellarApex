@@ -2,6 +2,8 @@ package apex.stellar.aldebaran.dto;
 
 import apex.stellar.aldebaran.model.entities.Score.ScalingLevel;
 import apex.stellar.aldebaran.model.enums.Unit;
+import apex.stellar.aldebaran.model.enums.UnitField;
+import apex.stellar.aldebaran.validation.UnitOf;
 import apex.stellar.aldebaran.validation.ValidScoreRequest;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.DecimalMin;
@@ -34,23 +36,22 @@ public record ScoreRequest(
     // --- Load Metrics ---
     @DecimalMin(value = "0.0", message = "{validation.value.positive}") Double maxWeight,
     @DecimalMin(value = "0.0", message = "{validation.value.positive}") Double totalLoad,
-    Unit weightUnit,
+    @UnitOf(UnitField.MASS) Unit weightUnit,
 
     // --- Distance Metrics ---
     @DecimalMin(value = "0.0", message = "{validation.value.positive}") Double totalDistance,
-    Unit distanceUnit,
+    @UnitOf(UnitField.DISTANCE) Unit distanceUnit,
     // --- Calories ---
     @Min(value = 0, message = "{validation.value.positive}") Integer totalCalories,
 
-    // --- Performance Context ---
+    // --- Performance Context: RX = no change to the prescription, SCALED = changes per line ---
     @NotNull(message = "{validation.scaling.required}") ScalingLevel scaling,
     boolean timeCapped,
     // Optional official tiebreak time (elapsed seconds); ignored when the WOD has no tiebreak
     @Min(value = 1, message = "{validation.value.positive}") Integer tiebreakSeconds,
 
-    // --- Comments and Scaling notes---
+    // --- Comment ---
     @Size(max = 4000, message = "{validation.score.comment.size}") String userComment,
-    @Size(max = 4000, message = "{validation.score.scalingNotes.size}") String scalingNotes,
 
     // --- Gym where it was performed (public or personal WOD only; a gym WOD uses its gym) ---
     Long gymId,
@@ -63,8 +64,11 @@ public record ScoreRequest(
     // by one block of the session; needed when two blocks borrow the same WOD) ---
     Long sessionBlockId,
 
-    // --- Strength sets, set by set (WEIGHT / LOAD / NONE scores), in weightUnit ---
+    // --- Strength sets, set by set, each on its line (WEIGHT / LOAD / NONE scores), in weightUnit
     @Valid @Size(max = 50, message = "{validation.score.sets.size}") List<ScoreSetRequest> sets,
+
+    // --- Lines done otherwise than prescribed (SCALED), or the reps of "max" lines (D142, D147)
+    @Valid @Size(max = 50, message = "{validation.score.lines.size}") List<ScoreLineRequest> lines,
 
     // --- Competition WOD: submit the score to the judges ---
     boolean verificationRequested,
@@ -72,98 +76,46 @@ public record ScoreRequest(
     // --- Team WOD: the other members of the team (same box), who get the same score ---
     @Size(max = 5, message = "{validation.score.team.size}") List<Long> teammateIds) {
 
-  /** Score without session block (the block is derived from the WOD), with team mates. */
+  /** A score without changed lines. */
   @SuppressWarnings("java:S107") // Mirrors the record components
   public ScoreRequest(
       Long userId, LocalDate date, Long wodId, Integer timeMinutes, Integer timeSeconds,
       Integer rounds, Integer reps, Double maxWeight, Double totalLoad, Unit weightUnit,
       Double totalDistance, Unit distanceUnit, Integer totalCalories, ScalingLevel scaling,
-      boolean timeCapped, Integer tiebreakSeconds, String userComment, String scalingNotes,
-      Long gymId, Long sessionLogId, List<ScoreSetRequest> sets, boolean verificationRequested,
+      boolean timeCapped, Integer tiebreakSeconds, String userComment, Long gymId,
+      Long sessionLogId, List<ScoreSetRequest> sets, boolean verificationRequested,
       List<Long> teammateIds) {
     this(
         userId, date, wodId, timeMinutes, timeSeconds, rounds, reps, maxWeight, totalLoad,
         weightUnit, totalDistance, distanceUnit, totalCalories, scaling, timeCapped,
-        tiebreakSeconds, userComment, scalingNotes, gymId, sessionLogId, null, sets,
+        tiebreakSeconds, userComment, gymId, sessionLogId, null, sets, null,
         verificationRequested, teammateIds);
   }
 
-  /** Individual score, possibly in a session, with sets or a verification request. */
+  /** An individual score without changed lines. */
   @SuppressWarnings("java:S107") // Mirrors the record components
   public ScoreRequest(
-      Long userId,
-      LocalDate date,
-      Long wodId,
-      Integer timeMinutes,
-      Integer timeSeconds,
-      Integer rounds,
-      Integer reps,
-      Double maxWeight,
-      Double totalLoad,
-      Unit weightUnit,
-      Double totalDistance,
-      Unit distanceUnit,
-      Integer totalCalories,
-      ScalingLevel scaling,
-      boolean timeCapped,
-      Integer tiebreakSeconds,
-      String userComment,
-      String scalingNotes,
-      Long gymId,
-      Long sessionLogId,
-      List<ScoreSetRequest> sets,
-      boolean verificationRequested) {
+      Long userId, LocalDate date, Long wodId, Integer timeMinutes, Integer timeSeconds,
+      Integer rounds, Integer reps, Double maxWeight, Double totalLoad, Unit weightUnit,
+      Double totalDistance, Unit distanceUnit, Integer totalCalories, ScalingLevel scaling,
+      boolean timeCapped, Integer tiebreakSeconds, String userComment, Long gymId,
+      Long sessionLogId, List<ScoreSetRequest> sets, boolean verificationRequested) {
     this(
         userId, date, wodId, timeMinutes, timeSeconds, rounds, reps, maxWeight, totalLoad,
         weightUnit, totalDistance, distanceUnit, totalCalories, scaling, timeCapped,
-        tiebreakSeconds, userComment, scalingNotes, gymId, sessionLogId, sets,
-        verificationRequested, null);
+        tiebreakSeconds, userComment, gymId, sessionLogId, sets, verificationRequested, null);
   }
 
-  /** Score outside a session, without sets nor verification request. */
+  /** An individual score without sets nor changed lines, outside any session. */
   @SuppressWarnings("java:S107") // Mirrors the record components
   public ScoreRequest(
-      Long userId,
-      LocalDate date,
-      Long wodId,
-      Integer timeMinutes,
-      Integer timeSeconds,
-      Integer rounds,
-      Integer reps,
-      Double maxWeight,
-      Double totalLoad,
-      Unit weightUnit,
-      Double totalDistance,
-      Unit distanceUnit,
-      Integer totalCalories,
-      ScalingLevel scaling,
-      boolean timeCapped,
-      Integer tiebreakSeconds,
-      String userComment,
-      String scalingNotes,
-      Long gymId) {
+      Long userId, LocalDate date, Long wodId, Integer timeMinutes, Integer timeSeconds,
+      Integer rounds, Integer reps, Double maxWeight, Double totalLoad, Unit weightUnit,
+      Double totalDistance, Unit distanceUnit, Integer totalCalories, ScalingLevel scaling,
+      boolean timeCapped, Integer tiebreakSeconds, String userComment, Long gymId) {
     this(
-        userId,
-        date,
-        wodId,
-        timeMinutes,
-        timeSeconds,
-        rounds,
-        reps,
-        maxWeight,
-        totalLoad,
-        weightUnit,
-        totalDistance,
-        distanceUnit,
-        totalCalories,
-        scaling,
-        timeCapped,
-        tiebreakSeconds,
-        userComment,
-        scalingNotes,
-        gymId,
-        null,
-        null,
-        false);
+        userId, date, wodId, timeMinutes, timeSeconds, rounds, reps, maxWeight, totalLoad,
+        weightUnit, totalDistance, distanceUnit, totalCalories, scaling, timeCapped,
+        tiebreakSeconds, userComment, gymId, null, null, false);
   }
 }

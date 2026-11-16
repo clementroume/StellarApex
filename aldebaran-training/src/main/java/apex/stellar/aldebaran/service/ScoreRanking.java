@@ -10,7 +10,7 @@ import org.springframework.data.domain.Sort.Order;
 /**
  * Single ordering of scores, shared by personal records, rank comparison and leaderboards.
  *
- * <p>Best first: the scaling tier ({@code ELITE > RX > SCALED > CUSTOM}), then the performance for
+ * <p>Best first: the level ({@code RX > official Scaled > other Scaled}, D141), then the performance for
  * the WOD's score type. For TIME, every finished time beats every time-capped score, and capped
  * scores are ranked by the reps completed at the cap. Missing values rank last.
  *
@@ -28,7 +28,7 @@ public final class ScoreRanking {
    * @return A comparator placing the best score first.
    */
   public static Comparator<Score> bestFirst(ScoreType type) {
-    return Comparator.<Score>comparingInt(s -> -s.getScaling().getTier())
+    return Comparator.<Score>comparingInt(s -> -s.tier())
         .thenComparing(performanceBestFirst(type));
   }
 

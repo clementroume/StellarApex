@@ -4,6 +4,7 @@ import apex.stellar.aldebaran.exception.InvalidWodMovementException;
 import apex.stellar.aldebaran.model.enums.Equipment;
 import apex.stellar.aldebaran.model.enums.Technique;
 import apex.stellar.aldebaran.model.enums.Unit;
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
 import jakarta.persistence.ElementCollection;
@@ -16,6 +17,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
@@ -210,11 +212,41 @@ public class WodMovement {
   @Column(name = "notes_fr", columnDefinition = "TEXT")
   private String notesFr;
 
-  @Column(name = "scaling_options_en", columnDefinition = "TEXT")
-  private String scalingOptionsEn;
+  /**
+   * This line in the WOD's official Scaled version: at most one (unique in the table), none when
+   * the version keeps it RX. A collection so that it loads lazily, in batches; read it with {@link
+   * #getScaled()}.
+   */
+  @OneToMany(mappedBy = "wodMovement", cascade = CascadeType.ALL, orphanRemoval = true)
+  @BatchSize(size = 50)
+  @Builder.Default
+  @ToString.Exclude
+  private Set<WodScaledLine> scaledLines = new HashSet<>();
 
-  @Column(name = "scaling_options_fr", columnDefinition = "TEXT")
-  private String scalingOptionsFr;
+  /**
+   * The line in the WOD's official Scaled version.
+   *
+   * @return The scaled line, or null when the version keeps this line RX.
+   */
+  public WodScaledLine getScaled() {
+    return scaledLines == null || scaledLines.isEmpty() ? null : scaledLines.iterator().next();
+  }
+
+  /**
+   * Sets (or removes, with null) the line in the WOD's official Scaled version.
+   *
+   * @param scaled The scaled line, or null.
+   */
+  public void setScaled(WodScaledLine scaled) {
+    if (scaledLines == null) {
+      scaledLines = new HashSet<>();
+    }
+    scaledLines.clear();
+    if (scaled != null) {
+      scaled.setWodMovement(this);
+      scaledLines.add(scaled);
+    }
+  }
 
   // --- Business rules ---
 

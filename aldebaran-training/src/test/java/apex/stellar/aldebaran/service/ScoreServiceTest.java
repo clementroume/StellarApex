@@ -61,6 +61,7 @@ class ScoreServiceTest {
   @Mock private MovementRecordService movementRecordService;
   @Mock private BalanceMaintenanceService balanceMaintenance;
   @Mock private ScoreTeamRepository scoreTeamRepository;
+  @Mock private ScoreLineService scoreLineService;
   @InjectMocks private ScoreService scoreService;
 
   private Wod wodProxy;
@@ -90,7 +91,6 @@ class ScoreServiceTest {
             null,
             ScalingLevel.RX,
             false, null,
-            null,
             null, null);
 
     scoreEntityTime =
@@ -168,7 +168,7 @@ class ScoreServiceTest {
   private ScoreRequest timeRequest(Long wodId, boolean capped) {
     return new ScoreRequest(
         null, LocalDate.now(), wodId, 5, 0, null, null, null, null, null, null, null, null,
-        ScalingLevel.RX, capped, null, null, null, null);
+        ScalingLevel.RX, capped, null, null, null);
   }
 
   private Score score(long id, ScalingLevel scaling) {
@@ -208,7 +208,7 @@ class ScoreServiceTest {
     ScoreRequest requestForOther =
         new ScoreRequest(
             targetUser, LocalDate.now(), 1L, 5, 0, null, null, null, null, null, null, null, null,
-            ScalingLevel.RX, false, null, null, null, null);
+            ScalingLevel.RX, false, null, null, null);
     Score scoreForOther =
         Score.builder().id(60L).userId(targetUser).timeSeconds(300).scaling(ScalingLevel.RX).build();
 
@@ -412,7 +412,7 @@ class ScoreServiceTest {
   }
 
   @Test
-  @DisplayName("PR Calculation: any Rx score beats a better scaled one, Rx+ beats Rx")
+  @DisplayName("PR Calculation: RX beats any Scaled, the official Scaled beats a free one")
   void testPrCalculation_ScalingTier() {
     Score scaled = score(10L, ScalingLevel.SCALED);
     scaled.setTimeSeconds(200);
@@ -423,12 +423,14 @@ class ScoreServiceTest {
     assertTrue(rx.isPersonalRecord());
     assertFalse(scaled.isPersonalRecord());
 
-    Score elite = score(12L, ScalingLevel.ELITE);
-    elite.setTimeSeconds(500);
-    when(scoreRepository.findByWodIdAndUserId(1L, userId)).thenReturn(List.of(scaled, rx, elite));
+    Score official = score(12L, ScalingLevel.SCALED);
+    official.setScaledOfficial(true);
+    official.setTimeSeconds(500);
+    official.setRxPlus(false);
+    when(scoreRepository.findByWodIdAndUserId(1L, userId)).thenReturn(List.of(scaled, official));
     scoreService.deleteScore(99L);
-    assertTrue(elite.isPersonalRecord());
-    assertFalse(rx.isPersonalRecord());
+    assertTrue(official.isPersonalRecord());
+    assertFalse(scaled.isPersonalRecord());
   }
 
   @Test
@@ -551,7 +553,7 @@ class ScoreServiceTest {
   private ScoreRequest anyRequest(Long wodId) {
     return new ScoreRequest(
         null, LocalDate.now(), wodId, null, null, null, null, null, null, null, null, null, null,
-        ScalingLevel.RX, false, null, null, null, null);
+        ScalingLevel.RX, false, null, null, null);
   }
 
   private Score saveThroughLog(Wod wod, Score entity) {
@@ -661,7 +663,7 @@ class ScoreServiceTest {
     ScoreRequest otherGym =
         new ScoreRequest(
             null, LocalDate.now(), 20L, 5, 0, null, null, null, null, null, null, null, null,
-            ScalingLevel.RX, false, null, null, null, 300L);
+            ScalingLevel.RX, false, null, null, 300L);
     Score entity = Score.builder().timeSeconds(300).scaling(ScalingLevel.RX).build();
     when(securityService.getCurrentUserId()).thenReturn(userId);
     when(wodRepository.findById(20L)).thenReturn(Optional.of(gymWod));
@@ -676,7 +678,7 @@ class ScoreServiceTest {
     ScoreRequest inMyBox =
         new ScoreRequest(
             null, LocalDate.now(), 21L, 5, 0, null, null, null, null, null, null, null, null,
-            ScalingLevel.RX, false, null, null, null, 300L);
+            ScalingLevel.RX, false, null, null, 300L);
     Score openScore = Score.builder().timeSeconds(300).scaling(ScalingLevel.RX).build();
     when(wodRepository.findById(21L)).thenReturn(Optional.of(open));
     when(scoreMapper.toEntity(inMyBox)).thenReturn(openScore);
@@ -725,9 +727,9 @@ class ScoreServiceTest {
     Score best7 = verified(2L, 7L, 290, ScalingLevel.RX);
     // Athlete 8: verified RX 300 s
     Score only8 = verified(3L, 8L, 300, ScalingLevel.RX);
-    // Athlete 9: best verified score is ELITE, so not on the RX leaderboard
-    Score rx9 = verified(4L, 9L, 250, ScalingLevel.RX);
-    Score elite9 = verified(5L, 9L, 400, ScalingLevel.ELITE);
+    // Athlete 9: only a free Scaled score (never ranked, D141), however fast
+    Score rx9 = verified(4L, 9L, 250, ScalingLevel.SCALED);
+    Score elite9 = verified(5L, 9L, 200, ScalingLevel.SCALED);
     when(scoreRepository.findFilteredByWod(
             eq(1L), eq(true), eq(List.of(300L)), eq(true), isNull(), isNull(), eq(ScoreRepository.NO_SESSION)))
         .thenReturn(List.of(slow7, only8, best7, rx9, elite9));
@@ -777,7 +779,7 @@ class ScoreServiceTest {
     ScoreRequest request =
         new ScoreRequest(
             athleteId, LocalDate.now(), 1L, 5, 0, null, null, null, null, null, null, null, null,
-            ScalingLevel.RX, false, null, null, null, null);
+            ScalingLevel.RX, false, null, null, null);
     Score entity = Score.builder().timeSeconds(300).scaling(ScalingLevel.RX).build();
     when(securityService.getCurrentUserId()).thenReturn(coachId);
     when(wodRepository.findById(1L)).thenReturn(Optional.of(competition));
@@ -835,7 +837,7 @@ class ScoreServiceTest {
     ScoreRequest request =
         new ScoreRequest(
             athleteId, LocalDate.now(), 1L, 5, 0, null, null, null, null, null, null, null, null,
-            ScalingLevel.RX, false, null, null, null, null);
+            ScalingLevel.RX, false, null, null, null);
     Score entity = Score.builder().timeSeconds(300).scaling(ScalingLevel.RX).build();
     when(securityService.getCurrentUserId()).thenReturn(coachId);
     when(antaresClient.getAthleteFacts(athleteId)).thenReturn(new AthleteFacts(Division.MEN, null));
@@ -860,7 +862,7 @@ class ScoreServiceTest {
     ScoreRequest request =
         new ScoreRequest(
             athleteId, LocalDate.now(), 1L, 5, 0, null, null, null, null, null, null, null, null,
-            ScalingLevel.RX, false, null, null, null, null);
+            ScalingLevel.RX, false, null, null, null);
     when(securityService.getCurrentUserId()).thenReturn(2L);
     when(wodRepository.findById(1L)).thenReturn(Optional.of(competition));
     when(scoreMapper.toEntity(request)).thenReturn(Score.builder().build());

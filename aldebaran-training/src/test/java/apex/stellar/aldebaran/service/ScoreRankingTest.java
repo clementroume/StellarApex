@@ -29,14 +29,16 @@ class ScoreRankingTest {
     Score rxCapped = time(2, ScalingLevel.RX, null, 80);
     Score rxCappedMore = time(3, ScalingLevel.RX, null, 90);
     Score rxSlow = time(4, ScalingLevel.RX, 900, null);
-    Score eliteSlow = time(5, ScalingLevel.ELITE, 1000, null);
+    Score officialSlow = time(5, ScalingLevel.SCALED, 1000, null);
+    officialSlow.setScaledOfficial(true);
 
     List<Score> sorted =
-        List.of(scaledFast, rxCapped, rxCappedMore, rxSlow, eliteSlow).stream()
+        List.of(scaledFast, rxCapped, rxCappedMore, rxSlow, officialSlow).stream()
             .sorted(ScoreRanking.bestFirst(ScoreType.TIME))
             .toList();
 
-    assertEquals(List.of(eliteSlow, rxSlow, rxCappedMore, rxCapped, scaledFast), sorted);
+    // RX, then the official Scaled version, then any other Scaled (D141)
+    assertEquals(List.of(rxSlow, rxCappedMore, rxCapped, officialSlow, scaledFast), sorted);
   }
 
   @Test

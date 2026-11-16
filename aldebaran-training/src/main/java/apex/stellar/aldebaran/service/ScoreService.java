@@ -6,7 +6,6 @@ import apex.stellar.aldebaran.dto.ScoreComparisonResponse;
 import apex.stellar.aldebaran.dto.ScoreReferenceData;
 import apex.stellar.aldebaran.dto.ScoreRequest;
 import apex.stellar.aldebaran.dto.ScoreResponse;
-import apex.stellar.aldebaran.dto.ScoreSetRequest;
 import apex.stellar.aldebaran.dto.WodResponse;
 import apex.stellar.aldebaran.exception.AntaresUnavailableException;
 import apex.stellar.aldebaran.exception.InvalidScoreException;
@@ -14,7 +13,6 @@ import apex.stellar.aldebaran.exception.ResourceNotFoundException;
 import apex.stellar.aldebaran.mapper.ScoreMapper;
 import apex.stellar.aldebaran.model.entities.Score.ScalingLevel;
 import apex.stellar.aldebaran.model.entities.Score;
-import apex.stellar.aldebaran.model.entities.ScoreSet;
 import apex.stellar.aldebaran.model.entities.ScoreTeam;
 import apex.stellar.aldebaran.model.entities.Session;
 import apex.stellar.aldebaran.model.entities.SessionBlock;
@@ -23,7 +21,6 @@ import apex.stellar.aldebaran.model.entities.Wod.ScoreType;
 import apex.stellar.aldebaran.model.entities.Wod;
 import apex.stellar.aldebaran.model.enums.AgeGroup;
 import apex.stellar.aldebaran.model.enums.Division;
-import apex.stellar.aldebaran.model.enums.Unit;
 import apex.stellar.aldebaran.repository.ScoreRepository;
 import apex.stellar.aldebaran.repository.ScoreTeamRepository;
 import apex.stellar.aldebaran.repository.SessionBlockRepository;
@@ -74,6 +71,7 @@ public class ScoreService {
   private final ScoreTeamRepository scoreTeamRepository;
   private final MovementRecordService movementRecordService;
   private final BalanceMaintenanceService balanceMaintenance;
+  private final ScoreLineService scoreLineService;
 
   /**
    * Retrieves the current user's scores, optionally only those on a WOD logged in a session (the
@@ -141,7 +139,8 @@ public class ScoreService {
     }
     attachToSession(
         newScore, wod, request.sessionLogId(), request.sessionBlockId(), targetUserId, currentUserId);
-    applySets(newScore, request, wod);
+    scoreLineService.applySets(newScore, request, wod);
+    scoreLineService.applyLines(newScore, request, wod);
     normalizeAndCheck(newScore, wod);
 
     List<Long> teammates = teammatesOf(request, wod, targetUserId, newScore.getGymId());
@@ -235,7 +234,8 @@ public class ScoreService {
                 }
               });
     }
-    applySets(existingScore, request, wod);
+    scoreLineService.applySets(existingScore, request, wod);
+    scoreLineService.applyLines(existingScore, request, wod);
     normalizeAndCheck(existingScore, wod);
     if (existingScore.getTeam() == null
         && existingScore.getDate() != null
@@ -418,7 +418,7 @@ public class ScoreService {
     return divisions.stream().allMatch(d -> d == Division.WOMEN) ? Division.WOMEN : Division.MIXED;
   }
 
-  /** Copies the shared performance of a team score (day, box, result, sets) onto another member's. */
+  /** Copies the shared performance of a team score (day, box, result, level, sets, lines) onto another member's. */
   private static void copyPerformance(Score from, Score to) {
     to.setDate(from.getDate());
     to.setGymId(from.getGymId());
@@ -435,12 +435,10 @@ public class ScoreService {
     to.setScaling(from.getScaling());
     to.setTimeCapped(from.getTimeCapped());
     to.setTiebreakSeconds(from.getTiebreakSeconds());
-    to.getSets().clear();
-    from.getSets()
-        .forEach(
-            set ->
-                to.getSets()
-                    .add(new ScoreSet(set.getReps(), set.getWeightKg(), set.isCompleted())));
+    to.setScaledOfficial(from.isScaledOfficial());
+    to.setRxPlus(from.isRxPlus());
+    // Sets and lines are the team's (D146)
+    ScoreLineService.copy(from, to);
   }
 
   /**
@@ -492,6 +490,7 @@ public class ScoreService {
         .findByWodIdAndScalingAndPersonalRecordTrue(score.getWod().getId(), score.getScaling())
         .stream()
         .filter(other -> !Objects.equals(other.getUserId(), score.getUserId()))
+        .filter(other -> other.tier() == score.tier())
         .filter(other -> ownTeam == null || other.getTeam() == null
             || !ownTeam.equals(other.getTeam().getId()))
         .forEach(
@@ -599,6 +598,8 @@ public class ScoreService {
     List<Score> ranked =
         bestByAthlete.values().stream()
             .filter(s -> s.getScaling() == scaling)
+            // RX, or the official Scaled version: a free Scaled or an Rx+ is never ranked (D141)
+            .filter(s -> s.getScaling() == ScalingLevel.RX || s.isScaledOfficial())
             .sorted(ranking)
             .toList();
 
@@ -688,53 +689,6 @@ public class ScoreService {
         .findFirst()
         .orElseThrow(
             () -> new InvalidScoreException("error.score.session.log.mismatch", requestedBlockId));
-  }
-
-  /**
-   * Replaces the sets of a strength score (D14) and derives its performance from them: the
-   * heaviest complete set for a WEIGHT score (PR and leaderboard unchanged), the sum of reps × load
-   * of the complete sets for a LOAD score.
-   *
-   * @throws InvalidScoreException if the WOD is not scored by load (or NONE), or a load has no
-   *     unit.
-   */
-  private void applySets(Score score, ScoreRequest request, Wod wod) {
-    score.getSets().clear();
-    if (request.sets() == null || request.sets().isEmpty()) {
-      return;
-    }
-    ScoreType type = wod.getScoreType();
-    if (type != ScoreType.WEIGHT && type != ScoreType.LOAD && type != ScoreType.NONE) {
-      throw new InvalidScoreException("error.score.sets.type");
-    }
-    Unit unit = request.weightUnit();
-    boolean anyWeight = request.sets().stream().anyMatch(set -> set.weight() != null);
-    if (anyWeight && unit == null) {
-      throw new InvalidScoreException("error.score.sets.unit.required");
-    }
-    for (ScoreSetRequest set : request.sets()) {
-      score
-          .getSets()
-          .add(
-              ScoreSet.builder()
-                  .reps(set.reps())
-                  .weightKg(set.weight() != null ? unit.toBase(set.weight()) : null)
-                  .completed(set.completed() == null || set.completed())
-                  .build());
-    }
-    if (unit != null) {
-      score.setWeightDisplayUnit(unit);
-    }
-    List<ScoreSet> complete =
-        score.getSets().stream()
-            .filter(set -> set.isCompleted() && set.getReps() > 0 && set.getWeightKg() != null)
-            .toList();
-    if (type == ScoreType.WEIGHT && !complete.isEmpty()) {
-      score.setMaxWeightKg(complete.stream().mapToDouble(ScoreSet::getWeightKg).max().orElseThrow());
-    } else if (type == ScoreType.LOAD && !complete.isEmpty()) {
-      score.setTotalLoadKg(
-          complete.stream().mapToDouble(set -> set.getReps() * set.getWeightKg()).sum());
-    }
   }
 
   /** Retrieves reference data for WOD Score forms. */

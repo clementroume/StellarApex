@@ -1,10 +1,16 @@
 package apex.stellar.aldebaran.mapper;
 
+import apex.stellar.aldebaran.dto.MovementSummaryResponse;
+import apex.stellar.aldebaran.dto.ScoreLineResponse;
 import apex.stellar.aldebaran.dto.ScoreRequest;
 import apex.stellar.aldebaran.dto.ScoreResponse;
 import apex.stellar.aldebaran.dto.ScoreSetResponse;
+import apex.stellar.aldebaran.model.entities.Movement;
 import apex.stellar.aldebaran.model.entities.Score;
+import apex.stellar.aldebaran.model.entities.WodMovement;
 import apex.stellar.aldebaran.model.enums.Unit;
+import apex.stellar.aldebaran.service.CatalogRules;
+import apex.stellar.aldebaran.service.LineVersions;
 import java.util.List;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
@@ -52,6 +58,8 @@ public interface ScoreMapper {
   @Mapping(target = "weightUnit", source = "weightDisplayUnit")
   @Mapping(target = "distanceUnit", source = "distanceDisplayUnit")
   @Mapping(target = "sets", source = "score", qualifiedByName = "mapSetsToDisplay")
+  @Mapping(target = "lines", source = "score", qualifiedByName = "mapLinesToDisplay")
+  @Mapping(target = "roundReps", ignore = true) // Computed by ScoreService
   @Mapping(target = "teamId", source = "team.id")
   @Mapping(target = "teamMemberIds", source = "team.memberIds")
   ScoreResponse toResponse(Score score);
@@ -74,6 +82,9 @@ public interface ScoreMapper {
   @Mapping(target = "division", ignore = true)
   @Mapping(target = "ageGroup", ignore = true)
   @Mapping(target = "sets", ignore = true) // Converted and checked by ScoreService
+  @Mapping(target = "lines", ignore = true) // Converted and checked by ScoreService
+  @Mapping(target = "scaledOfficial", ignore = true) // Computed by ScoreService
+  @Mapping(target = "rxPlus", ignore = true) // Computed by ScoreService
   @Mapping(target = "sessionLogId", ignore = true) // Checked by ScoreService
   @Mapping(target = "sessionBlockId", ignore = true) // Derived by ScoreService
   @Mapping(target = "verificationRequested", ignore = true) // Competition WODs only
@@ -104,6 +115,9 @@ public interface ScoreMapper {
   @Mapping(target = "division", ignore = true)
   @Mapping(target = "ageGroup", ignore = true)
   @Mapping(target = "sets", ignore = true) // Converted and checked by ScoreService
+  @Mapping(target = "lines", ignore = true) // Converted and checked by ScoreService
+  @Mapping(target = "scaledOfficial", ignore = true) // Computed by ScoreService
+  @Mapping(target = "rxPlus", ignore = true) // Computed by ScoreService
   @Mapping(target = "sessionLogId", ignore = true) // Checked by ScoreService
   @Mapping(target = "sessionBlockId", ignore = true) // Derived by ScoreService
   @Mapping(target = "verificationRequested", ignore = true) // Competition WODs only
@@ -293,7 +307,47 @@ public interface ScoreMapper {
                 new ScoreSetResponse(
                     set.getReps(),
                     set.getWeightKg() != null ? unit.fromBase(set.getWeightKg()) : null,
-                    set.isCompleted()))
+                    set.isCompleted(),
+                    set.getWodMovement() != null ? set.getWodMovement().getId() : null))
+        .toList();
+  }
+
+  /**
+   * The lines done otherwise than prescribed, the load in the score's weight unit, each with how
+   * the line done reads.
+   *
+   * @param s The score.
+   * @return The lines.
+   */
+  @SuppressWarnings("unused")
+  @Named("mapLinesToDisplay")
+  default List<ScoreLineResponse> mapLinesToDisplay(Score s) {
+    if (s.getLines() == null) {
+      return List.of();
+    }
+    Unit unit = s.getWeightDisplayUnit() != null ? s.getWeightDisplayUnit() : Unit.KG;
+    return s.getLines().stream()
+        .map(
+            line -> {
+              WodMovement done = LineVersions.done(line.getWodMovement(), line);
+              Movement m = line.getMovement();
+              return new ScoreLineResponse(
+                  line.getWodMovement().getId(),
+                  m == null
+                      ? null
+                      : new MovementSummaryResponse(
+                          m.getId(), m.getName(), m.getNameAbbreviation(), m.getCategory(),
+                          m.getImageUrl(), List.of(), List.of()),
+                  line.getEquipment(),
+                  line.getTechniques(),
+                  line.getRepsScheme(),
+                  line.getWeightKg() != null ? unit.fromBase(line.getWeightKg()) : null,
+                  line.getDistanceMeters(),
+                  line.getCalories(),
+                  line.getHeightMeters(),
+                  line.getDurationSeconds(),
+                  CatalogRules.display(done));
+            })
         .toList();
   }
 }

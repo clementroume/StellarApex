@@ -6,6 +6,8 @@ import apex.stellar.aldebaran.model.entities.Wod.TeamMode;
 import apex.stellar.aldebaran.model.entities.Wod.WodStructure;
 import apex.stellar.aldebaran.model.entities.Wod.WodType;
 import apex.stellar.aldebaran.model.enums.Unit;
+import apex.stellar.aldebaran.model.enums.UnitField;
+import apex.stellar.aldebaran.validation.UnitOf;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Max;
@@ -61,7 +63,7 @@ public record WodRequest(
     @Min(value = 1, message = "{validation.wod.rounds.min}") Integer ladderStep,
     @DecimalMin(value = "0.0", message = "{validation.value.positive}") Double vestWeight,
     @DecimalMin(value = "0.0", message = "{validation.value.positive}") Double vestWeightFemale,
-    Unit vestWeightUnit,
+    @UnitOf(UnitField.MASS) Unit vestWeightUnit,
 
     // --- Sub-category of the format (For Time: Rounds, Scheme, Chipper...), optional ---
     WodStructure structure,

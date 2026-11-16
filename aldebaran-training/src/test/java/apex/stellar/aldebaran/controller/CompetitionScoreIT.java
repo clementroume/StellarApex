@@ -90,14 +90,14 @@ class CompetitionScoreIT extends BaseIntegrationTest {
     return objectMapper.writeValueAsString(
         new ScoreRequest(
             userId, LocalDate.now(), wodId, minutes, 0, null, null, null, null, null, null, null,
-            null, ScalingLevel.RX, false, null, null, null, null));
+            null, ScalingLevel.RX, false, null, null, null));
   }
 
   private String scoreForGym(Long wodId, int minutes) throws Exception {
     return objectMapper.writeValueAsString(
         new ScoreRequest(
             null, LocalDate.now(), wodId, minutes, 0, null, null, null, null, null, null, null,
-            null, ScalingLevel.RX, false, null, null, null, GYM));
+            null, ScalingLevel.RX, false, null, null, GYM));
   }
 
   private Score saveScore(long userId, boolean verified) {
