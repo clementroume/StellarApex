@@ -29,28 +29,6 @@ export function wodTypeLabel(translate: (key: string) => string, wod: {wodType: 
   return wod.category ? `${translate('WOD.CATEGORIES.' + wod.category)} / ${format}` : format;
 }
 
-/** The request that keeps a line's official Scaled version as it is (editing a WOD, lot S). */
-export function scaledRequestOf(scaled: WodScaledLineResponse | null | undefined): WodScaledLineRequest | null {
-  if (!scaled) return null;
-  return {
-    movementId: scaled.movement.id,
-    equipment: scaled.equipment ?? [],
-    techniques: scaled.techniques ?? [],
-    repsScheme: scaled.repsScheme ?? null,
-    weight: scaled.weight ?? null,
-    weightFemale: scaled.weightFemale ?? null,
-    weightUnit: scaled.weightUnit ?? null,
-    distance: scaled.distance ?? null,
-    distanceUnit: scaled.distanceUnit ?? null,
-    calories: scaled.calories ?? null,
-    caloriesFemale: scaled.caloriesFemale ?? null,
-    height: scaled.height ?? null,
-    heightFemale: scaled.heightFemale ?? null,
-    heightUnit: scaled.heightUnit ?? null,
-    durationSeconds: scaled.durationSeconds ?? null
-  };
-}
-
 /** A Scaled line request shaped as a response (a WOD written in a form filled again). */
 export function scaledResponseOf(scaled: WodScaledLineRequest | null | undefined): WodScaledLineResponse | null {
   if (!scaled) return null;

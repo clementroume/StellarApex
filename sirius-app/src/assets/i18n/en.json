@@ -1033,7 +1033,9 @@
       "SCALED": "Scaled",
       "OFFICIAL": "Official Scaled",
       "RX_PLUS": "Rx+",
-      "OWN": "Own Scaled"
+      "OWN": "Own Scaled",
+      "SCALED_OR_RX_PLUS": "Scaled / Rx+",
+      "OWN_OR_RX_PLUS": "Own Scaled / Rx+"
     },
     "DISPLAY": {
       "CAPPED": "CAP + {{reps}} reps",
@@ -1059,7 +1061,10 @@
       "TEAM_HINT": "Your teammates get the same score. An extra athlete mirrors a member.",
       "OWN_HINT": "Own Scaled: in your history, not ranked.",
       "SCALED_HINT": "Say what you changed, line by line. Scaled scores are not ranked.",
-      "OFFICIAL_HINT": "The lines follow the WOD's Scaled version. Changing a line makes it your own Scaled, not ranked."
+      "OFFICIAL_HINT": "The lines follow the WOD's Scaled version. Changing a line makes it your own Scaled, not ranked.",
+      "RX_PLUS_HINT": "Rx+: every line at least RX, one harder. In your history, not ranked.",
+      "OFFICIAL_MATCH": "Your lines follow the official Scaled version: your score will be ranked in Scaled.",
+      "OFFICIAL_MISMATCH": "Your lines no longer follow the official Scaled version: your score will not be ranked."
     },
     "TIEBREAK_SHORT": "TB {{time}}",
     "ENTRY": {

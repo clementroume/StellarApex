@@ -3,6 +3,7 @@ package apex.stellar.aldebaran.service;
 import apex.stellar.aldebaran.client.AntaresClient.AthleteFacts;
 import apex.stellar.aldebaran.client.AntaresClient;
 import apex.stellar.aldebaran.dto.ScoreComparisonResponse;
+import apex.stellar.aldebaran.dto.ScoreLevelResponse;
 import apex.stellar.aldebaran.dto.ScoreReferenceData;
 import apex.stellar.aldebaran.dto.ScoreRequest;
 import apex.stellar.aldebaran.dto.ScoreResponse;
@@ -21,6 +22,7 @@ import apex.stellar.aldebaran.model.entities.Wod.ScoreType;
 import apex.stellar.aldebaran.model.entities.Wod;
 import apex.stellar.aldebaran.model.enums.AgeGroup;
 import apex.stellar.aldebaran.model.enums.Division;
+import apex.stellar.aldebaran.model.enums.Unit;
 import apex.stellar.aldebaran.repository.ScoreRepository;
 import apex.stellar.aldebaran.repository.ScoreTeamRepository;
 import apex.stellar.aldebaran.repository.SessionBlockRepository;
@@ -177,6 +179,36 @@ public class ScoreService {
     }
 
     return scoreMapper.toResponse(savedScore);
+  }
+
+  /**
+   * Tells how a score being written compares with the prescription, without saving anything (lot S): whether it is
+   * as prescribed, Rx+, or the WOD's official Scaled version, as {@code logScore} would decide it. The score form shows
+   * it while the athlete changes lines.
+   *
+   * @param request The score being written (its performance may still be empty).
+   * @return The comparison.
+   * @throws ResourceNotFoundException if the WOD does not exist.
+   * @throws InvalidScoreException if a line is not a line of the WOD.
+   */
+  @Transactional(readOnly = true)
+  public ScoreLevelResponse previewLevel(ScoreRequest request) {
+    Wod wod =
+        wodRepository
+            .findById(request.wodId())
+            .orElseThrow(() -> new ResourceNotFoundException(ERROR_WOD_NOT_FOUND, request.wodId()));
+    Long currentUserId = securityService.getCurrentUserId();
+    Long targetUserId = request.userId() != null ? request.userId() : currentUserId;
+    Score score =
+        Score.builder()
+            .wod(wod)
+            .scaling(request.scaling() != null ? request.scaling() : ScalingLevel.SCALED)
+            .weightDisplayUnit(request.weightUnit() != null ? request.weightUnit() : Unit.KG)
+            .division(athleteOf(targetUserId, currentUserId).division())
+            .build();
+    scoreLineService.applyLines(score, request, wod);
+    ScoreConformity.Result result = scoreLineService.conformity(score, wod);
+    return new ScoreLevelResponse(result.asPrescribed(), result.rxPlus(), result.official());
   }
 
   /**

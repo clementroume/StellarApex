@@ -47,6 +47,7 @@ export class SessionBlockComponent {
   protected readonly store = inject(WodScoresStore);
 
   // --- STATE (SIGNALS & VARIABLES) ---
+  protected readonly levelKey = levelKey;
   readonly block = input.required<SessionBlockResponse>();
   /** Session of the block: history and leaderboard keep that session's scores. */
   readonly sessionId = input<number | null>(null);
@@ -144,6 +145,4 @@ export class SessionBlockComponent {
   changedLines(score: ScoreResponse): string[] {
     return (score.lines ?? []).map(line => formatScoreLine(line, score.weightUnit, this.unitService));
   }
-
-  protected readonly levelKey = levelKey;
 }

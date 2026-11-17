@@ -1,5 +1,7 @@
 package apex.stellar.aldebaran.service;
 
+import apex.stellar.aldebaran.dto.MovementComponentDto;
+import apex.stellar.aldebaran.dto.MovementResponse;
 import apex.stellar.aldebaran.dto.ScoreLineRequest;
 import apex.stellar.aldebaran.dto.ScoreRequest;
 import apex.stellar.aldebaran.dto.ScoreSetRequest;
@@ -12,6 +14,7 @@ import apex.stellar.aldebaran.model.entities.Wod;
 import apex.stellar.aldebaran.model.entities.Wod.ScoreType;
 import apex.stellar.aldebaran.model.entities.WodMovement;
 import apex.stellar.aldebaran.model.enums.Division;
+import apex.stellar.aldebaran.model.enums.Technique;
 import apex.stellar.aldebaran.model.enums.Unit;
 import apex.stellar.aldebaran.repository.MovementRepository;
 import java.util.ArrayList;
@@ -156,8 +159,8 @@ public class ScoreLineService {
     // The variant done is checked like a WOD line, then kept in canonical form
     WodMovement done = LineVersions.done(rx, line);
     if (done != rx) {
-      CatalogRules.normalizeAndCheck(
-          CatalogRules.Spec.of(movementService.getMovement(req.movementId())), done, List.of());
+      MovementResponse movement = movementService.getMovement(req.movementId());
+      CatalogRules.normalizeAndCheck(CatalogRules.Spec.of(movement), done, componentsOf(done, movement));
       line.setEquipment(new HashSet<>(done.getEquipment()));
       line.setTechniques(new HashSet<>(done.getTechniques()));
     }
@@ -175,19 +178,30 @@ public class ScoreLineService {
    * @throws InvalidScoreException if an RX score changes a line.
    */
   public void applyConformity(Score score, Wod wod) {
-    Division division = score.getDivision() == Division.MIXED ? null : score.getDivision();
-    ScoreConformity.Result result =
-        ScoreConformity.of(
-            sortedLines(wod),
-            score.getLines(),
-            new ScoreConformity.Context(
-                division, score.getWeightDisplayUnit(), UnitEquivalence.exact(wod), true));
+    ScoreConformity.Result result = conformity(score, wod);
     boolean scaled = score.getScaling() == ScalingLevel.SCALED;
     if (!scaled && !result.asPrescribed()) {
       throw new InvalidScoreException("error.score.rx.changed");
     }
     score.setRxPlus(scaled && result.rxPlus());
     score.setScaledOfficial(scaled && result.official());
+  }
+
+  /**
+   * How a score's lines compare with the WOD's RX lines and its official Scaled version, with the box equivalences of
+   * the athlete's unit (D149).
+   *
+   * @param score The score, its lines, division and weight unit set.
+   * @param wod The WOD, with its lines.
+   * @return The comparison.
+   */
+  public ScoreConformity.Result conformity(Score score, Wod wod) {
+    Division division = score.getDivision() == Division.MIXED ? null : score.getDivision();
+    return ScoreConformity.of(
+        sortedLines(wod),
+        score.getLines(),
+        new ScoreConformity.Context(
+            division, score.getWeightDisplayUnit(), UnitEquivalence.exact(wod), true));
   }
 
   private static List<WodMovement> sortedLines(Wod wod) {
@@ -322,6 +336,20 @@ public class ScoreLineService {
     }
     score.getLines().retainAll(kept);
     kept.stream().filter(l -> !score.getLines().contains(l)).forEach(score.getLines()::add);
+  }
+
+  /**
+   * Allowed techniques of each component of a chained movement, when the line keeps per-component techniques (the
+   * RX variant of a chain, e.g. a lighter Power Clean and Split Jerk), as the WOD form checks them.
+   */
+  private List<Set<Technique>> componentsOf(WodMovement line, MovementResponse movement) {
+    if (line.getComponentTechniques().isEmpty() || movement.components() == null) {
+      return List.of();
+    }
+    return movement.components().stream()
+        .sorted(Comparator.comparing(MovementComponentDto::componentOrder))
+        .map(c -> movementService.getMovement(c.movementId()).techniques())
+        .toList();
   }
 
   private static Double toMeters(Double value, Unit unit, Unit lineUnit) {

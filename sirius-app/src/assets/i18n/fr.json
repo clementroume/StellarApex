@@ -1033,7 +1033,9 @@
       "SCALED": "Scaled",
       "OFFICIAL": "Scaled officiel",
       "RX_PLUS": "Rx+",
-      "OWN": "Scaled perso"
+      "OWN": "Scaled perso",
+      "SCALED_OR_RX_PLUS": "Scaled / Rx+",
+      "OWN_OR_RX_PLUS": "Scaled perso / Rx+"
     },
     "DISPLAY": {
       "CAPPED": "CAP + {{reps}} rép.",
@@ -1059,7 +1061,10 @@
       "TEAM_HINT": "Tes coéquipiers reçoivent le même score. Un athlète en plus fait le miroir d'un membre.",
       "OWN_HINT": "Scaled perso : visible dans ton historique, pas classé.",
       "SCALED_HINT": "Indique ce que tu as changé ligne par ligne. Les scaled ne sont pas classés.",
-      "OFFICIAL_HINT": "Les lignes suivent la version Scaled du WOD. Modifier une ligne en fait un Scaled perso, non classé."
+      "OFFICIAL_HINT": "Les lignes suivent la version Scaled du WOD. Modifier une ligne en fait un Scaled perso, non classé.",
+      "RX_PLUS_HINT": "Rx+ : toutes tes lignes sont au moins RX, une est plus dure. Visible dans ton historique, pas classé.",
+      "OFFICIAL_MATCH": "Tes lignes suivent la version Scaled officielle : ton score sera classé en Scaled.",
+      "OFFICIAL_MISMATCH": "Tes lignes ne suivent plus la version Scaled officielle : ton score ne sera pas classé."
     },
     "TIEBREAK_SHORT": "TB {{time}}",
     "ENTRY": {

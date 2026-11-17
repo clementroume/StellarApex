@@ -55,7 +55,9 @@ describe('ScoreFormComponent', () => {
         {provide: MovementService, useValue: {getUsualNames: vi.fn().mockName('MovementService.getUsualNames').mockReturnValue(of([
           {movementId: 50, movementName: 'Rowing', category: 'CARDIO', nameEn: 'Row', techniques: [], equipment: []},
           {movementId: 60, movementName: 'Ring Row', category: 'PULLING', nameEn: 'Ring Row', techniques: [], equipment: []}]))}},
-        {provide: ScoreService, useValue: {getReferenceData: vi.fn().mockName('ScoreService.getReferenceData').mockReturnValue(of({
+        {provide: ScoreService, useValue: {
+          previewLevel: vi.fn().mockName('ScoreService.previewLevel').mockReturnValue(of({asPrescribed: false, rxPlus: true, official: false})),
+          getReferenceData: vi.fn().mockName('ScoreService.getReferenceData').mockReturnValue(of({
           scalingLevels: ['RX', 'SCALED'],
           cardio: [{movementName: 'Running', meters: 1}, {movementName: 'Rowing', meters: 1.25, calories: 0.1}]}))}},
         {
@@ -390,6 +392,9 @@ describe('ScoreFormComponent', () => {
     component.lineControls()[1].patchValue({reps: '61'});
     fixture.detectChanges();
     expect(component.form.controls.reps.value).toBe(143);
+    // The Save button follows the total (it is not left disabled)
+    expect(component.valueMissing()).toBe(false);
+    expect((fixture.nativeElement.querySelector('button[type=submit]') as HTMLButtonElement).disabled).toBe(false);
     component.onSubmit();
     const sent = store.save.mock.lastCall[0];
     expect(sent).toMatchObject({scaling: 'RX', reps: 143});
@@ -412,5 +417,52 @@ describe('ScoreFormComponent', () => {
     expect(component.setIndexes(lines[0])).toEqual([0, 1]);
     component.onSubmit();
     expect(store.save.mock.lastCall[0].sets.map((s: any) => s.wodMovementId)).toEqual([1, 1, 2]);
+  });
+
+  it('should keep a target height written in feet in feet, never as centimeters', () => {
+    init('REPS', 'new', {movements: [
+      {id: 1, orderIndex: 1, repsScheme: '150', height: 10, heightFemale: 9, heightUnit: 'FEET', equipment: [], techniques: [],
+        movement: {id: 9, name: 'Wall-Ball Shot'}}]});
+    component.setLevel('SCALED');
+    component.changeLine(0);
+    expect(component.lineControls()[0].controls.height.value).toBe(10);
+    component.lineControls()[0].patchValue({height: 9});
+    component.form.patchValue({reps: 150});
+    component.onSubmit();
+    expect(store.save.mock.lastCall[0].lines[0]).toMatchObject({height: 9, heightUnit: 'FEET'});
+  });
+
+  it('should tell Rx+ while the lines change, as Aldebaran decides it (never on RX)', () => {
+    vi.useFakeTimers();
+    try {
+      init('TIME', 'new', fran);
+      // "Own Scaled / Rx+" until Aldebaran answers
+      expect([...fixture.nativeElement.querySelectorAll('#score-level button')].map((b: any) => b.textContent.trim()))
+        .toContain('SCORE.SCALING.OWN_OR_RX_PLUS');
+      const scoreService = TestBed.inject(ScoreService) as any;
+      component.setLevel('SCALED');
+      component.changeLine(0);
+      component.lineControls()[0].patchValue({load: 50});
+      fixture.detectChanges();
+      vi.advanceTimersByTime(450);
+      fixture.detectChanges();
+
+      expect(scoreService.previewLevel).toHaveBeenLastCalledWith(expect.objectContaining({
+        wodId: 7, scaling: 'SCALED', timeCapped: false, verificationRequested: false,
+        lines: [expect.objectContaining({wodMovementId: 10, weight: 50})]}));
+      expect(fixture.nativeElement.querySelector('#rx-plus-badge')).not.toBeNull();
+      // The Scaled level says what the lines make
+      const levels = () => [...fixture.nativeElement.querySelectorAll('#score-level button')].map((b: any) => b.textContent.trim());
+      expect(levels()).toContain('SCORE.SCALING.RX_PLUS');
+      expect(fixture.nativeElement.querySelector('#level-preview').textContent).toContain('SCORE.MESSAGES.RX_PLUS_HINT');
+
+      component.setLevel('RX');
+      fixture.detectChanges();
+      vi.advanceTimersByTime(450);
+      fixture.detectChanges();
+      expect(fixture.nativeElement.querySelector('#rx-plus-badge')).toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

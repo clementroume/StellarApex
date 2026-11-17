@@ -167,6 +167,13 @@ export interface ScoreResponse {
   capabilities?: ScoreCapabilities;
 }
 
+/** How a score being written compares with the prescription (Aldebaran decides, nothing saved). */
+export interface ScoreLevelResponse {
+  asPrescribed: boolean;
+  rxPlus: boolean;
+  official: boolean;
+}
+
 export interface ScoreComparisonResponse {
   // --- Score Comparison Data ---
   rank: number;

@@ -204,6 +204,43 @@ class ScoreEntryIT extends BaseIntegrationTest {
   }
 
   @Test
+  @DisplayName("Level preview: tells Rx+ or the official version before saving, and saves nothing")
+  void levelPreview() throws Exception {
+    JsonNode wod = fran();
+    long id = wod.get("id").asLong();
+    long thrusterLine = wod.get("movements").get(0).get("id").asLong();
+    long pullLine = wod.get("movements").get(1).get("id").asLong();
+    String heavy =
+        "{\"wodMovementId\": %d, \"movementId\": %d, \"weight\": 50}".formatted(thrusterLine, thruster.getId());
+    String light =
+        "{\"wodMovementId\": %d, \"movementId\": %d, \"weight\": 30}".formatted(thrusterLine, thruster.getId());
+    String ringRows = "{\"wodMovementId\": %d, \"movementId\": %d}".formatted(pullLine, ringRow.getId());
+
+    mockMvc
+        .perform(
+            as(post("/aldebaran/scores/level-preview"), 30L, MEMBER, "MEN")
+                .content(time(id, "SCALED", 0, heavy)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.rxPlus").value(true))
+        .andExpect(jsonPath("$.asPrescribed").value(false))
+        .andExpect(jsonPath("$.official").value(false));
+    mockMvc
+        .perform(
+            as(post("/aldebaran/scores/level-preview"), 30L, MEMBER, "MEN")
+                .content(time(id, "SCALED", 0, light + "," + ringRows)))
+        .andExpect(jsonPath("$.official").value(true))
+        .andExpect(jsonPath("$.rxPlus").value(false));
+    mockMvc
+        .perform(
+            as(post("/aldebaran/scores/level-preview"), 30L, MEMBER, "MEN").content(time(id, "RX", 0, "")))
+        .andExpect(jsonPath("$.asPrescribed").value(true));
+    // Nothing saved
+    mockMvc
+        .perform(as(get("/aldebaran/scores/me"), 30L, MEMBER, "MEN"))
+        .andExpect(jsonPath("$.content", hasSize(0)));
+  }
+
+  @Test
   @DisplayName("CrossFit Total: sets per line, LOAD = sum of the bests, each lift and a substitute fed")
   void crossFitTotal() throws Exception {
     String body =

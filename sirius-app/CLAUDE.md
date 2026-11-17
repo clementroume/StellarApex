@@ -126,7 +126,8 @@ the dev proxy targets the local Traefik `https://localhost` with `Host: stellar.
 - Score entry (lot S): the form has a level RX / official Scaled (when the WOD has one, lines prefilled) / own Scaled, one
   row per WOD line (`score-form/score-lines.utils.ts`: counted "max" lines, set lines, cardio substitution from
   `ScoreReferenceData.cardio`); a changed line sends `ScoreRequest.lines` (only what differs), strength sets name their
-  line (`sets[].wodMovementId`). Aldebaran decides RX / Rx+ / official (`levelKey`, `isRanked`, `formatScoreLine` in
+  line (`sets[].wodMovementId`). Aldebaran decides RX / Rx+ / official, told while typing by `ScoreService.previewLevel`
+  (debounced, nothing saved; send the primitives `timeCapped` / `verificationRequested`) and shown with `levelKey`, `isRanked`, `formatScoreLine` in
   `score.utils.ts`); the leaderboard has a Scaled tab only for a WOD with an official version. WOD forms write the
   official Scaled version with `features/wods/scaled-line` (switch + block per line); the whiteboard switches RX / Scaled.
   Prescribed loads and box heights are shown from `WodMovementResponse.equivalents` (`UnitService.lineLoadPair`,

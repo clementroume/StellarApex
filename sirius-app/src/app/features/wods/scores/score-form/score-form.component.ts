@@ -1,11 +1,13 @@
 import {ChangeDetectionStrategy, Component, computed, DestroyRef, DOCUMENT, effect, inject, signal, untracked} from '@angular/core';
-import {toSignal} from '@angular/core/rxjs-interop';
+import {takeUntilDestroyed, toObservable, toSignal} from '@angular/core/rxjs-interop';
+import {catchError, debounceTime, distinctUntilChanged, of, switchMap} from 'rxjs';
 import {FormArray, FormBuilder, FormControl, FormGroup, ReactiveFormsModule} from '@angular/forms';
 import {TranslatePipe, TranslateService} from '@ngx-translate/core';
 import {NgIconComponent} from '@ng-icons/core';
 import {
   CardioEquivalent,
   ScoreLineRequest,
+  ScoreLevelResponse,
   ScoreRequest,
   ScoreResponse,
   ScoreSet
@@ -23,11 +25,12 @@ import {WodScoresStore} from '../wod-scores.store';
 import {splitRounds} from '../score.utils';
 import {formatTimeCapShort, localizedText} from '../../wod.utils';
 import {boardName} from '../../movement-board-name';
-import {cardioQuantity, countedLines, hasOfficialScaled, isMaxLine, setLines, sortedLines} from './score-lines.utils';
+import {cardioQuantity, countedLines, hasOfficialScaled, setLines, sortedLines} from './score-lines.utils';
 import {HlmSpinner} from '@spartan-ng/helm/spinner';
 import {NativeSelectDirective} from '../../../../shared/component/native-select/native-select.directive';
 import {MovementComboboxComponent} from '../../../../shared/component/movement-combobox/movement-combobox.component';
 import {HlmButton} from '@spartan-ng/helm/button';
+import {HlmBadge} from '@spartan-ng/helm/badge';
 import {HlmInput} from '@spartan-ng/helm/input';
 import {HlmTextarea} from '@spartan-ng/helm/textarea';
 import {CdkTrapFocus} from '@angular/cdk/a11y';
@@ -86,7 +89,7 @@ function today(): string {
   selector: 'app-score-form',
   standalone: true,
   imports: [CdkTrapFocus, HlmTextarea, HlmInput, HlmButton, NativeSelectDirective, HlmSpinner, ReactiveFormsModule, TranslatePipe,
-    NgIconComponent, MovementComboboxComponent],
+    NgIconComponent, MovementComboboxComponent, HlmBadge],
   templateUrl: './score-form.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
@@ -116,6 +119,11 @@ export class ScoreFormComponent {
   readonly usualNames = signal<UsualNameOption[]>([]);
   /** Box tables between cardio machines (D151), to propose a substitution's quantity. */
   private readonly cardio = signal<CardioEquivalent[]>([]);
+  /**
+   * How the lines being written compare with the prescription, as Aldebaran decides it (nothing saved): the Rx+ badge,
+   * and whether they follow the official Scaled version.
+   */
+  readonly preview = signal<ScoreLevelResponse | null>(null);
 
   readonly form = this.fb.nonNullable.group({
     date: [today()],
@@ -263,6 +271,36 @@ export class ScoreFormComponent {
     return this.store.wod()?.gymId ?? (this.gymChoices().some(c => c.gymId === chosen) ? chosen : null);
   });
 
+  /**
+   * Label of the Scaled level: "Scaled / Rx+" until Aldebaran tells which one the changed lines make, then "Rx+" or
+   * "Scaled" ("Scaled perso" when the WOD has an official version).
+   */
+  readonly scaledLabel = computed(() => {
+    const own = this.hasOfficial() ? 'SCORE.SCALING.OWN' : 'SCORE.SCALING.SCALED';
+    const preview = this.preview();
+    if (this.level() !== 'SCALED' || !preview) return own + '_OR_RX_PLUS';
+    return preview.rxPlus ? 'SCORE.SCALING.RX_PLUS' : own;
+  });
+
+  /** The request of the level preview: a Scaled with changed lines, else nothing to ask. */
+  private readonly previewRequest = computed<ScoreRequest | null>(() => {
+    this.formValue();
+    const wod = this.store.wod();
+    if (!wod || this.level() === 'RX') return null;
+    const lines = this.linesRequest().filter(l => !this.countedIds().has(l.wodMovementId));
+    if (lines.length === 0) return null;
+    return {
+      wodId: wod.id,
+      date: this.form.controls.date.value,
+      scaling: 'SCALED',
+      timeCapped: false,
+      verificationRequested: false,
+      weightUnit: this.unitService.massUnit(),
+      lines,
+      userId: this.canChooseAthlete() ? this.form.controls.athleteId.value ?? undefined : undefined
+    };
+  });
+
   /** The tiebreak is optional and only offered when it applies: never for a finished For Time. */
   readonly showTiebreak = computed(() =>
     !!this.tiebreakRule() && (this.scoreType() !== 'TIME' || this.timeCapped()));
@@ -297,10 +335,20 @@ export class ScoreFormComponent {
       const gymId = this.teamGymId();
       if (this.isTeam() && gymId != null) untracked(() => this.loadGymMates(gymId));
     });
+    // Rx+ / official version told while the lines change (debounced, the latest answer only)
+    toObservable(this.previewRequest).pipe(
+      debounceTime(400),
+      distinctUntilChanged((a, b) => JSON.stringify(a) === JSON.stringify(b)),
+      switchMap(request => request ? this.scoreService.previewLevel(request).pipe(catchError(() => of(null))) : of(null)),
+      takeUntilDestroyed()
+    ).subscribe(preview => this.preview.set(preview));
     effect(() => {
       // The counted "max" lines make the total
       const total = this.countedTotal();
-      if (total != null) untracked(() => this.form.controls.reps.setValue(total, {emitEvent: false}));
+      // Emitted, so that the required value (Save button) follows; the total is stable on the second pass
+      if (total != null && total !== untracked(() => this.form.controls.reps.value)) {
+        untracked(() => this.form.controls.reps.setValue(total));
+      }
     });
   }
 
@@ -441,6 +489,13 @@ export class ScoreFormComponent {
     return loads.length ? Math.max(...loads) : null;
   }
 
+  /** Unit label of a line's height as typed: cm / in, or the line's own unit (ft, m). */
+  heightLabelOf(line: WodMovementResponse): string {
+    const unit = line.heightUnit;
+    if (unit === 'CENTIMETERS' || unit === 'INCHES' || !unit) return this.heightUnitLabel();
+    return unit === 'FEET' ? 'ft' : 'm';
+  }
+
   /** Board name of a line: "Thrusters", "Ring Rows". */
   lineName(line: WodMovementResponse): string {
     const reps = line.repsScheme?.trim();
@@ -550,12 +605,24 @@ export class ScoreFormComponent {
     });
   }
 
-  /** A box or target height in the user's unit (cm or in), as boxes have them. */
+  /**
+   * A box or target height as typed: in the user's unit (cm or in, as boxes have them) for a height written in cm or
+   * inches, in the line's own unit otherwise (a wall ball target in feet stays in feet).
+   */
   private heightFor(line: Parameters<UnitService['lineHeightPair']>[0]): number | null {
+    const women = this.division() === 'WOMEN';
+    if (!isBoxUnit(line.heightUnit)) {
+      return (women ? line.heightFemale ?? line.height : line.height ?? line.heightFemale) ?? null;
+    }
     const pair = this.unitService.lineHeightPair(line, null);
     if (!pair) return null;
-    const women = this.division() === 'WOMEN' && pair.values.length === 2;
-    return Number(String(pair.values[women ? 1 : 0]).replace(',', '.'));
+    return Number(String(pair.values[women && pair.values.length === 2 ? 1 : 0]).replace(',', '.'));
+  }
+
+  /** Unit of a height typed for a line: the user's for cm / inches, the line's own otherwise. */
+  private heightUnitOf(line: WodMovementResponse): string {
+    if (!isBoxUnit(line.heightUnit)) return line.heightUnit ?? 'METERS';
+    return this.unitService.unitSystem() === 'METRIC' ? 'CENTIMETERS' : 'INCHES';
   }
 
   private fill(score: ScoreResponse): void {
@@ -654,7 +721,7 @@ export class ScoreFormComponent {
         distanceUnit: differs(v.distance, prescribed.distance) ? v.distanceUnit ?? 'METERS' : null,
         calories: differs(v.calories, prescribed.calories) ? v.calories : null,
         height: differs(v.height, prescribed.height) ? v.height : null,
-        heightUnit: differs(v.height, prescribed.height) ? (this.unitService.unitSystem() === 'METRIC' ? 'CENTIMETERS' : 'INCHES') : null,
+        heightUnit: differs(v.height, prescribed.height) ? this.heightUnitOf(rx) : null,
         durationSeconds: differs(v.duration, prescribed.duration) ? v.duration : null
       });
     });
@@ -714,5 +781,9 @@ export class ScoreFormComponent {
     }
   }
 
-  protected readonly isMaxLine = isMaxLine;
+}
+
+/** Heights shown as boxes have them (cm / inches); other units are typed as written. */
+function isBoxUnit(unit: string | null | undefined): boolean {
+  return unit === 'CENTIMETERS' || unit === 'INCHES';
 }

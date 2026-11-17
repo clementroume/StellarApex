@@ -5,6 +5,9 @@
     <div class="flex items-center justify-between gap-2">
       <h3 id="score-form-title" class="text-lg font-bold">
         {{ (isEdit() ? 'SCORE.TITLES.EDIT' : 'SCORE.TITLES.LOG') | translate }}
+        @if (level() !== 'RX' && preview()?.rxPlus) {
+          <span hlmBadge id="rx-plus-badge" class="ml-1 align-middle bg-success/15 text-success">{{ 'SCORE.SCALING.RX_PLUS' | translate }}</span>
+        }
       </h3>
       <button type="button" hlmBtn variant="ghost" size="sm" (click)="store.close()"
               [attr.aria-label]="'GLOBAL.CLOSE' | translate">
@@ -30,8 +33,17 @@
         }
         <button type="button" hlmBtn variant="outline" class="flex-1 h-11 md:h-10 aria-pressed:bg-primary aria-pressed:text-primary-foreground aria-pressed:font-semibold"
                 [attr.aria-pressed]="level() === 'SCALED'" (click)="setLevel('SCALED')">
-          {{ (hasOfficial() ? 'SCORE.SCALING.OWN' : 'SCORE.SCALING.SCALED') | translate }}</button>
+          {{ scaledLabel() | translate }}</button>
       </div>
+      @if (level() !== 'RX' && preview(); as p) {
+        @if (p.rxPlus) {
+          <span id="level-preview" class="text-xs text-success">{{ 'SCORE.MESSAGES.RX_PLUS_HINT' | translate }}</span>
+        } @else if (p.official) {
+          <span id="level-preview" class="text-xs text-success">{{ 'SCORE.MESSAGES.OFFICIAL_MATCH' | translate }}</span>
+        } @else if (level() === 'OFFICIAL') {
+          <span id="level-preview" class="text-xs text-warning">{{ 'SCORE.MESSAGES.OFFICIAL_MISMATCH' | translate }}</span>
+        }
+      }
       @if (level() === 'SCALED') {
         <span class="text-xs text-muted-foreground">{{ (hasOfficial() ? 'SCORE.MESSAGES.OWN_HINT' : 'SCORE.MESSAGES.SCALED_HINT') | translate }}</span>
       } @else if (level() === 'OFFICIAL') {
@@ -264,7 +276,7 @@
                 }
                 @if (line.height != null || line.heightFemale != null) {
                   <label class="flex flex-col gap-1">
-                    <span class="text-xs text-muted-foreground">{{ 'SCORE.LINES.HEIGHT' | translate }} ({{ heightUnitLabel() }})</span>
+                    <span class="text-xs text-muted-foreground">{{ 'SCORE.LINES.HEIGHT' | translate }} ({{ heightLabelOf(line) }})</span>
                     <input type="number" min="0" inputmode="decimal" formControlName="height" hlmInput class="h-10"/>
                   </label>
                 }

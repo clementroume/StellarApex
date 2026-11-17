@@ -58,7 +58,8 @@ resolving IDs from the `antares` schema with `JdbcTemplate`, then calls `demo/De
   (a complex: its first line), `wod_scaled_lines` = the WOD's official Scaled version (`WodMovement.getScaled()`).
   `service/ScoreLineService` builds them (rows updated in place: unique per score and index / line) and derives
   `LOAD` = sum of each line's best set; `ScoreConformity` (pure) refuses a changed RX (400), sets `rxPlus` (never
-  ranked) and `scaledOfficial` (Scaled leaderboard); `LineVersions` (pure) builds the scaled line and the line as
+  ranked) and `scaledOfficial` (Scaled leaderboard), also answered without saving by `POST /scores/level-preview`
+  (`ScoreService.previewLevel`, readers of the WOD); `LineVersions` (pure) builds the scaled line and the line as
   done, read by the display, records (`LiftVariant.lifts`: every strength line outside a complex, the variant done)
   and the weekly balance (`Workout.lines()` / `maxCounts()`). `UnitEquivalence` (pure, D149) = box values between
   kg / lb and in / cm (exact in competitions), sent as `WodMovementResponse.equivalents` and used for RX.

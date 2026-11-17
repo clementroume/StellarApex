@@ -88,7 +88,7 @@ export interface ScaledMeasures {
   template: `
     <div [formGroup]="group()" class="scaled-line flex flex-col gap-2 border-l-4 border-secondary bg-secondary/10 rounded-r-xl px-3 py-2">
       <div class="flex items-center justify-between gap-2 text-sm">
-        <span><span class="font-semibold text-secondary">Scaled</span>
+        <span><span class="font-semibold text-secondary">{{ 'SCORE.SCALING.SCALED' | translate }}</span>
           @if (!group().controls.changed.value) { · {{ 'WOD.SCALED.AS_RX' | translate }} }</span>
         <button type="button" class="text-sm text-primary hover:underline" (click)="toggle()">
           {{ (group().controls.changed.value ? 'WOD.SCALED.AS_RX' : 'WOD.SCALED.CHANGE') | translate }}</button>
