@@ -6,12 +6,14 @@
       {{ title }}
     </h4>
     <div class="flex flex-wrap items-center gap-2">
-      <div class="field-group" role="group" [attr.aria-label]="'SCORE.FIELDS.SCALING' | translate">
-        @for (level of scalingLevels; track level) {
-          <button type="button" hlmBtn variant="outline" size="sm" class="aria-pressed:bg-muted aria-pressed:font-semibold" [attr.aria-pressed]="scaling() === level"
-                  (click)="onScalingChange(level)">{{ 'SCORE.SCALING.' + level | translate }}</button>
-        }
-      </div>
+      @if (scalingLevels().length > 1) {
+        <div class="field-group" role="group" [attr.aria-label]="'SCORE.FIELDS.SCALING' | translate">
+          @for (level of scalingLevels(); track level) {
+            <button type="button" hlmBtn variant="outline" size="sm" class="aria-pressed:bg-muted aria-pressed:font-semibold" [attr.aria-pressed]="scaling() === level"
+                    (click)="onScalingChange(level)">{{ (level === 'RX' ? 'SCORE.SCALING.RX' : 'SCORE.SCALING.OFFICIAL') | translate }}</button>
+          }
+        </div>
+      }
       <div class="field-group" role="group" [attr.aria-label]="'DIVISION.LABEL' | translate" data-slot="division-filter">
         <button type="button" hlmBtn variant="outline" size="sm" class="aria-pressed:bg-muted aria-pressed:font-semibold"
                 [attr.aria-pressed]="division() === null" (click)="onDivisionChange(null)">{{ 'DIVISION.ALL' | translate }}</button>

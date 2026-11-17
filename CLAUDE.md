@@ -80,6 +80,11 @@ and a virtual programming); there is no "active gym" in requests.
   `WOD_WRITE` on that gym; personal WOD (`gymId = null`): author only. Admin: everything.
 - WOD with logged scores is locked (409 on update/delete). Ownership (`gymId`, `authorId`) is ignored
   on update (`WodMapper.updateEntity`); `isPublic` stays editable.
+- Score entry (lot S, D140-D155): level RX (no change, 400 otherwise) or SCALED with `score_lines` (lines done otherwise:
+  variant, reps, real load); `scaledOfficial` (follows the WOD's official Scaled version `wod_scaled_lines`, the only
+  Scaled leaderboard) and the `rxPlus` badge are computed by Aldebaran (`ScoreConformity`); sets name their line; a LOAD
+  score = sum of each line's best set. Units: performances stored in kg / m / s, prescriptions in their unit of origin;
+  box equivalences and real implement sizes live in Aldebaran (`UnitEquivalence`), Sirius only shows them.
 - Scores: self-logging on any readable WOD; a score records the gym where it was performed
   (`score.gymId`: the WOD's gym, else one of the athlete's gyms); correcting/deleting others' scores:
   `SCORE_VERIFY` on that gym. Leaderboards return user IDs; names come from Antares
@@ -130,9 +135,8 @@ and a virtual programming); there is no "active gym" in requests.
   judges. `SessionResponse.capabilities {canModify, canDelete, contentVisible, canLog}`, per block
   `SessionBlockResponse.capabilities {canModify, canDelete, frozen}`.
 - Records (lot C, D47-D62): Aldebaran `movement_records` = best load per athlete, movement, variant key
-  (equipment + techniques, implied equipment removed) and reps, rebuilt on every score write from the
-  individual single-movement lift WODs (`WEIGHT` / `LOAD` / `NONE` with sets): every complete set
-  feeds its N RM, a score without sets on an "N RM" test (`wods.rep_max`) feeds N; every scaling and
+  (equipment + techniques, implied equipment removed) and reps, rebuilt on every score write from every strength line of the individual
+  WODs scored `WEIGHT` / `LOAD` / `NONE` (outside complexes, the variant done; lot S, D144): every complete set feeds its N RM, a score without sets on an "N RM" test (`wods.rep_max`) feeds N; every scaling and
   unverified scores count, team scores never. `GET /records/me` (with Epley 1RM estimate, 2-10 reps,
   never stored; `estimates` of the usual 1/2/3/5/10 RM without a record, `previousWeightKg` per record),
   `GET /records/me/progress` (successive bests), `GET /records/lifts` (public N RM tests, competition

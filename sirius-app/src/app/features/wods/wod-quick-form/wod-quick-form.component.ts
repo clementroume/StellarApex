@@ -7,6 +7,7 @@ import {HlmButton} from '@spartan-ng/helm/button';
 import {HlmInput} from '@spartan-ng/helm/input';
 import {HlmTextarea} from '@spartan-ng/helm/textarea';
 import {MovementService} from '../../../api/aldebaran/services/movement.service';
+import {WodService} from '../../../api/aldebaran/services/wod.service';
 import {MovementReferenceData, MovementResponse, MovementSummaryResponse, UsualNameOption} from '../../../api/aldebaran/models/movement.model';
 import {
   WodMovementRequest,
@@ -16,16 +17,16 @@ import {
   TeamMode,
   TeamSplit,
   WodSegment,
-  ComponentTechnique
+  ComponentTechnique,
+  ImplementSizes
 } from '../../../api/aldebaran/models/wod.model';
+import {ScaledLineComponent, ScaledLineForm, scaledLineGroup, scaledLineRequest} from '../scaled-line/scaled-line.component';
 import {UnitService} from '../../../core/services/unit.service';
 import {MovementComboboxComponent, usualNameOf} from '../../../shared/component/movement-combobox/movement-combobox.component';
 import {toggleVariant, VariantPickerComponent} from '../../../shared/component/variant-picker/variant-picker.component';
 import {NativeSelectDirective} from '../../../shared/component/native-select/native-select.directive';
 import {
   ALL_EXTRAS,
-  BOX_CM,
-  BOX_IN,
   defaultExtras,
   implementOf,
   loadPresets,
@@ -81,6 +82,12 @@ type MovementRow = FormGroup<{
   // For Load: load as a percentage of the RM of rmReps reps (1RM unless set elsewhere)
   percentOfRm: FormControl<number | null>;
   rmReps: FormControl<number | null>;
+  // Units of the line's load and height: the line's own when edited (a WOD written in lb stays in lb, D149),
+  // the user's for a new line
+  weightUnit: FormControl<string>;
+  heightUnit: FormControl<string>;
+  // The line in the official Scaled version (lot S, D154)
+  scaled: ScaledLineForm;
 }>;
 
 /**
@@ -99,13 +106,14 @@ type MovementRow = FormGroup<{
   selector: 'app-wod-quick-form',
   standalone: true,
   imports: [ReactiveFormsModule, TranslatePipe, NgIcon, HlmButton, HlmInput, HlmTextarea, MovementComboboxComponent, VariantPickerComponent,
-    NativeSelectDirective],
+    NativeSelectDirective, ScaledLineComponent],
   templateUrl: './wod-quick-form.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class WodQuickFormComponent implements OnInit {
   // --- INJECTIONS ---
   private readonly movementService = inject(MovementService);
+  private readonly wodService = inject(WodService);
   private readonly unitService = inject(UnitService);
   private readonly translate = inject(TranslateService);
 
@@ -140,6 +148,12 @@ export class WodQuickFormComponent implements OnInit {
   /** Open equipment / technique choices, keyed "row:field". */
   protected readonly variantsOpen = signal<Set<string>>(new Set());
   protected readonly variantFields: VariantField[] = ['equipment', 'techniques'];
+  /** Official Scaled version written with the WOD (D141, D154): a block "Scaled" under each line. */
+  protected readonly withScaled = signal(false);
+  /** Real sizes of kettlebells, dumbbells, medballs and plyo boxes, from Aldebaran (D155). */
+  protected readonly sizes = signal<ImplementSizes | null>(null);
+  /** Unit of the vest: the WOD's own when edited, the user's for a new WOD. */
+  private readonly vestUnit = signal<string | null>(null);
 
   readonly form = new FormGroup({
     category: new FormControl<WodCategory>('FOR_TIME', {nonNullable: true}),
@@ -216,6 +230,7 @@ export class WodQuickFormComponent implements OnInit {
       this.movements.set([...list].sort((a, b) => a.name.localeCompare(b.name))));
     this.movementService.getUsualNames().subscribe(list => this.usualNames.set(list));
     this.movementService.getReferenceData().subscribe(reference => this.referenceData.set(reference));
+    this.wodService.getReferenceData().subscribe({next: reference => this.sizes.set(reference.implementSizes ?? null), error: () => {}});
     const initial = this.initial();
     if (initial) {
       this.fill(initial);
@@ -399,8 +414,50 @@ export class WodQuickFormComponent implements OnInit {
     const row = this.form.controls.rows.at(index).getRawValue();
     const movement = this.movements().find(m => m.id === row.movementId);
     const allowed = row.movementId == null ? null : this.details()[row.movementId]?.equipment;
-    const presets = loadPresets(implementOf(row.equipment, allowed, movement?.name), this.metric());
+    const presets = loadPresets(implementOf(row.equipment, allowed, movement?.name), row.weightUnit === 'KG', this.sizes());
     return presets && withCurrent(presets, row.weight, row.weightFemale);
+  }
+
+  /** Real sizes of the row's implement for its Scaled line (same unit as the line). */
+  scaledLoadChoices(index: number): number[] | null {
+    const row = this.form.controls.rows.at(index).getRawValue();
+    const allowed = row.movementId == null ? null : this.details()[row.movementId]?.equipment;
+    const movement = this.movements().find(m => m.id === row.movementId);
+    return loadPresets(implementOf(row.equipment, allowed, movement?.name), row.weightUnit === 'KG', this.sizes());
+  }
+
+  /** "kg" or "lb": the unit of the row's load. */
+  rowMassLabel(index: number): string {
+    return this.form.controls.rows.at(index).controls.weightUnit.value === 'KG' ? 'kg' : 'lb';
+  }
+
+  /** "cm" or "in": the unit of the row's height. */
+  rowHeightLabel(index: number): string {
+    return this.form.controls.rows.at(index).controls.heightUnit.value === 'INCHES' ? 'in' : 'cm';
+  }
+
+  /** The quantities a row prescribes, asked again by its Scaled line. */
+  scaledMeasures(index: number) {
+    const row = this.form.controls.rows.at(index).getRawValue();
+    return {
+      load: row.weight != null || row.weightFemale != null,
+      distance: row.measure === 'DISTANCE',
+      calories: row.measure === 'CALORIES',
+      height: row.height != null || row.heightFemale != null,
+      duration: row.measure === 'TIME'
+    };
+  }
+
+  /** The Scaled block of a row (official Scaled version). */
+  scaledOf(index: number): ScaledLineForm {
+    return this.form.controls.rows.at(index).controls.scaled;
+  }
+
+  /** Switches the official Scaled version on or off (off: every line RX again). */
+  toggleScaled(): void {
+    const on = !this.withScaled();
+    this.withScaled.set(on);
+    if (!on) this.form.controls.rows.controls.forEach(r => r.controls.scaled.controls.changed.setValue(false));
   }
 
   /** The three box heights (20/24/30 in, 51/61/76 cm) for a movement on a box, or null for a free height. */
@@ -408,7 +465,9 @@ export class WodQuickFormComponent implements OnInit {
     const row = this.form.controls.rows.at(index).getRawValue();
     const movement = this.movements().find(m => m.id === row.movementId);
     if (!onBox(row.equipment, movement?.name)) return null;
-    return withCurrent(this.metric() ? BOX_CM : BOX_IN, row.height, row.heightFemale);
+    const sizes = this.sizes();
+    if (!sizes) return null;
+    return withCurrent(row.heightUnit === 'INCHES' ? sizes.boxIn : sizes.boxCm, row.height, row.heightFemale);
   }
 
   /** Equipment or techniques the row's movement allows, once loaded. */
@@ -471,10 +530,10 @@ export class WodQuickFormComponent implements OnInit {
         durationSeconds: measure === 'TIME' ? r.durationSeconds ?? undefined : undefined,
         weight: r.weight ?? undefined,
         weightFemale: r.weightFemale ?? undefined,
-        weightUnit: load ? this.unitService.massUnit() : undefined,
+        weightUnit: load ? r.weightUnit : undefined,
         height: r.height ?? undefined,
         heightFemale: r.heightFemale ?? undefined,
-        heightUnit: height ? (metric ? 'CENTIMETERS' : 'INCHES') : undefined,
+        heightUnit: height ? r.heightUnit : undefined,
         equipment: r.equipment,
         techniques: r.techniques,
         componentTechniques: r.componentTechniques,
@@ -482,7 +541,12 @@ export class WodQuickFormComponent implements OnInit {
         teamSplit: this.showTeam() ? r.teamSplit : 'TOTAL',
         complexGroup: complex ? 1 : null,
         percentOfRm: category === 'FOR_LOAD' ? r.percentOfRm ?? null : null,
-        rmReps: category === 'FOR_LOAD' && r.percentOfRm != null ? r.rmReps ?? 1 : null
+        rmReps: category === 'FOR_LOAD' && r.percentOfRm != null ? r.rmReps ?? 1 : null,
+        // The line in the official Scaled version, in the line's units
+        scaled: this.withScaled()
+          ? scaledLineRequest(this.form.controls.rows.at(i).controls.scaled,
+            {weightUnit: r.weightUnit, distanceUnit: 'METERS', heightUnit: r.heightUnit})
+          : null
       };
     });
     const minutes = v.minutes != null && v.minutes > 0 ? Math.round(v.minutes * 60) : undefined;
@@ -515,7 +579,7 @@ export class WodQuickFormComponent implements OnInit {
       repScheme: values ? values.join('-') : withSets(category) ? v.sets.trim() || undefined : undefined,
       vestWeight: vest ? v.vestWeight : null,
       vestWeightFemale: vest ? v.vestWeightFemale : null,
-      vestWeightUnit: vest ? this.unitService.massUnit() : null,
+      vestWeightUnit: vest ? this.vestUnit() ?? this.unitService.massUnit() : null,
       teamSize: this.showTeam() ? v.teamSize : null,
       teamMode: this.showTeam() ? v.teamMode : null,
       movements
@@ -627,6 +691,8 @@ export class WodQuickFormComponent implements OnInit {
     });
     this.showNotes.set(!!this.form.controls.notes.value);
     this.showVest.set(wod.vestWeight != null || wod.vestWeightFemale != null);
+    this.vestUnit.set(wod.vestWeightUnit ?? null);
+    this.withScaled.set(wod.movements.some(wm => !!wm.scaled));
     this.showTeam.set(!!wod.teamSize);
     if (wod.teamSize) this.form.patchValue({teamSize: wod.teamSize, teamMode: wod.teamMode ?? 'YOU_GO_I_GO'});
     const shared = this.sharedReps();
@@ -647,8 +713,10 @@ export class WodQuickFormComponent implements OnInit {
         segment: wm.segment ?? 'MAIN',
         teamSplit: wm.teamSplit ?? 'TOTAL',
         percentOfRm: wm.percentOfRm ?? null,
-        rmReps: wm.rmReps ?? null
-      }));
+        rmReps: wm.rmReps ?? null,
+        weightUnit: wm.weightUnit ?? undefined,
+        heightUnit: wm.heightUnit ?? undefined
+      }, wm.scaled));
       this.loadDetail(wm.movement.id);
     });
   }
@@ -662,7 +730,8 @@ export class WodQuickFormComponent implements OnInit {
     return 'REPS';
   }
 
-  private row(v: Partial<ReturnType<MovementRow['getRawValue']>> = {}): MovementRow {
+  private row(v: Partial<Omit<ReturnType<MovementRow['getRawValue']>, 'scaled'>> = {},
+              scaled?: WodMovementResponse['scaled']): MovementRow {
     const number = (value?: number | null) => new FormControl<number | null>(value ?? null, Validators.min(0));
     return new FormGroup({
       movementId: new FormControl<number | null>(v.movementId ?? null, Validators.required),
@@ -678,7 +747,10 @@ export class WodQuickFormComponent implements OnInit {
       segment: new FormControl<WodSegment>(v.segment ?? 'MAIN', {nonNullable: true}),
       teamSplit: new FormControl<TeamSplit>(v.teamSplit ?? 'TOTAL', {nonNullable: true}),
       percentOfRm: new FormControl<number | null>(v.percentOfRm ?? null, [Validators.min(1), Validators.max(150)]),
-      rmReps: new FormControl<number | null>(v.rmReps ?? null)
+      rmReps: new FormControl<number | null>(v.rmReps ?? null),
+      weightUnit: new FormControl<string>(v.weightUnit ?? this.unitService.massUnit(), {nonNullable: true}),
+      heightUnit: new FormControl<string>(v.heightUnit ?? (this.metric() ? 'CENTIMETERS' : 'INCHES'), {nonNullable: true}),
+      scaled: scaledLineGroup(scaled)
     });
   }
 

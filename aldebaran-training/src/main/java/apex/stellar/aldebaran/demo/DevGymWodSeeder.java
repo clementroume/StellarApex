@@ -7,6 +7,7 @@ import apex.stellar.aldebaran.model.entities.Wod;
 import apex.stellar.aldebaran.model.entities.Wod.ScoreType;
 import apex.stellar.aldebaran.model.entities.Wod.WodType;
 import apex.stellar.aldebaran.model.entities.WodMovement;
+import apex.stellar.aldebaran.model.entities.WodScaledLine;
 import apex.stellar.aldebaran.service.CatalogRules;
 import apex.stellar.aldebaran.model.enums.Unit;
 import apex.stellar.aldebaran.repository.MovementRepository;
@@ -205,6 +206,9 @@ public class DevGymWodSeeder implements ApplicationRunner {
             mv("Sit-up", "30"),
             mv("Push-up", "20"),
             mv("Pull-up", "10")));
+    // Its official Scaled version (lot S): single-unders and ring rows, ranked in Scaled
+    scaled(catalog, wods.getLast(), "Double-under", "Single-under", "100");
+    scaled(catalog, wods.getLast(), "Pull-up", "Ring Row", null);
     wods.add(
         wod(
             catalog,
@@ -335,6 +339,44 @@ public class DevGymWodSeeder implements ApplicationRunner {
     }
     wod.getModalities().addAll(CatalogRules.modalities(wod.getMovements()));
     return wod;
+  }
+
+  /**
+   * Writes a line of the WOD's official Scaled version: the usual name done in place of the line's, and its reps when
+   * they change.
+   */
+  private static void scaled(
+      Map<String, Movement> catalog, Wod wod, String lineName, String usualName, String reps) {
+    MovementUsualName usual = usualNames(catalog).get(usualName);
+    WodMovement line =
+        wod.getMovements().stream()
+            .filter(l -> lineName.equals(usualName(catalog, l)))
+            .findFirst()
+            .orElse(null);
+    if (usual == null || line == null) {
+      log.warn("Dev gym WOD '{}': no Scaled '{}' for '{}'", wod.getTitle(), usualName, lineName);
+      return;
+    }
+    line.setScaled(
+        WodScaledLine.builder()
+            .movement(usual.getMovement())
+            .equipment(new HashSet<>(usual.getEquipment()))
+            .techniques(new HashSet<>(usual.getTechniques()))
+            .repsScheme(reps)
+            .build());
+  }
+
+  /** The usual name of a demo line (the one it was written with), or its movement's name. */
+  private static String usualName(Map<String, Movement> catalog, WodMovement line) {
+    return usualNames(catalog).values().stream()
+        .filter(u -> u.getMovement() == line.getMovement()
+            && line.getEquipment().containsAll(u.getEquipment())
+            && line.getTechniques().containsAll(u.getTechniques())
+            && u.getEquipment().size() + u.getTechniques().size()
+                == line.getEquipment().size() + line.getTechniques().size())
+        .map(MovementUsualName::getNameEn)
+        .findFirst()
+        .orElse(line.getMovement().getName());
   }
 
   /** The catalog's usual names: demo WODs are written the way athletes name movements. */

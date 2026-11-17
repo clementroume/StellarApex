@@ -8,6 +8,7 @@ import {ScoreComparisonResponse, ScoreRequest, ScoreResponse} from '../../../api
 import {WodResponse} from '../../../api/aldebaran/models/wod.model';
 import {NotificationService} from '../../../core/services/notification.service';
 import {ProblemDetail} from '../../../core/models/problem-detail.model';
+import {isRanked} from './score.utils';
 
 /** The current user's scores on the WOD shown, history size kept on one page. */
 const HISTORY_SIZE = 50;
@@ -72,7 +73,8 @@ export class WodScoresStore {
   private loadComparison(): void {
     const best = this.best();
     this.comparison.set(null);
-    if (!best || this.wod()?.scoreType === 'NONE') return;
+    // A free Scaled (Rx+ included) has no rank (D141)
+    if (!best || this.wod()?.scoreType === 'NONE' || !isRanked(best)) return;
     this.scoreService.compareScore(best.id).subscribe({
       next: (comparison) => this.comparison.set(comparison),
       error: () => this.comparison.set(null)

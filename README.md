@@ -247,6 +247,9 @@ Rules are enforced by the backends; Sirius only adapts its UI to what they retur
   is locked. The API returns `capabilities` (`canModify`, `locked`) for each WOD.
 - **Scores**: athletes log and manage their own scores on the WODs they can read, in one of their
   gyms; `SCORE_VERIFY` on that gym lets staff correct or delete their athletes' scores.
+  A score is RX (as prescribed) or Scaled, detailed line by line (movement done, reps, real load);
+  only RX and the WOD's official Scaled version (written by its author) are ranked, an Rx+ gets a badge.
+  Loads show in kg or lb as boxes load them (135 lb = 60 kg, real kettlebell / dumbbell / medball sizes).
 - **Team WODs**: a box WOD (or a public one) done in teams of 2 to 6; one athlete logs the team
   score with teammates of the box, each member gets it (mixed division for mixed teams), and the
   leaderboard shows one row per team. Never on a program.

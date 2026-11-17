@@ -3,6 +3,18 @@ import {TranslateService} from '@ngx-translate/core';
 import {AuthService} from '../../api/antares/services/auth.service';
 import {UserService} from '../../api/antares/services/user.service';
 import {UnitSystem} from '../../api/antares/models/user.model';
+import {LineEquivalents} from '../../api/aldebaran/models/wod.model';
+
+/** What a WOD line (or a line of its official Scaled version) says about its load and height. */
+export interface LoadLine {
+  weight?: number | null;
+  weightFemale?: number | null;
+  weightUnit?: string | null;
+  height?: number | null;
+  heightFemale?: number | null;
+  heightUnit?: string | null;
+  equivalents?: LineEquivalents | null;
+}
 
 const STORAGE_KEY = 'unitSystem';
 const LB_IN_KG = 0.45359237;
@@ -196,6 +208,57 @@ export class UnitService {
     }
     return this.pair({values: [weight, weightFemale].map(v => this.convertLoad(v, unit)), unit: this.massUnit()},
       division);
+  }
+
+  /**
+   * Men's / women's load of a WOD line as boxes load it (D149, D155): the equivalents Aldebaran sends with the line
+   * (135 lb = 60 kg, a kettlebell its real size), else the line converted here.
+   */
+  lineLoadPair(line: LoadLine, division?: 'MEN' | 'WOMEN' | null): MeasurePair | null {
+    const eq = line.equivalents;
+    if (eq && (eq.weightKg != null || eq.weightFemaleKg != null)) {
+      const kg = this.massUnit() === 'KG';
+      return this.pairOf([kg ? eq.weightKg : eq.weightLb, kg ? eq.weightFemaleKg : eq.weightFemaleLb],
+        this.massUnit(), division);
+    }
+    return this.loadPair(line.weight, line.weightFemale, line.weightUnit, division);
+  }
+
+  /** Men's / women's box or target height of a WOD line, from the equivalents Aldebaran sends (51/61/76 cm boxes). */
+  lineHeightPair(line: LoadLine, division?: 'MEN' | 'WOMEN' | null): MeasurePair | null {
+    const eq = line.equivalents;
+    const unit = line.heightUnit;
+    if (eq && (eq.heightCm != null || eq.heightFemaleCm != null)
+      && (unit === 'CENTIMETERS' || unit === 'INCHES')) {
+      const metric = this.unitSystem() === 'METRIC';
+      return this.pairOf([metric ? eq.heightCm : eq.heightIn, metric ? eq.heightFemaleCm : eq.heightFemaleIn],
+        metric ? 'CENTIMETERS' : 'INCHES', division);
+    }
+    return this.distancePair(line.height, line.heightFemale, line.heightUnit, division);
+  }
+
+  /**
+   * The load of a WOD line for one athlete, in the user's unit, as boxes load it (the value to prefill a load done):
+   * the women's load for WOMEN, else the men's one.
+   */
+  lineLoadFor(line: LoadLine, division?: 'MEN' | 'WOMEN' | null): number | null {
+    const women = division === 'WOMEN';
+    const eq = line.equivalents;
+    if (eq) {
+      const kg = this.massUnit() === 'KG';
+      const men = kg ? eq.weightKg : eq.weightLb;
+      const fem = kg ? eq.weightFemaleKg : eq.weightFemaleLb;
+      const value = women ? fem ?? men : men ?? fem;
+      if (value != null) return value;
+    }
+    const raw = women ? line.weightFemale ?? line.weight : line.weight ?? line.weightFemale;
+    return raw == null ? null : this.convertLoad(raw, line.weightUnit);
+  }
+
+  private pairOf(values: (number | null | undefined)[], unit: string, division?: 'MEN' | 'WOMEN' | null): MeasurePair | null {
+    const kept = values.filter((v): v is number => v != null);
+    if (kept.length === 0) return null;
+    return this.pair({values: kept, unit}, kept.length === 2 ? division : null);
   }
 
   /** Men's / women's height (box, target) as a pair (see `pair`), or null without a height. */

@@ -163,4 +163,18 @@ describe('UnitService', () => {
     expect(service.loadPair(null, null, 'KG', 'MEN')).toBeNull();
     expect(service.distancePair(24, 20, 'INCHES', 'WOMEN')).toEqual({values: ['60', '50'], unit: 'cm', mine: 1});
   });
+
+  it('should show a line with the equivalents Aldebaran sends, as boxes load them (lot S, D149)', () => {
+    currentUser.set(user({unitSystem: 'METRIC'}));
+    const thruster = {weight: 95, weightFemale: 65, weightUnit: 'LBS', equivalents: {weightKg: 40, weightFemaleKg: 30, weightLb: 95, weightFemaleLb: 65}};
+    expect(service.lineLoadPair(thruster, 'MEN')).toEqual({values: ['40', '30'], unit: 'kg', mine: 0});
+    expect(service.lineLoadFor(thruster, 'WOMEN')).toBe(30);
+    expect(service.lineLoadFor(thruster, null)).toBe(40);
+    const box = {height: 24, heightFemale: 20, heightUnit: 'INCHES', equivalents: {heightCm: 61, heightFemaleCm: 51, heightIn: 24, heightFemaleIn: 20}};
+    expect(service.lineHeightPair(box, 'WOMEN')).toEqual({values: ['61', '51'], unit: 'cm', mine: 1});
+    currentUser.set(user({unitSystem: 'IMPERIAL'}));
+    expect(service.lineLoadPair(thruster, null)).toEqual({values: ['95', '65'], unit: 'lb', mine: null});
+    // Without equivalents: converted here
+    expect(service.lineLoadFor({weight: 100, weightUnit: 'KG'}, null)).toBeGreaterThan(200);
+  });
 });

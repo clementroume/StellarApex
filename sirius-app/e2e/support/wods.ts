@@ -5,13 +5,15 @@ export interface BoxWodOptions {
   title: string;
   /** Competition WOD of the box (never public): staff verify the scores. */
   competition?: boolean;
+  /** Official Scaled version: the movement done in place of the line (lot S, D154). */
+  scaledMovement?: string;
 }
 
 /**
  * Creates a For Time / Time WOD of the box (full form, `/wods/new`) with one movement and returns its id.
  * The signed-in user needs WOD_WRITE on the box (Owner).
  */
-export async function createBoxWod(page: Page, {title, competition = false}: BoxWodOptions): Promise<number> {
+export async function createBoxWod(page: Page, {title, competition = false, scaledMovement}: BoxWodOptions): Promise<number> {
   await page.goto('/wods/new');
   await page.getByRole('textbox', {name: t('WOD.FIELDS.TITLE')}).first().fill(title);
   await page.getByRole('combobox', {name: t('WOD.FIELDS.FORMAT')}).selectOption({label: 'For Time'});
@@ -24,6 +26,12 @@ export async function createBoxWod(page: Page, {title, competition = false}: Box
   await page.getByRole('combobox', {name: t('WOD.FIELDS.MOVEMENT')}).fill('Air Squat');
   await page.getByRole('option', {name: /^Air Squat\b/}).first().click();
   await page.getByRole('textbox', {name: t('WOD.FIELDS.REPS'), exact: false}).first().fill('10');
+  if (scaledMovement) {
+    await page.getByRole('switch', {name: t('WOD.SCALED.TITLE')}).check();
+    await page.getByRole('button', {name: t('WOD.SCALED.CHANGE')}).click();
+    await page.getByRole('combobox', {name: t('WOD.FIELDS.MOVEMENT')}).nth(1).fill(scaledMovement);
+    await page.getByRole('option', {name: new RegExp(`^${scaledMovement}\\b`)}).first().click();
+  }
 
   await page.getByRole('button', {name: t('GLOBAL.SAVE')}).click();
   await expect(page).toHaveURL(/\/wods\/\d+$/);

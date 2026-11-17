@@ -6,14 +6,14 @@
       <dt class="text-xs font-semibold text-muted-foreground">{{ 'SCORE.SUMMARY.RECORD' | translate }}</dt>
       <dd class="flex flex-wrap items-center gap-x-2">
         <span id="best-score-value" class="text-lg font-bold">{{ bestValue() }}</span>
-        <span hlmBadge variant="secondary" [class.bg-primary/15]="best.scaling !== 'SCALED' && best.scaling !== 'CUSTOM'" [class.text-primary]="best.scaling !== 'SCALED' && best.scaling !== 'CUSTOM'">
-          {{ 'SCORE.SCALING.' + best.scaling | translate }}
+        <span hlmBadge variant="secondary" [class.bg-primary/15]="best.scaling === 'RX'" [class.text-primary]="best.scaling === 'RX'">
+          {{ levelKey(best) | translate }}
         </span>
       </dd>
     </div>
     <div class="rounded-xl bg-muted px-3 py-2 flex flex-col gap-1">
       <dt class="text-xs font-semibold text-muted-foreground">
-        {{ 'SCORE.SUMMARY.RANK' | translate: {scaling: ('SCORE.SCALING.' + best.scaling | translate)} }}
+        {{ 'SCORE.SUMMARY.RANK' | translate: {scaling: (levelKey(best) | translate)} }}
       </dt>
       <dd id="best-score-rank" class="text-lg font-bold tabular-nums">
         @if (store.comparison(); as cmp) {

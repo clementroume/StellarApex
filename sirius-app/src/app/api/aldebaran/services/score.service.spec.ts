@@ -35,7 +35,8 @@ describe('ScoreService', () => {
   };
 
   const mockReferenceData: ScoreReferenceData = {
-    scalingLevels: ['RX', 'SCALED', 'ELITE', 'CUSTOM']
+    scalingLevels: ['RX', 'SCALED'],
+    cardio: [{movementName: 'Rowing', meters: 1.25, calories: 0.1}]
   };
 
   beforeEach(() => {

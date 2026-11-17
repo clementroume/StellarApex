@@ -4,6 +4,7 @@ import {NgTemplateOutlet} from '@angular/common';
 import {RouterLink} from '@angular/router';
 import {TranslatePipe, TranslateService} from '@ngx-translate/core';
 import {HlmBadge} from '@spartan-ng/helm/badge';
+import {HlmButton} from '@spartan-ng/helm/button';
 import {WodMovementResponse, WodResponse, WodSegment} from '../../../api/aldebaran/models/wod.model';
 import {MeasurePair, UnitService} from '../../../core/services/unit.service';
 import {AuthService} from '../../../api/antares/services/auth.service';
@@ -28,7 +29,7 @@ const STRUCTURE_SCHEME = /round|tier|window|rm\b| x /i;
 @Component({
   selector: 'app-wod-whiteboard',
   standalone: true,
-  imports: [NgTemplateOutlet, RouterLink, TranslatePipe, HlmBadge],
+  imports: [NgTemplateOutlet, RouterLink, TranslatePipe, HlmBadge, HlmButton],
   templateUrl: './wod-whiteboard.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
@@ -43,12 +44,20 @@ export class WodWhiteboardComponent {
   // --- STATE (SIGNALS & VARIABLES) ---
   /** The user's records, loaded only for a WOD prescribing loads as a percentage (D58). */
   readonly myRecords = signal<MovementRecords[] | null>(null);
+  /** Version shown when the WOD has an official Scaled version (D154). */
+  readonly version = signal<'RX' | 'SCALED'>('RX');
 
   // --- COMPUTED STATE ---
   readonly activeLang = computed(() => this.translate.currentLang() ?? this.translate.fallbackLang() ?? 'en');
-  readonly sortedMovements = computed<WodMovementResponse[]>(() =>
-    [...(this.wod().movements ?? [])].sort((a, b) => a.orderIndex - b.orderIndex)
-  );
+  /** Whether the WOD has an official Scaled version: a choice RX / Scaled on the board. */
+  readonly hasScaled = computed(() => (this.wod().movements ?? []).some(wm => !!wm.scaled));
+  /** The lines in order, in the version shown (a Scaled line in place of its RX line). */
+  readonly sortedMovements = computed<WodMovementResponse[]>(() => {
+    const scaled = this.version() === 'SCALED' && this.hasScaled();
+    return [...(this.wod().movements ?? [])]
+      .sort((a, b) => a.orderIndex - b.orderIndex)
+      .map(wm => scaled && wm.scaled ? scaledView(wm) : wm);
+  });
   /** Movements by part of the WOD: buy-in, rounds, cash-out (only the parts that have movements). */
   readonly segments = computed<{segment: WodSegment; movements: WodMovementResponse[]}[]>(() =>
     (['BUY_IN', 'MAIN', 'BUY_OUT'] as WodSegment[])
@@ -105,6 +114,18 @@ export class WodWhiteboardComponent {
   }
 
   /** Movements of one part of the WOD, or null when it has none. */
+  /** On the Scaled version, the RX line a changed line replaces: "RX: 21-15-9 Pull-ups". */
+  rxReminder(wm: WodMovementResponse): string {
+    if (this.version() !== 'SCALED') return '';
+    const rx = (this.wod().movements ?? []).find(m => m.id === wm.id);
+    if (!rx?.scaled) return '';
+    const division = this.authService.currentUser()?.division;
+    const load = this.unitService.lineLoadPair(rx, division);
+    const line = [this.quantity(rx, this.wod()), this.movementName(rx, this.wod()),
+      load ? `${load.values.join('/')} ${load.unit}` : ''].filter(Boolean).join(' ');
+    return this.translate.instant('WOD.SCALED.BOARD_RX', {line});
+  }
+
   part(segment: WodSegment): WodMovementResponse[] | null {
     return this.segments().find(p => p.segment === segment)?.movements ?? null;
   }
@@ -252,18 +273,14 @@ export class WodWhiteboardComponent {
   measures(wm: WodMovementResponse): MeasurePair[] {
     const division = this.authService.currentUser()?.division;
     return [
-      this.unitService.loadPair(wm.weight, wm.weightFemale, wm.weightUnit, division),
-      this.unitService.distancePair(wm.height, wm.heightFemale, wm.heightUnit, division),
+      this.unitService.lineLoadPair(wm, division),
+      this.unitService.lineHeightPair(wm, division),
       this.unitService.distancePair(wm.length, null, wm.lengthUnit, division)
     ].filter((pair): pair is MeasurePair => pair != null);
   }
 
   movementNotes(wm: WodMovementResponse): string {
     return localizedText(this.activeLang(), wm.notesEn, wm.notesFr);
-  }
-
-  scaling(wm: WodMovementResponse): string {
-    return localizedText(this.activeLang(), wm.scalingOptionsEn, wm.scalingOptionsFr);
   }
 
   private partnerCarry(wm: WodMovementResponse, wod: WodResponse): boolean {
@@ -281,4 +298,33 @@ export class WodWhiteboardComponent {
       ? this.translate.instant('WOD.FIELDS.DURATION_MINUTES', {count: seconds / 60})
       : formatTimeCapShort(seconds);
   }
+}
+
+/** A line of the official Scaled version shown as a WOD line (the response carries every value of the version). */
+function scaledView(wm: WodMovementResponse): WodMovementResponse {
+  const s = wm.scaled!;
+  return {
+    ...wm,
+    movement: {...wm.movement, id: s.movement.id, name: s.movement.name, category: s.movement.category,
+      equipment: s.movement.id === wm.movement.id ? wm.movement.equipment : []},
+    equipment: s.equipment,
+    techniques: s.techniques,
+    componentTechniques: s.movement.id === wm.movement.id ? wm.componentTechniques : [],
+    repsScheme: s.repsScheme ?? undefined,
+    weight: s.weight ?? undefined,
+    weightFemale: s.weightFemale ?? undefined,
+    weightUnit: s.weightUnit ?? undefined,
+    distance: s.distance ?? undefined,
+    distanceUnit: s.distanceUnit ?? undefined,
+    calories: s.calories ?? undefined,
+    caloriesFemale: s.caloriesFemale ?? undefined,
+    height: s.height ?? undefined,
+    heightFemale: s.heightFemale ?? undefined,
+    heightUnit: s.heightUnit ?? undefined,
+    durationSeconds: s.durationSeconds ?? undefined,
+    percentOfRm: s.weight != null || s.weightFemale != null ? null : wm.percentOfRm,
+    display: s.display ?? null,
+    equivalents: s.equivalents ?? null,
+    scaled: null
+  };
 }

@@ -2,7 +2,7 @@ import {ChangeDetectionStrategy, Component, computed, inject} from '@angular/cor
 import {TranslatePipe, TranslateService} from '@ngx-translate/core';
 import {UnitService} from '../../../../core/services/unit.service';
 import {WodScoresStore} from '../wod-scores.store';
-import {formatScore} from '../score.utils';
+import {formatScore, levelKey} from '../score.utils';
 
 /** Summary of the user's scores on the WOD: personal record, its rank and the number of attempts. */
 import {HlmBadge} from '@spartan-ng/helm/badge';
@@ -19,6 +19,8 @@ export class ScoreBestComponent {
   readonly store = inject(WodScoresStore);
   private readonly unitService = inject(UnitService);
   private readonly translate = inject(TranslateService);
+
+  protected readonly levelKey = levelKey;
 
   // --- COMPUTED STATE ---
   readonly bestValue = computed(() => {

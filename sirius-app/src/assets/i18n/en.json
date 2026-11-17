@@ -972,7 +972,14 @@
         "TOGETHER": "Together"
       }
     },
-    "REPS_UNREADABLE": "Not counted in the balance: write for example 21, 21-15-9, 5 x 5, max or 1 min."
+    "REPS_UNREADABLE": "Not counted in the balance: write for example 21, 21-15-9, 5 x 5, max or 1 min.",
+    "SCALED": {
+      "TITLE": "Official Scaled version",
+      "HINT": "What every scaled athlete does. Only these scores are ranked in Scaled.",
+      "AS_RX": "As RX",
+      "CHANGE": "Change",
+      "BOARD_RX": "RX: {{line}}"
+    }
   },
   "SCORE": {
     "TITLE": "Scores",
@@ -1007,7 +1014,6 @@
       "CALORIES": "Calories",
       "DISTANCE": "Distance",
       "UNIT": "Unit",
-      "SCALING_NOTES": "Scaling",
       "COMMENT": "Comment",
       "ROUNDS_ON_MINUTE": "Rounds completed on the minute",
       "MAX": "max {{max}}",
@@ -1022,14 +1028,12 @@
       "SUBMIT": "Submit for verification",
       "TEAMMATES": "Teammates (teams of {{size}})"
     },
-    "PLACEHOLDERS": {
-      "SCALING_NOTES": "e.g. 35 kg thrusters, banded pull-ups"
-    },
     "SCALING": {
-      "ELITE": "Rx+",
       "RX": "Rx",
       "SCALED": "Scaled",
-      "CUSTOM": "Custom"
+      "OFFICIAL": "Official Scaled",
+      "RX_PLUS": "Rx+",
+      "OWN": "Own Scaled"
     },
     "DISPLAY": {
       "CAPPED": "CAP + {{reps}} reps",
@@ -1052,7 +1056,10 @@
       "UNVERIFIED": "Verification withdrawn",
       "SUBMIT_HINT": "A judge of the box verifies your score for the competition leaderboard. Unticked, it is a regular score.",
       "NO_GYM_MATES": "No other member in this box.",
-      "TEAM_HINT": "Your teammates get the same score. An extra athlete mirrors a member."
+      "TEAM_HINT": "Your teammates get the same score. An extra athlete mirrors a member.",
+      "OWN_HINT": "Own Scaled: in your history, not ranked.",
+      "SCALED_HINT": "Say what you changed, line by line. Scaled scores are not ranked.",
+      "OFFICIAL_HINT": "The lines follow the WOD's Scaled version. Changing a line makes it your own Scaled, not ranked."
     },
     "TIEBREAK_SHORT": "TB {{time}}",
     "ENTRY": {
@@ -1089,10 +1096,23 @@
       "REMOVE": "Remove set {{n}}",
       "BEST": "Best set: {{value}} {{unit}}",
       "VOLUME": "Volume: {{value}} {{unit}}",
-      "SUMMARY": "{{count}} sets"
+      "SUMMARY": "{{count}} sets",
+      "TOTAL": "Total: {{value}} {{unit}}"
     },
     "SUBMITTED": "Submitted for verification",
-    "TEAM_OF": "Team of {{count}}"
+    "TEAM_OF": "Team of {{count}}",
+    "LINES": {
+      "TITLE": "Movements",
+      "ROUND": "Round as done: {{reps}} reps",
+      "COUNT": "Reps done",
+      "CHANGE": "Change",
+      "MOVEMENT": "Movement done",
+      "REPS": "Reps",
+      "LOAD": "Load",
+      "HEIGHT": "Height",
+      "DURATION": "Duration (s)",
+      "RESTORE": "Back to the prescription"
+    }
   },
   "ADMIN": {
     "SUPPORT": {

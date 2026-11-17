@@ -8,7 +8,7 @@
           <div class="flex flex-wrap items-center gap-2">
             <span class="text-sm text-muted-foreground">{{ date(score) }}</span>
             <span class="font-bold">{{ value(score) }}</span>
-            <span hlmBadge variant="secondary">{{ 'SCORE.SCALING.' + score.scaling | translate }}</span>
+            <span hlmBadge variant="secondary">{{ levelKey(score) | translate }}</span>
             @if (score.tiebreakSeconds) {
               <span class="text-sm text-muted-foreground" [title]="'SCORE.FIELDS.TIEBREAK' | translate">
                 {{ 'SCORE.TIEBREAK_SHORT' | translate: {time: duration(score.tiebreakSeconds)} }}
@@ -35,14 +35,14 @@
               </span>
             }
           </div>
-          @if (score.sets?.length) {
-            <p class="text-sm text-muted-foreground tabular-nums">{{ setsLine(score) }}</p>
+          @for (line of changedLines(score); track $index) {
+            <p class="score-line text-sm text-muted-foreground">{{ line }}</p>
+          }
+          @for (sets of setsLines(score); track $index) {
+            <p class="text-sm text-muted-foreground tabular-nums">{{ sets }}</p>
           }
           @if (loggedByStaff(score)) {
             <p class="text-sm text-muted-foreground">{{ 'SCORE.LOGGED_BY' | translate: {name: staffName(score.loggedBy)} }}</p>
-          }
-          @if (score.scalingNotes) {
-            <p class="text-sm text-muted-foreground whitespace-pre-line">{{ score.scalingNotes }}</p>
           }
           @if (score.userComment) {
             <p class="text-sm whitespace-pre-line">{{ score.userComment }}</p>

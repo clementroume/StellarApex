@@ -122,15 +122,24 @@ the dev proxy targets the local Traefik `https://localhost` with `Host: stellar.
 - Scores on the WOD detail: `features/wods/scores` (`WodScoresStore` provided by the detail, shared by
   `score-best`, `score-history`, `score-form`; `formatScore` in `score.utils.ts`). Each session block
   provides its own store with `sessionLogId` and `sessionBlockId` (new scores join the journal and the block; the form then hides day
-  and gym) and `sessionId` (history and the folded "session leaderboard" keep that session's scores). Strength sets: `ScoreRequest.sets` (Aldebaran derives the best set / volume).
+  and gym) and `sessionId` (history and the folded "session leaderboard" keep that session's scores).
+- Score entry (lot S): the form has a level RX / official Scaled (when the WOD has one, lines prefilled) / own Scaled, one
+  row per WOD line (`score-form/score-lines.utils.ts`: counted "max" lines, set lines, cardio substitution from
+  `ScoreReferenceData.cardio`); a changed line sends `ScoreRequest.lines` (only what differs), strength sets name their
+  line (`sets[].wodMovementId`). Aldebaran decides RX / Rx+ / official (`levelKey`, `isRanked`, `formatScoreLine` in
+  `score.utils.ts`); the leaderboard has a Scaled tab only for a WOD with an official version. WOD forms write the
+  official Scaled version with `features/wods/scaled-line` (switch + block per line); the whiteboard switches RX / Scaled.
+  Prescribed loads and box heights are shown from `WodMovementResponse.equivalents` (`UnitService.lineLoadPair`,
+  `lineHeightPair`, `lineLoadFor`: box values, never converted here); implement sizes come from
+  `WodReferenceData.implementSizes`; the quick form keeps each line's unit of origin.
 - WOD prescription display: `features/wods/wod-whiteboard` (WOD detail and session blocks). Movement
   names are written in CrossFit English whatever the language (`features/wods/movement-board-name.ts`:
   usual name and remaining words from `WodMovementResponse.display`, variants built into the name, plural for reps: "9 Hang Power Cleans", "Bar Muscle-Ups"), team split
   after the line ("(each)", "(synchro)", partner carry); a buy-in is written before the format line. Coaches and
   athletes write WODs with `features/wods/wod-quick-form` (`initial`, `defaultFormat`, `(submitted)`
   hands the `WodRequest` back; categories / sub-categories (`CATEGORIES`, `STRUCTURES`),
-  measures per movement, scheme / sets parsing in `wod-quick.utils.ts`; kettlebell / dumbbell weights
-  (Rogue catalogue) and the three box heights are picked from lists (`loadPresets`, `BOX_CM` / `BOX_IN`),
+  measures per movement, scheme / sets parsing in `wod-quick.utils.ts`; kettlebell / dumbbell / medball weights
+  and the three box heights are picked from the real sizes sent by Aldebaran (`loadPresets`, `implementSizes`),
   the implied equipment is picked with the movement (`obviousEquipment`), buy-in / cash-out lines come
   from their own buttons (`addRow(segment)`; `BUY_OUT` in code is shown "Cash-out");
   structure in fields, never a free scheme); the
@@ -217,7 +226,7 @@ the dev proxy targets the local Traefik `https://localhost` with `Host: stellar.
 
 ## Known state
 
-- Initial bundle budget (`angular.json`): warning at 600 kB (raised from 500 kB in lot 0): ~598.9 kB after the 3D muscle page (three.js stays out of it), ~597.9 kB after lot C
+- Initial bundle budget (`angular.json`): warning at 600 kB (raised from 500 kB in lot 0): ~598.9 kB after the 3D muscle page (three.js stays out of it), ~597.9 kB after lot C, ~599.3 kB after lot S
   (140 kB transferred after brain 1.9.0; 520 kB before lot 0). New screens stay lazy (sessions: own chunks). Tailwind generates the utilities of every helm file
   (~145 kB of CSS) and helm in the shell brings `tailwind-merge` (~37 kB). Keep heavy brain modules out of the shell
   (sonner is loaded on first toast and its toaster is `@defer (on idle)`).

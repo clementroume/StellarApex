@@ -453,14 +453,13 @@ describe('WodFormComponent', () => {
 
     it('should send the category, the texts of both languages and the women load', () => {
       component.wodForm.patchValue({category: 'GIRLS', descriptionFr: ' Pour le temps ', descriptionEn: ''});
-      component.movementsFormArray.at(0).patchValue({weightFemale: 30, notesFr: 'Prise large', scalingOptionsEn: 'PVC'});
+      component.movementsFormArray.at(0).patchValue({weightFemale: 30, notesFr: 'Prise large'});
 
       const payload = component.buildPayload();
 
       expect(payload).toMatchObject({category: 'GIRLS', descriptionFr: 'Pour le temps', descriptionEn: undefined});
-      expect(payload.movements[0]).toMatchObject({weight: 43, weightFemale: 30, notesFr: 'Prise large', scalingOptionsEn: 'PVC'});
+      expect(payload.movements[0]).toMatchObject({weight: 43, weightFemale: 30, notesFr: 'Prise large', scaled: null});
       expect(component.textControl('notes', 'FR')).toBe('notesFr');
-      expect(component.textControl('scalingOptions', 'EN')).toBe('scalingOptionsEn');
     });
 
     it('should send the men/women calories and heights, without a height unit when no height is given', () => {

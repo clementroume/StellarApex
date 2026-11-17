@@ -16,6 +16,7 @@ import {NotificationService} from '../../../core/services/notification.service';
 import {AccessService} from '../../../core/services/access.service';
 import {MovementReferenceData, MovementResponse, MovementSummaryResponse, UsualNameOption} from '../../../api/aldebaran/models/movement.model';
 import {ComponentTechnique, TeamMode, WodMovementRequest, WodMovementResponse, WodRequest, WodResponse} from '../../../api/aldebaran/models/wod.model';
+import {ScaledLineComponent, ScaledLineForm, scaledLineGroup, scaledLineRequest} from '../scaled-line/scaled-line.component';
 import {ProblemDetail} from '../../../core/models/problem-detail.model';
 import {UnitService} from '../../../core/services/unit.service';
 
@@ -45,7 +46,7 @@ import {HlmTextarea} from '@spartan-ng/helm/textarea';
 @Component({
   selector: 'app-wod-form',
   standalone: true,
-  imports: [HlmTextarea, HlmInput, HlmCardImports, HlmButton, HlmBadge, NativeSelectDirective, HlmSpinner, ReactiveFormsModule, RouterModule, TranslatePipe, NgIconComponent, VariantPickerComponent, MovementComboboxComponent],
+  imports: [HlmTextarea, HlmInput, HlmCardImports, HlmButton, HlmBadge, NativeSelectDirective, HlmSpinner, ReactiveFormsModule, RouterModule, TranslatePipe, NgIconComponent, VariantPickerComponent, MovementComboboxComponent, ScaledLineComponent],
   templateUrl: './wod-form.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -76,6 +77,8 @@ export class WodFormComponent implements OnInit {
   unitGroups = signal<Record<string, string[]>>({});
   availableMovements = signal<MovementSummaryResponse[]>([]);
   usualNames = signal<UsualNameOption[]>([]);
+  /** Official Scaled version written with the WOD (D141, D154): a block "Scaled" under each line. */
+  readonly withScaled = signal(false);
   referenceData = signal<MovementReferenceData | null>(null);
   readonly variantFields: readonly WodMovementVariant[] = ['equipment', 'techniques'];
   /** Per line: true when the weekly balance cannot read its text (D121, warning only). */
@@ -317,9 +320,10 @@ export class WodFormComponent implements OnInit {
       componentTechniques: [source?.componentTechniques ?? [] as ComponentTechnique[]],
       notesFr: [source?.notesFr ?? '', [Validators.maxLength(4000)]],
       notesEn: [source?.notesEn ?? '', [Validators.maxLength(4000)]],
-      scalingOptionsFr: [source?.scalingOptionsFr ?? '', [Validators.maxLength(4000)]],
-      scalingOptionsEn: [source?.scalingOptionsEn ?? '', [Validators.maxLength(4000)]]
+      // The line in the official Scaled version (lot S), edited by app-scaled-line
+      scaled: scaledLineGroup(source?.scaled)
     }));
+    if (source?.scaled) this.withScaled.set(true);
     if (source) {
       this.loadMovementDetails(source.movement.id);
     }
@@ -420,7 +424,31 @@ export class WodFormComponent implements OnInit {
   }
 
   /** Form control of a bilingual movement text, e.g. ('notes', 'FR') -> 'notesFr'. */
-  textControl(field: 'notes' | 'scalingOptions', lang: 'FR' | 'EN'): string {
+  /** The Scaled block of a line. */
+  scaledOf(index: number): ScaledLineForm {
+    return this.movementsFormArray.at(index).get('scaled') as ScaledLineForm;
+  }
+
+  /** The quantities a line prescribes, asked again by its Scaled line. */
+  scaledMeasures(index: number) {
+    const m = this.movementsFormArray.at(index).getRawValue();
+    return {
+      load: m.weight != null || m.weightFemale != null,
+      distance: m.distance != null,
+      calories: m.calories != null || m.caloriesFemale != null,
+      height: m.height != null || m.heightFemale != null,
+      duration: m.durationSeconds != null
+    };
+  }
+
+  /** Switches the official Scaled version on or off (off: every line RX again). */
+  toggleScaled(): void {
+    const on = !this.withScaled();
+    this.withScaled.set(on);
+    if (!on) this.movementsFormArray.controls.forEach((_, i) => this.scaledOf(i).controls.changed.setValue(false));
+  }
+
+  textControl(field: 'notes', lang: 'FR' | 'EN'): string {
     return field + (lang === 'FR' ? 'Fr' : 'En');
   }
 
@@ -579,8 +607,10 @@ export class WodFormComponent implements OnInit {
       // --- Instructions ---
       notesEn: m.notesEn?.trim() || undefined,
       notesFr: m.notesFr?.trim() || undefined,
-      scalingOptionsEn: m.scalingOptionsEn?.trim() || undefined,
-      scalingOptionsFr: m.scalingOptionsFr?.trim() || undefined
+      scaled: this.withScaled()
+        ? scaledLineRequest(this.movementsFormArray.at(index).get('scaled') as ScaledLineForm,
+          {weightUnit: m.weightUnit, distanceUnit: m.distanceUnit, heightUnit: m.heightUnit})
+        : null
     }));
 
     return {

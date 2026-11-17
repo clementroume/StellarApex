@@ -6,6 +6,7 @@ import {of} from 'rxjs';
 import {vi} from 'vitest';
 import {WodQuickFormComponent} from './wod-quick-form.component';
 import {APP_ICONS} from '../../../app.config';
+import {WodService} from '../../../api/aldebaran/services/wod.service';
 import {MovementService} from '../../../api/aldebaran/services/movement.service';
 import {UnitService} from '../../../core/services/unit.service';
 import {WodRequest, WodResponse} from '../../../api/aldebaran/models/wod.model';
@@ -51,6 +52,11 @@ describe('WodQuickFormComponent', () => {
       imports: [WodQuickFormComponent],
       providers: [provideTranslateService(), provideIcons(APP_ICONS),
         {provide: MovementService, useValue: movementService},
+        // Real sizes of the implements, sent by Aldebaran (D155)
+        {provide: WodService, useValue: {getReferenceData: () => of({implementSizes: {
+          kettlebellKg: [4, 6, 8, 12, 16, 20, 24, 28, 32, 36, 40, 48], kettlebellLb: [9, 13, 18, 26, 35, 44, 53, 62, 70, 80, 88, 106],
+          dumbbellKg: [2.5, 5, 7.5, 10], dumbbellLb: [5, 10, 15], medballKg: [3, 4, 6, 9], medballLb: [6, 10, 14, 20],
+          boxCm: [51, 61, 76], boxIn: [20, 24, 30]}})}},
         {provide: UnitService, useValue: {unitSystem: signal('METRIC'), massUnit: signal('KG')}}]
     }).compileComponents();
   });
@@ -340,5 +346,33 @@ describe('WodQuickFormComponent', () => {
     fixture.detectChanges();
     expect(fixture.nativeElement.querySelectorAll('select.load-preset').length).toBe(4);
     expect(fixture.nativeElement.querySelectorAll('select.height-preset').length).toBe(2);
+  });
+
+  it('should keep the units of a line written in lb when a metric coach edits it (D149)', () => {
+    init({initial: {
+      id: 3, title: 'Fran', wodType: 'FOR_TIME', structure: 'SCHEME', scoreType: 'TIME', repScheme: '21-15-9',
+      isPublic: false, competition: false, modalities: [], createdAt: '', updatedAt: '',
+      movements: [{id: 30, orderIndex: 1, movement: {id: 8, name: 'Thruster'}, repsScheme: '21-15-9',
+        weight: 95, weightFemale: 65, weightUnit: 'LBS', equipment: [], techniques: []}]
+    }});
+    expect(component.rowMassLabel(0)).toBe('lb');
+    expect(component.buildRequest().movements[0]).toMatchObject({weight: 95, weightFemale: 65, weightUnit: 'LBS'});
+  });
+
+  it('should write the official Scaled version under each line, kept RX by default (D154)', () => {
+    init();
+    pick(0, 8);
+    component.addRow();
+    pick(1, 9);
+    component.toggleScaled();
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelectorAll('app-scaled-line').length).toBe(2);
+    component.scaledOf(0).patchValue({changed: true, movementId: 8, weight: 16});
+    const movements = component.buildRequest().movements;
+    expect(movements[0].scaled).toMatchObject({movementId: 8, weight: 16, weightUnit: 'KG'});
+    expect(movements[1].scaled).toBeNull();
+
+    component.toggleScaled();
+    expect(component.buildRequest().movements[0].scaled).toBeNull();
   });
 });

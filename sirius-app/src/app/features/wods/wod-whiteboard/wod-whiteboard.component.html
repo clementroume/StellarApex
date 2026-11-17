@@ -1,5 +1,14 @@
 @let w = wod();
 <div id="whiteboard" class="flex flex-col gap-2">
+  @if (hasScaled()) {
+    <!-- The official Scaled version (lot S, D154) -->
+    <div class="field-group self-start" role="group" [attr.aria-label]="'WOD.SCALED.TITLE' | translate" id="board-version">
+      <button type="button" hlmBtn variant="outline" size="sm" class="aria-pressed:bg-muted aria-pressed:font-semibold"
+              [attr.aria-pressed]="version() === 'RX'" (click)="version.set('RX')">{{ 'SCORE.SCALING.RX' | translate }}</button>
+      <button type="button" hlmBtn variant="outline" size="sm" class="aria-pressed:bg-muted aria-pressed:font-semibold"
+              [attr.aria-pressed]="version() === 'SCALED'" (click)="version.set('SCALED')">{{ 'SCORE.SCALING.SCALED' | translate }}</button>
+    </div>
+  }
   <!-- As written on the board: buy-in, then the format and the rounds, then the cash-out -->
   @if (part('BUY_IN'); as buyIn) {
     <ng-container [ngTemplateOutlet]="movementPart" [ngTemplateOutletContext]="{segment: 'BUY_IN', movements: buyIn}"/>
@@ -85,13 +94,11 @@
             {{ percentLoad(wm)?.source ?? percentLabel(wm) }}
           </p>
         }
+        @if (rxReminder(wm); as rx) {
+          <p class="text-sm text-muted-foreground">{{ rx }}</p>
+        }
         @if (movementNotes(wm); as n) {
           <p class="text-sm text-muted-foreground whitespace-pre-line">{{ n }}</p>
-        }
-        @if (scaling(wm); as sc) {
-          <p class="text-sm text-muted-foreground whitespace-pre-line">
-            <span class="font-semibold">{{ 'WOD.FIELDS.SCALING' | translate }} :</span> {{ sc }}
-          </p>
         }
       </li>
     }
