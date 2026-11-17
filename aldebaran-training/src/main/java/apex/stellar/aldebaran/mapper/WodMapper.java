@@ -14,6 +14,7 @@ import apex.stellar.aldebaran.model.entities.WodMovement;
 import apex.stellar.aldebaran.model.entities.WodScaledLine;
 import apex.stellar.aldebaran.service.CatalogRules;
 import apex.stellar.aldebaran.service.LineVersions;
+import apex.stellar.aldebaran.service.UnitEquivalence;
 import java.util.List;
 import apex.stellar.aldebaran.repository.projection.WodSummary;
 import org.mapstruct.Mapper;
@@ -176,6 +177,9 @@ public interface WodMapper {
       target = "display",
       expression = "java(apex.stellar.aldebaran.service.CatalogRules.display(wodMovement))")
   @Mapping(target = "scaled", expression = "java(toScaledResponse(wodMovement))")
+  @Mapping(
+      target = "equivalents",
+      expression = "java(apex.stellar.aldebaran.service.UnitEquivalence.of(wodMovement))")
   WodMovementResponse toWodMovementResponse(WodMovement wodMovement);
 
   /**
@@ -205,7 +209,8 @@ public interface WodMapper {
         s.getHeightFemale(),
         s.getHeightUnit(),
         s.getDurationSeconds(),
-        CatalogRules.display(s));
+        CatalogRules.display(s),
+        UnitEquivalence.of(s));
   }
 
   /**

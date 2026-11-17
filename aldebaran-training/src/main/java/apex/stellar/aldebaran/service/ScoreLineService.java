@@ -5,11 +5,13 @@ import apex.stellar.aldebaran.dto.ScoreRequest;
 import apex.stellar.aldebaran.dto.ScoreSetRequest;
 import apex.stellar.aldebaran.exception.InvalidScoreException;
 import apex.stellar.aldebaran.model.entities.Score;
+import apex.stellar.aldebaran.model.entities.Score.ScalingLevel;
 import apex.stellar.aldebaran.model.entities.ScoreLine;
 import apex.stellar.aldebaran.model.entities.ScoreSet;
 import apex.stellar.aldebaran.model.entities.Wod;
 import apex.stellar.aldebaran.model.entities.Wod.ScoreType;
 import apex.stellar.aldebaran.model.entities.WodMovement;
+import apex.stellar.aldebaran.model.enums.Division;
 import apex.stellar.aldebaran.model.enums.Unit;
 import apex.stellar.aldebaran.repository.MovementRepository;
 import java.util.ArrayList;
@@ -160,6 +162,38 @@ public class ScoreLineService {
       line.setTechniques(new HashSet<>(done.getTechniques()));
     }
     return line;
+  }
+
+  /**
+   * Compares the score with the prescription (D140-D142): an RX score may change nothing; a Scaled
+   * score gets the Rx+ badge (no line lighter, one harder) and the official flag (every line as the
+   * WOD's official Scaled version). Loads count with the box equivalences of the athlete's unit
+   * (D149).
+   *
+   * @param score The score, its lines, division and weight unit set.
+   * @param wod The WOD, with its lines.
+   * @throws InvalidScoreException if an RX score changes a line.
+   */
+  public void applyConformity(Score score, Wod wod) {
+    Division division = score.getDivision() == Division.MIXED ? null : score.getDivision();
+    ScoreConformity.Result result =
+        ScoreConformity.of(
+            sortedLines(wod),
+            score.getLines(),
+            new ScoreConformity.Context(
+                division, score.getWeightDisplayUnit(), UnitEquivalence.exact(wod), true));
+    boolean scaled = score.getScaling() == ScalingLevel.SCALED;
+    if (!scaled && !result.asPrescribed()) {
+      throw new InvalidScoreException("error.score.rx.changed");
+    }
+    score.setRxPlus(scaled && result.rxPlus());
+    score.setScaledOfficial(scaled && result.official());
+  }
+
+  private static List<WodMovement> sortedLines(Wod wod) {
+    return wod.getMovements().stream()
+        .sorted(Comparator.comparing(WodMovement::getOrderIndex))
+        .toList();
   }
 
   /**

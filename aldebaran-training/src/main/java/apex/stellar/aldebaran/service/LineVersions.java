@@ -189,6 +189,39 @@ public final class LineVersions {
     return null;
   }
 
+  /**
+   * The reps of one round as done (D147): the WOD's reps per round, with each changed line's reps
+   * in place of the prescribed ones (Cindy at 3 pull-ups: 28). Only plain numbers are replaced.
+   *
+   * @param repsPerRound The WOD's reps per round, or null.
+   * @param rxLines The WOD's lines.
+   * @param done The score's changed lines.
+   * @return The reps of a round as done, or null when the WOD has none.
+   */
+  public static @Nullable Integer roundReps(
+      @Nullable Integer repsPerRound, List<WodMovement> rxLines, List<ScoreLine> done) {
+    if (repsPerRound == null) {
+      return null;
+    }
+    int reps = repsPerRound;
+    for (WodMovement rx : rxLines) {
+      ScoreLine line = lineOf(done, rx);
+      if (line == null || line.getRepsScheme() == null) {
+        continue;
+      }
+      Integer before = plainNumber(rx.getRepsScheme());
+      Integer after = plainNumber(line.getRepsScheme());
+      if (before != null && after != null) {
+        reps += after - before;
+      }
+    }
+    return reps > 0 ? reps : repsPerRound;
+  }
+
+  private static @Nullable Integer plainNumber(@Nullable String text) {
+    return text != null && text.trim().matches("\\d+") ? Integer.valueOf(text.trim()) : null;
+  }
+
   private static void applyVariant(
       WodMovement line,
       WodMovement rx,

@@ -746,7 +746,8 @@ public class WodService {
       unitGroups.computeIfAbsent(u.getType().name(), k -> new ArrayList<>()).add(u.name());
     }
 
-    return new WodReferenceData(wodTypes, structures, categories, scoreTypes, unitGroups);
+    return new WodReferenceData(
+        wodTypes, structures, categories, scoreTypes, unitGroups, UnitEquivalence.sizes());
   }
 
   /**

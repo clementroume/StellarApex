@@ -63,5 +63,8 @@ public record WodMovementResponse(
     // --- How the line reads, decided by the catalog ---
     WodMovementDisplay display,
 
+    // --- Load and height in both systems, as boxes load them (D149), or null ---
+    LineEquivalents equivalents,
+
     // --- This line in the WOD's official Scaled version, or null (kept RX) ---
     WodScaledLineResponse scaled) {}

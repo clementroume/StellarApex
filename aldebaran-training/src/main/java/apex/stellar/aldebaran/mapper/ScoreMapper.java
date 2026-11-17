@@ -59,7 +59,7 @@ public interface ScoreMapper {
   @Mapping(target = "distanceUnit", source = "distanceDisplayUnit")
   @Mapping(target = "sets", source = "score", qualifiedByName = "mapSetsToDisplay")
   @Mapping(target = "lines", source = "score", qualifiedByName = "mapLinesToDisplay")
-  @Mapping(target = "roundReps", ignore = true) // Computed by ScoreService
+  @Mapping(target = "roundReps", source = "score", qualifiedByName = "roundReps")
   @Mapping(target = "teamId", source = "team.id")
   @Mapping(target = "teamMemberIds", source = "team.memberIds")
   ScoreResponse toResponse(Score score);
@@ -310,6 +310,25 @@ public interface ScoreMapper {
                     set.isCompleted(),
                     set.getWodMovement() != null ? set.getWodMovement().getId() : null))
         .toList();
+  }
+
+  /**
+   * The reps of one round as done (D147), or null when the WOD has no fixed round.
+   *
+   * @param s The score.
+   * @return The reps.
+   */
+  @SuppressWarnings("unused")
+  @Named("roundReps")
+  default Integer roundReps(Score s) {
+    if (s.getWod() == null || s.getWod().getRepsPerRound() == null) {
+      return null;
+    }
+    if (s.getLines() == null || s.getLines().isEmpty()) {
+      return s.getWod().getRepsPerRound();
+    }
+    return LineVersions.roundReps(
+        s.getWod().getRepsPerRound(), s.getWod().getMovements(), s.getLines());
   }
 
   /**

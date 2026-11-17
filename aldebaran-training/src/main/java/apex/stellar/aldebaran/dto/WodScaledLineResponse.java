@@ -23,4 +23,5 @@ public record WodScaledLineResponse(
     Double heightFemale,
     Unit heightUnit,
     Integer durationSeconds,
-    WodMovementDisplay display) {}
+    WodMovementDisplay display,
+    LineEquivalents equivalents) {}
