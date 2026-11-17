@@ -16,7 +16,7 @@ import {WodScoresStore} from '../../wods/scores/wod-scores.store';
 import {ScoreHistoryComponent} from '../../wods/scores/score-history/score-history.component';
 import {ScoreFormComponent} from '../../wods/scores/score-form/score-form.component';
 import {ScoreLeaderboardComponent} from '../../wods/scores/score-leaderboard/score-leaderboard.component';
-import {formatScore} from '../../wods/scores/score.utils';
+import {formatScore, formatScoreLine, levelKey} from '../../wods/scores/score.utils';
 import {WodWhiteboardComponent} from '../../wods/wod-whiteboard/wod-whiteboard.component';
 import {localizedText} from '../../wods/wod.utils';
 import {blockTheme, isTextKind} from '../session.utils';
@@ -47,6 +47,7 @@ export class SessionBlockComponent {
   protected readonly store = inject(WodScoresStore);
 
   // --- STATE (SIGNALS & VARIABLES) ---
+  protected readonly levelKey = levelKey;
   readonly block = input.required<SessionBlockResponse>();
   /** Session of the block: history and leaderboard keep that session's scores. */
   readonly sessionId = input<number | null>(null);
@@ -138,5 +139,10 @@ export class SessionBlockComponent {
   protected scoreValue(score: ScoreResponse): string {
     const wod = this.wod();
     return wod ? formatScore(score, wod, this.unitService, (k, p) => this.translate.instant(k, p)) : '';
+  }
+
+  /** Lines a submitted score changed, for the judges (lot S). */
+  changedLines(score: ScoreResponse): string[] {
+    return (score.lines ?? []).map(line => formatScoreLine(line, score.weightUnit, this.unitService));
   }
 }

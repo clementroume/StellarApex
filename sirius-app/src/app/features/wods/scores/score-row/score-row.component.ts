@@ -4,7 +4,7 @@ import {TranslatePipe, TranslateService} from '@ngx-translate/core';
 import {HlmBadge} from '@spartan-ng/helm/badge';
 import {ScoreResponse} from '../../../../api/aldebaran/models/score.model';
 import {UnitService} from '../../../../core/services/unit.service';
-import {formatScore} from '../score.utils';
+import {formatScore, levelKey} from '../score.utils';
 
 /** One of the user's scores as a link to its WOD: title, date, PR badge and formatted score. */
 @Component({
@@ -19,7 +19,7 @@ import {formatScore} from '../score.utils';
         <span class="block font-medium truncate">{{ score().wodSummary.title }}</span>
         <span class="block text-xs text-muted-foreground">
           {{ date() }}
-          · {{ 'SCORE.SCALING.' + score().scaling | translate }}
+          · {{ levelKey(score()) | translate }}
           @if (score().sets?.length) {
             · {{ 'SCORE.SETS.SUMMARY' | translate: {count: score().sets?.length} }}
           }
@@ -41,6 +41,8 @@ export class ScoreRowComponent {
 
   // --- STATE (SIGNALS & VARIABLES) ---
   readonly score = input.required<ScoreResponse>();
+
+  protected readonly levelKey = levelKey;
 
   // --- COMPUTED STATE ---
   /** "26 Oct 2026" / "26 oct. 2026", in the language shown. */

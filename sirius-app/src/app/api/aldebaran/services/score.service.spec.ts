@@ -35,7 +35,8 @@ describe('ScoreService', () => {
   };
 
   const mockReferenceData: ScoreReferenceData = {
-    scalingLevels: ['RX', 'SCALED', 'ELITE', 'CUSTOM']
+    scalingLevels: ['RX', 'SCALED'],
+    cardio: [{movementName: 'Rowing', meters: 1.25, calories: 0.1}]
   };
 
   beforeEach(() => {
@@ -132,6 +133,15 @@ describe('ScoreService', () => {
     const req = httpMock.expectOne(`${base}/scores/reference-data`);
     expect(req.request.method).toBe('GET');
     req.flush(mockReferenceData);
+  });
+
+  it('previewLevel should POST the score being written to /scores/level-preview', () => {
+    const request = {wodId: 1, date: '2026-11-17', scaling: 'SCALED', timeCapped: false} as const;
+    service.previewLevel(request).subscribe(response => expect(response.rxPlus).toBe(true));
+    const req = httpMock.expectOne(`${base}/scores/level-preview`);
+    expect(req.request.method).toBe('POST');
+    expect(req.request.body).toEqual(request);
+    req.flush({asPrescribed: false, rxPlus: true, official: false});
   });
 
   it('getLeaderboard should pass the gyms and verified-only filters', () => {

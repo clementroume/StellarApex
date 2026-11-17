@@ -9,6 +9,7 @@ import apex.stellar.aldebaran.model.entities.MovementMuscle;
 import apex.stellar.aldebaran.model.entities.Muscle;
 import apex.stellar.aldebaran.model.entities.PerSet;
 import apex.stellar.aldebaran.model.entities.Score;
+import apex.stellar.aldebaran.model.entities.ScoreLine;
 import apex.stellar.aldebaran.model.entities.ScoreSet;
 import apex.stellar.aldebaran.model.entities.SessionBlock.Kind;
 import apex.stellar.aldebaran.model.entities.Wod.ScoreType;
@@ -20,6 +21,7 @@ import apex.stellar.aldebaran.model.entities.WodMovement.Segment;
 import apex.stellar.aldebaran.model.entities.WodMovement;
 import apex.stellar.aldebaran.model.enums.Category.Modality;
 import apex.stellar.aldebaran.model.enums.Category;
+import apex.stellar.aldebaran.model.enums.Division;
 import apex.stellar.aldebaran.model.enums.Equipment;
 import apex.stellar.aldebaran.model.enums.TimeDomain;
 import apex.stellar.aldebaran.model.enums.UncountedReason;
@@ -92,6 +94,7 @@ class BalanceCalculatorTest {
   private static WodMovement line(Wod wod, Movement movement, String scheme) {
     WodMovement line =
         WodMovement.builder()
+            .id(IDS.getAndIncrement())
             .wod(wod)
             .movement(movement)
             .orderIndex(wod.getMovements().size() + 1)
@@ -268,11 +271,11 @@ class BalanceCalculatorTest {
     WodMovement back = line(squat, SQUAT, "5 x 5");
     back.getEquipment().add("BARBELL");
     List<ScoreSet> sets = new ArrayList<>();
-    sets.add(ScoreSet.builder().reps(5).weightKg(40.0).build());
+    sets.add(ScoreSet.builder().wodMovement(back).reps(5).weightKg(40.0).build());
     for (int i = 0; i < 5; i++) {
-      sets.add(ScoreSet.builder().reps(5).weightKg(100.0).build());
+      sets.add(ScoreSet.builder().wodMovement(back).reps(5).weightKg(100.0).build());
     }
-    sets.add(ScoreSet.builder().reps(5).weightKg(100.0).completed(false).build());
+    sets.add(ScoreSet.builder().wodMovement(back).reps(5).weightKg(100.0).completed(false).build());
     Score score = Score.builder().date(DAY).maxWeightKg(100.0).sets(sets).build();
 
     WeekTotals totals = new WeekTotals();
@@ -304,14 +307,15 @@ class BalanceCalculatorTest {
   @DisplayName("A complex: each set is a round, its reps summed, each muscle at its strongest role")
   void complex() {
     Wod complex = wod(WodType.FOR_LOAD, ScoreType.WEIGHT);
-    line(complex, THRUSTER, "1").setComplexGroup(1);
+    WodMovement first = line(complex, THRUSTER, "1");
+    first.setComplexGroup(1);
     line(complex, PULL_UP, "1").setComplexGroup(1);
     Score score =
         Score.builder()
             .date(DAY)
             .sets(new ArrayList<>(List.of(
-                ScoreSet.builder().reps(1).weightKg(60.0).build(),
-                ScoreSet.builder().reps(1).weightKg(60.0).build())))
+                ScoreSet.builder().wodMovement(first).reps(1).weightKg(60.0).build(),
+                ScoreSet.builder().wodMovement(first).reps(1).weightKg(60.0).build())))
             .build();
 
     WeekTotals totals = totals(complex, score);
@@ -328,9 +332,9 @@ class BalanceCalculatorTest {
   void emomWithSetsIsStrength() {
     Wod emom = wod(WodType.EMOM, ScoreType.NONE);
     emom.setEmomRounds(10);
-    line(emom, SQUAT, "2");
+    WodMovement squat = line(emom, SQUAT, "2");
     Score score =
-        Score.builder().date(DAY).sets(new ArrayList<>(List.of(ScoreSet.builder().reps(2).weightKg(80.0).build()))).build();
+        Score.builder().date(DAY).sets(new ArrayList<>(List.of(ScoreSet.builder().wodMovement(squat).reps(2).weightKg(80.0).build()))).build();
 
     WeekTotals totals = totals(emom, score);
 
@@ -467,4 +471,89 @@ class BalanceCalculatorTest {
     line(noLength, SHUTTLE, "30");
     assertThat(totals(noLength, timed(240)).totalSets()).isCloseTo(1.0, within(1e-9));
   }
+
+  // --- Lot S: the lines as done (D148) ---
+
+  private static ScoreLine changed(WodMovement line, Movement movement, String reps) {
+    return ScoreLine.builder().wodMovement(line).movement(movement).repsScheme(reps).build();
+  }
+
+  @Test
+  @DisplayName("Lot S: a substitute counts with its own muscles, reduced reps with their own volume")
+  void substitution() {
+    Wod fran = wod(WodType.FOR_TIME, ScoreType.TIME);
+    line(fran, THRUSTER, "21-15-9");
+    WodMovement pullUps = line(fran, PULL_UP, "21-15-9");
+    Score score = timed(400);
+    score.getLines().add(changed(pullUps, PUSH_UP, "15-12-9"));
+
+    WeekTotals totals = totals(fran, score);
+
+    // 36 push-ups at 15 a set, no pull-up at all
+    assertThat(moving(totals, CHEST)).isCloseTo(36 / 15.0, within(1e-9));
+    assertThat(moving(totals, LATS)).isZero();
+    assertThat(moving(totals, QUADS)).isCloseTo(4.5, within(1e-9));
+  }
+
+  @Test
+  @DisplayName("Lot S: reps counted on max lines replace the equal shares (D147)")
+  void maxCounts() {
+    Wod lynne = wod(WodType.AMRAP, ScoreType.REPS);
+    WodMovement pullUps = line(lynne, PULL_UP, "max");
+    line(lynne, PUSH_UP, "max");
+    Score score = Score.builder().date(DAY).reps(60).build();
+    score.getLines().add(changed(pullUps, PULL_UP, "40"));
+
+    WeekTotals totals = totals(lynne, score);
+
+    // 40 pull-ups counted, the 20 reps left for the push-ups
+    assertThat(moving(totals, LATS)).isCloseTo(4, within(1e-9));
+    assertThat(moving(totals, CHEST)).isCloseTo(20 / 15.0, within(1e-9));
+  }
+
+  @Test
+  @DisplayName("Lot S: each line counts its own sets (D122 rule 4 lifted)")
+  void setsPerLine() {
+    Wod total = wod(WodType.FOR_LOAD, ScoreType.LOAD);
+    WodMovement squat = line(total, SQUAT, "1");
+    WodMovement press = line(total, PUSH_UP, "1");
+    Score score =
+        Score.builder()
+            .date(DAY)
+            .sets(
+                new ArrayList<>(
+                    List.of(
+                        ScoreSet.builder().wodMovement(squat).reps(1).weightKg(120.0).build(),
+                        ScoreSet.builder().wodMovement(squat).reps(1).weightKg(130.0).build(),
+                        ScoreSet.builder().wodMovement(press).reps(1).weightKg(60.0).build())))
+            .build();
+
+    WeekTotals totals = new WeekTotals();
+    BalanceCalculator.add(
+        new Workout(total, score, DAY, null, null, 0),
+        (m, key, day, load) -> m == SQUAT && load >= 130,
+        totals);
+
+    assertThat(totals.lifts().get("Squat").sets()).isCloseTo(1, within(1e-9));
+    assertThat(totals.lifts().get("Squat").nearRecord()).isTrue();
+    assertThat(totals.lifts().get("Push-up").sets()).isCloseTo(0.5, within(1e-9));
+    assertThat(totals.lifts().get("Push-up").nearRecord()).isFalse();
+  }
+
+  @Test
+  @DisplayName("Lot S: a line in calories counts on its men's value (D151)")
+  void caloriesOnMensValue() {
+    Movement rower = movement("Rowing", Category.CARDIO, new PerSet(null, 1000, 240, 80), QUADS, null, null);
+    Wod row = wod(WodType.FOR_TIME, ScoreType.TIME);
+    WodMovement line = line(row, rower, null);
+    line.setCalories(40);
+    line.setCaloriesFemale(28);
+
+    WeekTotals men = totals(new Workout(row, timed(180), DAY, null, Division.MEN, 0));
+    WeekTotals women = totals(new Workout(row, timed(200), DAY, null, Division.WOMEN, 0));
+
+    assertThat(moving(men, QUADS)).isCloseTo(0.5, within(1e-9));
+    assertThat(moving(women, QUADS)).isCloseTo(0.5, within(1e-9));
+  }
+
 }

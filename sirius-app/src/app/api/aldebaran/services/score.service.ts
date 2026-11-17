@@ -2,7 +2,8 @@ import {inject, Injectable} from '@angular/core';
 import {HttpClient, HttpContext, HttpParams} from '@angular/common/http';
 import {Observable} from 'rxjs';
 import {environment} from '../../../../environments/environment';
-import {ScoreComparisonResponse, ScoreReferenceData, ScoreRequest, ScoreResponse} from '../models/score.model';
+import {ScoreComparisonResponse, ScoreLevelResponse, ScoreReferenceData, ScoreRequest, ScoreResponse} from '../models/score.model';
+import {BYPASS_LOADER} from '../../../core/interceptors/loading.interceptor';
 import {Slice} from '../../../core/models/pagination.model';
 import {Division} from '../../antares/models/user.model';
 import {AgeGroup} from '../models/record.model';
@@ -94,6 +95,12 @@ export class ScoreService {
     }
 
     return this.http.get<Slice<ScoreResponse>>(this.buildUrl(`/leaderboard/${wodId}`), {params});
+  }
+
+  /** How a score being written compares with the prescription: RX, Rx+, official Scaled (lot S, nothing saved). */
+  previewLevel(request: ScoreRequest): Observable<ScoreLevelResponse> {
+    return this.http.post<ScoreLevelResponse>(this.buildUrl('/level-preview'), request,
+      {context: new HttpContext().set(BYPASS_LOADER, true)});
   }
 
   getReferenceData(): Observable<ScoreReferenceData> {

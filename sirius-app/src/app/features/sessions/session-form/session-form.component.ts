@@ -1,3 +1,4 @@
+import {scaledResponseOf} from '../../wods/wod.utils';
 import {map} from 'rxjs';
 import {ChangeDetectionStrategy, Component, computed, DestroyRef, effect, inject, input, signal, untracked} from '@angular/core';
 import {toSignal} from '@angular/core/rxjs-interop';
@@ -498,6 +499,9 @@ function requestAsResponse(request: WodRequest): WodResponse {
     modalities: [],
     createdAt: '',
     updatedAt: '',
-    movements: request.movements.map(m => ({...m, id: 0, movement: {id: m.movementId, name: ''} as WodResponse['movements'][number]['movement']}))
+    movements: request.movements.map(m => ({
+      ...m, id: 0, movement: {id: m.movementId, name: ''} as WodResponse['movements'][number]['movement'],
+      scaled: scaledResponseOf(m.scaled)
+    }))
   };
 }

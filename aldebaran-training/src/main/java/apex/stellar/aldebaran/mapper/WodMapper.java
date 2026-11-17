@@ -1,12 +1,21 @@
 package apex.stellar.aldebaran.mapper;
 
+import apex.stellar.aldebaran.dto.MovementSummaryResponse;
 import apex.stellar.aldebaran.dto.WodMovementRequest;
 import apex.stellar.aldebaran.dto.WodMovementResponse;
 import apex.stellar.aldebaran.dto.WodRequest;
 import apex.stellar.aldebaran.dto.WodResponse;
+import apex.stellar.aldebaran.dto.WodScaledLineRequest;
+import apex.stellar.aldebaran.dto.WodScaledLineResponse;
 import apex.stellar.aldebaran.dto.WodSummaryResponse;
+import apex.stellar.aldebaran.model.entities.Movement;
 import apex.stellar.aldebaran.model.entities.Wod;
 import apex.stellar.aldebaran.model.entities.WodMovement;
+import apex.stellar.aldebaran.model.entities.WodScaledLine;
+import apex.stellar.aldebaran.service.CatalogRules;
+import apex.stellar.aldebaran.service.LineVersions;
+import apex.stellar.aldebaran.service.UnitEquivalence;
+import java.util.List;
 import apex.stellar.aldebaran.repository.projection.WodSummary;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
@@ -167,7 +176,68 @@ public interface WodMapper {
   @Mapping(
       target = "display",
       expression = "java(apex.stellar.aldebaran.service.CatalogRules.display(wodMovement))")
+  @Mapping(target = "scaled", expression = "java(toScaledResponse(wodMovement))")
+  @Mapping(
+      target = "equivalents",
+      expression = "java(apex.stellar.aldebaran.service.UnitEquivalence.of(wodMovement))")
   WodMovementResponse toWodMovementResponse(WodMovement wodMovement);
+
+  /**
+   * The line in the WOD's official Scaled version, every value filled in (D141).
+   *
+   * @param rx The RX line.
+   * @return The Scaled line, or null when the version keeps it RX.
+   */
+  default WodScaledLineResponse toScaledResponse(WodMovement rx) {
+    if (rx.getScaled() == null) {
+      return null;
+    }
+    WodMovement s = LineVersions.scaled(rx);
+    return new WodScaledLineResponse(
+        movementSummary(s.getMovement()),
+        s.getEquipment(),
+        s.getTechniques(),
+        s.getRepsScheme(),
+        s.getWeight(),
+        s.getWeightFemale(),
+        s.getWeightUnit(),
+        s.getDistance(),
+        s.getDistanceUnit(),
+        s.getCalories(),
+        s.getCaloriesFemale(),
+        s.getHeight(),
+        s.getHeightFemale(),
+        s.getHeightUnit(),
+        s.getDurationSeconds(),
+        CatalogRules.display(s),
+        UnitEquivalence.of(s));
+  }
+
+  /**
+   * A short summary of a movement entity (no composition).
+   *
+   * @param m The movement.
+   * @return The summary, or null.
+   */
+  default MovementSummaryResponse movementSummary(Movement m) {
+    if (m == null) {
+      return null;
+    }
+    return new MovementSummaryResponse(
+        m.getId(), m.getName(), m.getNameAbbreviation(), m.getCategory(), m.getImageUrl(),
+        List.of(), List.of());
+  }
+
+  /**
+   * Maps the request of a line in the official Scaled version (movement resolved by the service).
+   *
+   * @param request The request.
+   * @return The entity, without its RX line nor its movement.
+   */
+  @Mapping(target = "id", ignore = true)
+  @Mapping(target = "wodMovement", ignore = true)
+  @Mapping(target = "movement", ignore = true)
+  WodScaledLine toWodScaledLineEntity(WodScaledLineRequest request);
 
   /**
    * Maps a movement prescription request to a WodMovement entity.
@@ -181,5 +251,6 @@ public interface WodMapper {
   @Mapping(target = "id", ignore = true)
   @Mapping(target = "wod", ignore = true) // Set by parent context
   @Mapping(target = "movement", ignore = true) // Resolved by Service via movementId
+  @Mapping(target = "scaledLines", ignore = true)
   WodMovement toWodMovementEntity(WodMovementRequest request);
 }

@@ -50,9 +50,13 @@ public record ScoreResponse(
     // Age group of the athlete in the year of the score (null: no birth year)
     AgeGroup ageGroup,
 
-    // --- Comments and Scaling notes---
+    // Scaled score following the WOD's official Scaled version (ranked in Scaled)
+    boolean scaledOfficial,
+    // Rx+ badge: Scaled, every line at least RX and one harder (never ranked)
+    boolean rxPlus,
+
+    // --- Comment ---
     String userComment,
-    String scalingNotes,
 
     // --- Audit ---
     LocalDate loggedAt,
@@ -69,6 +73,11 @@ public record ScoreResponse(
     Long sessionLogId,
     List<ScoreSetResponse> sets,
 
+    // --- Lines done otherwise than prescribed, or the reps of "max" lines ---
+    List<ScoreLineResponse> lines,
+    // --- Reps of one round as done (scaled reps included), or null when not readable ---
+    Integer roundReps,
+
     // --- Team WOD: team of the score and its members (same performance), or null ---
     Long teamId,
     List<Long> teamMemberIds,
@@ -78,10 +87,10 @@ public record ScoreResponse(
 
   /**
    * Returns a copy of this response for a given viewer: with their capabilities, and without the
-   * athlete's comment and scaling notes when the viewer may not see them.
+   * athlete's comment when the viewer may not see them.
    *
    * @param capabilities The rights of the viewer on this score.
-   * @param showNotes Whether the viewer may read the comment and the scaling notes.
+   * @param showNotes Whether the viewer may read the comment.
    * @return A new response adapted to the viewer.
    */
   public ScoreResponse forViewer(ScoreCapabilities capabilities, boolean showNotes) {
@@ -109,8 +118,9 @@ public record ScoreResponse(
         personalRecord,
         division,
         ageGroup,
+        scaledOfficial,
+        rxPlus,
         showNotes ? userComment : null,
-        showNotes ? scalingNotes : null,
         loggedAt,
         loggedBy,
         verifiedBy,
@@ -118,6 +128,8 @@ public record ScoreResponse(
         verificationRequested,
         sessionLogId,
         sets,
+        lines,
+        roundReps,
         teamId,
         teamMemberIds,
         capabilities);

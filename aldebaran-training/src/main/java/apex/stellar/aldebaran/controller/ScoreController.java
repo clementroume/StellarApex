@@ -1,6 +1,7 @@
 package apex.stellar.aldebaran.controller;
 
 import apex.stellar.aldebaran.dto.ScoreComparisonResponse;
+import apex.stellar.aldebaran.dto.ScoreLevelResponse;
 import apex.stellar.aldebaran.dto.ScoreReferenceData;
 import apex.stellar.aldebaran.dto.ScoreRequest;
 import apex.stellar.aldebaran.dto.ScoreResponse;
@@ -92,6 +93,23 @@ public class ScoreController {
 
     return ResponseEntity.status(HttpStatus.CREATED)
         .body(scoreCapabilityService.forViewer(scoreService.logScore(request), principal));
+  }
+
+  /**
+   * Tells how a score being written compares with the prescription, without saving it (lot S): as prescribed, Rx+,
+   * or the WOD's official Scaled version. The score form shows it while the athlete changes lines.
+   *
+   * <p><b>Security:</b> users who can read the WOD.
+   *
+   * @param request The score being written (its performance may still be empty).
+   * @param principal The authenticated user.
+   * @return The comparison.
+   */
+  @PostMapping("/level-preview")
+  @PreAuthorize("@wodSecurity.canRead(#request.wodId(), principal)")
+  public ResponseEntity<ScoreLevelResponse> previewLevel(
+      @RequestBody ScoreRequest request, @AuthenticationPrincipal AldebaranUserPrincipal principal) {
+    return ResponseEntity.ok(scoreService.previewLevel(request));
   }
 
   /**

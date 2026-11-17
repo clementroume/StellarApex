@@ -80,7 +80,10 @@
           @for (score of queue(); track score.id) {
             <li class="py-2 flex flex-wrap items-center justify-between gap-2">
               <span><span class="font-medium">{{ athleteName(score) }}</span> · <span class="tabular-nums">{{ scoreValue(score) }}</span>
-                · {{ 'SCORE.SCALING.' + score.scaling | translate }}</span>
+                · {{ levelKey(score) | translate }}
+                @for (line of changedLines(score); track $index) {
+                  <span class="block text-sm text-muted-foreground">{{ line }}</span>
+                }</span>
               @if (score.capabilities?.canVerify) {
                 <button type="button" hlmBtn variant="outline" size="sm" (click)="verify(score)">
                   <ng-icon name="heroCheckBadge" aria-hidden="true"/>{{ 'SCORE.ACTIONS.VERIFY' | translate }}

@@ -972,7 +972,14 @@
         "TOGETHER": "Ensemble"
       }
     },
-    "REPS_UNREADABLE": "Non compté dans le bilan : écris par exemple 21, 21-15-9, 5 x 5, max ou 1 min."
+    "REPS_UNREADABLE": "Non compté dans le bilan : écris par exemple 21, 21-15-9, 5 x 5, max ou 1 min.",
+    "SCALED": {
+      "TITLE": "Version Scaled officielle",
+      "HINT": "Ce que font tous les athlètes scaled. Seuls ces scores sont classés en Scaled.",
+      "AS_RX": "Comme RX",
+      "CHANGE": "Changer",
+      "BOARD_RX": "RX : {{line}}"
+    }
   },
   "SCORE": {
     "TITLE": "Scores",
@@ -1007,7 +1014,6 @@
       "CALORIES": "Calories",
       "DISTANCE": "Distance",
       "UNIT": "Unité",
-      "SCALING_NOTES": "Adaptations",
       "COMMENT": "Commentaire",
       "ROUNDS_ON_MINUTE": "Tours réalisés dans la minute",
       "MAX": "max {{max}}",
@@ -1022,14 +1028,14 @@
       "SUBMIT": "Soumettre à validation",
       "TEAMMATES": "Coéquipiers (équipes de {{size}})"
     },
-    "PLACEHOLDERS": {
-      "SCALING_NOTES": "ex. thrusters à 35 kg, tractions avec élastique"
-    },
     "SCALING": {
-      "ELITE": "Rx+",
       "RX": "Rx",
       "SCALED": "Scaled",
-      "CUSTOM": "Personnalisé"
+      "OFFICIAL": "Scaled officiel",
+      "RX_PLUS": "Rx+",
+      "OWN": "Scaled perso",
+      "SCALED_OR_RX_PLUS": "Scaled / Rx+",
+      "OWN_OR_RX_PLUS": "Scaled perso / Rx+"
     },
     "DISPLAY": {
       "CAPPED": "CAP + {{reps}} rép.",
@@ -1052,7 +1058,13 @@
       "UNVERIFIED": "Validation retirée",
       "SUBMIT_HINT": "Un juge de la box valide ton score pour le classement compétition. Sans la coche, c'est un score normal.",
       "NO_GYM_MATES": "Aucun autre membre dans cette box.",
-      "TEAM_HINT": "Tes coéquipiers reçoivent le même score. Un athlète en plus fait le miroir d'un membre."
+      "TEAM_HINT": "Tes coéquipiers reçoivent le même score. Un athlète en plus fait le miroir d'un membre.",
+      "OWN_HINT": "Scaled perso : visible dans ton historique, pas classé.",
+      "SCALED_HINT": "Indique ce que tu as changé ligne par ligne. Les scaled ne sont pas classés.",
+      "OFFICIAL_HINT": "Les lignes suivent la version Scaled du WOD. Modifier une ligne en fait un Scaled perso, non classé.",
+      "RX_PLUS_HINT": "Rx+ : toutes tes lignes sont au moins RX, une est plus dure. Visible dans ton historique, pas classé.",
+      "OFFICIAL_MATCH": "Tes lignes suivent la version Scaled officielle : ton score sera classé en Scaled.",
+      "OFFICIAL_MISMATCH": "Tes lignes ne suivent plus la version Scaled officielle : ton score ne sera pas classé."
     },
     "TIEBREAK_SHORT": "TB {{time}}",
     "ENTRY": {
@@ -1089,10 +1101,23 @@
       "REMOVE": "Retirer la série {{n}}",
       "BEST": "Meilleure série : {{value}} {{unit}}",
       "VOLUME": "Volume : {{value}} {{unit}}",
-      "SUMMARY": "{{count}} séries"
+      "SUMMARY": "{{count}} séries",
+      "TOTAL": "Total : {{value}} {{unit}}"
     },
     "SUBMITTED": "Soumis à validation",
-    "TEAM_OF": "Équipe de {{count}}"
+    "TEAM_OF": "Équipe de {{count}}",
+    "LINES": {
+      "TITLE": "Mouvements",
+      "ROUND": "Tour réalisé : {{reps}} rép.",
+      "COUNT": "Rép. faites",
+      "CHANGE": "Modifier",
+      "MOVEMENT": "Mouvement fait",
+      "REPS": "Rép.",
+      "LOAD": "Charge",
+      "HEIGHT": "Hauteur",
+      "DURATION": "Durée (s)",
+      "RESTORE": "Revenir à la prescription"
+    }
   },
   "ADMIN": {
     "SUPPORT": {

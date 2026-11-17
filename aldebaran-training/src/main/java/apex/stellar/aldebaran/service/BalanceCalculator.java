@@ -16,7 +16,6 @@ import apex.stellar.aldebaran.model.enums.Category.Modality;
 import apex.stellar.aldebaran.model.enums.Measure;
 import apex.stellar.aldebaran.model.enums.TimeDomain;
 import apex.stellar.aldebaran.model.enums.UncountedReason;
-import apex.stellar.aldebaran.service.LiftVariant.Lift;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -27,7 +26,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.jspecify.annotations.Nullable;
@@ -50,7 +48,7 @@ import org.jspecify.annotations.Nullable;
 public final class BalanceCalculator {
 
   /** Version of these rules: a stored week of another version is rebuilt (D120). */
-  public static final int RULES_VERSION = 2;
+  public static final int RULES_VERSION = 3;
 
   /** A set at or above this share of the 1RM is near the record (D124). */
   public static final double NEAR_RECORD = 0.8;
@@ -204,7 +202,9 @@ public final class BalanceCalculator {
   private static void addMetcon(Workout workout, WeekTotals totals) {
     Wod wod = workout.wod();
     double divisor = teamDivisor(workout);
-    Map<WodMovement, Double> sets = MetconVolume.sets(wod, workout.score(), workout.division());
+    Map<WodMovement, Double> sets =
+        MetconVolume.sets(
+            wod, workout.lines(), workout.maxCounts(), workout.score(), workout.division());
     sets.forEach(
         (line, s) -> {
           double share = line.getTeamSplit() == TeamSplit.TOTAL || line.getTeamSplit() == null ? s / divisor : s;
@@ -252,43 +252,53 @@ public final class BalanceCalculator {
   }
 
   private static void addStrength(Workout workout, NearRecord nearRecord, WeekTotals totals) {
-    Wod wod = workout.wod();
     Score score = workout.score();
-    List<WodMovement> lines =
-        wod.getMovements().stream().sorted(LINE_ORDER).toList();
+    List<WodMovement> lines = workout.lines();
     Map<Object, List<WodMovement>> groups = new LinkedHashMap<>();
-    for (WodMovement line : lines) {
-      Object key = line.getComplexGroup() != null ? "complex:" + line.getComplexGroup() : line;
+    for (int i = 0; i < lines.size(); i++) {
+      WodMovement line = lines.get(i);
+      Object key = line.getComplexGroup() != null ? "complex:" + line.getComplexGroup() : "line:" + i;
       groups.computeIfAbsent(key, k -> new ArrayList<>()).add(line);
     }
-    List<StrengthSet> entered = entered(score);
-    if (groups.size() == 1 && !entered.isEmpty()) {
-      // One movement or one complex: the athlete's sets (D122 rules 2 and 3)
-      List<WodMovement> group = groups.values().iterator().next();
-      Integer roundReps = group.size() > 1 ? roundReps(group, workout) : null;
-      for (StrengthSet set : entered) {
-        StrengthSet counted = roundReps != null ? new StrengthSet(roundReps, set.loadKg()) : set;
-        boolean near = group.size() == 1 && near(wod, workout.date(), set.loadKg(), nearRecord);
-        addGroup(group, counted.worth(), near, totals);
-      }
-      return;
-    }
-    // No sets, or several lines: the prescription (D122 rule 4), the score's load for one line
+    boolean onlyGroup = groups.size() == 1;
     for (List<WodMovement> group : groups.values()) {
+      // The athlete's sets of this line or complex (lot S: sets belong to their line, D143)
+      List<StrengthSet> entered = entered(score, group.getFirst());
+      boolean single = group.size() == 1;
+      if (!entered.isEmpty()) {
+        Integer roundReps = single ? null : roundReps(group, workout);
+        for (StrengthSet set : entered) {
+          StrengthSet counted = roundReps != null ? new StrengthSet(roundReps, set.loadKg()) : set;
+          boolean near = single && near(group.getFirst(), workout.date(), set.loadKg(), nearRecord);
+          addGroup(group, counted.worth(), near, totals);
+        }
+        continue;
+      }
+      // No sets on it: the prescription, the score's load for the WOD's only movement
       List<StrengthSet> prescribed = prescribedSets(group, workout);
-      boolean near = groups.size() == 1 && group.size() == 1 && nearWithoutSets(wod, group.getFirst(), workout, nearRecord);
+      boolean near =
+          single && nearWithoutSets(group.getFirst(), onlyGroup, workout, nearRecord);
       for (StrengthSet set : prescribed) {
         addGroup(group, set.worth(), near, totals);
       }
     }
   }
 
-  /** Completed sets of a score, warm-up sets left out (D82). */
-  private static List<StrengthSet> entered(@Nullable Score score) {
+  /**
+   * Completed sets of a score on one line (a complex: its first line), warm-up sets left out
+   * (D82).
+   */
+  private static List<StrengthSet> entered(@Nullable Score score, WodMovement line) {
     if (score == null || score.getSets() == null) {
       return List.of();
     }
-    List<ScoreSet> done = score.getSets().stream().filter(ScoreSet::isCompleted).toList();
+    List<ScoreSet> done =
+        score.getSets().stream()
+            .filter(ScoreSet::isCompleted)
+            .filter(
+                s -> s.getWodMovement() != null
+                    && Objects.equals(s.getWodMovement().getId(), line.getId()))
+            .toList();
     double best =
         done.stream()
             .map(ScoreSet::getWeightKg)
@@ -373,21 +383,24 @@ public final class BalanceCalculator {
     return a.ordinal() <= b.ordinal() ? a : b;
   }
 
-  /** A set of the single movement lifted, against the record of its day. */
-  private static boolean near(Wod wod, LocalDate date, @Nullable Double loadKg, NearRecord nearRecord) {
+  /** A set of a line, against the record of its day of the variant done (D124, D144). */
+  private static boolean near(
+      WodMovement line, LocalDate date, @Nullable Double loadKg, NearRecord nearRecord) {
     if (loadKg == null || loadKg <= 0) {
       return false;
     }
-    Optional<Lift> lift = LiftVariant.of(wod);
-    return lift.isPresent() && nearRecord.test(lift.get().movement(), lift.get().variantKey(), date, loadKg);
+    return nearRecord.test(line.getMovement(), LiftVariant.key(line), date, loadKg);
   }
 
-  /** Without sets: the score's load as one set, else the prescribed percentage (D124 rule 5). */
+  /**
+   * Without sets: the score's load as one set for the WOD's only movement, a load done on the
+   * line, else the prescribed percentage (D124 rule 5).
+   */
   private static boolean nearWithoutSets(
-      Wod wod, WodMovement line, Workout workout, NearRecord nearRecord) {
+      WodMovement line, boolean onlyGroup, Workout workout, NearRecord nearRecord) {
     Score score = workout.score();
-    if (score != null && score.getMaxWeightKg() != null) {
-      return near(wod, workout.date(), score.getMaxWeightKg(), nearRecord);
+    if (onlyGroup && score != null && score.getMaxWeightKg() != null) {
+      return near(line, workout.date(), score.getMaxWeightKg(), nearRecord);
     }
     if (line.getPercentOfRm() != null) {
       int rmReps = line.getRmReps() != null ? line.getRmReps() : 1;

@@ -1,10 +1,16 @@
 package apex.stellar.aldebaran.service;
 
 import apex.stellar.aldebaran.model.entities.Score;
+import apex.stellar.aldebaran.model.entities.ScoreLine;
 import apex.stellar.aldebaran.model.entities.SessionBlock.Kind;
 import apex.stellar.aldebaran.model.entities.Wod;
+import apex.stellar.aldebaran.model.entities.WodMovement;
 import apex.stellar.aldebaran.model.enums.Division;
 import java.time.LocalDate;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -24,4 +30,55 @@ public record Workout(
     LocalDate date,
     @Nullable Kind blockKind,
     @Nullable Division division,
-    int teamMembers) {}
+    int teamMembers) {
+
+  /**
+   * The lines as done (lot S, D148): the WOD's lines in the order the balance reads them, each
+   * with the variant and the quantities the athlete changed (a substitute, reduced reps, a real
+   * load). A "max" line keeps its "max": the reps counted on it are in {@link #maxCounts()}.
+   *
+   * @return The lines done, the prescription without a score.
+   */
+  public List<WodMovement> lines() {
+    List<WodMovement> rx = wod.getMovements().stream().sorted(BalanceCalculator.LINE_ORDER).toList();
+    if (score == null || score.getLines() == null || score.getLines().isEmpty()) {
+      return rx;
+    }
+    return rx.stream()
+        .map(
+            line -> {
+              ScoreLine changed = LineVersions.lineOf(score.getLines(), line);
+              WodMovement done = LineVersions.done(line, changed);
+              if (done != line && isMax(line) && changed.getRepsScheme() != null) {
+                done.setRepsScheme(line.getRepsScheme());
+              }
+              return done;
+            })
+        .toList();
+  }
+
+  /**
+   * The reps counted on "max" lines (D147), by WOD line ID.
+   *
+   * @return The counts, empty without a score or a count.
+   */
+  public Map<Long, Integer> maxCounts() {
+    Map<Long, Integer> counts = new HashMap<>();
+    if (score == null || score.getLines() == null) {
+      return counts;
+    }
+    for (ScoreLine changed : score.getLines()) {
+      WodMovement line = changed.getWodMovement();
+      String text = changed.getRepsScheme();
+      if (line != null && isMax(line) && text != null && text.trim().matches("\\d+")) {
+        counts.put(line.getId(), Integer.valueOf(text.trim()));
+      }
+    }
+    return counts;
+  }
+
+  private static boolean isMax(WodMovement line) {
+    return line.getRepsScheme() != null
+        && "max".equals(line.getRepsScheme().trim().toLowerCase(Locale.ROOT));
+  }
+}

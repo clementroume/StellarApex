@@ -42,7 +42,6 @@ export class ScoreLeaderboardComponent {
   private readonly translate = inject(TranslateService);
 
   // --- STATE (SIGNALS & VARIABLES) ---
-  readonly scalingLevels = SCALING_LEVELS;
   readonly scaling = signal<ScalingLevel>('RX');
   /** Public or personal WOD: only the scores performed in the user's boxes and/or programs. */
   readonly myBoxes = signal<boolean>(false);
@@ -56,6 +55,12 @@ export class ScoreLeaderboardComponent {
    * Division leaderboard (D37): scores logged in that division only; null = every score. Starts on
    * every score, as scores logged before the athletes chose a division have none.
    */
+  /**
+   * Levels with a leaderboard (D141): RX, and Scaled only when the WOD has an official Scaled version (the only
+   * Scaled scores ranked).
+   */
+  readonly scalingLevels = computed<ScalingLevel[]>(() =>
+    this.store.wod()?.movements?.some(m => !!m.scaled) ? SCALING_LEVELS : ['RX']);
   /** Men, women, and mixed teams on a team WOD. */
   readonly divisions = computed<(Division | 'MIXED')[]>(() =>
     this.store.wod()?.teamSize ? [...DIVISIONS, 'MIXED'] : DIVISIONS);

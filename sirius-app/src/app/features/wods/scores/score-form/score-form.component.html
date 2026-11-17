@@ -5,6 +5,9 @@
     <div class="flex items-center justify-between gap-2">
       <h3 id="score-form-title" class="text-lg font-bold">
         {{ (isEdit() ? 'SCORE.TITLES.EDIT' : 'SCORE.TITLES.LOG') | translate }}
+        @if (level() !== 'RX' && preview()?.rxPlus) {
+          <span hlmBadge id="rx-plus-badge" class="ml-1 align-middle bg-success/15 text-success">{{ 'SCORE.SCALING.RX_PLUS' | translate }}</span>
+        }
       </h3>
       <button type="button" hlmBtn variant="ghost" size="sm" (click)="store.close()"
               [attr.aria-label]="'GLOBAL.CLOSE' | translate">
@@ -12,21 +15,40 @@
       </button>
     </div>
 
-    <div class="grid gap-4" [class.grid-cols-2]="!inSession()">
-      @if (!inSession()) {
-        <label class="flex flex-col gap-1.5 w-full">
-          <span class="text-sm font-medium">{{ 'SCORE.FIELDS.DATE' | translate }}</span>
-          <input type="date" formControlName="date" [max]="maxDate" hlmInput class="h-11 md:h-10"/>
-        </label>
-      }
+    @if (!inSession()) {
       <label class="flex flex-col gap-1.5 w-full">
-        <span class="text-sm font-medium">{{ 'SCORE.FIELDS.SCALING' | translate }}</span>
-        <select formControlName="scaling" appNativeSelect class="w-full">
-          @for (level of scalingLevels; track level) {
-            <option [value]="level">{{ 'SCORE.SCALING.' + level | translate }}</option>
-          }
-        </select>
+        <span class="text-sm font-medium">{{ 'SCORE.FIELDS.DATE' | translate }}</span>
+        <input type="date" formControlName="date" [max]="maxDate" hlmInput class="h-11 md:h-10"/>
       </label>
+    }
+
+    <div class="flex flex-col gap-1.5">
+      <span id="score-level-label" class="text-sm font-medium">{{ 'SCORE.FIELDS.SCALING' | translate }}</span>
+      <div class="field-group" role="group" aria-labelledby="score-level-label" id="score-level">
+        <button type="button" hlmBtn variant="outline" class="flex-1 h-11 md:h-10 aria-pressed:bg-primary aria-pressed:text-primary-foreground aria-pressed:font-semibold"
+                [attr.aria-pressed]="level() === 'RX'" (click)="setLevel('RX')">{{ 'SCORE.SCALING.RX' | translate }}</button>
+        @if (hasOfficial()) {
+          <button type="button" hlmBtn variant="outline" class="flex-1 h-11 md:h-10 aria-pressed:bg-primary aria-pressed:text-primary-foreground aria-pressed:font-semibold"
+                  [attr.aria-pressed]="level() === 'OFFICIAL'" (click)="setLevel('OFFICIAL')">{{ 'SCORE.SCALING.OFFICIAL' | translate }}</button>
+        }
+        <button type="button" hlmBtn variant="outline" class="flex-1 h-11 md:h-10 aria-pressed:bg-primary aria-pressed:text-primary-foreground aria-pressed:font-semibold"
+                [attr.aria-pressed]="level() === 'SCALED'" (click)="setLevel('SCALED')">
+          {{ scaledLabel() | translate }}</button>
+      </div>
+      @if (level() !== 'RX' && preview(); as p) {
+        @if (p.rxPlus) {
+          <span id="level-preview" class="text-xs text-success">{{ 'SCORE.MESSAGES.RX_PLUS_HINT' | translate }}</span>
+        } @else if (p.official) {
+          <span id="level-preview" class="text-xs text-success">{{ 'SCORE.MESSAGES.OFFICIAL_MATCH' | translate }}</span>
+        } @else if (level() === 'OFFICIAL') {
+          <span id="level-preview" class="text-xs text-warning">{{ 'SCORE.MESSAGES.OFFICIAL_MISMATCH' | translate }}</span>
+        }
+      }
+      @if (level() === 'SCALED') {
+        <span class="text-xs text-muted-foreground">{{ (hasOfficial() ? 'SCORE.MESSAGES.OWN_HINT' : 'SCORE.MESSAGES.SCALED_HINT') | translate }}</span>
+      } @else if (level() === 'OFFICIAL') {
+        <span class="text-xs text-muted-foreground">{{ 'SCORE.MESSAGES.OFFICIAL_HINT' | translate }}</span>
+      }
     </div>
 
     @if (canChooseAthlete()) {
@@ -190,43 +212,123 @@
       }
     }
 
-    @if (canUseSets()) {
-      <section id="score-sets" class="flex flex-col gap-2" [attr.aria-label]="'SCORE.SETS.TITLE' | translate">
-        @if (useSets()) {
-          <div class="flex items-center justify-between gap-2">
-            <span class="text-sm font-medium">{{ 'SCORE.SETS.TITLE' | translate }} ({{ massUnitLabel() }})</span>
-            @if (setsValue(); as value) {
-              <span class="text-sm text-muted-foreground">
-                {{ (scoreType() === 'LOAD' ? 'SCORE.SETS.VOLUME' : 'SCORE.SETS.BEST') | translate: {value: value, unit: massUnitLabel()} }}
-              </span>
-            }
-          </div>
-          <ol formArrayName="sets" class="flex flex-col gap-2">
-            @for (row of form.controls.sets.controls; track row; let i = $index) {
-              <li [formGroupName]="i" class="grid grid-cols-[2rem_1fr_1fr_auto_auto] items-center gap-2">
-                <span class="text-sm text-muted-foreground text-center">{{ i + 1 }}</span>
-                <input type="number" min="0" inputmode="numeric" formControlName="reps" hlmInput class="h-11 md:h-10"
-                       [attr.aria-label]="'SCORE.SETS.REPS' | translate: {n: i + 1}" [placeholder]="'SCORE.SETS.REPS_SHORT' | translate"/>
-                <input type="number" min="0" step="0.5" inputmode="decimal" formControlName="weight" hlmInput class="h-11 md:h-10"
-                       [attr.aria-label]="'SCORE.SETS.WEIGHT' | translate: {n: i + 1}" [placeholder]="massUnitLabel()"/>
-                <label class="flex items-center gap-1 text-xs cursor-pointer" [title]="'SCORE.SETS.COMPLETED_HINT' | translate">
-                  <input type="checkbox" formControlName="completed" class="size-5 accent-(--color-secondary)"/>
-                  <span class="sr-only sm:not-sr-only">{{ 'SCORE.SETS.COMPLETED' | translate }}</span>
-                </label>
-                <button type="button" hlmBtn variant="ghost" size="sm" (click)="removeSet(i)"
-                        [attr.aria-label]="'SCORE.SETS.REMOVE' | translate: {n: i + 1}">
-                  <ng-icon name="heroXMark"></ng-icon>
-                </button>
-              </li>
-            }
-          </ol>
+    <section id="score-lines" class="flex flex-col gap-2" [attr.aria-label]="'SCORE.LINES.TITLE' | translate">
+      <div class="flex items-baseline justify-between gap-2">
+        <span class="text-sm font-medium">{{ 'SCORE.LINES.TITLE' | translate }}</span>
+        @if (roundChanged() && repsPerRound(); as perRound) {
+          <span class="text-xs text-muted-foreground">{{ 'SCORE.LINES.ROUND' | translate: {reps: perRound} }}</span>
         }
-        <button type="button" id="add-set" hlmBtn variant="outline" size="sm" class="self-start" (click)="addSet()">
-          <ng-icon name="heroPlus"></ng-icon>
-          {{ (useSets() ? 'SCORE.SETS.ADD' : 'SCORE.SETS.START') | translate }}
-        </button>
-      </section>
-    }
+      </div>
+      <ol formArrayName="lines" class="flex flex-col gap-2">
+        @for (group of lineControls(); track group; let i = $index) {
+          @let line = wodLines()[i];
+          @let changed = group.controls.changed.value;
+          <li [formGroupName]="i" class="score-line rounded-xl border p-3 flex flex-col gap-2" [class.border-secondary]="changed">
+            <div class="flex items-start justify-between gap-2">
+              <div class="min-w-0">
+                <p class="font-semibold">{{ lineName(line) }}</p>
+                <p class="text-xs text-muted-foreground">{{ linePrescription(line) }}</p>
+                @if (level() === 'OFFICIAL' && line.scaled) {
+                  <p class="text-xs text-secondary">{{ officialText(line) }}</p>
+                }
+              </div>
+              @if (countedIds().has(line.id)) {
+                <label class="flex flex-col gap-1 w-24 shrink-0">
+                  <span class="text-xs text-muted-foreground">{{ 'SCORE.LINES.COUNT' | translate }}</span>
+                  <input type="text" inputmode="numeric" formControlName="reps" hlmInput class="h-10"/>
+                </label>
+              } @else if (level() === 'SCALED' && !changed) {
+                <button type="button" hlmBtn variant="outline" size="sm" class="shrink-0" (click)="changeLine(i)">
+                  {{ 'SCORE.LINES.CHANGE' | translate }}</button>
+              } @else if (level() === 'OFFICIAL') {
+                <button type="button" hlmBtn variant="ghost" size="sm" class="shrink-0" (click)="changeLine(i)">
+                  {{ 'SCORE.LINES.CHANGE' | translate }}</button>
+              }
+            </div>
+            @if (level() === 'SCALED' && changed && !countedIds().has(line.id)) {
+              <div class="grid grid-cols-2 gap-2">
+                <div class="col-span-2">
+                  <app-movement-combobox [options]="usualNames()" [label]="'SCORE.LINES.MOVEMENT' | translate"
+                                         [value]="group.controls.movementId.value" [techniques]="group.controls.techniques.value"
+                                         [equipment]="group.controls.equipment.value" (picked)="onLinePicked(i, $event)"/>
+                </div>
+                <label class="flex flex-col gap-1">
+                  <span class="text-xs text-muted-foreground">{{ 'SCORE.LINES.REPS' | translate }}</span>
+                  <input type="text" formControlName="reps" hlmInput class="h-10"/>
+                </label>
+                @if (line.weight != null || line.weightFemale != null) {
+                  <label class="flex flex-col gap-1">
+                    <span class="text-xs text-muted-foreground">{{ 'SCORE.LINES.LOAD' | translate }} ({{ massUnitLabel() }})</span>
+                    <input type="number" min="0" step="0.5" inputmode="decimal" formControlName="load" hlmInput class="h-10"/>
+                  </label>
+                }
+                @if (line.distance != null) {
+                  <label class="flex flex-col gap-1">
+                    <span class="text-xs text-muted-foreground">{{ 'SCORE.FIELDS.DISTANCE' | translate }}</span>
+                    <input type="number" min="0" inputmode="decimal" formControlName="distance" hlmInput class="h-10"/>
+                  </label>
+                }
+                @if (line.calories != null || line.caloriesFemale != null) {
+                  <label class="flex flex-col gap-1">
+                    <span class="text-xs text-muted-foreground">{{ 'SCORE.FIELDS.CALORIES' | translate }}</span>
+                    <input type="number" min="0" inputmode="numeric" formControlName="calories" hlmInput class="h-10"/>
+                  </label>
+                }
+                @if (line.height != null || line.heightFemale != null) {
+                  <label class="flex flex-col gap-1">
+                    <span class="text-xs text-muted-foreground">{{ 'SCORE.LINES.HEIGHT' | translate }} ({{ heightLabelOf(line) }})</span>
+                    <input type="number" min="0" inputmode="decimal" formControlName="height" hlmInput class="h-10"/>
+                  </label>
+                }
+                @if (line.durationSeconds != null) {
+                  <label class="flex flex-col gap-1">
+                    <span class="text-xs text-muted-foreground">{{ 'SCORE.LINES.DURATION' | translate }}</span>
+                    <input type="number" min="0" inputmode="numeric" formControlName="duration" hlmInput class="h-10"/>
+                  </label>
+                }
+                <button type="button" class="col-span-2 justify-self-start text-sm text-primary hover:underline" (click)="restoreLine(i)">
+                  {{ 'SCORE.LINES.RESTORE' | translate }}</button>
+              </div>
+            }
+            @if (canUseSets() && setLines().includes(line)) {
+              <div class="flex flex-col gap-2" role="group" [attr.aria-label]="'SCORE.SETS.TITLE' | translate">
+                @for (idx of setIndexes(line); track idx; let n = $index) {
+                  <div [formGroup]="form.controls.sets.at(idx)" class="grid grid-cols-[2rem_1fr_1fr_auto_auto] items-center gap-2">
+                    <span class="text-sm text-muted-foreground text-center">{{ n + 1 }}</span>
+                    <input type="number" min="0" inputmode="numeric" formControlName="reps" hlmInput class="h-11 md:h-10"
+                           [attr.aria-label]="'SCORE.SETS.REPS' | translate: {n: n + 1}" [placeholder]="'SCORE.SETS.REPS_SHORT' | translate"/>
+                    <input type="number" min="0" step="0.5" inputmode="decimal" formControlName="weight" hlmInput class="h-11 md:h-10"
+                           [attr.aria-label]="'SCORE.SETS.WEIGHT' | translate: {n: n + 1}" [placeholder]="massUnitLabel()"/>
+                    <label class="flex items-center gap-1 text-xs cursor-pointer" [title]="'SCORE.SETS.COMPLETED_HINT' | translate">
+                      <input type="checkbox" formControlName="completed" class="size-5 accent-(--color-secondary)"/>
+                      <span class="sr-only sm:not-sr-only">{{ 'SCORE.SETS.COMPLETED' | translate }}</span>
+                    </label>
+                    <button type="button" hlmBtn variant="ghost" size="sm" (click)="removeSet(idx)"
+                            [attr.aria-label]="'SCORE.SETS.REMOVE' | translate: {n: n + 1}">
+                      <ng-icon name="heroXMark"></ng-icon>
+                    </button>
+                  </div>
+                }
+                <div class="flex items-center justify-between gap-2">
+                  <button type="button" hlmBtn variant="outline" size="sm" class="add-set" (click)="addSet(line)">
+                    <ng-icon name="heroPlus"></ng-icon>
+                    {{ (setIndexes(line).length ? 'SCORE.SETS.ADD' : 'SCORE.SETS.START') | translate }}
+                  </button>
+                  @if (bestOf(line); as best) {
+                    <span class="text-sm text-muted-foreground">{{ 'SCORE.SETS.BEST' | translate: {value: best, unit: massUnitLabel()} }}</span>
+                  }
+                </div>
+              </div>
+            }
+          </li>
+        }
+      </ol>
+      @if (useSets() && setsValue(); as value) {
+        <p id="score-sets-value" class="text-sm text-muted-foreground">
+          {{ (scoreType() === 'LOAD' ? 'SCORE.SETS.TOTAL' : 'SCORE.SETS.BEST') | translate: {value: value, unit: massUnitLabel()} }}
+        </p>
+      }
+    </section>
 
     @if (canSubmit()) {
       <label id="verification-requested" class="flex items-start gap-3 cursor-pointer">
@@ -257,13 +359,6 @@
       </details>
     }
 
-    @if (!isRx()) {
-      <label class="flex flex-col gap-1.5 w-full">
-        <span class="text-sm font-medium">{{ 'SCORE.FIELDS.SCALING_NOTES' | translate }}</span>
-        <textarea formControlName="scalingNotes" rows="2" maxlength="4000" hlmTextarea class="w-full"
-                  [placeholder]="'SCORE.PLACEHOLDERS.SCALING_NOTES' | translate"></textarea>
-      </label>
-    }
     <label class="flex flex-col gap-1.5 w-full">
       <span class="text-sm font-medium">{{ 'SCORE.FIELDS.COMMENT' | translate }}</span>
       <textarea formControlName="userComment" rows="2" maxlength="4000" hlmTextarea class="w-full"></textarea>

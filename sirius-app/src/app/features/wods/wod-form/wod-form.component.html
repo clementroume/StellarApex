@@ -278,6 +278,13 @@
         @if (movementsFormArray.controls.length === 0) {
           <p class="text-center text-muted-foreground py-4">{{ 'WOD.MESSAGES.MOVEMENTS_REQUIRED' | translate }}</p>
         }
+        <label class="flex items-center justify-between gap-3 rounded-xl border p-3 cursor-pointer">
+          <span class="flex flex-col">
+            <span class="text-sm font-medium">{{ 'WOD.SCALED.TITLE' | translate }}</span>
+            <span class="text-xs text-muted-foreground">{{ 'WOD.SCALED.HINT' | translate }}</span>
+          </span>
+          <input type="checkbox" role="switch" id="scaled-version" class="switch" [checked]="withScaled()" (change)="toggleScaled()"/>
+        </label>
 
         <div formArrayName="movements" class="flex flex-col gap-4">
           @for (movementCtrl of movementsFormArray.controls; track movementCtrl; let i = $index; let first = $first; let last = $last) {
@@ -436,31 +443,28 @@
                 </label>
               </div>
 
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <label class="flex flex-col gap-1.5 w-full">
-                  <span class="text-sm font-medium">{{ 'WOD.FIELDS.NOTES' | translate }}</span>
-                  <textarea [formControlName]="textControl('notes', primaryLanguage())" hlmTextarea class="h-16 w-full"></textarea>
-                </label>
-                <label class="flex flex-col gap-1.5 w-full">
-                  <span class="text-sm font-medium">{{ 'WOD.FIELDS.SCALING' | translate }}</span>
-                  <textarea [formControlName]="textControl('scalingOptions', primaryLanguage())" hlmTextarea class="h-16 w-full"></textarea>
-                </label>
-              </div>
+              <label class="flex flex-col gap-1.5 w-full">
+                <span class="text-sm font-medium">{{ 'WOD.FIELDS.NOTES' | translate }}</span>
+                <textarea [formControlName]="textControl('notes', primaryLanguage())" hlmTextarea class="h-16 w-full"></textarea>
+              </label>
               <details class="group rounded-xl border">
                 <summary class="cursor-pointer select-none px-4 py-3 marker:text-muted-foreground text-sm font-medium">
                   {{ 'WOD.FIELDS.OTHER_LANGUAGE' | translate }} ({{ secondaryLanguage() }})
                 </summary>
-                <div class="px-4 pb-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="px-4 pb-4">
                   <label class="flex flex-col gap-1.5 w-full">
                     <span class="text-sm font-medium">{{ 'WOD.FIELDS.NOTES' | translate }}</span>
                     <textarea [formControlName]="textControl('notes', secondaryLanguage())" hlmTextarea class="h-16 w-full"></textarea>
                   </label>
-                  <label class="flex flex-col gap-1.5 w-full">
-                    <span class="text-sm font-medium">{{ 'WOD.FIELDS.SCALING' | translate }}</span>
-                    <textarea [formControlName]="textControl('scalingOptions', secondaryLanguage())" hlmTextarea class="h-16 w-full"></textarea>
-                  </label>
                 </div>
               </details>
+              @if (withScaled()) {
+                <app-scaled-line [group]="scaledOf(i)" [options]="usualNames()" [rxMovementId]="movementCtrl.get('movementId')?.value"
+                                 [rxEquipment]="movementCtrl.get('equipment')?.value ?? []" [rxTechniques]="movementCtrl.get('techniques')?.value ?? []"
+                                 [rxReps]="movementCtrl.get('repsScheme')?.value ?? ''" [measures]="scaledMeasures(i)"
+                                 [massLabel]="movementCtrl.get('weightUnit')?.value === 'LBS' ? 'lb' : 'kg'"
+                                 [heightLabel]="movementCtrl.get('heightUnit')?.value === 'INCHES' ? 'in' : 'cm'"/>
+              }
             </div>
           }
         </div>

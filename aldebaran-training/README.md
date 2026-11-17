@@ -98,8 +98,18 @@ of them:
   of the athlete's gyms chosen when logging (or none). `SCORE_VERIFY` on that gym allows correcting
   or deleting other athletes' scores (errors, cheating), including on public WODs such as the Open.
   Logging a score for someone else is admin-only, except on competition WODs (below). Each score
-  carries `capabilities {canModify, canVerify}`; other athletes' comments and scaling notes are hidden
+  carries `capabilities {canModify, canVerify}`; other athletes' comments are hidden
   from viewers who cannot moderate the score.
+* **Score entry (lot S)**: a score is `RX` (nothing changed: a changed line is refused, 400) or
+  `SCALED`, detailed per line in `lines` (variant done, reps, real load, distance, calories, height,
+  duration; only the lines that changed). A Scaled score that follows the WOD's official Scaled
+  version (`movements[].scaled`, set by the WOD's author, locked with the WOD) is `scaledOfficial`
+  and ranked on the Scaled leaderboard; any other Scaled is never ranked, an `rxPlus` one (every
+  line at least RX, one harder, the catalog's "counts for" rule for a variant) included. PR order:
+  RX, official Scaled, free Scaled. Strength sets name their line (`sets[].wodMovementId`, a complex
+  its first line); a `LOAD` score is the sum of each line's best complete set (CrossFit Total).
+  Loads count with the box equivalences between kg and lb (`movements[].equivalents`: 135 lb =
+  60 kg, exact conversion in competitions), so 60 kg on a 135 lb line is RX.
 * **Team WODs** (former V16): `teamSize` (2–6) and `teamMode` (`YOU_GO_I_GO`, `SPLIT`, `SYNCHRO`) on the WOD,
   `teamSplit` (`TOTAL` default, `EACH`, `TOGETHER`) on each line; never on a program (400). A team
   score names teammates of the box (`teammateIds`, at most `teamSize`: an odd athlete mirrors a team;
@@ -277,10 +287,12 @@ default); `GET /lifts` returns one test per movement, variant and N, with its us
 rebuilt by `MovementRecordService.rebuild(userId, movementId)` after every score write, correction or
 deletion, and once at startup when the table is empty (`config/MovementRecordBackfill`).
 
-* Sources: individual WODs with a single main movement scored `WEIGHT`, `LOAD` or `NONE` (any format):
-  every complete set with a load is a candidate for the N RM of its reps; a score without sets on an
-  "N RM" test (`repMax`) is a candidate for N. Every scaling level and unverified scores count; team
-  scores and multi-movement WODs never do. On a tie the earliest day keeps the record.
+* Sources (lot S, D144): individual WODs scored `WEIGHT`, `LOAD` or `NONE` (any format), every main
+  line outside a complex: each complete set with a load on that line is a candidate for the N RM of its
+  reps, for the movement and variant done on it (a Front Squat done in place of a Back Squat feeds the
+  Front Squat); a score without sets on an "N RM" test (`repMax`, one line) is a candidate for N. Every
+  scaling level and unverified scores count; team scores and complexes never do. On a tie the earliest
+  day keeps the record.
 * Variant key (`service/LiftVariant`): sorted equipment `;` sorted techniques of the WOD line, the
   implied equipment removed (`movements.implied_equipment`; for the Squat only with a load position),
   a component technique written `1:POWER`; `''` is the base version.
@@ -298,7 +310,9 @@ deletion, and once at startup when the table is empty (`config/MovementRecordBac
 ### Weekly balance (`/aldebaran/balance`, lot D)
 
 The athlete's own balance, from their scores and the session blocks checked in a journal without a score
-(prescription). Facts only: no alert and no ratio (D89).
+(prescription). Facts only: no alert and no ratio (D89). Since lot S (rules version 3) it reads the lines as done: the
+variant done (a substitute counts with its own muscles and modality), the reps and loads done, each line's
+own sets, the reps counted on "max" lines; a line in calories counts on its men's value.
 
 * `GET /me?week=yyyy-MM-dd` (any day of the week; Sirius sends the Monday of the athlete's local week): muscles,
   metcon minutes per time domain, strength sets per lift ("near the record" = a set at 80 % of the 1RM of its day)

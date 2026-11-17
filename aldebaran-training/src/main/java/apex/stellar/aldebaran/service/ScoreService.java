@@ -3,10 +3,10 @@ package apex.stellar.aldebaran.service;
 import apex.stellar.aldebaran.client.AntaresClient.AthleteFacts;
 import apex.stellar.aldebaran.client.AntaresClient;
 import apex.stellar.aldebaran.dto.ScoreComparisonResponse;
+import apex.stellar.aldebaran.dto.ScoreLevelResponse;
 import apex.stellar.aldebaran.dto.ScoreReferenceData;
 import apex.stellar.aldebaran.dto.ScoreRequest;
 import apex.stellar.aldebaran.dto.ScoreResponse;
-import apex.stellar.aldebaran.dto.ScoreSetRequest;
 import apex.stellar.aldebaran.dto.WodResponse;
 import apex.stellar.aldebaran.exception.AntaresUnavailableException;
 import apex.stellar.aldebaran.exception.InvalidScoreException;
@@ -14,7 +14,6 @@ import apex.stellar.aldebaran.exception.ResourceNotFoundException;
 import apex.stellar.aldebaran.mapper.ScoreMapper;
 import apex.stellar.aldebaran.model.entities.Score.ScalingLevel;
 import apex.stellar.aldebaran.model.entities.Score;
-import apex.stellar.aldebaran.model.entities.ScoreSet;
 import apex.stellar.aldebaran.model.entities.ScoreTeam;
 import apex.stellar.aldebaran.model.entities.Session;
 import apex.stellar.aldebaran.model.entities.SessionBlock;
@@ -74,6 +73,7 @@ public class ScoreService {
   private final ScoreTeamRepository scoreTeamRepository;
   private final MovementRecordService movementRecordService;
   private final BalanceMaintenanceService balanceMaintenance;
+  private final ScoreLineService scoreLineService;
 
   /**
    * Retrieves the current user's scores, optionally only those on a WOD logged in a session (the
@@ -141,7 +141,9 @@ public class ScoreService {
     }
     attachToSession(
         newScore, wod, request.sessionLogId(), request.sessionBlockId(), targetUserId, currentUserId);
-    applySets(newScore, request, wod);
+    scoreLineService.applySets(newScore, request, wod);
+    scoreLineService.applyLines(newScore, request, wod);
+    scoreLineService.applyConformity(newScore, wod);
     normalizeAndCheck(newScore, wod);
 
     List<Long> teammates = teammatesOf(request, wod, targetUserId, newScore.getGymId());
@@ -180,6 +182,36 @@ public class ScoreService {
   }
 
   /**
+   * Tells how a score being written compares with the prescription, without saving anything (lot S): whether it is
+   * as prescribed, Rx+, or the WOD's official Scaled version, as {@code logScore} would decide it. The score form shows
+   * it while the athlete changes lines.
+   *
+   * @param request The score being written (its performance may still be empty).
+   * @return The comparison.
+   * @throws ResourceNotFoundException if the WOD does not exist.
+   * @throws InvalidScoreException if a line is not a line of the WOD.
+   */
+  @Transactional(readOnly = true)
+  public ScoreLevelResponse previewLevel(ScoreRequest request) {
+    Wod wod =
+        wodRepository
+            .findById(request.wodId())
+            .orElseThrow(() -> new ResourceNotFoundException(ERROR_WOD_NOT_FOUND, request.wodId()));
+    Long currentUserId = securityService.getCurrentUserId();
+    Long targetUserId = request.userId() != null ? request.userId() : currentUserId;
+    Score score =
+        Score.builder()
+            .wod(wod)
+            .scaling(request.scaling() != null ? request.scaling() : ScalingLevel.SCALED)
+            .weightDisplayUnit(request.weightUnit() != null ? request.weightUnit() : Unit.KG)
+            .division(athleteOf(targetUserId, currentUserId).division())
+            .build();
+    scoreLineService.applyLines(score, request, wod);
+    ScoreConformity.Result result = scoreLineService.conformity(score, wod);
+    return new ScoreLevelResponse(result.asPrescribed(), result.rxPlus(), result.official());
+  }
+
+  /**
    * Division and birth year behind a new score: the logger's own ({@code X-Auth-User-Division},
    * {@code X-Auth-User-Birth-Year}) for a score logged for themselves, else the athlete's, asked to
    * Antares (never the judge's). The birth year only gives the score's age group, never stored.
@@ -215,6 +247,8 @@ public class ScoreService {
     }
 
     LocalDate previousDate = existingScore.getDate();
+    // Movements done in place of the WOD's lines before the correction: their records follow
+    List<Long> previousMovements = substitutedMovements(existingScore);
     Integer previousYear = previousDate == null ? null : previousDate.getYear();
     scoreMapper.updateEntity(request, existingScore);
     existingScore.setGymId(wod.getGymId() != null ? wod.getGymId() : request.gymId());
@@ -235,7 +269,9 @@ public class ScoreService {
                 }
               });
     }
-    applySets(existingScore, request, wod);
+    scoreLineService.applySets(existingScore, request, wod);
+    scoreLineService.applyLines(existingScore, request, wod);
+    scoreLineService.applyConformity(existingScore, wod);
     normalizeAndCheck(existingScore, wod);
     if (existingScore.getTeam() == null
         && existingScore.getDate() != null
@@ -249,7 +285,7 @@ public class ScoreService {
     Score savedScore = scoreRepository.save(existingScore);
 
     recalculatePrsForUser(wod, savedScore.getUserId());
-    movementRecordService.rebuildFor(wod, savedScore.getUserId());
+    movementRecordService.rebuildFor(wod, savedScore.getUserId(), previousMovements);
     List<Long> athletes = new ArrayList<>(List.of(savedScore.getUserId()));
     if (savedScore.getTeam() != null) {
       // One shared performance: every member's row follows the correction
@@ -285,6 +321,7 @@ public class ScoreService {
     Wod wod = score.getWod();
     Long userId = score.getUserId();
     ScoreTeam team = score.getTeam();
+    List<Long> previousMovements = substitutedMovements(score);
 
     if (team != null && removesWholeTeam(team, userId)) {
       List<Score> rows = scoreRepository.findByTeamId(team.getId());
@@ -305,13 +342,21 @@ public class ScoreService {
     scoreRepository.flush();
 
     recalculatePrsForUser(wod, userId);
-    movementRecordService.rebuildFor(wod, userId);
+    movementRecordService.rebuildFor(wod, userId, previousMovements);
     List<Long> athletes = new ArrayList<>(List.of(userId));
     if (team != null) {
       // The others' share of each TOTAL line follows the new team size (D128)
       athletes.addAll(team.getMemberIds());
     }
     balanceMaintenance.scoreChanged(athletes, score.getDate(), wod);
+  }
+
+  /** Movements a score did in place of the WOD's lines (their records follow it, D144). */
+  private static List<Long> substitutedMovements(Score score) {
+    return score.getLines().stream()
+        .map(l -> l.getMovement().getId())
+        .distinct()
+        .toList();
   }
 
   /**
@@ -418,7 +463,7 @@ public class ScoreService {
     return divisions.stream().allMatch(d -> d == Division.WOMEN) ? Division.WOMEN : Division.MIXED;
   }
 
-  /** Copies the shared performance of a team score (day, box, result, sets) onto another member's. */
+  /** Copies the shared performance of a team score (day, box, result, level, sets, lines) onto another member's. */
   private static void copyPerformance(Score from, Score to) {
     to.setDate(from.getDate());
     to.setGymId(from.getGymId());
@@ -435,12 +480,10 @@ public class ScoreService {
     to.setScaling(from.getScaling());
     to.setTimeCapped(from.getTimeCapped());
     to.setTiebreakSeconds(from.getTiebreakSeconds());
-    to.getSets().clear();
-    from.getSets()
-        .forEach(
-            set ->
-                to.getSets()
-                    .add(new ScoreSet(set.getReps(), set.getWeightKg(), set.isCompleted())));
+    to.setScaledOfficial(from.isScaledOfficial());
+    to.setRxPlus(from.isRxPlus());
+    // Sets and lines are the team's (D146)
+    ScoreLineService.copy(from, to);
   }
 
   /**
@@ -484,6 +527,10 @@ public class ScoreService {
             .findById(scoreId)
             .orElseThrow(() -> new ResourceNotFoundException(ERROR_SCORE_NOT_FOUND, scoreId));
 
+    if (score.tier() == 0) {
+      // A free Scaled score (Rx+ included) is never ranked (D141)
+      throw new InvalidScoreException("error.score.not.ranked");
+    }
     Comparator<Score> order = ScoreRanking.rankingFirst(score.getWod().getScoreType());
     // A team counts once (its members share one score), the score's own team excluded
     Long ownTeam = score.getTeam() == null ? null : score.getTeam().getId();
@@ -492,6 +539,7 @@ public class ScoreService {
         .findByWodIdAndScalingAndPersonalRecordTrue(score.getWod().getId(), score.getScaling())
         .stream()
         .filter(other -> !Objects.equals(other.getUserId(), score.getUserId()))
+        .filter(other -> other.tier() == score.tier())
         .filter(other -> ownTeam == null || other.getTeam() == null
             || !ownTeam.equals(other.getTeam().getId()))
         .forEach(
@@ -599,6 +647,8 @@ public class ScoreService {
     List<Score> ranked =
         bestByAthlete.values().stream()
             .filter(s -> s.getScaling() == scaling)
+            // RX, or the official Scaled version: a free Scaled or an Rx+ is never ranked (D141)
+            .filter(s -> s.getScaling() == ScalingLevel.RX || s.isScaledOfficial())
             .sorted(ranking)
             .toList();
 
@@ -690,57 +740,10 @@ public class ScoreService {
             () -> new InvalidScoreException("error.score.session.log.mismatch", requestedBlockId));
   }
 
-  /**
-   * Replaces the sets of a strength score (D14) and derives its performance from them: the
-   * heaviest complete set for a WEIGHT score (PR and leaderboard unchanged), the sum of reps × load
-   * of the complete sets for a LOAD score.
-   *
-   * @throws InvalidScoreException if the WOD is not scored by load (or NONE), or a load has no
-   *     unit.
-   */
-  private void applySets(Score score, ScoreRequest request, Wod wod) {
-    score.getSets().clear();
-    if (request.sets() == null || request.sets().isEmpty()) {
-      return;
-    }
-    ScoreType type = wod.getScoreType();
-    if (type != ScoreType.WEIGHT && type != ScoreType.LOAD && type != ScoreType.NONE) {
-      throw new InvalidScoreException("error.score.sets.type");
-    }
-    Unit unit = request.weightUnit();
-    boolean anyWeight = request.sets().stream().anyMatch(set -> set.weight() != null);
-    if (anyWeight && unit == null) {
-      throw new InvalidScoreException("error.score.sets.unit.required");
-    }
-    for (ScoreSetRequest set : request.sets()) {
-      score
-          .getSets()
-          .add(
-              ScoreSet.builder()
-                  .reps(set.reps())
-                  .weightKg(set.weight() != null ? unit.toBase(set.weight()) : null)
-                  .completed(set.completed() == null || set.completed())
-                  .build());
-    }
-    if (unit != null) {
-      score.setWeightDisplayUnit(unit);
-    }
-    List<ScoreSet> complete =
-        score.getSets().stream()
-            .filter(set -> set.isCompleted() && set.getReps() > 0 && set.getWeightKg() != null)
-            .toList();
-    if (type == ScoreType.WEIGHT && !complete.isEmpty()) {
-      score.setMaxWeightKg(complete.stream().mapToDouble(ScoreSet::getWeightKg).max().orElseThrow());
-    } else if (type == ScoreType.LOAD && !complete.isEmpty()) {
-      score.setTotalLoadKg(
-          complete.stream().mapToDouble(set -> set.getReps() * set.getWeightKg()).sum());
-    }
-  }
-
   /** Retrieves reference data for WOD Score forms. */
   public ScoreReferenceData getReferenceData() {
     List<String> scalingLevels = Arrays.stream(ScalingLevel.values()).map(Enum::name).toList();
-    return new ScoreReferenceData(scalingLevels);
+    return new ScoreReferenceData(scalingLevels, CardioEquivalence.TABLE);
   }
 
   /**
@@ -796,7 +799,7 @@ public class ScoreService {
 
   /**
    * Stores a REPS score as its total reps (canonical, as the Open scores AMRAPs). Rounds + reps
-   * entered for a WOD with a fixed round become {@code rounds * repsPerRound + reps}.
+   * entered for a WOD with a fixed round become {@code rounds * round + reps}, the round as done.
    *
    * @param score The score about to be saved.
    * @param wod The WOD of the score.
@@ -810,7 +813,9 @@ public class ScoreService {
       throw new InvalidScoreException("error.score.rounds.unknown");
     }
     int extra = score.getReps() != null ? score.getReps() : 0;
-    score.setReps(score.getRounds() * wod.getRepsPerRound() + extra);
+    // A round as done: reduced reps make a shorter round (D147)
+    int round = LineVersions.roundReps(wod.getRepsPerRound(), wod.getMovements(), score.getLines());
+    score.setReps(score.getRounds() * round + extra);
     score.setRounds(null);
   }
 

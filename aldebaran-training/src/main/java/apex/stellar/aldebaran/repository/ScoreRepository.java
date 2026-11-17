@@ -71,15 +71,18 @@ public interface ScoreRepository extends JpaRepository<Score, Long> {
   boolean existsByWodId(Long wodId);
 
   /**
-   * Retrieves the worldwide leaderboard (PRs only) for a specific WOD and scaling level.
+   * Retrieves the worldwide leaderboard (PRs only) for a specific WOD and scaling level: RX, or
+   * the scores of the official Scaled version (D141; a free Scaled or an Rx+ is never ranked).
    *
    * @param wodId The WOD ID.
-   * @param scaling The scaling level (RX, SCALED...).
+   * @param scaling The scaling level (RX or SCALED).
    * @param pageable Pagination and Sorting (Sort is handled by Service based on WOD type).
    * @return A page of Personal Record scores.
    */
   @Query(
       "SELECT s FROM Score s WHERE s.wod.id = :wodId AND s.scaling = :scaling"
+          + " AND (s.scaling = apex.stellar.aldebaran.model.entities.Score.ScalingLevel.RX"
+          + " OR s.scaledOfficial = true)"
           + " AND s.personalRecord = true")
   Slice<Score> findLeaderboard(Long wodId, ScalingLevel scaling, Pageable pageable);
 
@@ -182,9 +185,9 @@ public interface ScoreRepository extends JpaRepository<Score, Long> {
    */
   @EntityGraph(attributePaths = {"sets", "wod"})
   @Query(
-      "SELECT DISTINCT s FROM Score s JOIN s.wod w JOIN w.movements wm"
-          + " WHERE s.userId = :userId AND wm.movement.id = :movementId AND s.team IS NULL"
-          + " AND w.scoreType IN :types")
+      "SELECT DISTINCT s FROM Score s JOIN s.wod w JOIN w.movements wm LEFT JOIN s.lines sl"
+          + " WHERE s.userId = :userId AND s.team IS NULL AND w.scoreType IN :types"
+          + " AND (wm.movement.id = :movementId OR sl.movement.id = :movementId)")
   List<Score> findRecordCandidates(Long userId, Long movementId, Collection<ScoreType> types);
 
   /**
@@ -198,6 +201,31 @@ public interface ScoreRepository extends JpaRepository<Score, Long> {
       "SELECT DISTINCT s.userId, wm.movement.id FROM Score s JOIN s.wod w JOIN w.movements wm"
           + " WHERE s.team IS NULL AND w.scoreType IN :types")
   List<Object[]> findRecordOwners(Collection<ScoreType> types);
+
+  /**
+   * Retrieves every (athlete, movement) pair a substitution may feed (a line done with another
+   * movement, D144), for the same one-time rebuild.
+   *
+   * @param types The score types that may carry a load.
+   * @return Pairs {@code [userId, movementId]}.
+   */
+  @Query(
+      "SELECT DISTINCT s.userId, sl.movement.id FROM Score s JOIN s.wod w JOIN s.lines sl"
+          + " WHERE s.team IS NULL AND w.scoreType IN :types")
+  List<Object[]> findSubstitutionRecordOwners(Collection<ScoreType> types);
+
+  /**
+   * The movements an athlete did in place of a WOD's lines (D144), so that their records follow
+   * a score written, corrected or deleted.
+   *
+   * @param wodId The WOD.
+   * @param userId The athlete.
+   * @return The movement IDs.
+   */
+  @Query(
+      "SELECT DISTINCT sl.movement.id FROM Score s JOIN s.lines sl"
+          + " WHERE s.wod.id = :wodId AND s.userId = :userId")
+  List<Long> findSubstitutedMovementIds(Long wodId, Long userId);
 
   /**
    * Retrieves every Personal Record for a WOD and scaling level, for rank comparison (the ordering

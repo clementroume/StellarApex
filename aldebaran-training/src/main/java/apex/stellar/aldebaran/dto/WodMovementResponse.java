@@ -36,8 +36,6 @@ public record WodMovementResponse(
     // --- Instructions ---
     String notesEn,
     String notesFr,
-    String scalingOptionsEn,
-    String scalingOptionsFr,
 
     // --- Sets (strength / skill work), or null ---
     Integer sets,
@@ -63,4 +61,10 @@ public record WodMovementResponse(
     Unit lengthUnit,
 
     // --- How the line reads, decided by the catalog ---
-    WodMovementDisplay display) {}
+    WodMovementDisplay display,
+
+    // --- Load and height in both systems, as boxes load them (D149), or null ---
+    LineEquivalents equivalents,
+
+    // --- This line in the WOD's official Scaled version, or null (kept RX) ---
+    WodScaledLineResponse scaled) {}

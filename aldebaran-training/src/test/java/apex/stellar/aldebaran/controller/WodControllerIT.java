@@ -307,8 +307,7 @@ class WodControllerIT extends BaseIntegrationTest {
     WodMovementRequest movement =
         new WodMovementRequest(
             pullUp.getId(), 1, "21-15-9", 43.0, 30.0, Unit.KG, null, null, null, null, null,
-            null, 60.0, 50.0, Unit.CENTIMETERS, null, null, "Wide grip", "Prise large", null,
-            null);
+            null, 60.0, 50.0, Unit.CENTIMETERS, null, null, "Wide grip", "Prise large");
     WodRequest girls =
         new WodRequest(
             "Girls Test", WodType.FOR_TIME, WodCategory.GIRLS, ScoreType.TIME, null, 101L, true,
@@ -388,7 +387,6 @@ class WodControllerIT extends BaseIntegrationTest {
                     null, null, null, null, null, null, null, null, null, null, null, null,
                     Set.of("RINGS"),
                     Set.of("STRICT", "PAUSED"),
-                    null, null,
                     null, null)));
     String body =
         mockMvc
@@ -460,8 +458,7 @@ class WodControllerIT extends BaseIntegrationTest {
                     "50",
                     null, null, null, null, null, null, null, null, null, null, null, null,
                     Set.of("RINGS"),
-                    null, null, null,
-                    null, null)));
+                    null, null, null)));
     mockMvc
         .perform(
             post("/aldebaran/wods")
@@ -512,8 +509,7 @@ class WodControllerIT extends BaseIntegrationTest {
                     0.0,
                     null,
                     0,
-                    null, null, null, null, null, null, null, null,
-                    null, null)));
+                    null, null, null, null, null, null, null, null)));
     mockMvc
         .perform(
             post("/aldebaran/wods")
@@ -608,8 +604,7 @@ class WodControllerIT extends BaseIntegrationTest {
                     0.0,
                     null,
                     0,
-                    null, null, null, null, null, null, null, null,
-                    null, null)));
+                    null, null, null, null, null, null, null, null)));
     mockMvc
         .perform(
             post("/aldebaran/wods")
@@ -648,8 +643,7 @@ class WodControllerIT extends BaseIntegrationTest {
                     0.0,
                     null,
                     0,
-                    null, null, null, null, null, null, null, null,
-                    null, null)));
+                    null, null, null, null, null, null, null, null)));
     mockMvc
         .perform(
             post("/aldebaran/wods")
@@ -689,8 +683,7 @@ class WodControllerIT extends BaseIntegrationTest {
                     0.0,
                     null,
                     0,
-                    null, null, null, null, null, null, null, null,
-                    null, null)));
+                    null, null, null, null, null, null, null, null)));
     mockMvc
         .perform(
             post("/aldebaran/wods")
@@ -731,8 +724,7 @@ class WodControllerIT extends BaseIntegrationTest {
                     0.0,
                     null,
                     0,
-                    null, null, null, null, null, null, null, null,
-                    null, null)));
+                    null, null, null, null, null, null, null, null)));
     mockMvc
         .perform(
             post("/aldebaran/wods")
@@ -812,8 +804,7 @@ class WodControllerIT extends BaseIntegrationTest {
                     0.0,
                     null,
                     0,
-                    null, null, null, null, null, null, null, null,
-                    null, null)));
+                    null, null, null, null, null, null, null, null)));
     mockMvc
         .perform(
             put("/aldebaran/wods/" + existing.getId())
@@ -864,8 +855,7 @@ class WodControllerIT extends BaseIntegrationTest {
                     0.0,
                     null,
                     0,
-                    null, null, null, null, null, null, null, null,
-                    null, null)));
+                    null, null, null, null, null, null, null, null)));
     mockMvc
         .perform(
             put("/aldebaran/wods/" + existing.getId())
@@ -912,8 +902,7 @@ class WodControllerIT extends BaseIntegrationTest {
                     0.0,
                     null,
                     0,
-                    null, null, null, null, null, null, null, null,
-                    null, null)));
+                    null, null, null, null, null, null, null, null)));
     mockMvc
         .perform(
             put("/aldebaran/wods/" + personalWod.getId())
@@ -960,8 +949,7 @@ class WodControllerIT extends BaseIntegrationTest {
                     0.0,
                     null,
                     0,
-                    null, null, null, null, null, null, null, null,
-                    null, null)));
+                    null, null, null, null, null, null, null, null)));
     mockMvc
         .perform(
             put("/aldebaran/wods/" + personalWod.getId())
@@ -1003,8 +991,7 @@ class WodControllerIT extends BaseIntegrationTest {
                     0.0,
                     null,
                     0,
-                    null, null, null, null, null, null, null, null,
-                    null, null)));
+                    null, null, null, null, null, null, null, null)));
     mockMvc
         .perform(
             put("/aldebaran/wods/99999")
@@ -1059,8 +1046,7 @@ class WodControllerIT extends BaseIntegrationTest {
                     0.0,
                     null,
                     0,
-                    null, null, null, null, null, null, null, null,
-                    null, null)));
+                    null, null, null, null, null, null, null, null)));
     mockMvc
         .perform(
             put("/aldebaran/wods/" + existing.getId())

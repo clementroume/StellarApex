@@ -1,6 +1,7 @@
 package apex.stellar.aldebaran.service;
 
 import apex.stellar.aldebaran.model.entities.Movement;
+import apex.stellar.aldebaran.model.entities.ScoreLine;
 import apex.stellar.aldebaran.model.entities.Wod;
 import apex.stellar.aldebaran.model.entities.Wod.ScoreType;
 import apex.stellar.aldebaran.model.entities.WodMovement;
@@ -69,6 +70,46 @@ public final class LiftVariant {
     }
     Movement movement = line.getMovement();
     return Optional.of(new Lift(movement, key(line)));
+  }
+
+  /**
+   * A line of a score that feeds a record (D144): the WOD line, and the movement and variant done
+   * on it (the substitute when the athlete changed it).
+   *
+   * @param line The WOD line.
+   * @param movement The movement done.
+   * @param variantKey The variant done.
+   * @param onlyLine Whether it is the WOD's only line (its "N RM" load feeds without sets).
+   */
+  public record LineLift(WodMovement line, Movement movement, String variantKey, boolean onlyLine) {}
+
+  /**
+   * The lines of a score that feed records (D144): on an individual WOD scored by load (or NONE),
+   * every line of the main part outside a complex, with the variant done on it. A team score or a
+   * complex never feeds a record.
+   *
+   * @param wod The WOD, with its lines.
+   * @param done The score's changed lines.
+   * @return The lines, in the WOD's order.
+   */
+  public static List<LineLift> lifts(Wod wod, List<ScoreLine> done) {
+    if (wod.getTeamSize() != null || !LOAD_TYPES.contains(wod.getScoreType())) {
+      return List.of();
+    }
+    List<WodMovement> lines = wod.getMovements();
+    if (lines == null || lines.isEmpty()) {
+      return List.of();
+    }
+    boolean only = lines.size() == 1;
+    return lines.stream()
+        .filter(l -> l.getSegment() == null || l.getSegment() == Segment.MAIN)
+        .filter(l -> l.getComplexGroup() == null)
+        .map(
+            l -> {
+              WodMovement line = LineVersions.done(l, LineVersions.lineOf(done, l));
+              return new LineLift(l, line.getMovement(), key(line), only);
+            })
+        .toList();
   }
 
   /**

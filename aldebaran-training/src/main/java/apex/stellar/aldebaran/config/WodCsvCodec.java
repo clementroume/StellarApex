@@ -8,6 +8,7 @@ import apex.stellar.aldebaran.model.entities.Wod.WodCategory;
 import apex.stellar.aldebaran.model.entities.Wod.WodStructure;
 import apex.stellar.aldebaran.model.entities.Wod.WodType;
 import apex.stellar.aldebaran.model.entities.WodMovement;
+import apex.stellar.aldebaran.model.entities.WodScaledLine;
 import apex.stellar.aldebaran.service.CatalogRules;
 import apex.stellar.aldebaran.model.entities.WodMovement.Segment;
 import apex.stellar.aldebaran.model.enums.Unit;
@@ -95,14 +96,12 @@ public final class WodCsvCodec {
     "duration_seconds",
     "calories",
     "notes_en",
-    "scaling_options_en",
     // Optional trailing columns, only needed to keep values edited in Sirius
     "duration_display_unit",
     "equipment",
     "techniques",
     "weight_female",
     "notes_fr",
-    "scaling_options_fr",
     "calories_female",
     "height",
     "height_female",
@@ -120,7 +119,23 @@ public final class WodCsvCodec {
     "component_techniques",
     // Length of the course (shuttle run: between the two lines)
     "length",
-    "length_unit"
+    "length_unit",
+    // The line in the official Scaled version (blank movement = kept RX), values of origin
+    "scaled_movement",
+    "scaled_equipment",
+    "scaled_techniques",
+    "scaled_reps_scheme",
+    "scaled_weight",
+    "scaled_weight_female",
+    "scaled_weight_unit",
+    "scaled_distance",
+    "scaled_distance_unit",
+    "scaled_calories",
+    "scaled_calories_female",
+    "scaled_height",
+    "scaled_height_female",
+    "scaled_height_unit",
+    "scaled_duration_seconds"
   };
 
   /** Separator of the equipment / technique lists (free text, so not a comma). */
@@ -220,10 +235,13 @@ public final class WodCsvCodec {
               .durationDisplayUnit(unit(row, "duration_display_unit"))
               .calories(integer(row, "calories"))
               .weightFemale(decimal(row, "weight_female"))
-              .notesEn(text(row, "notes_en", "notes"))
-              .notesFr(text(row, "notes_fr"))
-              .scalingOptionsEn(text(row, "scaling_options_en", "scaling_options"))
-              .scalingOptionsFr(text(row, "scaling_options_fr"))
+              // Former scaling options join the notes (D154)
+              .notesEn(
+                  withScaling(
+                      text(row, "notes_en", "notes"),
+                      text(row, "scaling_options_en", "scaling_options"),
+                      "Scaling: "))
+              .notesFr(withScaling(text(row, "notes_fr"), text(row, "scaling_options_fr"), "Scaling : "))
               .caloriesFemale(integer(row, "calories_female"))
               .height(decimal(row, "height"))
               .heightFemale(decimal(row, "height_female"))
@@ -245,6 +263,7 @@ public final class WodCsvCodec {
               .build();
       wodMovement.checkVariantsAllowed(
           movement.getName(), movement.getEquipment(), movement.getTechniques());
+      wodMovement.setScaled(scaledLine(row, movementsByName, wodTitle));
       wod.getMovements().add(wodMovement);
     }
 
@@ -313,13 +332,11 @@ public final class WodCsvCodec {
               wm.getDurationSeconds(),
               wm.getCalories(),
               wm.getNotesEn(),
-              wm.getScalingOptionsEn(),
               name(wm.getDurationDisplayUnit()),
               join(wm.getEquipment()),
               join(wm.getTechniques()),
               wm.getWeightFemale(),
               wm.getNotesFr(),
-              wm.getScalingOptionsFr(),
               wm.getCaloriesFemale(),
               wm.getHeight(),
               wm.getHeightFemale(),
@@ -332,10 +349,68 @@ public final class WodCsvCodec {
               wm.getRmReps(),
               joinComponents(wm.getComponentTechniques()),
               wm.getLength(),
-              name(wm.getLengthUnit()));
+              name(wm.getLengthUnit()),
+              scaledColumn(wm, sl -> sl.getMovement().getName()),
+              scaledColumn(wm, sl -> join(sl.getEquipment())),
+              scaledColumn(wm, sl -> join(sl.getTechniques())),
+              scaledColumn(wm, WodScaledLine::getRepsScheme),
+              scaledColumn(wm, WodScaledLine::getWeight),
+              scaledColumn(wm, WodScaledLine::getWeightFemale),
+              scaledColumn(wm, sl -> name(sl.getWeightUnit())),
+              scaledColumn(wm, WodScaledLine::getDistance),
+              scaledColumn(wm, sl -> name(sl.getDistanceUnit())),
+              scaledColumn(wm, WodScaledLine::getCalories),
+              scaledColumn(wm, WodScaledLine::getCaloriesFemale),
+              scaledColumn(wm, WodScaledLine::getHeight),
+              scaledColumn(wm, WodScaledLine::getHeightFemale),
+              scaledColumn(wm, sl -> name(sl.getHeightUnit())),
+              scaledColumn(wm, WodScaledLine::getDurationSeconds));
         }
       }
     }
+  }
+
+  /** Notes followed by the former scaling options of a line, when a file still has them. */
+  private static String withScaling(String notes, String scaling, String prefix) {
+    if (scaling == null) {
+      return notes;
+    }
+    return notes == null ? prefix + scaling : notes + "\n\n" + prefix + scaling;
+  }
+
+  /** The line in the official Scaled version written in a row, or null (kept RX). */
+  private static WodScaledLine scaledLine(
+      CSVRecord row, Map<String, Movement> movementsByName, String wodTitle) {
+    String name = text(row, "scaled_movement");
+    if (name == null) {
+      return null;
+    }
+    Movement movement = movementsByName.get(name.trim());
+    if (movement == null) {
+      log.warn("Unknown Scaled movement '{}' for WOD '{}', kept RX", name, wodTitle);
+      return null;
+    }
+    return WodScaledLine.builder()
+        .movement(movement)
+        .equipment(list(row, "scaled_equipment"))
+        .techniques(list(row, "scaled_techniques"))
+        .repsScheme(text(row, "scaled_reps_scheme"))
+        .weight(decimal(row, "scaled_weight"))
+        .weightFemale(decimal(row, "scaled_weight_female"))
+        .weightUnit(unit(row, "scaled_weight_unit"))
+        .distance(decimal(row, "scaled_distance"))
+        .distanceUnit(unit(row, "scaled_distance_unit"))
+        .calories(integer(row, "scaled_calories"))
+        .caloriesFemale(integer(row, "scaled_calories_female"))
+        .height(decimal(row, "scaled_height"))
+        .heightFemale(decimal(row, "scaled_height_female"))
+        .heightUnit(unit(row, "scaled_height_unit"))
+        .durationSeconds(integer(row, "scaled_duration_seconds"))
+        .build();
+  }
+
+  private static Object scaledColumn(WodMovement wm, Function<WodScaledLine, Object> value) {
+    return wm.getScaled() == null ? null : value.apply(wm.getScaled());
   }
 
   private static Set<ComponentTechnique> componentTechniques(CSVRecord row) {

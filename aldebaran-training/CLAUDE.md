@@ -48,11 +48,22 @@ resolving IDs from the `antares` schema with `JdbcTemplate`, then calls `demo/De
 - Per-user flags for the UI (`WodCapabilities`, `ScoreCapabilities`) are computed by
   `service/WodCapabilityService` / `ScoreCapabilityService` per request, never inside cached methods
   (`WodService.getWodDetail` is `@Cacheable`). `ScoreCapabilityService.forViewer` also hides others'
-  comments/scaling notes from non-moderators.
+  comments from non-moderators.
 - Team scores (`ScoreTeam`, `ScoreService.teammatesOf` / `formTeam`): one row per member, kept in
   sync on update; team WOD leaderboards go through the in-memory path keyed by team.
-- Score ordering lives once in `service/ScoreRanking` (PR, compare, leaderboard sort); score/WOD
-  consistency in `ScoreService.normalizeAndCheck` (`InvalidScoreException` → 400).
+- Score ordering lives once in `service/ScoreRanking` (PR, compare, leaderboard sort; `Score.tier()` = RX >
+  official Scaled > free Scaled); score/WOD consistency in `ScoreService.normalizeAndCheck` (`InvalidScoreException` → 400).
+- Score entry (lot S, `docs-private/roadmap/lots-passation-saisie-scores.md` D140-D154): levels RX / SCALED only;
+  `score_lines` = lines done otherwise than prescribed (variant + quantities, load in kg), `score_sets.wod_movement_id`
+  (a complex: its first line), `wod_scaled_lines` = the WOD's official Scaled version (`WodMovement.getScaled()`).
+  `service/ScoreLineService` builds them (rows updated in place: unique per score and index / line) and derives
+  `LOAD` = sum of each line's best set; `ScoreConformity` (pure) refuses a changed RX (400), sets `rxPlus` (never
+  ranked) and `scaledOfficial` (Scaled leaderboard), also answered without saving by `POST /scores/level-preview`
+  (`ScoreService.previewLevel`, readers of the WOD); `LineVersions` (pure) builds the scaled line and the line as
+  done, read by the display, records (`LiftVariant.lifts`: every strength line outside a complex, the variant done)
+  and the weekly balance (`Workout.lines()` / `maxCounts()`). `UnitEquivalence` (pure, D149) = box values between
+  kg / lb and in / cm (exact in competitions), sent as `WodMovementResponse.equivalents` and used for RX.
+  Units: performances in kg / m / s, prescriptions in their unit of origin; `@UnitOf` + `CHECK` per unit column.
 - Antares facts Aldebaran cannot know (another user's membership) come from `client/AntaresClient`
   (`application.antares.url`, internal API with `X-Internal-Secret`, 3 s timeout). Any failure throws
   `AntaresUnavailableException` (503): never authorize by default. ITs mock it in

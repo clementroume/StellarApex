@@ -1,25 +1,71 @@
 import {ChangeDetectionStrategy, Component, computed, DestroyRef, DOCUMENT, effect, inject, signal, untracked} from '@angular/core';
-import {toSignal} from '@angular/core/rxjs-interop';
-import {FormBuilder, FormControl, FormGroup, ReactiveFormsModule} from '@angular/forms';
+import {takeUntilDestroyed, toObservable, toSignal} from '@angular/core/rxjs-interop';
+import {catchError, debounceTime, distinctUntilChanged, of, switchMap} from 'rxjs';
+import {FormArray, FormBuilder, FormControl, FormGroup, ReactiveFormsModule} from '@angular/forms';
 import {TranslatePipe, TranslateService} from '@ngx-translate/core';
 import {NgIconComponent} from '@ng-icons/core';
-import {ScalingLevel, ScoreRequest, ScoreResponse, ScoreSet} from '../../../../api/aldebaran/models/score.model';
+import {
+  CardioEquivalent,
+  ScoreLineRequest,
+  ScoreLevelResponse,
+  ScoreRequest,
+  ScoreResponse,
+  ScoreSet
+} from '../../../../api/aldebaran/models/score.model';
+import {WodMovementResponse} from '../../../../api/aldebaran/models/wod.model';
+import {UsualNameOption} from '../../../../api/aldebaran/models/movement.model';
 import {UnitService} from '../../../../core/services/unit.service';
 import {AccessService} from '../../../../core/services/access.service';
+import {AuthService} from '../../../../api/antares/services/auth.service';
 import {GymService} from '../../../../api/antares/services/gym.service';
+import {MovementService} from '../../../../api/aldebaran/services/movement.service';
+import {ScoreService} from '../../../../api/aldebaran/services/score.service';
 import {DisplayName} from '../../../../api/antares/models/user.model';
 import {WodScoresStore} from '../wod-scores.store';
-import {SCALING_LEVELS, splitRounds} from '../score.utils';
+import {splitRounds} from '../score.utils';
 import {formatTimeCapShort, localizedText} from '../../wod.utils';
+import {boardName} from '../../movement-board-name';
+import {cardioQuantity, countedLines, hasOfficialScaled, setLines, sortedLines} from './score-lines.utils';
+import {HlmSpinner} from '@spartan-ng/helm/spinner';
+import {NativeSelectDirective} from '../../../../shared/component/native-select/native-select.directive';
+import {MovementComboboxComponent} from '../../../../shared/component/movement-combobox/movement-combobox.component';
+import {HlmButton} from '@spartan-ng/helm/button';
+import {HlmBadge} from '@spartan-ng/helm/badge';
+import {HlmInput} from '@spartan-ng/helm/input';
+import {HlmTextarea} from '@spartan-ng/helm/textarea';
+import {CdkTrapFocus} from '@angular/cdk/a11y';
 
 /** Score types that can be entered set by set (strength work, D14). */
 const SET_SCORE_TYPES = ['WEIGHT', 'LOAD', 'NONE'];
 
-/** One set row of the form: reps, load in the user's unit, done or failed. */
+/** Level chosen in the form: RX, the WOD's official Scaled version, or a Scaled of one's own (D140, D141). */
+export type FormLevel = 'RX' | 'OFFICIAL' | 'SCALED';
+
+/** One set row of the form: its line, reps, load in the user's unit, done or failed. */
 type SetForm = FormGroup<{
+  wodMovementId: FormControl<number | null>;
   reps: FormControl<number | null>;
   weight: FormControl<number | null>;
   completed: FormControl<boolean>;
+}>;
+
+/**
+ * One line of the WOD as done (D142): changed or not, the variant done and its quantities (load and height in the
+ * user's unit, distance and calories as typed). On a counted "max" line, `reps` holds the reps counted (D147).
+ */
+type LineForm = FormGroup<{
+  wodMovementId: FormControl<number>;
+  changed: FormControl<boolean>;
+  movementId: FormControl<number>;
+  equipment: FormControl<string[]>;
+  techniques: FormControl<string[]>;
+  reps: FormControl<string>;
+  load: FormControl<number | null>;
+  distance: FormControl<number | null>;
+  distanceUnit: FormControl<string | null>;
+  calories: FormControl<number | null>;
+  height: FormControl<number | null>;
+  duration: FormControl<number | null>;
 }>;
 
 /** Units offered for a distance score (stored in meters by Aldebaran). */
@@ -32,21 +78,18 @@ function today(): string {
 }
 
 /**
- * Log or edit a score on the WOD of the detail (modal): the current user's own score, or, for the
- * judge of a competition WOD (`capabilities.canJudge`), the score of a member of its gym. The fields
- * follow the WOD's score type; loads are typed in the user's unit and stored in kg by Aldebaran,
- * which also checks the value required by the score type and the right to log for someone else.
+ * Log or edit a score on the WOD of the detail (modal): the current user's own score, or, for the judge of a
+ * competition WOD (`capabilities.canJudge`), the score of a member of its gym. The level is RX (nothing changed),
+ * the WOD's official Scaled version (lines prefilled) or a Scaled of one's own, detailed line by line: the movement
+ * done (any catalog usual name), its reps, its real load (lot S, D140-D142). Strength sets are entered under their
+ * line (D143). Loads are typed in the user's unit, prefilled as boxes load them; Aldebaran checks the level, the
+ * value required by the score type and the right to log for someone else.
  */
-import {HlmSpinner} from '@spartan-ng/helm/spinner';
-import {NativeSelectDirective} from '../../../../shared/component/native-select/native-select.directive';
-import {HlmButton} from '@spartan-ng/helm/button';
-import {HlmInput} from '@spartan-ng/helm/input';
-import {HlmTextarea} from '@spartan-ng/helm/textarea';
-import {CdkTrapFocus} from '@angular/cdk/a11y';
 @Component({
   selector: 'app-score-form',
   standalone: true,
-  imports: [CdkTrapFocus, HlmTextarea, HlmInput, HlmButton, NativeSelectDirective, HlmSpinner, ReactiveFormsModule, TranslatePipe, NgIconComponent],
+  imports: [CdkTrapFocus, HlmTextarea, HlmInput, HlmButton, NativeSelectDirective, HlmSpinner, ReactiveFormsModule, TranslatePipe,
+    NgIconComponent, MovementComboboxComponent, HlmBadge],
   templateUrl: './score-form.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
@@ -57,10 +100,12 @@ export class ScoreFormComponent {
   private readonly unitService = inject(UnitService);
   private readonly translate = inject(TranslateService);
   private readonly accessService = inject(AccessService);
+  private readonly authService = inject(AuthService);
   private readonly gymService = inject(GymService);
+  private readonly movementService = inject(MovementService);
+  private readonly scoreService = inject(ScoreService);
 
   // --- STATE (SIGNALS & VARIABLES) ---
-  readonly scalingLevels = SCALING_LEVELS;
   readonly distanceUnits = DISTANCE_UNITS;
   readonly maxDate = today();
   /** How an AMRAP score with a fixed round is typed; both are stored as total reps. */
@@ -70,10 +115,19 @@ export class ScoreFormComponent {
   /** Team WOD: members of the box offered as teammates, and the ones chosen. */
   readonly gymMates = signal<DisplayName[]>([]);
   readonly teammates = signal<number[]>([]);
+  /** Usual names of the catalog, to pick the movement done (loaded on the first change of a line). */
+  readonly usualNames = signal<UsualNameOption[]>([]);
+  /** Box tables between cardio machines (D151), to propose a substitution's quantity. */
+  private readonly cardio = signal<CardioEquivalent[]>([]);
+  /**
+   * How the lines being written compare with the prescription, as Aldebaran decides it (nothing saved): the Rx+ badge,
+   * and whether they follow the official Scaled version.
+   */
+  readonly preview = signal<ScoreLevelResponse | null>(null);
 
   readonly form = this.fb.nonNullable.group({
     date: [today()],
-    scaling: ['RX' as ScalingLevel],
+    level: ['RX' as FormLevel],
     minutes: [null as number | null],
     seconds: [null as number | null],
     timeCapped: [false],
@@ -89,11 +143,12 @@ export class ScoreFormComponent {
     gymId: [(this.accessService.memberships()[0]?.gymId ?? null) as number | null],
     // Athlete of a new competition score logged by its judge; null = the current user
     athleteId: [null as number | null],
-    scalingNotes: [''],
     userComment: [''],
     // Competition WOD: the athlete submits the score to the judges
     verificationRequested: [false],
-    // Strength sets, set by set (load in the user's unit)
+    // The WOD's lines as done
+    lines: this.fb.nonNullable.array<LineForm>([]),
+    // Strength sets, set by set, each on its line (load in the user's unit)
     sets: this.fb.nonNullable.array<SetForm>([])
   });
 
@@ -101,8 +156,8 @@ export class ScoreFormComponent {
   private readonly formValue = toSignal(this.form.valueChanges, {initialValue: this.form.getRawValue()});
 
   // --- COMPUTED STATE ---
+  readonly level = computed(() => this.formValue().level as FormLevel);
   readonly timeCapped = computed(() => !!this.formValue().timeCapped);
-  readonly isRx = computed(() => this.formValue().scaling === 'RX');
   readonly hasTiebreak = computed(() => !!(this.formValue().tiebreakMinutes || this.formValue().tiebreakSeconds));
   readonly valueMissing = computed(() => {
     this.formValue();
@@ -112,17 +167,34 @@ export class ScoreFormComponent {
   readonly isEdit = computed(() => this.store.editing() !== 'new');
   /** Logged within a session journal: its day and gym apply. */
   readonly inSession = computed(() => this.store.sessionLogId() != null);
-  /** Set-by-set entry is offered for loads (and NONE, e.g. accessories). */
+  /** The WOD's lines in order, and whether it has an official Scaled version (three levels then). */
+  readonly wodLines = computed(() => sortedLines(this.store.wod()));
+  readonly hasOfficial = computed(() => hasOfficialScaled(this.store.wod()));
+  /** "max" lines whose reps are counted one by one (D147); the score is their sum. */
+  readonly countedIds = computed(() => new Set(countedLines(this.store.wod()).map(l => l.id)));
+  readonly countedTotal = computed(() => {
+    if (this.countedIds().size === 0) return null;
+    const counts = (this.formValue().lines ?? [])
+      .filter(l => l.wodMovementId != null && this.countedIds().has(l.wodMovementId))
+      .map(l => Number(l.reps));
+    return counts.every(n => Number.isInteger(n) && n >= 0) ? counts.reduce((a, b) => a + b, 0) : null;
+  });
+  /** Set-by-set entry is offered for loads (and NONE, e.g. accessories), under each line or complex. */
   readonly canUseSets = computed(() => SET_SCORE_TYPES.includes(this.scoreType()));
+  readonly setLines = computed(() => setLines(this.store.wod()));
   readonly setRows = computed(() => (this.formValue().sets ?? []) as Partial<ScoreSet>[]);
   readonly useSets = computed(() => this.setRows().length > 0);
-  /** Performance derived from the sets, as Aldebaran computes it (best complete set, or volume). */
+  /** Performance derived from the sets, as Aldebaran computes it: best set, or the sum of each line's best (D145). */
   readonly setsValue = computed(() => {
-    const done = this.setRows().filter(r => r.completed !== false && (r.reps ?? 0) > 0 && r.weight != null);
-    if (done.length === 0) return null;
-    return this.scoreType() === 'LOAD'
-      ? done.reduce((sum, r) => sum + (r.reps ?? 0) * (r.weight ?? 0), 0)
-      : Math.max(...done.map(r => r.weight ?? 0));
+    const best = new Map<number | null, number>();
+    for (const r of this.setRows()) {
+      if (r.completed === false || (r.reps ?? 0) <= 0 || r.weight == null) continue;
+      const key = r.wodMovementId ?? null;
+      best.set(key, Math.max(best.get(key) ?? 0, r.weight));
+    }
+    if (best.size === 0) return null;
+    const values = [...best.values()];
+    return this.scoreType() === 'LOAD' ? values.reduce((a, b) => a + b, 0) : Math.max(...values);
   });
   /** An athlete may submit their own score on a competition WOD (a judge's score is verified at once). */
   readonly canSubmit = computed(() => {
@@ -134,7 +206,11 @@ export class ScoreFormComponent {
   readonly canChooseAthlete = computed(() => !this.isEdit() && !!this.store.wod()?.capabilities?.canJudge);
   readonly myId = computed(() => this.accessService.userId());
   readonly massUnitLabel = computed(() => this.unitService.massUnit() === 'KG' ? 'kg' : 'lb');
+  readonly heightUnitLabel = computed(() => this.unitService.unitSystem() === 'METRIC' ? 'cm' : 'in');
   readonly timeCap = computed(() => formatTimeCapShort(this.store.wod()?.timeCapSeconds));
+  /** The athlete's division: the women's loads apply to women (a judge's score: the men's, the athlete corrects). */
+  private readonly division = computed(() =>
+    this.formValue().athleteId == null ? this.authService.currentUser()?.division ?? null : null);
   /**
    * A gym WOD is always scored in its gym; a public or personal WOD in one of the user's gyms, a
    * box for a team WOD (no team on a program).
@@ -147,8 +223,24 @@ export class ScoreFormComponent {
   /** The gym is only asked to members of several gyms; a single gym is used automatically. */
   readonly showGymChoice = computed(() => this.gymChoices().length > 1);
 
-  /** Reps of one round of the AMRAP, when its round is fixed. */
-  readonly repsPerRound = computed(() => this.store.wod()?.repsPerRound ?? null);
+  /** Reps of one round as done: reduced reps make a shorter round (D147). */
+  readonly repsPerRound = computed(() => {
+    const perRound = this.store.wod()?.repsPerRound ?? null;
+    if (!perRound) return null;
+    let reps = perRound;
+    for (const line of this.formValue().lines ?? []) {
+      if (!line.changed || line.wodMovementId == null) continue;
+      const rx = this.wodLines().find(l => l.id === line.wodMovementId);
+      const before = Number(rx?.repsScheme);
+      const after = Number(line.reps);
+      if (Number.isInteger(before) && Number.isInteger(after) && rx?.repsScheme?.trim() && line.reps?.trim()) {
+        reps += after - before;
+      }
+    }
+    return reps > 0 ? reps : perRound;
+  });
+  /** Whether the round as done differs from the WOD's. */
+  readonly roundChanged = computed(() => this.repsPerRound() !== (this.store.wod()?.repsPerRound ?? null));
   readonly byRounds = computed(() => !!this.repsPerRound() && this.repsEntry() === 'ROUNDS');
   /** The other way of writing the typed score: "= 312 reps" or "= 10 rounds + 12". */
   readonly conversion = computed(() => {
@@ -170,7 +262,6 @@ export class ScoreFormComponent {
     const lang = this.translate.currentLang() ?? this.translate.fallbackLang() ?? 'en';
     return localizedText(lang, wod?.tiebreakEn, wod?.tiebreakFr);
   });
-  /** The tiebreak is optional and only offered when it applies: never for a finished For Time. */
   /** Team WOD (new score): teammates of the box are chosen, and get the same score. */
   readonly isTeam = computed(() => !this.isEdit() && !!this.store.wod()?.teamSize);
   readonly teamSize = computed(() => this.store.wod()?.teamSize ?? 0);
@@ -180,6 +271,37 @@ export class ScoreFormComponent {
     return this.store.wod()?.gymId ?? (this.gymChoices().some(c => c.gymId === chosen) ? chosen : null);
   });
 
+  /**
+   * Label of the Scaled level: "Scaled / Rx+" until Aldebaran tells which one the changed lines make, then "Rx+" or
+   * "Scaled" ("Scaled perso" when the WOD has an official version).
+   */
+  readonly scaledLabel = computed(() => {
+    const own = this.hasOfficial() ? 'SCORE.SCALING.OWN' : 'SCORE.SCALING.SCALED';
+    const preview = this.preview();
+    if (this.level() !== 'SCALED' || !preview) return own + '_OR_RX_PLUS';
+    return preview.rxPlus ? 'SCORE.SCALING.RX_PLUS' : own;
+  });
+
+  /** The request of the level preview: a Scaled with changed lines, else nothing to ask. */
+  private readonly previewRequest = computed<ScoreRequest | null>(() => {
+    this.formValue();
+    const wod = this.store.wod();
+    if (!wod || this.level() === 'RX') return null;
+    const lines = this.linesRequest().filter(l => !this.countedIds().has(l.wodMovementId));
+    if (lines.length === 0) return null;
+    return {
+      wodId: wod.id,
+      date: this.form.controls.date.value,
+      scaling: 'SCALED',
+      timeCapped: false,
+      verificationRequested: false,
+      weightUnit: this.unitService.massUnit(),
+      lines,
+      userId: this.canChooseAthlete() ? this.form.controls.athleteId.value ?? undefined : undefined
+    };
+  });
+
+  /** The tiebreak is optional and only offered when it applies: never for a finished For Time. */
   readonly showTiebreak = computed(() =>
     !!this.tiebreakRule() && (this.scoreType() !== 'TIME' || this.timeCapped()));
 
@@ -189,8 +311,13 @@ export class ScoreFormComponent {
     const opener = inject(DOCUMENT).activeElement as HTMLElement | null;
     inject(DestroyRef).onDestroy(() => opener?.focus());
     effect(() => {
+      // One row per WOD line, as prescribed
+      const lines = this.wodLines();
+      untracked(() => this.resetLines(lines));
+    });
+    effect(() => {
       const editing = this.store.editing();
-      if (editing && editing !== 'new') this.fill(editing);
+      if (editing && editing !== 'new') untracked(() => this.fill(editing));
     });
     effect(() => {
       const gymId = this.store.wod()?.gymId;
@@ -207,6 +334,21 @@ export class ScoreFormComponent {
     effect(() => {
       const gymId = this.teamGymId();
       if (this.isTeam() && gymId != null) untracked(() => this.loadGymMates(gymId));
+    });
+    // Rx+ / official version told while the lines change (debounced, the latest answer only)
+    toObservable(this.previewRequest).pipe(
+      debounceTime(400),
+      distinctUntilChanged((a, b) => JSON.stringify(a) === JSON.stringify(b)),
+      switchMap(request => request ? this.scoreService.previewLevel(request).pipe(catchError(() => of(null))) : of(null)),
+      takeUntilDestroyed()
+    ).subscribe(preview => this.preview.set(preview));
+    effect(() => {
+      // The counted "max" lines make the total
+      const total = this.countedTotal();
+      // Emitted, so that the required value (Save button) follows; the total is stable on the second pass
+      if (total != null && total !== untracked(() => this.form.controls.reps.value)) {
+        untracked(() => this.form.controls.reps.setValue(total));
+      }
     });
   }
 
@@ -227,7 +369,59 @@ export class ScoreFormComponent {
     });
   }
 
+  /** The catalog's usual names and the cardio tables, once, when a line is first changed. */
+  private loadCatalog(): void {
+    if (this.usualNames().length > 0) return;
+    this.movementService.getUsualNames().subscribe({next: list => this.usualNames.set(list), error: () => {}});
+    this.scoreService.getReferenceData().subscribe({next: data => this.cardio.set(data.cardio ?? []), error: () => {}});
+  }
+
   // --- ACTIONS & EVENTS ---
+  /** Chooses the level: the official Scaled version prefills its lines, RX puts every line back. */
+  setLevel(level: FormLevel): void {
+    this.form.controls.level.setValue(level);
+    this.lineControls().forEach((group, i) => {
+      const rx = this.wodLines()[i];
+      if (this.countedIds().has(rx.id)) return;
+      if (level === 'OFFICIAL' && rx.scaled) {
+        this.applyOfficial(group, rx);
+      } else if (level !== 'SCALED') {
+        this.resetLine(group, rx);
+      }
+    });
+    if (level !== 'RX') this.loadCatalog();
+  }
+
+  /** Opens a line for changes (a Scaled of one's own), prefilled with the prescription. */
+  changeLine(index: number): void {
+    if (this.level() === 'OFFICIAL') this.form.controls.level.setValue('SCALED');
+    const group = this.lineControls()[index];
+    if (!group.controls.changed.value) {
+      this.resetLine(group, this.wodLines()[index]);
+      group.controls.changed.setValue(true);
+    }
+    this.loadCatalog();
+  }
+
+  /** Back to the prescription for one line. */
+  restoreLine(index: number): void {
+    this.resetLine(this.lineControls()[index], this.wodLines()[index]);
+  }
+
+  /** The movement done on a line: a usual name of the catalog; a cardio machine gets its quantity proposed (D151). */
+  onLinePicked(index: number, option: UsualNameOption | null): void {
+    if (!option) return;
+    const group = this.lineControls()[index];
+    const rx = this.wodLines()[index];
+    group.patchValue({movementId: option.movementId, equipment: [...option.equipment], techniques: [...option.techniques]});
+    const quantity = cardioQuantity(rx,
+      {movementName: rx.movement.name, usualName: rx.display?.usualNameEn},
+      {movementName: option.movementName, usualName: option.nameEn},
+      this.cardio(), this.division() === 'WOMEN');
+    if (quantity?.distance != null) group.patchValue({distance: quantity.distance, distanceUnit: quantity.distanceUnit ?? 'METERS', calories: null});
+    if (quantity?.calories != null) group.patchValue({calories: quantity.calories, distance: null});
+  }
+
   /** Adds or removes a teammate; at most the team size (the extra one mirrors a member). */
   toggleTeammate(id: number): void {
     this.teammates.update(ids => ids.includes(id)
@@ -250,17 +444,20 @@ export class ScoreFormComponent {
     this.repsEntry.set(mode);
   }
 
-  /** Starts set-by-set entry with the prescribed sets (e.g. 5 x 5), or adds one more set. */
-  addSet(): void {
+  /** Starts a line's sets with its prescribed sets (e.g. 5 x 5), or adds one more set like the last. */
+  addSet(line: WodMovementResponse): void {
     const sets = this.form.controls.sets;
-    if (sets.length === 0) {
-      const movement = this.store.wod()?.movements?.[0];
-      const reps = Number(movement?.repsScheme);
-      const count = Math.min(Math.max(movement?.sets ?? 1, 1), 20);
-      for (let i = 0; i < count; i++) sets.push(this.setGroup({reps: Number.isInteger(reps) ? reps : null}));
+    const own = sets.controls.filter(s => s.controls.wodMovementId.value === line.id);
+    if (own.length === 0) {
+      const reps = Number(line.repsScheme);
+      const count = Math.min(Math.max(line.sets ?? 1, 1), 20);
+      for (let i = 0; i < count; i++) {
+        sets.push(this.setGroup({wodMovementId: line.id, reps: Number.isInteger(reps) ? reps : null}));
+      }
     } else {
-      const last = sets.at(sets.length - 1).getRawValue();
-      sets.push(this.setGroup({reps: last.reps, weight: last.weight}));
+      const last = own[own.length - 1].getRawValue();
+      sets.insert(sets.controls.indexOf(own[own.length - 1]) + 1,
+        this.setGroup({wodMovementId: line.id, reps: last.reps, weight: last.weight}));
     }
   }
 
@@ -275,6 +472,63 @@ export class ScoreFormComponent {
   }
 
   // --- HELPERS ---
+  lineControls(): LineForm[] {
+    return this.form.controls.lines.controls;
+  }
+
+  /** Indexes of the sets of a line, in order. */
+  setIndexes(line: WodMovementResponse): number[] {
+    return this.setRows().map((r, i) => r.wodMovementId === line.id ? i : -1).filter(i => i >= 0);
+  }
+
+  /** The best complete set of a line, in the user's unit, or null. */
+  bestOf(line: WodMovementResponse): number | null {
+    const loads = this.setRows()
+      .filter(r => r.wodMovementId === line.id && r.completed !== false && (r.reps ?? 0) > 0 && r.weight != null)
+      .map(r => r.weight as number);
+    return loads.length ? Math.max(...loads) : null;
+  }
+
+  /** Unit label of a line's height as typed: cm / in, or the line's own unit (ft, m). */
+  heightLabelOf(line: WodMovementResponse): string {
+    const unit = line.heightUnit;
+    if (unit === 'CENTIMETERS' || unit === 'INCHES' || !unit) return this.heightUnitLabel();
+    return unit === 'FEET' ? 'ft' : 'm';
+  }
+
+  /** Board name of a line: "Thrusters", "Ring Rows". */
+  lineName(line: WodMovementResponse): string {
+    const reps = line.repsScheme?.trim();
+    return boardName({name: line.movement.name, allowed: line.movement.equipment, equipment: line.equipment,
+      techniques: line.techniques, display: line.display}, !!reps && !/^1(?![\d-])/.test(reps));
+  }
+
+  /** What a line prescribes: "21-15-9 · 43/29 kg"; and the official Scaled version of it, when shown. */
+  linePrescription(line: WodMovementResponse): string {
+    const division = this.authService.currentUser()?.division;
+    const load = this.unitService.lineLoadPair(line, division);
+    const height = this.unitService.lineHeightPair(line, division);
+    const calories = [line.calories, line.caloriesFemale].filter(v => v != null).join('/');
+    return [
+      line.repsScheme?.replace(/^max\b/i, 'Max') ?? '',
+      calories ? `${calories} cal` : '',
+      this.unitService.formatDistance(line.distance, null, line.distanceUnit),
+      load ? `${load.values.join('/')} ${load.unit}` : '',
+      height ? `${height.values.join('/')} ${height.unit}` : ''
+    ].filter(Boolean).join(' · ');
+  }
+
+  /** The official Scaled version of a line: "Jumping Pull-ups", "21 · 30/20 kg". */
+  officialText(line: WodMovementResponse): string {
+    const s = line.scaled;
+    if (!s) return '';
+    const name = boardName({name: s.movement.name, equipment: s.equipment, techniques: s.techniques, display: s.display}, true);
+    const division = this.authService.currentUser()?.division;
+    const load = this.unitService.lineLoadPair(s, division);
+    return [name, s.repsScheme && s.repsScheme !== line.repsScheme ? s.repsScheme : '',
+      load ? `${load.values.join('/')} ${load.unit}` : ''].filter(Boolean).join(' · ');
+  }
+
   /** True while the value required by the score type is empty (Aldebaran checks it too). */
   isValueMissing(): boolean {
     const v = this.form.getRawValue();
@@ -299,12 +553,86 @@ export class ScoreFormComponent {
     }
   }
 
+  private resetLines(lines: WodMovementResponse[]): void {
+    const array = this.form.controls.lines as FormArray<LineForm>;
+    array.clear();
+    for (const line of lines) {
+      const group = this.lineGroup(line);
+      array.push(group);
+    }
+  }
+
+  private lineGroup(line: WodMovementResponse): LineForm {
+    return new FormGroup({
+      wodMovementId: new FormControl<number>(line.id, {nonNullable: true}),
+      changed: new FormControl<boolean>(false, {nonNullable: true}),
+      movementId: new FormControl<number>(line.movement.id, {nonNullable: true}),
+      equipment: new FormControl<string[]>([...(line.equipment ?? [])], {nonNullable: true}),
+      techniques: new FormControl<string[]>([...(line.techniques ?? [])], {nonNullable: true}),
+      reps: new FormControl<string>(this.countedIds().has(line.id) ? '' : line.repsScheme ?? '', {nonNullable: true}),
+      load: new FormControl<number | null>(this.unitService.lineLoadFor(line, this.division())),
+      distance: new FormControl<number | null>(line.distance ?? null),
+      distanceUnit: new FormControl<string | null>(line.distanceUnit ?? null),
+      calories: new FormControl<number | null>(this.division() === 'WOMEN' ? line.caloriesFemale ?? line.calories ?? null : line.calories ?? null),
+      height: new FormControl<number | null>(this.heightFor(line)),
+      duration: new FormControl<number | null>(line.durationSeconds ?? null)
+    });
+  }
+
+  /** A line back to its prescription. */
+  private resetLine(group: LineForm, line: WodMovementResponse): void {
+    const fresh = this.lineGroup(line).getRawValue();
+    group.setValue({...fresh, reps: this.countedIds().has(line.id) ? group.controls.reps.value : fresh.reps});
+  }
+
+  /** A line as the official Scaled version writes it. */
+  private applyOfficial(group: LineForm, line: WodMovementResponse): void {
+    const s = line.scaled!;
+    const women = this.division() === 'WOMEN';
+    group.setValue({
+      wodMovementId: line.id,
+      changed: true,
+      movementId: s.movement.id,
+      equipment: [...(s.equipment ?? [])],
+      techniques: [...(s.techniques ?? [])],
+      reps: s.repsScheme ?? line.repsScheme ?? '',
+      load: this.unitService.lineLoadFor(s, this.division()),
+      distance: s.distance ?? null,
+      distanceUnit: s.distanceUnit ?? null,
+      calories: women ? s.caloriesFemale ?? s.calories ?? null : s.calories ?? null,
+      height: this.heightFor(s),
+      duration: s.durationSeconds ?? null
+    });
+  }
+
+  /**
+   * A box or target height as typed: in the user's unit (cm or in, as boxes have them) for a height written in cm or
+   * inches, in the line's own unit otherwise (a wall ball target in feet stays in feet).
+   */
+  private heightFor(line: Parameters<UnitService['lineHeightPair']>[0]): number | null {
+    const women = this.division() === 'WOMEN';
+    if (!isBoxUnit(line.heightUnit)) {
+      return (women ? line.heightFemale ?? line.height : line.height ?? line.heightFemale) ?? null;
+    }
+    const pair = this.unitService.lineHeightPair(line, null);
+    if (!pair) return null;
+    return Number(String(pair.values[women && pair.values.length === 2 ? 1 : 0]).replace(',', '.'));
+  }
+
+  /** Unit of a height typed for a line: the user's for cm / inches, the line's own otherwise. */
+  private heightUnitOf(line: WodMovementResponse): string {
+    if (!isBoxUnit(line.heightUnit)) return line.heightUnit ?? 'METERS';
+    return this.unitService.unitSystem() === 'METRIC' ? 'CENTIMETERS' : 'INCHES';
+  }
+
   private fill(score: ScoreResponse): void {
     const load = score.maxWeight ?? score.totalLoad;
-    const split = this.scoreType() === 'REPS' ? splitRounds(score.reps, this.repsPerRound()) : null;
-    this.form.setValue({
+    const perRound = score.roundReps ?? this.store.wod()?.repsPerRound ?? null;
+    const split = this.scoreType() === 'REPS' ? splitRounds(score.reps, perRound) : null;
+    const level: FormLevel = score.scaling === 'RX' ? 'RX' : score.scaledOfficial ? 'OFFICIAL' : 'SCALED';
+    this.form.patchValue({
       date: score.date,
-      scaling: score.scaling,
+      level,
       minutes: score.timeMinutesPart ?? null,
       seconds: score.timeSecondsPart ?? null,
       timeCapped: score.timeCapped,
@@ -318,15 +646,33 @@ export class ScoreFormComponent {
       tiebreakSeconds: score.tiebreakSeconds ? score.tiebreakSeconds % 60 : null,
       gymId: score.gymId ?? null,
       athleteId: null,
-      scalingNotes: score.scalingNotes ?? '',
       userComment: score.userComment ?? '',
-      verificationRequested: !!score.verificationRequested,
-      sets: []
+      verificationRequested: !!score.verificationRequested
     });
+    this.resetLines(this.wodLines());
+    this.lineControls().forEach((group, i) => {
+      const rx = this.wodLines()[i];
+      const done = score.lines?.find(l => l.wodMovementId === rx.id);
+      if (!done) return;
+      group.patchValue({
+        changed: !this.countedIds().has(rx.id),
+        movementId: done.movement.id,
+        equipment: [...done.equipment],
+        techniques: [...done.techniques],
+        reps: done.repsScheme ?? (this.countedIds().has(rx.id) ? '' : rx.repsScheme ?? ''),
+        load: done.weight != null ? this.unitService.convertScoreLoad(done.weight, score.weightUnit) : group.controls.load.value,
+        distance: done.distanceMeters ?? group.controls.distance.value,
+        distanceUnit: done.distanceMeters != null ? 'METERS' : group.controls.distanceUnit.value,
+        calories: done.calories ?? group.controls.calories.value,
+        duration: done.durationSeconds ?? group.controls.duration.value
+      });
+    });
+    if (level !== 'RX') this.loadCatalog();
     const sets = this.form.controls.sets;
     sets.clear();
     for (const set of score.sets ?? []) {
       sets.push(this.setGroup({
+        wodMovementId: set.wodMovementId ?? null,
         reps: set.reps,
         weight: set.weight != null ? this.unitService.convertScoreLoad(set.weight, score.weightUnit) : null,
         completed: set.completed
@@ -334,13 +680,52 @@ export class ScoreFormComponent {
     }
   }
 
-  /** One set row: reps, load (user's unit), done or failed. */
-  private setGroup(value: {reps?: number | null; weight?: number | null; completed?: boolean} = {}): SetForm {
+  /** One set row: its line, reps, load (user's unit), done or failed. */
+  private setGroup(value: {wodMovementId?: number | null; reps?: number | null; weight?: number | null; completed?: boolean} = {}): SetForm {
     return new FormGroup({
+      wodMovementId: new FormControl<number | null>(value.wodMovementId ?? null),
       reps: new FormControl<number | null>(value.reps ?? null),
       weight: new FormControl<number | null>(value.weight ?? null),
       completed: new FormControl<boolean>(value.completed ?? true, {nonNullable: true})
     });
+  }
+
+  /**
+   * The lines sent (D142): each changed line with what differs from the prescription (null = as prescribed), and the
+   * reps counted on "max" lines (D147).
+   */
+  private linesRequest(): ScoreLineRequest[] {
+    const level = this.level();
+    const requests: ScoreLineRequest[] = [];
+    this.lineControls().forEach((group, i) => {
+      const rx = this.wodLines()[i];
+      const v = group.getRawValue();
+      if (this.countedIds().has(rx.id)) {
+        if (v.reps.trim()) {
+          requests.push({wodMovementId: rx.id, movementId: rx.movement.id, equipment: rx.equipment ?? [],
+            techniques: rx.techniques ?? [], repsScheme: v.reps.trim()});
+        }
+        return;
+      }
+      if (level === 'RX' || !v.changed) return;
+      const prescribed = this.lineGroup(rx).getRawValue();
+      const differs = <T>(a: T, b: T) => a != null && a !== b;
+      requests.push({
+        wodMovementId: rx.id,
+        movementId: v.movementId,
+        equipment: v.equipment,
+        techniques: v.techniques,
+        repsScheme: differs(v.reps.trim(), prescribed.reps) ? v.reps.trim() : null,
+        weight: differs(v.load, prescribed.load) ? v.load : null,
+        distance: differs(v.distance, prescribed.distance) ? v.distance : null,
+        distanceUnit: differs(v.distance, prescribed.distance) ? v.distanceUnit ?? 'METERS' : null,
+        calories: differs(v.calories, prescribed.calories) ? v.calories : null,
+        height: differs(v.height, prescribed.height) ? v.height : null,
+        heightUnit: differs(v.height, prescribed.height) ? this.heightUnitOf(rx) : null,
+        durationSeconds: differs(v.duration, prescribed.duration) ? v.duration : null
+      });
+    });
+    return requests;
   }
 
   private buildRequest(wodId: number): ScoreRequest {
@@ -348,25 +733,28 @@ export class ScoreFormComponent {
     const type = this.scoreType();
     const capped = type === 'TIME' && v.timeCapped;
     const tiebreak = (v.tiebreakMinutes ?? 0) * 60 + (v.tiebreakSeconds ?? 0);
+    const lines = this.linesRequest();
     const request: ScoreRequest = {
       userId: this.canChooseAthlete() && v.athleteId != null ? v.athleteId : undefined,
       date: v.date,
       wodId,
-      scaling: v.scaling,
+      scaling: v.level === 'RX' ? 'RX' : 'SCALED',
       timeCapped: capped,
       gymId: this.gymChoices().length > 0 ? v.gymId : null,
       tiebreakSeconds: this.showTiebreak() && tiebreak > 0 ? tiebreak : undefined,
-      scalingNotes: v.scaling === 'RX' ? undefined : v.scalingNotes.trim() || undefined,
       userComment: v.userComment.trim() || undefined,
       verificationRequested: this.canSubmit() && v.verificationRequested,
-      teammateIds: this.isTeam() && this.teammates().length > 0 ? this.teammates() : undefined
+      teammateIds: this.isTeam() && this.teammates().length > 0 ? this.teammates() : undefined,
+      lines: lines.length ? lines : undefined,
+      // Loads of the lines are typed in the user's unit
+      weightUnit: this.unitService.massUnit()
     };
     if (this.useSets()) {
-      // Aldebaran derives the performance from the sets (best complete set, or volume)
+      // Aldebaran derives the performance from the sets (best complete set, or the sum of each line's best)
       const sets: ScoreSet[] = v.sets
         .filter(r => r.reps != null)
-        .map(r => ({reps: r.reps as number, weight: r.weight, completed: r.completed}));
-      return {...request, sets, weightUnit: this.unitService.massUnit()};
+        .map(r => ({reps: r.reps as number, weight: r.weight, completed: r.completed, wodMovementId: r.wodMovementId}));
+      return {...request, sets};
     }
     switch (type) {
       case 'TIME':
@@ -376,14 +764,14 @@ export class ScoreFormComponent {
       case 'ROUNDS':
         return {...request, rounds: v.rounds ?? undefined};
       case 'REPS':
-        // Rounds + reps are converted to total reps by Aldebaran
+        // Rounds + reps are converted to total reps by Aldebaran, with the round as done
         return this.byRounds()
           ? {...request, rounds: v.rounds ?? 0, reps: v.reps ?? 0}
           : {...request, reps: v.reps ?? undefined};
       case 'WEIGHT':
-        return {...request, maxWeight: v.load ?? undefined, weightUnit: this.unitService.massUnit()};
+        return {...request, maxWeight: v.load ?? undefined};
       case 'LOAD':
-        return {...request, totalLoad: v.load ?? undefined, weightUnit: this.unitService.massUnit()};
+        return {...request, totalLoad: v.load ?? undefined};
       case 'CALORIES':
         return {...request, totalCalories: v.calories ?? undefined};
       case 'DISTANCE':
@@ -392,4 +780,10 @@ export class ScoreFormComponent {
         return request;
     }
   }
+
+}
+
+/** Heights shown as boxes have them (cm / inches); other units are typed as written. */
+function isBoxUnit(unit: string | null | undefined): boolean {
+  return unit === 'CENTIMETERS' || unit === 'INCHES';
 }

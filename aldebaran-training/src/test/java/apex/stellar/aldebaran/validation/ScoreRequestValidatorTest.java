@@ -67,7 +67,6 @@ class ScoreRequestValidatorTest {
         calories,
         ScalingLevel.RX, // ScalingLevel in string
         false, null,
-        null,
         null, null);
   }
 

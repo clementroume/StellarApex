@@ -22,16 +22,17 @@ import apex.stellar.aldebaran.repository.MovementRepository;
 import apex.stellar.aldebaran.repository.ScoreRepository;
 import apex.stellar.aldebaran.repository.WodRepository;
 import apex.stellar.aldebaran.security.SecurityService;
-import apex.stellar.aldebaran.service.LiftVariant.Lift;
 import apex.stellar.aldebaran.service.RecordInheritance.Effective;
 import apex.stellar.aldebaran.service.RecordInheritance.Target;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -85,14 +86,33 @@ public class MovementRecordService {
   // -------------------------------------------------------------------------
 
   /**
-   * Rebuilds an athlete's records of the movement a WOD lifts, if it feeds records.
+   * Rebuilds an athlete's records of the movements a WOD lifts (every strength line, D144) and of
+   * the movements done in their place.
+   *
+   * @param wod The WOD of a score just written, corrected or deleted.
+   * @param userId The athlete.
+   * @param previous Movements the score fed before it changed (substitutions given up).
+   */
+  @Transactional
+  public void rebuildFor(Wod wod, Long userId, Collection<Long> previous) {
+    if (LiftVariant.lifts(wod, List.of()).isEmpty()) {
+      return;
+    }
+    Set<Long> movements = new LinkedHashSet<>(previous);
+    LiftVariant.lifts(wod, List.of()).forEach(l -> movements.add(l.movement().getId()));
+    movements.addAll(scoreRepository.findSubstitutedMovementIds(wod.getId(), userId));
+    movements.forEach(movementId -> rebuild(userId, movementId));
+  }
+
+  /**
+   * Rebuilds an athlete's records of the movements a WOD lifts.
    *
    * @param wod The WOD of a score just written, corrected or deleted.
    * @param userId The athlete.
    */
   @Transactional
   public void rebuildFor(Wod wod, Long userId) {
-    LiftVariant.of(wod).ifPresent(lift -> rebuild(userId, lift.movement().getId()));
+    rebuildFor(wod, userId, List.of());
   }
 
   /**
@@ -148,15 +168,17 @@ public class MovementRecordService {
       if (score.getTeam() != null) {
         continue;
       }
-      Optional<Lift> lift = LiftVariant.of(score.getWod());
-      if (lift.isEmpty() || !Objects.equals(lift.get().movement().getId(), movementId)) {
-        continue;
-      }
-      movement = lift.get().movement();
-      for (Candidate candidate : candidates(score, lift.get().variantKey())) {
-        byKey
-            .computeIfAbsent(candidate.variantKey() + "#" + candidate.reps(), k -> new ArrayList<>())
-            .add(candidate);
+      for (LiftVariant.LineLift lift : LiftVariant.lifts(score.getWod(), score.getLines())) {
+        if (!Objects.equals(lift.movement().getId(), movementId)) {
+          continue;
+        }
+        movement = lift.movement();
+        for (Candidate candidate : candidates(score, lift)) {
+          byKey
+              .computeIfAbsent(
+                  candidate.variantKey() + "#" + candidate.reps(), k -> new ArrayList<>())
+              .add(candidate);
+        }
       }
     }
     return new Candidates(movement, byKey);
@@ -257,17 +279,27 @@ public class MovementRecordService {
     if (recordRepository.count() > 0) {
       return 0;
     }
-    List<Object[]> owners = scoreRepository.findRecordOwners(LiftVariant.LOAD_TYPES);
+    List<Object[]> owners = new ArrayList<>(scoreRepository.findRecordOwners(LiftVariant.LOAD_TYPES));
+    owners.addAll(scoreRepository.findSubstitutionRecordOwners(LiftVariant.LOAD_TYPES));
     for (Object[] pair : owners) {
       rebuild((Long) pair[0], (Long) pair[1]);
     }
     return owners.size();
   }
 
-  /** The record candidates of a score: its complete loaded sets, else its "N RM" load. */
-  private static List<Candidate> candidates(Score score, String variantKey) {
+  /**
+   * The record candidates of a line of a score: its complete loaded sets, else the "N RM" load of
+   * a WOD with a single line.
+   */
+  private static List<Candidate> candidates(Score score, LiftVariant.LineLift lift) {
     List<Candidate> list = new ArrayList<>();
-    List<ScoreSet> sets = score.getSets() == null ? List.of() : score.getSets();
+    String variantKey = lift.variantKey();
+    List<ScoreSet> sets =
+        score.getSets() == null
+            ? List.of()
+            : score.getSets().stream()
+                .filter(set -> Objects.equals(set.getWodMovement().getId(), lift.line().getId()))
+                .toList();
     if (!sets.isEmpty()) {
       for (ScoreSet set : sets) {
         if (set.isCompleted()
@@ -281,11 +313,15 @@ public class MovementRecordService {
       return list;
     }
     Integer repMax = score.getWod().getRepMax();
-    if (repMax != null && score.getMaxWeightKg() != null && score.getMaxWeightKg() > 0) {
+    if (lift.onlyLine()
+        && repMax != null
+        && score.getMaxWeightKg() != null
+        && score.getMaxWeightKg() > 0) {
       list.add(new Candidate(variantKey, repMax, score.getMaxWeightKg(), score));
     }
     return list;
   }
+
 
   // -------------------------------------------------------------------------
   // Reads

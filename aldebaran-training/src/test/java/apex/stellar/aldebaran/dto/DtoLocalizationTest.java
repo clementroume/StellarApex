@@ -9,6 +9,7 @@ import apex.stellar.aldebaran.model.entities.Wod.ScoreType;
 import apex.stellar.aldebaran.model.entities.Wod.WodType;
 import apex.stellar.aldebaran.model.enums.Category;
 import apex.stellar.aldebaran.model.enums.Equipment;
+import apex.stellar.aldebaran.model.enums.Unit;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validator;
 import java.time.LocalDate;
@@ -264,7 +265,7 @@ class DtoLocalizationTest {
               Collections.singletonList(
                   new WodMovementRequest(
                       1L, 1, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
-                      null, null, null, null)));
+                      null, null)));
 
       assertViolationEnAndFr(
           request,
@@ -313,7 +314,7 @@ class DtoLocalizationTest {
       WodMovementRequest request =
           new WodMovementRequest(
               null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
-              null, null, null);
+              null);
 
       assertViolationEnAndFr(
           request,
@@ -322,6 +323,26 @@ class DtoLocalizationTest {
           "L'identifiant du mouvement est requis.");
       assertViolationEnAndFr(
           request, "orderIndex", "Order index is required.", "L'index d'ordre est requis.");
+    }
+
+    @Test
+    @DisplayName("Unit of the wrong kind (D150): a height in KG, a load in meters")
+    void unitKind() {
+      WodMovementRequest request =
+          new WodMovementRequest(
+              1L, 1, "10", 20.0, null, Unit.METERS, null, null, null, null, null, null, 60.0,
+              null, Unit.KG, null, null, null, null);
+
+      assertViolationEnAndFr(
+          request,
+          "heightUnit",
+          "This unit does not fit this field.",
+          "Cette unité ne convient pas à ce champ.");
+      assertViolationEnAndFr(
+          request,
+          "weightUnit",
+          "This unit does not fit this field.",
+          "Cette unité ne convient pas à ce champ.");
     }
 
     @Test
@@ -340,9 +361,7 @@ class DtoLocalizationTest {
               -1.0,
               null,
               -1,
-              null, null, null, null, null, null, null, null,
-              "A".repeat(4001),
-              null);
+              null, null, null, null, null, null, null, null);
 
       assertViolationEnAndFr(
           request,
@@ -354,11 +373,6 @@ class DtoLocalizationTest {
           "repsScheme",
           "Rep scheme cannot exceed 50 characters.",
           "Le schéma de répétition (détail) ne peut pas dépasser 50 caractères.");
-      assertViolationEnAndFr(
-          request,
-          "scalingOptionsEn",
-          "Scaling options cannot exceed 4000 characters.",
-          "Les options de scaling ne peuvent pas dépasser 4000 caractères.");
       assertViolationEnAndFr(
           request,
           "weight",
@@ -396,7 +410,7 @@ class DtoLocalizationTest {
       ScoreRequest request =
           new ScoreRequest(
               null, null, null, null, null, null, null, null, null, null, null, null, null, null,
-              false, null, null, null, null);
+              false, null, null, null);
 
       assertViolationEnAndFr(request, "wodId", "WOD ID is required.", "L'ID du WOD est requis.");
       assertViolationEnAndFr(request, "date", "Date is required.", "La date est requise.");
@@ -415,7 +429,6 @@ class DtoLocalizationTest {
               null, null, null, null, null, null, null, null, null, null,
               ScalingLevel.RX,
               false, null,
-              null,
               null, null);
 
       assertViolationEnAndFr(
@@ -446,7 +459,6 @@ class DtoLocalizationTest {
               -1,
               ScalingLevel.RX,
               false, null,
-              "A".repeat(4001),
               "A".repeat(4001), null);
 
       // Metrics (Negative values)
@@ -497,11 +509,6 @@ class DtoLocalizationTest {
           "userComment",
           "User comment cannot exceed 4000 characters.",
           "Le commentaire ne peut pas dépasser 4000 caractères.");
-      assertViolationEnAndFr(
-          request,
-          "scalingNotes",
-          "Scaling notes cannot exceed 4000 characters.",
-          "Les notes de scaling ne peuvent pas dépasser 4000 caractères.");
     }
   }
 }

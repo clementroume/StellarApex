@@ -1,3 +1,4 @@
+import {ImplementSizes} from '../../../api/aldebaran/models/wod.model';
 /** WOD categories (formats v3): the first row of chips. */
 export type WodCategory = 'FOR_TIME' | 'AMRAP' | 'EMOM' | 'TABATA' | 'FOR_LOAD' | 'FOR_QUALITY';
 
@@ -131,34 +132,33 @@ export function roundsOf(scheme: string | null | undefined): number | null {
   return match ? Number(match[1]) : null;
 }
 
-/**
- * Standard implement weights (Rogue Fitness catalogue): kettlebells in kilograms with their usual
- * pound labels (16 kg = 35 lb, 24 kg = 53 lb), dumbbells by 2.5 kg / 5 lb.
- */
-export const KETTLEBELL_KG = [4, 6, 8, 12, 16, 20, 24, 28, 32, 36, 40, 48];
-export const KETTLEBELL_LB = [9, 13, 18, 26, 35, 44, 53, 62, 70, 80, 88, 106];
-export const DUMBBELL_KG = Array.from({length: 20}, (_, i) => (i + 1) * 2.5);
-export const DUMBBELL_LB = Array.from({length: 20}, (_, i) => (i + 1) * 5);
-/** The three heights of a plyo box: 20", 24", 30" (51, 61, 76 cm). */
-export const BOX_IN = [20, 24, 30];
-export const BOX_CM = [51, 61, 76];
-
 /** Weighted implement of a WOD line: the equipment picked, else the only one of the movement or its name. */
 export function implementOf(picked: string[], allowed: string[] | null | undefined, name: string | null | undefined):
-  'KETTLEBELL' | 'DUMBBELL' | null {
-  const implement = (values: string[]) =>
-    values.includes('KETTLEBELL') ? 'KETTLEBELL' : values.includes('DUMBBELL') ? 'DUMBBELL' : null;
+  Implement | null {
+  const implement = (values: string[]): Implement | null =>
+    values.includes('KETTLEBELL') ? 'KETTLEBELL' : values.includes('DUMBBELL') ? 'DUMBBELL'
+      : values.includes('MEDICINE_BALL') ? 'MEDBALL' : null;
   if (picked.length > 0) return implement(picked);
   if (name && /kettlebell/i.test(name)) return 'KETTLEBELL';
   if (name && /dumbbell/i.test(name)) return 'DUMBBELL';
+  if (name && /wall-?ball|med(icine)? ?ball/i.test(name)) return 'MEDBALL';
   return allowed?.length === 1 ? implement(allowed) : null;
 }
 
-/** Weights offered for an implement in the user's unit, or null for a free load. */
-export function loadPresets(implement: 'KETTLEBELL' | 'DUMBBELL' | null, metric: boolean): number[] | null {
-  if (implement === 'KETTLEBELL') return metric ? KETTLEBELL_KG : KETTLEBELL_LB;
-  if (implement === 'DUMBBELL') return metric ? DUMBBELL_KG : DUMBBELL_LB;
-  return null;
+/** An implement that comes in fixed sizes (D155). */
+export type Implement = 'KETTLEBELL' | 'DUMBBELL' | 'MEDBALL';
+
+/**
+ * The real sizes of an implement in a unit (D155, sent by Aldebaran), or null for a free load (a barbell) or while the
+ * sizes are not loaded.
+ */
+export function loadPresets(implement: Implement | null, kg: boolean, sizes: ImplementSizes | null): number[] | null {
+  if (!sizes || !implement) return null;
+  switch (implement) {
+    case 'KETTLEBELL': return kg ? sizes.kettlebellKg : sizes.kettlebellLb;
+    case 'DUMBBELL': return kg ? sizes.dumbbellKg : sizes.dumbbellLb;
+    case 'MEDBALL': return kg ? sizes.medballKg : sizes.medballLb;
+  }
 }
 
 /** A movement on a plyo box (box jump, step-up, burpee box jump over): three heights only. */

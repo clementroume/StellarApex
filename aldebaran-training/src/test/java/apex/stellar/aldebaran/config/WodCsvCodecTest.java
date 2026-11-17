@@ -99,12 +99,12 @@ class WodCsvCodecTest {
     assertEquals(95.0, thruster.getWeight());
     assertEquals(Unit.LBS, thruster.getWeightUnit());
     assertEquals("Women: 65 lb", thruster.getNotesEn());
-    assertNull(thruster.getScalingOptionsEn());
     WodMovement pullUp = fran.getMovements().get(1);
     assertSame(PULL_UP, pullUp.getMovement());
     assertNull(pullUp.getWeight());
     assertNull(pullUp.getWeightUnit());
-    assertEquals("Ring rows", pullUp.getScalingOptionsEn());
+    // Former scaling options join the notes (D154)
+    assertTrue(pullUp.getNotesEn().endsWith("Scaling: Ring rows"));
 
     Wod cindy = wods.get(1);
     assertEquals(WodType.AMRAP, cindy.getWodType());
@@ -240,8 +240,6 @@ class WodCsvCodecTest {
                 .heightUnit(Unit.CENTIMETERS)
                 .notesEn("Two dumbbells")
                 .notesFr("Deux haltères")
-                .scalingOptionsEn("PVC")
-                .scalingOptionsFr("Tube PVC")
                 .equipment(Set.of("BARBELL", "DUMBBELL"))
                 .techniques(Set.of("PAUSED"))
                 .build());
@@ -305,14 +303,12 @@ class WodCsvCodecTest {
       assertEquals(e.getDurationDisplayUnit(), a.getDurationDisplayUnit());
       assertEquals(e.getCalories(), a.getCalories());
       assertEquals(e.getNotesEn(), a.getNotesEn());
-      assertEquals(e.getScalingOptionsEn(), a.getScalingOptionsEn());
       assertEquals(e.getWeightFemale(), a.getWeightFemale());
       assertEquals(e.getCaloriesFemale(), a.getCaloriesFemale());
       assertEquals(e.getHeight(), a.getHeight());
       assertEquals(e.getHeightFemale(), a.getHeightFemale());
       assertEquals(e.getHeightUnit(), a.getHeightUnit());
       assertEquals(e.getNotesFr(), a.getNotesFr());
-      assertEquals(e.getScalingOptionsFr(), a.getScalingOptionsFr());
       assertEquals(e.getEquipment(), a.getEquipment());
       assertEquals(e.getTechniques(), a.getTechniques());
       assertEquals(e.getSets(), a.getSets());

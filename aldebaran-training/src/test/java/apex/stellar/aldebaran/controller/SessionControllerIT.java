@@ -148,7 +148,7 @@ class SessionControllerIT extends BaseIntegrationTest {
         List.of(
             new WodMovementRequest(
                 backSquat.getId(), 1, "5", null, null, null, null, null, null, null, null, null,
-                null, null, null, null, null, null, null, null, null, 5)));
+                null, null, null, null, null, null, null, 5)));
   }
 
   private static SessionBlockRequest warmUp() {
@@ -338,7 +338,7 @@ class SessionControllerIT extends BaseIntegrationTest {
     ScoreRequest squatScore =
         new ScoreRequest(
             null, today, squatId, null, null, null, null, null, null, Unit.KG, null, null, null,
-            ScalingLevel.RX, false, null, null, null, null, null,
+            ScalingLevel.RX, false, null, null, null, null,
             List.of(
                 new ScoreSetRequest(5, 100.0, null),
                 new ScoreSetRequest(5, 110.0, true),
@@ -357,7 +357,7 @@ class SessionControllerIT extends BaseIntegrationTest {
     ScoreRequest franScore =
         new ScoreRequest(
             null, today, fran.getId(), 4, 30, null, null, null, null, null, null, null, null,
-            ScalingLevel.RX, false, null, null, null, null, logId, null, false);
+            ScalingLevel.RX, false, null, null, null, logId, null, false);
     mockMvc
         .perform(as(post("/aldebaran/scores"), ATHLETE, ATHLETE_MEMBERSHIPS).content(json(franScore)))
         .andExpect(status().isCreated())
@@ -368,7 +368,7 @@ class SessionControllerIT extends BaseIntegrationTest {
     ScoreRequest franElsewhere =
         new ScoreRequest(
             null, today.minusDays(3), fran.getId(), 4, 0, null, null, null, null, null, null, null,
-            null, ScalingLevel.RX, false, null, null, null, null, null, null, false);
+            null, ScalingLevel.RX, false, null, null, null, null, null, false);
     mockMvc
         .perform(as(post("/aldebaran/scores"), ATHLETE, ATHLETE_MEMBERSHIPS).content(json(franElsewhere)))
         .andExpect(status().isCreated());
@@ -505,7 +505,7 @@ class SessionControllerIT extends BaseIntegrationTest {
     ScoreRequest accessoryScore =
         new ScoreRequest(
             null, today, accessoryWodId, null, null, null, null, null, null, Unit.KG, null, null,
-            null, ScalingLevel.RX, false, null, null, null, null, null,
+            null, ScalingLevel.RX, false, null, null, null, null,
             List.of(new ScoreSetRequest(5, 100.0, true)), false);
     mockMvc
         .perform(
@@ -516,7 +516,7 @@ class SessionControllerIT extends BaseIntegrationTest {
     ScoreRequest franElsewhere =
         new ScoreRequest(
             null, today.minusDays(3), fran.getId(), 4, 0, null, null, null, null, null, null, null,
-            null, ScalingLevel.RX, false, null, null, null, null, null, null, false);
+            null, ScalingLevel.RX, false, null, null, null, null, null, false);
     mockMvc
         .perform(
             as(post("/aldebaran/scores"), ATHLETE, ATHLETE_MEMBERSHIPS)
@@ -622,15 +622,15 @@ class SessionControllerIT extends BaseIntegrationTest {
     ScoreRequest wrongBlock =
         new ScoreRequest(
             null, today, fran.getId(), 4, 30, null, null, null, null, null, null, null, null,
-            ScalingLevel.RX, false, null, null, null, null, logId, session.at("/blocks/0/id").asLong(),
-            null, false, null);
+            ScalingLevel.RX, false, null, null, null, logId, session.at("/blocks/0/id").asLong(),
+            null, null, false, null);
     mockMvc
         .perform(as(post("/aldebaran/scores"), ATHLETE, ATHLETE_MEMBERSHIPS).content(json(wrongBlock)))
         .andExpect(status().isBadRequest());
     ScoreRequest franScore =
         new ScoreRequest(
             null, today, fran.getId(), 4, 30, null, null, null, null, null, null, null, null,
-            ScalingLevel.RX, false, null, null, null, null, logId, wodBlockId, null, false, null);
+            ScalingLevel.RX, false, null, null, null, logId, wodBlockId, null, null, false, null);
     mockMvc
         .perform(as(post("/aldebaran/scores"), ATHLETE, ATHLETE_MEMBERSHIPS).content(json(franScore)))
         .andExpect(status().isCreated());
@@ -738,11 +738,11 @@ class SessionControllerIT extends BaseIntegrationTest {
     ScoreRequest submitted =
         new ScoreRequest(
             null, today, openCopyId, null, null, null, 180, null, null, null, null, null, null,
-            ScalingLevel.RX, false, null, null, null, null, null, null, true);
+            ScalingLevel.RX, false, null, null, null, null, null, true);
     ScoreRequest notSubmitted =
         new ScoreRequest(
             null, today, openCopyId, null, null, null, 150, null, null, null, null, null, null,
-            ScalingLevel.RX, false, null, null, null, null, null, null, false);
+            ScalingLevel.RX, false, null, null, null, null, null, false);
     MvcResult s1 =
         mockMvc
             .perform(as(post("/aldebaran/scores"), ATHLETE, ATHLETE_MEMBERSHIPS).content(json(submitted)))

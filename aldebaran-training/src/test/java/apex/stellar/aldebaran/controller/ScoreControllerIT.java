@@ -94,7 +94,6 @@ class ScoreControllerIT extends BaseIntegrationTest {
             null,
             ScalingLevel.RX,
             false, null,
-            null,
             null, null);
 
     mockMvc
@@ -148,7 +147,6 @@ class ScoreControllerIT extends BaseIntegrationTest {
             null,
             ScalingLevel.RX,
             false, null,
-            null,
             null, null);
 
     mockMvc
@@ -202,7 +200,6 @@ class ScoreControllerIT extends BaseIntegrationTest {
             null,
             ScalingLevel.RX,
             false, null,
-            null,
             null, null);
 
     mockMvc
@@ -260,7 +257,6 @@ class ScoreControllerIT extends BaseIntegrationTest {
             null,
             ScalingLevel.RX,
             false, null,
-            null,
             null, null);
 
     mockMvc
@@ -319,7 +315,6 @@ class ScoreControllerIT extends BaseIntegrationTest {
             null, // totalCalories
             ScalingLevel.RX,
             false, null,
-            null,
             null, null);
 
     mockMvc
@@ -378,7 +373,6 @@ class ScoreControllerIT extends BaseIntegrationTest {
             null, // totalCalories
             ScalingLevel.RX,
             false, null,
-            null,
             null, null);
 
     mockMvc
@@ -493,7 +487,6 @@ class ScoreControllerIT extends BaseIntegrationTest {
             null,
             ScalingLevel.RX,
             false, null,
-            null,
             null, null);
 
     mockMvc
@@ -530,7 +523,6 @@ class ScoreControllerIT extends BaseIntegrationTest {
             null,
             ScalingLevel.RX,
             false, null,
-            null,
             null, null);
 
     mockMvc
@@ -576,7 +568,6 @@ class ScoreControllerIT extends BaseIntegrationTest {
             null,
             ScalingLevel.RX,
             false, null,
-            null,
             null, null);
 
     mockMvc
@@ -614,7 +605,6 @@ class ScoreControllerIT extends BaseIntegrationTest {
             null,
             ScalingLevel.RX,
             false, null,
-            null,
             null, null);
 
     mockMvc
@@ -650,7 +640,6 @@ class ScoreControllerIT extends BaseIntegrationTest {
             null,
             ScalingLevel.RX,
             false, null,
-            null,
             null, null);
 
     mockMvc
@@ -685,7 +674,6 @@ class ScoreControllerIT extends BaseIntegrationTest {
             null,
             ScalingLevel.RX,
             false, null,
-            null,
             null, null);
 
     mockMvc
@@ -798,7 +786,7 @@ class ScoreControllerIT extends BaseIntegrationTest {
   private ScoreRequest franRequest(Long wodId, Integer minutes, Integer reps, boolean capped) {
     return new ScoreRequest(
         null, LocalDate.now(), wodId, minutes, null, null, reps, null, null, null, null, null,
-        null, ScalingLevel.RX, capped, null, "my comment", null, null);
+        null, ScalingLevel.RX, capped, null, "my comment", null);
   }
 
   private org.springframework.test.web.servlet.ResultActions postAs(
@@ -928,7 +916,7 @@ class ScoreControllerIT extends BaseIntegrationTest {
     ScoreRequest rounds =
         new ScoreRequest(
             null, LocalDate.now(), chelsea.getId(), null, null, 24, null, null, null, null, null,
-            null, null, ScalingLevel.RX, false, null, null, null, null);
+            null, null, ScalingLevel.RX, false, null, null, null);
     postAs("100", null, rounds)
         .andExpect(status().isCreated())
         .andExpect(jsonPath("$.rounds").value(24))
@@ -937,7 +925,7 @@ class ScoreControllerIT extends BaseIntegrationTest {
     ScoreRequest tooMany =
         new ScoreRequest(
             null, LocalDate.now(), chelsea.getId(), null, null, 31, null, null, null, null, null,
-            null, null, ScalingLevel.RX, false, null, null, null, null);
+            null, null, ScalingLevel.RX, false, null, null, null);
     postAs("100", null, tooMany)
         .andExpect(status().isBadRequest())
         .andExpect(jsonPath("$.detail").value("A score cannot exceed the 30 rounds of the EMOM."));
@@ -945,7 +933,7 @@ class ScoreControllerIT extends BaseIntegrationTest {
     ScoreRequest capped =
         new ScoreRequest(
             null, LocalDate.now(), open.getId(), null, null, null, 180, null, null, null, null,
-            null, null, ScalingLevel.RX, true, 1105, null, null, null);
+            null, null, ScalingLevel.RX, true, 1105, null, null);
     postAs("100", null, capped)
         .andExpect(status().isCreated())
         .andExpect(jsonPath("$.tiebreakSeconds").value(1105));
@@ -953,7 +941,7 @@ class ScoreControllerIT extends BaseIntegrationTest {
     ScoreRequest noTiebreakWod =
         new ScoreRequest(
             null, LocalDate.now(), chelsea.getId(), null, null, 25, null, null, null, null, null,
-            null, null, ScalingLevel.RX, false, 300, null, null, null);
+            null, null, ScalingLevel.RX, false, 300, null, null);
     postAs("100", null, noTiebreakWod)
         .andExpect(status().isCreated())
         .andExpect(jsonPath("$.tiebreakSeconds").doesNotExist());
@@ -965,7 +953,7 @@ class ScoreControllerIT extends BaseIntegrationTest {
     ScoreRequest inBox =
         new ScoreRequest(
             null, LocalDate.now(), fran.getId(), 4, 30, null, null, null, null, null, null, null,
-            null, ScalingLevel.RX, false, null, null, null, 101L);
+            null, ScalingLevel.RX, false, null, null, 101L);
     String body = objectMapper.writeValueAsString(inBox);
 
     String created =

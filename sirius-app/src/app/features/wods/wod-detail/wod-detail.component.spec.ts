@@ -116,6 +116,9 @@ describe('WodDetailComponent', () => {
             formatDistance: (v?: number | null, f?: number | null, u?: string | null) =>
               v == null ? '' : `${v}${f ? '/' + f : ''} ${u}`,
             loadPair: pair,
+            lineLoadPair: (l: any, d: any) => pair(l.weight, l.weightFemale, l.weightUnit, d),
+            lineHeightPair: (l: any, d: any) => pair(l.height, l.heightFemale, l.heightUnit, d),
+            lineLoadFor: () => null,
             distancePair: pair
           }
         },

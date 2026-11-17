@@ -39,7 +39,8 @@ final class MetconVolume {
   private MetconVolume() {}
 
   /** A line and how it reads. */
-  private record Line(WodMovement line, LinePrescription prescription, PerSet perSet) {
+  private record Line(
+      WodMovement line, LinePrescription prescription, PerSet perSet, double calorieScale) {
 
     /**
      * Sets of an amount in the line's unit. Repetitions over a course length (a shuttle run, one rep
@@ -52,7 +53,8 @@ final class MetconVolume {
         return amount * meters / perSet.meters();
       }
       Integer value = prescription.measure().of(perSet);
-      return value == null || value <= 0 ? 0 : amount / value;
+      double scale = prescription.measure() == Measure.CALORIES ? calorieScale : 1;
+      return value == null || value <= 0 ? 0 : amount * scale / value;
     }
 
     private double metersPerRep() {
@@ -77,10 +79,38 @@ final class MetconVolume {
    * @return Sets per line, in line order; unreadable lines count 0.
    */
   static Map<WodMovement, Double> sets(Wod wod, @Nullable Score score, @Nullable Division division) {
+    return sets(
+        wod,
+        wod.getMovements().stream().sorted(BalanceCalculator.LINE_ORDER).toList(),
+        Map.of(),
+        score,
+        division);
+  }
+
+  /**
+   * Equivalent sets per line, from the lines as done (lot S, D148).
+   *
+   * @param wod The WOD (format, rounds, time).
+   * @param doneLines Its lines as done, in the order the balance reads them.
+   * @param maxCounts Reps counted on "max" lines, by WOD line ID (D147).
+   * @param score The score, or null for a block checked without score (prescription).
+   * @param division The athlete's division (women's calories), or null.
+   * @return Sets per line done, in line order; unreadable lines count 0.
+   */
+  static Map<WodMovement, Double> sets(
+      Wod wod,
+      List<WodMovement> doneLines,
+      Map<Long, Integer> maxCounts,
+      @Nullable Score score,
+      @Nullable Division division) {
     List<Line> lines = new ArrayList<>();
-    for (WodMovement line :
-        wod.getMovements().stream().sorted(BalanceCalculator.LINE_ORDER).toList()) {
-      lines.add(new Line(line, prescription(wod, line, division), CatalogRules.perSet(line)));
+    for (WodMovement line : doneLines) {
+      lines.add(
+          new Line(
+              line,
+              prescription(wod, line, division),
+              CatalogRules.perSet(line),
+              calorieScale(line, division)));
     }
     Map<WodMovement, Double> sets = new LinkedHashMap<>();
     lines.forEach(l -> sets.put(l.line(), 0.0));
@@ -111,10 +141,23 @@ final class MetconVolume {
                 && lines.stream().anyMatch(l -> l.prescription().kind() == Kind.OPEN_LADDER));
 
     if (!maxLines.isEmpty()) {
-      // Rule 3: the score's reps shared equally by the max lines; the others as prescribed
+      // Rule 3: the reps counted on a max line (D147), the rest of the score's reps shared
+      // equally by the other max lines; the others as prescribed
+      List<Line> uncounted =
+          maxLines.stream().filter(l -> !maxCounts.containsKey(l.line().getId())).toList();
+      int counted =
+          maxLines.stream()
+              .mapToInt(l -> maxCounts.getOrDefault(l.line().getId(), 0))
+              .sum();
       for (Line l : lines) {
         if (l.prescription().kind() == Kind.MAX) {
-          sets.put(l.line(), scoreReps == null ? 0 : l.sets((double) scoreReps / maxLines.size()));
+          Integer count = maxCounts.get(l.line().getId());
+          if (count != null) {
+            sets.put(l.line(), l.sets(count));
+          } else {
+            double rest = scoreReps == null ? 0 : Math.max(0, scoreReps - counted);
+            sets.put(l.line(), uncounted.isEmpty() ? 0 : l.sets(rest / uncounted.size()));
+          }
         } else {
           sets.put(l.line(), l.sets(prescribed(l, rounds)));
         }
@@ -134,6 +177,21 @@ final class MetconVolume {
       sets.put(l.line(), l.sets(prescribed(l, rounds)));
     }
     return sets;
+  }
+
+  /**
+   * A line in calories counts on its men's value (D151): "15/10 cal" is the same effort for both,
+   * so a woman's 10 cal are worth the men's 15.
+   */
+  private static double calorieScale(WodMovement line, @Nullable Division division) {
+    if (division == Division.WOMEN
+        && line.getCalories() != null
+        && line.getCaloriesFemale() != null
+        && line.getCalories() > 0
+        && line.getCaloriesFemale() > 0) {
+      return (double) line.getCalories() / line.getCaloriesFemale();
+    }
+    return 1;
   }
 
   /** How a line reads; a Death by line without text climbs the WOD's ladder. */

@@ -1,4 +1,4 @@
-import {MovementResponse} from './movement.model';
+import {MovementResponse, MovementSummaryResponse} from './movement.model';
 
 /** Part of a WOD a movement belongs to. */
 export type WodSegment = 'BUY_IN' | 'MAIN' | 'BUY_OUT';
@@ -202,8 +202,6 @@ export interface WodMovementRequest {
   // --- Instructions (EN / FR) ---
   notesEn?: string;
   notesFr?: string;
-  scalingOptionsEn?: string;
-  scalingOptionsFr?: string;
   // --- Prescribed number of sets (strength / skill work) ---
   sets?: number | null;
   // --- Part of the WOD: before the rounds, the rounds, after them (null = MAIN) ---
@@ -217,6 +215,78 @@ export interface WodMovementRequest {
   rmReps?: number | null;
   // --- Techniques of one component of a chained line ---
   componentTechniques?: ComponentTechnique[];
+  // --- This line in the WOD's official Scaled version, or null (kept RX) ---
+  scaled?: WodScaledLineRequest | null;
+}
+
+/**
+ * A line in the WOD's official Scaled version (lot S, D141): the variant and the quantities in that version, a
+ * value left null being the RX one; units of origin, like the RX line.
+ */
+export interface WodScaledLineRequest {
+  movementId: number;
+  equipment?: string[];
+  techniques?: string[];
+  repsScheme?: string | null;
+  weight?: number | null;
+  weightFemale?: number | null;
+  weightUnit?: string | null;
+  distance?: number | null;
+  distanceUnit?: string | null;
+  calories?: number | null;
+  caloriesFemale?: number | null;
+  height?: number | null;
+  heightFemale?: number | null;
+  heightUnit?: string | null;
+  durationSeconds?: number | null;
+}
+
+/** A line in the official Scaled version, every value filled in (the RX one where the version keeps it). */
+export interface WodScaledLineResponse {
+  movement: MovementSummaryResponse;
+  equipment: string[];
+  techniques: string[];
+  repsScheme?: string | null;
+  weight?: number | null;
+  weightFemale?: number | null;
+  weightUnit?: string | null;
+  distance?: number | null;
+  distanceUnit?: string | null;
+  calories?: number | null;
+  caloriesFemale?: number | null;
+  height?: number | null;
+  heightFemale?: number | null;
+  heightUnit?: string | null;
+  durationSeconds?: number | null;
+  display?: WodMovementDisplay | null;
+  equivalents?: LineEquivalents | null;
+}
+
+/**
+ * A line's load and height in both systems (D149, D155): the prescription in its own unit, and in the other unit
+ * the value boxes use (real implement sizes; exact in competitions). Shown as is, never converted by Sirius.
+ */
+export interface LineEquivalents {
+  weightKg?: number | null;
+  weightFemaleKg?: number | null;
+  weightLb?: number | null;
+  weightFemaleLb?: number | null;
+  heightCm?: number | null;
+  heightFemaleCm?: number | null;
+  heightIn?: number | null;
+  heightFemaleIn?: number | null;
+}
+
+/** Real sizes of the weighted implements and plyo boxes in both systems (D155). */
+export interface ImplementSizes {
+  kettlebellKg: number[];
+  kettlebellLb: number[];
+  dumbbellKg: number[];
+  dumbbellLb: number[];
+  medballKg: number[];
+  medballLb: number[];
+  boxCm: number[];
+  boxIn: number[];
 }
 
 /** A technique of one component of a chained line (Power Clean and Split Jerk: 1 POWER, 2 SPLIT). */
@@ -266,8 +336,6 @@ export interface WodMovementResponse {
   // --- Instructions (EN / FR) ---
   notesEn?: string;
   notesFr?: string;
-  scalingOptionsEn?: string;
-  scalingOptionsFr?: string;
   // --- Prescribed number of sets (strength / skill work) ---
   sets?: number | null;
   // --- Part of the WOD: before the rounds, the rounds, after them (null = MAIN) ---
@@ -281,6 +349,10 @@ export interface WodMovementResponse {
   rmReps?: number | null;
   componentTechniques?: ComponentTechnique[];
   display?: WodMovementDisplay | null;
+  // --- Load and height in both systems, as boxes load them (D149) ---
+  equivalents?: LineEquivalents | null;
+  // --- This line in the WOD's official Scaled version, or null (kept RX) ---
+  scaled?: WodScaledLineResponse | null;
 }
 
 export interface WodReferenceData {
@@ -293,6 +365,8 @@ export interface WodReferenceData {
   scoreTypes: string[];
   // --- Units ---
   unitGroups: Record<string, string[]>;
+  // --- Real sizes of the weighted implements (D155) ---
+  implementSizes?: ImplementSizes;
 }
 
 

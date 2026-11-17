@@ -164,6 +164,15 @@
     </select>
   }
 
+  <!-- Official Scaled version (lot S, D154): a block "Scaled" under each line -->
+  <label class="flex items-center justify-between gap-3 rounded-xl border p-3 cursor-pointer">
+    <span class="flex flex-col">
+      <span class="text-sm font-medium">{{ 'WOD.SCALED.TITLE' | translate }}</span>
+      <span class="text-xs text-muted-foreground">{{ 'WOD.SCALED.HINT' | translate }}</span>
+    </span>
+    <input type="checkbox" role="switch" id="scaled-version" class="switch" [checked]="withScaled()" (change)="toggleScaled()"/>
+  </label>
+
   <!-- Movements: a quantity measure, then only the extra measures each one needs -->
   @if (withSegments()) {
     <button type="button" id="add-buy-in" class="self-start text-sm text-primary hover:underline" (click)="addRow('BUY_IN')">
@@ -240,7 +249,7 @@
             @switch (m) {
               @case ('LOAD') {
                 <div class="flex flex-col gap-1">
-                  <span class="text-xs text-muted-foreground">{{ 'WOD.QUICK.LOAD' | translate }} ({{ massLabel() }})</span>
+                  <span class="text-xs text-muted-foreground">{{ 'WOD.QUICK.LOAD' | translate }} ({{ rowMassLabel(i) }})</span>
                   <div class="flex items-center gap-1">
                     @if (loadChoices(i); as weights) {
                       <!-- Kettlebells and dumbbells come in standard weights -->
@@ -265,7 +274,7 @@
               }
               @case ('HEIGHT') {
                 <div class="flex flex-col gap-1">
-                  <span class="text-xs text-muted-foreground">{{ 'WOD.QUICK.HEIGHT' | translate }} ({{ heightLabel() }})</span>
+                  <span class="text-xs text-muted-foreground">{{ 'WOD.QUICK.HEIGHT' | translate }} ({{ rowHeightLabel(i) }})</span>
                   <div class="flex items-center gap-1">
                     @if (heightChoices(i); as heights) {
                       <!-- A plyo box has three heights -->
@@ -327,6 +336,12 @@
                                 [typePrefix]="field === 'techniques' ? 'MOVEMENT.TECHNIQUE_CATEGORIES.' : ''"
                                 (toggled)="toggleVariant(i, field, $event)"/>
           }
+        }
+        @if (withScaled()) {
+          <app-scaled-line [group]="scaledOf(i)" [options]="usualNames()" [rxMovementId]="row.controls.movementId.value"
+                           [rxEquipment]="row.controls.equipment.value" [rxTechniques]="row.controls.techniques.value"
+                           [rxReps]="row.controls.reps.value" [measures]="scaledMeasures(i)" [massLabel]="rowMassLabel(i)"
+                           [heightLabel]="rowHeightLabel(i)" [loadChoices]="scaledLoadChoices(i)"/>
         }
       </li>
     }

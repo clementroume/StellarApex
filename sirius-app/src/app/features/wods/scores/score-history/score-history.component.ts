@@ -5,7 +5,7 @@ import {ScoreResponse} from '../../../../api/aldebaran/models/score.model';
 import {UnitService} from '../../../../core/services/unit.service';
 import {UserService} from '../../../../api/antares/services/user.service';
 import {WodScoresStore} from '../wod-scores.store';
-import {formatScore} from '../score.utils';
+import {formatScore, formatScoreLine, levelKey} from '../score.utils';
 import {formatDuration} from '../../wod.utils';
 
 /**
@@ -31,6 +31,7 @@ export class ScoreHistoryComponent {
   // --- STATE (SIGNALS & VARIABLES) ---
   /** Names of the staff who logged or verified the scores (gym mates, visible through Antares). */
   readonly names = signal<Record<number, string>>({});
+  protected readonly levelKey = levelKey;
 
   // --- LIFECYCLE ---
   constructor() {
@@ -65,12 +66,29 @@ export class ScoreHistoryComponent {
     return wod ? formatScore(score, wod, this.unitService, (k, p) => this.translate.instant(k, p)) : '';
   }
 
-  /** Sets of a strength score: "5 x 100 kg · 5 x 110 kg · (3 x 120 kg)", a missed set in brackets. */
-  setsLine(score: ScoreResponse): string {
-    return (score.sets ?? []).map(set => {
+  /**
+   * Sets of a strength score by line: "Back Squat: 5 x 100 kg · (3 x 120 kg)", a missed set in brackets; without a
+   * name when the WOD has a single line.
+   */
+  setsLines(score: ScoreResponse): string[] {
+    const lines = this.store.wod()?.movements ?? [];
+    const groups = new Map<number | null, string[]>();
+    for (const set of score.sets ?? []) {
       const load = set.weight != null ? ` x ${this.unitService.formatScoreLoad(set.weight, score.weightUnit)}` : '';
-      return set.completed ? `${set.reps}${load}` : `(${set.reps}${load})`;
-    }).join(' · ');
+      const text = set.completed ? `${set.reps}${load}` : `(${set.reps}${load})`;
+      const key = set.wodMovementId ?? null;
+      groups.set(key, [...(groups.get(key) ?? []), text]);
+    }
+    return [...groups.entries()].map(([lineId, sets]) => {
+      const line = lineId != null && groups.size > 1 ? lines.find(l => l.id === lineId) : null;
+      const name = line ? (line.display?.usualNameEn || line.movement.name) : null;
+      return name ? `${name} : ${sets.join(' · ')}` : sets.join(' · ');
+    });
+  }
+
+  /** Lines done otherwise than prescribed: "Ring Row · 21-15-9". */
+  changedLines(score: ScoreResponse): string[] {
+    return (score.lines ?? []).map(line => formatScoreLine(line, score.weightUnit, this.unitService));
   }
 
   duration(seconds: number): string {

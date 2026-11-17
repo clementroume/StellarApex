@@ -4,6 +4,9 @@ import apex.stellar.aldebaran.model.entities.ComponentTechnique;
 import apex.stellar.aldebaran.model.entities.WodMovement.Segment;
 import apex.stellar.aldebaran.model.entities.WodMovement.TeamSplit;
 import apex.stellar.aldebaran.model.enums.Unit;
+import apex.stellar.aldebaran.model.enums.UnitField;
+import apex.stellar.aldebaran.validation.UnitOf;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Max;
@@ -24,16 +27,16 @@ public record WodMovementRequest(
     @Size(max = 50, message = "{validation.wod.repsScheme.size}") String repsScheme,
     @DecimalMin(value = "0.0", message = "{validation.value.positive}") Double weight,
     @DecimalMin(value = "0.0", message = "{validation.value.positive}") Double weightFemale,
-    Unit weightUnit,
+    @UnitOf(UnitField.MASS) Unit weightUnit,
     @Min(value = 0, message = "{validation.value.positive}") Integer durationSeconds,
-    Unit durationDisplayUnit,
+    @UnitOf(UnitField.TIME) Unit durationDisplayUnit,
     @DecimalMin(value = "0.0", message = "{validation.value.positive}") Double distance,
-    Unit distanceUnit,
+    @UnitOf(UnitField.DISTANCE) Unit distanceUnit,
     @Min(value = 0, message = "{validation.value.positive}") Integer calories,
     @Min(value = 0, message = "{validation.value.positive}") Integer caloriesFemale,
     @DecimalMin(value = "0.0", message = "{validation.value.positive}") Double height,
     @DecimalMin(value = "0.0", message = "{validation.value.positive}") Double heightFemale,
-    Unit heightUnit,
+    @UnitOf(UnitField.HEIGHT) Unit heightUnit,
 
     // --- Characteristics ---
     Set<String> equipment,
@@ -42,8 +45,6 @@ public record WodMovementRequest(
     // --- Instructions ---
     @Size(max = 4000, message = "{validation.wod.notes.size}") String notesEn,
     @Size(max = 4000, message = "{validation.wod.notes.size}") String notesFr,
-    @Size(max = 4000, message = "{validation.wod.scaling.size}") String scalingOptionsEn,
-    @Size(max = 4000, message = "{validation.wod.scaling.size}") String scalingOptionsFr,
 
     // --- Sets (strength / skill work), optional ---
     @Min(value = 1, message = "{validation.wod.sets.min}") Integer sets,
@@ -70,7 +71,48 @@ public record WodMovementRequest(
 
     // --- Length of the course (shuttle run: between the two lines), optional ---
     @DecimalMin(value = "0.0", message = "{validation.value.positive}") Double length,
-    Unit lengthUnit) {
+    @UnitOf(UnitField.LENGTH) Unit lengthUnit,
+
+    // --- This line in the WOD's official Scaled version, or null (kept RX) ---
+    @Valid WodScaledLineRequest scaled) {
+
+  /** Line without an official Scaled version. */
+  @SuppressWarnings("java:S107") // Mirrors the record components
+  public WodMovementRequest(
+      Long movementId,
+      Integer orderIndex,
+      String repsScheme,
+      Double weight,
+      Double weightFemale,
+      Unit weightUnit,
+      Integer durationSeconds,
+      Unit durationDisplayUnit,
+      Double distance,
+      Unit distanceUnit,
+      Integer calories,
+      Integer caloriesFemale,
+      Double height,
+      Double heightFemale,
+      Unit heightUnit,
+      Set<String> equipment,
+      Set<String> techniques,
+      String notesEn,
+      String notesFr,
+      Integer sets,
+      Segment segment,
+      Integer complexGroup,
+      TeamSplit teamSplit,
+      Double percentOfRm,
+      Integer rmReps,
+      Set<ComponentTechnique> componentTechniques,
+      Double length,
+      Unit lengthUnit) {
+    this(
+        movementId, orderIndex, repsScheme, weight, weightFemale, weightUnit, durationSeconds,
+        durationDisplayUnit, distance, distanceUnit, calories, caloriesFemale, height, heightFemale,
+        heightUnit, equipment, techniques, notesEn, notesFr, sets, segment, complexGroup, teamSplit,
+        percentOfRm, rmReps, componentTechniques, length, lengthUnit, null);
+  }
 
   /** Line without a course length. */
   @SuppressWarnings("java:S107") // Mirrors the record components
@@ -94,8 +136,6 @@ public record WodMovementRequest(
       Set<String> techniques,
       String notesEn,
       String notesFr,
-      String scalingOptionsEn,
-      String scalingOptionsFr,
       Integer sets,
       Segment segment,
       Integer complexGroup,
@@ -106,8 +146,9 @@ public record WodMovementRequest(
     this(
         movementId, orderIndex, repsScheme, weight, weightFemale, weightUnit, durationSeconds,
         durationDisplayUnit, distance, distanceUnit, calories, caloriesFemale, height, heightFemale,
-        heightUnit, equipment, techniques, notesEn, notesFr, scalingOptionsEn, scalingOptionsFr,
-        sets, segment, complexGroup, teamSplit, percentOfRm, rmReps, componentTechniques, null, null);
+        heightUnit, equipment, techniques, notesEn, notesFr,
+        sets, segment, complexGroup, teamSplit, percentOfRm, rmReps, componentTechniques, null, null,
+        null);
   }
 
   /** Line without per-component techniques. */
@@ -132,8 +173,6 @@ public record WodMovementRequest(
       Set<String> techniques,
       String notesEn,
       String notesFr,
-      String scalingOptionsEn,
-      String scalingOptionsFr,
       Integer sets,
       Segment segment,
       Integer complexGroup,
@@ -143,7 +182,7 @@ public record WodMovementRequest(
     this(
         movementId, orderIndex, repsScheme, weight, weightFemale, weightUnit, durationSeconds,
         durationDisplayUnit, distance, distanceUnit, calories, caloriesFemale, height, heightFemale,
-        heightUnit, equipment, techniques, notesEn, notesFr, scalingOptionsEn, scalingOptionsFr,
+        heightUnit, equipment, techniques, notesEn, notesFr,
         sets, segment, complexGroup, teamSplit, percentOfRm, rmReps, null);
   }
 
@@ -182,8 +221,6 @@ public record WodMovementRequest(
       Set<String> techniques,
       String notesEn,
       String notesFr,
-      String scalingOptionsEn,
-      String scalingOptionsFr,
       Integer sets,
       Segment segment,
       Integer complexGroup,
@@ -191,7 +228,7 @@ public record WodMovementRequest(
     this(
         movementId, orderIndex, repsScheme, weight, weightFemale, weightUnit, durationSeconds,
         durationDisplayUnit, distance, distanceUnit, calories, caloriesFemale, height, heightFemale,
-        heightUnit, equipment, techniques, notesEn, notesFr, scalingOptionsEn, scalingOptionsFr,
+        heightUnit, equipment, techniques, notesEn, notesFr,
         sets, segment, complexGroup, teamSplit, null, null);
   }
 
@@ -217,15 +254,13 @@ public record WodMovementRequest(
       Set<String> techniques,
       String notesEn,
       String notesFr,
-      String scalingOptionsEn,
-      String scalingOptionsFr,
       Integer sets,
       Segment segment,
       Integer complexGroup) {
     this(
         movementId, orderIndex, repsScheme, weight, weightFemale, weightUnit, durationSeconds,
         durationDisplayUnit, distance, distanceUnit, calories, caloriesFemale, height, heightFemale,
-        heightUnit, equipment, techniques, notesEn, notesFr, scalingOptionsEn, scalingOptionsFr,
+        heightUnit, equipment, techniques, notesEn, notesFr,
         sets, segment, complexGroup, TeamSplit.TOTAL);
   }
 
@@ -251,14 +286,12 @@ public record WodMovementRequest(
       Set<String> techniques,
       String notesEn,
       String notesFr,
-      String scalingOptionsEn,
-      String scalingOptionsFr,
       Integer sets,
       Segment segment) {
     this(
         movementId, orderIndex, repsScheme, weight, weightFemale, weightUnit, durationSeconds,
         durationDisplayUnit, distance, distanceUnit, calories, caloriesFemale, height, heightFemale,
-        heightUnit, equipment, techniques, notesEn, notesFr, scalingOptionsEn, scalingOptionsFr,
+        heightUnit, equipment, techniques, notesEn, notesFr,
         sets, segment, null);
   }
 
@@ -284,13 +317,11 @@ public record WodMovementRequest(
       Set<String> techniques,
       String notesEn,
       String notesFr,
-      String scalingOptionsEn,
-      String scalingOptionsFr,
       Integer sets) {
     this(
         movementId, orderIndex, repsScheme, weight, weightFemale, weightUnit, durationSeconds,
         durationDisplayUnit, distance, distanceUnit, calories, caloriesFemale, height, heightFemale,
-        heightUnit, equipment, techniques, notesEn, notesFr, scalingOptionsEn, scalingOptionsFr,
+        heightUnit, equipment, techniques, notesEn, notesFr,
         sets, Segment.MAIN);
   }
 
@@ -315,9 +346,7 @@ public record WodMovementRequest(
       Set<String> equipment,
       Set<String> techniques,
       String notesEn,
-      String notesFr,
-      String scalingOptionsEn,
-      String scalingOptionsFr) {
+      String notesFr) {
     this(
         movementId,
         orderIndex,
@@ -338,8 +367,6 @@ public record WodMovementRequest(
         techniques,
         notesEn,
         notesFr,
-        scalingOptionsEn,
-        scalingOptionsFr,
         null);
   }
 }

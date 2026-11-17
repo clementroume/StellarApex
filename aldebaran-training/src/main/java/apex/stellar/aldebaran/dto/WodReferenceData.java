@@ -13,4 +13,6 @@ public record WodReferenceData(
     // --- Score Types ---
     List<String> scoreTypes,
     // --- Units ---
-    Map<String, List<String>> unitGroups) {}
+    Map<String, List<String>> unitGroups,
+    // --- Real sizes of the weighted implements (D155) ---
+    ImplementSizes implementSizes) {}

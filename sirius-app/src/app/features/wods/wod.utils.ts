@@ -1,3 +1,6 @@
+import {WodScaledLineRequest, WodScaledLineResponse} from '../../api/aldebaran/models/wod.model';
+
+
 /** Formats a duration in seconds as "m:ss" (e.g. 754 -> "12:34"). */
 export function formatDuration(totalSeconds: number | null | undefined): string {
   if (totalSeconds === null || totalSeconds === undefined || totalSeconds < 0) return '';
@@ -24,4 +27,15 @@ export function localizedText(lang: string, en?: string | null, fr?: string | nu
 export function wodTypeLabel(translate: (key: string) => string, wod: {wodType: string; category?: string | null}): string {
   const format = translate('WOD.WOD_TYPES.' + wod.wodType);
   return wod.category ? `${translate('WOD.CATEGORIES.' + wod.category)} / ${format}` : format;
+}
+
+/** A Scaled line request shaped as a response (a WOD written in a form filled again). */
+export function scaledResponseOf(scaled: WodScaledLineRequest | null | undefined): WodScaledLineResponse | null {
+  if (!scaled) return null;
+  return {
+    ...scaled,
+    movement: {id: scaled.movementId, name: ''} as WodScaledLineResponse['movement'],
+    equipment: scaled.equipment ?? [],
+    techniques: scaled.techniques ?? []
+  };
 }

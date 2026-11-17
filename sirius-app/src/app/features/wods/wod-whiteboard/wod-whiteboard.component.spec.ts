@@ -63,6 +63,8 @@ describe('WodWhiteboardComponent', () => {
             formatDistance: (v?: number | null, f?: number | null, u?: string | null) =>
               v == null ? '' : `${v}${f ? '/' + f : ''} ${u}`,
             loadPair: pair,
+            lineLoadPair: (l: any, d: any) => pair(l.weight, l.weightFemale, l.weightUnit, d),
+            lineHeightPair: (l: any, d: any) => pair(l.height, l.heightFemale, l.heightUnit, d),
             distancePair: pair,
             formatPercentLoad: (kg: number) => `${Math.round(kg)} kg`
           }
@@ -187,7 +189,6 @@ describe('WodWhiteboardComponent', () => {
       techniques: ['TOUCH_AND_GO'],
       notesEn: 'Squat below parallel',
       notesFr: 'Squat sous la parallèle',
-      scalingOptionsEn: 'Lighter barbell'
     };
 
     // Variants built into the name in CrossFit English, plural for 21-15-9
@@ -196,7 +197,27 @@ describe('WodWhiteboardComponent', () => {
     // No language loaded in tests: English, with the French text as fallback when English is missing
     expect(component.movementNotes(thruster)).toBe('Squat below parallel');
     expect(component.movementNotes({...thruster, notesEn: undefined})).toBe('Squat sous la parallèle');
-    expect(component.scaling(thruster)).toBe('Lighter barbell');
+  });
+
+  it('should show the official Scaled version on demand, with the RX line in reminder (D154)', () => {
+    init(buildWod({movements: [
+      {id: 12, movement: movement(2, 'Pull-up'), orderIndex: 2, repsScheme: '21-15-9',
+        scaled: {movement: {id: 7, name: 'Ring Row'} as any, equipment: [], techniques: [], repsScheme: '21-15-9'}},
+      {id: 11, movement: movement(1, 'Thruster'), orderIndex: 1, repsScheme: '21-15-9', weight: 43, weightUnit: 'KG'}
+    ]}));
+    expect(fixture.nativeElement.querySelector('#board-version')).not.toBeNull();
+    expect(component.sortedMovements().map(m => m.movement.name)).toEqual(['Thruster', 'Pull-up']);
+
+    component.version.set('SCALED');
+    fixture.detectChanges();
+    expect(component.sortedMovements().map(m => m.movement.name)).toEqual(['Thruster', 'Ring Row']);
+    expect(component.rxReminder(component.sortedMovements()[1])).toContain('WOD.SCALED.BOARD_RX');
+    expect(component.rxReminder(component.sortedMovements()[0])).toBe('');
+  });
+
+  it('should offer no version choice without an official Scaled version', () => {
+    init();
+    expect(fixture.nativeElement.querySelector('#board-version')).toBeNull();
   });
 
   it('should not number the movements on the board', () => {
