@@ -7,14 +7,16 @@ import {TranslatePipe, TranslateService} from '@ngx-translate/core';
 import {NotificationService} from '../../../core/services/notification.service';
 import {HttpErrorResponse} from '@angular/common/http';
 import {ProblemDetail, problemDetailOf} from '../../../core/models/problem-detail.model';
-import {NgIcon} from '@ng-icons/core';
+import {NgIcon, provideIcons} from '@ng-icons/core';
 import {HlmButton} from '@spartan-ng/helm/button';
 import {HlmBadge} from '@spartan-ng/helm/badge';
 import {HlmCardImports} from '@spartan-ng/helm/card';
 import {HlmInputGroupImports} from '@spartan-ng/helm/input-group';
 import {FormFieldComponent} from '../../../shared/component/form-field/form-field.component';
 
+import {heroEnvelope, heroPencilSquare, heroUser} from '@ng-icons/heroicons/outline';
 @Component({
+  viewProviders: [provideIcons({heroEnvelope, heroPencilSquare, heroUser})],
   selector: 'app-profile',
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule, TranslatePipe, NgIcon, HlmButton, HlmBadge,

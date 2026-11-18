@@ -1,10 +1,12 @@
 import {ChangeDetectionStrategy, Component, input, output} from '@angular/core';
-import {NgIcon} from '@ng-icons/core';
+import {NgIcon, provideIcons} from '@ng-icons/core';
 
 import {HlmButton} from '@spartan-ng/helm/button';
 import {HlmBadge} from '@spartan-ng/helm/badge';
 import {TranslatePipe} from '@ngx-translate/core';
+import {hugeCircleArrowLeft02} from '@ng-icons/huge-icons';
 @Component({
+  viewProviders: [provideIcons({hugeCircleArrowLeft02})],
   selector: 'app-detail-header',
   standalone: true,
   imports: [NgIcon, HlmButton, HlmBadge, TranslatePipe],

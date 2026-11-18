@@ -3,7 +3,7 @@ import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
 import {RouterModule} from '@angular/router';
 import {HttpContext} from '@angular/common/http';
 import {TranslatePipe, TranslateService} from '@ngx-translate/core';
-import {NgIcon} from '@ng-icons/core';
+import {NgIcon, provideIcons} from '@ng-icons/core';
 import {debounceTime, distinctUntilChanged, forkJoin, Subject} from 'rxjs';
 import {HlmBadge} from '@spartan-ng/helm/badge';
 import {HlmButton} from '@spartan-ng/helm/button';
@@ -16,6 +16,7 @@ import {SearchInputComponent} from '../../../shared/component/search-input/searc
 import {ListStateComponent} from '../../../shared/component/list/list-state/list-state.component';
 import {formatTimeCapShort} from '../wod.utils';
 
+import {heroChevronLeft, heroChevronRight, heroDocumentArrowDown, heroPlus} from '@ng-icons/heroicons/outline';
 export const WOD_PAGE_SIZE = 20;
 export const WOD_SEARCH_DEBOUNCE_MS = 300;
 /** Families of official competitions: latest edition first, events in order within an edition. */
@@ -49,6 +50,7 @@ export function editionYear(title: string): number | null {
  * programming goes through sessions, personal WODs live in My training.
  */
 @Component({
+  viewProviders: [provideIcons({heroChevronLeft, heroChevronRight, heroDocumentArrowDown, heroPlus})],
   selector: 'app-wod-list',
   standalone: true,
   imports: [HlmButton, HlmBadge, RouterModule, TranslatePipe, NgIcon, SearchInputComponent, ListStateComponent],

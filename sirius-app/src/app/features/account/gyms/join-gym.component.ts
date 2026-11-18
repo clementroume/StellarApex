@@ -4,7 +4,7 @@ import {Router, RouterLink} from '@angular/router';
 import {FormBuilder, ReactiveFormsModule, Validators} from '@angular/forms';
 import {debounceTime, distinctUntilChanged, Subject} from 'rxjs';
 import {TranslatePipe, TranslateService} from '@ngx-translate/core';
-import {NgIcon} from '@ng-icons/core';
+import {NgIcon, provideIcons} from '@ng-icons/core';
 import {HlmAlertImports} from '@spartan-ng/helm/alert';
 import {HlmBadge} from '@spartan-ng/helm/badge';
 import {HlmButton} from '@spartan-ng/helm/button';
@@ -21,6 +21,7 @@ import {SearchInputComponent} from '../../../shared/component/search-input/searc
 import {FormFieldComponent} from '../../../shared/component/form-field/form-field.component';
 import {EmailVerificationNoticeComponent} from '../../../shared/component/email-verification-notice/email-verification-notice.component';
 
+import {heroArrowLeft, heroChevronRight, heroExclamationTriangle, heroKey} from '@ng-icons/heroicons/outline';
 export const GYM_SEARCH_DEBOUNCE_MS = 300;
 export const GYM_PAGE_SIZE = 20;
 
@@ -29,6 +30,7 @@ export const GYM_PAGE_SIZE = 20;
  * code. An invitation link (`/join?gym=12&code=ABC`, redirected here) pre-fills both.
  */
 @Component({
+  viewProviders: [provideIcons({heroArrowLeft, heroChevronRight, heroExclamationTriangle, heroKey})],
   selector: 'app-join-gym',
   standalone: true,
   imports: [ReactiveFormsModule, RouterLink, TranslatePipe, NgIcon, HlmAlertImports, HlmBadge, HlmButton, HlmCardImports,

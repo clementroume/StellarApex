@@ -1,18 +1,20 @@
 import {ChangeDetectionStrategy, Component, computed, inject, input} from '@angular/core';
 import {RouterLink} from '@angular/router';
 import {TranslatePipe, TranslateService} from '@ngx-translate/core';
-import {NgIcon} from '@ng-icons/core';
+import {NgIcon, provideIcons} from '@ng-icons/core';
 import {HlmBadge} from '@spartan-ng/helm/badge';
 import {SessionSummaryResponse} from '../../../api/aldebaran/models/session.model';
 import {AccessService} from '../../../core/services/access.service';
 import {blockTheme, sessionDateLabel, sessionLink} from '../session.utils';
 
+import {heroCheckCircle, heroLockClosed} from '@ng-icons/heroicons/outline';
 /**
  * Frame of a session as a link to it (week planning, Today page, journal): type or title, day or week,
  * the blocks with their themes, and the user's state (done, content still hidden). Actions such as
  * "Séance faite" are projected (`[cardActions]`).
  */
 @Component({
+  viewProviders: [provideIcons({heroCheckCircle, heroLockClosed})],
   selector: 'app-session-card',
   standalone: true,
   imports: [RouterLink, TranslatePipe, NgIcon, HlmBadge],

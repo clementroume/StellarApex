@@ -1,7 +1,7 @@
 import {ChangeDetectionStrategy, Component, computed, DOCUMENT, inject, OnInit, signal} from '@angular/core';
 import {RouterModule} from '@angular/router';
 import {TranslatePipe} from '@ngx-translate/core';
-import {NgIcon} from '@ng-icons/core';
+import {NgIcon, provideIcons} from '@ng-icons/core';
 import {HlmButton} from '@spartan-ng/helm/button';
 import {HlmCardImports} from '@spartan-ng/helm/card';
 import {AuthService} from '../../../api/antares/services/auth.service';
@@ -9,6 +9,7 @@ import {UserService} from '../../../api/antares/services/user.service';
 import {problemDetailOf} from '../../../core/models/problem-detail.model';
 import {readLinkToken} from '../auth-token';
 
+import {heroCheckBadge, heroExclamationTriangle} from '@ng-icons/heroicons/outline';
 type VerifyState = 'verifying' | 'verified' | 'failed';
 
 /**
@@ -16,6 +17,7 @@ type VerifyState = 'verifying' | 'verified' | 'failed';
  * opened on another device); a signed-in user is refreshed so the UI unlocks joining a box/prog.
  */
 @Component({
+  viewProviders: [provideIcons({heroCheckBadge, heroExclamationTriangle})],
   selector: 'app-verify-email',
   standalone: true,
   imports: [RouterModule, TranslatePipe, NgIcon, HlmButton, HlmCardImports],

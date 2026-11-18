@@ -3,7 +3,7 @@ import {takeUntilDestroyed, toObservable, toSignal} from '@angular/core/rxjs-int
 import {catchError, debounceTime, distinctUntilChanged, of, switchMap} from 'rxjs';
 import {FormArray, FormBuilder, FormControl, FormGroup, ReactiveFormsModule} from '@angular/forms';
 import {TranslatePipe, TranslateService} from '@ngx-translate/core';
-import {NgIconComponent} from '@ng-icons/core';
+import {NgIconComponent, provideIcons} from '@ng-icons/core';
 import {
   CardioEquivalent,
   ScoreLineRequest,
@@ -35,6 +35,7 @@ import {HlmInput} from '@spartan-ng/helm/input';
 import {HlmTextarea} from '@spartan-ng/helm/textarea';
 import {CdkTrapFocus} from '@angular/cdk/a11y';
 
+import {heroPlus, heroXMark} from '@ng-icons/heroicons/outline';
 /** Score types that can be entered set by set (strength work, D14). */
 const SET_SCORE_TYPES = ['WEIGHT', 'LOAD', 'NONE'];
 
@@ -86,6 +87,7 @@ function today(): string {
  * value required by the score type and the right to log for someone else.
  */
 @Component({
+  viewProviders: [provideIcons({heroPlus, heroXMark})],
   selector: 'app-score-form',
   standalone: true,
   imports: [CdkTrapFocus, HlmTextarea, HlmInput, HlmButton, NativeSelectDirective, HlmSpinner, ReactiveFormsModule, TranslatePipe,

@@ -2,7 +2,7 @@ import {ChangeDetectionStrategy, Component, DestroyRef, inject, OnInit, signal} 
 import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
 import {debounceTime, distinctUntilChanged, Subject} from 'rxjs';
 import {TranslatePipe, TranslateService} from '@ngx-translate/core';
-import {NgIcon} from '@ng-icons/core';
+import {NgIcon, provideIcons} from '@ng-icons/core';
 import {HlmBadge} from '@spartan-ng/helm/badge';
 import {HlmButton} from '@spartan-ng/helm/button';
 import {HlmSpinner} from '@spartan-ng/helm/spinner';
@@ -15,6 +15,7 @@ import {PageComponent} from '../../../shared/component/page/page.component';
 import {SearchInputComponent} from '../../../shared/component/search-input/search-input.component';
 import {ConfirmDialogComponent} from '../../../shared/component/confirm-dialog/confirm-dialog.component';
 
+import {heroCheck, heroPause, heroPlay, heroXMark} from '@ng-icons/heroicons/outline';
 export const ADMIN_GYM_SEARCH_DEBOUNCE_MS = 300;
 export const ADMIN_GYM_PAGE_SIZE = 20;
 export const ADMIN_GYM_STATUSES: GymStatus[] = ['PENDING_APPROVAL', 'ACTIVE', 'SUSPENDED', 'REJECTED'];
@@ -27,6 +28,7 @@ type GymAction = {gym: AdminGymResponse; status: 'REJECTED' | 'SUSPENDED'};
  * suspend and reactivate (Antares `PUT /gyms/{id}/status`, platform admin only).
  */
 @Component({
+  viewProviders: [provideIcons({heroCheck, heroPause, heroPlay, heroXMark})],
   selector: 'app-admin-gyms',
   standalone: true,
   imports: [TranslatePipe, NgIcon, HlmBadge, HlmButton, HlmSpinner, PageComponent, SearchInputComponent, ConfirmDialogComponent],

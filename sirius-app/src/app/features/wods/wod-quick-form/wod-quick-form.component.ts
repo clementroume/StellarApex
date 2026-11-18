@@ -2,7 +2,7 @@ import {ChangeDetectionStrategy, Component, computed, inject, input, OnInit, out
 import {toSignal} from '@angular/core/rxjs-interop';
 import {FormArray, FormControl, FormGroup, ReactiveFormsModule, Validators} from '@angular/forms';
 import {TranslatePipe, TranslateService} from '@ngx-translate/core';
-import {NgIcon} from '@ng-icons/core';
+import {NgIcon, provideIcons} from '@ng-icons/core';
 import {HlmButton} from '@spartan-ng/helm/button';
 import {HlmInput} from '@spartan-ng/helm/input';
 import {HlmTextarea} from '@spartan-ng/helm/textarea';
@@ -50,6 +50,7 @@ import {
   withSets
 } from './wod-quick.utils';
 
+import {heroPlus, heroTrash} from '@ng-icons/heroicons/outline';
 const SCORE_TYPES = ['TIME', 'ROUNDS', 'REPS', 'WEIGHT', 'LOAD', 'CALORIES', 'DISTANCE', 'NONE'];
 /** Values suggested per format (a tap fills the field). */
 const LADDER_HINTS = ['21-15-9', '15-12-9', '10-9-8-7-6-5-4-3-2-1', '50-40-30-20-10'];
@@ -103,6 +104,7 @@ type MovementRow = FormGroup<{
  * (`submitted`); the caller saves it.
  */
 @Component({
+  viewProviders: [provideIcons({heroPlus, heroTrash})],
   selector: 'app-wod-quick-form',
   standalone: true,
   imports: [ReactiveFormsModule, TranslatePipe, NgIcon, HlmButton, HlmInput, HlmTextarea, MovementComboboxComponent, VariantPickerComponent,

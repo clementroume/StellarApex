@@ -3,7 +3,7 @@ import {HttpContext} from '@angular/common/http';
 import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
 import {RouterLink} from '@angular/router';
 import {TranslatePipe, TranslateService} from '@ngx-translate/core';
-import {NgIcon} from '@ng-icons/core';
+import {NgIcon, provideIcons} from '@ng-icons/core';
 import {HlmButton} from '@spartan-ng/helm/button';
 import {HlmSpinner} from '@spartan-ng/helm/spinner';
 import {SessionService} from '../../../api/aldebaran/services/session.service';
@@ -15,12 +15,14 @@ import {PageComponent} from '../../../shared/component/page/page.component';
 import {SessionCardComponent} from '../session-card/session-card.component';
 import {addDays, dayLabel, localDate, mondayOf, shortDay, sortSessions} from '../session.utils';
 
+import {heroChevronLeft, heroChevronRight, heroPlus} from '@ng-icons/heroicons/outline';
 /**
  * My box › Sessions: the week of the displayed box/prog (D7), one column per day with its WOD
  * sessions, the specialties of the week apart. Members see each session's frame (themes); its content
  * opens per the session's visibility policy. Staff with WOD_WRITE create sessions from here.
  */
 @Component({
+  viewProviders: [provideIcons({heroChevronLeft, heroChevronRight, heroPlus})],
   selector: 'app-session-week',
   standalone: true,
   imports: [RouterLink, TranslatePipe, NgIcon, HlmButton, HlmSpinner, PageComponent, SessionCardComponent],

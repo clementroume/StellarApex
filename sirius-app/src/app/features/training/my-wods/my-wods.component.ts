@@ -2,7 +2,7 @@ import {ChangeDetectionStrategy, Component, inject, signal} from '@angular/core'
 import {HttpContext} from '@angular/common/http';
 import {RouterLink} from '@angular/router';
 import {TranslatePipe, TranslateService} from '@ngx-translate/core';
-import {NgIcon} from '@ng-icons/core';
+import {NgIcon, provideIcons} from '@ng-icons/core';
 import {HlmButton} from '@spartan-ng/helm/button';
 import {HlmCardImports} from '@spartan-ng/helm/card';
 import {HlmSpinner} from '@spartan-ng/helm/spinner';
@@ -13,10 +13,12 @@ import {PageComponent} from '../../../shared/component/page/page.component';
 import {ListItemComponent} from '../../../shared/component/list/list-item/list-item.component';
 import {wodTypeLabel} from '../../wods/wod.utils';
 
+import {heroPlus} from '@ng-icons/heroicons/outline';
 const PAGE_SIZE = 20;
 
 /** My training › My WODs: the user's personal WODs (author only), written with the quick editor. */
 @Component({
+  viewProviders: [provideIcons({heroPlus})],
   selector: 'app-my-wods',
   standalone: true,
   imports: [RouterLink, TranslatePipe, NgIcon, HlmButton, HlmCardImports, HlmSpinner, PageComponent, ListItemComponent],

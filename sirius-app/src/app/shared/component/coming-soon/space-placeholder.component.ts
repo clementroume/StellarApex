@@ -3,8 +3,11 @@ import {TranslatePipe} from '@ngx-translate/core';
 import {PageComponent} from '../page/page.component';
 import {ComingSoonComponent} from './coming-soon.component';
 
+import {provideIcons} from '@ng-icons/core';
+import {heroClock} from '@ng-icons/heroicons/outline';
 /** Space page whose feature comes in a later lot; title, description and icon come from the route data. */
 @Component({
+  viewProviders: [provideIcons({heroClock})],
   selector: 'app-space-placeholder',
   standalone: true,
   imports: [TranslatePipe, PageComponent, ComingSoonComponent],

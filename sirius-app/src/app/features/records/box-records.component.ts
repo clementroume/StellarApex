@@ -4,7 +4,7 @@ import {RouterLink} from '@angular/router';
 import {TranslatePipe, TranslateService} from '@ngx-translate/core';
 import {sourceLabel} from './record.utils';
 import {HlmButton} from '@spartan-ng/helm/button';
-import {NgIconComponent} from '@ng-icons/core';
+import {NgIconComponent, provideIcons} from '@ng-icons/core';
 import {HlmSpinner} from '@spartan-ng/helm/spinner';
 import {AGE_GROUPS, AgeGroup, BoardRecord, CanonicalLift} from '../../api/aldebaran/models/record.model';
 import {RecordService} from '../../api/aldebaran/services/record.service';
@@ -17,6 +17,7 @@ import {UnitService} from '../../core/services/unit.service';
 import {NativeSelectDirective} from '../../shared/component/native-select/native-select.directive';
 import {PageComponent} from '../../shared/component/page/page.component';
 
+import {heroAdjustmentsHorizontal} from '@ng-icons/heroicons/outline';
 /** A movement offered on the board, with the N RM that have a canonical test. */
 interface BoardLift {
   movementId: number;
@@ -31,6 +32,7 @@ interface BoardLift {
  * (Antares) and refuses non-members; names come from Antares display names.
  */
 @Component({
+  viewProviders: [provideIcons({heroAdjustmentsHorizontal})],
   selector: 'app-box-records',
   standalone: true,
   imports: [RouterLink, TranslatePipe, NgIconComponent, HlmButton, HlmSpinner, NativeSelectDirective, PageComponent],

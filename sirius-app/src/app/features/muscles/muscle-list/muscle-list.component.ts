@@ -5,7 +5,7 @@ import {TranslatePipe, TranslateService} from '@ngx-translate/core';
 import {MuscleService} from '../../../api/aldebaran/services/muscle.service';
 import {MuscleResponse} from '../../../api/aldebaran/models/muscle.model';
 import {AccessService} from '../../../core/services/access.service';
-import {NgIcon} from '@ng-icons/core';
+import {NgIcon, provideIcons} from '@ng-icons/core';
 import {ExporterService} from '../../../api/aldebaran/services/exporter.service';
 import {HttpContext} from '@angular/common/http';
 import {BYPASS_LOADER} from '../../../core/interceptors/loading.interceptor';
@@ -24,7 +24,9 @@ export interface MuscleRow {
 
 import {normalize} from '../../../shared/text.utils';
 import {HlmButton} from '@spartan-ng/helm/button';
+import {heroDocumentArrowDown, heroPlus} from '@ng-icons/heroicons/outline';
 @Component({
+  viewProviders: [provideIcons({heroDocumentArrowDown, heroPlus})],
   selector: 'app-muscle-list',
   standalone: true,
   imports: [MuscleCreditComponent, MuscleSceneComponent, NgTemplateOutlet, HlmButton, RouterModule, TranslatePipe, NgIcon, SearchInputComponent, ListStateComponent],

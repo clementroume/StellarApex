@@ -8,7 +8,7 @@ import {MuscleService} from '../../../api/aldebaran/services/muscle.service';
 import {NotificationService} from '../../../core/services/notification.service';
 import {MuscleRequest, MuscleResponse} from '../../../api/aldebaran/models/muscle.model';
 import {ProblemDetail} from '../../../core/models/problem-detail.model';
-import {NgIcon} from '@ng-icons/core';
+import {NgIcon, provideIcons} from '@ng-icons/core';
 
 import {SectionDividerComponent} from '../../../shared/component/section-divider/section-divider.component';
 import {HlmSpinner} from '@spartan-ng/helm/spinner';
@@ -17,7 +17,9 @@ import {HlmButton} from '@spartan-ng/helm/button';
 import {HlmInput} from '@spartan-ng/helm/input';
 import {HlmLabel} from '@spartan-ng/helm/label';
 import {HlmTextarea} from '@spartan-ng/helm/textarea';
+import {hugeCircleArrowLeft02} from '@ng-icons/huge-icons';
 @Component({
+  viewProviders: [provideIcons({hugeCircleArrowLeft02})],
   selector: 'app-muscle-form',
   standalone: true,
   imports: [HlmTextarea, HlmLabel, HlmInput, HlmButton, NativeSelectDirective, HlmSpinner, SectionDividerComponent, ReactiveFormsModule, RouterModule, TranslatePipe, NgIcon],

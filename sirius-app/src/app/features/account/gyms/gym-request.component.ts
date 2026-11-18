@@ -2,7 +2,7 @@ import {ChangeDetectionStrategy, Component, computed, inject, signal} from '@ang
 import {Router, RouterLink} from '@angular/router';
 import {FormBuilder, ReactiveFormsModule, Validators} from '@angular/forms';
 import {TranslatePipe, TranslateService} from '@ngx-translate/core';
-import {NgIcon} from '@ng-icons/core';
+import {NgIcon, provideIcons} from '@ng-icons/core';
 import {HlmAlertImports} from '@spartan-ng/helm/alert';
 import {HlmButton} from '@spartan-ng/helm/button';
 import {HlmCardImports} from '@spartan-ng/helm/card';
@@ -18,11 +18,13 @@ import {problemDetailOf} from '../../../core/models/problem-detail.model';
 import {FormFieldComponent} from '../../../shared/component/form-field/form-field.component';
 import {EmailVerificationNoticeComponent} from '../../../shared/component/email-verification-notice/email-verification-notice.component';
 
+import {heroArrowLeft, heroBuildingOffice, heroClock} from '@ng-icons/heroicons/outline';
 /**
  * Asks for a new box or program (D1): open to every user, approved by a platform admin, one request
  * waiting at a time (Antares answers 409 otherwise; the form only says it beforehand).
  */
 @Component({
+  viewProviders: [provideIcons({heroArrowLeft, heroBuildingOffice, heroClock})],
   selector: 'app-gym-request',
   standalone: true,
   imports: [ReactiveFormsModule, RouterLink, TranslatePipe, NgIcon, HlmAlertImports, HlmButton, HlmCardImports,

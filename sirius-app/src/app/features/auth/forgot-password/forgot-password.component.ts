@@ -2,7 +2,7 @@ import {ChangeDetectionStrategy, Component, inject, signal} from '@angular/core'
 import {FormBuilder, ReactiveFormsModule, Validators} from '@angular/forms';
 import {RouterModule} from '@angular/router';
 import {TranslatePipe, TranslateService} from '@ngx-translate/core';
-import {NgIcon} from '@ng-icons/core';
+import {NgIcon, provideIcons} from '@ng-icons/core';
 import {HlmButton} from '@spartan-ng/helm/button';
 import {HlmCardImports} from '@spartan-ng/helm/card';
 import {HlmInputGroupImports} from '@spartan-ng/helm/input-group';
@@ -11,11 +11,13 @@ import {NotificationService} from '../../../core/services/notification.service';
 import {problemDetailOf} from '../../../core/models/problem-detail.model';
 import {FormFieldComponent} from '../../../shared/component/form-field/form-field.component';
 
+import {heroEnvelope} from '@ng-icons/heroicons/outline';
 /**
  * "Forgot password": asks Antares to mail a reset link. The confirmation is the same whether or not
  * the address has an account (Antares never tells).
  */
 @Component({
+  viewProviders: [provideIcons({heroEnvelope})],
   selector: 'app-forgot-password',
   standalone: true,
   imports: [ReactiveFormsModule, RouterModule, TranslatePipe, NgIcon, HlmButton, HlmCardImports,

@@ -4,7 +4,7 @@ import {TranslatePipe, TranslateService} from '@ngx-translate/core';
 import {Router, RouterModule} from '@angular/router';
 import {Location} from '@angular/common';
 import {HttpErrorResponse} from '@angular/common/http';
-import {NgIconComponent} from '@ng-icons/core';
+import {NgIconComponent, provideIcons} from '@ng-icons/core';
 import {WodResponse} from '../../../api/aldebaran/models/wod.model';
 import {WodService} from '../../../api/aldebaran/services/wod.service';
 import {NotificationService} from '../../../core/services/notification.service';
@@ -29,7 +29,9 @@ export type WodVisibility = 'PUBLIC' | 'GYM' | 'PRIVATE';
 
 import {HlmBadge} from '@spartan-ng/helm/badge';
 import {HlmButton} from '@spartan-ng/helm/button';
+import {heroBuildingOffice, heroCalendarDays, heroDocumentDuplicate, heroExclamationTriangle, heroGlobeAlt, heroLockClosed, heroPlus, heroTrophy} from '@ng-icons/heroicons/outline';
 @Component({
+  viewProviders: [provideIcons({heroBuildingOffice, heroCalendarDays, heroDocumentDuplicate, heroExclamationTriangle, heroGlobeAlt, heroLockClosed, heroPlus, heroTrophy})],
   selector: 'app-wod-detail',
   standalone: true,
   imports: [HlmButton, HlmBadge, TranslatePipe, RouterModule, NgIconComponent, DetailAdminActionsComponent, DetailCardComponent, DetailHeaderComponent, DetailStateComponent, ScoreBestComponent, ScoreHistoryComponent, ScoreFormComponent, ScoreLeaderboardComponent, WodWhiteboardComponent],

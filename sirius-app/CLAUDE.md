@@ -95,8 +95,11 @@ the dev proxy targets the local Traefik `https://localhost` with `Host: stellar.
 - Every visible string goes through `| translate`; add keys to BOTH `src/assets/i18n/fr.json` and
   `en.json` (2-space JSON, keys grouped by feature: `GLOBAL`, `NAVBAR`, `MOVEMENT`, `WOD`, `ADMIN`...).
   Gym roles, statuses and permissions (label + description) are shared under `GYM.*`.
-- Icons must be registered in `APP_ICONS` (`app.config.ts`) from `@ng-icons/heroicons/outline` or
-  `@ng-icons/huge-icons`; check the name exists in `node_modules/@ng-icons/heroicons/types`.
+- Icons (D160, initial bundle budget): each component declares the icons it names, including names passed to
+  shared components, with `viewProviders: [provideIcons({...})]` (imported from `@ng-icons/heroicons/outline` or
+  `@ng-icons/huge-icons`; check the name exists in `node_modules/@ng-icons/heroicons/types`); descendants inherit
+  them. `APP_ICONS` (`app.config.ts`) = layout icons only, copied in `core/layout/layout-icons.ts` (checked by its
+  spec): importing a single icon from a package in eager code puts the whole package module in `main`.
 - Lists: `BYPASS_LOADER` HttpContext to skip the global loader; UI state worth keeping across
   navigation lives in service signals (`savedSearchQuery`...); services expose `refreshNeeded$` +
   `notifyRefresh()` so forms/details can refresh lists.

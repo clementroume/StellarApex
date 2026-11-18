@@ -3,7 +3,7 @@ import {RouterLink} from '@angular/router';
 import {NgTemplateOutlet} from '@angular/common';
 import {Observable} from 'rxjs';
 import {TranslatePipe, TranslateService} from '@ngx-translate/core';
-import {NgIcon} from '@ng-icons/core';
+import {NgIcon, provideIcons} from '@ng-icons/core';
 import {HlmBadge} from '@spartan-ng/helm/badge';
 import {HlmButton} from '@spartan-ng/helm/button';
 import {HlmSpinner} from '@spartan-ng/helm/spinner';
@@ -22,6 +22,7 @@ import {ConfirmDialogComponent} from '../../../shared/component/confirm-dialog/c
 import {NativeSelectDirective} from '../../../shared/component/native-select/native-select.directive';
 import {StaffGymPickerComponent, staffGymSelection} from '../staff-gym';
 
+import {heroArrowPath, heroCheck, heroNoSymbol, heroPencilSquare, heroUserMinus, heroUserPlus, heroXMark} from '@ng-icons/heroicons/outline';
 export const MEMBER_STATUSES: MembershipStatus[] = ['PENDING', 'ACTIVE', 'INACTIVE', 'BANNED'];
 export const ALL_PERMISSIONS: Permission[] = ['WOD_WRITE', 'SCORE_VERIFY', 'MANAGE_MEMBERSHIPS', 'MANAGE_SETTINGS'];
 
@@ -34,6 +35,7 @@ type MemberAction = {kind: 'refuse' | 'remove' | 'ban'; member: MembershipRespon
  * permissions. Nothing is decided here: buttons only follow the capabilities.
  */
 @Component({
+  viewProviders: [provideIcons({heroArrowPath, heroCheck, heroNoSymbol, heroPencilSquare, heroUserMinus, heroUserPlus, heroXMark})],
   selector: 'app-box-members',
   standalone: true,
   imports: [RouterLink, NgTemplateOutlet, TranslatePipe, NgIcon, HlmBadge, HlmButton, HlmSpinner, PageComponent, ConfirmDialogComponent,

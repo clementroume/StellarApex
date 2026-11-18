@@ -1,12 +1,14 @@
 import {ChangeDetectionStrategy, Component, inject} from '@angular/core';
 import {TranslatePipe} from '@ngx-translate/core';
-import {NgIcon} from '@ng-icons/core';
+import {NgIcon, provideIcons} from '@ng-icons/core';
 import {HlmCardImports} from '@spartan-ng/helm/card';
 import {UnitService} from '../../../core/services/unit.service';
 import {UnitSystem} from '../../../api/antares/models/user.model';
 
+import {heroScale} from '@ng-icons/heroicons/outline';
 /** "Units" tab of My account: the display system for loads, heights and distances. */
 @Component({
+  viewProviders: [provideIcons({heroScale})],
   selector: 'app-units',
   standalone: true,
   imports: [TranslatePipe, NgIcon, HlmCardImports],

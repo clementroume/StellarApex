@@ -4,7 +4,7 @@ import {FormArray, FormBuilder, ReactiveFormsModule, Validators} from '@angular/
 import {ActivatedRoute, Router, RouterModule} from '@angular/router';
 import {HttpErrorResponse} from '@angular/common/http';
 import {TranslatePipe, TranslateService} from '@ngx-translate/core';
-import {NgIconComponent} from '@ng-icons/core';
+import {NgIconComponent, provideIcons} from '@ng-icons/core';
 import {MovementService} from '../../../api/aldebaran/services/movement.service';
 import {MuscleService} from '../../../api/aldebaran/services/muscle.service';
 import {NotificationService} from '../../../core/services/notification.service';
@@ -22,7 +22,10 @@ import {HlmButton} from '@spartan-ng/helm/button';
 import {HlmInput} from '@spartan-ng/helm/input';
 import {HlmTextarea} from '@spartan-ng/helm/textarea';
 import {HlmCardImports} from '@spartan-ng/helm/card';
+import {heroPlus, heroTrash, heroXMark} from '@ng-icons/heroicons/outline';
+import {hugeCircleArrowLeft02} from '@ng-icons/huge-icons';
 @Component({
+  viewProviders: [provideIcons({heroPlus, heroTrash, heroXMark, hugeCircleArrowLeft02})],
   selector: 'app-movement-form',
   standalone: true,
   imports: [MovementComboboxComponent, VariantPickerComponent, HlmCardImports, HlmTextarea, HlmInput, HlmButton, HlmBadge, NativeSelectDirective, HlmSpinner, CommonModule, ReactiveFormsModule, RouterModule, TranslatePipe, NgIconComponent],

@@ -6,7 +6,7 @@ import {FormsModule} from '@angular/forms';
 import {MovementService} from '../../../api/aldebaran/services/movement.service';
 import {AccessService} from '../../../core/services/access.service';
 import {MovementSummaryResponse, UsualNameOption} from '../../../api/aldebaran/models/movement.model';
-import {NgIcon} from '@ng-icons/core';
+import {NgIcon, provideIcons} from '@ng-icons/core';
 import {ExporterService} from '../../../api/aldebaran/services/exporter.service';
 import {HttpContext} from '@angular/common/http';
 import {BYPASS_LOADER} from '../../../core/interceptors/loading.interceptor';
@@ -20,6 +20,8 @@ import {MovementRecords} from '../../../api/aldebaran/models/record.model';
 import {UnitService} from '../../../core/services/unit.service';
 import {LiftSummary, liftSummary} from '../../records/record.utils';
 
+import {heroDocumentArrowDown, heroPlus} from '@ng-icons/heroicons/outline';
+import {hugeCardiogram02, hugeDumbbell01, hugeGymnastic} from '@ng-icons/huge-icons';
 /** A card of the catalog. */
 export interface MovementCard {
   movement: MovementSummaryResponse;
@@ -33,6 +35,7 @@ const PREVIEW_SIZE = 4;
 
 
 @Component({
+  viewProviders: [provideIcons({heroDocumentArrowDown, heroPlus, hugeCardiogram02, hugeDumbbell01, hugeGymnastic})],
   selector: 'app-movement-list',
   standalone: true,
   imports: [HlmButton, HlmBadge, CommonModule, RouterModule, TranslatePipe, FormsModule, NgIcon, SearchInputComponent, ListStateComponent],

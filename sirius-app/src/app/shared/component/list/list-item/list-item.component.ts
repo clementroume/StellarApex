@@ -1,10 +1,12 @@
 import {ChangeDetectionStrategy, Component, input} from '@angular/core';
 import {RouterLink} from '@angular/router';
-import {NgIconComponent} from '@ng-icons/core';
+import {NgIconComponent, provideIcons} from '@ng-icons/core';
 import {NgOptimizedImage, UpperCasePipe} from '@angular/common';
 
 import {HlmBadge} from '@spartan-ng/helm/badge';
+import {heroChevronRight} from '@ng-icons/heroicons/outline';
 @Component({
+  viewProviders: [provideIcons({heroChevronRight})],
   selector: 'app-list-item',
   standalone: true,
   imports: [RouterLink, NgIconComponent, UpperCasePipe, NgOptimizedImage, HlmBadge],

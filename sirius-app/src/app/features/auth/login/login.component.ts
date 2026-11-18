@@ -13,6 +13,8 @@ import {HlmInputGroupImports} from '@spartan-ng/helm/input-group';
 import {FormFieldComponent} from '../../../shared/component/form-field/form-field.component';
 import {DEFAULT_RETURN_URL, forwardableReturnUrl, resolveReturnUrl, ReturnTarget} from '../return-url';
 
+import {provideIcons} from '@ng-icons/core';
+import {heroEnvelope, heroKey} from '@ng-icons/heroicons/outline';
 /** Demo accounts offered on the sign-in page (seeded by Antares' DevDataSeeder, roadmap D68). */
 export const DEMO_PERSONAS = [
   {key: 'OWNER', email: 'owner.sparta@demo.test'},
@@ -22,6 +24,7 @@ export const DEMO_PERSONAS = [
 ] as const;
 
 @Component({
+  viewProviders: [provideIcons({heroEnvelope, heroKey})],
   selector: 'app-login',
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule, RouterModule, TranslatePipe, HlmButton, HlmCardImports,

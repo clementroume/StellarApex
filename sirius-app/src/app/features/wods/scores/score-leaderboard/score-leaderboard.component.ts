@@ -1,7 +1,7 @@
 import {ChangeDetectionStrategy, Component, computed, effect, inject, signal, untracked} from '@angular/core';
 import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
 import {TranslatePipe, TranslateService} from '@ngx-translate/core';
-import {NgIconComponent} from '@ng-icons/core';
+import {NgIconComponent, provideIcons} from '@ng-icons/core';
 import {ScalingLevel, ScoreResponse} from '../../../../api/aldebaran/models/score.model';
 import {ScoreService} from '../../../../api/aldebaran/services/score.service';
 import {UserService} from '../../../../api/antares/services/user.service';
@@ -25,7 +25,9 @@ const PAGE_SIZE = 50;
  * scores from here (`ScoreResponse.capabilities`, computed by Aldebaran).
  */
 import {HlmButton} from '@spartan-ng/helm/button';
+import {heroCheckBadge, heroPencilSquare, heroTrash, heroTrophy, heroXMark} from '@ng-icons/heroicons/outline';
 @Component({
+  viewProviders: [provideIcons({heroCheckBadge, heroPencilSquare, heroTrash, heroTrophy, heroXMark})],
   selector: 'app-score-leaderboard',
   standalone: true,
   imports: [HlmButton, TranslatePipe, NgIconComponent, NativeSelectDirective],

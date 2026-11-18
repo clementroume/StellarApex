@@ -11,7 +11,7 @@ import {
   signal,
   viewChild
 } from '@angular/core';
-import {NgIcon} from '@ng-icons/core';
+import {NgIcon, provideIcons} from '@ng-icons/core';
 import {TranslatePipe} from '@ngx-translate/core';
 import {HlmButton} from '@spartan-ng/helm/button';
 import {DoubleSide, Mesh, Object3D, PerspectiveCamera, Scene, ShaderMaterial, Vector3, WebGLRenderer} from 'three';
@@ -21,6 +21,7 @@ import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
 import {Theme} from '../../../core/services/theme.service';
 import {DRACO_PATH, MODEL_URL, MuscleModelEntry} from '../muscle-model/muscle-model';
 
+import {heroArrowPath} from '@ng-icons/heroicons/outline';
 /** Camera directions, in the axes of the model: the same as the images (tools/muscle-model/common.py). */
 const VIEWS: Record<string, [number, number, number]> = {
   FRONT: [0, 0.1, 1],
@@ -100,6 +101,7 @@ function glassMaterial(): ShaderMaterial {
  * Renders on demand, stops off screen, frees its WebGL resources when destroyed.
  */
 @Component({
+  viewProviders: [provideIcons({heroArrowPath})],
   selector: 'app-muscle-viewer',
   standalone: true,
   imports: [HlmButton, NgIcon, TranslatePipe],

@@ -3,7 +3,7 @@ import {HttpContext} from '@angular/common/http';
 import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
 import {RouterLink} from '@angular/router';
 import {TranslatePipe, TranslateService} from '@ngx-translate/core';
-import {NgIcon} from '@ng-icons/core';
+import {NgIcon, provideIcons} from '@ng-icons/core';
 import {HlmBadge} from '@spartan-ng/helm/badge';
 import {HlmButton} from '@spartan-ng/helm/button';
 import {HlmCardImports} from '@spartan-ng/helm/card';
@@ -14,6 +14,7 @@ import {DisplayGymService} from '../../../core/services/display-gym.service';
 import {SessionCardComponent} from '../session-card/session-card.component';
 import {addDays, dayLabel, localDate, sessionLink} from '../session.utils';
 
+import {heroCalendarDays, heroPlus} from '@ng-icons/heroicons/outline';
 /** Personal sessions planned from two weeks ago on. */
 const PERSONAL_PAST_DAYS = 14;
 
@@ -22,6 +23,7 @@ const PERSONAL_PAST_DAYS = 14;
  * scores), newest first, and their personal sessions not done yet (D15) with the create button.
  */
 @Component({
+  viewProviders: [provideIcons({heroCalendarDays, heroPlus})],
   selector: 'app-session-journal',
   standalone: true,
   imports: [RouterLink, TranslatePipe, NgIcon, HlmBadge, HlmButton, HlmCardImports, SessionCardComponent],
