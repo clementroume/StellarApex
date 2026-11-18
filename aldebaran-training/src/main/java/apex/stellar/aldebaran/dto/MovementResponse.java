@@ -5,6 +5,7 @@ import apex.stellar.aldebaran.model.entities.DumbbellBase;
 import apex.stellar.aldebaran.model.entities.MovementJointAction;
 import apex.stellar.aldebaran.model.enums.Category;
 import apex.stellar.aldebaran.model.enums.Equipment;
+import apex.stellar.aldebaran.model.enums.MovementPattern;
 import apex.stellar.aldebaran.model.enums.RequiredRule;
 import apex.stellar.aldebaran.model.enums.Technique;
 import java.util.List;
@@ -44,7 +45,8 @@ public record MovementResponse(
     Set<RoleAdjustmentDto> roleAdjustments,
     Set<MovementJointAction> jointActions,
     Set<UsualNameDto> usualNames,
-    PerSet perSet) {
+    PerSet perSet,
+    Set<MovementPattern> patterns) {
 
   /** A plain movement, without the catalog model. */
   @SuppressWarnings("java:S107") // Mirrors the record components
@@ -65,6 +67,6 @@ public record MovementResponse(
     this(
         id, name, nameAbbreviation, category, equipment, techniques, targetedMuscles, descriptionEn,
         descriptionFr, coachingCuesEn, coachingCuesFr, videoUrl, imageUrl, null, false, Set.of(),
-        Set.of(), List.of(), Set.of(), Set.of(), Set.of(), Set.of(), PerSet.NONE);
+        Set.of(), List.of(), Set.of(), Set.of(), Set.of(), Set.of(), PerSet.NONE, Set.of());
   }
 }

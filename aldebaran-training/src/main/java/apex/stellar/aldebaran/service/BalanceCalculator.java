@@ -14,6 +14,7 @@ import apex.stellar.aldebaran.model.entities.WodMovement.TeamSplit;
 import apex.stellar.aldebaran.model.entities.WodMovement;
 import apex.stellar.aldebaran.model.enums.Category.Modality;
 import apex.stellar.aldebaran.model.enums.Measure;
+import apex.stellar.aldebaran.model.enums.MovementPattern;
 import apex.stellar.aldebaran.model.enums.TimeDomain;
 import apex.stellar.aldebaran.model.enums.UncountedReason;
 import java.time.LocalDate;
@@ -374,6 +375,9 @@ public final class BalanceCalculator {
     }
     addRoles(roles, sets, totals);
     totals.addSets(modality, sets);
+    Set<MovementPattern> patterns = EnumSet.noneOf(MovementPattern.class);
+    group.forEach(line -> patterns.addAll(CatalogRules.patterns(line)));
+    totals.addPatterns(patterns, sets);
     String label =
         group.stream().map(CatalogRules::listName).collect(Collectors.joining(" + "));
     totals.addLift(label.length() > 200 ? label.substring(0, 200) : label, null, sets, false);
@@ -423,6 +427,7 @@ public final class BalanceCalculator {
         sets,
         totals);
     totals.addSets(CatalogRules.modality(line), sets);
+    totals.addPatterns(CatalogRules.patterns(line), sets);
   }
 
   private static void addRoles(Map<Muscle, MuscleRole> roles, double sets, WeekTotals totals) {

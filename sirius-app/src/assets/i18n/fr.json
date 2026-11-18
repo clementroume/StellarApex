@@ -654,6 +654,36 @@
       "MODALITY": "Modalité",
       "MODALITY_INHERITED": "Modalité du mouvement"
     },
+    "PATTERNS": {
+      "TITLE": "Schémas de mouvement (bilan de la prog)",
+      "HINT": "Les axes de la toile de la prog ; un mouvement composé compte sur chacun de ses axes.",
+      "HINT_USUAL": "Aucun choisi : ceux du mouvement.",
+      "AXES": {
+        "SQUAT": "Squat",
+        "HINGE": "Hinge",
+        "PUSH": "Push",
+        "PULL": "Pull",
+        "LUNGE": "Lunge",
+        "LOCOMOTION": "Locomotion",
+        "CORE": "Core"
+      },
+      "SQUAT": "Squat",
+      "HINGE": "Hinge",
+      "LUNGE": "Lunge",
+      "PUSH_V": "Push V",
+      "PUSH_H": "Push H",
+      "PULL_V": "Pull V",
+      "PULL_H": "Pull H",
+      "CARRY": "Carry",
+      "GAIT": "Gait",
+      "CRAWL": "Crawl",
+      "CYCLIC": "Cyclic",
+      "JUMP": "Jump",
+      "CORE_FLEXION": "Flexion",
+      "CORE_EXTENSION": "Extension",
+      "CORE_ROTATION": "Rotation",
+      "CORE_LATERAL_FLEXION": "Lateral Flexion"
+    },
     "REQUIRED": {
       "LOAD_POSITION_IF_EQUIPMENT": "Position si équipement",
       "AMPLITUDE": "Amplitude",

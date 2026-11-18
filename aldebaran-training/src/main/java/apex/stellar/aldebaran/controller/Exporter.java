@@ -170,7 +170,7 @@ public class Exporter {
         "coaching_cues_en", "coaching_cues_fr", "video_url", "image_url",
         "implied_equipment", "implied_requires_position", "required_rules", "dumbbell_bases",
         "components", "accepted", "role_adjustments", "joint_actions",
-        "reps_per_set", "meters_per_set", "seconds_per_set", "calories_per_set"
+        "reps_per_set", "meters_per_set", "seconds_per_set", "calories_per_set", "patterns"
       };
 
       Path movementsCsvPath = directory.resolve("movements.csv");
@@ -218,6 +218,7 @@ public class Exporter {
                 CatalogCsv.formatAdjustments(m.getRoleAdjustments()),
                 CatalogCsv.formatJoints(m.getJointActions()));
             cells.addAll(CatalogCsv.formatPerSet(m.getPerSet()));
+            cells.add(CatalogCsv.formatPatterns(m.getPatterns()));
             printer.printRecord(cells);
           }
           exportUsualNames(directory, movements);
@@ -257,7 +258,8 @@ public class Exporter {
                 u.getPerSet().meters(),
                 u.getPerSet().seconds(),
                 u.getPerSet().calories(),
-                u.getModality());
+                u.getModality(),
+                CatalogCsv.formatPatterns(u.getPatterns()));
           }
         }
       }

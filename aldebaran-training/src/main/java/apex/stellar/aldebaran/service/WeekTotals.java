@@ -1,10 +1,14 @@
 package apex.stellar.aldebaran.service;
 
 import apex.stellar.aldebaran.model.enums.Category.Modality;
+import apex.stellar.aldebaran.model.enums.MovementPattern;
+import apex.stellar.aldebaran.model.enums.MovementPattern.Axis;
 import apex.stellar.aldebaran.model.enums.TimeDomain;
 import java.util.EnumMap;
+import java.util.EnumSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Set;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -65,6 +69,8 @@ public final class WeekTotals {
   private final Map<Modality, Double> modalities = new EnumMap<>(Modality.class);
   private final Map<TimeDomain, Integer> seconds = new EnumMap<>(TimeDomain.class);
   private final Map<String, LiftSets> lifts = new LinkedHashMap<>();
+  private final Map<Axis, Double> axes = new EnumMap<>(Axis.class);
+  private final Map<MovementPattern, Double> patterns = new EnumMap<>(MovementPattern.class);
   private double totalSets;
 
   public Map<Long, MuscleSets> muscles() {
@@ -73,6 +79,24 @@ public final class WeekTotals {
 
   public Map<Modality, Double> modalities() {
     return modalities;
+  }
+
+  /**
+   * Sets per movement-pattern axis (lot D', D174): a line counts once on each of its axes.
+   *
+   * @return Sets per axis.
+   */
+  public Map<Axis, Double> axes() {
+    return axes;
+  }
+
+  /**
+   * Sets per pattern detail (Push V, Core Flexion...): a line counts on each of its details.
+   *
+   * @return Sets per detail.
+   */
+  public Map<MovementPattern, Double> patterns() {
+    return patterns;
   }
 
   public Map<TimeDomain, Integer> seconds() {
@@ -116,7 +140,18 @@ public final class WeekTotals {
   }
 
   /** Adds another vector to this one. */
+  void addPatterns(Set<MovementPattern> lineAxes, double sets) {
+    Set<Axis> seen = EnumSet.noneOf(Axis.class);
+    for (MovementPattern pattern : lineAxes) {
+      patterns.merge(pattern, sets, Double::sum);
+      seen.add(pattern.getAxis());
+    }
+    seen.forEach(axis -> axes.merge(axis, sets, Double::sum));
+  }
+
   void addAll(WeekTotals other) {
+    other.axes.forEach((axis, sets) -> axes.merge(axis, sets, Double::sum));
+    other.patterns.forEach((pattern, sets) -> patterns.merge(pattern, sets, Double::sum));
     other.muscles.forEach((id, sets) -> addMuscle(id, sets.moving(), sets.holding()));
     other.modalities.forEach((modality, sets) -> modalities.merge(modality, sets, Double::sum));
     other.seconds.forEach(this::addSeconds);

@@ -5,6 +5,7 @@ import apex.stellar.aldebaran.model.entities.DumbbellBase;
 import apex.stellar.aldebaran.model.entities.MovementJointAction;
 import apex.stellar.aldebaran.model.enums.Category;
 import apex.stellar.aldebaran.model.enums.Equipment;
+import apex.stellar.aldebaran.model.enums.MovementPattern;
 import apex.stellar.aldebaran.model.enums.RequiredRule;
 import apex.stellar.aldebaran.model.enums.Technique;
 import jakarta.validation.Valid;
@@ -12,6 +13,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -51,7 +53,8 @@ public record MovementRequest(
     @Valid Set<RoleAdjustmentDto> roleAdjustments,
     Set<MovementJointAction> jointActions,
     @Valid Set<UsualNameDto> usualNames,
-    @Valid PerSet perSet) {
+    @Valid PerSet perSet,
+    Set<MovementPattern> patterns) {
 
   /** A plain movement: no chain, no adjustment, no usual name. */
   @SuppressWarnings("java:S107") // Mirrors the record components
@@ -71,7 +74,7 @@ public record MovementRequest(
     this(
         name, nameAbbreviation, category, equipment, techniques, muscles, descriptionEn,
         descriptionFr, coachingCuesEn, coachingCuesFr, videoUrl, imageUrl, null, false, null, null,
-        null, null, null, null, null, null);
+        null, null, null, null, null, null, null);
   }
 
   /**
@@ -89,5 +92,6 @@ public record MovementRequest(
     roleAdjustments = roleAdjustments != null ? roleAdjustments : new HashSet<>();
     jointActions = jointActions != null ? jointActions : new HashSet<>();
     usualNames = usualNames != null ? usualNames : new HashSet<>();
+    patterns = patterns != null ? patterns : EnumSet.noneOf(MovementPattern.class);
   }
 }

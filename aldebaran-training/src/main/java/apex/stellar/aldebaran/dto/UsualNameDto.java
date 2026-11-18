@@ -2,9 +2,11 @@ package apex.stellar.aldebaran.dto;
 
 import apex.stellar.aldebaran.model.entities.PerSet;
 import apex.stellar.aldebaran.model.enums.Category.Modality;
+import apex.stellar.aldebaran.model.enums.MovementPattern;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
+import java.util.EnumSet;
 import java.util.Set;
 
 /**
@@ -21,6 +23,7 @@ import java.util.Set;
  * @param videoUrl Demonstration video, or null.
  * @param perSet Value of one set of this variant, null values = the movement's (D126).
  * @param modality Modality of this variant, or null = the movement's family (D127).
+ * @param patterns Movement patterns of this variant, empty = the movement's (D177).
  */
 public record UsualNameDto(
     @NotBlank @Size(max = 80) String nameEn,
@@ -32,4 +35,11 @@ public record UsualNameDto(
     @Size(max = 4000) String descriptionFr,
     @Size(max = 512) String videoUrl,
     @Valid PerSet perSet,
-    Modality modality) {}
+    Modality modality,
+    Set<MovementPattern> patterns) {
+
+  /** Null patterns read as none (the movement's). */
+  public UsualNameDto {
+    patterns = patterns != null ? patterns : EnumSet.noneOf(MovementPattern.class);
+  }
+}

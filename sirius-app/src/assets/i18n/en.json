@@ -654,6 +654,36 @@
       "MODALITY": "Modality",
       "MODALITY_INHERITED": "Movement's modality"
     },
+    "PATTERNS": {
+      "TITLE": "Movement patterns (programming balance)",
+      "HINT": "The axes of the programming radar; a compound movement counts on each of its axes.",
+      "HINT_USUAL": "None selected: the movement's patterns.",
+      "AXES": {
+        "SQUAT": "Squat",
+        "HINGE": "Hinge",
+        "PUSH": "Push",
+        "PULL": "Pull",
+        "LUNGE": "Lunge",
+        "LOCOMOTION": "Locomotion",
+        "CORE": "Core"
+      },
+      "SQUAT": "Squat",
+      "HINGE": "Hinge",
+      "LUNGE": "Lunge",
+      "PUSH_V": "Push V",
+      "PUSH_H": "Push H",
+      "PULL_V": "Pull V",
+      "PULL_H": "Pull H",
+      "CARRY": "Carry",
+      "GAIT": "Gait",
+      "CRAWL": "Crawl",
+      "CYCLIC": "Cyclic",
+      "JUMP": "Jump",
+      "CORE_FLEXION": "Flexion",
+      "CORE_EXTENSION": "Extension",
+      "CORE_ROTATION": "Rotation",
+      "CORE_LATERAL_FLEXION": "Lateral Flexion"
+    },
     "REQUIRED": {
       "LOAD_POSITION_IF_EQUIPMENT": "Position if equipment",
       "AMPLITUDE": "Amplitude",

@@ -3,11 +3,13 @@ package apex.stellar.aldebaran.model.entities;
 import apex.stellar.aldebaran.model.enums.Category;
 import apex.stellar.aldebaran.model.enums.Category.Modality;
 import apex.stellar.aldebaran.model.enums.Equipment;
+import apex.stellar.aldebaran.model.enums.MovementPattern;
 import apex.stellar.aldebaran.model.enums.RequiredRule;
 import apex.stellar.aldebaran.model.enums.Technique;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
 import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Embedded;
 import jakarta.persistence.Entity;
@@ -30,6 +32,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -146,6 +149,12 @@ public class Movement {
 
   /** Value of one set in each unit (D126); a usual name may override it. */
   @Embedded private PerSet perSet;
+
+  /** Fundamental movement patterns (lot D', D177); a usual name may override them. */
+  @Column(name = "patterns", nullable = false, length = 300)
+  @Convert(converter = PatternSetConverter.class)
+  @Builder.Default
+  private Set<MovementPattern> patterns = EnumSet.noneOf(MovementPattern.class);
 
   // --- Internationalized Content ---
   @Column(name = "description_en", columnDefinition = "TEXT")

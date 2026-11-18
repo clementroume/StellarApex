@@ -178,6 +178,7 @@ public class DataSeeder implements CommandLineRunner {
                 .dumbbellBases(CatalogCsv.parseBases(getOptionalStr(csvRecord, "dumbbell_bases")))
                 .jointActions(CatalogCsv.parseJoints(getOptionalStr(csvRecord, "joint_actions")))
                 .perSet(CatalogCsv.parsePerSet(header -> getOptionalStr(csvRecord, header)))
+                .patterns(CatalogCsv.parsePatterns(getOptionalStr(csvRecord, "patterns")))
                 .build();
 
         // Ajout des relations musculaires
@@ -242,6 +243,7 @@ public class DataSeeder implements CommandLineRunner {
                     .videoUrl(getOptionalStr(row, "video_url"))
                     .perSet(CatalogCsv.parsePerSet(header -> getOptionalStr(row, header)))
                     .modality(optionalEnum(row, "modality", Modality.class))
+                    .patterns(CatalogCsv.parsePatterns(getOptionalStr(row, "patterns")))
                     .build());
       }
     }

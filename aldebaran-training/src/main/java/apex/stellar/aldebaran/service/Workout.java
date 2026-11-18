@@ -23,6 +23,8 @@ import org.jspecify.annotations.Nullable;
  * @param blockKind Kind of the session block it belongs to, or null outside a session.
  * @param division The athlete's division (women's calories), or null.
  * @param teamMembers Members of the team that logged it, 0 when not a team score.
+ * @param scaled Without a score: read the WOD's official Scaled version instead of the RX
+ *     prescription (lot D', D162); a line the version keeps stays RX.
  */
 public record Workout(
     Wod wod,
@@ -30,7 +32,33 @@ public record Workout(
     LocalDate date,
     @Nullable Kind blockKind,
     @Nullable Division division,
-    int teamMembers) {
+    int teamMembers,
+    boolean scaled) {
+
+  /** A workout done or checked by an athlete (lot D): the RX prescription without a score. */
+  public Workout(
+      Wod wod,
+      @Nullable Score score,
+      LocalDate date,
+      @Nullable Kind blockKind,
+      @Nullable Division division,
+      int teamMembers) {
+    this(wod, score, date, blockKind, division, teamMembers, false);
+  }
+
+  /**
+   * A prescribed block of a programming (lot D'): no score, no athlete (men's calories, the
+   * prescribed team size).
+   *
+   * @param wod The WOD.
+   * @param date The day of its session.
+   * @param blockKind The kind of its block.
+   * @param scaled True for the official Scaled version.
+   * @return The workout.
+   */
+  public static Workout prescribed(Wod wod, LocalDate date, Kind blockKind, boolean scaled) {
+    return new Workout(wod, null, date, blockKind, null, 0, scaled);
+  }
 
   /**
    * The lines as done (lot S, D148): the WOD's lines in the order the balance reads them, each
@@ -41,6 +69,9 @@ public record Workout(
    */
   public List<WodMovement> lines() {
     List<WodMovement> rx = wod.getMovements().stream().sorted(BalanceCalculator.LINE_ORDER).toList();
+    if (score == null && scaled) {
+      return rx.stream().map(LineVersions::scaled).toList();
+    }
     if (score == null || score.getLines() == null || score.getLines().isEmpty()) {
       return rx;
     }

@@ -24,10 +24,12 @@ import apex.stellar.aldebaran.model.enums.Category.Modality;
 import apex.stellar.aldebaran.model.enums.Equipment;
 import apex.stellar.aldebaran.model.enums.JointAction;
 import apex.stellar.aldebaran.model.enums.JointAction.Regime;
+import apex.stellar.aldebaran.model.enums.MovementPattern;
 import apex.stellar.aldebaran.model.enums.RequiredRule;
 import apex.stellar.aldebaran.model.enums.Technique;
 import apex.stellar.aldebaran.service.CatalogRules.Spec;
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -289,6 +291,37 @@ class CatalogRulesTest {
     WodMovement line = line(equipment, techniques);
     line.setMovement(movement);
     return line;
+  }
+
+  @Test
+  @DisplayName("Patterns: the most precise usual name's, else the movement's, else a chain's components (D177)")
+  void patterns_usualNameThenMovement() {
+    Movement clean = family("Clean", Category.CLEAN, PerSet.NONE);
+    clean.setTechniques(new HashSet<>(Set.of(Technique.POWER, Technique.HANG)));
+    clean.setPatterns(EnumSet.of(MovementPattern.SQUAT, MovementPattern.HINGE, MovementPattern.PULL_V));
+    MovementUsualName power = usual(clean, "Power Clean", Set.of("POWER"), Set.of());
+    power.setPatterns(EnumSet.of(MovementPattern.HINGE, MovementPattern.PULL_V));
+    clean.getUsualNames().add(power);
+    clean.getUsualNames().add(usual(clean, "Hang Power Clean", Set.of("HANG", "POWER"), Set.of()));
+
+    assertThat(CatalogRules.patterns(on(clean, Set.of(), Set.of())))
+        .containsExactly(MovementPattern.SQUAT, MovementPattern.HINGE, MovementPattern.PULL_V);
+    assertThat(CatalogRules.patterns(on(clean, Set.of(), Set.of("POWER"))))
+        .containsExactly(MovementPattern.HINGE, MovementPattern.PULL_V);
+    // The most precise name has none: the movement's, never a less precise name's
+    assertThat(CatalogRules.patterns(on(clean, Set.of(), Set.of("HANG", "POWER"))))
+        .contains(MovementPattern.SQUAT);
+
+    Movement thruster = family("Thruster", Category.COMPLEXES, PerSet.NONE);
+    Movement press = family("Shoulder Press", Category.PRESS_AND_JERK, PerSet.NONE);
+    press.setPatterns(EnumSet.of(MovementPattern.PUSH_V));
+    Movement squat = family("Squat", Category.SQUAT, PerSet.NONE);
+    squat.setPatterns(EnumSet.of(MovementPattern.SQUAT));
+    thruster.setComponents(new ArrayList<>(List.of(
+        MovementComponent.builder().chain(thruster).component(squat).componentOrder(1).build(),
+        MovementComponent.builder().chain(thruster).component(press).componentOrder(2).build())));
+    assertThat(CatalogRules.patterns(on(thruster, Set.of(), Set.of())))
+        .containsExactly(MovementPattern.SQUAT, MovementPattern.PUSH_V);
   }
 
   @Test
