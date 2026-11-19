@@ -1,38 +1,37 @@
 package apex.stellar.aldebaran.demo;
 
-import apex.stellar.aldebaran.model.entities.Score;
+import apex.stellar.aldebaran.dto.ScoreRequest;
 import apex.stellar.aldebaran.model.entities.Score.ScalingLevel;
 import apex.stellar.aldebaran.model.entities.Wod;
-import apex.stellar.aldebaran.model.enums.Division;
+import apex.stellar.aldebaran.model.enums.Unit;
 import apex.stellar.aldebaran.repository.ScoreRepository;
 import apex.stellar.aldebaran.repository.WodRepository;
-import apex.stellar.aldebaran.service.MovementRecordService;
-import apex.stellar.aldebaran.service.ScoreRanking;
+import apex.stellar.aldebaran.service.ScoreService;
 import java.time.Clock;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.jspecify.annotations.Nullable;
 import org.springframework.context.annotation.Profile;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.support.TransactionTemplate;
 
 /**
- * Temporary development tool (profile {@code dev} only): logs scores for the Antares test accounts
- * on gym WODs and a few public benchmarks, so histories, personal records and leaderboards (per
- * scaling level and per gym) can be checked without typing them. Called by {@link
- * DevGymWodSeeder} once the WODs exist.
+ * Demo data (profile {@code demo}): logs scores for the demo accounts on the public benchmarks, the
+ * public "N RM" tests and the athlete's personal WOD, so public leaderboards, lift leaderboards and
+ * records have data. Every score goes through {@link ScoreService} as its athlete ({@link
+ * DemoActor}): division, age group, personal records and records come from the service. The demo
+ * programs' scores come from {@link DemoProgramScores}. Called by {@link DevGymWodSeeder}.
  *
- * <p>Idempotent: nothing is done when {@code owner.sparta@demo.test} already has a score. Accounts or WODs
- * that cannot be found are skipped with a warning. Dates are relative to today; personal records are
- * computed with {@link ScoreRanking} like the service does. Values are stored canonically (AMRAP =
- * total reps, capped TIME = reps at the cap).
+ * <p>Idempotent: the benchmark scores are skipped when {@code owner.sparta@demo.test} already has a
+ * score on the public "Fran", the lift tests when it has one on "Back Squat 1RM". Accounts or WODs
+ * that cannot be found are skipped with a warning. Dates are relative to today.
  */
 @Component
 @Profile("demo")
@@ -49,6 +48,9 @@ public class DevScoreSeeder {
   static final String ACTIVE = "active.zeus@demo.test";
   static final String FREE = "free@demo.test";
 
+  /** Public benchmark whose owner score marks the benchmark scores as seeded. */
+  static final String BENCHMARK_MARKER = "Fran";
+
   /** Public "N RM" test whose owner score marks the lift scores as seeded. */
   static final String LIFT_MARKER = "Back Squat 1RM";
 
@@ -64,54 +66,39 @@ public class DevScoreSeeder {
 
   private final JdbcTemplate jdbcTemplate;
   private final WodRepository wodRepository;
-  private final MovementRecordService movementRecordService;
   private final ScoreRepository scoreRepository;
+  private final ScoreService scoreService;
+  private final DemoActor actor;
+  private final TransactionTemplate ownTransaction;
   private final Clock clock;
 
   /**
    * Creates the seeder.
    *
-   * @param jdbcTemplate Access to the Antares users and existing scores.
+   * @param jdbcTemplate Access to the Antares users (another schema).
    * @param wodRepository WOD lookup by title.
-   * @param scoreRepository Score persistence.
-   * @param movementRecordService Rebuilds the records of the seeded scores.
+   * @param scoreRepository The "already seeded" checks.
+   * @param scoreService Logs each score as its athlete.
+   * @param actor Identity of the demo accounts.
+   * @param transactionManager One transaction per score: a refused one never undoes the others.
+   * @param clock The application clock.
    */
-  @Autowired
   public DevScoreSeeder(
       JdbcTemplate jdbcTemplate,
       WodRepository wodRepository,
       ScoreRepository scoreRepository,
-      MovementRecordService movementRecordService) {
-    this(
-        jdbcTemplate, wodRepository, scoreRepository, movementRecordService, Clock.systemDefaultZone());
-  }
-
-  DevScoreSeeder(
-      JdbcTemplate jdbcTemplate,
-      WodRepository wodRepository,
-      ScoreRepository scoreRepository,
-      MovementRecordService movementRecordService,
+      ScoreService scoreService,
+      DemoActor actor,
+      PlatformTransactionManager transactionManager,
       Clock clock) {
     this.jdbcTemplate = jdbcTemplate;
     this.wodRepository = wodRepository;
     this.scoreRepository = scoreRepository;
-    this.movementRecordService = movementRecordService;
+    this.scoreService = scoreService;
+    this.actor = actor;
+    this.ownTransaction = new TransactionTemplate(transactionManager);
+    this.ownTransaction.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
     this.clock = clock;
-  }
-
-  /**
-   * Gives the scores without a division the division of their athlete in Antares (dev data only:
-   * real scores get theirs at logging), so division leaderboards can be tried at once. Runs at
-   * every start, before the "already seeded" check.
-   */
-  void classifyDivisions() {
-    int updated =
-        jdbcTemplate.update(
-            "UPDATE aldebaran.scores s SET division = u.division FROM antares.users u"
-                + " WHERE s.user_id = u.id AND s.division IS NULL AND u.division IS NOT NULL");
-    if (updated > 0) {
-      log.info("Dev score seeding: {} scores given their athlete's division", updated);
-    }
   }
 
   /**
@@ -121,145 +108,94 @@ public class DevScoreSeeder {
    * @param zeusGymId ID of "Zeus Programming".
    */
   public void seed(Long spartaGymId, Long zeusGymId) {
-    classifyDivisions();
     Map<String, Long> users = new HashMap<>();
     for (String email : ACCOUNTS) {
       List<Long> ids =
-          jdbcTemplate.queryForList(
-              "SELECT id FROM antares.users WHERE email = ?", Long.class, email);
+          jdbcTemplate.queryForList("SELECT id FROM antares.users WHERE email = ?", Long.class, email);
       if (!ids.isEmpty()) {
         users.put(email, ids.getFirst());
       }
     }
-    Map<Long, Division> divisions = new HashMap<>();
-    users.forEach(
-        (email, id) ->
-            jdbcTemplate
-                .queryForList("SELECT division FROM antares.users WHERE id = ?", String.class, id)
-                .stream()
-                .filter(Objects::nonNull)
-                .findFirst()
-                .ifPresent(d -> divisions.put(id, Division.valueOf(d))));
     Long owner = users.get(OWNER);
     if (owner == null) {
       log.warn("Dev score seeding skipped: {} not found", OWNER);
       return;
     }
-
-    Map<String, Wod> wods =
-        wodRepository.findAll().stream()
-            .collect(Collectors.toMap(Wod::getTitle, Function.identity(), (a, b) -> a));
-    LocalDate today = LocalDate.now(clock);
-
-    if (hasScores(owner)) {
-      log.info("Dev score seeding skipped: {} already has scores", OWNER);
+    // Public WODs and the personal one only: the box copies of the benchmarks share their titles
+    Map<String, Wod> wods = new HashMap<>();
+    for (Wod w : wodRepository.findAll()) {
+      boolean personal = w.getGymId() == null && !w.isPublic() && DevGymWodSeeder.PERSONAL_WOD.equals(w.getTitle());
+      if ((w.isPublic() && w.getGymId() == null) || personal) {
+        wods.putIfAbsent(w.getTitle(), w);
+      }
+    }
+    Seed seed = new Seed(users, wods, spartaGymId, zeusGymId, LocalDate.now(clock));
+    if (seeded(owner, wods.get(BENCHMARK_MARKER))) {
+      log.info("Dev score seeding: benchmark scores already logged");
     } else {
-      Seed seed = new Seed(users, divisions, wods, spartaGymId, zeusGymId, today);
-      addGymScores(seed);
+      addPersonalScores(seed);
       addPublicScores(seed);
-      save(seed);
     }
-
-    // The lift tests come in a second step, so a database seeded before them gets them on the next
-    // start (idempotent: the owner's score on the first test marks them as seeded)
-    Wod marker = wods.get(LIFT_MARKER);
-    if (marker != null && !hasScores(owner, marker.getId())) {
-      Seed lifts = new Seed(users, divisions, wods, spartaGymId, zeusGymId, today);
-      addLiftScores(lifts);
-      save(lifts);
-      // Same transaction as the inserts: the scores carry their division already (see Seed.on), the
-      // records copy it from these managed instances
-      lifts.scores.stream()
-          .map(sc -> List.of(sc.getWod(), sc.getUserId()))
-          .distinct()
-          .forEach(k -> movementRecordService.rebuildFor((Wod) k.get(0), (Long) k.get(1)));
+    // The lift tests come in a second step (their own marker), so an older database gets them
+    if (!seeded(owner, wods.get(LIFT_MARKER))) {
+      addLiftScores(seed);
     }
-
-    // Seeded after the startup rebuild (the gym lookup runs in the background): records now
-    movementRecordService.rebuildAllIfEmpty();
-  }
-
-  private boolean hasScores(Long userId) {
-    return !jdbcTemplate
-        .queryForList("SELECT id FROM aldebaran.scores WHERE user_id = ? LIMIT 1", Long.class, userId)
-        .isEmpty();
-  }
-
-  private boolean hasScores(Long userId, Long wodId) {
-    return !jdbcTemplate
-        .queryForList(
-            "SELECT id FROM aldebaran.scores WHERE user_id = ? AND wod_id = ? LIMIT 1",
-            Long.class,
-            userId,
-            wodId)
-        .isEmpty();
-  }
-
-  private void save(Seed seed) {
-    if (seed.scores.isEmpty()) {
-      return;
+    int logged = 0;
+    for (Planned p : seed.planned) {
+      logged += log(p) ? 1 : 0;
     }
-    seed.scores.stream()
-        .collect(Collectors.groupingBy(s -> List.of(s.getWod().getId(), s.getUserId())))
-        .values()
-        .forEach(DevScoreSeeder::markPersonalRecord);
-    scoreRepository.saveAll(seed.scores);
-    log.info("Dev score seeding: logged {} scores", seed.scores.size());
+    if (logged > 0) {
+      log.info("Dev score seeding: logged {} scores", logged);
+    }
   }
 
-  private static void markPersonalRecord(List<Score> scores) {
-    Score best =
-        scores.stream()
-            .min(ScoreRanking.bestFirst(scores.getFirst().getWod().getScoreType()))
-            .orElseThrow();
-    scores.forEach(s -> s.setPersonalRecord(s == best));
+  private boolean seeded(Long owner, @Nullable Wod marker) {
+    return marker == null || scoreRepository.existsByUserIdAndWodId(owner, marker.getId());
+  }
+
+  private boolean log(Planned p) {
+    int time = p.timeSeconds == null ? 0 : p.timeSeconds;
+    ScoreRequest request =
+        new ScoreRequest(
+            null,
+            p.date,
+            p.wod.getId(),
+            p.timeSeconds == null ? null : time / 60,
+            p.timeSeconds == null ? null : time % 60,
+            p.rounds,
+            p.reps,
+            p.maxWeightKg,
+            p.totalLoadKg,
+            p.maxWeightKg != null || p.totalLoadKg != null ? Unit.KG : null,
+            null,
+            null,
+            null,
+            p.scaling,
+            p.timeCapped,
+            p.tiebreakSeconds,
+            null,
+            p.gymId,
+            null,
+            null,
+            null,
+            null,
+            false,
+            null);
+    try {
+      actor.run(p.userId, () -> ownTransaction.executeWithoutResult(s -> scoreService.logScore(request)));
+      return true;
+    } catch (RuntimeException e) {
+      log.warn("Dev score on '{}' for user id={} skipped ({})", p.wod.getTitle(), p.userId, e.getMessage());
+      return false;
+    }
   }
 
   // --- Data set ---
 
-  private static void addGymScores(Seed s) {
-    // Spartacus CrossFit (Sparta Burner: 30 reps per round)
-    s.add(s.on("Sparta Burner", OWNER, 9, ScalingLevel.RX, null).reps(252));
-    s.add(s.on("Sparta Burner", COACH, 9, ScalingLevel.RX, null).reps(275));
-    s.add(s.on("Sparta Burner", ATHLETE, 40, ScalingLevel.RX, null).reps(200));
-    s.add(s.on("Sparta Burner", ATHLETE, 6, ScalingLevel.RX, null).reps(220));
-    s.add(s.on("Sparta Burner", SCORER, 9, ScalingLevel.RX, null).reps(210));
-    s.add(s.on("Sparta Burner", MULTI, 9, ScalingLevel.RX, null).reps(243));
-    s.add(s.on("Sparta Burner", HYBRID, 9, ScalingLevel.SCALED, null).reps(270));
-
-    s.add(s.on("Hoplite Chipper", COACH, 15, ScalingLevel.RX, null).timeSeconds(680));
-    s.add(s.on("Hoplite Chipper", OWNER, 15, ScalingLevel.RX, null).timeSeconds(765));
-    s.add(s.on("Hoplite Chipper", ATHLETE, 15, ScalingLevel.RX, null).timeCapped(true).reps(130));
-    s.add(s.on("Hoplite Chipper", SCORER, 15, ScalingLevel.SCALED, null).timeSeconds(790));
-    s.add(s.on("Hoplite Chipper", MULTI, 14, ScalingLevel.RX, null).timeSeconds(842));
-
-    s.add(s.on("Sparta Back Squat 5x5", OWNER, 20, ScalingLevel.RX, null).maxWeightKg(140.0));
-    s.add(s.on("Sparta Back Squat 5x5", COACH, 20, ScalingLevel.RX, null).maxWeightKg(130.0));
-    s.add(s.on("Sparta Back Squat 5x5", ATHLETE, 60, ScalingLevel.RX, null).maxWeightKg(95.0));
-    s.add(s.on("Sparta Back Squat 5x5", ATHLETE, 20, ScalingLevel.RX, null).maxWeightKg(100.0));
-    s.add(s.on("Sparta Back Squat 5x5", SCORER, 20, ScalingLevel.RX, null).maxWeightKg(110.0));
-    s.add(s.on("Sparta Back Squat 5x5", HYBRID, 19, ScalingLevel.RX, null).maxWeightKg(120.0));
-    s.add(s.on("Sparta Back Squat 5x5", MULTI, 19, ScalingLevel.RX, null).maxWeightKg(105.0));
-
-    // Zeus Programming (Titan AMRAP: 32 reps per round)
-    s.add(s.on("Olympus Deadlift", PROGRAMMER, 25, ScalingLevel.RX, null).maxWeightKg(200.0));
-    s.add(s.on("Olympus Deadlift", ACTIVE, 24, ScalingLevel.RX, null).maxWeightKg(150.0));
-    s.add(s.on("Olympus Deadlift", MULTI, 23, ScalingLevel.RX, null).maxWeightKg(160.0));
-    s.add(s.on("Olympus Deadlift", HYBRID, 23, ScalingLevel.RX, null).maxWeightKg(180.0));
-
-    s.add(s.on("Titan AMRAP", PROGRAMMER, 12, ScalingLevel.RX, null).reps(324));
-    s.add(s.on("Titan AMRAP", ACTIVE, 12, ScalingLevel.RX, null).reps(239));
-    s.add(s.on("Titan AMRAP", MULTI, 11, ScalingLevel.RX, null).reps(256));
-    s.add(s.on("Titan AMRAP", HYBRID, 11, ScalingLevel.SCALED, null).reps(308));
-
-    s.add(s.on("Pantheon 21-15-9", PROGRAMMER, 4, ScalingLevel.RX, null).timeSeconds(390));
-    s.add(s.on("Pantheon 21-15-9", ACTIVE, 4, ScalingLevel.RX, null).timeSeconds(585));
-    s.add(s.on("Pantheon 21-15-9", MULTI, 3, ScalingLevel.RX, null).timeCapped(true).reps(70));
-    s.add(s.on("Pantheon 21-15-9", HYBRID, 3, ScalingLevel.RX, null).timeSeconds(490));
-
-    // Personal WOD (no reps per round)
-    s.add(s.on("Athlete Engine Builder", ATHLETE, 30, ScalingLevel.RX, null).reps(180));
-    s.add(s.on("Athlete Engine Builder", ATHLETE, 2, ScalingLevel.RX, null).reps(196));
+  private static void addPersonalScores(Seed s) {
+    // Personal WOD (no reps per round); the programs' scores come from DemoProgramScores
+    s.add(s.on(DevGymWodSeeder.PERSONAL_WOD, ATHLETE, 30, ScalingLevel.RX, null).reps(180));
+    s.add(s.on(DevGymWodSeeder.PERSONAL_WOD, ATHLETE, 2, ScalingLevel.RX, null).reps(196));
   }
 
   /**
@@ -395,25 +331,76 @@ public class DevScoreSeeder {
     s.add(s.on("CrossFit Total", FREE, 85, ScalingLevel.RX, Gym.NONE).totalLoadKg(400.0));
   }
 
-  /** Collects the scores; a score whose account or WOD is unknown is skipped. */
+  /** One score to log, written fluently like the data set reads. */
+  private static final class Planned {
+    private final Wod wod;
+    private final Long userId;
+    private final LocalDate date;
+    private final ScalingLevel scaling;
+    private final @Nullable Long gymId;
+    private @Nullable Integer timeSeconds;
+    private @Nullable Integer rounds;
+    private @Nullable Integer reps;
+    private @Nullable Double maxWeightKg;
+    private @Nullable Double totalLoadKg;
+    private boolean timeCapped;
+    private @Nullable Integer tiebreakSeconds;
+
+    private Planned(Wod wod, Long userId, LocalDate date, ScalingLevel scaling, @Nullable Long gymId) {
+      this.wod = wod;
+      this.userId = userId;
+      this.date = date;
+      this.scaling = scaling;
+      this.gymId = gymId;
+    }
+
+    Planned timeSeconds(int value) {
+      timeSeconds = value;
+      return this;
+    }
+
+    Planned rounds(int value) {
+      rounds = value;
+      return this;
+    }
+
+    Planned reps(int value) {
+      reps = value;
+      return this;
+    }
+
+    Planned maxWeightKg(double value) {
+      maxWeightKg = value;
+      return this;
+    }
+
+    Planned totalLoadKg(double value) {
+      totalLoadKg = value;
+      return this;
+    }
+
+    Planned timeCapped(boolean value) {
+      timeCapped = value;
+      return this;
+    }
+
+    Planned tiebreakSeconds(int value) {
+      tiebreakSeconds = value;
+      return this;
+    }
+  }
+
+  /** Collects the scores to log; a score whose account or WOD is unknown is skipped. */
   private static final class Seed {
     private final Map<String, Long> users;
-    private final Map<Long, Division> divisions;
     private final Map<String, Wod> wods;
     private final Long sparta;
     private final Long zeus;
     private final LocalDate today;
-    private final List<Score> scores = new ArrayList<>();
+    private final List<Planned> planned = new ArrayList<>();
 
-    private Seed(
-        Map<String, Long> users,
-        Map<Long, Division> divisions,
-        Map<String, Wod> wods,
-        Long sparta,
-        Long zeus,
-        LocalDate today) {
+    private Seed(Map<String, Long> users, Map<String, Wod> wods, Long sparta, Long zeus, LocalDate today) {
       this.users = users;
-      this.divisions = divisions;
       this.wods = wods;
       this.sparta = sparta;
       this.zeus = zeus;
@@ -421,36 +408,29 @@ public class DevScoreSeeder {
     }
 
     /**
-     * Starts a score. The gym is the WOD's own gym when {@code gym} is null (gym or personal WOD),
-     * else the gym where the athlete performed a public WOD.
+     * Starts a score. The gym is the athlete's for a public WOD ({@code gym}), none for the personal
+     * WOD ({@code gym} null). Unknown WOD or account: a detached score, never logged.
      */
-    Score.ScoreBuilder on(String title, String email, int daysAgo, ScalingLevel scaling, Gym gym) {
+    Planned on(String title, String email, int daysAgo, ScalingLevel scaling, @Nullable Gym gym) {
       Wod wod = wods.get(title);
-      if (wod == null || !users.containsKey(email)) {
-        log.warn("Dev score seeding: WOD '{}' or account {} not found, score skipped", title, email);
-      }
+      Long userId = users.get(email);
       Long gymId =
           switch (gym) {
-            case null -> wod != null ? wod.getGymId() : null;
+            case null -> null;
             case SPARTA -> sparta;
             case ZEUS -> zeus;
             case NONE -> null;
           };
-      return Score.builder()
-          .wod(wod)
-          .userId(users.get(email))
-          // Set now, not by classifyDivisions: the seeding runs in one transaction, where a JDBC
-          // update would leave these managed scores (and the records copied from them) stale
-          .division(divisions.get(users.get(email)))
-          .date(today.minusDays(daysAgo))
-          .scaling(scaling)
-          .gymId(gymId);
+      Planned p = new Planned(wod, userId, today.minusDays(daysAgo), scaling, gymId);
+      if (wod == null || userId == null) {
+        log.warn("Dev score seeding: WOD '{}' or account {} not found, score skipped", title, email);
+      }
+      return p;
     }
 
-    void add(Score.ScoreBuilder builder) {
-      Score score = builder.build();
-      if (score.getWod() != null && score.getUserId() != null) {
-        scores.add(score);
+    void add(Planned p) {
+      if (p.wod != null && p.userId != null) {
+        planned.add(p);
       }
     }
   }

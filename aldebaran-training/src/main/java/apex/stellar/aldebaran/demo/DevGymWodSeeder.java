@@ -7,12 +7,13 @@ import apex.stellar.aldebaran.model.entities.Wod;
 import apex.stellar.aldebaran.model.entities.Wod.ScoreType;
 import apex.stellar.aldebaran.model.entities.Wod.WodType;
 import apex.stellar.aldebaran.model.entities.WodMovement;
-import apex.stellar.aldebaran.model.entities.WodScaledLine;
 import apex.stellar.aldebaran.service.CatalogRules;
 import apex.stellar.aldebaran.model.enums.Unit;
 import apex.stellar.aldebaran.repository.MovementRepository;
 import apex.stellar.aldebaran.repository.WodRepository;
+import java.time.Clock;
 import java.time.Duration;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -30,22 +31,22 @@ import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
 /**
- * Temporary development tool (profile {@code dev} only): creates gym WODs for the two fake test
- * gyms seeded by Antares, so the UI can be checked with real rights.
+ * Demo data of the training side (profile {@code demo}): the two demo programs and one personal WOD.
  *
  * <ul>
- *   <li>"Spartacus CrossFit" (physical gym), authored by {@code owner.sparta@demo.test};
- *   <li>"Zeus Programming" (virtual gym), authored by {@code programmer.zeus@demo.test};
+ *   <li>"Spartacus CrossFit" (physical box): a balanced 12-week programming, written by {@code
+ *       owner.sparta@demo.test}; "Zeus Programming" (virtual program): an unbalanced one, 6 days a
+ *       week, written by {@code programmer.zeus@demo.test} ({@link DemoPrograms});
  *   <li>one personal private WOD for {@code athlete.sparta@demo.test}.
  * </ul>
  *
- * <p>Then {@link DevScoreSeeder} logs scores for the test accounts (its own idempotency check, so
- * an existing database gets them too).
+ * <p>Then {@link DevScoreSeeder} logs the public test and benchmark scores, and {@link
+ * DemoProgramScores} the journals and scores of the programs' past sessions (each with its own
+ * idempotency check, so an existing database gets what it lacks).
  *
  * <p>Gym and user IDs are read with {@link JdbcTemplate} from the Antares schema of the same
  * PostgreSQL instance. Antares may seed after Aldebaran starts, so the lookup is retried in the
- * background (about 60 s by default) before giving up. Idempotent: nothing is done when the Sparta
- * gym already has WODs.
+ * background (about 60 s by default) before giving up.
  */
 @Component
 @Profile("demo")
@@ -57,12 +58,16 @@ public class DevGymWodSeeder implements ApplicationRunner {
   static final String SPARTA_OWNER = "owner.sparta@demo.test";
   static final String ZEUS_PROGRAMMER = "programmer.zeus@demo.test";
   static final String SPARTA_ATHLETE = "athlete.sparta@demo.test";
+  static final String PERSONAL_WOD = "Athlete Engine Builder";
 
   private final JdbcTemplate jdbcTemplate;
   private final WodRepository wodRepository;
   private final MovementRepository movementRepository;
   private final DevScoreSeeder devScoreSeeder;
+  private final DemoPrograms demoPrograms;
+  private final DemoProgramScores demoProgramScores;
   private final TransactionTemplate transactionTemplate;
+  private final Clock clock;
   private final int maxAttempts;
   private final Duration retryDelay;
 
@@ -72,24 +77,34 @@ public class DevGymWodSeeder implements ApplicationRunner {
    * @param jdbcTemplate Access to the Antares tables.
    * @param wodRepository WOD persistence.
    * @param movementRepository Movement catalog.
-   * @param devScoreSeeder Test scores, logged once the WODs exist.
+   * @param devScoreSeeder Public test and benchmark scores.
+   * @param demoPrograms The demo programs' sessions.
+   * @param demoProgramScores The demo programs' journals and scores.
    * @param transactionManager Transaction manager used for the background seeding.
+   * @param clock The application clock (the seed day centres the programs).
    * @param maxAttempts Number of lookups before giving up.
    * @param retryDelay Delay between two lookups.
    */
+  @SuppressWarnings("java:S107") // Spring wiring of the demo seeders
   public DevGymWodSeeder(
       JdbcTemplate jdbcTemplate,
       WodRepository wodRepository,
       MovementRepository movementRepository,
       DevScoreSeeder devScoreSeeder,
+      DemoPrograms demoPrograms,
+      DemoProgramScores demoProgramScores,
       PlatformTransactionManager transactionManager,
+      Clock clock,
       @Value("${aldebaran.dev-seeder.max-attempts:12}") int maxAttempts,
       @Value("${aldebaran.dev-seeder.retry-delay:5s}") Duration retryDelay) {
     this.jdbcTemplate = jdbcTemplate;
     this.wodRepository = wodRepository;
     this.movementRepository = movementRepository;
     this.devScoreSeeder = devScoreSeeder;
+    this.demoPrograms = demoPrograms;
+    this.demoProgramScores = demoProgramScores;
     this.transactionTemplate = new TransactionTemplate(transactionManager);
+    this.clock = clock;
     this.maxAttempts = maxAttempts;
     this.retryDelay = retryDelay;
   }
@@ -109,9 +124,7 @@ public class DevGymWodSeeder implements ApplicationRunner {
       try {
         Ids ids = lookupIds();
         if (ids != null && movementRepository.count() > 0) {
-          transactionTemplate.executeWithoutResult(status -> seed(ids));
-          transactionTemplate.executeWithoutResult(
-              status -> devScoreSeeder.seed(ids.sparta(), ids.zeus()));
+          seed(ids);
           return true;
         }
       } catch (DataAccessException e) {
@@ -127,6 +140,46 @@ public class DevGymWodSeeder implements ApplicationRunner {
         ZEUS_GYM,
         maxAttempts);
     return false;
+  }
+
+  private void seed(Ids ids) {
+    transactionTemplate.executeWithoutResult(status -> seedPersonalWod(ids));
+    LocalDate today = LocalDate.now(clock);
+    List<DemoPrograms.Program> programs = demoPrograms.programs();
+    for (DemoPrograms.Program program : programs) {
+      Long gymId = gymOf(program, ids);
+      if (demoPrograms.seeded(program, gymId)) {
+        log.info("Demo program {} already in '{}'", program.key(), program.gym());
+      } else {
+        demoPrograms.seed(program, gymId, "ZEUS".equals(program.key()) ? ids.programmer() : ids.owner(), today);
+      }
+    }
+    devScoreSeeder.seed(ids.sparta(), ids.zeus());
+    Map<String, Long> users = users();
+    for (DemoPrograms.Program program : programs) {
+      demoProgramScores.seed(program, gymOf(program, ids), users, today);
+    }
+  }
+
+  private static Long gymOf(DemoPrograms.Program program, Ids ids) {
+    return "ZEUS".equals(program.key()) ? ids.zeus() : ids.sparta();
+  }
+
+  private Map<String, Long> users() {
+    Map<String, Long> users = new HashMap<>();
+    for (DemoProgramScores.Persona p : DemoProgramScores.PERSONAS) {
+      Long id = findId("SELECT id FROM antares.users WHERE email = ?", p.email());
+      if (id != null) {
+        users.put(p.email(), id);
+      }
+    }
+    for (String judge : List.of(DemoProgramScores.SCORER, DemoProgramScores.COACH)) {
+      Long id = findId("SELECT id FROM antares.users WHERE email = ?", judge);
+      if (id != null) {
+        users.put(judge, id);
+      }
+    }
+    return users;
   }
 
   private boolean sleep() {
@@ -156,133 +209,24 @@ public class DevGymWodSeeder implements ApplicationRunner {
     return ids.isEmpty() ? null : ids.getFirst();
   }
 
-  private void seed(Ids ids) {
-    if (wodRepository.existsByGymId(ids.sparta())) {
-      log.info("Dev gym WOD seeding skipped: '{}' already has WODs", SPARTA_GYM);
+  /** The athlete's personal private WOD (no gym), once. */
+  private void seedPersonalWod(Ids ids) {
+    if (wodRepository.existsByAuthorIdAndGymIdIsNullAndTitle(ids.athlete(), PERSONAL_WOD)) {
       return;
     }
     Map<String, Movement> catalog = WodCsvCodec.byName(movementRepository.findAll());
-    Long sparta = ids.sparta();
-    Long zeus = ids.zeus();
-    List<Wod> wods = new ArrayList<>();
-
-    // --- Spartacus CrossFit (physical gym) ---
-    wods.add(
+    Wod wod =
         wod(
             catalog,
-            base("Sparta Burner", WodType.AMRAP, ScoreType.REPS, sparta, ids.owner())
-                .repScheme("AMRAP 12 min")
-                .repsPerRound(30)
-                .timeCapSeconds(720)
-                .descriptionEn("As many rounds as possible in 12 minutes.")
-                .descriptionFr("Le plus de tours possible en 12 minutes."),
-            mv("Wall-ball Shot", "10").weight(9.0).weightFemale(6.0).weightUnit(Unit.KG),
-            mv("Box Jump", "10").height(60.0).heightFemale(50.0).heightUnit(Unit.CENTIMETERS),
-            mv("American Kettlebell Swing", "10")
-                .weight(24.0)
-                .weightFemale(16.0)
-                .weightUnit(Unit.KG)));
-    wods.add(
-        wod(
-            catalog,
-            base("Leonidas EMOM", WodType.EMOM, ScoreType.NONE, sparta, ids.owner())
-                .repScheme("EMOM 10 min")
-                .emomInterval(60)
-                .emomRounds(10)
-                .descriptionEn("Every minute on the minute for 10 minutes.")
-                .descriptionFr("Chaque minute, pendant 10 minutes."),
-            mv("Power Clean", "3").weight(70.0).weightFemale(45.0).weightUnit(Unit.KG),
-            mv("Burpee", "6")));
-    wods.add(
-        wod(
-            catalog,
-            base("Hoplite Chipper", WodType.FOR_TIME, ScoreType.TIME, sparta, ids.owner())
-                .repScheme("50-40-30-20-10")
-                .timeCapSeconds(900)
-                .descriptionEn("For time, one movement after the other.")
-                .descriptionFr("Pour le temps, un mouvement après l'autre."),
-            mv("Double-under", "50"),
-            mv("Air Squat", "40"),
-            mv("Sit-up", "30"),
-            mv("Push-up", "20"),
-            mv("Pull-up", "10")));
-    // Its official Scaled version (lot S): single-unders and ring rows, ranked in Scaled
-    scaled(catalog, wods.getLast(), "Double-under", "Single-under", "100");
-    scaled(catalog, wods.getLast(), "Pull-up", "Ring Row", null);
-    wods.add(
-        wod(
-            catalog,
-            base("Sparta Back Squat 5x5", WodType.FOR_LOAD, ScoreType.WEIGHT, sparta, ids.owner())
-                .repScheme("5x5")
-                .descriptionEn("5 sets of 5 reps, rest 2 minutes between sets. Score the heaviest.")
-                .descriptionFr(
-                    "5 séries de 5 répétitions, 2 minutes de repos entre les séries. Score : la"
-                        + " série la plus lourde."),
-            mv("Back Squat", "5x5")
-                .notesEn("Build up to a heavy 5")
-                .notesFr("Monte jusqu'à 5 répétitions lourdes")));
-
-    // --- Zeus Programming (virtual gym) ---
-    wods.add(
-        wod(
-            catalog,
-            base("Olympus Deadlift", WodType.FOR_LOAD, ScoreType.WEIGHT, zeus, ids.programmer())
-                .repScheme("5-3-1")
-                .descriptionEn("Work up to a heavy single.")
-                .descriptionFr("Monte jusqu'à une répétition lourde."),
-            mv("Deadlift", "5-3-1")));
-    wods.add(
-        wod(
-            catalog,
-            base("Thunderbolt Intervals", WodType.EMOM, ScoreType.NONE, zeus, ids.programmer())
-                .repScheme("EMOM 16 min")
-                .emomInterval(60)
-                .emomRounds(16)
-                .descriptionEn("Odd minutes: row. Even minutes: toes-to-bar.")
-                .descriptionFr("Minutes impaires : rameur. Minutes paires : toes-to-bar."),
-            mv("Rowing", null)
-                .calories(15)
-                .caloriesFemale(12)
-                .notesEn("Odd minutes")
-                .notesFr("Minutes impaires"),
-            mv("Toes-to-Bar", "12").notesEn("Even minutes").notesFr("Minutes paires")));
-    wods.add(
-        wod(
-            catalog,
-            base("Titan AMRAP", WodType.AMRAP, ScoreType.REPS, zeus, ids.programmer())
-                .repScheme("AMRAP 15 min")
-                .repsPerRound(32)
-                .timeCapSeconds(900)
-                .descriptionEn("As many rounds as possible in 15 minutes.")
-                .descriptionFr("Le plus de tours possible en 15 minutes."),
-            mv("Thruster", "10").weight(43.0).weightFemale(30.0).weightUnit(Unit.KG),
-            mv("Chest-to-Bar Pull-up", "10"),
-            mv("Rowing", null).calories(12)));
-    wods.add(
-        wod(
-            catalog,
-            base("Pantheon 21-15-9", WodType.FOR_TIME, ScoreType.TIME, zeus, ids.programmer())
-                .repScheme("21-15-9")
-                .timeCapSeconds(720)
-                .descriptionEn("21-15-9 reps for time.")
-                .descriptionFr("21-15-9 répétitions pour le temps."),
-            mv("Front Squat", "21-15-9").weight(60.0).weightFemale(40.0).weightUnit(Unit.KG),
-            mv("Handstand Push-up", "21-15-9")));
-
-    // --- Personal private WOD (no gym) ---
-    wods.add(
-        wod(
-            catalog,
-            base("Athlete Engine Builder", WodType.AMRAP, ScoreType.REPS, null, ids.athlete())
+            base(PERSONAL_WOD, WodType.AMRAP, ScoreType.REPS, null, ids.athlete())
                 .repScheme("AMRAP 20 min")
                 .timeCapSeconds(1200)
                 .descriptionEn("Personal session: as many rounds as possible in 20 minutes.")
                 .descriptionFr("Séance perso : le plus de tours possible en 20 minutes."),
             mv("Running", null).distance(400.0).distanceUnit(Unit.METERS),
-            mv("Air Squat", "20")));
-
-    wodRepository.saveAll(wods);
-    log.info("Dev gym WOD seeding: created {} WODs", wods.size());
+            mv("Air Squat", "20"));
+    wodRepository.save(wod);
+    log.info("Dev gym WOD seeding: personal WOD created");
   }
 
   // --- Builders ---
@@ -339,44 +283,6 @@ public class DevGymWodSeeder implements ApplicationRunner {
     }
     wod.getModalities().addAll(CatalogRules.modalities(wod.getMovements()));
     return wod;
-  }
-
-  /**
-   * Writes a line of the WOD's official Scaled version: the usual name done in place of the line's, and its reps when
-   * they change.
-   */
-  private static void scaled(
-      Map<String, Movement> catalog, Wod wod, String lineName, String usualName, String reps) {
-    MovementUsualName usual = usualNames(catalog).get(usualName);
-    WodMovement line =
-        wod.getMovements().stream()
-            .filter(l -> lineName.equals(usualName(catalog, l)))
-            .findFirst()
-            .orElse(null);
-    if (usual == null || line == null) {
-      log.warn("Dev gym WOD '{}': no Scaled '{}' for '{}'", wod.getTitle(), usualName, lineName);
-      return;
-    }
-    line.setScaled(
-        WodScaledLine.builder()
-            .movement(usual.getMovement())
-            .equipment(new HashSet<>(usual.getEquipment()))
-            .techniques(new HashSet<>(usual.getTechniques()))
-            .repsScheme(reps)
-            .build());
-  }
-
-  /** The usual name of a demo line (the one it was written with), or its movement's name. */
-  private static String usualName(Map<String, Movement> catalog, WodMovement line) {
-    return usualNames(catalog).values().stream()
-        .filter(u -> u.getMovement() == line.getMovement()
-            && line.getEquipment().containsAll(u.getEquipment())
-            && line.getTechniques().containsAll(u.getTechniques())
-            && u.getEquipment().size() + u.getTechniques().size()
-                == line.getEquipment().size() + line.getTechniques().size())
-        .map(MovementUsualName::getNameEn)
-        .findFirst()
-        .orElse(line.getMovement().getName());
   }
 
   /** The catalog's usual names: demo WODs are written the way athletes name movements. */

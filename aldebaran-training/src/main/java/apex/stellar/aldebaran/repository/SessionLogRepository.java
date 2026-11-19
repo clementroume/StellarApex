@@ -96,4 +96,14 @@ public interface SessionLogRepository extends JpaRepository<SessionLog, Long> {
    * @return The journals.
    */
   List<SessionLog> findByUserIdAndDateBetween(Long userId, LocalDate from, LocalDate to);
+
+  /**
+   * Whether a journal exists for a session of a gym whose title starts with a prefix (a demo
+   * program already logged).
+   *
+   * @param gymId The gym of the session.
+   * @param prefix The session title prefix.
+   * @return True if one exists.
+   */
+  boolean existsBySessionGymIdAndSessionTitleStartingWith(Long gymId, String prefix);
 }

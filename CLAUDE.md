@@ -178,7 +178,8 @@ never on a leaderboard.
 
 Demo data: Spring profile `demo` (set in `docker-compose.yml`, together with `e2e` for Antares), code in a
 `demo` sub-package of each service (`apex.stellar.antares.demo`: seeder, `GET /antares/auth/demo`;
-`apex.stellar.aldebaran.demo`: WODs and scores of the demo gyms), so that retiring the demo = deleting those
+`apex.stellar.aldebaran.demo` + resource `demo/programs.json`: the demo programs of Spartacus (balanced, 12 weeks) and Zeus
+(unbalanced, 6 days), centered on the seed day, with journals and scores), so that retiring the demo = deleting those
 packages (+ the Sirius sign-in section, see the Antares README). Gyms "Spartacus CrossFit" (physical), "Zeus
 Programming" (virtual), "Pending Box" and their accounts (`DevDataSeeder`; `free@demo.test` shows its name on
 public leaderboards). The accounts are **demo accounts** (D68): `users.demo`, addresses `<role>.<box>@demo.test`
