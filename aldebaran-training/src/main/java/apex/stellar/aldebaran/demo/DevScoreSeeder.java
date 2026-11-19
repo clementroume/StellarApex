@@ -30,7 +30,8 @@ import org.springframework.transaction.support.TransactionTemplate;
  * programs' scores come from {@link DemoProgramScores}. Called by {@link DevGymWodSeeder}.
  *
  * <p>Idempotent: the benchmark scores are skipped when {@code owner.sparta@demo.test} already has a
- * score on the public "Fran", the lift tests when it has one on "Back Squat 1RM". Accounts or WODs
+ * score on the public "Fran", the lift tests when it has one on "Back Squat 1RM", the personal WOD's
+ * when its athlete has one on it. Accounts or WODs
  * that cannot be found are skipped with a warning. Dates are relative to today.
  */
 @Component
@@ -133,8 +134,12 @@ public class DevScoreSeeder {
     if (seeded(owner, wods.get(BENCHMARK_MARKER))) {
       log.info("Dev score seeding: benchmark scores already logged");
     } else {
-      addPersonalScores(seed);
       addPublicScores(seed);
+    }
+    // The personal WOD always exists: its own marker, whatever the public catalog holds
+    Long athlete = users.get(ATHLETE);
+    if (athlete != null && !seeded(athlete, wods.get(DevGymWodSeeder.PERSONAL_WOD))) {
+      addPersonalScores(seed);
     }
     // The lift tests come in a second step (their own marker), so an older database gets them
     if (!seeded(owner, wods.get(LIFT_MARKER))) {

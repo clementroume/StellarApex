@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.Nullable;
@@ -111,7 +112,6 @@ class DemoProgramScores {
   /** One score or journal per transaction: a refused one never undoes the others. */
   private final TransactionTemplate ownTransaction;
   private final DemoActor actor;
-  private int scores;
 
   DemoProgramScores(
       SessionLogRepository sessionLogRepository,
@@ -152,15 +152,15 @@ class DemoProgramScores {
             .toList();
     List<Persona> personas =
         PERSONAS.stream().filter(p -> p.program().equals(program.key()) && users.containsKey(p.email())).toList();
-    scores = 0;
+    AtomicInteger scores = new AtomicInteger();
     for (Long sessionId : sessions) {
       try {
-        readTransaction.executeWithoutResult(status -> session(sessionId, first, personas, users, gymId));
+        readTransaction.executeWithoutResult(status -> session(sessionId, first, personas, users, gymId, scores));
       } catch (RuntimeException e) {
         log.warn("Demo program {}: session id={} not logged ({})", program.key(), sessionId, e.getMessage());
       }
     }
-    log.info("Demo program {}: {} scores on {} past sessions", program.key(), scores, sessions.size());
+    log.info("Demo program {}: {} scores on {} past sessions", program.key(), scores.get(), sessions.size());
   }
 
   private boolean logged(DemoPrograms.Program program, Long gymId) {
@@ -168,14 +168,15 @@ class DemoProgramScores {
   }
 
   /** One past session: who came, their scores and journals. */
-  private void session(Long sessionId, LocalDate first, List<Persona> personas, Map<String, Long> users, Long gymId) {
+  private void session(
+      Long sessionId, LocalDate first, List<Persona> personas, Map<String, Long> users, Long gymId, AtomicInteger scores) {
     Session session = sessionRepository.findById(sessionId).orElseThrow();
     LocalDate date = session.getDate();
     int week = (int) ChronoUnit.WEEKS.between(first, date) + 1;
     Random rnd = new Random(sessionId * 7919L);
     boolean competition = session.getBlocks().stream().anyMatch(b -> b.getWod() != null && b.getWod().isCompetition());
     if (competition) {
-      throwdown(session, users, gymId, week, rnd);
+      throwdown(session, users, gymId, week, rnd, scores);
       return;
     }
     List<Persona> came = personas.stream().filter(p -> p.attends().on(week, date.getDayOfWeek())).toList();
@@ -190,12 +191,12 @@ class DemoProgramScores {
           List<Persona> team = came.subList(i, Math.min(came.size(), i + wod.getTeamSize()));
           Persona logger = team.getFirst();
           List<Long> mates = team.stream().skip(1).map(p -> users.get(p.email())).toList();
-          log(logger, users, block, wod, date, week, gymId, rnd, null, mates, false);
+          log(logger, users, block, wod, date, week, gymId, rnd, null, mates, false, scores);
         }
         continue;
       }
       for (Persona p : came) {
-        log(p, users, block, wod, date, week, gymId, rnd, null, List.of(), false);
+        log(p, users, block, wod, date, week, gymId, rnd, null, List.of(), false, scores);
       }
     }
     for (Persona p : came) {
@@ -207,7 +208,8 @@ class DemoProgramScores {
    * The autumn throwdown: the judge logs (and so verifies) the scores of two athletes, two others
    * submit theirs, the second judge verifies one of them; the other stays in the queue.
    */
-  private void throwdown(Session session, Map<String, Long> users, Long gymId, int week, Random rnd) {
+  private void throwdown(
+      Session session, Map<String, Long> users, Long gymId, int week, Random rnd, AtomicInteger scores) {
     Persona owner = persona(OWNER, "SPARTA");
     Persona athlete = persona(ATHLETE, "SPARTA");
     Persona multi = persona(MULTI, "SPARTA");
@@ -222,14 +224,14 @@ class DemoProgramScores {
       }
       if (wod.getTeamSize() != null) {
         // Final by two: the judge logs one team (verified), the other team submits its score
-        log(owner, users, block, wod, date, week, gymId, rnd, scorer, List.of(users.get(ATHLETE)), false);
-        log(multi, users, block, wod, date, week, gymId, rnd, null, List.of(users.get(HYBRID)), true);
+        log(owner, users, block, wod, date, week, gymId, rnd, scorer, List.of(users.get(ATHLETE)), false, scores);
+        log(multi, users, block, wod, date, week, gymId, rnd, null, List.of(users.get(HYBRID)), true, scores);
         continue;
       }
-      log(athlete, users, block, wod, date, week, gymId, rnd, scorer, List.of(), false);
-      log(multi, users, block, wod, date, week, gymId, rnd, scorer, List.of(), false);
-      ScoreResponse own = log(owner, users, block, wod, date, week, gymId, rnd, null, List.of(), true);
-      log(hybrid, users, block, wod, date, week, gymId, rnd, null, List.of(), true);
+      log(athlete, users, block, wod, date, week, gymId, rnd, scorer, List.of(), false, scores);
+      log(multi, users, block, wod, date, week, gymId, rnd, scorer, List.of(), false, scores);
+      ScoreResponse own = log(owner, users, block, wod, date, week, gymId, rnd, null, List.of(), true, scores);
+      log(hybrid, users, block, wod, date, week, gymId, rnd, null, List.of(), true, scores);
       if (own != null && coach != null) {
         actor.run(coach, () -> ownTransaction.executeWithoutResult(s -> scoreService.setVerified(own.id(), true)));
       }
@@ -280,7 +282,8 @@ class DemoProgramScores {
       Random rnd,
       @Nullable Long judge,
       List<Long> mates,
-      boolean submit) {
+      boolean submit,
+      AtomicInteger scores) {
     Long athleteId = users.get(p.email());
     if (athleteId == null) {
       return null;
@@ -288,6 +291,9 @@ class DemoProgramScores {
     boolean female = actor.principal(athleteId).getDivision() == Division.WOMEN;
     boolean scaled = hasScaled(wod) && rnd.nextDouble() < p.scales();
     Performance perf = performance(p, wod, block, week, female, scaled, rnd);
+    if (wod.getScoreType() == ScoreType.WEIGHT && perf.maxWeight == null) {
+      return null; // bodyweight work: the journal's checked block says it was done
+    }
     String comment = rnd.nextDouble() < 0.06 ? COMMENTS.get(rnd.nextInt(COMMENTS.size())) : null;
     ScoreRequest request =
         new ScoreRequest(
@@ -318,7 +324,7 @@ class DemoProgramScores {
     try {
       ScoreResponse saved =
           actor.as(judge != null ? judge : athleteId, () -> ownTransaction.execute(s -> scoreService.logScore(request)));
-      scores += 1 + mates.size();
+      scores.addAndGet(1 + mates.size());
       return saved;
     } catch (RuntimeException e) {
       log.warn("Demo score of {} on '{}' skipped ({})", p.email(), wod.getTitle(), e.getMessage());
@@ -444,7 +450,7 @@ class DemoProgramScores {
         top = Math.max(top, w);
       }
     }
-    perf.maxWeight = top > 0 ? top : 20.0;
+    perf.maxWeight = top > 0 ? top : null;
   }
 
   /** The load of a strength line for a persona: its percent of the RM, a fixed load, or a feel. */

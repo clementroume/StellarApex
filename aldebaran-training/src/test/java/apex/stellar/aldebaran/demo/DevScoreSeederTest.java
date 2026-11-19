@@ -191,14 +191,27 @@ class DevScoreSeederTest {
   }
 
   @Test
-  @DisplayName("Skips what the owner already has: benchmarks and lift tests have their own marker")
+  @DisplayName("Skips what is already logged: benchmarks, lift tests and the personal WOD have their own marker")
   void shouldSkipWhenAlreadySeeded() {
     wodsPresent();
-    when(scoreRepository.existsByUserIdAndWodId(eq(OWNER_ID), anyLong())).thenReturn(true);
+    when(scoreRepository.existsByUserIdAndWodId(anyLong(), anyLong())).thenReturn(true);
 
     seeder.seed(SPARTA, ZEUS);
 
     verify(scoreService, never()).logScore(any());
+  }
+
+  @Test
+  @DisplayName("Logs the personal WOD's scores even without a public catalog")
+  void shouldLogPersonalScoresWithoutCatalog() {
+    AtomicLong ids = new AtomicLong();
+    when(wodRepository.findAll())
+        .thenReturn(List.of(wod(ids, DevGymWodSeeder.PERSONAL_WOD, ScoreType.REPS, false)));
+
+    seeder.seed(SPARTA, ZEUS);
+
+    assertEquals(2, logged.size());
+    assertTrue(logged.stream().allMatch(e -> e.getKey().equals(ATHLETE_ID) && e.getValue().gymId() == null));
   }
 
   @Test
