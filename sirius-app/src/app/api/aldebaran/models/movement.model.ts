@@ -40,6 +40,8 @@ export interface MovementRequest {
   jointActions?: MovementJointAction[];
   usualNames?: UsualName[];
   perSet?: PerSet | null;
+  /** Fundamental movement patterns (lot D', D177). */
+  patterns?: MovementPattern[];
 }
 
 export interface MovementResponse {
@@ -71,6 +73,7 @@ export interface MovementResponse {
   jointActions?: MovementJointAction[];
   usualNames?: UsualName[];
   perSet?: PerSet | null;
+  patterns?: MovementPattern[];
 }
 
 /**
@@ -135,7 +138,26 @@ export interface UsualName {
   perSet?: PerSet | null;
   /** Modality of this variant (Air Squat: GYMNASTICS); null = the movement's family. */
   modality?: string | null;
+  /** Movement patterns of this variant (Power Clean: no SQUAT); empty = the movement's. */
+  patterns?: MovementPattern[];
 }
+
+/** A movement pattern of the programming radar (lot D', D175-D179): an axis or one of its details. */
+export type MovementPattern =
+  | 'SQUAT' | 'HINGE' | 'LUNGE' | 'PUSH_V' | 'PUSH_H' | 'PULL_V' | 'PULL_H'
+  | 'CARRY' | 'GAIT' | 'CRAWL' | 'CYCLIC' | 'JUMP'
+  | 'CORE_FLEXION' | 'CORE_EXTENSION' | 'CORE_ROTATION' | 'CORE_LATERAL_FLEXION';
+
+/** The radar axes, in display order, with their patterns (MovementPattern.Axis in Aldebaran). */
+export const PATTERN_AXES: readonly {axis: string; patterns: readonly MovementPattern[]}[] = [
+  {axis: 'SQUAT', patterns: ['SQUAT']},
+  {axis: 'HINGE', patterns: ['HINGE']},
+  {axis: 'PUSH', patterns: ['PUSH_V', 'PUSH_H']},
+  {axis: 'PULL', patterns: ['PULL_V', 'PULL_H']},
+  {axis: 'LUNGE', patterns: ['LUNGE']},
+  {axis: 'LOCOMOTION', patterns: ['CARRY', 'GAIT', 'CRAWL', 'CYCLIC', 'JUMP']},
+  {axis: 'CORE', patterns: ['CORE_FLEXION', 'CORE_EXTENSION', 'CORE_ROTATION', 'CORE_LATERAL_FLEXION']}
+];
 
 /** One entry of the movement search (UsualNameOptionResponse). */
 export interface UsualNameOption {

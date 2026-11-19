@@ -53,6 +53,13 @@ describe('AccessService', () => {
     expect(service.gymsWithPermission('WOD_WRITE').map(m => m.gymId)).toEqual([1]);
   });
 
+  it('should list the gyms where the user is staff of any role, never as an athlete', () => {
+    currentUser.set({id: 7, platformRole: 'USER', memberships: [
+      membership(1, {gymRole: 'COACH', permissions: []}), membership(2, {gymRole: 'ATHLETE', permissions: []})
+    ]});
+    expect(service.staffGyms().map(m => m.gymId)).toEqual([1]);
+  });
+
   it('should give every right to a platform admin', () => {
     currentUser.set({id: 1, platformRole: 'ADMIN', memberships: [membership(1)]});
 

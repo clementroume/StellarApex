@@ -1,8 +1,10 @@
 import {ChangeDetectionStrategy, Component, input, output} from '@angular/core';
-import {NgIconComponent} from '@ng-icons/core';
+import {NgIconComponent, provideIcons} from '@ng-icons/core';
 
 import {HlmInputGroupImports} from '@spartan-ng/helm/input-group';
+import {heroMagnifyingGlass} from '@ng-icons/heroicons/outline';
 @Component({
+  viewProviders: [provideIcons({heroMagnifyingGlass})],
   selector: 'app-search-input',
   standalone: true,
   imports: [NgIconComponent, HlmInputGroupImports],

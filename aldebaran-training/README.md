@@ -200,6 +200,13 @@ version (`movement_dumbbell_bases`), and a joint layer that controls the roles (
   % of RM, load position, `WEIGHTED`) is weightlifting. Equipment alone never decides (deficit plates, assistance
   band, rings are apparatus). `wods.modalities` is computed with the same rule (Cindy: gymnastics only).
 * **Roles** weigh a muscle alone: `impact_factor` was dropped (D130, it counted the role twice).
+* **Movement patterns** (lot D', D175-D179, Flyway V11): `patterns` on a movement and on each usual name, values of
+  `MovementPattern` = the axes of the coach's programming radar (Squat, Hinge, Push V/H, Pull V/H, Lunge, Locomotion:
+  Carry / Gait / Crawl / Cyclic / Jump, Core: Flexion / Extension / Rotation / Lateral Flexion; a hold counts in the
+  direction it works: Plank = Core Flexion, overhead = Push V, a hang = Pull V). A line reads its most precise usual
+  name's, else the movement's, else (a chain without its own) the union of its components' (`CatalogRules.patterns`);
+  a line counts once per axis, its details are shown on demand. Edited in the Sirius catalog forms, exported in the
+  CSV backup (`patterns` column). Values reviewed in `docs-private/catalogue/revue-schemas-mouvement.md`.
 
 * **Muscle code**: `code` is the stable key of a muscle in the 3D model of Sirius (`sirius-app/tools/muscle-model`),
   returned in `MuscleResponse` and `MuscleRefResponse`. Derived once from the medical name (`Quadriceps Femoris` gives
@@ -350,6 +357,30 @@ missing or older-rules weeks it needs (`WeeklyBalanceService`, advisory lock per
 * strength (For Load, scored by load, or any score with sets, D122): completed sets, warm-ups under half the best set
   left out, a set of 1 to 5 reps worth half; one movement or one complex reads the athlete's sets, several lines
   the prescription.
+
+### Programming balance (`/aldebaran/programming`, lot D')
+
+`GET /programming/gyms/{gymId}/balance?start=&weeks=4&scaled=false&optional=false&days=`: the prescription of a
+gym's CrossFit sessions over a cycle of 4 to 8 weeks, for its staff of any role (admin too; `canReorder` = WOD_WRITE).
+Computed on request from the sessions, nothing stored (`ProgrammingBalanceService`; specialties and other disciplines
+left out, same-day sessions merged, optional blocks only when asked, official Scaled versions with `scaled`).
+Evaluated on each rolling window of 4 weeks for the full week and every profile of 3, 4 and 5 fixed days
+(`ProgrammingBalance`), rules pure and unit tested in `ProgrammingAlerts` (decisions D173-D181, every constant
+provisional until the beta):
+
+* **alerts** (3 at most per profile): a pattern axis of a profile under 0.6 times its share in the coach's full week
+  (relative to the coach, never a norm), judged only when the full-week share reaches 5 % and the axis is regular: an
+  athlete coming the same number of days at random misses it less than 10 % of the time (`RandomAttendance`, exact
+  count, no random draw); a main group (7) under 4 sets per week on average;
+* **information**: regions against the full week (behind under 0.8 times, ahead over 1.25 times), axes concentrated
+  on few days (an athlete without fixed days misses them, `concentratedAxes`), unusual sessions (a region over 1.3
+  times its biggest day of the 4 programmed weeks before, at least 3 sets).
+
+The response also counts the weeks holding a counted session (`programmedWeeks`: fewer than `weeks` means empty weeks
+were read) and the lines with an official Scaled version (`scaledLines`: 0 means Scaled reads as RX), so Sirius can
+warn the coach.
+
+Never shown to an athlete (D89).
 
 ### Scores (`/aldebaran/scores`)
 

@@ -2,9 +2,11 @@ import {ChangeDetectionStrategy, Component, input} from '@angular/core';
 
 import {HlmSpinner} from '@spartan-ng/helm/spinner';
 import {HlmEmptyImports} from '@spartan-ng/helm/empty';
-import {NgIcon} from '@ng-icons/core';
+import {NgIcon, provideIcons} from '@ng-icons/core';
 import {TranslatePipe} from '@ngx-translate/core';
+import {heroMagnifyingGlass} from '@ng-icons/heroicons/outline';
 @Component({
+  viewProviders: [provideIcons({heroMagnifyingGlass})],
   selector: 'app-list-state',
   standalone: true,
   imports: [HlmSpinner, HlmEmptyImports, NgIcon, TranslatePipe],

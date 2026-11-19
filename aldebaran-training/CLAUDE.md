@@ -95,6 +95,12 @@ resolving IDs from the `antares` schema with `JdbcTemplate`, then calls `demo/De
   Contract for lot D': `BalanceCalculator.vectorOf` (workouts done or prescribed → vector) and `sum` (linear).
   Lines that count nothing (D121 rule 5): `BalanceCalculator.readableText` (WOD form warning, `POST /balance/readable-texts`)
   and `uncounted` (admin control `GET /balance/uncounted-lines`, `model/enums/UncountedReason`).
+- Programming balance (lot D', handover `docs-private/roadmap/lotd-prime-passation-programmation.md` D160-D181):
+  `GET /programming/gyms/{gymId}/balance` (staff, `SessionSecurity.canReadProgramming`), computed on request by
+  `ProgrammingBalanceService` from the sessions' prescriptions (`Workout.prescribed`, `BalanceCalculator`); pure rules in
+  `ProgrammingBalance` (windows, profiles), `ProgrammingAlerts` (pattern gap relative to the full week, group minimum;
+  regions, concentrated axes and unusual sessions as information) and `RandomAttendance` (exact regularity count).
+  `WeekTotals.axes()` / `patterns()` = sets per pattern axis / detail (a line counts once per axis).
 - Support session: `X-Auth-Actor-Id` (nullable `actorId`) = the admin acting as the user; rights stay
   the user's. `security/SupportSessionAuditFilter` logs every non-GET request with an actor at INFO.
 
@@ -112,7 +118,7 @@ resolving IDs from the `antares` schema with `JdbcTemplate`, then calls `demo/De
   line normalization and checks (one written form, `Technique.exclusiveSets`, required values, component
   techniques), `display` (usual name + remaining words, sent as `WodMovementResponse.display`),
   `effectiveRoles` (adjustments, lowest role wins; for lot D), `perSet` (value of one set by unit, usual name then
-  movement, D126), `modality` / `modalities` (per line: usual name, family, load; also `wods.modalities`, D127), `checkMovement` (no cycle, no muscle with
+  movement, D126), `patterns` (movement patterns, same lookup, then a chain's components; lot D' D177), `modality` / `modalities` (per line: usual name, family, load; also `wods.modalities`, D127), `checkMovement` (no cycle, no muscle with
   its group, roles against the joint layer).
 - Catalog rules: `WodMovement.checkVariantsAllowed` (variants allowed by the movement; used by
   `CatalogRules`, `WodCsvCodec`, `DevGymWodSeeder`; `InvalidWodMovementException` → 400), its

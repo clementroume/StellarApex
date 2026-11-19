@@ -16,7 +16,7 @@ import {NotificationService} from '../../../core/services/notification.service';
 import {HttpErrorResponse} from '@angular/common/http';
 import {PreferencesUpdateRequest} from '../../../api/antares/models/user.model';
 import {ProblemDetail} from '../../../core/models/problem-detail.model';
-import {NgIcon} from '@ng-icons/core';
+import {NgIcon, provideIcons} from '@ng-icons/core';
 import {PalettePickerComponent} from '../../../shared/component/palette-picker/palette-picker.component';
 import {FormFieldComponent} from '../../../shared/component/form-field/form-field.component';
 import {HlmButton} from '@spartan-ng/helm/button';
@@ -29,6 +29,7 @@ import {HlmNativeSelectImports} from '@spartan-ng/helm/native-select';
 import {HlmSwitchImports} from '@spartan-ng/helm/switch';
 import {BrnDialogState} from '@spartan-ng/brain/dialog';
 
+import {heroCog8Tooth, heroExclamationTriangle, heroGlobeAlt, heroKey} from '@ng-icons/heroicons/outline';
 export const passwordMatchValidator: ValidatorFn = (control: AbstractControl): ValidationErrors | null => {
   const newPassword = control.get('newPassword');
   const confirmationPassword = control.get('confirmationPassword');
@@ -36,6 +37,7 @@ export const passwordMatchValidator: ValidatorFn = (control: AbstractControl): V
 };
 
 @Component({
+  viewProviders: [provideIcons({heroCog8Tooth, heroExclamationTriangle, heroGlobeAlt, heroKey})],
   selector: 'app-settings',
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule, TranslatePipe, NgIcon, PalettePickerComponent, FormFieldComponent, HlmButton,

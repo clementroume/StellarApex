@@ -4,7 +4,7 @@ import {FormBuilder, ReactiveFormsModule, Validators} from '@angular/forms';
 import {HttpErrorResponse} from '@angular/common/http';
 import {NgTemplateOutlet} from '@angular/common';
 import {TranslatePipe, TranslateService} from '@ngx-translate/core';
-import {NgIcon} from '@ng-icons/core';
+import {NgIcon, provideIcons} from '@ng-icons/core';
 import {BehaviorSubject, debounceTime, distinctUntilChanged, skip} from 'rxjs';
 import {AdminService, UserSearchFilters} from '../../../api/antares/services/admin.service';
 import {UserResponse} from '../../../api/antares/models/user.model';
@@ -31,7 +31,9 @@ import {HlmBadge} from '@spartan-ng/helm/badge';
 import {HlmButton} from '@spartan-ng/helm/button';
 import {HlmCardImports} from '@spartan-ng/helm/card';
 import {HlmTextarea} from '@spartan-ng/helm/textarea';
+import {heroBuildingOffice, heroCheckCircle, heroExclamationTriangle, heroXMark} from '@ng-icons/heroicons/outline';
 @Component({
+  viewProviders: [provideIcons({heroBuildingOffice, heroCheckCircle, heroExclamationTriangle, heroXMark})],
   selector: 'app-support',
   standalone: true,
   imports: [HlmTextarea, HlmCardImports, HlmButton, HlmBadge, HlmAlertImports, NativeSelectDirective, HlmSpinner, ReactiveFormsModule, NgTemplateOutlet, TranslatePipe, NgIcon, SearchInputComponent],

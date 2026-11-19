@@ -1,6 +1,7 @@
 package apex.stellar.aldebaran.model.entities;
 
 import apex.stellar.aldebaran.model.enums.Category.Modality;
+import apex.stellar.aldebaran.model.enums.MovementPattern;
 import jakarta.persistence.Column;
 import jakarta.persistence.Convert;
 import jakarta.persistence.Embedded;
@@ -14,6 +15,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import java.util.EnumSet;
 import java.util.LinkedHashSet;
 import java.util.Set;
 import lombok.AllArgsConstructor;
@@ -80,6 +82,12 @@ public class MovementUsualName {
   @Enumerated(EnumType.STRING)
   @Column(name = "modality", length = 30)
   private Modality modality;
+
+  /** Movement patterns of this variant (Power Clean: no Squat), empty = the movement's (D177). */
+  @Column(name = "patterns", nullable = false, length = 300)
+  @Convert(converter = PatternSetConverter.class)
+  @Builder.Default
+  private Set<MovementPattern> patterns = EnumSet.noneOf(MovementPattern.class);
 
   /**
    * Value of one set, never null.

@@ -2,7 +2,7 @@ import {ChangeDetectionStrategy, Component, DOCUMENT, inject, OnInit, signal} fr
 import {FormBuilder, ReactiveFormsModule, Validators} from '@angular/forms';
 import {Router, RouterModule} from '@angular/router';
 import {TranslatePipe, TranslateService} from '@ngx-translate/core';
-import {NgIcon} from '@ng-icons/core';
+import {NgIcon, provideIcons} from '@ng-icons/core';
 import {HlmButton} from '@spartan-ng/helm/button';
 import {HlmCardImports} from '@spartan-ng/helm/card';
 import {HlmInputGroupImports} from '@spartan-ng/helm/input-group';
@@ -13,11 +13,13 @@ import {FormFieldComponent} from '../../../shared/component/form-field/form-fiel
 import {passwordMatchValidator} from '../register/register.component';
 import {readLinkToken} from '../auth-token';
 
+import {heroExclamationTriangle, heroKey} from '@ng-icons/heroicons/outline';
 /**
  * New password from a mailed reset link (`/auth/reset-password#token=...`). Antares ends every
  * session of the account, so the user signs in again with the new password.
  */
 @Component({
+  viewProviders: [provideIcons({heroExclamationTriangle, heroKey})],
   selector: 'app-reset-password',
   standalone: true,
   imports: [ReactiveFormsModule, RouterModule, TranslatePipe, NgIcon, HlmButton, HlmCardImports,

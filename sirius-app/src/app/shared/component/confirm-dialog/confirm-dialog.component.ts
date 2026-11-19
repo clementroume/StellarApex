@@ -1,15 +1,17 @@
 import {ChangeDetectionStrategy, Component, computed, input, output} from '@angular/core';
 import {TranslatePipe} from '@ngx-translate/core';
-import {NgIcon} from '@ng-icons/core';
+import {NgIcon, provideIcons} from '@ng-icons/core';
 import {BrnDialogState} from '@spartan-ng/brain/dialog';
 import {HlmAlertDialogImports} from '@spartan-ng/helm/alert-dialog';
 
+import {heroExclamationTriangle} from '@ng-icons/heroicons/outline';
 /**
  * Confirmation of a sensitive action (spartan alert dialog: focus trapped, Escape closes, focus
  * given back). Extra fields (e.g. typing a name to confirm) are projected between the description
  * and the buttons; `confirmDisabled` keeps the action off until they are valid.
  */
 @Component({
+  viewProviders: [provideIcons({heroExclamationTriangle})],
   selector: 'app-confirm-dialog',
   standalone: true,
   imports: [TranslatePipe, NgIcon, HlmAlertDialogImports],

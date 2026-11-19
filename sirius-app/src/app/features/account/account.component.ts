@@ -1,9 +1,11 @@
 import {ChangeDetectionStrategy, Component} from '@angular/core';
 import {RouterModule} from '@angular/router';
 import {TranslatePipe} from '@ngx-translate/core';
-import {NgIcon} from '@ng-icons/core';
+import {NgIcon, provideIcons} from '@ng-icons/core';
 
+import {heroBuildingOffice, heroCog8Tooth, heroScale, heroTrophy, heroUser} from '@ng-icons/heroicons/outline';
 @Component({
+  viewProviders: [provideIcons({heroBuildingOffice, heroCog8Tooth, heroScale, heroTrophy, heroUser})],
   selector: 'app-account',
   standalone: true,
   imports: [RouterModule, TranslatePipe, NgIcon],

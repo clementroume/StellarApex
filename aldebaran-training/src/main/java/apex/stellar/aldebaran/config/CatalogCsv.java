@@ -8,9 +8,11 @@ import apex.stellar.aldebaran.model.entities.MovementMuscle.MuscleRole;
 import apex.stellar.aldebaran.model.entities.MovementRoleAdjustment;
 import apex.stellar.aldebaran.model.entities.MovementRoleAdjustment.TriggerKind;
 import apex.stellar.aldebaran.model.entities.Muscle;
+import apex.stellar.aldebaran.model.entities.PatternSetConverter;
 import apex.stellar.aldebaran.model.entities.PerSet;
 import apex.stellar.aldebaran.model.enums.JointAction;
 import apex.stellar.aldebaran.model.enums.JointAction.Regime;
+import apex.stellar.aldebaran.model.enums.MovementPattern;
 import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -32,7 +34,7 @@ public final class CatalogCsv {
   public static final String[] USUAL_NAME_HEADERS = {
     "movement", "name_en", "name_fr", "search_terms", "techniques", "equipment",
     "description_en", "description_fr", "video_url",
-    "reps_per_set", "meters_per_set", "seconds_per_set", "calories_per_set", "modality"
+    "reps_per_set", "meters_per_set", "seconds_per_set", "calories_per_set", "modality", "patterns"
   };
 
   /** Columns of one set's value (D126), in {@code movements.csv} and the usual names file. */
@@ -236,6 +238,26 @@ public final class CatalogCsv {
 
   private static Integer integer(String cell) {
     return cell == null || cell.isBlank() ? null : Integer.valueOf(cell.trim());
+  }
+
+  /**
+   * Parses space-separated movement patterns (lot D', D177).
+   *
+   * @param cell The cell, possibly null.
+   * @return The patterns, possibly empty.
+   */
+  public static Set<MovementPattern> parsePatterns(String cell) {
+    return new PatternSetConverter().convertToEntityAttribute(cell);
+  }
+
+  /**
+   * Formats movement patterns as one space-separated cell.
+   *
+   * @param patterns The patterns.
+   * @return The cell, empty when none.
+   */
+  public static String formatPatterns(Set<MovementPattern> patterns) {
+    return new PatternSetConverter().convertToDatabaseColumn(patterns);
   }
 
   /**

@@ -27,6 +27,7 @@ import apex.stellar.aldebaran.model.entities.MovementUsualName;
 import apex.stellar.aldebaran.model.entities.Muscle;
 import apex.stellar.aldebaran.model.enums.Category;
 import apex.stellar.aldebaran.model.enums.Equipment;
+import apex.stellar.aldebaran.model.enums.MovementPattern;
 import apex.stellar.aldebaran.model.enums.Technique;
 import apex.stellar.aldebaran.repository.MovementRepository;
 import apex.stellar.aldebaran.repository.MuscleRepository;
@@ -34,6 +35,7 @@ import apex.stellar.aldebaran.repository.WodRepository;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -427,9 +429,14 @@ public class MovementService {
                   .videoUrl(dto.videoUrl())
                   .perSet(dto.perSet())
                   .modality(dto.modality())
+                  .patterns(patternSet(dto.patterns()))
                   .build());
     }
     CatalogRules.checkMovement(movement);
+  }
+
+  private static Set<MovementPattern> patternSet(Set<MovementPattern> patterns) {
+    return patterns.isEmpty() ? EnumSet.noneOf(MovementPattern.class) : EnumSet.copyOf(patterns);
   }
 
   private static Map<Long, List<String>> namesById(List<Object[]> rows) {

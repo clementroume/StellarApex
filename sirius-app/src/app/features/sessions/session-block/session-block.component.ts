@@ -2,7 +2,7 @@ import {ChangeDetectionStrategy, Component, computed, effect, inject, input, out
 import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
 import {RouterLink} from '@angular/router';
 import {TranslatePipe, TranslateService} from '@ngx-translate/core';
-import {NgIcon} from '@ng-icons/core';
+import {NgIcon, provideIcons} from '@ng-icons/core';
 import {HlmBadge} from '@spartan-ng/helm/badge';
 import {HlmButton} from '@spartan-ng/helm/button';
 import {SessionBlockResponse, SessionLogResponse} from '../../../api/aldebaran/models/session.model';
@@ -21,6 +21,7 @@ import {WodWhiteboardComponent} from '../../wods/wod-whiteboard/wod-whiteboard.c
 import {localizedText} from '../../wods/wod.utils';
 import {blockTheme, isTextKind} from '../session.utils';
 
+import {heroCheckBadge, heroClock, heroPlus, heroTrophy} from '@ng-icons/heroicons/outline';
 /**
  * One block of a session: kind, label and theme, then its text (warm-up, cool down) or its WOD on the
  * whiteboard. A scored block shows the user's scores and the score form (`WodScoresStore` per block),
@@ -28,6 +29,7 @@ import {blockTheme, isTextKind} from '../session.utils';
  * submitted for verification. Rights come from Aldebaran (WOD and score capabilities).
  */
 @Component({
+  viewProviders: [provideIcons({heroCheckBadge, heroClock, heroPlus, heroTrophy})],
   selector: 'app-session-block',
   standalone: true,
   imports: [RouterLink, TranslatePipe, NgIcon, HlmBadge, HlmButton, ScoreHistoryComponent, ScoreFormComponent,

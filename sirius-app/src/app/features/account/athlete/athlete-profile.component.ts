@@ -1,7 +1,7 @@
 import {ChangeDetectionStrategy, Component, computed, inject, OnInit, signal} from '@angular/core';
 import {FormBuilder, ReactiveFormsModule, Validators} from '@angular/forms';
 import {TranslatePipe, TranslateService} from '@ngx-translate/core';
-import {NgIcon} from '@ng-icons/core';
+import {NgIcon, provideIcons} from '@ng-icons/core';
 import {HlmButton} from '@spartan-ng/helm/button';
 import {HlmCardImports} from '@spartan-ng/helm/card';
 import {HlmInputGroupImports} from '@spartan-ng/helm/input-group';
@@ -13,6 +13,7 @@ import {UnitService} from '../../../core/services/unit.service';
 import {problemDetailOf} from '../../../core/models/problem-detail.model';
 import {FormFieldComponent} from '../../../shared/component/form-field/form-field.component';
 
+import {heroArrowUp, heroCalendarDays, heroLockClosed, heroPlus, heroScale, heroTrash, heroTrophy} from '@ng-icons/heroicons/outline';
 /**
  * Athlete profile (D31), all optional: division (men's/women's loads highlighted, separate
  * leaderboards), birth year, height and body weight history. Only the division is shared (it is
@@ -20,6 +21,7 @@ import {FormFieldComponent} from '../../../shared/component/form-field/form-fiel
  * only). Heights and weights are typed and shown in the user's unit system, stored in cm / kg.
  */
 @Component({
+  viewProviders: [provideIcons({heroArrowUp, heroCalendarDays, heroLockClosed, heroPlus, heroScale, heroTrash, heroTrophy})],
   selector: 'app-athlete-profile',
   standalone: true,
   imports: [ReactiveFormsModule, TranslatePipe, NgIcon, HlmButton, HlmCardImports, HlmInputGroupImports,

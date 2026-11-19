@@ -4,7 +4,7 @@ import {Location} from '@angular/common';
 import {Router, RouterLink} from '@angular/router';
 import {FormsModule} from '@angular/forms';
 import {TranslatePipe, TranslateService} from '@ngx-translate/core';
-import {NgIcon} from '@ng-icons/core';
+import {NgIcon, provideIcons} from '@ng-icons/core';
 import {HlmBadge} from '@spartan-ng/helm/badge';
 import {HlmButton} from '@spartan-ng/helm/button';
 import {HlmInput} from '@spartan-ng/helm/input';
@@ -26,6 +26,7 @@ import {localizedText} from '../../wods/wod.utils';
 import {SessionBlockComponent} from '../session-block/session-block.component';
 import {dayLabel, localDate, sessionDateLabel, toLocalInput} from '../session.utils';
 
+import {heroBuildingOffice, heroCheckCircle, heroEye, heroLockClosed, heroPencilSquare, heroTrash} from '@ng-icons/heroicons/outline';
 /**
  * A session: frame (day or week, discipline, block themes), then the content when the visibility
  * policy shows it to the user. "Séance faite" creates the user's journal (every block checked);
@@ -33,6 +34,7 @@ import {dayLabel, localDate, sessionDateLabel, toLocalInput} from '../session.ut
  * visibility (always). Every flag comes from `SessionResponse.capabilities`.
  */
 @Component({
+  viewProviders: [provideIcons({heroBuildingOffice, heroCheckCircle, heroEye, heroLockClosed, heroPencilSquare, heroTrash})],
   selector: 'app-session-detail',
   standalone: true,
   imports: [RouterLink, FormsModule, TranslatePipe, NgIcon, HlmBadge, HlmButton, HlmInput, HlmSpinner, PageComponent,

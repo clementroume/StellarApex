@@ -250,6 +250,30 @@ public class SessionSecurity {
   }
 
   /**
+   * Evaluates if the user reads the balance of the gym's programming (lot D', D167): staff of any
+   * role, or a platform admin (the gym is always explicit).
+   *
+   * @param gymId The gym.
+   * @param principal The authenticated user.
+   * @return {@code true} if allowed.
+   */
+  public boolean canReadProgramming(Long gymId, AldebaranUserPrincipal principal) {
+    return securityService.isAdmin(principal) || isStaff(principal, gymId);
+  }
+
+  /**
+   * Evaluates if the user reorders the gym's sessions (lot D', D167): WOD_WRITE, or a platform
+   * admin.
+   *
+   * @param gymId The gym.
+   * @param principal The authenticated user.
+   * @return {@code true} if allowed.
+   */
+  public boolean canReorder(Long gymId, AldebaranUserPrincipal principal) {
+    return securityService.isAdmin(principal) || securityService.hasGymPermission(principal, gymId, WOD_WRITE);
+  }
+
+  /**
    * Staff of the gym: any role but athlete (Owner, Programmer, Coach), permissions aside.
    *
    * @param principal The authenticated user.

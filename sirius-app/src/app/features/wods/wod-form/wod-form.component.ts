@@ -4,7 +4,7 @@ import {AbstractControl, FormArray, FormBuilder, ReactiveFormsModule, Validation
 import {ActivatedRoute, Router, RouterModule} from '@angular/router';
 import {HttpContext, HttpErrorResponse} from '@angular/common/http';
 import {TranslatePipe, TranslateService} from '@ngx-translate/core';
-import {NgIconComponent} from '@ng-icons/core';
+import {NgIconComponent, provideIcons} from '@ng-icons/core';
 import {MovementComboboxComponent} from '../../../shared/component/movement-combobox/movement-combobox.component';
 import {toggleVariant, VariantPickerComponent} from '../../../shared/component/variant-picker/variant-picker.component';
 import {catchError, debounceTime, distinctUntilChanged, forkJoin, map, of, switchMap, tap} from 'rxjs';
@@ -43,7 +43,10 @@ import {HlmButton} from '@spartan-ng/helm/button';
 import {HlmCardImports} from '@spartan-ng/helm/card';
 import {HlmInput} from '@spartan-ng/helm/input';
 import {HlmTextarea} from '@spartan-ng/helm/textarea';
+import {heroArrowDown, heroArrowUp, heroBuildingOffice, heroGlobeAlt, heroLockClosed, heroPlus, heroTrash, heroTrophy} from '@ng-icons/heroicons/outline';
+import {hugeCircleArrowLeft02} from '@ng-icons/huge-icons';
 @Component({
+  viewProviders: [provideIcons({heroArrowDown, heroArrowUp, heroBuildingOffice, heroGlobeAlt, heroLockClosed, heroPlus, heroTrash, heroTrophy, hugeCircleArrowLeft02})],
   selector: 'app-wod-form',
   standalone: true,
   imports: [HlmTextarea, HlmInput, HlmCardImports, HlmButton, HlmBadge, NativeSelectDirective, HlmSpinner, ReactiveFormsModule, RouterModule, TranslatePipe, NgIconComponent, VariantPickerComponent, MovementComboboxComponent, ScaledLineComponent],

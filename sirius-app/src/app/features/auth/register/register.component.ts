@@ -21,6 +21,8 @@ import {HlmInputGroupImports} from '@spartan-ng/helm/input-group';
 import {FormFieldComponent} from '../../../shared/component/form-field/form-field.component';
 import {forwardableReturnUrl, resolveReturnUrl} from '../return-url';
 
+import {provideIcons} from '@ng-icons/core';
+import {heroEnvelope, heroKey, heroUser} from '@ng-icons/heroicons/outline';
 export const passwordMatchValidator: ValidatorFn = (control: AbstractControl): ValidationErrors | null => {
   const password = control.get('password');
   const confirmation = control.get('confirmationPassword');
@@ -30,6 +32,7 @@ export const passwordMatchValidator: ValidatorFn = (control: AbstractControl): V
 };
 
 @Component({
+  viewProviders: [provideIcons({heroEnvelope, heroKey, heroUser})],
   selector: 'app-register',
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule, RouterModule, TranslatePipe, HlmButton, HlmCardImports,

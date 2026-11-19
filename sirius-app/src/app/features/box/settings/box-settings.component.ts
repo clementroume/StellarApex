@@ -3,7 +3,7 @@ import {Router} from '@angular/router';
 import {Observable} from 'rxjs';
 import {FormBuilder, ReactiveFormsModule, Validators} from '@angular/forms';
 import {TranslatePipe, TranslateService} from '@ngx-translate/core';
-import {NgIcon} from '@ng-icons/core';
+import {NgIcon, provideIcons} from '@ng-icons/core';
 import {HlmAlertImports} from '@spartan-ng/helm/alert';
 import {HlmButton} from '@spartan-ng/helm/button';
 import {HlmCardImports} from '@spartan-ng/helm/card';
@@ -28,6 +28,7 @@ import {NativeSelectDirective} from '../../../shared/component/native-select/nat
 import {StaffGymPickerComponent, staffGymSelection} from '../staff-gym';
 import {SessionSettingsCardComponent} from '../../sessions/session-settings/session-settings-card.component';
 
+import {heroArrowPath, heroArrowsRightLeft, heroBuildingOffice, heroClipboardDocument, heroClock, heroExclamationTriangle, heroKey, heroLink, heroTrash} from '@ng-icons/heroicons/outline';
 /** Sensitive action waiting for confirmation. */
 type SettingsDialog = 'regenerate' | 'transfer' | 'delete';
 
@@ -37,6 +38,7 @@ type SettingsDialog = 'regenerate' | 'transfer' | 'delete';
  * (ownership transfer to a member Antares marks `canBecomeHolder`, deletion).
  */
 @Component({
+  viewProviders: [provideIcons({heroArrowPath, heroArrowsRightLeft, heroBuildingOffice, heroClipboardDocument, heroClock, heroExclamationTriangle, heroKey, heroLink, heroTrash})],
   selector: 'app-box-settings',
   standalone: true,
   imports: [ReactiveFormsModule, TranslatePipe, NgIcon, HlmAlertImports, HlmButton, HlmCardImports, HlmInputGroupImports,

@@ -1,15 +1,15 @@
 import {ChangeDetectionStrategy, Component, computed, inject, OnInit, signal} from '@angular/core';
 import {CommonModule} from '@angular/common';
-import {FormArray, FormBuilder, ReactiveFormsModule, Validators} from '@angular/forms';
+import {AbstractControl, FormArray, FormBuilder, ReactiveFormsModule, Validators} from '@angular/forms';
 import {ActivatedRoute, Router, RouterModule} from '@angular/router';
 import {HttpErrorResponse} from '@angular/common/http';
 import {TranslatePipe, TranslateService} from '@ngx-translate/core';
-import {NgIconComponent} from '@ng-icons/core';
+import {NgIconComponent, provideIcons} from '@ng-icons/core';
 import {MovementService} from '../../../api/aldebaran/services/movement.service';
 import {MuscleService} from '../../../api/aldebaran/services/muscle.service';
 import {NotificationService} from '../../../core/services/notification.service';
 import {MuscleResponse} from '../../../api/aldebaran/models/muscle.model';
-import {MovementRequest, MovementComponent, MovementJointAction, MovementResponse, MovementSummaryResponse, PerSet, RoleAdjustment, UsualName, UsualNameOption} from '../../../api/aldebaran/models/movement.model';
+import {MovementRequest, MovementComponent, MovementJointAction, MovementPattern, MovementResponse, MovementSummaryResponse, PATTERN_AXES, PerSet, RoleAdjustment, UsualName, UsualNameOption} from '../../../api/aldebaran/models/movement.model';
 import {ProblemDetail} from '../../../core/models/problem-detail.model';
 import {forkJoin} from 'rxjs';
 import {MovementComboboxComponent} from '../../../shared/component/movement-combobox/movement-combobox.component';
@@ -22,7 +22,10 @@ import {HlmButton} from '@spartan-ng/helm/button';
 import {HlmInput} from '@spartan-ng/helm/input';
 import {HlmTextarea} from '@spartan-ng/helm/textarea';
 import {HlmCardImports} from '@spartan-ng/helm/card';
+import {heroPlus, heroTrash, heroXMark} from '@ng-icons/heroicons/outline';
+import {hugeCircleArrowLeft02} from '@ng-icons/huge-icons';
 @Component({
+  viewProviders: [provideIcons({heroPlus, heroTrash, heroXMark, hugeCircleArrowLeft02})],
   selector: 'app-movement-form',
   standalone: true,
   imports: [MovementComboboxComponent, VariantPickerComponent, HlmCardImports, HlmTextarea, HlmInput, HlmButton, HlmBadge, NativeSelectDirective, HlmSpinner, CommonModule, ReactiveFormsModule, RouterModule, TranslatePipe, NgIconComponent],
@@ -71,6 +74,8 @@ export class MovementFormComponent implements OnInit {
   muscleRoles = signal<string[]>([]);
   /** Modalities a usual name may set (CrossFit Level 1). */
   readonly modalities = ['WEIGHTLIFTING', 'GYMNASTICS', 'MONOSTRUCTURAL'] as const;
+  /** Axes and details of the programming radar (lot D', D177). */
+  readonly patternAxes = PATTERN_AXES;
   /** Units of one set's value, in the order of the inputs. */
   readonly perSetUnits = ['reps', 'meters', 'seconds', 'calories'] as const;
 
@@ -91,6 +96,7 @@ export class MovementFormComponent implements OnInit {
     usualNames: this.fb.array([]),
     components: this.fb.array([]),
     perSet: this.perSetGroup(),
+    patterns: [[] as MovementPattern[]],
     acceptedMovementIds: [[] as number[]],
     // --- Internationalized Content ---
     descriptionEn: ['', [Validators.maxLength(2000)]],
@@ -164,6 +170,12 @@ export class MovementFormComponent implements OnInit {
     return (this.movementForm.getRawValue().techniques.includes(value) ? 'MOVEMENT.TECHNIQUES.' : 'MOVEMENT.EQUIPMENT.') + value;
   }
 
+  /** Adds or removes a pattern of the movement or of a usual name. */
+  togglePattern(control: AbstractControl | null, pattern: MovementPattern): void {
+    const value = (control?.value ?? []) as MovementPattern[];
+    control?.setValue(value.includes(pattern) ? value.filter(p => p !== pattern) : [...value, pattern]);
+  }
+
   toggleRule(rule: string): void {
     const control = this.movementForm.controls.requiredRules;
     control.setValue(control.value.includes(rule) ? control.value.filter(r => r !== rule) : [...control.value, rule]);
@@ -189,7 +201,8 @@ export class MovementFormComponent implements OnInit {
       descriptionFr: [value?.descriptionFr ?? null],
       videoUrl: [value?.videoUrl ?? null],
       perSet: this.perSetGroup(value?.perSet),
-      modality: [value?.modality ?? null as string | null]
+      modality: [value?.modality ?? null as string | null],
+      patterns: [value?.patterns ?? [] as MovementPattern[]]
     }));
   }
 
@@ -308,6 +321,7 @@ export class MovementFormComponent implements OnInit {
           dumbbellBases: (movement.dumbbellBases ?? [])
             .map(b => `${b.loadPosition}=${b.implementCount ?? ''}`).join(', '),
           acceptedMovementIds: (movement.acceptedMovements ?? []).map(a => a.id),
+          patterns: movement.patterns ?? [],
           perSet: {
             reps: movement.perSet?.reps ?? null,
             meters: movement.perSet?.meters ?? null,

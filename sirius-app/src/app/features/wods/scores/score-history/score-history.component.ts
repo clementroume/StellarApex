@@ -1,6 +1,6 @@
 import {ChangeDetectionStrategy, Component, effect, inject, signal} from '@angular/core';
 import {TranslatePipe, TranslateService} from '@ngx-translate/core';
-import {NgIconComponent} from '@ng-icons/core';
+import {NgIconComponent, provideIcons} from '@ng-icons/core';
 import {ScoreResponse} from '../../../../api/aldebaran/models/score.model';
 import {UnitService} from '../../../../core/services/unit.service';
 import {UserService} from '../../../../api/antares/services/user.service';
@@ -14,7 +14,9 @@ import {formatDuration} from '../../wod.utils';
  */
 import {HlmBadge} from '@spartan-ng/helm/badge';
 import {HlmButton} from '@spartan-ng/helm/button';
+import {heroCheckBadge, heroClock, heroPencilSquare, heroTrash, heroTrophy, heroUsers} from '@ng-icons/heroicons/outline';
 @Component({
+  viewProviders: [provideIcons({heroCheckBadge, heroClock, heroPencilSquare, heroTrash, heroTrophy, heroUsers})],
   selector: 'app-score-history',
   standalone: true,
   imports: [HlmButton, HlmBadge, TranslatePipe, NgIconComponent],

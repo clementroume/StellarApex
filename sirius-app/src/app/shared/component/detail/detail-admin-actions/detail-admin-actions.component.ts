@@ -1,10 +1,12 @@
 import {ChangeDetectionStrategy, Component, input, output} from '@angular/core';
 import {RouterModule} from '@angular/router';
 import {TranslatePipe} from '@ngx-translate/core';
-import {NgIcon} from '@ng-icons/core';
+import {NgIcon, provideIcons} from '@ng-icons/core';
 
 import {HlmButton} from '@spartan-ng/helm/button';
+import {heroPencilSquare, heroTrash} from '@ng-icons/heroicons/outline';
 @Component({
+  viewProviders: [provideIcons({heroPencilSquare, heroTrash})],
   selector: 'app-detail-admin-actions',
   standalone: true,
   imports: [RouterModule, TranslatePipe, NgIcon, HlmButton],

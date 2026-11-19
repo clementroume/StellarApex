@@ -1,6 +1,6 @@
 import {ChangeDetectionStrategy, Component, computed, inject, signal} from '@angular/core';
 import {TranslatePipe, TranslateService} from '@ngx-translate/core';
-import {NgIcon} from '@ng-icons/core';
+import {NgIcon, provideIcons} from '@ng-icons/core';
 import {HlmAlertImports} from '@spartan-ng/helm/alert';
 import {HlmButton} from '@spartan-ng/helm/button';
 import {AuthService} from '../../../api/antares/services/auth.service';
@@ -8,12 +8,14 @@ import {UserService} from '../../../api/antares/services/user.service';
 import {NotificationService} from '../../../core/services/notification.service';
 import {problemDetailOf} from '../../../core/models/problem-detail.model';
 
+import {heroEnvelope} from '@ng-icons/heroicons/outline';
 /**
  * Tells an unverified user that joining or requesting a box/prog needs a confirmed address (Antares
  * answers 403 EMAIL_NOT_VERIFIED otherwise), with a button to mail a new link. Shows nothing once
  * the address is verified.
  */
 @Component({
+  viewProviders: [provideIcons({heroEnvelope})],
   selector: 'app-email-verification-notice',
   standalone: true,
   imports: [TranslatePipe, NgIcon, HlmAlertImports, HlmButton],

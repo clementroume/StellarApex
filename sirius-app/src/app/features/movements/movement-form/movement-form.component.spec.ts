@@ -46,7 +46,8 @@ describe('MovementFormComponent', () => {
         {muscle: {id: 1, medicalName: 'Quads'}, role: 'AGONIST'}
       ],
       perSet: {reps: 10, meters: null, seconds: 60, calories: null},
-      usualNames: [{nameEn: 'Air Squat', techniques: [], equipment: [], perSet: {reps: 20}, modality: 'GYMNASTICS'}]
+      patterns: ['SQUAT'],
+      usualNames: [{nameEn: 'Air Squat', techniques: [], equipment: [], perSet: {reps: 20}, modality: 'GYMNASTICS', patterns: ['SQUAT', 'JUMP']}]
     } as any));
     movementServiceSpy.getMovements.mockReturnValue(of([
       {id: 2, name: 'Clean', category: 'CLEAN'}, {id: 3, name: 'Jerk', category: 'PRESS_AND_JERK'}
@@ -221,6 +222,15 @@ describe('MovementFormComponent', () => {
       expect(payload.perSet).toEqual({reps: 10, meters: null, seconds: 60, calories: null});
       expect(payload.usualNames![0].perSet).toEqual({reps: 20, meters: null, seconds: null, calories: null});
       expect(payload.usualNames![0].modality).toBe('GYMNASTICS');
+    });
+
+    it('should load, toggle and send the movement patterns of the movement and its usual names', () => {
+      component.togglePattern(component.movementForm.controls.patterns, 'HINGE');
+      component.togglePattern(component.usualNamesArray.at(0).get('patterns'), 'JUMP');
+      component.onSubmit();
+      const payload = movementServiceSpy.updateMovement.mock.calls[0][1];
+      expect(payload.patterns).toEqual(['SQUAT', 'HINGE']);
+      expect(payload.usualNames![0].patterns).toEqual(['SQUAT']);
     });
   });
 });

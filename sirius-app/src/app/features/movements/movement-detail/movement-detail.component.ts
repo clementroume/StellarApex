@@ -2,7 +2,7 @@ import {ChangeDetectionStrategy, Component, computed, effect, inject, input, sig
 import {TranslatePipe, TranslateService} from '@ngx-translate/core';
 import {Router, RouterModule} from '@angular/router';
 import {Location, NgOptimizedImage} from '@angular/common';
-import {NgIconComponent} from '@ng-icons/core';
+import {NgIconComponent, provideIcons} from '@ng-icons/core';
 import {MovementReferenceData, MovementResponse, MovementVariant, UsualName, VariantMuscle} from '../../../api/aldebaran/models/movement.model';
 import {toggleVariant, VariantPickerComponent} from '../../../shared/component/variant-picker/variant-picker.component';
 import {AccessService} from '../../../core/services/access.service';
@@ -22,7 +22,9 @@ import {DetailStateComponent} from '../../../shared/component/detail/detail-stat
 
 import {HlmBadge} from '@spartan-ng/helm/badge';
 import {HlmButton} from '@spartan-ng/helm/button';
+import {heroPlay} from '@ng-icons/heroicons/outline';
 @Component({
+  viewProviders: [provideIcons({heroPlay})],
   selector: 'app-movement-detail',
   standalone: true,
   imports: [VariantPickerComponent, HlmButton, HlmBadge, TranslatePipe, RouterModule, NgIconComponent, NgOptimizedImage, DetailAdminActionsComponent, DetailCardComponent, DetailHeaderComponent, DetailStateComponent, LiftRecordsComponent],

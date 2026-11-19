@@ -1,10 +1,12 @@
 import {ChangeDetectionStrategy, Component, input} from '@angular/core';
-import {NgIcon} from '@ng-icons/core';
+import {NgIcon, provideIcons} from '@ng-icons/core';
 import {TranslatePipe} from '@ngx-translate/core';
 import {HlmEmptyImports} from '@spartan-ng/helm/empty';
 
+import {heroClock} from '@ng-icons/heroicons/outline';
 /** Placeholder for a space whose feature comes in a later lot. */
 @Component({
+  viewProviders: [provideIcons({heroClock})],
   selector: 'app-coming-soon',
   standalone: true,
   imports: [NgIcon, TranslatePipe, HlmEmptyImports],

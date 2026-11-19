@@ -4,6 +4,7 @@ import apex.stellar.aldebaran.model.entities.Session;
 import apex.stellar.aldebaran.model.entities.Session.SessionType;
 import java.time.LocalDate;
 import java.util.Collection;
+import java.util.List;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -66,4 +67,23 @@ public interface SessionRepository extends JpaRepository<Session, Long> {
       @Param("memberGymIds") Collection<Long> memberGymIds,
       @Param("isAdmin") boolean isAdmin,
       Pageable pageable);
+
+  /**
+   * Every session of a gym proposed on at least one day of a range, with its blocks: the
+   * programming read by the coach's balance (lot D', D161). No visibility filter: the caller checks
+   * that the user is staff of the gym.
+   *
+   * @param gymId The gym.
+   * @param from First day.
+   * @param to Last day.
+   * @return The sessions, by date.
+   */
+  @Query(
+      """
+      SELECT DISTINCT s FROM Session s LEFT JOIN FETCH s.blocks
+      WHERE s.gymId = :gymId AND s.endDate >= :from AND s.date <= :to
+      ORDER BY s.date
+      """)
+  List<Session> findProgramming(
+      @Param("gymId") Long gymId, @Param("from") LocalDate from, @Param("to") LocalDate to);
 }

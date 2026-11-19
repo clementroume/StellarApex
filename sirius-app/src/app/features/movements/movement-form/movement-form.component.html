@@ -233,6 +233,7 @@
           <input type="text" formControlName="dumbbellBases" hlmInput class="h-11 md:h-10" placeholder="FRONT_RACK=2, OVERHEAD=1, =2"/>
         </label>
         <ng-container *ngTemplateOutlet="perSetFields; context: {group: movementForm.controls.perSet}"></ng-container>
+        <ng-container *ngTemplateOutlet="patternFields; context: {control: movementForm.controls.patterns, hint: 'MOVEMENT.PATTERNS.HINT'}"></ng-container>
       </div>
     </div>
 
@@ -296,6 +297,9 @@
               </select>
               <div class="sm:col-span-2">
                 <ng-container *ngTemplateOutlet="perSetFields; context: {group: ctrl.get('perSet')}"></ng-container>
+              </div>
+              <div class="sm:col-span-2">
+                <ng-container *ngTemplateOutlet="patternFields; context: {control: ctrl.get('patterns'), hint: 'MOVEMENT.PATTERNS.HINT_USUAL'}"></ng-container>
               </div>
             </div>
           }
@@ -390,6 +394,27 @@
       @for (unit of perSetUnits; track unit) {
         <input type="number" min="1" [formControlName]="unit" hlmInput class="h-11 md:h-10"
                [placeholder]="'MOVEMENT.PER_SET.' + unit | translate" [attr.aria-label]="'MOVEMENT.PER_SET.' + unit | translate"/>
+      }
+    </div>
+  </fieldset>
+</ng-template>
+
+<!-- Movement patterns of the programming radar (lot D', D177); shared by the movement and its usual names -->
+<ng-template #patternFields let-control="control" let-hint="hint">
+  <fieldset class="flex flex-col gap-1.5">
+    <legend class="text-sm font-medium">{{ 'MOVEMENT.PATTERNS.TITLE' | translate }}</legend>
+    <p class="text-xs text-muted-foreground">{{ hint | translate }}</p>
+    <div class="flex flex-col gap-1.5">
+      @for (group of patternAxes; track group.axis) {
+        <div class="flex flex-wrap items-center gap-1.5" role="group" [attr.aria-label]="'MOVEMENT.PATTERNS.AXES.' + group.axis | translate">
+          <span class="w-24 shrink-0 text-xs text-muted-foreground">{{ 'MOVEMENT.PATTERNS.AXES.' + group.axis | translate }}</span>
+          @for (pattern of group.patterns; track pattern) {
+            <button type="button" hlmBtn variant="outline" size="xs" class="aria-pressed:border-secondary aria-pressed:bg-secondary/15"
+                    [attr.aria-pressed]="(control.value ?? []).includes(pattern)" (click)="togglePattern(control, pattern)">
+              {{ 'MOVEMENT.PATTERNS.' + pattern | translate }}
+            </button>
+          }
+        </div>
       }
     </div>
   </fieldset>

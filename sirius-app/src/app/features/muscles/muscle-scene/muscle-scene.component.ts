@@ -1,17 +1,19 @@
 import {ChangeDetectionStrategy, Component, computed, effect, inject, input, signal} from '@angular/core';
-import {NgIcon} from '@ng-icons/core';
+import {NgIcon, provideIcons} from '@ng-icons/core';
 import {TranslatePipe} from '@ngx-translate/core';
 import {ThemeService} from '../../../core/services/theme.service';
 import {MuscleCreditComponent} from '../muscle-credit/muscle-credit.component';
 import {canShow3d, muscleImageUrl, muscleModelEntry, muscleRegionEntry, muscleRegionUrl} from '../muscle-model/muscle-model';
 import {MuscleViewerComponent} from '../muscle-viewer/muscle-viewer.component';
 
+import {heroEye} from '@ng-icons/heroicons/outline';
 /**
  * The square scene of a muscle (`code`) or of a region of the catalog (`region`): its image first, then the 3D model
  * takes over. The image stays as the fallback (no WebGL, data saver, model failure). A muscle missing from the model
  * shows its own image or an icon.
  */
 @Component({
+  viewProviders: [provideIcons({heroEye})],
   selector: 'app-muscle-scene',
   standalone: true,
   imports: [NgIcon, TranslatePipe, MuscleCreditComponent, MuscleViewerComponent],

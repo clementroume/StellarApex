@@ -95,8 +95,11 @@ the dev proxy targets the local Traefik `https://localhost` with `Host: stellar.
 - Every visible string goes through `| translate`; add keys to BOTH `src/assets/i18n/fr.json` and
   `en.json` (2-space JSON, keys grouped by feature: `GLOBAL`, `NAVBAR`, `MOVEMENT`, `WOD`, `ADMIN`...).
   Gym roles, statuses and permissions (label + description) are shared under `GYM.*`.
-- Icons must be registered in `APP_ICONS` (`app.config.ts`) from `@ng-icons/heroicons/outline` or
-  `@ng-icons/huge-icons`; check the name exists in `node_modules/@ng-icons/heroicons/types`.
+- Icons (D160, initial bundle budget): each component declares the icons it names, including names passed to
+  shared components, with `viewProviders: [provideIcons({...})]` (imported from `@ng-icons/heroicons/outline` or
+  `@ng-icons/huge-icons`; check the name exists in `node_modules/@ng-icons/heroicons/types`); descendants inherit
+  them. `APP_ICONS` (`app.config.ts`) = layout icons only, copied in `core/layout/layout-icons.ts` (checked by its
+  spec): importing a single icon from a package in eager code puts the whole package module in `main`.
 - Lists: `BYPASS_LOADER` HttpContext to skip the global loader; UI state worth keeping across
   navigation lives in service signals (`savedSearchQuery`...); services expose `refreshNeeded$` +
   `notifyRefresh()` so forms/details can refresh lists.
@@ -171,6 +174,15 @@ the dev proxy targets the local Traefik `https://localhost` with `Host: stellar.
   muscles uses the accent (`--heat-colour` read by `body-map`).
   Line texts (D121): the WOD form asks `BalanceService.readableTexts` (debounced, blank texts not asked) and warns
   under the field, never blocks; admins see every uncounted line on `/admin/balance` (`getUncountedLines`).
+- Programming balance (`features/programming`, lot D', `/box/programming`, staff of any role: `AccessService.staffGyms()`,
+  `staffGymSelection('STAFF')`, `gymPermissionGuard('STAFF')`): `ProgrammingService.getBalance` (cycle start = Monday of the
+  device's week, 4-8 weeks, RX / Scaled, optional blocks, profile days); `pattern-radar` (SVG drawn with the theme variables
+  `var(--color-*)`, no new Tailwind utility; axis buttons open the details), `programming.utils.ts` (axes order =
+  Aldebaran's `MovementPattern.Axis`, `PATTERN_AXES` in `movement.model.ts`). Reuses `review-metcons` (always shown, `emptyKey`
+  explains that a For Time without time cap gives no minute) and `review-modalities`. Desktop: two independent stacks
+  (radar + regions | profiles + metcons + modalities) that dissolve on a phone (`contents` + `order`). Notes for a
+  partial cycle (`programmedWeeks`), no official Scaled (`scaledLines` = 0: Scaled disabled) and missing profile sizes.
+  Alerts and thresholds come from Aldebaran only.
 - WOD catalogue (`/wods`) = public WODs only: family chips with counts (`WodFacets.categoryCounts`),
   format then sub-category chips, rows with a movement preview, competitions grouped by edition
   (`editionYear`, latest first, `sort=title,desc`), numbered pagination (`GET /wods/count`; page and

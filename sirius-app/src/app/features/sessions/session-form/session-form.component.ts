@@ -6,7 +6,7 @@ import {HttpErrorResponse} from '@angular/common/http';
 import {ActivatedRoute, Router, RouterLink} from '@angular/router';
 import {FormArray, FormControl, FormGroup, ReactiveFormsModule, Validators} from '@angular/forms';
 import {TranslatePipe, TranslateService} from '@ngx-translate/core';
-import {NgIcon} from '@ng-icons/core';
+import {NgIcon, provideIcons} from '@ng-icons/core';
 import {HlmButton} from '@spartan-ng/helm/button';
 import {HlmInput} from '@spartan-ng/helm/input';
 import {HlmTextarea} from '@spartan-ng/helm/textarea';
@@ -35,6 +35,7 @@ import {StaffGymPickerComponent, staffGymSelection} from '../../box/staff-gym';
 import {WodQuickFormComponent} from '../../wods/wod-quick-form/wod-quick-form.component';
 import {addDays, isTextKind, localDate, mondayOf, shortDay, toLocalInput} from '../session.utils';
 
+import {heroArrowDown, heroArrowUp, heroEye, heroLockClosed, heroMagnifyingGlass, heroPencilSquare, heroPlus, heroTrash, heroXMark} from '@ng-icons/heroicons/outline';
 const DISCIPLINES: Discipline[] = ['CROSSFIT', 'WEIGHTLIFTING', 'STRENGTH', 'GYMNASTICS', 'ENDURANCE', 'HYROX',
   'MOBILITY', 'BODYBUILDING', 'STRONGMAN', 'OTHER'];
 const ALL_POLICIES: VisibilityPolicy[] = ['ADVANCE', 'DAY_OF', 'AFTER', 'AFTER_PARTICIPANTS', 'PARTICIPANTS_ONLY'];
@@ -70,6 +71,7 @@ type BlockForm = FormGroup<{
  * Mobile first: blocks stack, reordered with up/down buttons.
  */
 @Component({
+  viewProviders: [provideIcons({heroArrowDown, heroArrowUp, heroEye, heroLockClosed, heroMagnifyingGlass, heroPencilSquare, heroPlus, heroTrash, heroXMark})],
   selector: 'app-session-form',
   standalone: true,
   imports: [RouterLink, ReactiveFormsModule, TranslatePipe, NgIcon, HlmButton, HlmInput, HlmTextarea, HlmSpinner,

@@ -2,7 +2,7 @@ import {ChangeDetectionStrategy, Component, computed, inject, signal} from '@ang
 import {RouterLink} from '@angular/router';
 import {Observable} from 'rxjs';
 import {TranslatePipe, TranslateService} from '@ngx-translate/core';
-import {NgIcon} from '@ng-icons/core';
+import {NgIcon, provideIcons} from '@ng-icons/core';
 import {HlmBadge} from '@spartan-ng/helm/badge';
 import {HlmButton} from '@spartan-ng/helm/button';
 import {HlmCardImports} from '@spartan-ng/helm/card';
@@ -14,6 +14,7 @@ import {NotificationService} from '../../../core/services/notification.service';
 import {problemDetailOf} from '../../../core/models/problem-detail.model';
 import {ConfirmDialogComponent} from '../../../shared/component/confirm-dialog/confirm-dialog.component';
 
+import {heroAdjustmentsHorizontal, heroArrowRightOnRectangle, heroPlus, heroTrash, heroUserPlus, heroXMark} from '@ng-icons/heroicons/outline';
 /** Confirmed action on one of the user's memberships. */
 type PendingAction = {kind: 'leave' | 'withdraw' | 'deleteRequest'; membership: MembershipSummary};
 
@@ -25,6 +26,7 @@ const HOLDER_ROLES: GymRole[] = ['OWNER', 'PROGRAMMER'];
  * banned is refused there (409), the UI only avoids offering it.
  */
 @Component({
+  viewProviders: [provideIcons({heroAdjustmentsHorizontal, heroArrowRightOnRectangle, heroPlus, heroTrash, heroUserPlus, heroXMark})],
   selector: 'app-my-gyms',
   standalone: true,
   imports: [RouterLink, TranslatePipe, NgIcon, HlmBadge, HlmButton, HlmCardImports, ConfirmDialogComponent],

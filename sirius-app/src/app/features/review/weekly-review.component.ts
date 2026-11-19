@@ -2,7 +2,7 @@ import {ChangeDetectionStrategy, Component, computed, effect, inject, signal} fr
 import {HttpContext} from '@angular/common/http';
 import {RouterLink} from '@angular/router';
 import {TranslatePipe, TranslateService} from '@ngx-translate/core';
-import {NgIcon} from '@ng-icons/core';
+import {NgIcon, provideIcons} from '@ng-icons/core';
 import {HlmBadge} from '@spartan-ng/helm/badge';
 import {HlmButton} from '@spartan-ng/helm/button';
 import {HlmDialogImports} from '@spartan-ng/helm/dialog';
@@ -20,6 +20,7 @@ import {ReviewMusclesComponent} from './review-muscles.component';
 import {ReviewVolumeComponent} from './review-volume.component';
 import {weekLabel} from './review.utils';
 
+import {heroChevronLeft, heroChevronRight} from '@ng-icons/heroicons/outline';
 /**
  * The athlete's weekly balance (`/training/review`, lot D): muscles, volume, metcons, strength and
  * modalities of the selected week and the 3 before (D125), facts only (D89), explained in one help
@@ -27,6 +28,7 @@ import {weekLabel} from './review.utils';
  * one of the device's local day; the server decides nothing about it.
  */
 @Component({
+  viewProviders: [provideIcons({heroChevronLeft, heroChevronRight})],
   selector: 'app-weekly-review',
   standalone: true,
   imports: [

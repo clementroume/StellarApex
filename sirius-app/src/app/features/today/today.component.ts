@@ -2,7 +2,7 @@ import {ChangeDetectionStrategy, Component, computed, inject, signal} from '@ang
 import {HttpContext} from '@angular/common/http';
 import {RouterLink} from '@angular/router';
 import {TranslatePipe, TranslateService} from '@ngx-translate/core';
-import {NgIcon} from '@ng-icons/core';
+import {NgIcon, provideIcons} from '@ng-icons/core';
 import {HlmBadge} from '@spartan-ng/helm/badge';
 import {HlmButton} from '@spartan-ng/helm/button';
 import {HlmCardImports} from '@spartan-ng/helm/card';
@@ -21,11 +21,13 @@ import {problemDetailOf} from '../../core/models/problem-detail.model';
 import {SessionCardComponent} from '../sessions/session-card/session-card.component';
 import {localDate, sessionLink, sortSessions} from '../sessions/session.utils';
 
+import {heroCalendarDays, heroCheckCircle, heroClipboardDocumentList, heroPlus, heroTrophy} from '@ng-icons/heroicons/outline';
 /**
  * Home (D38): today's sessions of the displayed box/prog (WOD of the day, specialties of the week,
  * personal sessions) with "Séance faite", then the latest scores and records.
  */
 @Component({
+  viewProviders: [provideIcons({heroCalendarDays, heroCheckCircle, heroClipboardDocumentList, heroPlus, heroTrophy})],
   selector: 'app-today',
   standalone: true,
   imports: [RouterLink, TranslatePipe, NgIcon, HlmBadge, HlmButton, HlmCardImports, HlmSkeleton, PageComponent,

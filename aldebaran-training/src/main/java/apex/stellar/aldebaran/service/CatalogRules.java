@@ -20,6 +20,7 @@ import apex.stellar.aldebaran.model.entities.WodMovement;
 import apex.stellar.aldebaran.model.enums.Category.Modality;
 import apex.stellar.aldebaran.model.enums.Equipment;
 import apex.stellar.aldebaran.model.enums.JointAction;
+import apex.stellar.aldebaran.model.enums.MovementPattern;
 import apex.stellar.aldebaran.model.enums.RequiredRule;
 import apex.stellar.aldebaran.model.enums.Technique;
 import apex.stellar.aldebaran.model.enums.Technique.TechniqueCategory;
@@ -360,6 +361,33 @@ public final class CatalogRules {
         named.meters() != null ? named.meters() : own.meters(),
         named.seconds() != null ? named.seconds() : own.seconds(),
         named.calories() != null ? named.calories() : own.calories());
+  }
+
+  /**
+   * The movement patterns of a line (lot D', D177): those of its most precise usual name, else (that
+   * name has none, or there is none) the movement's, else (a chain without its own) the union of its
+   * components'. Like {@link #perSet}: never a less precise name's.
+   *
+   * @param line The line, with its movement.
+   * @return The patterns, possibly empty.
+   */
+  public static Set<MovementPattern> patterns(WodMovement line) {
+    Set<MovementPattern> named =
+        usualName(line).map(MovementUsualName::getPatterns).orElse(Set.of());
+    if (!named.isEmpty()) {
+      return EnumSet.copyOf(named);
+    }
+    return movementPatterns(line.getMovement());
+  }
+
+  /** The movement's own patterns, else the union of its components'. */
+  private static Set<MovementPattern> movementPatterns(Movement movement) {
+    Set<MovementPattern> patterns = EnumSet.noneOf(MovementPattern.class);
+    patterns.addAll(movement.getPatterns());
+    if (patterns.isEmpty()) {
+      movement.getComponents().forEach(c -> patterns.addAll(c.getComponent().getPatterns()));
+    }
+    return patterns;
   }
 
   /**
