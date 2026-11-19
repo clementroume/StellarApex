@@ -55,14 +55,21 @@ src/spartan.css       # spartan tokens and Tailwind colours mapped to the palett
 
 * **Spaces** (`core/layout/spaces.service.ts`): Today (`/today`, home) · My training (`/training`:
   journal of the sessions done and of the scores, personal sessions, records, review to come) ·
-  My box (`/box`, members only: sessions, records board; members and settings for staff holding `MANAGE_MEMBERSHIPS` /
-  `MANAGE_SETTINGS`) · Catalogue (`/wods`, `/movements`, `/muscles`) · Admin (`/admin`, admins).
+  My box (`/box`, members only: sessions, records board; programming balance for staff of any role; members and
+  settings for staff holding `MANAGE_MEMBERSHIPS` / `MANAGE_SETTINGS`) · Catalogue (`/wods`, `/movements`, `/muscles`) · Admin (`/admin`, admins).
   Desktop: spaces in the top bar, the space's pages as tabs below it. Mobile: bottom tab bar.
 * **Weekly balance** (`features/review`, lot D): My training › Balance shows the selected week and the 3 before
   (arrows, "current" badge): muscles worked in two tabs (moving / holding, each on its own scale, drawing shaded per
   zone, 7 region bars, each opening its muscles right under it), volume of 8 weeks, metcon minutes per time domain,
   strength share per lift with the lifts done close to the record, and the three modalities. One "?" next to the
   title explains it all in plain words. Facts only: no alert, no ratio. Data from Aldebaran `GET /balance/me`.
+* **Programming balance** (`features/programming`, lot D'): My box › Programming balance, for the staff of any role
+  (`AccessService.staffGyms`, guard `gymPermissionGuard('STAFF')`). The coach picks a cycle (Monday, 4 to 8 weeks), RX or
+  the official Scaled versions and the optional blocks; the page shows the full week (radar of the movement patterns,
+  each axis opening its details, regions, unusual sessions, axes concentrated on few days), the attendance profiles of
+  3, 4 and 5 days in alert, and a profile picked or composed with day chips, drawn against the full week. Notes tell
+  when the cycle is only partly programmed, when no official Scaled version exists (Scaled is then disabled) and why a
+  profile size is missing (a 4-day box has no 4-day profile: it is the full week). Rules and thresholds live in Aldebaran (`GET /programming/gyms/{gymId}/balance`); athletes never see it.
 * **Records** (`features/records`, lot C): My training › Records is the user's records board: one tile
   per lift or named variant (1RM, else the estimated 1RM, with "+5" or "PR" for a record of the last 30 days), family
   chips, the CrossFit Total with its three lifts, and the lifts not tested yet. A tile opens the lift

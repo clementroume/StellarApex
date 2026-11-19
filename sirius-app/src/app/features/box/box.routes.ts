@@ -22,6 +22,11 @@ export const BOX_ROUTES: Routes = [
   },
   // Records board of the box (lot C, D56)
   {path: 'leaderboards', loadComponent: () => import('../records/box-records.component').then(c => c.BoxRecordsComponent)},
+  // Balance of the programming, staff of any role (lot D', D167)
+  {
+    path: 'programming', canActivate: [gymPermissionGuard('STAFF')],
+    loadComponent: () => import('../programming/programming-balance.component').then(c => c.ProgrammingBalanceComponent)
+  },
   {
     path: 'members', canActivate: [gymPermissionGuard('MANAGE_MEMBERSHIPS')],
     loadComponent: () => import('./members/box-members.component').then(c => c.BoxMembersComponent)

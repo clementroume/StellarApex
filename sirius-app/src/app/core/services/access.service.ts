@@ -31,4 +31,9 @@ export class AccessService {
   gymsWithPermission(permission: Permission): MembershipSummary[] {
     return this.memberships().filter(m => this.isAdmin() || (m.permissions ?? []).includes(permission));
   }
+
+  /** Gyms where the user is staff of any role (Owner, Programmer, Coach), as Aldebaran's `isStaff`; admin: all. */
+  staffGyms(): MembershipSummary[] {
+    return this.memberships().filter(m => this.isAdmin() || m.gymRole !== 'ATHLETE');
+  }
 }

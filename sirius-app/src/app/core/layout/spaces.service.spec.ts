@@ -30,7 +30,8 @@ describe('SpacesService', () => {
           provide: AccessService,
           useValue: {
             memberships, isAdmin,
-            gymsWithPermission: (p: Permission) => memberships().filter(m => m.permissions.includes(p))
+            gymsWithPermission: (p: Permission) => memberships().filter(m => m.permissions.includes(p)),
+            staffGyms: () => memberships().filter(m => m.gymRole !== 'ATHLETE')
           }
         }
       ]
@@ -53,6 +54,8 @@ describe('SpacesService', () => {
     const coachBox = service.spaces().find(s => s.key === 'box')!;
     expect(coachBox.children.map(c => c.link)).toContain('/box/members');
     expect(coachBox.children.map(c => c.link)).not.toContain('/box/settings');
+    // Staff of any role reads the balance of the programming (lot D')
+    expect(coachBox.children.map(c => c.link)).toContain('/box/programming');
   });
 
   it('should show Admin to a platform admin', () => {

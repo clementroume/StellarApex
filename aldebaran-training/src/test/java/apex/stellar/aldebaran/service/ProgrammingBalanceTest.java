@@ -140,6 +140,19 @@ class ProgrammingBalanceTest {
   }
 
   @Test
+  @DisplayName("A cycle without any session: the full week is empty, no profile, no alert")
+  void emptyCycle() {
+    Plan plan = new Plan(new HashMap<>(), cycle(4), MUSCLES);
+    List<Window> windows = ProgrammingBalance.windows(plan);
+    ProfileBalance full = ProgrammingBalance.evaluate(plan, windows, plan.trainingDays());
+    assertThat(full.isFull()).isTrue();
+    assertThat(full.inAlert()).isFalse();
+    assertThat(windows.getFirst().judged(3)).isEmpty();
+    assertThat(windows.getFirst().concentrated()).isEmpty();
+    assertThat(ProgrammingBalance.profiles(plan.trainingDays(), 3)).isEmpty();
+  }
+
+  @Test
   @DisplayName("Group minimum applies to a profile with muscles, after 3 trained weeks")
   void groupMinimum() {
     Plan plan = plan(START, 4, cycle(4));

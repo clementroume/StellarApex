@@ -1,0 +1,222 @@
+<app-page [title]="'BOX.PROGRAMMING.TITLE' | translate" [subtitle]="'PROGRAMMING.SUBTITLE' | translate">
+  <hlm-dialog pageTitleAside>
+    <button hlmDialogTrigger type="button" data-slot="programming-help"
+            class="flex size-7 flex-none items-center justify-center rounded-full border text-sm font-bold text-muted-foreground hover:bg-muted"
+            [attr.aria-label]="'PROGRAMMING.HELP.OPEN' | translate">?</button>
+    <hlm-dialog-content *hlmDialogPortal="let ctx" class="max-h-[85dvh] overflow-y-auto gap-4 sm:max-w-lg"
+                        [closeLabel]="'GLOBAL.CLOSE' | translate">
+      <hlm-dialog-header>
+        <h2 hlmDialogTitle>{{ 'PROGRAMMING.HELP.TITLE' | translate }}</h2>
+        <p hlmDialogDescription>{{ 'PROGRAMMING.HELP.INTRO' | translate }}</p>
+      </hlm-dialog-header>
+      <dl class="flex flex-col gap-3">
+        @for (part of helpParts; track part) {
+          <div>
+            <dt class="font-semibold">{{ 'PROGRAMMING.HELP.' + part + '_TITLE' | translate }}</dt>
+            <dd class="text-muted-foreground">{{ 'PROGRAMMING.HELP.' + part | translate }}</dd>
+          </div>
+        }
+      </dl>
+    </hlm-dialog-content>
+  </hlm-dialog>
+
+  <div class="flex flex-col gap-4">
+    <app-staff-gym-picker [candidates]="gym.candidates()" [value]="gym.gymId()" (valueChange)="gym.select($event)"/>
+
+    <section class="flex flex-col gap-3 rounded-xl border bg-card p-4" [attr.aria-label]="'PROGRAMMING.SETTINGS' | translate">
+      <div class="flex flex-wrap items-end gap-3">
+        <div class="flex flex-col gap-1.5">
+          <span class="text-sm font-medium" id="programming-start">{{ 'PROGRAMMING.START' | translate }}</span>
+          <div class="flex items-center gap-1" role="group" aria-labelledby="programming-start">
+            <button type="button" hlmBtn variant="outline" size="icon" [attr.aria-label]="'PROGRAMMING.PREVIOUS_WEEK' | translate" (click)="shiftStart(-1)">
+              <ng-icon name="heroChevronLeft"/>
+            </button>
+            <span class="min-w-20 text-center font-semibold" data-slot="start">{{ startText() }}</span>
+            <button type="button" hlmBtn variant="outline" size="icon" [attr.aria-label]="'PROGRAMMING.NEXT_WEEK' | translate" (click)="shiftStart(1)">
+              <ng-icon name="heroChevronRight"/>
+            </button>
+          </div>
+        </div>
+        <label class="flex flex-col gap-1.5">
+          <span class="text-sm font-medium">{{ 'PROGRAMMING.WEEKS' | translate }}</span>
+          <select appNativeSelect (change)="setWeeks($event)">
+            @for (w of weekOptions; track w) {
+              <option [value]="w" [selected]="w === weeks()">{{ 'PROGRAMMING.WEEKS_COUNT' | translate: {count: w} }}</option>
+            }
+          </select>
+        </label>
+        <div class="flex flex-col gap-1.5">
+          <span class="text-sm font-medium" id="programming-level">{{ 'PROGRAMMING.LEVEL' | translate }}</span>
+          <div class="inline-flex overflow-hidden rounded-md border" role="group" aria-labelledby="programming-level">
+            <button type="button" class="px-3 py-2 text-sm aria-pressed:bg-primary aria-pressed:text-primary-content"
+                    [attr.aria-pressed]="!scaled()" (click)="scaled.set(false)">RX</button>
+            <button type="button" class="border-l px-3 py-2 text-sm aria-pressed:bg-primary aria-pressed:text-primary-content disabled:opacity-50"
+                    [attr.aria-pressed]="scaled()" [disabled]="noScaled() && !scaled()" (click)="scaled.set(true)">Scaled</button>
+          </div>
+        </div>
+        <label class="flex items-center gap-2 py-2 text-sm">
+          <input type="checkbox" role="switch" class="switch" [checked]="optional()" (change)="optional.set(!optional())"/>
+          {{ 'PROGRAMMING.OPTIONAL' | translate }}
+        </label>
+      </div>
+      @if (balance(); as b) {
+        <p class="text-xs text-muted-foreground" data-slot="cycle">{{ cycleText() }}</p>
+        @if (b.programmedWeeks < b.weeks) {
+          <p class="text-xs text-secondary" data-slot="partial">
+            {{ 'PROGRAMMING.PARTIAL' | translate: {programmed: b.programmedWeeks, weeks: b.weeks} }}
+          </p>
+        }
+        @if (noScaled()) {
+          <p class="text-xs text-muted-foreground" data-slot="no-scaled">{{ 'PROGRAMMING.NO_SCALED' | translate }}</p>
+        }
+        @if (b.uncountedSessions || b.uncountedLines) {
+          <p class="text-xs text-muted-foreground" data-slot="uncounted">
+            {{ 'PROGRAMMING.UNCOUNTED' | translate: {sessions: b.uncountedSessions, lines: b.uncountedLines} }}
+          </p>
+        }
+      }
+    </section>
+
+    @if (gym.gymId() === null) {
+      <p class="py-8 text-center text-sm text-muted-foreground">{{ 'PROGRAMMING.NO_GYM' | translate }}</p>
+    } @else if (isLoading() && !balance()) {
+      <div class="flex justify-center py-8"><hlm-spinner/></div>
+    } @else if (failed()) {
+      <p class="py-8 text-center text-sm text-muted-foreground">{{ 'PROGRAMMING.LOAD_ERROR' | translate }}</p>
+    } @else if (balance(); as b) {
+      @if (b.sessions === 0) {
+        <p class="py-8 text-center text-sm text-muted-foreground" data-slot="programming-empty">{{ 'PROGRAMMING.EMPTY' | translate }}</p>
+      } @else {
+        <div class="flex flex-col gap-4" [class.opacity-60]="isLoading()">
+          <!-- Two columns on a desktop, each its own stack (radar + regions | profiles + metcons + modalities);
+               on a phone the columns dissolve and order puts the profiles right after the radar -->
+          <div class="flex flex-col gap-4 lg:grid lg:grid-cols-2 lg:items-start">
+            <div class="contents lg:flex lg:flex-col lg:gap-4">
+              <!-- The radar of the full week, or of the profile against it -->
+              @if (profile(); as p) {
+                <section class="order-1 flex flex-col gap-3 rounded-xl border bg-card p-4 lg:order-none" aria-labelledby="programming-profile" data-slot="profile">
+                  <button type="button" class="self-start text-sm text-primary" (click)="closeProfile()">‹ {{ 'PROGRAMMING.PROFILES.BACK' | translate }}</button>
+                  <h2 class="flex items-baseline justify-between gap-2 text-base font-semibold" id="programming-profile">
+                    {{ 'PROGRAMMING.PROFILE.TITLE' | translate: {days: profileDays()} }}
+                    <span class="text-xs font-normal text-muted-foreground">{{ profileWindow() }}</span>
+                  </h2>
+                  @for (a of profileAlerts(); track a.title) {
+                    <div class="rounded-r-lg border-l-4 border-secondary bg-secondary/10 px-3 py-2 text-sm" data-slot="alert">
+                      <b class="block">{{ a.title }}</b>
+                      <span class="text-xs text-muted-foreground">{{ a.why }}</span>
+                    </div>
+                  } @empty {
+                    <p class="text-sm text-primary" data-slot="no-alert">{{ 'PROGRAMMING.PROFILE.NO_ALERT' | translate }}</p>
+                  }
+                  <app-pattern-radar [axes]="p.axes" [details]="p.details" [compare]="true" [alerted]="profileAlerted()"
+                                     [lang]="lang()" [selected]="profileAxis()" (selectedChange)="profileAxis.set($event)"/>
+                </section>
+              } @else {
+                <section class="order-1 flex flex-col gap-3 rounded-xl border bg-card p-4 lg:order-none" aria-labelledby="programming-full" data-slot="full-week">
+                  <h2 class="flex items-baseline justify-between gap-2 text-base font-semibold" id="programming-full">
+                    {{ 'PROGRAMMING.FULL.TITLE' | translate }}
+                    <span class="text-xs font-normal text-muted-foreground">{{ 'PROGRAMMING.FULL.DAYS' | translate: {count: b.trainingDays.length} }}</span>
+                  </h2>
+                  @for (a of fullAlerts(); track a.title) {
+                    <div class="rounded-r-lg border-l-4 border-secondary bg-secondary/10 px-3 py-2 text-sm" data-slot="alert">
+                      <b class="block">{{ a.title }}</b>
+                      <span class="text-xs text-muted-foreground">{{ a.why }}</span>
+                    </div>
+                  } @empty {
+                    <p class="text-sm text-primary" data-slot="no-alert">{{ 'PROGRAMMING.FULL.NO_ALERT' | translate }}</p>
+                  }
+                  @for (u of unusual(); track u.key) {
+                    <div class="rounded-r-lg border-l-4 border-accent bg-accent/10 px-3 py-2 text-sm" data-slot="unusual">
+                      <b class="block">{{ 'PROGRAMMING.UNUSUAL.TITLE' | translate }}</b>
+                      <span class="text-xs text-muted-foreground">{{ u.text }}</span>
+                    </div>
+                  }
+                  @if (concentrated()) {
+                    <p class="text-xs text-muted-foreground" data-slot="concentrated">{{ 'PROGRAMMING.CONCENTRATED' | translate: {axes: concentrated()} }}</p>
+                  }
+                  <app-pattern-radar [axes]="b.fullWeek.axes" [details]="b.fullWeek.details" [lang]="lang()"
+                                     [selected]="fullAxis()" (selectedChange)="fullAxis.set($event)"/>
+                </section>
+              }
+
+              <!-- Regions of the moving volume: information, against the full week for a profile (D180) -->
+              <section class="order-3 flex flex-col gap-2 rounded-xl border bg-card p-4 lg:order-none" aria-labelledby="programming-regions" data-slot="regions">
+                <h2 class="text-base font-semibold" id="programming-regions">{{ 'PROGRAMMING.REGIONS.TITLE' | translate }}</h2>
+                @if (profile()) {
+                  <div class="flex flex-wrap gap-3 text-xs text-muted-foreground">
+                    <span class="flex items-center gap-1"><i class="inline-block size-2.5 rounded-sm bg-secondary"></i>{{ 'PROGRAMMING.RADAR.PROFILE' | translate }}</span>
+                    <span class="flex items-center gap-1"><i class="inline-block h-2.5 w-0.5 bg-foreground"></i>{{ 'PROGRAMMING.RADAR.FULL_WEEK' | translate }}</span>
+                  </div>
+                }
+                @for (r of regionRows(); track r.region) {
+                  <div class="flex flex-col gap-1 text-sm">
+                    <div class="flex items-center justify-between gap-2">
+                      <span>{{ 'MUSCLE.REGIONS.' + r.region | translate }}</span>
+                      <span class="flex items-center gap-2 tabular-nums">
+                        @if (r.trend !== 'IN_LINE') {
+                          <span class="rounded-full px-2 text-xs" [class]="r.trend === 'BEHIND' ? 'bg-secondary/15' : 'bg-primary/15'">
+                            {{ 'PROGRAMMING.REGIONS.' + r.trend | translate }}
+                          </span>
+                        }
+                        {{ r.text }}
+                        @if (r.fullText) {
+                          <span class="text-xs text-muted-foreground">({{ r.fullText }})</span>
+                        }
+                      </span>
+                    </div>
+                    <div class="relative h-2.5 rounded-full bg-muted">
+                      <span class="absolute inset-y-0 left-0 rounded-full" [class]="r.fullText ? 'bg-secondary' : 'bg-primary'" [style.width.%]="r.width"></span>
+                      @if (r.fullText) {
+                        <span class="absolute -inset-y-0.5 w-0.5 bg-foreground" [style.left.%]="r.fullWidth"></span>
+                      }
+                    </div>
+                  </div>
+                }
+              </section>
+            </div>
+
+            <!-- The profiles, then the minutes per time domain and the modalities of what the radar shows -->
+            <div class="contents lg:flex lg:flex-col lg:gap-4">
+              <section class="order-2 flex flex-col gap-3 rounded-xl border bg-card p-4 lg:order-none" aria-labelledby="programming-profiles">
+                <h2 class="text-base font-semibold" id="programming-profiles">{{ 'PROGRAMMING.PROFILES.TITLE' | translate }}</h2>
+                <p class="text-xs text-muted-foreground">{{ 'PROGRAMMING.PROFILES.INTRO' | translate }}</p>
+                @for (s of summaries(); track s.size) {
+                  <details class="overflow-hidden rounded-lg border" [open]="s.rows.length > 0 && $first" data-slot="profile-size">
+                    <summary class="flex cursor-pointer items-center justify-between gap-2 px-3 py-2.5">
+                      <span class="font-semibold">{{ 'PROGRAMMING.PROFILES.SIZE' | translate: {count: s.size} }}</span>
+                      <span class="text-sm font-semibold" [class.text-secondary]="s.rows.length" [class.text-primary]="!s.rows.length">
+                        {{ (s.rows.length ? 'PROGRAMMING.PROFILES.IN_ALERT' : 'PROGRAMMING.PROFILES.NONE') | translate: {count: s.rows.length, total: s.total} }}
+                      </span>
+                    </summary>
+                    @for (r of s.rows; track r.days) {
+                      <button type="button" class="flex w-full items-center justify-between gap-2 border-t px-3 py-2 text-left text-sm hover:bg-muted"
+                              (click)="openProfile(r.row)" data-slot="profile-row">
+                        <span class="font-semibold whitespace-nowrap">{{ r.days }}</span>
+                        <span class="text-right text-xs text-muted-foreground">{{ r.main }} ›</span>
+                      </button>
+                    }
+                  </details>
+                }
+                @if (sizesNote()) {
+                  <p class="text-xs text-muted-foreground" data-slot="sizes-note">{{ sizesNote() }}</p>
+                }
+                <div class="flex flex-col gap-1.5">
+                  <span class="text-sm font-medium" id="programming-compose">{{ 'PROGRAMMING.PROFILES.COMPOSE' | translate }}</span>
+                  <div class="flex flex-wrap gap-1.5" role="group" aria-labelledby="programming-compose">
+                    @for (day of b.trainingDays; track day) {
+                      <button type="button" class="min-h-10 min-w-11 rounded-full border px-3 text-sm aria-pressed:border-primary aria-pressed:bg-primary aria-pressed:text-primary-content"
+                              [attr.aria-pressed]="days().includes(day)" (click)="toggleDay(day)">{{ dayName(day) }}</button>
+                    }
+                  </div>
+                </div>
+              </section>
+              <app-review-metcons class="order-4 lg:order-none" [minutes]="(profile() ?? b.fullWeek).minutesPerWeek" emptyKey="PROGRAMMING.METCONS_EMPTY"/>
+              <app-review-modalities class="order-5 lg:order-none" [modalities]="(profile() ?? b.fullWeek).modalities"/>
+            </div>
+          </div>
+        </div>
+      }
+    }
+  </div>
+</app-page>
+

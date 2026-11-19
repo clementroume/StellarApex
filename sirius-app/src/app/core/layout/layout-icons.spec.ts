@@ -11,6 +11,6 @@ describe('LAYOUT_ICONS', () => {
   });
 
   it('holds the layout icons only', () => {
-    expect(Object.keys(LAYOUT_ICONS).length).toBe(20);
+    expect(Object.keys(LAYOUT_ICONS).length).toBe(21);
   });
 });

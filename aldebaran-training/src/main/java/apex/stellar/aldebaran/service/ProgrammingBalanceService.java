@@ -37,6 +37,7 @@ import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -96,6 +97,8 @@ public class ProgrammingBalanceService {
     int sessions = 0;
     int uncountedSessions = 0;
     int uncountedLines = 0;
+    int scaledLines = 0;
+    Set<LocalDate> programmed = new HashSet<>();
     for (Session session : sessionRepository.findProgramming(gymId, historyStart, end)) {
       boolean inCycle = !session.getEndDate().isBefore(start) && !session.getDate().isAfter(end);
       if (!counts(session)) {
@@ -116,11 +119,15 @@ public class ProgrammingBalanceService {
         if (inCycle) {
           for (WodMovement line : block.getWod().getMovements()) {
             uncountedLines += BalanceCalculator.uncounted(block.getWod(), line) != null ? 1 : 0;
+            scaledLines += line.getScaled() != null ? 1 : 0;
           }
         }
       }
       if (!counted) {
         continue; // only text or optional blocks: not a training day of the profiles
+      }
+      if (inCycle) {
+        programmed.add(monday(date));
       }
       // Two CrossFit sessions on the same day make one day (D161)
       vectors
@@ -170,6 +177,8 @@ public class ProgrammingBalanceService {
         weeks - ProgrammingBalance.WINDOW_WEEKS + 1,
         uncountedSessions,
         uncountedLines,
+        programmed.size(),
+        scaledLines,
         fullWeek,
         summaries,
         profile,

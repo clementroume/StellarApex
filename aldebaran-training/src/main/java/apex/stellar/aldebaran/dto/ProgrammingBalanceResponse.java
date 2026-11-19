@@ -25,6 +25,9 @@ import org.jspecify.annotations.Nullable;
  * @param windows Windows of 4 weeks evaluated.
  * @param uncountedSessions Sessions of the cycle left out: specialties and other disciplines.
  * @param uncountedLines Lines of counted blocks that count nothing (unreadable text, no set value).
+ * @param programmedWeeks Weeks of the cycle holding at least one counted session (fewer than {@code
+ *     weeks}: the balance reads empty weeks).
+ * @param scaledLines Lines of the cycle with an official Scaled version (0: Scaled reads as RX).
  * @param fullWeek The athlete who comes every training day.
  * @param summaries One per profile size (3, 4, 5 days) smaller than the training days.
  * @param profile The profile asked for ({@code days}), or null.
@@ -44,6 +47,8 @@ public record ProgrammingBalanceResponse(
     int windows,
     int uncountedSessions,
     int uncountedLines,
+    int programmedWeeks,
+    int scaledLines,
     ProfileResponse fullWeek,
     List<ProfileSummary> summaries,
     @Nullable ProfileResponse profile,

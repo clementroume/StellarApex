@@ -1,6 +1,6 @@
 <app-review-section heading="REVIEW.METCONS.TITLE" headingId="review-metcons">
   @if (isEmpty()) {
-    <p class="text-sm text-muted-foreground" data-slot="metcons-empty">{{ 'REVIEW.METCONS.EMPTY' | translate }}</p>
+    <p class="text-sm text-muted-foreground" data-slot="metcons-empty">{{ emptyKey() | translate }}</p>
   } @else {
     @for (row of rows(); track row.domain) {
       <div class="flex flex-col gap-1">

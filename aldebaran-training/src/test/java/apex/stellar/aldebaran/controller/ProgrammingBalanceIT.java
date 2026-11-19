@@ -157,6 +157,9 @@ class ProgrammingBalanceIT extends BaseIntegrationTest {
         .andExpect(jsonPath("$.sessions").value(16))
         .andExpect(jsonPath("$.windows").value(1))
         .andExpect(jsonPath("$.uncountedSessions").value(1))
+        .andExpect(jsonPath("$.programmedWeeks").value(4))
+        // The Tuesday WODs have an official Scaled version (set up)
+        .andExpect(jsonPath("$.scaledLines").value(4))
         .andExpect(jsonPath("$.fullWeek.inAlert").value(true))
         // This test catalog has none of the 7 main groups: their minimum, 3 alerts at most
         .andExpect(jsonPath("$.fullWeek.alerts", hasSize(3)))

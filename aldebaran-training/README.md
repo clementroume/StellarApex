@@ -376,6 +376,10 @@ provisional until the beta):
   on few days (an athlete without fixed days misses them, `concentratedAxes`), unusual sessions (a region over 1.3
   times its biggest day of the 4 programmed weeks before, at least 3 sets).
 
+The response also counts the weeks holding a counted session (`programmedWeeks`: fewer than `weeks` means empty weeks
+were read) and the lines with an official Scaled version (`scaledLines`: 0 means Scaled reads as RX), so Sirius can
+warn the coach.
+
 Never shown to an athlete (D89).
 
 ### Scores (`/aldebaran/scores`)

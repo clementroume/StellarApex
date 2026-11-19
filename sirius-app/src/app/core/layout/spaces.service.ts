@@ -54,6 +54,8 @@ export class SpacesService {
         children: [
           {link: '/box/sessions', label: 'BOX.SESSIONS.TITLE', icon: 'heroCalendarDays'},
           {link: '/box/leaderboards', label: 'BOX.LEADERBOARDS.TITLE', icon: 'heroChartBar'},
+          ...(this.accessService.staffGyms().length > 0
+            ? [{link: '/box/programming', label: 'BOX.PROGRAMMING.TITLE', icon: 'heroPresentationChartLine'}] : []),
           ...(this.accessService.gymsWithPermission('MANAGE_MEMBERSHIPS').length > 0
             ? [{link: '/box/members', label: 'BOX.MEMBERS.TITLE', icon: 'heroUsers'}] : []),
           ...(this.accessService.gymsWithPermission('MANAGE_SETTINGS').length > 0

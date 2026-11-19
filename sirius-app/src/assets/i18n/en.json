@@ -1320,12 +1320,106 @@
       "EMPTY": "No personal WOD yet."
     }
   },
+  "PROGRAMMING": {
+    "SUBTITLE": "The prescription of your sessions over a cycle, for an athlete coming every day or on fixed days.",
+    "SETTINGS": "Cycle",
+    "START": "Start",
+    "PREVIOUS_WEEK": "Previous week",
+    "NEXT_WEEK": "Next week",
+    "WEEKS": "Length",
+    "WEEKS_COUNT": "{{count}} weeks",
+    "LEVEL": "Version",
+    "OPTIONAL": "Optional blocks",
+    "CYCLE": "From {{from}} to {{to}} · {{sessions}} CrossFit sessions · alerts on each window of 4 weeks ({{windows}})",
+    "UNCOUNTED": "Not counted: {{sessions}} specialty sessions · {{lines}} lines not read.",
+    "NO_GYM": "You are staff of no box or program.",
+    "LOAD_ERROR": "The balance could not be loaded.",
+    "EMPTY": "No CrossFit session in this cycle.",
+    "METCONS_EMPTY": "No minute counted: minutes come from the format (AMRAP, EMOM, intervals, time cap). A For Time without a time cap gives none.",
+    "NO_SCALED": "No official Scaled version in this cycle: Scaled would read the same as RX.",
+    "PARTIAL": "Only {{programmed}} programmed week(s) out of {{weeks}}: the empty weeks still count in the windows, the balance is partial.",
+    "WINDOW": "{{from}} – {{to}}",
+    "CONCENTRATED": "Concentrated on few days: {{axes}}. An athlete without fixed days often misses it.",
+    "PROFILES": {
+      "TITLE": "Attendance profiles",
+      "INTRO": "An athlete who comes on the same days every week.",
+      "SIZE": "{{count}} days",
+      "IN_ALERT": "{{count}} of {{total}} in alert",
+      "NONE": "no alert ({{total}} profiles)",
+      "COMPOSE": "Compose a profile",
+      "SIZES_NOTE": "{{days}} training days: a profile of {{sizes}} days would be the full week or more, so it is not listed.",
+      "BACK": "All profiles"
+    },
+    "PROFILE": {
+      "TITLE": "Profile {{days}}",
+      "NO_ALERT": "No alert for this profile."
+    },
+    "FULL": {
+      "TITLE": "Full week",
+      "DAYS": "{{count}} days",
+      "NO_ALERT": "No alert on the full week."
+    },
+    "ALERT": {
+      "GAP_TITLE": "{{axis}}: {{share}} of the sets",
+      "GAP_WHY": "The full week has {{full}}: this profile does less than 60 % of it.",
+      "MINIMUM_TITLE": "{{group}}: {{sets}} sets per week",
+      "MINIMUM_WHY": "Little work to progress (reference: {{limit}} sets per week).",
+      "MINIMUM_SHORT": "{{group}} {{sets}} sets/wk"
+    },
+    "UNUSUAL": {
+      "TITLE": "Unusual session",
+      "LINE": "{{day}} · {{region}}: {{sets}} sets, against {{base}} at most over the 4 weeks before. Information, not an alert."
+    },
+    "REGIONS": {
+      "TITLE": "Regions (share of the volume)",
+      "BEHIND": "Behind",
+      "AHEAD": "Ahead"
+    },
+    "RADAR": {
+      "LABEL": "Radar of movement patterns",
+      "FULL_WEEK": "full week",
+      "PROFILE": "this profile",
+      "DETAILS": "Details of an axis",
+      "NOT_JUDGED": "Too irregular to be judged: random attendance already misses it often.",
+      "DETAILS_NOTE": "Share of the sets; a line may count on two details of one axis.",
+      "EXAMPLES": {
+        "SQUAT": "Squat, Thruster, Wall-ball, catch of the full Clean and Snatch.",
+        "HINGE": "Deadlift, Kettlebell Swing, pull of the Clean and Snatch, Burpee.",
+        "LUNGE": "Lunge, Pistol, Box Step-up, Split Jerk."
+      }
+    },
+    "GROUPS": {
+      "quadriceps-femoris": "Quadriceps",
+      "musculi-ischiocrurales": "Hamstrings",
+      "musculi-glutei": "Glutes",
+      "latissimus-dorsi": "Lats",
+      "pectoralis-major": "Pecs",
+      "deltoideus": "Delts",
+      "triceps-brachii": "Triceps"
+    },
+    "HELP": {
+      "OPEN": "How to read this balance",
+      "TITLE": "How to read this balance",
+      "INTRO": "Computed from the prescription of your CrossFit sessions (specialties left out). Athletes never see it.",
+      "RADAR_TITLE": "Radar",
+      "RADAR": "Each axis is a fundamental movement pattern; a compound movement counts on each of its axes (Thruster: Squat and Push). Touch an axis for its details.",
+      "PROFILES_TITLE": "Profiles",
+      "PROFILES": "An athlete coming 3, 4 or 5 fixed days a week. Each profile is compared with your full week, never with a norm.",
+      "ALERTS_TITLE": "Alerts",
+      "ALERTS": "A pattern of a profile under 60 % of its share in the full week, when that pattern is regular enough to be judged; a main muscle group under 4 sets per week. Thresholds are provisional.",
+      "INFO_TITLE": "Information",
+      "INFO": "Regions compared with the full week, patterns concentrated on few days, unusual sessions: facts to read, never alerts."
+    }
+  },
   "BOX": {
     "SESSIONS": {
       "TITLE": "Sessions"
     },
     "LEADERBOARDS": {
       "TITLE": "Leaderboards"
+    },
+    "PROGRAMMING": {
+      "TITLE": "Programming balance"
     },
     "MEMBERS": {
       "TITLE": "Members",

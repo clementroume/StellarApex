@@ -14,6 +14,8 @@ import {ReviewSectionComponent} from './review-section.component';
 export class ReviewMetconsComponent {
   // --- STATE (SIGNALS & VARIABLES) ---
   readonly minutes = input.required<Record<TimeDomain, number>>();
+  /** Text when no minute is counted (the coach's balance explains where minutes come from). */
+  readonly emptyKey = input('REVIEW.METCONS.EMPTY');
 
   // --- COMPUTED STATE ---
   readonly rows = computed(() => {

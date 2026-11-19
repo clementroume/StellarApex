@@ -251,7 +251,7 @@ public final class ProgrammingBalance {
 
     /** @return Whether this is the full week (no pattern gap: it is the reference). */
     public boolean isFull() {
-      return days.equals(EnumSet.copyOf(window.plan.trainingDays()));
+      return days.containsAll(window.plan.trainingDays());
     }
   }
 

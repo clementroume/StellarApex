@@ -19,11 +19,12 @@ export interface StaffGymSelection {
  * manage; never sent to the API as an "active gym" (the gym id is part of each request).
  * Call in an injection context.
  */
-export function staffGymSelection(permission: Permission): StaffGymSelection {
+export function staffGymSelection(permission: Permission | 'STAFF'): StaffGymSelection {
   const accessService = inject(AccessService);
   const displayGymService = inject(DisplayGymService);
   const picked = signal<number | null>(null);
-  const candidates = computed(() => accessService.gymsWithPermission(permission));
+  const candidates = computed(() =>
+    permission === 'STAFF' ? accessService.staffGyms() : accessService.gymsWithPermission(permission));
   const gymId = computed(() => {
     const ids = candidates().map(m => m.gymId);
     const choice = picked();

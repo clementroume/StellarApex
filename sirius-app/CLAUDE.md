@@ -174,6 +174,15 @@ the dev proxy targets the local Traefik `https://localhost` with `Host: stellar.
   muscles uses the accent (`--heat-colour` read by `body-map`).
   Line texts (D121): the WOD form asks `BalanceService.readableTexts` (debounced, blank texts not asked) and warns
   under the field, never blocks; admins see every uncounted line on `/admin/balance` (`getUncountedLines`).
+- Programming balance (`features/programming`, lot D', `/box/programming`, staff of any role: `AccessService.staffGyms()`,
+  `staffGymSelection('STAFF')`, `gymPermissionGuard('STAFF')`): `ProgrammingService.getBalance` (cycle start = Monday of the
+  device's week, 4-8 weeks, RX / Scaled, optional blocks, profile days); `pattern-radar` (SVG drawn with the theme variables
+  `var(--color-*)`, no new Tailwind utility; axis buttons open the details), `programming.utils.ts` (axes order =
+  Aldebaran's `MovementPattern.Axis`, `PATTERN_AXES` in `movement.model.ts`). Reuses `review-metcons` (always shown, `emptyKey`
+  explains that a For Time without time cap gives no minute) and `review-modalities`. Desktop: two independent stacks
+  (radar + regions | profiles + metcons + modalities) that dissolve on a phone (`contents` + `order`). Notes for a
+  partial cycle (`programmedWeeks`), no official Scaled (`scaledLines` = 0: Scaled disabled) and missing profile sizes.
+  Alerts and thresholds come from Aldebaran only.
 - WOD catalogue (`/wods`) = public WODs only: family chips with counts (`WodFacets.categoryCounts`),
   format then sub-category chips, rows with a movement preview, competitions grouped by edition
   (`editionYear`, latest first, `sort=title,desc`), numbered pagination (`GET /wods/count`; page and

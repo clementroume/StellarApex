@@ -1320,12 +1320,106 @@
       "EMPTY": "Pas encore de WOD perso."
     }
   },
+  "PROGRAMMING": {
+    "SUBTITLE": "La prescription de vos séances sur un cycle, pour un athlète qui vient tous les jours ou à jours fixes.",
+    "SETTINGS": "Cycle",
+    "START": "Début",
+    "PREVIOUS_WEEK": "Semaine précédente",
+    "NEXT_WEEK": "Semaine suivante",
+    "WEEKS": "Durée",
+    "WEEKS_COUNT": "{{count}} semaines",
+    "LEVEL": "Version",
+    "OPTIONAL": "Blocs optionnels",
+    "CYCLE": "Du {{from}} au {{to}} · {{sessions}} séances CrossFit · alertes sur chaque fenêtre de 4 semaines ({{windows}})",
+    "UNCOUNTED": "Non comptées : {{sessions}} séances de spécialité · {{lines}} lignes non lues.",
+    "NO_GYM": "Vous n'êtes staff d'aucune box ni prog.",
+    "LOAD_ERROR": "Le bilan n'a pas pu être chargé.",
+    "EMPTY": "Aucune séance CrossFit sur ce cycle.",
+    "METCONS_EMPTY": "Aucune minute comptée : les minutes viennent du format (AMRAP, EMOM, intervalles, time cap). Un For Time sans time cap n'en donne pas.",
+    "NO_SCALED": "Aucune version Scaled officielle sur ce cycle : le Scaled se lirait comme le RX.",
+    "PARTIAL": "Seulement {{programmed}} semaine(s) programmée(s) sur {{weeks}} : les semaines vides comptent quand même dans les fenêtres, le bilan est partiel.",
+    "WINDOW": "{{from}} – {{to}}",
+    "CONCENTRATED": "Concentré sur peu de jours : {{axes}}. Un athlète sans jours fixes le manque souvent.",
+    "PROFILES": {
+      "TITLE": "Profils de fréquentation",
+      "INTRO": "Un athlète qui vient les mêmes jours chaque semaine.",
+      "SIZE": "{{count}} jours",
+      "IN_ALERT": "{{count}} sur {{total}} en alerte",
+      "NONE": "aucune alerte ({{total}} profils)",
+      "COMPOSE": "Composer un profil",
+      "SIZES_NOTE": "{{days}} jours d'entraînement : un profil de {{sizes}} jours serait la semaine complète ou plus, il n'est pas listé.",
+      "BACK": "Tous les profils"
+    },
+    "PROFILE": {
+      "TITLE": "Profil {{days}}",
+      "NO_ALERT": "Aucune alerte pour ce profil."
+    },
+    "FULL": {
+      "TITLE": "Semaine complète",
+      "DAYS": "{{count}} jours",
+      "NO_ALERT": "Aucune alerte sur la semaine complète."
+    },
+    "ALERT": {
+      "GAP_TITLE": "{{axis}} : {{share}} des séries",
+      "GAP_WHY": "La semaine complète en a {{full}} : ce profil en fait moins de 60 %.",
+      "MINIMUM_TITLE": "{{group}} : {{sets}} séries par semaine",
+      "MINIMUM_WHY": "Peu de travail pour progresser (repère : {{limit}} séries par semaine).",
+      "MINIMUM_SHORT": "{{group}} {{sets}} séries/sem"
+    },
+    "UNUSUAL": {
+      "TITLE": "Séance inhabituelle",
+      "LINE": "{{day}} · {{region}} : {{sets}} séries, contre {{base}} au plus sur les 4 semaines d'avant. Information, pas une alerte."
+    },
+    "REGIONS": {
+      "TITLE": "Régions (part du volume)",
+      "BEHIND": "En retrait",
+      "AHEAD": "Au-dessus"
+    },
+    "RADAR": {
+      "LABEL": "Toile des schémas de mouvement",
+      "FULL_WEEK": "semaine complète",
+      "PROFILE": "ce profil",
+      "DETAILS": "Détail d'un axe",
+      "NOT_JUDGED": "Trop irrégulier pour être jugé : une fréquentation au hasard le manque déjà souvent.",
+      "DETAILS_NOTE": "Part des séries ; une ligne peut compter sur deux détails d'un axe.",
+      "EXAMPLES": {
+        "SQUAT": "Squat, Thruster, Wall-ball, réception du Clean et du Snatch complets.",
+        "HINGE": "Deadlift, Kettlebell Swing, tirage du Clean et du Snatch, Burpee.",
+        "LUNGE": "Lunge, Pistol, Box Step-up, Split Jerk."
+      }
+    },
+    "GROUPS": {
+      "quadriceps-femoris": "Quadriceps",
+      "musculi-ischiocrurales": "Ischio-jambiers",
+      "musculi-glutei": "Fessiers",
+      "latissimus-dorsi": "Grand dorsal",
+      "pectoralis-major": "Grand pectoral",
+      "deltoideus": "Deltoïdes",
+      "triceps-brachii": "Triceps"
+    },
+    "HELP": {
+      "OPEN": "Comment lire ce bilan",
+      "TITLE": "Comment lire ce bilan",
+      "INTRO": "Calculé à partir de la prescription de vos séances CrossFit (hors spécialités). Les athlètes ne le voient jamais.",
+      "RADAR_TITLE": "Toile",
+      "RADAR": "Chaque axe est un schéma de mouvement fondamental ; un mouvement composé compte sur chacun de ses axes (Thruster : Squat et Push). Touchez un axe pour son détail.",
+      "PROFILES_TITLE": "Profils",
+      "PROFILES": "Un athlète qui vient 3, 4 ou 5 jours fixes par semaine. Chaque profil est comparé à votre semaine complète, jamais à une norme.",
+      "ALERTS_TITLE": "Alertes",
+      "ALERTS": "Un schéma d'un profil sous 60 % de sa part en semaine complète, quand ce schéma est assez régulier pour être jugé ; un grand groupe musculaire sous 4 séries par semaine. Seuils provisoires.",
+      "INFO_TITLE": "Informations",
+      "INFO": "Régions comparées à la semaine complète, schémas concentrés sur peu de jours, séances inhabituelles : des faits à lire, jamais des alertes."
+    }
+  },
   "BOX": {
     "SESSIONS": {
       "TITLE": "Séances"
     },
     "LEADERBOARDS": {
       "TITLE": "Classements"
+    },
+    "PROGRAMMING": {
+      "TITLE": "Bilan de la prog"
     },
     "MEMBERS": {
       "TITLE": "Membres",

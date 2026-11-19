@@ -1,0 +1,68 @@
+<div class="flex flex-col gap-2">
+  <svg viewBox="-45 -5 390 310" class="mx-auto w-full max-w-96" role="img" [attr.aria-label]="'PROGRAMMING.RADAR.LABEL' | translate">
+    @for (ring of rings(); track ring.label) {
+      <polygon [attr.points]="ring.points" fill="none" stroke="var(--color-border)"/>
+      <text [attr.x]="centre + 3" [attr.y]="ring.y + 3" font-size="8" fill="var(--color-muted-foreground)">{{ ring.label }}</text>
+    }
+    @for (spoke of spokes(); track spoke.axis) {
+      <line [attr.x1]="centre" [attr.y1]="centre" [attr.x2]="spoke.x" [attr.y2]="spoke.y" stroke="var(--color-border)"/>
+    }
+    <polygon [attr.points]="fullPolygon()" fill="var(--color-primary)" fill-opacity=".25" stroke="var(--color-primary)" stroke-width="2" data-slot="radar-full"/>
+    @if (profilePolygon(); as points) {
+      <polygon [attr.points]="points" fill="none" stroke="var(--color-secondary)" stroke-width="2" stroke-dasharray="5 4" data-slot="radar-profile"/>
+    }
+    @for (dot of alertDots(); track $index) {
+      <circle [attr.cx]="dot[0]" [attr.cy]="dot[1]" r="4" fill="var(--color-secondary)"/>
+    }
+    @for (spoke of spokes(); track spoke.axis) {
+      <text [attr.x]="spoke.lx" [attr.y]="spoke.ly - 3" [attr.text-anchor]="spoke.anchor" font-size="12.5" font-weight="600"
+            [attr.fill]="spoke.alert ? 'var(--color-secondary)' : 'var(--color-foreground)'">{{ 'MOVEMENT.PATTERNS.AXES.' + spoke.axis | translate }}</text>
+      <text [attr.x]="spoke.lx" [attr.y]="spoke.ly + 10" [attr.text-anchor]="spoke.anchor" font-size="10" fill="var(--color-muted-foreground)">{{ spoke.value }}</text>
+    }
+  </svg>
+  <div class="flex flex-wrap justify-center gap-3 text-xs text-muted-foreground">
+    <span class="flex items-center gap-1"><i class="inline-block size-2.5 rounded-sm bg-primary"></i>{{ 'PROGRAMMING.RADAR.FULL_WEEK' | translate }}</span>
+    @if (compare()) {
+      <span class="flex items-center gap-1"><i class="inline-block size-2.5 rounded-sm bg-secondary"></i>{{ 'PROGRAMMING.RADAR.PROFILE' | translate }}</span>
+    }
+  </div>
+  <div class="flex flex-wrap justify-center gap-1.5" role="group" [attr.aria-label]="'PROGRAMMING.RADAR.DETAILS' | translate">
+    @for (axis of spokes(); track axis.axis) {
+      <button type="button" class="rounded-full border px-2.5 py-1 text-xs aria-pressed:border-primary aria-pressed:bg-primary/15"
+              [class.text-secondary]="axis.alert" [attr.aria-pressed]="selected() === axis.axis" (click)="toggle(axis.axis)">
+        {{ 'MOVEMENT.PATTERNS.AXES.' + axis.axis | translate }}
+      </button>
+    }
+  </div>
+  @if (panel(); as p) {
+    <div class="flex flex-col gap-1.5 border-t pt-2 text-xs" data-slot="radar-panel">
+      <div class="flex flex-wrap items-baseline justify-between gap-2">
+        <span class="text-sm font-semibold">{{ 'MOVEMENT.PATTERNS.AXES.' + p.axis | translate }}</span>
+        <span class="text-muted-foreground">
+          {{ 'PROGRAMMING.RADAR.FULL_WEEK' | translate }} {{ p.fullText }}
+          @if (compare()) { · {{ 'PROGRAMMING.RADAR.PROFILE' | translate }} {{ p.text }} }
+        </span>
+      </div>
+      @if (compare() && !p.share.judged) {
+        <p class="text-muted-foreground" data-slot="not-judged">{{ 'PROGRAMMING.RADAR.NOT_JUDGED' | translate }}</p>
+      }
+      @for (row of p.rows; track row.pattern) {
+        <div class="grid items-center gap-2" style="grid-template-columns: 6.5rem 1fr 3.25rem">
+          <span>{{ 'MOVEMENT.PATTERNS.' + row.pattern | translate }}</span>
+          <div class="relative h-3.5 overflow-hidden rounded bg-muted">
+            <span class="absolute left-0 top-0 h-1.5 bg-primary" [style.width.%]="row.fullWidth"></span>
+            @if (compare()) {
+              <span class="absolute bottom-0 left-0 h-1.5 bg-secondary" [style.width.%]="row.width"></span>
+            }
+          </div>
+          <span class="text-right tabular-nums leading-tight">{{ row.fullText }}@if (compare()) {<br><span class="text-secondary">{{ row.text }}</span>}</span>
+        </div>
+      } @empty {
+        <p class="text-muted-foreground">{{ 'PROGRAMMING.RADAR.EXAMPLES.' + p.axis | translate }}</p>
+      }
+      @if (p.rows.length) {
+        <p class="text-muted-foreground">{{ 'PROGRAMMING.RADAR.DETAILS_NOTE' | translate }}</p>
+      }
+    </div>
+  }
+</div>
