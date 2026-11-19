@@ -67,7 +67,7 @@ export interface ProfileRow {
   alerts: number;
 }
 
-/** The profiles of one size (3, 4 or 5 days). */
+/** The profiles of one size (3, 4 or 5 days); `total` 0 when the size is the full week or more. */
 export interface ProfileSummary {
   size: number;
   total: number;

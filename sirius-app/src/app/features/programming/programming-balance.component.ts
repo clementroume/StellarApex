@@ -1,4 +1,4 @@
-import {ChangeDetectionStrategy, Component, computed, effect, inject, signal} from '@angular/core';
+import {ChangeDetectionStrategy, Component, computed, effect, inject, linkedSignal, signal} from '@angular/core';
 import {HttpContext} from '@angular/common/http';
 import {TranslatePipe, TranslateService} from '@ngx-translate/core';
 import {NgIcon, provideIcons} from '@ng-icons/core';
@@ -56,8 +56,8 @@ export class ProgrammingBalanceComponent {
   readonly weeks = signal(4);
   readonly scaled = signal(false);
   readonly optional = signal(false);
-  /** The profile detailed; empty = none. */
-  readonly days = signal<DayOfWeek[]>([]);
+  /** The profile detailed; empty = none. Reset when the staff picks another gym (other training days). */
+  readonly days = linkedSignal<number | null, DayOfWeek[]>({source: () => this.gym.gymId(), computation: () => []});
   readonly balance = signal<ProgrammingBalance | null>(null);
   readonly isLoading = signal(true);
   readonly failed = signal(false);
@@ -77,7 +77,12 @@ export class ProgrammingBalanceComponent {
       from: shortDay(b.start, this.lang()), to: shortDay(b.end, this.lang()), sessions: b.sessions, windows: b.windows
     });
   });
-  readonly profile = computed(() => this.days().length ? this.balance()?.profile ?? null : null);
+  /** The profile of the last answer, only while it is the one asked (not the previous one during a reload). */
+  readonly profile = computed(() => {
+    const p = this.balance()?.profile ?? null;
+    const days = this.days();
+    return p && days.length === p.days.length && days.every(d => p.days.includes(d)) ? p : null;
+  });
   readonly profileWindow = computed(() => {
     const p = this.profile();
     return p ? this.translate.instant('PROGRAMMING.WINDOW', {
@@ -87,12 +92,11 @@ export class ProgrammingBalanceComponent {
   /** No official Scaled version in the cycle: Scaled would read as RX. */
   readonly noScaled = computed(() => this.balance()?.scaledLines === 0);
   readonly profileDays = computed(() => daysLabel(this.days(), this.lang()));
-  /** Why some profile sizes are missing: a size as large as the training days is the full week. */
+  /** Why some profile sizes have no profile: a size as large as the training days is the full week. */
   readonly sizesNote = computed(() => {
     const b = this.balance();
     if (!b) return '';
-    const shown = b.summaries.map(s => s.size);
-    const missing = [3, 4, 5].filter(size => !shown.includes(size));
+    const missing = b.summaries.filter(s => s.total === 0).map(s => s.size);
     return missing.length
       ? this.translate.instant('PROGRAMMING.PROFILES.SIZES_NOTE', {days: b.trainingDays.length, sizes: missing.join(', ')})
       : '';
@@ -126,7 +130,7 @@ export class ProgrammingBalanceComponent {
   })));
   readonly concentrated = computed(() => (this.balance()?.concentratedAxes ?? [])
     .map(a => this.translate.instant('MOVEMENT.PATTERNS.AXES.' + a)).join(', '));
-  readonly summaries = computed(() => (this.balance()?.summaries ?? []).map(s => ({
+  readonly summaries = computed(() => (this.balance()?.summaries ?? []).filter(s => s.total > 0).map(s => ({
     ...s,
     rows: s.inAlert.map(row => ({row, days: daysLabel(row.days, this.lang()), main: this.shortAlert(row)}))
   })));
@@ -190,7 +194,7 @@ export class ProgrammingBalanceComponent {
     if (!profile) return [];
     return profile.alerts.map(alert => {
       if (alert.kind === 'PATTERN_GAP') {
-        const full = profile.axes.find(a => a.axis === alert.subject)?.fullShare ?? alert.limit / 0.6;
+        const full = profile.axes.find(a => a.axis === alert.subject)?.fullShare ?? 0;
         const axis = this.translate.instant('MOVEMENT.PATTERNS.AXES.' + alert.subject);
         return {
           kind: alert.kind,

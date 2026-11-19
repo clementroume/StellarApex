@@ -1,4 +1,4 @@
-import {ProgrammingBalance, ProgrammingProfile} from '../../api/aldebaran/models/programming.model';
+import {DayOfWeek, ProgrammingBalance, ProgrammingProfile} from '../../api/aldebaran/models/programming.model';
 
 /** A profile of the test programming: Squat at `squat` % against 36 % in the full week. */
 export function profileOf(squat: number, alerts: ProgrammingProfile['alerts'] = []): ProgrammingProfile {
@@ -23,8 +23,11 @@ export function profileOf(squat: number, alerts: ProgrammingProfile['alerts'] = 
   };
 }
 
-/** The test programming: Monday to Saturday, one 3-day profile in alert on Squat. */
-export function balanceOf(withProfile = false): ProgrammingBalance {
+/**
+ * The test programming: Monday to Saturday, one 3-day profile in alert on Squat, no profile of 5
+ * days (total 0); with `days`, the profile asked.
+ */
+export function balanceOf(days: DayOfWeek[] = []): ProgrammingBalance {
   return {
     gymId: 4, start: '2026-11-16', end: '2026-12-13', weeks: 4, scaled: false, optional: false,
     trainingDays: ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'],
@@ -33,10 +36,11 @@ export function balanceOf(withProfile = false): ProgrammingBalance {
     summaries: [
       {size: 3, total: 20, inAlert: [{days: ['THURSDAY', 'FRIDAY', 'SATURDAY'], alerts: 1,
         main: {kind: 'PATTERN_GAP', subject: 'SQUAT', value: 0, limit: 21.6}}]},
-      {size: 4, total: 15, inAlert: []}
+      {size: 4, total: 15, inAlert: []},
+      {size: 5, total: 0, inAlert: []}
     ],
-    profile: withProfile
-      ? profileOf(0, [{kind: 'PATTERN_GAP', subject: 'SQUAT', value: 0, limit: 21.6}])
+    profile: days.length
+      ? {...profileOf(0, [{kind: 'PATTERN_GAP', subject: 'SQUAT', value: 0, limit: 21.6}]), days}
       : null,
     concentratedAxes: ['CORE'],
     unusualSessions: [{date: '2026-12-05', region: 'SHOULDER', sets: 34, base: 26}],

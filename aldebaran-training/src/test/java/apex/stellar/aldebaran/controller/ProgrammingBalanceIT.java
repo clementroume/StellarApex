@@ -173,9 +173,12 @@ class ProgrammingBalanceIT extends BaseIntegrationTest {
         .andExpect(jsonPath("$.fullWeek.details[?(@.pattern == 'PUSH_V')].share").value(hasItem(closeTo(50.0, 1e-9))))
         .andExpect(jsonPath("$.concentratedAxes", hasSize(0)))
         .andExpect(jsonPath("$.unusualSessions", hasSize(0)))
-        .andExpect(jsonPath("$.summaries", hasSize(1)))
+        // 4 training days: 4 profiles of 3 days; 4 and 5 days are the full week (no profile)
+        .andExpect(jsonPath("$.summaries", hasSize(3)))
         .andExpect(jsonPath("$.summaries[0].size").value(3))
         .andExpect(jsonPath("$.summaries[0].total").value(4))
+        .andExpect(jsonPath("$.summaries[1].total").value(0))
+        .andExpect(jsonPath("$.summaries[2].total").value(0))
         .andExpect(jsonPath("$.profile").isEmpty())
         .andExpect(jsonPath("$.capabilities.canReorder").value(false));
 
@@ -202,6 +205,19 @@ class ProgrammingBalanceIT extends BaseIntegrationTest {
         .andExpect(jsonPath("$.profile.axes[?(@.axis == 'SQUAT')].judged").value(hasItem(true)))
         .andExpect(jsonPath("$.profile.alerts[?(@.kind == 'PATTERN_GAP')]", hasSize(0)))
         .andExpect(jsonPath("$.profile.windowStart").value(start.toString()));
+
+    // A day without session is left out: the profile stays the 3-day one
+    mockMvc
+        .perform(
+            as(get(URL).param("start", start.toString()).param("days", "MONDAY", "WEDNESDAY", "THURSDAY", "SUNDAY"),
+                GYM + ":OWNER:"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.profile.days", hasSize(3)))
+        .andExpect(jsonPath("$.profile.axes[?(@.axis == 'SQUAT')].judged").value(hasItem(true)));
+    mockMvc
+        .perform(as(get(URL).param("start", start.toString()).param("days", "SUNDAY"), GYM + ":OWNER:"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.profile").isEmpty());
   }
 
   @Test

@@ -11,15 +11,16 @@ import {DisplayGymService} from '../../core/services/display-gym.service';
 import {localDate, mondayOf} from '../sessions/session.utils';
 import {ProgrammingBalanceComponent} from './programming-balance.component';
 import {balanceOf} from './programming.fixture';
+import {DayOfWeek} from '../../api/aldebaran/models/programming.model';
 
 describe('ProgrammingBalanceComponent', () => {
   let fixture: ComponentFixture<ProgrammingBalanceComponent>;
   let service: {getBalance: ReturnType<typeof vi.fn>};
 
-  async function setup(response: (days: string[]) => unknown, staff = [{gymId: 4, gymName: 'Box', gymRole: 'COACH'}]) {
+  async function setup(response: (days: DayOfWeek[]) => unknown, staff = [{gymId: 4, gymName: 'Box', gymRole: 'COACH'}]) {
     service = {
       getBalance: vi.fn().mockName('ProgrammingService.getBalance')
-        .mockImplementation((_: number, q: {days: string[]}) => response(q.days))
+        .mockImplementation((_: number, q: {days: DayOfWeek[]}) => response(q.days))
     };
     await TestBed.configureTestingModule({
       imports: [ProgrammingBalanceComponent],
@@ -65,7 +66,7 @@ describe('ProgrammingBalanceComponent', () => {
   });
 
   it('opens a profile in alert, shows its alert and goes back to all profiles', async () => {
-    await setup(days => of(balanceOf(days.length > 0)));
+    await setup(days => of(balanceOf(days)));
     (el('[data-slot="profile-row"]') as HTMLButtonElement).click();
     fixture.detectChanges();
     expect(lastQuery().days).toEqual(['THURSDAY', 'FRIDAY', 'SATURDAY']);
@@ -98,14 +99,27 @@ describe('ProgrammingBalanceComponent', () => {
 
   it('explains the profile sizes left out and draws one bar per region', async () => {
     await setup(() => of(balanceOf()));
-    // Sizes 3 and 4 are listed, 5 is not (6 training days would allow it: the backend decides, the page explains)
+    // Sizes 3 and 4 are listed; 5 comes with no profile (the backend decides, the page explains)
     expect(el('[data-slot="sizes-note"]')!.textContent).toContain('PROGRAMMING.PROFILES.SIZES_NOTE');
     expect(all('[data-slot="regions"] .rounded-full.bg-muted')).toHaveLength(2);
     expect(el('[data-slot="partial"]')).toBeNull();
   });
 
-  it('composes a profile with the day chips', async () => {
-    await setup(days => of(balanceOf(days.length > 0)));
+  it('never shows the previous profile under the days now asked', async () => {
+    // The answer always carries Thursday to Saturday, whatever was asked
+    await setup(days => of(balanceOf(days.length ? ['THURSDAY', 'FRIDAY', 'SATURDAY'] : [])));
+    (el('[data-slot="profile-row"]') as HTMLButtonElement).click();
+    fixture.detectChanges();
+    expect(el('[data-slot="profile"]')).not.toBeNull();
+    const chips = all('[aria-labelledby="programming-compose"] button');
+    chips[0].click();
+    fixture.detectChanges();
+    expect(lastQuery().days).toEqual(['MONDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY']);
+    expect(el('[data-slot="profile"]')).toBeNull();
+  });
+
+    it('composes a profile with the day chips', async () => {
+    await setup(days => of(balanceOf(days)));
     const chips = all('[aria-labelledby="programming-compose"] button');
     expect(chips).toHaveLength(6);
     chips[2].click();

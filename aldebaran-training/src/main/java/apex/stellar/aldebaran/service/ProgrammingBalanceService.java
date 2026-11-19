@@ -105,7 +105,6 @@ public class ProgrammingBalanceService {
         uncountedSessions += inCycle ? 1 : 0;
         continue;
       }
-      sessions += inCycle ? 1 : 0;
       LocalDate date = session.getDate();
       WeekTotals vector = new WeekTotals();
       boolean counted = false;
@@ -114,11 +113,14 @@ public class ProgrammingBalanceService {
           continue;
         }
         counted = true;
-        BalanceCalculator.add(
-            Workout.prescribed(block.getWod(), date, block.getKind(), scaled), BalanceCalculator.NearRecord.NEVER, vector);
+        Workout workout = Workout.prescribed(block.getWod(), date, block.getKind(), scaled);
+        BalanceCalculator.add(workout, BalanceCalculator.NearRecord.NEVER, vector);
         if (inCycle) {
-          for (WodMovement line : block.getWod().getMovements()) {
+          // The lines read (the Scaled version when asked), and the lines that have one
+          for (WodMovement line : workout.lines()) {
             uncountedLines += BalanceCalculator.uncounted(block.getWod(), line) != null ? 1 : 0;
+          }
+          for (WodMovement line : block.getWod().getMovements()) {
             scaledLines += line.getScaled() != null ? 1 : 0;
           }
         }
@@ -127,6 +129,7 @@ public class ProgrammingBalanceService {
         continue; // only text or optional blocks: not a training day of the profiles
       }
       if (inCycle) {
+        sessions++;
         programmed.add(monday(date));
       }
       // Two CrossFit sessions on the same day make one day (D161)
@@ -147,10 +150,8 @@ public class ProgrammingBalanceService {
     ProfileResponse fullWeek = toResponse(ProgrammingBalance.evaluate(plan, windows, training), muscles);
     List<ProfileSummary> summaries = new ArrayList<>();
     for (int size : ProgrammingBalance.PROFILE_SIZES) {
+      // A size as large as the training days is the full week: sent with no profile, Sirius says why
       List<Set<DayOfWeek>> profiles = ProgrammingBalance.profiles(training, size);
-      if (profiles.isEmpty()) {
-        continue;
-      }
       List<ProfileRow> rows = new ArrayList<>();
       for (Set<DayOfWeek> profile : profiles) {
         ProfileBalance balance = ProgrammingBalance.evaluate(plan, windows, profile);
@@ -161,8 +162,12 @@ public class ProgrammingBalanceService {
       summaries.add(new ProfileSummary(size, profiles.size(), rows));
     }
     ProfileResponse profile = null;
-    if (days != null && !days.isEmpty()) {
-      Set<DayOfWeek> asked = EnumSet.copyOf(days);
+    // A profile holds training days only: another day would judge it for a larger size
+    Set<DayOfWeek> asked = EnumSet.noneOf(DayOfWeek.class);
+    if (days != null) {
+      days.stream().filter(training::contains).forEach(asked::add);
+    }
+    if (!asked.isEmpty()) {
       profile = toResponse(ProgrammingBalance.evaluate(plan, windows, asked), muscles);
     }
     return new ProgrammingBalanceResponse(
@@ -174,7 +179,7 @@ public class ProgrammingBalanceService {
         optional,
         List.copyOf(training),
         sessions,
-        weeks - ProgrammingBalance.WINDOW_WEEKS + 1,
+        windows.size(),
         uncountedSessions,
         uncountedLines,
         programmed.size(),

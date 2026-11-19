@@ -139,7 +139,12 @@ public final class WeekTotals {
     lifts.computeIfAbsent(label, l -> new LiftSets(movementId)).add(sets, near);
   }
 
-  /** Adds another vector to this one. */
+  /**
+   * Adds one line's sets to its pattern details and, once each, to their axes.
+   *
+   * @param lineAxes The line's patterns.
+   * @param sets Its sets.
+   */
   void addPatterns(Set<MovementPattern> lineAxes, double sets) {
     Set<Axis> seen = EnumSet.noneOf(Axis.class);
     for (MovementPattern pattern : lineAxes) {
@@ -149,6 +154,7 @@ public final class WeekTotals {
     seen.forEach(axis -> axes.merge(axis, sets, Double::sum));
   }
 
+  /** Adds another vector to this one. */
   void addAll(WeekTotals other) {
     other.axes.forEach((axis, sets) -> axes.merge(axis, sets, Double::sum));
     other.patterns.forEach((pattern, sets) -> patterns.merge(pattern, sets, Double::sum));

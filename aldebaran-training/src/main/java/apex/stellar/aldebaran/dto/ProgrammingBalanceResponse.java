@@ -21,16 +21,18 @@ import org.jspecify.annotations.Nullable;
  * @param scaled True when the official Scaled versions were read (D162).
  * @param optional True when optional blocks were counted (D161).
  * @param trainingDays Days of the week with a CrossFit session in the cycle.
- * @param sessions CrossFit sessions counted in the cycle.
+ * @param sessions CrossFit sessions of the cycle with at least one counted block.
  * @param windows Windows of 4 weeks evaluated.
  * @param uncountedSessions Sessions of the cycle left out: specialties and other disciplines.
- * @param uncountedLines Lines of counted blocks that count nothing (unreadable text, no set value).
+ * @param uncountedLines Lines of counted blocks that count nothing (unreadable text, no set value),
+ *     in the version read (RX or official Scaled).
  * @param programmedWeeks Weeks of the cycle holding at least one counted session (fewer than {@code
  *     weeks}: the balance reads empty weeks).
  * @param scaledLines Lines of the cycle with an official Scaled version (0: Scaled reads as RX).
  * @param fullWeek The athlete who comes every training day.
- * @param summaries One per profile size (3, 4, 5 days) smaller than the training days.
- * @param profile The profile asked for ({@code days}), or null.
+ * @param summaries One per profile size (3, 4, 5 days); {@code total} 0 when the size is as large
+ *     as the training days (the full week).
+ * @param profile The profile asked for ({@code days}, its training days only), or null.
  * @param concentratedAxes Axes an athlete without fixed days often misses (information, D181).
  * @param unusualSessions Sessions unusual against the weeks before (information, D173).
  * @param capabilities What the user may do on this programming.
