@@ -67,7 +67,8 @@ src/spartan.css       # spartan tokens and Tailwind colours mapped to the palett
   (`AccessService.staffGyms`, guard `gymPermissionGuard('STAFF')`). The coach picks a cycle (Monday, 4 to 8 weeks), RX or
   the official Scaled versions and the optional blocks; the page shows the full week (radar of the movement patterns,
   each axis opening its details, regions, unusual sessions, axes concentrated on few days), the attendance profiles of
-  3, 4 and 5 days in alert, and a profile picked or composed with day chips, drawn against the full week. Notes tell
+  3, 4 and 5 days in alert, and a profile picked or composed with day chips, drawn against the full week. An unusual
+  session on a competition day carries a "Competition" badge and says the volume is expected. Notes tell
   when the cycle is only partly programmed, when no official Scaled version exists (Scaled is then disabled) and why a
   profile size is missing (a 4-day box has no 4-day profile: it is the full week). Rules and thresholds live in Aldebaran (`GET /programming/gyms/{gymId}/balance`); athletes never see it.
 * **Records** (`features/records`, lot C): My training › Records is the user's records board: one tile

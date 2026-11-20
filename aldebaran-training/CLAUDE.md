@@ -14,10 +14,13 @@ columns `*_en` / `*_fr`, the former single-language columns still read as Englis
 `structure`, former V16 `team_size` / `team_mode`, former V18 `rep_max`, and `sets` / `segment` / `complex_group` /
 `team_split` / `percent_of_rm` / `rm_reps` / `component_techniques` / `length` / `length_unit` for WOD movements; catalog-model columns of `movements.csv` in `config/CatalogCsv`; former `wod_type` values read
 as a category + sub-category; a former `ROUNDS_REPS` score type reads as `REPS`).
-`demo/DevGymWodSeeder` (`@Profile("demo")`, package `aldebaran.demo` = what to delete to retire the demo) seeds WODs for the Antares test gyms,
-resolving IDs from the `antares` schema with `JdbcTemplate`, then calls `demo/DevScoreSeeder`
-(scores of the test accounts on gym WODs and public benchmarks, PRs via `ScoreRanking`; skipped when
-`owner@sparta.com` already has scores).
+`demo/DevGymWodSeeder` (`@Profile("demo")`, package `aldebaran.demo` + resource `demo/programs.json` = what to delete to
+retire the demo) resolves the Antares gyms and users with `JdbcTemplate`, writes the two demo programs (`DemoPrograms`:
+sessions through `SessionService` / `WodService`, data exported from `docs-private/demo/outils/export_json.py`), then
+`DevScoreSeeder` (public benchmarks, N RM tests, personal WOD) and `DemoProgramScores` (journals and scores of the past
+sessions through `ScoreService`). The demo seeders act as the demo account they write for (`DemoActor`, in-memory
+security context on the seeding thread, demo profile only; decision of 2026-11-19): never call a service as another user
+anywhere else.
 `./mvnw verify` runs unit tests and `*IT` (Testcontainers PostgreSQL + Redis, Docker required).
 
 ## Identity and security

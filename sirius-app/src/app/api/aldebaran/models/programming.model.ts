@@ -80,6 +80,8 @@ export interface UnusualSession {
   region: string;
   sets: number;
   base: number;
+  /** The day holds a competition block (a throwdown): the volume is expected. */
+  competition: boolean;
 }
 
 /**

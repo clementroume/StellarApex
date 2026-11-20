@@ -2,6 +2,7 @@ package apex.stellar.aldebaran.demo;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -14,14 +15,16 @@ import static org.mockito.Mockito.when;
 
 import apex.stellar.aldebaran.model.entities.Movement;
 import apex.stellar.aldebaran.model.entities.Wod;
-import apex.stellar.aldebaran.model.entities.WodMovement;
 import apex.stellar.aldebaran.model.enums.Category;
 import apex.stellar.aldebaran.repository.MovementRepository;
 import apex.stellar.aldebaran.repository.WodRepository;
+import java.time.Clock;
 import java.time.Duration;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
@@ -46,105 +49,93 @@ class DevGymWodSeederTest {
           DevGymWodSeeder.SPARTA_OWNER, 100L,
           DevGymWodSeeder.ZEUS_PROGRAMMER, 200L,
           DevGymWodSeeder.SPARTA_ATHLETE, 300L);
+  private static final LocalDate TODAY = LocalDate.of(2026, 11, 19);
+  private static final DemoPrograms.Program SPARTA =
+      new DemoPrograms.Program("SPARTA", "Spartacus CrossFit", "owner", "Sparta · ", -6, null);
+  private static final DemoPrograms.Program ZEUS =
+      new DemoPrograms.Program("ZEUS", "Zeus Programming", "programmer", "Zeus · ", -6, null);
 
   @Mock private JdbcTemplate jdbcTemplate;
   @Mock private WodRepository wodRepository;
   @Mock private MovementRepository movementRepository;
   @Mock private DevScoreSeeder devScoreSeeder;
+  @Mock private DemoPrograms demoPrograms;
+  @Mock private DemoProgramScores demoProgramScores;
   @Mock private PlatformTransactionManager transactionManager;
 
   private DevGymWodSeeder seeder;
 
   @BeforeEach
   void setUp() {
+    Clock clock = Clock.fixed(Instant.parse("2026-11-19T10:00:00Z"), ZoneOffset.UTC);
     seeder =
         new DevGymWodSeeder(
             jdbcTemplate,
             wodRepository,
             movementRepository,
             devScoreSeeder,
+            demoPrograms,
+            demoProgramScores,
             transactionManager,
+            clock,
             3,
             Duration.ZERO);
     AtomicLong id = new AtomicLong();
     List<Movement> catalog =
-        Stream.of(
-                "Wall-ball Shot", "Box Jump", "American Kettlebell Swing", "Power Clean",
-                "Burpee", "Double-under", "Air Squat", "Sit-up", "Push-up", "Pull-up",
-                "Back Squat", "Deadlift", "Rowing", "Toes-to-Bar", "Thruster", "Chest-to-Bar Pull-up",
-                "Front Squat", "Handstand Push-up", "Running")
-            .map(
-                n ->
-                    Movement.builder()
-                        .id(id.incrementAndGet())
-                        .name(n)
-                        .category(Category.OTHER_LIFTS)
-                        .build())
+        Stream.of("Running", "Air Squat")
+            .map(n -> Movement.builder().id(id.incrementAndGet()).name(n).category(Category.OTHER_LIFTS).build())
             .toList();
     lenient().when(movementRepository.findAll()).thenReturn(catalog);
     lenient().when(movementRepository.count()).thenReturn((long) catalog.size());
+    lenient().when(demoPrograms.programs()).thenReturn(List.of(SPARTA, ZEUS));
   }
 
+  /** Antares rows exist: names and e-mails resolve; any other lookup finds nothing. */
   private void antaresReady() {
     when(jdbcTemplate.queryForList(anyString(), eq(Long.class), any(Object[].class)))
         .thenAnswer(
             inv -> {
-              Long found = IDS.get((String) inv.getArgument(2));
+              Object key = inv.getArgument(2);
+              Long found = key instanceof String s ? IDS.get(s) : null;
               return found == null ? List.of() : List.of(found);
             });
   }
 
   @Test
-  @DisplayName("Seeds varied private WODs for both gyms and one personal WOD")
-  @SuppressWarnings("unchecked")
-  void shouldSeedGymWods() {
+  @DisplayName("Writes the personal WOD, both programs, then every score")
+  void shouldSeedProgramsAndScores() {
     antaresReady();
 
     assertTrue(seeder.seedWhenReady());
 
-    ArgumentCaptor<List<Wod>> captor = ArgumentCaptor.forClass(List.class);
-    verify(wodRepository).saveAll(captor.capture());
-    List<Wod> wods = captor.getValue();
+    ArgumentCaptor<Wod> personal = ArgumentCaptor.forClass(Wod.class);
+    verify(wodRepository).save(personal.capture());
+    assertEquals(DevGymWodSeeder.PERSONAL_WOD, personal.getValue().getTitle());
+    assertNull(personal.getValue().getGymId());
+    assertEquals(300L, personal.getValue().getAuthorId());
+    assertFalse(personal.getValue().isPublic());
+    assertEquals(2, personal.getValue().getMovements().size());
 
-    List<Wod> sparta = wods.stream().filter(w -> Objects.equals(w.getGymId(), 10L)).toList();
-    List<Wod> zeus = wods.stream().filter(w -> Objects.equals(w.getGymId(), 20L)).toList();
-    List<Wod> personal = wods.stream().filter(w -> w.getGymId() == null).toList();
-    assertEquals(4, sparta.size());
-    assertEquals(4, zeus.size());
-    assertEquals(1, personal.size());
-    assertTrue(sparta.stream().allMatch(w -> w.getAuthorId() == 100L));
-    assertTrue(zeus.stream().allMatch(w -> w.getAuthorId() == 200L));
-    assertEquals(300L, personal.getFirst().getAuthorId());
-    assertTrue(wods.stream().noneMatch(Wod::isPublic));
+    // Each program in its gym, written by its holder; scores after the sessions
+    verify(demoPrograms).seed(SPARTA, 10L, 100L, TODAY);
+    verify(demoPrograms).seed(ZEUS, 20L, 200L, TODAY);
     verify(devScoreSeeder).seed(10L, 20L);
-
-    // Varied formats so the UI can be checked
-    assertEquals(
-        4,
-        wods.stream().map(Wod::getWodType).distinct().count(),
-        "AMRAP, EMOM, FOR_TIME and STRENGTH expected");
-    // Every movement resolved against the catalog, with a 1-based order
-    for (Wod wod : wods) {
-      assertFalse(wod.getMovements().isEmpty(), wod.getTitle());
-      for (int i = 0; i < wod.getMovements().size(); i++) {
-        WodMovement wm = wod.getMovements().get(i);
-        assertEquals(i + 1, wm.getOrderIndex());
-        assertTrue(wm.getMovement().getId() != null, wm.getMovement().getName());
-      }
-    }
+    verify(demoProgramScores).seed(eq(SPARTA), eq(10L), any(), eq(TODAY));
+    verify(demoProgramScores).seed(eq(ZEUS), eq(20L), any(), eq(TODAY));
   }
 
   @Test
-  @DisplayName("Skips when the Sparta gym already has WODs")
-  void shouldSkipWhenAlreadySeeded() {
+  @DisplayName("Leaves a program already in its gym; scores keep their own check")
+  void shouldSkipSeededPrograms() {
     antaresReady();
-    when(wodRepository.existsByGymId(10L)).thenReturn(true);
+    when(demoPrograms.seeded(SPARTA, 10L)).thenReturn(true);
+    when(demoPrograms.seeded(ZEUS, 20L)).thenReturn(true);
 
     assertTrue(seeder.seedWhenReady());
 
-    verify(wodRepository, never()).saveAll(any());
-    // Scores have their own check, so an already seeded database still gets them
+    verify(demoPrograms, never()).seed(any(), any(), any(), any());
     verify(devScoreSeeder).seed(10L, 20L);
+    verify(demoProgramScores, times(2)).seed(any(), any(), any(), any());
   }
 
   @Test
@@ -155,7 +146,7 @@ class DevGymWodSeederTest {
 
     assertFalse(seeder.seedWhenReady());
 
-    verify(wodRepository, never()).saveAll(any());
+    verify(demoPrograms, never()).seed(any(), any(), any(), any());
     verify(jdbcTemplate, times(3 * 5))
         .queryForList(anyString(), eq(Long.class), any(Object[].class));
   }
@@ -167,12 +158,13 @@ class DevGymWodSeederTest {
         .thenThrow(new DataAccessResourceFailureException("relation antares.gyms does not exist"))
         .thenAnswer(
             inv -> {
-              Long found = IDS.get((String) inv.getArgument(2));
+              Object key = inv.getArgument(2);
+              Long found = key instanceof String s ? IDS.get(s) : null;
               return found == null ? List.of() : List.of(found);
             });
 
     assertTrue(seeder.seedWhenReady());
 
-    verify(wodRepository).saveAll(any());
+    verify(demoPrograms).seed(SPARTA, 10L, 100L, TODAY);
   }
 }

@@ -5,39 +5,38 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.lenient;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import apex.stellar.aldebaran.model.entities.Score;
+import apex.stellar.aldebaran.dto.ScoreRequest;
 import apex.stellar.aldebaran.model.entities.Score.ScalingLevel;
 import apex.stellar.aldebaran.model.entities.Wod;
 import apex.stellar.aldebaran.model.entities.Wod.ScoreType;
 import apex.stellar.aldebaran.repository.ScoreRepository;
 import apex.stellar.aldebaran.repository.WodRepository;
-import apex.stellar.aldebaran.service.MovementRecordService;
+import apex.stellar.aldebaran.service.ScoreService;
 import java.time.Clock;
-import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.stream.Collectors;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.transaction.PlatformTransactionManager;
 
 /** Unit tests for {@link DevScoreSeeder}. */
 @ExtendWith(MockitoExtension.class)
@@ -63,35 +62,54 @@ class DevScoreSeederTest {
   @Mock private JdbcTemplate jdbcTemplate;
   @Mock private WodRepository wodRepository;
   @Mock private ScoreRepository scoreRepository;
+  @Mock private ScoreService scoreService;
+  @Mock private DemoActor actor;
+  @Mock private PlatformTransactionManager transactionManager;
 
   private DevScoreSeeder seeder;
+  private Long currentUser;
+  /** Each request with the account it was logged as. */
+  private final List<Map.Entry<Long, ScoreRequest>> logged = new ArrayList<>();
 
   @BeforeEach
   void setUp() {
-    Clock clock = Clock.fixed(Instant.parse("2026-10-27T10:00:00Z"), ZoneOffset.UTC);
     seeder =
         new DevScoreSeeder(
-            jdbcTemplate, wodRepository, scoreRepository, mock(MovementRecordService.class), clock);
+            jdbcTemplate,
+            wodRepository,
+            scoreRepository,
+            scoreService,
+            actor,
+            transactionManager,
+            Clock.fixed(TODAY.atStartOfDay().toInstant(ZoneOffset.UTC), ZoneOffset.UTC));
     lenient()
-        .when(
-            jdbcTemplate.queryForList(
-                eq("SELECT division FROM antares.users WHERE id = ?"), eq(String.class), any()))
-        .thenAnswer(
-            inv -> {
-              Object id = inv.getArgument(2);
-              return OWNER_ID.equals(id) ? List.of("MEN") : ATHLETE_ID.equals(id) ? List.of("WOMEN") : List.of();
-            });
-    when(jdbcTemplate.queryForList(
-            eq("SELECT id FROM antares.users WHERE email = ?"), eq(Long.class), anyString()))
+        .when(jdbcTemplate.queryForList(anyString(), eq(Long.class), any(Object[].class)))
         .thenAnswer(
             inv -> {
               Long id = USERS.get((String) inv.getArgument(2));
               return id == null ? List.of() : List.of(id);
             });
+    // The account runs the call: the service sees it as the current user
+    lenient()
+        .doAnswer(
+            inv -> {
+              currentUser = inv.getArgument(0);
+              ((Runnable) inv.getArgument(1)).run();
+              return null;
+            })
+        .when(actor)
+        .run(anyLong(), any(Runnable.class));
+    lenient()
+        .when(scoreService.logScore(any()))
+        .thenAnswer(
+            call -> {
+              logged.add(Map.entry(currentUser, call.getArgument(0)));
+              return null;
+            });
   }
 
-  private static Wod wod(AtomicLong ids, String title, ScoreType type, Long gymId) {
-    return Wod.builder().id(ids.incrementAndGet()).title(title).scoreType(type).gymId(gymId).build();
+  private static Wod wod(AtomicLong ids, String title, ScoreType type, boolean isPublic) {
+    return Wod.builder().id(ids.incrementAndGet()).title(title).scoreType(type).isPublic(isPublic).build();
   }
 
   private void wodsPresent() {
@@ -99,133 +117,122 @@ class DevScoreSeederTest {
     when(wodRepository.findAll())
         .thenReturn(
             List.of(
-                wod(ids, "Sparta Burner", ScoreType.REPS, SPARTA),
-                wod(ids, "Hoplite Chipper", ScoreType.TIME, SPARTA),
-                wod(ids, "Sparta Back Squat 5x5", ScoreType.WEIGHT, SPARTA),
-                wod(ids, "Olympus Deadlift", ScoreType.WEIGHT, ZEUS),
-                wod(ids, "Titan AMRAP", ScoreType.REPS, ZEUS),
-                wod(ids, "Pantheon 21-15-9", ScoreType.TIME, ZEUS),
-                wod(ids, "Athlete Engine Builder", ScoreType.REPS, null),
-                wod(ids, "Fran", ScoreType.TIME, null),
-                wod(ids, "Chelsea", ScoreType.ROUNDS, null),
-                wod(ids, "Cindy", ScoreType.REPS, null),
-                wod(ids, "Grace", ScoreType.TIME, null),
-                wod(ids, "Murph", ScoreType.TIME, null),
-                wod(ids, "Open 25.1", ScoreType.REPS, null),
-                wod(ids, "Open 25.2", ScoreType.TIME, null),
-                wod(ids, "CrossFit Total", ScoreType.LOAD, null),
-                wod(ids, "Back Squat 1RM", ScoreType.WEIGHT, null),
-                wod(ids, "Deadlift 1RM", ScoreType.WEIGHT, null)));
-  }
-
-  @SuppressWarnings("unchecked")
-  private List<Score> savedScores() {
-    ArgumentCaptor<List<Score>> captor = ArgumentCaptor.forClass(List.class);
-    verify(scoreRepository, atLeastOnce()).saveAll(captor.capture());
-    return captor.getAllValues().stream().flatMap(List::stream).toList();
+                wod(ids, DevGymWodSeeder.PERSONAL_WOD, ScoreType.REPS, false),
+                wod(ids, "Fran", ScoreType.TIME, true),
+                // A box copy shares the benchmark's title: never scored here
+                Wod.builder().id(99L).title("Fran").scoreType(ScoreType.TIME).gymId(SPARTA).build(),
+                wod(ids, "Chelsea", ScoreType.ROUNDS, true),
+                wod(ids, "Cindy", ScoreType.REPS, true),
+                wod(ids, "Grace", ScoreType.TIME, true),
+                wod(ids, "Murph", ScoreType.TIME, true),
+                wod(ids, "Open 25.1", ScoreType.REPS, true),
+                wod(ids, "Open 25.2", ScoreType.TIME, true),
+                wod(ids, "CrossFit Total", ScoreType.LOAD, true),
+                wod(ids, "Back Squat 1RM", ScoreType.WEIGHT, true),
+                wod(ids, "Deadlift 1RM", ScoreType.WEIGHT, true)));
   }
 
   @Test
-  @DisplayName("Logs scores on gym and public WODs with one personal record per athlete and WOD")
-  void shouldSeedScores() {
+  @DisplayName("Logs each score through the service as its athlete, on public and personal WODs")
+  void shouldLogScoresAsTheirAthletes() {
     wodsPresent();
-    when(jdbcTemplate.queryForList(anyString(), eq(Long.class), eq(OWNER_ID))).thenReturn(List.of());
 
     seeder.seed(SPARTA, ZEUS);
 
-    List<Score> scores = savedScores();
-    assertTrue(scores.size() > 50, "a rich data set is expected");
-    scores.stream()
-        .collect(Collectors.groupingBy(s -> List.of(s.getWod().getId(), s.getUserId())))
-        .forEach(
-            (key, list) ->
-                assertEquals(1, list.stream().filter(Score::isPersonalRecord).count(), key.toString()));
-    assertTrue(scores.stream().noneMatch(s -> s.getDate().isAfter(TODAY)));
-
-    // Gym WOD scores belong to the WOD's gym; public ones to the athlete's gym, or none
-    for (Score s : scores) {
-      if (s.getWod().getGymId() != null) {
-        assertEquals(s.getWod().getGymId(), s.getGymId(), s.getWod().getTitle());
-      }
-    }
+    assertTrue(logged.size() > 40, "a rich data set is expected");
+    assertTrue(logged.stream().allMatch(e -> e.getValue().userId() == null), "always the athlete itself");
+    assertTrue(logged.stream().noneMatch(e -> e.getValue().date().isAfter(TODAY)));
+    assertTrue(logged.stream().noneMatch(e -> e.getValue().wodId() == 99L), "never the box copy");
+    // A public WOD records the athlete's gym (or none); the personal WOD none
     assertTrue(
-        scores.stream()
-            .anyMatch(s -> s.getWod().getTitle().equals("Fran") && Objects.equals(s.getGymId(), ZEUS)));
-    assertTrue(
-        scores.stream()
-            .anyMatch(
-                s -> s.getWod().getTitle().equals("Fran") && s.getUserId() == 400L && s.getGymId() == null));
-
-    // The athlete's later Fran in RX beats an earlier, faster scaled one
-    Score athleteFranPr =
-        scores.stream()
-            .filter(
-                s ->
-                    s.getWod().getTitle().equals("Fran")
-                        && s.getUserId().equals(ATHLETE_ID)
-                        && s.isPersonalRecord())
-            .findFirst()
-            .orElseThrow();
-    assertEquals(ScalingLevel.RX, athleteFranPr.getScaling());
-
-    // Capped scores are stored as reps at the cap
-    assertTrue(
-        scores.stream()
-            .filter(s -> Boolean.TRUE.equals(s.getTimeCapped()))
-            .allMatch(s -> s.getTimeSeconds() == null && s.getReps() != null));
-  }
-
-  @Test
-  @DisplayName("Logs the lift tests so records exist, once")
-  void shouldSeedLiftTests() {
-    wodsPresent();
-    when(jdbcTemplate.queryForList(anyString(), eq(Long.class), eq(OWNER_ID))).thenReturn(List.of());
-
-    seeder.seed(SPARTA, ZEUS);
-
-    List<Score> scores = savedScores();
-    assertTrue(
-        scores.stream()
-            .anyMatch(
-                s ->
-                    s.getWod().getTitle().equals("Back Squat 1RM")
-                        && s.getMaxWeightKg() != null
-                        && s.getUserId().equals(OWNER_ID)));
-    assertTrue(scores.stream().anyMatch(s -> s.getWod().getTitle().equals("Deadlift 1RM")));
-    // The division is on the score before it is saved, so the records copy it (one transaction)
-    assertTrue(
-        scores.stream()
-            .filter(s -> s.getUserId().equals(OWNER_ID) || s.getUserId().equals(ATHLETE_ID))
-            .allMatch(s -> s.getDivision() != null));
-  }
-
-  @Test
-  @DisplayName("Skips missing WODs instead of failing")
-  void shouldSkipMissingWods() {
-    AtomicLong ids = new AtomicLong();
-    when(wodRepository.findAll()).thenReturn(List.of(wod(ids, "Fran", ScoreType.TIME, null)));
-    when(jdbcTemplate.queryForList(anyString(), eq(Long.class), eq(OWNER_ID))).thenReturn(List.of());
-
-    seeder.seed(SPARTA, ZEUS);
-
-    List<Score> scores = savedScores();
-    assertFalse(scores.isEmpty());
-    assertTrue(scores.stream().allMatch(s -> s.getWod().getTitle().equals("Fran")));
-    assertNull(
-        scores.stream()
-            .filter(s -> s.getUserId() == 400L)
+        logged.stream()
+            .anyMatch(e -> e.getKey() == 104L && e.getValue().wodId() == 2L && Objects.equals(e.getValue().gymId(), ZEUS)));
+    assertTrue(logged.stream().filter(e -> e.getValue().wodId() == 1L).allMatch(e -> e.getValue().gymId() == null));
+    // Times are split in minutes and seconds; a capped score gives its reps and tiebreak
+    ScoreRequest fran =
+        logged.stream()
+            .filter(e -> e.getKey().equals(OWNER_ID) && e.getValue().wodId() == 2L)
             .findFirst()
             .orElseThrow()
-            .getGymId());
+            .getValue();
+    assertEquals(3, fran.timeMinutes());
+    assertTrue(
+        logged.stream()
+            .map(Map.Entry::getValue)
+            .filter(ScoreRequest::timeCapped)
+            .allMatch(r -> r.reps() != null && r.timeMinutes() == null));
+    assertTrue(logged.stream().anyMatch(e -> e.getValue().scaling() == ScalingLevel.SCALED));
   }
 
   @Test
-  @DisplayName("Skips when the owner already has scores")
-  void shouldSkipWhenAlreadySeeded() {
-    when(jdbcTemplate.queryForList(anyString(), eq(Long.class), eq(OWNER_ID))).thenReturn(List.of(1L));
+  @DisplayName("Logs the lift tests so records exist")
+  void shouldLogLiftTests() {
+    wodsPresent();
 
     seeder.seed(SPARTA, ZEUS);
 
-    verify(scoreRepository, never()).saveAll(any());
+    assertTrue(
+        logged.stream()
+            .anyMatch(e -> e.getKey().equals(OWNER_ID) && e.getValue().wodId() == 10L && e.getValue().maxWeight() != null));
+    assertTrue(logged.stream().anyMatch(e -> e.getValue().wodId() == 11L));
+  }
+
+  @Test
+  @DisplayName("Skips missing WODs and accounts instead of failing")
+  void shouldSkipMissingWods() {
+    AtomicLong ids = new AtomicLong();
+    when(wodRepository.findAll()).thenReturn(List.of(wod(ids, "Fran", ScoreType.TIME, true)));
+
+    seeder.seed(SPARTA, ZEUS);
+
+    assertFalse(logged.isEmpty());
+    assertTrue(logged.stream().allMatch(e -> e.getValue().wodId() == 1L));
+    assertNull(logged.stream().filter(e -> e.getKey() == 400L).findFirst().orElseThrow().getValue().gymId());
+  }
+
+  @Test
+  @DisplayName("Skips what is already logged: benchmarks, lift tests and the personal WOD have their own marker")
+  void shouldSkipWhenAlreadySeeded() {
+    wodsPresent();
+    when(scoreRepository.existsByUserIdAndWodId(anyLong(), anyLong())).thenReturn(true);
+
+    seeder.seed(SPARTA, ZEUS);
+
+    verify(scoreService, never()).logScore(any());
+  }
+
+  @Test
+  @DisplayName("Logs the personal WOD's scores even without a public catalog")
+  void shouldLogPersonalScoresWithoutCatalog() {
+    AtomicLong ids = new AtomicLong();
+    when(wodRepository.findAll())
+        .thenReturn(List.of(wod(ids, DevGymWodSeeder.PERSONAL_WOD, ScoreType.REPS, false)));
+
+    seeder.seed(SPARTA, ZEUS);
+
+    assertEquals(2, logged.size());
+    assertTrue(logged.stream().allMatch(e -> e.getKey().equals(ATHLETE_ID) && e.getValue().gymId() == null));
+  }
+
+  @Test
+  @DisplayName("A score the service refuses is skipped, the others are logged")
+  void shouldGoOnAfterARefusedScore() {
+    AtomicLong ids = new AtomicLong();
+    when(wodRepository.findAll()).thenReturn(List.of(wod(ids, "Fran", ScoreType.TIME, true)));
+    doAnswer(
+            inv -> {
+              currentUser = inv.getArgument(0);
+              if (currentUser.equals(OWNER_ID)) {
+                throw new IllegalStateException("refused");
+              }
+              ((Runnable) inv.getArgument(1)).run();
+              return null;
+            })
+        .when(actor)
+        .run(anyLong(), any(Runnable.class));
+
+    seeder.seed(SPARTA, ZEUS);
+
+    assertTrue(logged.size() > 3);
   }
 }

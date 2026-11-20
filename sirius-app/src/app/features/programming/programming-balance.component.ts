@@ -123,6 +123,7 @@ export class ProgrammingBalanceComponent {
     (this.profile()?.alerts ?? []).filter(a => a.kind === 'PATTERN_GAP').map(a => a.subject));
   readonly unusual = computed(() => (this.balance()?.unusualSessions ?? []).map(u => ({
     key: u.date + u.region,
+    competition: u.competition,
     text: this.translate.instant('PROGRAMMING.UNUSUAL.LINE', {
       day: shortDay(u.date, this.lang()), region: this.translate.instant('MUSCLE.REGIONS.' + u.region),
       sets: decimal(u.sets, this.lang()), base: decimal(u.base, this.lang())

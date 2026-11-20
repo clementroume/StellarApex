@@ -127,8 +127,16 @@
                   }
                   @for (u of unusual(); track u.key) {
                     <div class="rounded-r-lg border-l-4 border-accent bg-accent/10 px-3 py-2 text-sm" data-slot="unusual">
-                      <b class="block">{{ 'PROGRAMMING.UNUSUAL.TITLE' | translate }}</b>
+                      <b class="block">
+                        {{ 'PROGRAMMING.UNUSUAL.TITLE' | translate }}
+                        @if (u.competition) {
+                          <span class="ml-1 rounded-full bg-accent/25 px-2 text-xs font-semibold" data-slot="unusual-competition">{{ 'PROGRAMMING.UNUSUAL.COMPETITION' | translate }}</span>
+                        }
+                      </b>
                       <span class="text-xs text-muted-foreground">{{ u.text }}</span>
+                      @if (u.competition) {
+                        <span class="block text-xs text-muted-foreground">{{ 'PROGRAMMING.UNUSUAL.COMPETITION_NOTE' | translate }}</span>
+                      }
                     </div>
                   }
                   @if (concentrated()) {

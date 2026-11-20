@@ -86,4 +86,25 @@ public interface SessionRepository extends JpaRepository<Session, Long> {
       """)
   List<Session> findProgramming(
       @Param("gymId") Long gymId, @Param("from") LocalDate from, @Param("to") LocalDate to);
+
+  /**
+   * Whether a gym has a session whose title starts with a prefix (a demo program already written).
+   *
+   * @param gymId The gym.
+   * @param prefix The title prefix.
+   * @return True if one exists.
+   */
+  boolean existsByGymIdAndTitleStartingWith(Long gymId, String prefix);
+
+  /**
+   * The sessions of a gym whose title starts with a prefix, before a day, oldest first (the past
+   * sessions of a demo program).
+   *
+   * @param gymId The gym.
+   * @param prefix The title prefix.
+   * @param before First day excluded.
+   * @return The sessions.
+   */
+  List<Session> findByGymIdAndTitleStartingWithAndDateBeforeOrderByDateAscIdAsc(
+      Long gymId, String prefix, LocalDate before);
 }

@@ -300,4 +300,13 @@ public interface ScoreRepository extends JpaRepository<Score, Long> {
       "SELECT s FROM Score s JOIN FETCH s.wod "
           + "WHERE s.userId = :userId AND s.date BETWEEN :from AND :to")
   List<Score> findByUserIdAndDateBetween(Long userId, LocalDate from, LocalDate to);
+
+  /**
+   * Whether a user has a score on a WOD.
+   *
+   * @param userId The athlete.
+   * @param wodId The WOD.
+   * @return True if one exists.
+   */
+  boolean existsByUserIdAndWodId(Long userId, Long wodId);
 }

@@ -356,4 +356,13 @@ public interface WodRepository extends JpaRepository<Wod, Long> {
           + "WHERE wm.movement.id = :movementId AND t = :technique")
   long countByMovementTechnique(
       @Param("movementId") Long movementId, @Param("technique") String technique);
+
+  /**
+   * Whether a user already has a personal WOD (no gym) of that title.
+   *
+   * @param authorId The author.
+   * @param title The title.
+   * @return True if one exists.
+   */
+  boolean existsByAuthorIdAndGymIdIsNullAndTitle(Long authorId, String title);
 }

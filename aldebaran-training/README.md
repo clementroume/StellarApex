@@ -374,7 +374,8 @@ provisional until the beta):
   count, no random draw); a main group (7) under 4 sets per week on average;
 * **information**: regions against the full week (behind under 0.8 times, ahead over 1.25 times), axes concentrated
   on few days (an athlete without fixed days misses them, `concentratedAxes`), unusual sessions (a region over 1.3
-  times its biggest day of the 4 programmed weeks before, at least 3 sets).
+  times its biggest day of the 4 programmed weeks before, at least 3 sets; `competition` when the day holds a
+  competition block, such as an in-house throwdown, where such a volume is expected).
 
 The response also counts the weeks holding a counted session (`programmedWeeks`: fewer than `weeks` means empty weeks
 were read) and the lines with an official Scaled version (`scaledLines`: 0 means Scaled reads as RX), so Sirius can
@@ -477,18 +478,25 @@ starts empty. This mechanism (export endpoints, source volume, CSV seeding) is t
   `movement_name` is the exact movement name; an unknown one is logged and the row skipped.
   Blank cell = `null`, so the export → seed round-trip is lossless (`config/WodCsvCodec`).
 
-With the `demo` Spring profile, `demo/DevGymWodSeeder` (package `aldebaran.demo`, removable as a whole) also creates private WODs for
-the Antares test gyms "Spartacus CrossFit" (author `owner.sparta@demo.test`) and "Zeus Programming"
-(author `programmer.zeus@demo.test`), plus a personal WOD for `athlete.sparta@demo.test`. IDs are read from the
-`antares` schema of the same database, retried in the background for about 60 s; skipped if Sparta
-already has WODs. `demo/DevScoreSeeder` then logs about 80 scores for the test accounts (gym WODs,
-Fran, Chelsea, Cindy, Grace, Murph, Open 25.1/25.2, CrossFit Total; several levels and gyms, some
-repeated attempts) so histories and leaderboards can be checked; skipped if `owner.sparta@demo.test`
-already has scores, so an existing database gets them on the next start. A second step logs about 45 scores on the public "N RM" tests (Back Squat, Deadlift, Clean and Jerk,
-Snatch, Shoulder Press, Bench Press, Front Squat), so the records, lift leaderboards and box board have
-data; it is marked by the owner's score on "Back Squat 1RM", so an older database gets it on the next start.
-At every start it also gives the scores and records without a division their athlete's Antares division
-(dev data only).
+With the `demo` Spring profile, `demo/DevGymWodSeeder` (package `aldebaran.demo` and resource `demo/programs.json`,
+removable as a whole) writes two original demo programs through the services (`demo/DemoPrograms`), centered on the seed
+day (6 weeks before, the seed week, 5 after): a balanced 12-week programming for the box "Spartacus CrossFit" (author
+`owner.sparta@demo.test`, Monday to Saturday, official Scaled version on every WOD, box copies of the benchmarks, team
+WOD every Saturday, an in-house throwdown of 4 events) and an unbalanced one for the program "Zeus Programming" (author
+`programmer.zeus@demo.test`, 6 days, fixed themes per day: many profiles in alert on the coach's programming balance),
+plus a personal WOD for `athlete.sparta@demo.test`. `demo/DemoProgramScores` then logs the past sessions of each demo
+athlete (own days and level, journals, Skill and WOD scores, Scaled, teams, judges and the verification queue). The
+seeders act as the demo account they write for (`demo/DemoActor`: an in-memory security context on the seeding thread,
+built from the Antares tables like the gateway headers), so every rule of the services applies. IDs are read from the
+`antares` schema of the same database, retried in the background for about 60 s; each program is skipped when its gym
+already has a session with its title prefix, its scores when a journal exists. The design and the export script live in
+`docs-private/demo` (`progs-demo-sparta-zeus.md`, `outils/export_json.py`). `demo/DevScoreSeeder` logs, through
+`ScoreService` as each athlete, scores on the public benchmarks (Fran, Chelsea, Cindy, Grace, Murph, Open 25.1/25.2,
+CrossFit Total) and the personal WOD (skipped once the owner has a score on the public Fran), then about 45 scores on
+the public "N RM" tests (Back Squat, Deadlift, Clean and Jerk, Snatch, Shoulder Press, Bench Press, Front Squat), so the
+records, lift leaderboards and box board have data (skipped once the owner has a score on "Back Squat 1RM"). Division,
+age group, personal records and records come from the service. The demo seeders read the Antares schema with
+`JdbcTemplate` (users, gyms, memberships: another schema) and their own tables through repositories.
 
 ## API Documentation
 
