@@ -60,7 +60,13 @@
         </label>
       </div>
       @if (balance(); as b) {
-        <p class="text-xs text-muted-foreground" data-slot="cycle">{{ cycleText() }}</p>
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <p class="text-xs text-muted-foreground" data-slot="cycle">{{ cycleText() }}</p>
+          @if (b.capabilities.canReorder) {
+            <a hlmBtn variant="outline" size="sm" routerLink="/box/programming/order" [queryParams]="orderParams()"
+               data-slot="order-open">{{ 'PROGRAMMING.ORDER.OPEN' | translate }}</a>
+          }
+        </div>
         @if (b.programmedWeeks < b.weeks) {
           <p class="text-xs text-secondary" data-slot="partial">
             {{ 'PROGRAMMING.PARTIAL' | translate: {programmed: b.programmedWeeks, weeks: b.weeks} }}

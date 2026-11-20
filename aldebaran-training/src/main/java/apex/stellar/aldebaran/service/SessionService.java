@@ -207,6 +207,20 @@ public class SessionService {
   }
 
   /**
+   * Moves a session to another day of its week (the session-order proposal applied, lot D'): its
+   * visibility follows the new day with the same policy. The caller checks rights and locks.
+   *
+   * @param session The session.
+   * @param date Its new day.
+   */
+  @Transactional
+  public void moveDate(Session session, LocalDate date) {
+    session.schedule(session.getType(), date);
+    applyVisibility(session, session.getVisibilityPolicy(), null);
+    sessionRepository.save(session);
+  }
+
+  /**
    * Replaces a session: fields and blocks (merged by ID; an owned WOD left behind is deleted).
    *
    * @param id The session.

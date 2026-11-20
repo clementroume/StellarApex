@@ -27,6 +27,11 @@ export const BOX_ROUTES: Routes = [
     path: 'programming', canActivate: [gymPermissionGuard('STAFF')],
     loadComponent: () => import('../programming/programming-balance.component').then(c => c.ProgrammingBalanceComponent)
   },
+  // Session-order proposal of the programming, writers only (lot D', D168-D171)
+  {
+    path: 'programming/order', canActivate: [gymPermissionGuard('WOD_WRITE')],
+    loadComponent: () => import('../programming/session-order.component').then(c => c.SessionOrderComponent)
+  },
   {
     path: 'members', canActivate: [gymPermissionGuard('MANAGE_MEMBERSHIPS')],
     loadComponent: () => import('./members/box-members.component').then(c => c.BoxMembersComponent)

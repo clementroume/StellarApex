@@ -149,6 +149,11 @@ and a virtual programming); there is no "active gym" in requests.
   the set's day) and modalities over the week and the 3 before, volume over 8 weeks; computed on first display
   from scores and checked journal blocks, writes only mark weeks stale. Facts only, never an alert or a ratio to
   the athlete; coach alerts belong to lot D' (on the coach's programming). Sirius `/training/review`.
+- Programming balance (lot D', D160-D181): staff of any role read `GET /programming/gyms/{gymId}/balance` (profiles of
+  3-5 fixed days, pattern gaps, group minimum, information); writers (`WOD_WRITE`, `capabilities.canReorder`) ask for a
+  session-order proposal (`POST .../order-proposals`, nothing written; WOD only, whole sessions, or WOD and Skills) and
+  apply the weeks kept (`POST .../order`, one transaction, 409 when a session became locked). Past, logged, scored and
+  competition days never move. Never shown to athletes. Sirius `/box/programming` and `/box/programming/order`.
 - Internal API: Antares `/antares/internal/**` (membership check, gym type; Aldebaran → `http://antares-auth:8080`,
   `X-Internal-Secret`, 404 without it, excluded from the Traefik `/antares` route). Aldebaran calls it
   through `client/AntaresClient` only.

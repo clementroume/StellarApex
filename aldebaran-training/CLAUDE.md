@@ -104,6 +104,11 @@ anywhere else.
   `ProgrammingBalance` (windows, profiles), `ProgrammingAlerts` (pattern gap relative to the full week, group minimum;
   regions, concentrated axes and unusual sessions as information) and `RandomAttendance` (exact regularity count).
   `WeekTotals.axes()` / `patterns()` = sets per pattern axis / detail (a line counts once per axis).
+  Session order (PR 2, D168-D171): `SessionOrder` (pure: exhaustive search per week, windows not touched reused,
+  candidates in parallel; score = profiles in alert, excess, same domain, moves; strength days in a row never more than
+  programmed) behind `SessionOrderService` (`POST .../order-proposals` / `.../order`, `canReorder`); the application
+  moves blocks with `SessionBlockRepository.moveTo` (an update, never an orphan removal; order constraint deferred) or
+  dates with `SessionService.moveDate`. Modes and strength option: `model/enums/OrderMode`, `HeavyDays`.
 - Support session: `X-Auth-Actor-Id` (nullable `actorId`) = the admin acting as the user; rights stay
   the user's. `security/SupportSessionAuditFilter` logs every non-GET request with an actor at INFO.
 

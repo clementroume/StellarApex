@@ -182,7 +182,9 @@ the dev proxy targets the local Traefik `https://localhost` with `Host: stellar.
   explains that a For Time without time cap gives no minute) and `review-modalities`. Desktop: two independent stacks
   (radar + regions | profiles + metcons + modalities) that dissolve on a phone (`contents` + `order`). Notes for a
   partial cycle (`programmedWeeks`), no official Scaled (`scaledLines` = 0: Scaled disabled) and missing profile sizes.
-  Alerts and thresholds come from Aldebaran only.
+  Alerts and thresholds come from Aldebaran only. `session-order` (`/box/programming/order`, `gymPermissionGuard('WOD_WRITE')`,
+  opened from the balance with its cycle and switches as query parameters): mode, strength-day option, pins (block ids,
+  never stored), weeks before / after, weeks kept, application after an alert dialog (`ProgrammingService.applyOrder`).
 - WOD catalogue (`/wods`) = public WODs only: family chips with counts (`WodFacets.categoryCounts`),
   format then sub-category chips, rows with a movement preview, competitions grouped by edition
   (`editionYear`, latest first, `sort=title,desc`), numbered pagination (`GET /wods/count`; page and

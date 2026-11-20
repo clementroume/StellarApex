@@ -71,6 +71,9 @@ src/spartan.css       # spartan tokens and Tailwind colours mapped to the palett
   session on a competition day carries a "Competition" badge and says the volume is expected. Notes tell
   when the cycle is only partly programmed, when no official Scaled version exists (Scaled is then disabled) and why a
   profile size is missing (a 4-day box has no 4-day profile: it is the full week). Rules and thresholds live in Aldebaran (`GET /programming/gyms/{gymId}/balance`); athletes never see it.
+  Writers open **Propose an order** (`/box/programming/order`): the mode (WOD only, whole sessions, WOD and Skills), the
+  strength-day option and pins, then each week before and after with the moves in words; the weeks kept are applied
+  after a confirmation.
 * **Records** (`features/records`, lot C): My training › Records is the user's records board: one tile
   per lift or named variant (1RM, else the estimated 1RM, with "+5" or "PR" for a record of the last 30 days), family
   chips, the CrossFit Total with its three lifts, and the lifts not tested yet. A tile opens the lift
