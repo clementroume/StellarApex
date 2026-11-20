@@ -157,6 +157,8 @@ public final class SessionOrder {
     /** Current parts: week, then day index: [skill, wod]. */
     private final Part[][][] parts;
     private final List<LocalDate> cycle;
+    /** Score of the current order, kept in step with {@link #parts}. */
+    private @Nullable Score current;
 
     State(List<Week> weeks, Map<Long, MuscleInfo> muscles, OrderMode mode, HeavyDays heavy, @Nullable Part dayBefore) {
       this.original = weeks;
@@ -188,8 +190,15 @@ public final class SessionOrder {
       return out;
     }
 
-    /** The score of the current order. */
+    /** The score of the current order (computed once per change). */
     Score score() {
+      if (current == null) {
+        current = evaluate();
+      }
+      return current;
+    }
+
+    private Score evaluate() {
       Plan plan = plan(parts);
       List<Window> windows = ProgrammingBalance.windows(plan);
       Partial all = Partial.of(plan, windows);
@@ -226,6 +235,7 @@ public final class SessionOrder {
               .orElse(null);
       if (best != null && Score.ORDER.compare(best.score(), score()) < 0) {
         parts[w] = best.week();
+        this.current = best.score();
       }
       return score();
     }
@@ -358,13 +368,15 @@ public final class SessionOrder {
       return pairs;
     }
 
+    /** Parts away from their day; a whole session moved counts once. */
     private int moves(Part[][][] all) {
       int moved = 0;
       for (int w = 0; w < original.size(); w++) {
         List<Day> was = original.get(w).days();
         for (int d = 0; d < was.size(); d++) {
-          moved += all[w][d][0] != was.get(d).skill() ? 1 : 0;
-          moved += all[w][d][1] != was.get(d).wod() ? 1 : 0;
+          boolean skill = all[w][d][0] != was.get(d).skill();
+          boolean wod = all[w][d][1] != was.get(d).wod();
+          moved += mode == OrderMode.WHOLE_SESSIONS ? (skill || wod ? 1 : 0) : (skill ? 1 : 0) + (wod ? 1 : 0);
         }
       }
       return moved;

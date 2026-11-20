@@ -145,6 +145,8 @@ export class ProgrammingBalanceComponent {
 
   // --- LIFECYCLE ---
   constructor() {
+    const gymParam = this.params.get('gym');
+    if (gymParam) this.gym.select(Number(gymParam));
     effect(() => {
       const gymId = this.gym.gymId();
       const query = {start: this.start(), weeks: this.weeks(), scaled: this.scaled(), optional: this.optional(), days: this.days()};

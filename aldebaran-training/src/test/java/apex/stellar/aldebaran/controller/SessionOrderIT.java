@@ -257,5 +257,17 @@ class SessionOrderIT extends BaseIntegrationTest {
     mockMvc
         .perform(as(post(BASE + "/order"), WRITER).content(foreign))
         .andExpect(status().isBadRequest());
+
+    // WOD only never moves a Skill
+    Long mondaySkill = block(firstWeek.get(DayOfWeek.MONDAY), Kind.SKILL);
+    Long wednesdaySkill = block(firstWeek.get(DayOfWeek.WEDNESDAY), Kind.SKILL);
+    String skills =
+        swapWods(DayOfWeek.MONDAY, DayOfWeek.WEDNESDAY, "WOD_ONLY")
+            .replace("[" + mondaySkill + "]", "[X]")
+            .replace("[" + wednesdaySkill + "]", "[" + mondaySkill + "]")
+            .replace("[X]", "[" + wednesdaySkill + "]");
+    mockMvc
+        .perform(as(post(BASE + "/order"), WRITER).content(skills))
+        .andExpect(status().isBadRequest());
   }
 }

@@ -77,7 +77,10 @@ export class SessionOrderComponent {
   readonly lang = computed(() => this.translate.currentLang() ?? this.translate.fallbackLang() ?? 'en');
   /** The Skills move: the strength-day option applies. */
   readonly skillsMove = computed(() => this.mode() !== 'WOD_ONLY');
-  readonly backParams = {start: this.start, weeks: this.weeks, scaled: this.scaled, optional: this.optional};
+  /** Back to the balance on the same gym, cycle and switches. */
+  readonly backParams = computed(() => ({
+    gym: this.gym.gymId(), start: this.start, weeks: this.weeks, scaled: this.scaled, optional: this.optional
+  }));
   readonly improved = computed(() => {
     const p = this.proposal();
     return !!p && p.weeks.some(w => w.changed);
@@ -177,7 +180,7 @@ export class SessionOrderComponent {
       next: () => {
         this.applying.set(false);
         this.notifications.showSuccess(this.translate.instant('PROGRAMMING.ORDER.APPLIED'));
-        void this.router.navigate(['/box/programming'], {queryParams: this.backParams});
+        void this.router.navigate(['/box/programming'], {queryParams: this.backParams()});
       },
       error: (error: HttpErrorResponse) => {
         this.applying.set(false);

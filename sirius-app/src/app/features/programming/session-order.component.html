@@ -1,6 +1,6 @@
 <app-page [title]="'PROGRAMMING.ORDER.TITLE' | translate" [subtitle]="'PROGRAMMING.ORDER.INTRO' | translate">
   <div class="flex flex-col gap-4">
-    <a class="self-start text-sm text-primary" routerLink="/box/programming" [queryParams]="backParams">‹ {{ 'PROGRAMMING.ORDER.BACK' | translate }}</a>
+    <a class="self-start text-sm text-primary" routerLink="/box/programming" [queryParams]="backParams()">‹ {{ 'PROGRAMMING.ORDER.BACK' | translate }}</a>
     <app-staff-gym-picker [candidates]="gym.candidates()" [value]="gym.gymId()" (valueChange)="gym.select($event)"/>
 
     <!-- What may move, the strength-day option -->

@@ -183,6 +183,16 @@ public class SessionOrderService {
     if (given.size() != expected.size() || !expected.equals(new HashSet<>(given))) {
       throw new InvalidSessionException("error.order.invalid", monday);
     }
+    // WOD only: every Skill stays in its own session
+    if (mode == OrderMode.WOD_ONLY) {
+      for (DayOrder day : week.days()) {
+        for (Long id : day.skillBlockIds()) {
+          if (!blocks.get(id).getSession().getId().equals(day.sessionId())) {
+            throw new InvalidSessionException("error.order.invalid", monday);
+          }
+        }
+      }
+    }
     if (mode == OrderMode.WHOLE_SESSIONS) {
       moveSessions(week, sessions, blocks, monday);
     } else {
