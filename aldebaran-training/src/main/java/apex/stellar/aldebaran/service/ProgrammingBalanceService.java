@@ -99,6 +99,8 @@ public class ProgrammingBalanceService {
     int uncountedLines = 0;
     int scaledLines = 0;
     Set<LocalDate> programmed = new HashSet<>();
+    // Days holding a counted competition block: an unusual session there is expected
+    Set<LocalDate> competitionDays = new HashSet<>();
     for (Session session : sessionRepository.findProgramming(gymId, historyStart, end)) {
       boolean inCycle = !session.getEndDate().isBefore(start) && !session.getDate().isAfter(end);
       if (!counts(session)) {
@@ -113,6 +115,9 @@ public class ProgrammingBalanceService {
           continue;
         }
         counted = true;
+        if (block.getWod().isCompetition()) {
+          competitionDays.add(date);
+        }
         Workout workout = Workout.prescribed(block.getWod(), date, block.getKind(), scaled);
         BalanceCalculator.add(workout, BalanceCalculator.NearRecord.NEVER, vector);
         if (inCycle) {
@@ -189,7 +194,8 @@ public class ProgrammingBalanceService {
         profile,
         concentrated(windows),
         ProgrammingAlerts.unusualSessions(plan.byDate(), start, end, muscles).stream()
-            .map(u -> new UnusualSessionResponse(u.date(), u.region().name(), round(u.sets()), round(u.base())))
+            .map(u -> new UnusualSessionResponse(
+                u.date(), u.region().name(), round(u.sets()), round(u.base()), competitionDays.contains(u.date())))
             .toList(),
         new Capabilities(sessionSecurity.canReorder(gymId, principal)));
   }

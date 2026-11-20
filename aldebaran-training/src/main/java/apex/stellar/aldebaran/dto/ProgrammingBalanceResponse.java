@@ -149,8 +149,10 @@ public record ProgrammingBalanceResponse(
    * @param region The region ({@code MuscleRegion}).
    * @param sets Its moving sets that day.
    * @param base Its biggest day over the 4 weeks before.
+   * @param competition The day holds a competition block (a throwdown): the volume is expected.
    */
-  public record UnusualSessionResponse(LocalDate date, String region, double sets, double base) {}
+  public record UnusualSessionResponse(
+      LocalDate date, String region, double sets, double base, boolean competition) {}
 
   /**
    * What the user may do.

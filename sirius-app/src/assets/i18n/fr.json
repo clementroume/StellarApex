@@ -1368,7 +1368,9 @@
     },
     "UNUSUAL": {
       "TITLE": "Séance inhabituelle",
-      "LINE": "{{day}} · {{region}} : {{sets}} séries, contre {{base}} au plus sur les 4 semaines d'avant. Information, pas une alerte."
+      "LINE": "{{day}} · {{region}} : {{sets}} séries, contre {{base}} au plus sur les 4 semaines d'avant. Information, pas une alerte.",
+      "COMPETITION": "Compétition",
+      "COMPETITION_NOTE": "Jour de compétition : un volume hors norme est attendu."
     },
     "REGIONS": {
       "TITLE": "Régions (part du volume)",

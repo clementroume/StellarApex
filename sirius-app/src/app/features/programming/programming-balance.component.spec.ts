@@ -45,7 +45,10 @@ describe('ProgrammingBalanceComponent', () => {
       {start: mondayOf(localDate()), weeks: 4, scaled: false, optional: false, days: []}, expect.anything());
     expect(el('[data-slot="full-week"]')).not.toBeNull();
     expect(el('app-pattern-radar')).not.toBeNull();
-    expect(el('[data-slot="unusual"]')).not.toBeNull();
+    expect(all('[data-slot="unusual"]')).toHaveLength(2);
+    // A competition day says why its volume is unusual
+    expect(all('[data-slot="unusual-competition"]')).toHaveLength(1);
+    expect(fixture.nativeElement.textContent).toContain('PROGRAMMING.UNUSUAL.COMPETITION_NOTE');
     expect(el('[data-slot="concentrated"]')).not.toBeNull();
     expect(el('[data-slot="uncounted"]')).not.toBeNull();
     expect(all('[data-slot="profile-row"]')).toHaveLength(1);

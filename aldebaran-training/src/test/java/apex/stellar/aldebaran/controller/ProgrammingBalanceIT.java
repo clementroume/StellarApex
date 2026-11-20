@@ -189,6 +189,27 @@ class ProgrammingBalanceIT extends BaseIntegrationTest {
   }
 
   @Test
+  @DisplayName("An unusual session on a competition day says so")
+  void unusualCompetition() throws Exception {
+    // 4 programmed weeks before the cycle, then a throwdown doubling Monday's legs
+    for (int w = 1; w <= 4; w++) {
+      session(start.minusWeeks(w), Discipline.CROSSFIT, wod(squat, "Before " + w), false);
+    }
+    Wod event = wod(squat, "Event");
+    event.setCompetition(true);
+    session(start, Discipline.CROSSFIT, wodRepository.save(event), false);
+    // An ordinary heavy day: shoulders doubled on Wednesday of week 2
+    session(start.plusDays(2).plusWeeks(1), Discipline.CROSSFIT, wod(press, "Extra Wed"), false);
+
+    mockMvc
+        .perform(as(get(URL).param("start", start.toString()), GYM + ":COACH:"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.unusualSessions[?(@.date == '" + start + "')].competition").value(hasItem(true)))
+        .andExpect(jsonPath("$.unusualSessions[?(@.date == '" + start.plusWeeks(1).plusDays(2) + "')].competition")
+            .value(hasItem(false)));
+  }
+
+  @Test
   @DisplayName("A profile is detailed on request")
   void profile() throws Exception {
     mockMvc

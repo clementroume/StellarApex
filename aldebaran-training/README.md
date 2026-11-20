@@ -374,7 +374,8 @@ provisional until the beta):
   count, no random draw); a main group (7) under 4 sets per week on average;
 * **information**: regions against the full week (behind under 0.8 times, ahead over 1.25 times), axes concentrated
   on few days (an athlete without fixed days misses them, `concentratedAxes`), unusual sessions (a region over 1.3
-  times its biggest day of the 4 programmed weeks before, at least 3 sets).
+  times its biggest day of the 4 programmed weeks before, at least 3 sets; `competition` when the day holds a
+  competition block, such as an in-house throwdown, where such a volume is expected).
 
 The response also counts the weeks holding a counted session (`programmedWeeks`: fewer than `weeks` means empty weeks
 were read) and the lines with an official Scaled version (`scaledLines`: 0 means Scaled reads as RX), so Sirius can

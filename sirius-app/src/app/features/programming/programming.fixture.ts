@@ -43,7 +43,10 @@ export function balanceOf(days: DayOfWeek[] = []): ProgrammingBalance {
       ? {...profileOf(0, [{kind: 'PATTERN_GAP', subject: 'SQUAT', value: 0, limit: 21.6}]), days}
       : null,
     concentratedAxes: ['CORE'],
-    unusualSessions: [{date: '2026-12-05', region: 'SHOULDER', sets: 34, base: 26}],
+    unusualSessions: [
+      {date: '2026-12-05', region: 'SHOULDER', sets: 34, base: 26, competition: false},
+      {date: '2026-12-12', region: 'HIP', sets: 30, base: 18, competition: true}
+    ],
     capabilities: {canReorder: false}
   };
 }
