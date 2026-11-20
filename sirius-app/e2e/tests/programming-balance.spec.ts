@@ -4,7 +4,8 @@ import {createBoxSession} from '../support/sessions';
 import {createBoxWod} from '../support/wods';
 
 /*
- * Lot D': the Owner programs a session of the box this week; a Coach reads the balance of the
+ * Lot D': the Owner programs a session of the box this week and opens the session-order proposal
+ * (nothing applied); a Coach reads the balance of the
  * programming (radar of the full week, the details of an axis, the RX / Scaled switch, the help);
  * an athlete has neither the entry nor the page. Only presence is checked: the box gathers the
  * sessions of every journey of the run.
@@ -17,6 +18,16 @@ test('Owner programs → Coach reads the programming balance → athlete has no 
   const owner = await ownerCtx.newPage();
   await createBoxWod(owner, {title: borrowed});
   await createBoxSession(owner, {title: `E2E prog ${stamp}`, borrowedWodTitle: borrowed, writtenWodTitle: `E2E prog skill ${stamp}`});
+
+  // --- Owner (WOD_WRITE): the balance opens the session-order proposal ---
+  await owner.goto('/box/programming');
+  await owner.getByRole('link', {name: t('PROGRAMMING.ORDER.OPEN')}).click();
+  await expect(owner).toHaveURL(/\/box\/programming\/order\?/);
+  await expect(owner.locator('[data-slot="order-summary"]')).toBeVisible({timeout: 30_000});
+  // Whole sessions: the strength-day option shows; nothing is written before a confirmation
+  await owner.locator('[data-mode="WHOLE_SESSIONS"]').click();
+  await expect(owner.getByRole('radio', {name: t('PROGRAMMING.ORDER.HEAVY_STRICT')})).toBeVisible();
+  await expect(owner.locator('[data-slot="order-summary"]')).toBeVisible({timeout: 30_000});
 
   // --- Coach (judge): the entry of My box opens the balance of the current cycle ---
   const coachCtx = await asRole(browser, 'judge');
@@ -64,6 +75,8 @@ test('Owner programs → Coach reads the programming balance → athlete has no 
   await expect(athlete.getByRole('link', {name: t('BOX.LEADERBOARDS.TITLE')}).first()).toBeVisible();
   await expect(athlete.getByRole('link', {name: t('BOX.PROGRAMMING.TITLE')})).toHaveCount(0);
   await athlete.goto('/box/programming');
+  await expect(athlete).not.toHaveURL(/\/box\/programming/);
+  await athlete.goto('/box/programming/order');
   await expect(athlete).not.toHaveURL(/\/box\/programming/);
 
   await Promise.all([ownerCtx.close(), coachCtx.close(), athleteCtx.close()]);

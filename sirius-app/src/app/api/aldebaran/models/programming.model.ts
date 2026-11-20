@@ -122,3 +122,70 @@ export interface ProgrammingQuery {
   optional: boolean;
   days: DayOfWeek[];
 }
+
+/** What a session-order proposal may move within a week (D168). */
+export type OrderMode = 'WOD_ONLY' | 'WHOLE_SESSIONS' | 'WOD_AND_SKILLS';
+
+/** Two strength Skills on consecutive days, when the Skills move (D169). */
+export type HeavyDays = 'STRICT' | 'SOFT';
+
+/** What the coach asks for a proposal: the balance's cycle and switches, the mode and the pins. */
+export interface OrderProposalRequest extends Omit<ProgrammingQuery, 'days'> {
+  mode: OrderMode;
+  heavy: HeavyDays;
+  pinnedBlockIds: number[];
+}
+
+/** How good an order is (D170, D171). */
+export interface OrderScore {
+  profilesInAlert: number;
+  excess: number;
+  sameDomain: number;
+  moves: number;
+}
+
+/** A part of a session: its Skill, or its WOD part (WOD, Accessory, Finisher). */
+export interface OrderPart {
+  blockIds: number[];
+  title: string;
+  pinned: boolean;
+  strength: boolean;
+  /** The day it comes from in the proposed order (its own day when it stays). */
+  fromDay: DayOfWeek;
+}
+
+/** A training day before and after (OrderProposalResponse.DayProposal). */
+export interface OrderDay {
+  day: DayOfWeek;
+  date: string;
+  sessionId: number;
+  locked: boolean;
+  skill: OrderPart | null;
+  wod: OrderPart | null;
+  skillAfter: OrderPart | null;
+  wodAfter: OrderPart | null;
+}
+
+/** A week of the proposal. */
+export interface OrderWeek {
+  monday: string;
+  changed: boolean;
+  days: OrderDay[];
+}
+
+/** A session-order proposal (OrderProposalResponse, D170): nothing is written. */
+export interface OrderProposal {
+  start: string;
+  end: string;
+  mode: OrderMode;
+  heavy: HeavyDays;
+  before: OrderScore;
+  after: OrderScore;
+  weeks: OrderWeek[];
+}
+
+/** The weeks of a proposal the coach keeps (OrderApplyRequest). */
+export interface OrderApplyRequest {
+  mode: OrderMode;
+  weeks: {monday: string; days: {sessionId: number; skillBlockIds: number[]; wodBlockIds: number[]}[]}[];
+}

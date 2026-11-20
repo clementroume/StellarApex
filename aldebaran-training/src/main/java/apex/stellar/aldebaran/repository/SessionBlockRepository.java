@@ -5,6 +5,7 @@ import apex.stellar.aldebaran.model.entities.SessionBlock;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -48,4 +49,18 @@ public interface SessionBlockRepository extends JpaRepository<SessionBlock, Long
    * @return The blocks (several when a WOD is borrowed twice).
    */
   List<SessionBlock> findBySessionIdAndWodIdOrderByOrderIndex(Long sessionId, Long wodId);
+
+  /**
+   * Moves a block to a session at an order (the session-order proposal applied, lot D'): an update
+   * query, so the move never reads as an orphan removal from the former session. The order unique
+   * constraint is deferred to the end of the transaction.
+   *
+   * @param blockId The block.
+   * @param session The session receiving it.
+   * @param orderIndex Its order there.
+   */
+  @Modifying(flushAutomatically = true, clearAutomatically = true)
+  @Query("UPDATE SessionBlock b SET b.session = :session, b.orderIndex = :orderIndex WHERE b.id = :blockId")
+  void moveTo(
+      @Param("blockId") Long blockId, @Param("session") Session session, @Param("orderIndex") int orderIndex);
 }

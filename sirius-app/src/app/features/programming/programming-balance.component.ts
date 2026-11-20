@@ -1,5 +1,6 @@
 import {ChangeDetectionStrategy, Component, computed, effect, inject, linkedSignal, signal} from '@angular/core';
 import {HttpContext} from '@angular/common/http';
+import {ActivatedRoute, RouterLink} from '@angular/router';
 import {TranslatePipe, TranslateService} from '@ngx-translate/core';
 import {NgIcon, provideIcons} from '@ng-icons/core';
 import {heroChevronLeft, heroChevronRight} from '@ng-icons/heroicons/outline';
@@ -38,7 +39,7 @@ interface AlertText {
   selector: 'app-programming-balance',
   standalone: true,
   imports: [
-    TranslatePipe, NgIcon, HlmButton, HlmDialogImports, HlmSpinner, NativeSelectDirective, PageComponent,
+    TranslatePipe, NgIcon, HlmButton, HlmDialogImports, HlmSpinner, NativeSelectDirective, PageComponent, RouterLink,
     StaffGymPickerComponent, PatternRadarComponent, ReviewMetconsComponent, ReviewModalitiesComponent
   ],
   templateUrl: './programming-balance.component.html',
@@ -52,10 +53,12 @@ export class ProgrammingBalanceComponent {
   // --- STATE (SIGNALS & VARIABLES) ---
   readonly gym = staffGymSelection('STAFF');
   /** Monday of the first week (D163: the current week by default, decided here). */
-  readonly start = signal(mondayOf(localDate()));
-  readonly weeks = signal(4);
-  readonly scaled = signal(false);
-  readonly optional = signal(false);
+  /** The cycle and switches: back from the order proposal, its query parameters; else the current 4 weeks. */
+  private readonly params = inject(ActivatedRoute).snapshot.queryParamMap;
+  readonly start = signal(this.params.get('start') ?? mondayOf(localDate()));
+  readonly weeks = signal(Number(this.params.get('weeks') ?? 4));
+  readonly scaled = signal(this.params.get('scaled') === 'true');
+  readonly optional = signal(this.params.get('optional') === 'true');
   /** The profile detailed; empty = none. Reset when the staff picks another gym (other training days). */
   readonly days = linkedSignal<number | null, DayOfWeek[]>({source: () => this.gym.gymId(), computation: () => []});
   readonly balance = signal<ProgrammingBalance | null>(null);
@@ -70,6 +73,10 @@ export class ProgrammingBalanceComponent {
   // --- COMPUTED STATE ---
   readonly lang = computed(() => this.translate.currentLang() ?? this.translate.fallbackLang() ?? 'en');
   readonly startText = computed(() => shortDay(this.start(), this.lang()));
+  /** The cycle and switches handed to the order proposal. */
+  readonly orderParams = computed(() => ({
+    gym: this.gym.gymId(), start: this.start(), weeks: this.weeks(), scaled: this.scaled(), optional: this.optional()
+  }));
   readonly cycleText = computed(() => {
     const b = this.balance();
     if (!b) return '';

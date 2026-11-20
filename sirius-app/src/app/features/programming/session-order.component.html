@@ -1,0 +1,143 @@
+<app-page [title]="'PROGRAMMING.ORDER.TITLE' | translate" [subtitle]="'PROGRAMMING.ORDER.INTRO' | translate">
+  <div class="flex flex-col gap-4">
+    <a class="self-start text-sm text-primary" routerLink="/box/programming" [queryParams]="backParams">‹ {{ 'PROGRAMMING.ORDER.BACK' | translate }}</a>
+    <app-staff-gym-picker [candidates]="gym.candidates()" [value]="gym.gymId()" (valueChange)="gym.select($event)"/>
+
+    <!-- What may move, the strength-day option -->
+    <section class="flex flex-col gap-3 rounded-xl border bg-card p-4" [attr.aria-label]="'PROGRAMMING.ORDER.SETTINGS' | translate">
+      <div class="flex flex-col gap-1.5">
+        <span class="text-sm font-medium" id="order-mode">{{ 'PROGRAMMING.ORDER.MODE' | translate }}</span>
+        <div class="grid gap-2 sm:grid-cols-3" role="radiogroup" aria-labelledby="order-mode">
+          @for (m of modes; track m) {
+            <button type="button" role="radio" class="flex flex-col items-start gap-0.5 rounded-lg border px-3 py-2 text-left aria-checked:border-primary aria-checked:bg-primary/10"
+                    [attr.aria-checked]="mode() === m" (click)="mode.set(m)" [attr.data-mode]="m">
+              <span class="text-sm font-semibold">{{ 'PROGRAMMING.ORDER.MODES.' + m | translate }}</span>
+              <span class="text-xs text-muted-foreground">{{ 'PROGRAMMING.ORDER.MODES.' + m + '_DESC' | translate }}</span>
+            </button>
+          }
+        </div>
+      </div>
+      @if (skillsMove()) {
+        <div class="flex flex-col gap-1.5">
+          <span class="text-sm font-medium" id="order-heavy">{{ 'PROGRAMMING.ORDER.HEAVY' | translate }}</span>
+          <div class="inline-flex self-start overflow-hidden rounded-md border" role="radiogroup" aria-labelledby="order-heavy">
+            @for (h of heavyOptions; track h) {
+              <button type="button" role="radio" class="px-3 py-2 text-sm not-first:border-l aria-checked:bg-primary aria-checked:text-primary-content"
+                      [attr.aria-checked]="heavy() === h" (click)="heavy.set(h)">{{ 'PROGRAMMING.ORDER.HEAVY_' + h | translate }}</button>
+            }
+          </div>
+        </div>
+      }
+      <p class="text-xs text-muted-foreground">{{ 'PROGRAMMING.ORDER.PIN_HINT' | translate }}</p>
+    </section>
+
+    @if (gym.gymId() === null) {
+      <p class="py-8 text-center text-sm text-muted-foreground">{{ 'PROGRAMMING.NO_GYM' | translate }}</p>
+    } @else if (failed()) {
+      <p class="py-8 text-center text-sm text-destructive">{{ 'PROGRAMMING.ORDER.LOAD_ERROR' | translate }}</p>
+    } @else if (isLoading() && !proposal()) {
+      <div class="flex flex-col items-center gap-2 py-12 text-sm text-muted-foreground">
+        <hlm-spinner/>
+        {{ 'PROGRAMMING.ORDER.SEARCHING' | translate }}
+      </div>
+    } @else if (proposal(); as p) {
+      <div class="flex flex-col gap-4" [class.opacity-60]="isLoading()">
+        <!-- Before / after on the whole cycle -->
+        <section class="flex flex-wrap items-center justify-between gap-3 rounded-xl border bg-card p-4" data-slot="order-summary">
+          <div class="flex flex-col gap-0.5">
+            <span class="text-base font-semibold">
+              {{ 'PROGRAMMING.ORDER.SUMMARY' | translate: {before: p.before.profilesInAlert, after: p.after.profilesInAlert} }}
+            </span>
+            <span class="text-xs text-muted-foreground">
+              @if (improved()) {
+                {{ 'PROGRAMMING.ORDER.MOVES' | translate: {count: p.after.moves} }}
+              } @else {
+                {{ 'PROGRAMMING.ORDER.NO_BETTER' | translate }}
+              }
+            </span>
+          </div>
+          @if (isLoading()) {
+            <hlm-spinner/>
+          }
+        </section>
+
+        @for (w of weekViews(); track w.monday) {
+          <section class="flex flex-col gap-3 rounded-xl border bg-card p-4" [attr.aria-label]="w.title" data-slot="order-week">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <h2 class="text-base font-semibold">{{ w.title }}</h2>
+              @if (w.changed) {
+                <label class="flex items-center gap-2 text-sm">
+                  <input type="checkbox" [checked]="kept().includes(w.monday)" (change)="toggleKeep(w.monday)" data-slot="order-keep"/>
+                  {{ 'PROGRAMMING.ORDER.KEEP' | translate }}
+                </label>
+              } @else {
+                <span class="text-xs text-muted-foreground">{{ 'PROGRAMMING.ORDER.UNCHANGED' | translate }}</span>
+              }
+            </div>
+            <div class="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
+              @for (d of w.days; track d.key) {
+                <div class="flex min-w-0 flex-col gap-1.5 rounded-lg border p-2" [class.bg-muted]="d.locked" data-slot="order-day">
+                  <div class="flex items-center justify-between gap-1 text-xs font-semibold">
+                    <span>{{ d.name }} <span class="font-normal text-muted-foreground">{{ d.date }}</span></span>
+                    @if (d.locked) {
+                      <ng-icon name="heroLockClosed" size="0.9rem" [attr.aria-label]="'PROGRAMMING.ORDER.LOCKED' | translate"/>
+                    }
+                  </div>
+                  @for (c of [d.skill, d.wod]; track $index) {
+                    @if (c) {
+                      <div class="flex items-start justify-between gap-1 rounded px-1.5 py-1 text-xs" [class.bg-secondary/15]="c.moved"
+                           [attr.data-moved]="c.moved || null">
+                        <span class="min-w-0 break-words">
+                          <span class="block text-[0.65rem] uppercase text-muted-foreground">
+                            {{ ($index === 0 ? 'PROGRAMMING.ORDER.SKILL' : 'PROGRAMMING.ORDER.WOD') | translate }}
+                            @if (c.moved) { · {{ 'PROGRAMMING.ORDER.FROM' | translate: {day: c.from} }} }
+                          </span>
+                          {{ c.part.title }}
+                        </span>
+                        @if (!d.locked) {
+                          <button type="button" class="shrink-0 rounded p-0.5 text-muted-foreground aria-pressed:text-primary"
+                                  [attr.aria-pressed]="c.part.pinned" [attr.aria-label]="'PROGRAMMING.ORDER.PIN' | translate: {day: c.from}"
+                                  (click)="togglePin(c.part)" data-slot="order-pin">
+                            <ng-icon name="heroMapPin" size="0.9rem"/>
+                          </button>
+                        }
+                      </div>
+                    }
+                  }
+                </div>
+              }
+            </div>
+            @if (w.moves.length) {
+              <ul class="flex flex-col gap-0.5 text-xs text-muted-foreground" data-slot="order-moves">
+                @for (m of w.moves; track m) {
+                  <li>{{ m }}</li>
+                }
+              </ul>
+            }
+          </section>
+        }
+
+        @if (improved()) {
+          <div class="flex justify-end">
+            <button hlmBtn type="button" [disabled]="!kept().length || applying() || isLoading()" (click)="openConfirm()" data-slot="order-apply">
+              {{ 'PROGRAMMING.ORDER.APPLY' | translate: {count: kept().length} }}
+            </button>
+          </div>
+        }
+      </div>
+    }
+  </div>
+</app-page>
+
+<hlm-alert-dialog [state]="confirmState()" (closed)="closeConfirm()">
+  <hlm-alert-dialog-content *hlmAlertDialogPortal>
+    <hlm-alert-dialog-header>
+      <h2 hlmAlertDialogTitle>{{ 'PROGRAMMING.ORDER.CONFIRM_TITLE' | translate }}</h2>
+      <p hlmAlertDialogDescription>{{ 'PROGRAMMING.ORDER.CONFIRM_DESC' | translate: {count: kept().length} }}</p>
+    </hlm-alert-dialog-header>
+    <hlm-alert-dialog-footer>
+      <button hlmAlertDialogCancel>{{ 'GLOBAL.CANCEL' | translate }}</button>
+      <button hlmAlertDialogAction (click)="apply()" data-slot="order-confirm">{{ 'PROGRAMMING.ORDER.CONFIRM' | translate }}</button>
+    </hlm-alert-dialog-footer>
+  </hlm-alert-dialog-content>
+</hlm-alert-dialog>

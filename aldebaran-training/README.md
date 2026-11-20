@@ -383,6 +383,15 @@ warn the coach.
 
 Never shown to an athlete (D89).
 
+`POST /programming/gyms/{gymId}/order-proposals` (writers: `WOD_WRITE` or admin) proposes, for the same cycle and
+switches, the order of each week's sessions that leaves the fewest profiles in alert (D168-D171), nothing written: the
+WOD parts move (WOD, Accessory, Finisher) and the Skills stay, whole sessions move, or both move separately; past,
+logged, scored and competition days never move, nor the blocks pinned in the request; when the Skills move, strength
+days in a row never exceed the programmed ones (strict, or soft when no main group is agonist in both). Ties go to
+fewer consecutive days in the same metcon domain or dominant modality, then to fewer moves. `POST .../order` applies
+the weeks the coach keeps in one transaction (blocks re-attached to the week's sessions, or sessions' dates swapped),
+after checking rights, locks (409) and that each week only swaps its own parts (400).
+
 ### Scores (`/aldebaran/scores`)
 
 * `GET /me`: the current user's scores (optional `wodId`, paginated; with `sessionId` too, only the

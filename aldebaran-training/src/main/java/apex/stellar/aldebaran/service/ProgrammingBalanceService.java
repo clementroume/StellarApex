@@ -201,7 +201,7 @@ public class ProgrammingBalanceService {
   }
 
   /** The days of a profile: CrossFit sessions of one day; other disciplines are specialties (D161). */
-  private static boolean counts(Session session) {
+  static boolean counts(Session session) {
     return session.getType() == SessionType.WOD && session.getDiscipline() == Discipline.CROSSFIT;
   }
 
@@ -209,7 +209,7 @@ public class ProgrammingBalanceService {
     return date.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
   }
 
-  private Map<Long, MuscleInfo> muscles() {
+  Map<Long, MuscleInfo> muscles() {
     Map<Long, MuscleInfo> infos = new HashMap<>();
     for (Muscle m : muscleRepository.findAll()) {
       Muscle parent = m.getParent();
