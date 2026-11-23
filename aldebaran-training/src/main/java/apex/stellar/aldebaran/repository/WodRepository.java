@@ -34,6 +34,12 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface WodRepository extends JpaRepository<Wod, Long> {
 
+  /**
+   * Whether a catalog WOD already holds this code.
+   *
+   * @param code The catalog code.
+   * @return true when taken.
+   */
   boolean existsByCode(String code);
 
   // -------------------------------------------------------------------------

@@ -16,7 +16,8 @@ describe an entry (roles, adjustments, usual names, equipment, Scaled lines...) 
 inserted again for the entries of the file; nothing references them. WOD lines are updated in place
 by (WOD code, order): scores reference them, so the generator never deletes one. A removal (entry
 or WOD line) goes through a versioned migration written by hand; the generator lists what
-disappeared since its last run (``catalog-manifest.json``).
+disappeared since its last run (``catalog-manifest.json``) and writes nothing until it is run again
+with ``--allow-removals``.
 
 The script only uses the standard library and reads the database through ``docker exec <container>
 psql`` (the credentials are those of the container). Usage, from ``aldebaran-training``:
@@ -405,6 +406,9 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     parser.add_argument("--container", default="castor-db", help="PostgreSQL container")
     parser.add_argument("--out", type=Path, default=DEFAULT_OUT, help="output folder")
+    parser.add_argument("--allow-removals", action="store_true",
+                        help="write the files even when entries or WOD lines disappeared (the"
+                             " versioned migration that removes them is written)")
     args = parser.parse_args()
 
     catalog = Catalog(Database(args.container))
@@ -427,6 +431,16 @@ def main() -> None:
     for name, wods in sorted(by_file.items()):
         files[name] = wods_file(catalog, name, wods)
 
+    gone = report_removals(previous, current) if previous else []
+    if gone:
+        print("No longer in the catalog since the last run (the files never delete: a versioned"
+              " migration must remove them from the other databases):")
+        for item in gone:
+            print(f"  - {item}")
+        if not args.allow_removals:
+            sys.exit("Nothing written. Write the removal migration, then run again with"
+                     " --allow-removals.")
+
     for stale in out.glob("R__*.sql"):
         if stale.stem not in files:
             stale.unlink()
@@ -437,12 +451,6 @@ def main() -> None:
 
     print(f"{len(catalog.muscles)} muscles, {len(catalog.movements)} movements, "
           f"{len(catalog.wods)} catalog WODs in {len(files)} files → {out}")
-    gone = report_removals(previous, current) if previous else []
-    if gone:
-        print("\nNo longer in the catalog since the last run (the files never delete: write a"
-              " versioned migration if the removal is wanted):")
-        for item in gone:
-            print(f"  - {item}")
 
 
 if __name__ == "__main__":

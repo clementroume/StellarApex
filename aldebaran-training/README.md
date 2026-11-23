@@ -475,13 +475,13 @@ a catalog entry; Flyway replays a file when its checksum changes, so a fix repla
 Rows that only describe an entry (roles, usual names, Scaled lines...) are deleted and inserted again;
 WOD lines are updated in place by (WOD code, order) and never deleted (scores reference them). A removal
 goes through a versioned migration written by hand: the generator lists what disappeared since its last
-run (`catalog-manifest.json`). Without the folder (CI, a fresh clone) the application starts with an empty
+run (`catalog-manifest.json`) and writes nothing until it runs again with `--allow-removals`. Without the folder (CI, a fresh clone) the application starts with an empty
 catalog. The folder enters the jar and the Docker image built on a machine that has it: such an image must
 never go to a public registry. Back the folder up outside the machine.
 
 * Movement code: derived once from the name (`Movement.codeOf`, numbered when taken), never changed.
-* WOD code: only a catalog WOD has one, a public WOD without gym created or published by a platform admin
-  (`WodService.assignCatalogCode`); gym, personal and session WODs have none.
+* WOD code: only a catalog WOD has one, a public WOD without gym created or published by a platform admin as
+  its author (`WodService.assignCatalogCode`; an admin editing a user's public WOD never makes it a catalog WOD); gym, personal and session WODs have none.
 * Usage, from `aldebaran-training`, with the local stack running: `python3 tools/catalog/generate_catalog.py`
   (options `--container`, `--out`; standard library only, reads the database through `docker exec ... psql`).
 * After a start that replayed a catalog file, `config/CatalogCachePurge` empties the catalog caches.

@@ -242,6 +242,10 @@ public class Movement {
     return CatalogCode.of(name, "movement");
   }
 
+  /**
+   * Fallback for movements saved without a code (tests). It does not number a taken code: create
+   * catalog movements through {@code MovementService.createMovement}, which does.
+   */
   @PrePersist
   void assignCode() {
     if (code == null) {

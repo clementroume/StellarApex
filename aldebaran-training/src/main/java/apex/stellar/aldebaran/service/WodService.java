@@ -678,15 +678,17 @@ public class WodService {
 
   /**
    * Gives a catalog WOD its stable code, once: a public WOD without gym that a platform admin
-   * creates or publishes (D191). The code never changes afterwards; any other WOD has none.
+   * creates or publishes as its author (D191). An admin editing someone else's public WOD never
+   * turns it into a catalog WOD. The code never changes afterwards; any other WOD has none.
    *
-   * @param wod The WOD about to be saved.
+   * @param wod The WOD about to be saved (its author already set).
    */
   private void assignCatalogCode(Wod wod) {
     if (wod.getCode() != null
         || !wod.isPublic()
         || wod.getGymId() != null
-        || !securityService.isCurrentUserAdmin()) {
+        || !securityService.isCurrentUserAdmin()
+        || !Objects.equals(wod.getAuthorId(), securityService.getCurrentUserId())) {
       return;
     }
     String base = CatalogCode.of(wod.getTitle(), "wod");
