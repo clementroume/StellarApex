@@ -275,12 +275,6 @@
     "IMPERIAL": "Impérial",
     "IMPERIAL_EXAMPLE": "Charges en lb, hauteurs en in, distances courtes en ft (course et rameur restent en m)."
   },
-  "EXPORT": {
-    "EXPORT_CSV": "Exporter CSV",
-    "CONFIRM_EXPORT": "Attention : Cela va écraser le fichier CSV local. Continuer ?",
-    "EXPORT_SUCCESS": "Export CSV réussi !",
-    "EXPORT_ERROR": "Erreur lors de l'export CSV."
-  },
   "MUSCLE": {
     "LIST": {
       "FRONT": "Face",
@@ -838,6 +832,7 @@
       "HERO": "Hero",
       "BENCHMARK": "Benchmark CrossFit",
       "OPEN": "Open",
+      "REGIONALS": "Regionals",
       "QUARTERFINALS": "Quarts de finale",
       "SEMIFINALS": "Demi-finales",
       "GAMES": "Games"

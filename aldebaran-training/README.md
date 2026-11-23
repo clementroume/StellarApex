@@ -131,7 +131,7 @@ of them:
 * **Sessions** (lot B, below): frame read by the members of the session's gym, content per the
   session's visibility policy (staff of any role always), written with `WOD_WRITE`; personal
   sessions by their author only.
-* **Muscles / movements**: read by everyone, written (and exported to CSV) by platform ADMIN only.
+* **Muscles / movements**: read by everyone, written by platform ADMIN only.
 * A platform ADMIN can do everything.
 
 Rules live in `security/WodSecurity`, `security/ScoreSecurity` and `security/SessionSecurity`, used
@@ -205,8 +205,7 @@ version (`movement_dumbbell_bases`), and a joint layer that controls the roles (
   Carry / Gait / Crawl / Cyclic / Jump, Core: Flexion / Extension / Rotation / Lateral Flexion; a hold counts in the
   direction it works: Plank = Core Flexion, overhead = Push V, a hang = Pull V). A line reads its most precise usual
   name's, else the movement's, else (a chain without its own) the union of its components' (`CatalogRules.patterns`);
-  a line counts once per axis, its details are shown on demand. Edited in the Sirius catalog forms, exported in the
-  CSV backup (`patterns` column). Values reviewed in `docs-private/catalogue/revue-schemas-mouvement.md`.
+  a line counts once per axis, its details are shown on demand. Edited in the Sirius catalog forms, frozen in the catalog migrations. Values reviewed in `docs-private/catalogue/revue-schemas-mouvement.md`.
 
 * **Muscle code**: `code` is the stable key of a muscle in the 3D model of Sirius (`sirius-app/tools/muscle-model`),
   returned in `MuscleResponse` and `MuscleRefResponse`. Derived once from the medical name (`Quadriceps Femoris` gives
@@ -219,7 +218,7 @@ version (`movement_dumbbell_bases`), and a joint layer that controls the roles (
   `RINGS`), never a new movement or a note. "Any style" movements match WOD prescriptions (Clean,
   Snatch, Shoulder-to-Overhead, Ground-to-Overhead). Coaching cues: one cue per line.
 * **WOD movements**: their equipment and techniques must be allowed by the movement
-  (`WodMovement.checkVariantsAllowed`): 400 on create/update, also enforced when reading the CSVs.
+  (`WodMovement.checkVariantsAllowed`): 400 on create/update.
   Conversely, a movement update cannot remove an equipment or technique that any WOD (public, gym
   or personal) still prescribes for it: 409 naming the value and the number of WODs.
 * **WOD format and category** (formats v3, former V15): `wodType` is the format category (`FOR_TIME`, `AMRAP`,
@@ -457,35 +456,35 @@ after checking rights, locks (409) and that each week only swaps its own parts (
   `MANAGE_SETTINGS` writes.
 * `GET /sessions/reference-data`: types, disciplines, block kinds, stimuli, visibility policies.
 
-### Export (`/aldebaran/export`) — temporary, development only
+## Catalog (private repeatable migrations)
 
-* `POST /muscles`, `POST /movements`: [ADMIN] write the current catalog to
-  `src/main/resources/muscles.csv` / `movements.csv` (through the source volume mounted in
-  `docker-compose.yml`).
-* `POST /wods`: [ADMIN] write the public WODs to `src/main/resources/wods.csv` /
-  `wod_movements.csv`.
+Muscles, movements and catalog WODs (Girls, Heroes, benchmarks, Open, Regionals, Quarterfinals,
+Semifinals, Games) are part of the value of the application: they never enter git. They are edited in
+the Sirius admin screens on a local database, then frozen by `tools/catalog/generate_catalog.py` into
+repeatable Flyway migrations in `src/main/resources/db/catalog/` (git-ignored, read through
+`spring.flyway.locations=classpath:db/migration,classpath:db/catalog`):
 
-## Catalog Backup (Development)
+* `R__10_Muscles`, `R__11_Movements` (roles, adjustments, joint actions, equipment, techniques),
+  `R__12_Movement_Chains` (chains and "either" movements), `R__13_Usual_Names`;
+* `R__20_Benchmarks`, `R__21_Girls`, `R__22_Heroes`;
+* one file per competition season, `R__30_Season_2011` ... (Open, Regionals or Quarterfinals /
+  Semifinals, Games of the year); a new season is a new file.
 
-While the software is being developed, muscles, movements and public reference WODs (Girls, Heroes,
-CrossFit benchmarks, Open, Quarterfinals, Semifinals, Games) are edited in the Sirius UI, then exported to CSV with the endpoints above. The CSV
-files are a local backup of the latest catalog: if the database is reset, `config/DataSeeder`
-reloads muscles and movements into empty tables, then the WODs when no public WOD exists (public,
-no author, no gym). The CSV files are git-ignored (never pushed); on a fresh clone the catalog
-starts empty. This mechanism (export endpoints, source volume, CSV seeding) is temporary.
+Each file upserts by stable code (`muscles.code`, `movements.code`, `wods.code`, V12) and never deletes
+a catalog entry; Flyway replays a file when its checksum changes, so a fix replays its own file only.
+Rows that only describe an entry (roles, usual names, Scaled lines...) are deleted and inserted again;
+WOD lines are updated in place by (WOD code, order) and never deleted (scores reference them). A removal
+goes through a versioned migration written by hand: the generator lists what disappeared since its last
+run (`catalog-manifest.json`). Without the folder (CI, a fresh clone) the application starts with an empty
+catalog. The folder enters the jar and the Docker image built on a machine that has it: such an image must
+never go to a public registry. Back the folder up outside the machine.
 
-* `muscles.csv`: `medical_name,region,parent,common_name_en,common_name_fr,description_en,description_fr,image_url,joint_actions,code`
-  (`parent` = medical name of the functional group, linked once every muscle is saved; `code` keeps the 3D model link
-  of a renamed muscle, derived from the name when empty).
-* `movements.csv`: equipment, techniques and muscles (`agonists`, `synergists`, `stabilizers`) are
-  lists separated by `, `.
-* `wods.csv`: `title,wod_type,category,score_type,rep_scheme,time_cap_seconds,emom_interval,emom_rounds,description_en,description_fr,notes_en,notes_fr,tiebreak_en,tiebreak_fr,reps_per_round,rounds,rest_seconds,work_seconds,ladder_start,ladder_step,vest_weight,vest_weight_female,vest_weight_unit,structure` (from `tiebreak_en` on optional; former `wod_type` values read as a category + sub-category; a former `ROUNDS_REPS` score type reads as `REPS`)
-* `wod_movements.csv`: `wod_title,order_index,movement_name,reps_scheme,weight,weight_unit,distance,distance_unit,duration_seconds,calories,notes_en,scaling_options_en`,
-  plus optional `duration_display_unit,equipment,techniques,weight_female,notes_fr,scaling_options_fr,calories_female,height,height_female,height_unit,sets,segment,complex_group` (blank segment = `MAIN`)
-  (lists separated by `|`). Files with the former `description`, `notes` and `scaling_options`
-  columns still load (read as English).
-  `movement_name` is the exact movement name; an unknown one is logged and the row skipped.
-  Blank cell = `null`, so the export → seed round-trip is lossless (`config/WodCsvCodec`).
+* Movement code: derived once from the name (`Movement.codeOf`, numbered when taken), never changed.
+* WOD code: only a catalog WOD has one, a public WOD without gym created or published by a platform admin
+  (`WodService.assignCatalogCode`); gym, personal and session WODs have none.
+* Usage, from `aldebaran-training`, with the local stack running: `python3 tools/catalog/generate_catalog.py`
+  (options `--container`, `--out`; standard library only, reads the database through `docker exec ... psql`).
+* After a start that replayed a catalog file, `config/CatalogCachePurge` empties the catalog caches.
 
 With the `demo` Spring profile, `demo/DevGymWodSeeder` (package `aldebaran.demo` and resource `demo/programs.json`,
 removable as a whole) writes two original demo programs through the services (`demo/DemoPrograms`), centered on the seed

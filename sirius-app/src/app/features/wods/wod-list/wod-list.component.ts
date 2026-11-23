@@ -10,19 +10,18 @@ import {HlmButton} from '@spartan-ng/helm/button';
 import {WodFacetFilters, WodListFilters, WodService} from '../../../api/aldebaran/services/wod.service';
 import {WodSummaryResponse} from '../../../api/aldebaran/models/wod.model';
 import {AccessService} from '../../../core/services/access.service';
-import {ExporterService} from '../../../api/aldebaran/services/exporter.service';
 import {BYPASS_LOADER} from '../../../core/interceptors/loading.interceptor';
 import {SearchInputComponent} from '../../../shared/component/search-input/search-input.component';
 import {ListStateComponent} from '../../../shared/component/list/list-state/list-state.component';
 import {formatTimeCapShort} from '../wod.utils';
 
-import {heroChevronLeft, heroChevronRight, heroDocumentArrowDown, heroPlus} from '@ng-icons/heroicons/outline';
+import {heroChevronLeft, heroChevronRight, heroPlus} from '@ng-icons/heroicons/outline';
 export const WOD_PAGE_SIZE = 20;
 export const WOD_SEARCH_DEBOUNCE_MS = 300;
 /** Families of official competitions: latest edition first, events in order within an edition. */
-export const COMPETITION_CATEGORIES = ['OPEN', 'QUARTERFINALS', 'SEMIFINALS', 'GAMES'];
+export const COMPETITION_CATEGORIES = ['OPEN', 'REGIONALS', 'QUARTERFINALS', 'SEMIFINALS', 'GAMES'];
 /** Family chips in this order (Aldebaran counts them). */
-const FAMILY_ORDER = ['GIRLS', 'HERO', 'BENCHMARK', 'OPEN', 'QUARTERFINALS', 'SEMIFINALS', 'GAMES'];
+const FAMILY_ORDER = ['GIRLS', 'HERO', 'BENCHMARK', 'OPEN', 'REGIONALS', 'QUARTERFINALS', 'SEMIFINALS', 'GAMES'];
 /** Movements shown in the preview of a row. */
 const PREVIEW_MOVEMENTS = 4;
 
@@ -50,7 +49,7 @@ export function editionYear(title: string): number | null {
  * programming goes through sessions, personal WODs live in My training.
  */
 @Component({
-  viewProviders: [provideIcons({heroChevronLeft, heroChevronRight, heroDocumentArrowDown, heroPlus})],
+  viewProviders: [provideIcons({heroChevronLeft, heroChevronRight, heroPlus})],
   selector: 'app-wod-list',
   standalone: true,
   imports: [HlmButton, HlmBadge, RouterModule, TranslatePipe, NgIcon, SearchInputComponent, ListStateComponent],
@@ -62,12 +61,10 @@ export class WodListComponent implements OnInit {
   private readonly wodService = inject(WodService);
   private readonly translate = inject(TranslateService);
   private readonly accessService = inject(AccessService);
-  private readonly exporterService = inject(ExporterService);
   private readonly destroyRef = inject(DestroyRef);
 
   // --- STATE (SIGNALS & VARIABLES) ---
   isLoading = signal<boolean>(false);
-  isExporting = signal<boolean>(false);
   wods = signal<WodSummaryResponse[]>([]);
   /** Number of WODs for the current filters (pages). */
   total = signal<number>(0);
@@ -262,11 +259,6 @@ export class WodListComponent implements OnInit {
     this.page.set(page);
     this.loadPage();
     if (typeof window !== 'undefined') window.scrollTo({top: 0, behavior: 'smooth'});
-  }
-
-  /** Temporary dev backup of the public WODs to the git-ignored seed CSVs. */
-  exportCsv(): void {
-    this.exporterService.executeCsvExport(this.exporterService.exportWods(), this.isExporting);
   }
 
   // --- HELPERS ---

@@ -33,9 +33,17 @@ export function dayLabel(day: string, lang: string, withYear = false): string {
   });
 }
 
-/** "3 nov." / "Nov 3", for week ranges. */
-export function shortDay(day: string, lang: string): string {
-  return new Date(`${day}T12:00:00`).toLocaleDateString(lang, {day: 'numeric', month: 'short'});
+/** "3 nov." / "Nov 3" (with the year: "3 nov. 2026" / "Nov 3, 2026"), for week ranges. */
+export function shortDay(day: string, lang: string, withYear = false): string {
+  return new Date(`${day}T12:00:00`).toLocaleDateString(lang, {
+    day: 'numeric', month: 'short', ...(withYear ? {year: 'numeric'} : {})
+  });
+}
+
+/** A week range with its year, once when both days share it: "3 nov. – 9 nov. 2026". */
+export function weekRange(from: string, to: string, lang: string): {from: string; to: string} {
+  const sameYear = from.slice(0, 4) === to.slice(0, 4);
+  return {from: shortDay(from, lang, !sameYear), to: shortDay(to, lang, true)};
 }
 
 /** The day of a WOD session, or the week of a specialty ("semaine du 2 nov. au 8 nov."). */

@@ -20,6 +20,7 @@ import apex.stellar.aldebaran.exception.InvalidWodException;
 import apex.stellar.aldebaran.exception.ResourceNotFoundException;
 import apex.stellar.aldebaran.exception.WodLockedException;
 import apex.stellar.aldebaran.mapper.WodMapper;
+import apex.stellar.aldebaran.model.entities.CatalogCode;
 import apex.stellar.aldebaran.model.entities.Movement;
 import apex.stellar.aldebaran.model.entities.Wod.ScoreType;
 import apex.stellar.aldebaran.model.entities.Wod.WodCategory;
@@ -507,6 +508,7 @@ public class WodService {
     wod.setAuthorId(authorId);
     wod.setSourceWodId(sourceWodId);
     wod.setStandalone(standalone);
+    assignCatalogCode(wod);
     checkCompetition(wod);
     checkStructure(wod);
     checkTeam(wod);
@@ -674,6 +676,27 @@ public class WodService {
             });
   }
 
+  /**
+   * Gives a catalog WOD its stable code, once: a public WOD without gym that a platform admin
+   * creates or publishes (D191). The code never changes afterwards; any other WOD has none.
+   *
+   * @param wod The WOD about to be saved.
+   */
+  private void assignCatalogCode(Wod wod) {
+    if (wod.getCode() != null
+        || !wod.isPublic()
+        || wod.getGymId() != null
+        || !securityService.isCurrentUserAdmin()) {
+      return;
+    }
+    String base = CatalogCode.of(wod.getTitle(), "wod");
+    String code = base;
+    for (int n = 2; wodRepository.existsByCode(code); n++) {
+      code = base + "-" + n;
+    }
+    wod.setCode(code);
+  }
+
   private Wod update(Long id, WodRequest request) {
     // 2. Fetch Existing Data (with movements to allow merging)
     Wod existingWod =
@@ -683,6 +706,7 @@ public class WodService {
 
     // 3. Update Scalar Fields
     wodMapper.updateEntity(request, existingWod);
+    assignCatalogCode(existingWod);
     checkCompetition(existingWod);
     checkStructure(existingWod);
     checkTeam(existingWod);

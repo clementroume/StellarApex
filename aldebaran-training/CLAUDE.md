@@ -3,17 +3,12 @@
 Spring Boot 4.1 / Java 25 service, base path `/aldebaran`, port 8081, schema `aldebaran` (Flyway).
 Domain: muscles, movements, WODs (`Wod` + `WodMovement`), scores and sessions (`Session` +
 `SessionBlock`, journal `SessionLog`, lot B; model and rules in `README.md` § Sessions).
-Dev-only catalog backup (temporary, git-ignored CSVs, see root `CLAUDE.md`): `controller/Exporter`
-(admin only) writes `src/main/resources/{muscles,movements,movement_usual_names,wods,wod_movements}.csv` through the source
-volume mounted in `docker-compose.yml`; `config/DataSeeder` reloads them into empty tables (WODs:
-when no public WOD exists). `muscles.csv` has a `parent` column (functional group, by medical name).
-WOD CSV format lives in `config/WodCsvCodec` (blank = null, lossless round-trip; movements by exact
-name; WOD movement variants joined by `|`, whereas `movements.csv` lists use `, `; FR/EN text
-columns `*_en` / `*_fr`, the former single-language columns still read as English; optional trailing
-`tiebreak_en` ... `reps_per_round` then the former V14 structure columns `rounds` ... `vest_weight_unit`, former V15
-`structure`, former V16 `team_size` / `team_mode`, former V18 `rep_max`, and `sets` / `segment` / `complex_group` /
-`team_split` / `percent_of_rm` / `rm_reps` / `component_techniques` / `length` / `length_unit` for WOD movements; catalog-model columns of `movements.csv` in `config/CatalogCsv`; former `wod_type` values read
-as a category + sub-category; a former `ROUNDS_REPS` score type reads as `REPS`).
+Catalog (lot E): never in git. `tools/catalog/generate_catalog.py` freezes the local catalog into private repeatable
+migrations `src/main/resources/db/catalog/R__*.sql` (git-ignored, `spring.flyway.locations` includes `db/catalog`;
+upsert by stable code `muscles.code` / `movements.code` / `wods.code`, never a deletion, WOD lines updated in place by
+(WOD code, order); a removal is a hand-written `V` migration). Only a catalog WOD (public, no gym, created or published
+by an admin: `WodService.assignCatalogCode`) has a code. ITs load `db/migration` only. `config/CatalogCachePurge` empties
+the catalog caches at startup; Redis keys carry `application.cache.key-prefix`.
 `demo/DevGymWodSeeder` (`@Profile("demo")`, package `aldebaran.demo` + resource `demo/programs.json` = what to delete to
 retire the demo) resolves the Antares gyms and users with `JdbcTemplate`, writes the two demo programs (`DemoPrograms`:
 sessions through `SessionService` / `WodService`, data exported from `docs-private/demo/outils/export_json.py`), then
@@ -86,8 +81,8 @@ anywhere else.
   from `ScoreService` after each log / update / delete (`rebuildFor(wod, userId)`), never from a
   request; `service/LiftVariant` says whether a WOD feeds records and builds the variant key. Records
   are stored at the most precise variant and read through `service/RecordInheritance` (best of what
-  counts for the slot, with `inheritedFrom`). The canonical "N RM" WODs live in the catalog CSVs
-  (`rep_max`), one per movement, variant and N, frozen in a migration at lot E.
+  counts for the slot, with `inheritedFrom`). The canonical "N RM" WODs live in the catalog migrations
+  (`rep_max`), one per movement, variant and N.
 - Weekly balance (lot D): own balance only (`GET /balance/me`). Every write that changes what an athlete did calls
   `service/BalanceMaintenanceService` (mark weeks stale, never compute in the write); the display rebuilds
   (`WeeklyBalanceService`). Rules live in `BalanceCalculator` / `MetconVolume` / `LinePrescription` (pure, unit
@@ -129,7 +124,7 @@ anywhere else.
   movement, D126), `patterns` (movement patterns, same lookup, then a chain's components; lot D' D177), `modality` / `modalities` (per line: usual name, family, load; also `wods.modalities`, D127), `checkMovement` (no cycle, no muscle with
   its group, roles against the joint layer).
 - Catalog rules: `WodMovement.checkVariantsAllowed` (variants allowed by the movement; used by
-  `CatalogRules`, `WodCsvCodec`, `DevGymWodSeeder`; `InvalidWodMovementException` → 400), its
+  `CatalogRules`, `DevGymWodSeeder`; `InvalidWodMovementException` → 400), its
   converse in `MovementService.updateMovement` (a variant used by any WOD cannot be removed;
   `WodRepository.countByMovementEquipment/Technique`; 409 `error.movement.variant.in.use`) and
   `MuscleService.applyParent` (one-level functional groups, same region; 409).
@@ -139,4 +134,4 @@ anywhere else.
 - Tests: `*Test` = unit (JUnit 5 + Mockito, principals from `security/TestPrincipals`); `*IT` extends
   `config/BaseIntegrationTest` (full context, random port, Testcontainers; one JVM and one context
   shared by all ITs, tables truncated before each test: create your own data, never depend on order,
-  no per-class `@MockitoBean` except where unavoidable, e.g. `ExporterIT`).
+  no per-class `@MockitoBean` except where unavoidable).

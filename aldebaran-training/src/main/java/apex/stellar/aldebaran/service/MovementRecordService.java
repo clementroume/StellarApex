@@ -72,7 +72,7 @@ public class MovementRecordService {
 
   /** Official competition events: never a canonical lift test (D65). */
   private static final Set<WodCategory> COMPETITION_CATEGORIES =
-      EnumSet.of(WodCategory.OPEN, WodCategory.QUARTERFINALS, WodCategory.SEMIFINALS, WodCategory.GAMES);
+      EnumSet.of(WodCategory.OPEN, WodCategory.REGIONALS, WodCategory.QUARTERFINALS, WodCategory.SEMIFINALS, WodCategory.GAMES);
 
   /** Heaviest first, then earliest day, then oldest score. */
   private static final Comparator<Candidate> BEST_FIRST =

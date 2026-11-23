@@ -8,7 +8,6 @@ import {provideRouter} from '@angular/router';
 import {provideTranslateService} from '@ngx-translate/core';
 import {APP_ICONS} from '../../../app.config';
 import {provideIcons} from '@ng-icons/core';
-import {ExporterService} from '../../../api/aldebaran/services/exporter.service';
 import {NotificationService} from '../../../core/services/notification.service';
 import {HttpContext} from '@angular/common/http';
 import {vi} from 'vitest';
@@ -21,7 +20,6 @@ describe('MovementListComponent', () => {
 
   let mockMovementService: any;
   let mockAuthService: any;
-  let mockExporterService: any;
   let mockNotificationService: any;
 
   let mockCurrentUserSignal: WritableSignal<any>;
@@ -79,9 +77,6 @@ describe('MovementListComponent', () => {
       currentUser: mockCurrentUserSignal
     };
 
-    mockExporterService = {
-      exportMovements: vi.fn().mockName("ExporterService.exportMovements")
-    };
     mockNotificationService = {
       showSuccess: vi.fn().mockName("NotificationService.showSuccess"),
       showError: vi.fn().mockName("NotificationService.showError")
@@ -95,7 +90,6 @@ describe('MovementListComponent', () => {
         provideTranslateService(),
         {provide: MovementService, useValue: mockMovementService},
         {provide: AuthService, useValue: mockAuthService},
-        {provide: ExporterService, useValue: mockExporterService},
         {provide: NotificationService, useValue: mockNotificationService},
         {provide: RecordService, useValue: {getMyRecords: vi.fn().mockReturnValue(of([
           {movementId: 1, movementName: 'Back Squat', category: 'SQUAT', variants: [

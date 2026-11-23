@@ -13,7 +13,7 @@ import {DisplayGymService} from '../../../core/services/display-gym.service';
 import {BYPASS_LOADER} from '../../../core/interceptors/loading.interceptor';
 import {PageComponent} from '../../../shared/component/page/page.component';
 import {SessionCardComponent} from '../session-card/session-card.component';
-import {addDays, dayLabel, localDate, mondayOf, shortDay, sortSessions} from '../session.utils';
+import {addDays, dayLabel, localDate, mondayOf, sortSessions, weekRange} from '../session.utils';
 
 import {heroChevronLeft, heroChevronRight, heroPlus} from '@ng-icons/heroicons/outline';
 /**
@@ -56,9 +56,8 @@ export class SessionWeekComponent {
       return {day, label: dayLabel(day, this.lang()), isToday: day === this.today, sessions: wods.filter(s => s.date === day)};
     });
   });
-  protected readonly weekLabel = computed(() => this.translate.instant('SESSION.WEEK_OF', {
-    from: shortDay(this.monday(), this.lang()), to: shortDay(addDays(this.monday(), 6), this.lang())
-  }));
+  protected readonly weekLabel = computed(() => this.translate.instant('SESSION.WEEK_OF',
+    weekRange(this.monday(), addDays(this.monday(), 6), this.lang())));
   protected readonly isCurrentWeek = computed(() => this.monday() === mondayOf(this.today));
   /** Staff programming sessions (WOD_WRITE) get the create button; Aldebaran checks the gym again. */
   protected readonly canCreate = computed(() => this.accessService.gymsWithPermission('WOD_WRITE').length > 0);

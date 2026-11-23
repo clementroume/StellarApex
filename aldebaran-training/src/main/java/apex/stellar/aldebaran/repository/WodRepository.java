@@ -34,6 +34,8 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface WodRepository extends JpaRepository<Wod, Long> {
 
+  boolean existsByCode(String code);
+
   // -------------------------------------------------------------------------
   // FULL ENTITY QUERIES (Eager Loading)
   // -------------------------------------------------------------------------

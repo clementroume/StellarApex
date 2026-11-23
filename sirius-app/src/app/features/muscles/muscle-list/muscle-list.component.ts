@@ -6,7 +6,6 @@ import {MuscleService} from '../../../api/aldebaran/services/muscle.service';
 import {MuscleResponse} from '../../../api/aldebaran/models/muscle.model';
 import {AccessService} from '../../../core/services/access.service';
 import {NgIcon, provideIcons} from '@ng-icons/core';
-import {ExporterService} from '../../../api/aldebaran/services/exporter.service';
 import {HttpContext} from '@angular/common/http';
 import {BYPASS_LOADER} from '../../../core/interceptors/loading.interceptor';
 import {SearchInputComponent} from '../../../shared/component/search-input/search-input.component';
@@ -24,9 +23,9 @@ export interface MuscleRow {
 
 import {normalize} from '../../../shared/text.utils';
 import {HlmButton} from '@spartan-ng/helm/button';
-import {heroDocumentArrowDown, heroPlus} from '@ng-icons/heroicons/outline';
+import {heroPlus} from '@ng-icons/heroicons/outline';
 @Component({
-  viewProviders: [provideIcons({heroDocumentArrowDown, heroPlus})],
+  viewProviders: [provideIcons({heroPlus})],
   selector: 'app-muscle-list',
   standalone: true,
   imports: [MuscleCreditComponent, MuscleSceneComponent, NgTemplateOutlet, HlmButton, RouterModule, TranslatePipe, NgIcon, SearchInputComponent, ListStateComponent],
@@ -53,13 +52,11 @@ export class MuscleListComponent implements OnInit {
   private readonly muscleService = inject(MuscleService);
   private readonly accessService = inject(AccessService);
   private readonly translate = inject(TranslateService);
-  private readonly exporterService = inject(ExporterService);
   private readonly themeService = inject(ThemeService);
   private readonly regions = viewChild<ElementRef<HTMLElement>>('regions');
 
   // --- STATE (SIGNALS & VARIABLES) ---
   isLoading = signal<boolean>(false);
-  isExporting = signal<boolean>(false);
   activeLang = computed(() => this.translate.currentLang() ?? this.translate.fallbackLang() ?? 'en');
 
   rawMuscles = signal<MuscleResponse[]>([]);
@@ -160,13 +157,6 @@ export class MuscleListComponent implements OnInit {
   // --- ACTIONS & EVENTS ---
   onSearchChange(query: string): void {
     this.searchQuery.set(query);
-  }
-
-  exportCsv(): void {
-    this.exporterService.executeCsvExport(
-      this.exporterService.exportMuscles(),
-      this.isExporting
-    );
   }
 
   // --- HELPERS ---

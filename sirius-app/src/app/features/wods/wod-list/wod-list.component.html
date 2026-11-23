@@ -124,12 +124,6 @@
 
   <div class="pt-8 flex flex-col md:flex-row justify-end gap-4">
     @if (isAdmin()) {
-      <button hlmBtn variant="outline" size="lg" class="min-w-36"
-              (click)="exportCsv()"
-              [disabled]="isExporting()">
-        <ng-icon name="heroDocumentArrowDown" size="1.5rem"></ng-icon>
-        {{ isExporting() ? '...' : ('EXPORT.EXPORT_CSV' | translate) }}
-      </button>
       <a routerLink="/wods/new" hlmBtn size="lg" class="min-w-36">
         <ng-icon name="heroPlus" size="1.5rem"></ng-icon>
         {{ 'WOD.ACTIONS.ADD_PUBLIC' | translate }}

@@ -23,6 +23,8 @@ public interface MovementRepository extends JpaRepository<Movement, Long> {
    */
   boolean existsByNameIgnoreCase(String name);
 
+  boolean existsByCode(String code);
+
   /**
    * The "either" movements of the catalog, with what they accept.
    *

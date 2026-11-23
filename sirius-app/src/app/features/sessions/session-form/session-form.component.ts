@@ -42,7 +42,7 @@ const ALL_POLICIES: VisibilityPolicy[] = ['ADVANCE', 'DAY_OF', 'AFTER', 'AFTER_P
 /** Blocks offered on top of a session (Skill and WOD are there from the start). */
 const EXTRA_KINDS: BlockKind[] = ['WARM_UP', 'SKILL', 'WOD', 'ACCESSORY', 'FINISHER', 'COOL_DOWN'];
 /** Official competition WODs: programmed as competition blocks by default. */
-const COMPETITION_CATEGORIES = ['OPEN', 'QUARTERFINALS', 'SEMIFINALS', 'GAMES'];
+const COMPETITION_CATEGORIES = ['OPEN', 'REGIONALS', 'QUARTERFINALS', 'SEMIFINALS', 'GAMES'];
 /** Blocks offered on top of the session: only they can be marked optional. */
 const OPTIONAL_KINDS: BlockKind[] = ['ACCESSORY', 'FINISHER'];
 
