@@ -1,4 +1,4 @@
-import {addDays, blockTheme, isTextKind, localDate, mondayOf, sessionDateLabel, sessionLink, sortSessions} from './session.utils';
+import {addDays, blockTheme, isTextKind, localDate, mondayOf, sessionDateLabel, sessionLink, sortSessions, weekRange} from './session.utils';
 
 describe('session utils', () => {
   it('should compute local days and the Monday of a week', () => {
@@ -14,6 +14,11 @@ describe('session utils', () => {
     expect(sessionDateLabel({type: 'WOD', date: '2026-11-03', endDate: '2026-11-03'}, 'en', t)).toContain('November 3');
     expect(sessionDateLabel({type: 'SPECIALTY', date: '2026-11-02', endDate: '2026-11-08'}, 'en', t))
       .toBe('SESSION.WEEK_OF {"from":"Nov 2","to":"Nov 8"}');
+  });
+
+  it('should give a week range its year, once when both days share it', () => {
+    expect(weekRange('2026-11-02', '2026-11-08', 'en')).toEqual({from: 'Nov 2', to: 'Nov 8, 2026'});
+    expect(weekRange('2026-12-28', '2027-01-03', 'en')).toEqual({from: 'Dec 28, 2026', to: 'Jan 3, 2027'});
   });
 
   it('should pick the theme in the language shown and link personal sessions to My training', () => {

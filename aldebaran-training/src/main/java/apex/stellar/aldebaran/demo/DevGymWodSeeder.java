@@ -1,6 +1,5 @@
 package apex.stellar.aldebaran.demo;
 
-import apex.stellar.aldebaran.config.WodCsvCodec;
 import apex.stellar.aldebaran.model.entities.Movement;
 import apex.stellar.aldebaran.model.entities.MovementUsualName;
 import apex.stellar.aldebaran.model.entities.Wod;
@@ -19,6 +18,8 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.ApplicationArguments;
@@ -214,7 +215,7 @@ public class DevGymWodSeeder implements ApplicationRunner {
     if (wodRepository.existsByAuthorIdAndGymIdIsNullAndTitle(ids.athlete(), PERSONAL_WOD)) {
       return;
     }
-    Map<String, Movement> catalog = WodCsvCodec.byName(movementRepository.findAll());
+    Map<String, Movement> catalog = byName(movementRepository.findAll());
     Wod wod =
         wod(
             catalog,
@@ -293,4 +294,10 @@ public class DevGymWodSeeder implements ApplicationRunner {
   }
 
   private record Ids(Long sparta, Long zeus, Long owner, Long programmer, Long athlete) {}
+
+  /** The catalog movements keyed by name (the demo WODs name their movements). */
+  private static Map<String, Movement> byName(List<Movement> movements) {
+    return movements.stream()
+        .collect(Collectors.toMap(Movement::getName, Function.identity(), (a, b) -> a));
+  }
 }

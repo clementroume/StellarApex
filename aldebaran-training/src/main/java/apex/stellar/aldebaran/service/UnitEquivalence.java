@@ -26,7 +26,11 @@ public final class UnitEquivalence {
   /** Official competitions and box competitions keep the exact conversion. */
   private static final Set<WodCategory> OFFICIAL =
       EnumSet.of(
-          WodCategory.OPEN, WodCategory.QUARTERFINALS, WodCategory.SEMIFINALS, WodCategory.GAMES);
+          WodCategory.OPEN,
+          WodCategory.REGIONALS,
+          WodCategory.QUARTERFINALS,
+          WodCategory.SEMIFINALS,
+          WodCategory.GAMES);
 
   /** What a load is lifted with: decides the table. */
   enum Implement {

@@ -25,6 +25,7 @@ import jakarta.persistence.JoinTable;
 import jakarta.persistence.ManyToMany;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.OrderBy;
+import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import jakarta.persistence.Transient;
 import jakarta.validation.constraints.NotBlank;
@@ -64,6 +65,13 @@ public class Movement {
   @Column(nullable = false, length = 50)
   @NotBlank
   private String name;
+
+  /**
+   * Stable key of the movement in the catalog migrations ({@code db/catalog}): derived once from the
+   * name, never changed afterwards, so renaming a movement keeps the link (lot E, D191).
+   */
+  @Column(name = "code", unique = true, nullable = false, updatable = false, length = 100)
+  private String code;
 
   @Column(name = "name_abbreviation", length = 20)
   @Size(max = 20)
@@ -222,5 +230,26 @@ public class Movement {
   public int hashCode() {
     // Not getClass(): a Hibernate proxy and its entity must hash alike
     return Movement.class.hashCode();
+  }
+
+  /**
+   * The code a movement name gives (see {@link CatalogCode}).
+   *
+   * @param name The movement name.
+   * @return The code, {@code "movement"} when the name holds no latin letter or digit.
+   */
+  public static String codeOf(String name) {
+    return CatalogCode.of(name, "movement");
+  }
+
+  /**
+   * Fallback for movements saved without a code (tests). It does not number a taken code: create
+   * catalog movements through {@code MovementService.createMovement}, which does.
+   */
+  @PrePersist
+  void assignCode() {
+    if (code == null) {
+      code = codeOf(name);
+    }
   }
 }

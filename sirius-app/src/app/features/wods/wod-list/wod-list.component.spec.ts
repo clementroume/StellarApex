@@ -8,7 +8,6 @@ import {vi} from 'vitest';
 import {editionYear, WOD_PAGE_SIZE, WOD_SEARCH_DEBOUNCE_MS, WodListComponent} from './wod-list.component';
 import {WodService} from '../../../api/aldebaran/services/wod.service';
 import {AccessService} from '../../../core/services/access.service';
-import {ExporterService} from '../../../api/aldebaran/services/exporter.service';
 import {APP_ICONS} from '../../../app.config';
 import {WodSummaryResponse} from '../../../api/aldebaran/models/wod.model';
 import {Slice} from '../../../core/models/pagination.model';
@@ -18,7 +17,6 @@ describe('WodListComponent', () => {
   let fixture: ComponentFixture<WodListComponent>;
   let mockWodService: any;
   let isAdmin: WritableSignal<boolean>;
-  let mockExporterService: any;
 
   const fran: WodSummaryResponse = {id: 1, title: 'Fran', wodType: 'FOR_TIME', scoreType: 'TIME', repScheme: '21-15-9', timeCapSeconds: 600, gymId: 5, isPublic: false, competition: false, createdAt: ''};
   const cindy: WodSummaryResponse = {id: 2, title: 'Cindy', wodType: 'AMRAP', scoreType: 'ROUNDS_REPS', isPublic: true, competition: false, createdAt: ''};
@@ -42,8 +40,7 @@ describe('WodListComponent', () => {
         {
           provide: AccessService,
           useValue: {isAdmin}
-        },
-        {provide: ExporterService, useValue: mockExporterService}
+        }
       ]
     }).compileComponents();
 
@@ -71,10 +68,6 @@ describe('WodListComponent', () => {
       categoryCounts: {GIRLS: 28, OPEN: 46}, total: 74, structures: []
     }));
     isAdmin = signal(false);
-    mockExporterService = {
-      exportWods: vi.fn().mockName('ExporterService.exportWods').mockReturnValue(of('ok')),
-      executeCsvExport: vi.fn().mockName('ExporterService.executeCsvExport')
-    };
   });
 
   afterEach(() => vi.useRealTimers());
@@ -141,11 +134,9 @@ describe('WodListComponent', () => {
     expect(lastFilters()).toMatchObject({search: 'fran'});
   });
 
-  it('should offer the CSV export and the creation to admins only', async () => {
+  it('should offer the creation to admins only', async () => {
     isAdmin.set(true);
     await create();
     expect(fixture.nativeElement.querySelector('a[href="/wods/new"]')).toBeTruthy();
-    component.exportCsv();
-    expect(mockExporterService.executeCsvExport).toHaveBeenCalled();
   });
 });

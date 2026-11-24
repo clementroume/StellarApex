@@ -235,6 +235,44 @@ class WodServiceTest {
   }
 
   @Test
+  @DisplayName("createWod: a public WOD without gym published by an admin gets a free catalog code")
+  void testCreateWod_catalogCode() {
+    wod.setPublic(true);
+    stubCreation();
+    when(securityService.isCurrentUserAdmin()).thenReturn(true);
+    when(wodRepository.existsByCode("fran")).thenReturn(true);
+    when(wodRepository.existsByCode("fran-2")).thenReturn(false);
+
+    wodService.createWod(wodRequest);
+
+    assertEquals("fran-2", wod.getCode());
+  }
+
+  @Test
+  @DisplayName("createWod: a user's public WOD, a gym WOD or a private WOD never gets a code")
+  void testCreateWod_noCatalogCode() {
+    wod.setPublic(true);
+    stubCreation();
+    when(securityService.isCurrentUserAdmin()).thenReturn(false);
+
+    wodService.createWod(wodRequest);
+
+    assertNull(wod.getCode());
+    verify(wodRepository, never()).existsByCode(any());
+  }
+
+  private void stubCreation() {
+    when(securityService.getCurrentUserId()).thenReturn(100L);
+    when(movementService.getMovement(1L))
+        .thenReturn(mock(apex.stellar.aldebaran.dto.MovementResponse.class));
+    when(movementRepository.getReferenceById(1L)).thenReturn(movement);
+    when(wodMapper.toEntity(wodRequest)).thenReturn(wod);
+    when(wodMapper.toWodMovementEntity(any())).thenReturn(new WodMovement());
+    when(wodRepository.save(wod)).thenReturn(wod);
+    when(wodMapper.toResponse(wod)).thenReturn(mock(WodResponse.class));
+  }
+
+  @Test
   @DisplayName("createWod: should link movements and set creator using cached MovementService")
   void testCreateWod_Success() {
     when(securityService.getCurrentUserId()).thenReturn(100L);

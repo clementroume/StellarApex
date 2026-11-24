@@ -7,7 +7,6 @@ import {MovementService} from '../../../api/aldebaran/services/movement.service'
 import {AccessService} from '../../../core/services/access.service';
 import {MovementSummaryResponse, UsualNameOption} from '../../../api/aldebaran/models/movement.model';
 import {NgIcon, provideIcons} from '@ng-icons/core';
-import {ExporterService} from '../../../api/aldebaran/services/exporter.service';
 import {HttpContext} from '@angular/common/http';
 import {BYPASS_LOADER} from '../../../core/interceptors/loading.interceptor';
 import {SearchInputComponent} from '../../../shared/component/search-input/search-input.component';
@@ -20,7 +19,7 @@ import {MovementRecords} from '../../../api/aldebaran/models/record.model';
 import {UnitService} from '../../../core/services/unit.service';
 import {LiftSummary, liftSummary} from '../../records/record.utils';
 
-import {heroDocumentArrowDown, heroPlus} from '@ng-icons/heroicons/outline';
+import {heroPlus} from '@ng-icons/heroicons/outline';
 import {hugeCardiogram02, hugeDumbbell01, hugeGymnastic} from '@ng-icons/huge-icons';
 /** A card of the catalog. */
 export interface MovementCard {
@@ -35,7 +34,7 @@ const PREVIEW_SIZE = 4;
 
 
 @Component({
-  viewProviders: [provideIcons({heroDocumentArrowDown, heroPlus, hugeCardiogram02, hugeDumbbell01, hugeGymnastic})],
+  viewProviders: [provideIcons({heroPlus, hugeCardiogram02, hugeDumbbell01, hugeGymnastic})],
   selector: 'app-movement-list',
   standalone: true,
   imports: [HlmButton, HlmBadge, CommonModule, RouterModule, TranslatePipe, FormsModule, NgIcon, SearchInputComponent, ListStateComponent],
@@ -60,13 +59,11 @@ export class MovementListComponent implements OnInit {
   private readonly movementService = inject(MovementService);
   private readonly accessService = inject(AccessService);
   private readonly translate = inject(TranslateService);
-  private readonly exporterService = inject(ExporterService);
   private readonly recordService = inject(RecordService);
   private readonly unitService = inject(UnitService);
 
   // --- STATE (SIGNALS & VARIABLES) ---
   isLoading = signal<boolean>(false);
-  isExporting = signal<boolean>(false);
 
   rawMovements = signal<MovementSummaryResponse[]>([]);
   usualNames = signal<UsualNameOption[]>([]);
@@ -209,13 +206,6 @@ export class MovementListComponent implements OnInit {
   setModality(modality: string): void {
     this.activeTab.set(modality);
     this.activeFamily.set(null);
-  }
-
-  exportCsv(): void {
-    this.exporterService.executeCsvExport(
-      this.exporterService.exportMovements(),
-      this.isExporting
-    );
   }
 
   // --- HELPERS ---

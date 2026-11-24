@@ -9,7 +9,6 @@ import {provideTranslateService, TranslateService} from '@ngx-translate/core';
 import {APP_ICONS} from '../../../app.config';
 import {ThemeService} from '../../../core/services/theme.service';
 import {provideIcons} from '@ng-icons/core';
-import {ExporterService} from '../../../api/aldebaran/services/exporter.service';
 import {NotificationService} from '../../../core/services/notification.service';
 import {HttpContext} from '@angular/common/http';
 import {BYPASS_LOADER} from '../../../core/interceptors/loading.interceptor';
@@ -22,7 +21,6 @@ describe('MuscleListComponent', () => {
 
   let mockMuscleService: any;
   let mockAuthService: any;
-  let mockExporterService: any;
   let mockNotificationService: any;
 
   let mockCurrentUserSignal: WritableSignal<any>;
@@ -75,9 +73,6 @@ describe('MuscleListComponent', () => {
     };
 
     // 3. Other mocks
-    mockExporterService = {
-      exportMuscles: vi.fn().mockName("ExporterService.exportMuscles")
-    };
     mockNotificationService = {
       showSuccess: vi.fn().mockName("NotificationService.showSuccess"),
       showError: vi.fn().mockName("NotificationService.showError")
@@ -92,7 +87,6 @@ describe('MuscleListComponent', () => {
         {provide: MuscleService, useValue: mockMuscleService},
         {provide: ThemeService, useValue: {currentTheme: signal('dark')}},
         {provide: AuthService, useValue: mockAuthService},
-        {provide: ExporterService, useValue: mockExporterService},
         {provide: NotificationService, useValue: mockNotificationService}
       ]
     }).compileComponents();

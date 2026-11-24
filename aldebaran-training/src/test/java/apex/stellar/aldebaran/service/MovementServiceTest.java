@@ -129,6 +129,9 @@ class MovementServiceTest {
     // Execute
     MovementResponse response = movementService.createMovement(request);
 
+    // The code comes from the name, numbered when already taken
+    assertEquals(Movement.codeOf(request.name()), movement.getCode());
+
     // Verify Muscle Linking
     verify(muscleRepository).findById(1L);
     assertEquals(1, movement.getTargetedMuscles().size(), "Should have linked 1 muscle");

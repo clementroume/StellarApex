@@ -275,12 +275,6 @@
     "IMPERIAL": "Imperial",
     "IMPERIAL_EXAMPLE": "Loads in lb, heights in in, short distances in ft (runs and rows stay in m)."
   },
-  "EXPORT": {
-    "EXPORT_CSV": "Export CSV",
-    "CONFIRM_EXPORT": "Warning: This will overwrite the local CSV file. Continue?",
-    "EXPORT_SUCCESS": "CSV Export successful!",
-    "EXPORT_ERROR": "Error during CSV export."
-  },
   "MUSCLE": {
     "LIST": {
       "FRONT": "Front",
@@ -838,6 +832,7 @@
       "HERO": "Hero",
       "BENCHMARK": "CrossFit Benchmark",
       "OPEN": "Open",
+      "REGIONALS": "Regionals",
       "QUARTERFINALS": "Quarterfinals",
       "SEMIFINALS": "Semifinals",
       "GAMES": "Games"

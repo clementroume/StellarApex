@@ -70,11 +70,6 @@
 
   @if (isAdmin()) {
     <div class="pt-8 flex flex-col md:flex-row justify-end gap-4">
-      <button hlmBtn variant="outline" size="lg" class="min-w-36" (click)="exportCsv()" [disabled]="isExporting()">
-        <ng-icon name="heroDocumentArrowDown" aria-hidden="true"></ng-icon>
-        {{ isExporting() ? '...' : ('EXPORT.EXPORT_CSV' | translate) }}
-      </button>
-
       <a hlmBtn size="lg" routerLink="/muscles/new" class="min-w-36">
         <ng-icon name="heroPlus" aria-hidden="true"></ng-icon>
         {{ 'MUSCLE.ACTIONS.ADD' | translate }}

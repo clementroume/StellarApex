@@ -165,12 +165,6 @@
         </dependency>
 
         <dependency>
-            <groupId>org.apache.commons</groupId>
-            <artifactId>commons-csv</artifactId>
-            <version>1.14.1</version>
-        </dependency>
-
-        <dependency>
             <artifactId>spring-boot-starter-webmvc-test</artifactId>
             <groupId>org.springframework.boot</groupId>
             <scope>test</scope>

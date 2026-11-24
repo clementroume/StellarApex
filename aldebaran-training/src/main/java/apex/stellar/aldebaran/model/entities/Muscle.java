@@ -24,7 +24,6 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Locale;
 import java.util.Set;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -127,9 +126,7 @@ public class Muscle {
    * @return The code, {@code "muscle"} when the name holds no latin letter or digit.
    */
   public static String codeOf(String medicalName) {
-    String code =
-        medicalName.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9]+", "-").replaceAll("^-|-$", "");
-    return code.isEmpty() ? "muscle" : code;
+    return CatalogCode.of(medicalName, "muscle");
   }
 
   @PrePersist

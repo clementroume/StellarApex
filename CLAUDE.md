@@ -90,7 +90,7 @@ and a virtual programming); there is no "active gym" in requests.
   `SCORE_VERIFY` on that gym. Leaderboards return user IDs; names come from Antares
   `POST /antares/users/display-names` (gym mates, opted-in users, oneself).
   `ScoreResponse.capabilities {canModify, canVerify}`; others' comments hidden from non-moderators.
-  Movements/muscles CRUD and CSV export: `hasRole('ADMIN')`.
+  Movements/muscles CRUD: `hasRole('ADMIN')`.
 - Team WODs (`wods.team_size` 2–6, `team_mode`, per line `team_split` TOTAL/EACH/TOGETHER; never on a
   program, 400): the logger names teammates of the box (`ScoreRequest.teammateIds`, up to `teamSize`
   so an odd athlete mirrors a team; each checked through Antares `isGymMember`, box only, never a
@@ -283,7 +283,8 @@ Rules common to every lot session (the brief of a lot only lists what is specifi
 - Wording: CrossFit French keeps English jargon. Physical gym = "box" (FR/EN), virtual gym = "prog"
   (FR) / "program" (EN), roles Owner / Programmer / Coach / Athlète; code keeps `gym`.
 - `.env` (secrets) is git-ignored: never print or commit it.
-- Muscle/movement/public-WOD CSVs (`aldebaran-training/src/main/resources/*.csv`) are a temporary,
-  git-ignored local backup: the catalog is edited in Sirius, exported with `POST /aldebaran/export/*`,
-  and reloaded by Aldebaran's `DataSeeder` after a database reset. Not a product feature; never commit
-  them.
+- The catalog (muscles, movements, catalog WODs) never enters git: it is frozen by
+  `aldebaran-training/tools/catalog/generate_catalog.py` into private repeatable migrations
+  (`aldebaran-training/src/main/resources/db/catalog/R__*.sql`, git-ignored; upsert by stable code, never a
+  deletion; see the Aldebaran README). Never commit them, and never push an image built with them to a
+  public registry. Older local `*.csv` backups stay git-ignored too.

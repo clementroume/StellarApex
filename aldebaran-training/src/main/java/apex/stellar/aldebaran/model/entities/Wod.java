@@ -67,6 +67,14 @@ public class Wod {
   @Size(max = 100)
   private String title;
 
+  /**
+   * Stable key of a catalog WOD (public, without gym, published by a platform admin) in the catalog
+   * migrations ({@code db/catalog}): given once, never changed afterwards (lot E, D191). Null for
+   * every other WOD.
+   */
+  @Column(name = "code", unique = true, length = 150)
+  private String code;
+
   @Enumerated(EnumType.STRING)
   @Column(name = "wod_type", nullable = false, length = 50)
   @NotNull
@@ -335,6 +343,8 @@ public class Wod {
     BENCHMARK,
     // --- Official competitions ---
     OPEN,
+    // Regional stage of the CrossFit Games season, from 2011 to 2018
+    REGIONALS,
     QUARTERFINALS,
     SEMIFINALS,
     GAMES

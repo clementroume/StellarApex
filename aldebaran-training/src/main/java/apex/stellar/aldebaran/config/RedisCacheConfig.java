@@ -96,13 +96,18 @@ public class RedisCacheConfig {
     JacksonJsonRedisSerializer<Object> singleMuscleSerializer =
         new JacksonJsonRedisSerializer<>(objectMapper, singleMuscleType);
 
-    RedisCacheConfiguration baseConfig =
+    RedisCacheConfiguration keyed =
         RedisCacheConfiguration.defaultCacheConfig()
             .entryTtl(Duration.ofMillis(properties.defaultTtl()))
             .disableCachingNullValues()
             .serializeKeysWith(
                 RedisSerializationContext.SerializationPair.fromSerializer(
                     new StringRedisSerializer()));
+    // Own key space in the Redis shared with Antares ("aldebaran:wods::12")
+    RedisCacheConfiguration baseConfig =
+        properties.keyPrefix() == null || properties.keyPrefix().isBlank()
+            ? keyed
+            : keyed.prefixCacheNameWith(properties.keyPrefix() + ":");
 
     Map<String, RedisCacheConfiguration> cacheConfigurations =
         Map.of(

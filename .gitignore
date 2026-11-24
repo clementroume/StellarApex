@@ -112,6 +112,8 @@ test.http
 /aldebaran-training/src/main/resources/wods.csv
 /aldebaran-training/src/main/resources/wod_movements.csv
 /aldebaran-training/src/main/resources/movement_usual_names.csv
+# Private catalog migrations (lot E, D190): part of the value of the app, never in git
+/aldebaran-training/src/main/resources/db/catalog/
 
 # Sirius e2e (Playwright): saved sessions, reports
 sirius-app/e2e/.auth/

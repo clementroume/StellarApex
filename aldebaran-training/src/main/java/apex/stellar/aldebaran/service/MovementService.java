@@ -207,6 +207,7 @@ public class MovementService {
     }
 
     Movement movement = movementMapper.toEntity(request);
+    movement.setCode(freeCode(request.name()));
 
     if (request.muscles() != null) {
       movement.setTargetedMuscles(new HashSet<>());
@@ -476,5 +477,21 @@ public class MovementService {
     joinEntity.setMuscle(muscle);
 
     movement.getTargetedMuscles().add(joinEntity);
+  }
+
+  /**
+   * The code of a new movement: the one its name gives, numbered when it is already taken (a
+   * renamed movement keeps its code, so another name may give it).
+   *
+   * @param name The movement name.
+   * @return A code no other movement holds.
+   */
+  private String freeCode(String name) {
+    String base = Movement.codeOf(name);
+    String code = base;
+    for (int n = 2; movementRepository.existsByCode(code); n++) {
+      code = base + "-" + n;
+    }
+    return code;
   }
 }
